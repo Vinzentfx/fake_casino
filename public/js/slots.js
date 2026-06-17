@@ -1,0 +1,1104 @@
+"use strict";
+
+/* ============================================================
+   Fake Casino – Slots client
+   Real slot-machine feel: pull the lever, symbols roll top→bottom
+   through a window with a center payline, then an escalating win
+   celebration (Small → Big → Mega → Ultra w/ money shower).
+   Server is authoritative (game/slots.js); this only animates.
+   ============================================================ */
+
+(function () {
+  const { socket, toast } = window.Casino;
+  const $ = (s) => document.querySelector(s);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  let machines = [];
+  let machine = null;
+  let betIndex = 1;
+  let spinning = false;
+  let freeActive = false;
+  let freeWinTotal = 0;
+  let cellH = 70; // measured at runtime
+
+  // PvP duel state
+  let pvpMode = false;
+  let pvp = null; // { code, buyIn, state, isHost, chips, spinsLeft, done, youName, opponent, result }
+
+  // ===============================================================
+  // Sound — classic mechanical slot (ratchet) + wins
+  // ===============================================================
+  let audioCtx = null;
+  const soundOn = () => {
+    const cb = $("#set-sound");
+    return !cb || cb.checked;
+  };
+  function ac() {
+    if (!soundOn()) return null;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    } catch {
+      return null;
+    }
+  }
+  function tone(freq, dur, type = "square", gain = 0.05, delay = 0, to = null) {
+    const ctx = ac();
+    if (!ctx) return;
+    const t = ctx.currentTime + delay;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (to) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+  function noise(dur, gain = 0.05, delay = 0, freq = 1000, q = 1) {
+    const ctx = ac();
+    if (!ctx) return;
+    const t = ctx.currentTime + delay;
+    const len = Math.max(1, Math.floor(ctx.sampleRate * dur));
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filt = ctx.createBiquadFilter();
+    filt.type = "bandpass";
+    filt.frequency.value = freq;
+    filt.Q.value = q;
+    const g = ctx.createGain();
+    g.gain.value = gain;
+    src.connect(filt).connect(g).connect(ctx.destination);
+    src.start(t);
+  }
+
+  // A single ratchet "click" (pawl over gear tooth).
+  function ratchetClick() {
+    tone(2100, 0.01, "square", 0.018);
+    noise(0.012, 0.022, 0, 3200, 5);
+  }
+  // Decelerating ratchet for the whole spin — the classic casino "rrrrr...r..r..r" .
+  function startRatchet(totalMs) {
+    let stopped = false;
+    let elapsed = 0;
+    let id = null;
+    function step() {
+      if (stopped) return;
+      ratchetClick();
+      const p = Math.min(1, elapsed / totalMs);
+      const gap = 36 + 150 * Math.pow(p, 1.7);
+      elapsed += gap;
+      if (elapsed < totalMs + 180) id = setTimeout(step, gap);
+    }
+    step();
+    return () => {
+      stopped = true;
+      if (id) clearTimeout(id);
+    };
+  }
+  const sndLever = () => {
+    tone(150, 0.16, "sawtooth", 0.06, 0, 70);
+    noise(0.16, 0.05, 0, 500, 0.8);
+    tone(520, 0.1, "triangle", 0.03, 0.12, 900);
+  };
+  const sndReelStop = (i = 0) => {
+    tone(240 - i * 18, 0.07, "square", 0.05, 0, 90);
+    noise(0.05, 0.045, 0, 480, 1.3);
+  };
+  const sndWin = () => [523, 659, 784].forEach((f, i) => tone(f, 0.13, "triangle", 0.06, i * 0.07));
+  const sndBig = () => {
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.26, "triangle", 0.07, i * 0.09));
+    noise(0.4, 0.03, 0, 1600, 0.6);
+  };
+  const sndUltra = () => {
+    [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.34, "triangle", 0.08, i * 0.1));
+    noise(0.7, 0.04, 0, 2000, 0.5);
+  };
+  const sndCoin = () => tone(1760 + Math.random() * 300, 0.05, "triangle", 0.035, 0, 2400);
+
+  // ===============================================================
+  // Machine list
+  // ===============================================================
+  function loadMachines() {
+    socket.emit("slots:machines", (res) => {
+      machines = (res && res.machines) || [];
+      renderMachineGrid();
+    });
+  }
+  function isMachineUnlocked(m) {
+    if (!m || m.unlockCost === 0) return true;
+    const acc = window.Casino.getAccount();
+    return !!acc && (acc.unlocked || ["lucky7"]).includes(m.id);
+  }
+  function renderMachineGrid() {
+    const grid = $("#machine-grid");
+    grid.innerHTML = "";
+    machines.forEach((m) => {
+      const unlocked = isMachineUnlocked(m);
+      const card = document.createElement("button");
+      card.className = "machine-card theme-" + m.theme + (unlocked ? "" : " locked");
+      const sampleSyms = Object.values(m.emojis).slice(0, 5).join(" ");
+      const feature = m.freeSpins ? "🎁 Freispiele" : "⚡ Klassisch";
+      card.innerHTML = `
+        <div class="mc-syms">${sampleSyms}</div>
+        <div class="mc-name">${m.name}</div>
+        <div class="mc-tag">${m.tagline}</div>
+        <div class="mc-bets">Einsatz ${m.bets[0].toLocaleString("de-DE")}–${m.bets[m.bets.length - 1].toLocaleString("de-DE")} 🪙</div>
+        ${unlocked
+          ? `<div class="mc-feature">${feature}</div>`
+          : `<div class="mc-lock">🔒 ${m.unlockCost.toLocaleString("de-DE")} 🪙</div>`}`;
+      card.addEventListener("click", () => (unlocked ? openMachine(m.id) : tryUnlock(m)));
+      grid.appendChild(card);
+    });
+  }
+  function tryUnlock(m) {
+    if (pvpMode) return toast("Im Duell kannst du nichts freischalten.");
+    const acc = window.Casino.getAccount();
+    if (!acc) return;
+    if (acc.chips < m.unlockCost) return toast(`Du brauchst ${m.unlockCost.toLocaleString("de-DE")} 🪙 für ${m.name}.`);
+    if (!confirm(`${m.name} für ${m.unlockCost.toLocaleString("de-DE")} 🪙 freischalten?`)) return;
+    socket.emit("slots:unlock", { machineId: m.id }, (res) => {
+      if (res && res.ok) {
+        window.Casino.applyAccount(res.account);
+        toast(`${m.name} freigeschaltet! 🎉`);
+        renderMachineGrid();
+      } else {
+        toast((res && res.error) || "Freischalten fehlgeschlagen.");
+      }
+    });
+  }
+
+  // ===============================================================
+  // Open / close a machine
+  // ===============================================================
+  function openMachine(id) {
+    const m = machines.find((x) => x.id === id);
+    if (!m) return;
+    // In a PvP duel the machine is assigned regardless of unlocks.
+    if (!pvpMode && !isMachineUnlocked(m)) return toast("Erst freischalten.");
+    machine = m;
+    betIndex = pvpMode ? 0 : 1; // PvP: fixed bet = machine minimum
+    freeActive = false;
+    $("#slots-select").classList.add("hidden");
+    const mv = $("#slots-machine");
+    mv.classList.remove("hidden");
+    mv.className = "theme-" + machine.theme;
+    setBodyTheme(machine.theme);
+    $("#machine-title").textContent = machine.name;
+    $("#reels").style.gridTemplateColumns = `repeat(${machine.cols}, 1fr)`;
+    buildReels(true);
+    // Decide payline visibility synchronously (only line machines with a true
+    // middle row). Positioning happens after layout.
+    $("#payline").style.display = machine.mode === "lines" && machine.rows % 2 === 1 ? "" : "none";
+    requestAnimationFrame(() => {
+      measureCells();
+      positionPayline();
+    });
+    updateBet();
+    $("#win-amount").textContent = "0";
+    $("#free-badge").classList.remove("show");
+    $("#mult-badge").classList.remove("show");
+    // In PvP the machine & bet are fixed: lock the bet stepper and hide the
+    // "‹ Automaten" back button (no machine switching mid-duel).
+    const lockBet = pvpMode;
+    $("#bet-down").style.display = lockBet ? "none" : "";
+    $("#bet-up").style.display = lockBet ? "none" : "";
+    $("#slots-back").style.display = lockBet ? "none" : "";
+    if (pvpMode) $("#machine-title").textContent = machine.name + " 🎲";
+  }
+  function closeMachine() {
+    $("#slots-machine").classList.add("hidden");
+    $("#slots-select").classList.remove("hidden");
+    setBodyTheme(null);
+    machine = null;
+  }
+
+  const BG_THEMES = ["bg-classic", "bg-gems", "bg-dragon", "bg-cosmic"];
+  function setBodyTheme(theme) {
+    document.body.classList.remove(...BG_THEMES);
+    if (theme) document.body.classList.add("bg-" + theme);
+  }
+  $("#slots-back").addEventListener("click", () => {
+    if (spinning || freeActive) return;
+    closeMachine();
+  });
+
+  const slotsScreen = document.querySelector('[data-screen="slots"]');
+  new MutationObserver(() => {
+    if (slotsScreen.classList.contains("active")) {
+      if (!machines.length) loadMachines();
+    } else if (machine && !spinning && !freeActive) {
+      closeMachine();
+    }
+  }).observe(slotsScreen, { attributes: true, attributeFilter: ["class"] });
+
+  // ===============================================================
+  // Reels (vertical scrolling strips)
+  // ===============================================================
+  const pool = () => Object.values(machine.emojis);
+  const randSym = () => pool()[Math.floor(Math.random() * pool().length)];
+
+  // Build idle reels showing `rows` symbols per column.
+  function buildReels(randomFill) {
+    const reels = $("#reels");
+    reels.innerHTML = "";
+    for (let c = 0; c < machine.cols; c++) {
+      const reel = document.createElement("div");
+      reel.className = "reel";
+      reel.dataset.col = c;
+      const strip = document.createElement("div");
+      strip.className = "strip";
+      for (let r = 0; r < machine.rows; r++) strip.appendChild(makeCell(c, r, randSym()));
+      reel.appendChild(strip);
+      reels.appendChild(reel);
+    }
+  }
+  function makeCell(c, r, emoji) {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.dataset.c = c;
+    cell.dataset.r = r;
+    cell.innerHTML = `<span>${emoji}</span>`;
+    return cell;
+  }
+  // A plain (non-indexed) cell for the rolling part of a strip.
+  function rollCell(emoji) {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.innerHTML = `<span>${emoji}</span>`;
+    return cell;
+  }
+  function measureCells() {
+    const cell = document.querySelector("#reels .cell");
+    if (cell) cellH = cell.getBoundingClientRect().height || cellH;
+  }
+  // Centre the payline band on the true vertical middle of the symbol area.
+  // (Measured from real cells so it lines up regardless of padding/borders;
+  // for odd rows it sits on the middle row, for 4 rows on the exact centre.)
+  function positionPayline() {
+    const pl = $("#payline");
+    const win = $("#reels-window");
+    const first = document.querySelector('.cell[data-c="0"][data-r="0"]');
+    if (!pl || !win || !first) return;
+    // Only show a center line where it actually makes sense: payline machines
+    // with a true middle row (odd row count). Ways/cluster or even rows → hide.
+    if (machine.mode !== "lines" || machine.rows % 2 === 0) {
+      pl.style.display = "none";
+      return;
+    }
+    pl.style.display = "";
+    const wb = win.getBoundingClientRect();
+    const fb = first.getBoundingClientRect();
+    const ch = fb.height;
+    const cellsTop = fb.top - wb.top;
+    const center = cellsTop + (machine.rows * ch) / 2;
+    pl.style.top = center - ch / 2 + "px";
+    pl.style.height = ch + "px";
+  }
+  function setCell(c, r, emoji) {
+    const cell = document.querySelector(`.cell[data-c="${c}"][data-r="${r}"]`);
+    if (cell) cell.querySelector("span").textContent = emoji;
+  }
+  const cellEl = (c, r) => document.querySelector(`.cell[data-c="${c}"][data-r="${r}"]`);
+  function clearHighlights() {
+    document.querySelectorAll(".cell.win, .cell.dim, .cell.scatter-hit").forEach((el) =>
+      el.classList.remove("win", "dim", "scatter-hit")
+    );
+  }
+
+  // ===============================================================
+  // Bet controls
+  // ===============================================================
+  function updateBet() {
+    $("#bet-amount").textContent = machine.bets[betIndex].toLocaleString("de-DE");
+  }
+  $("#bet-down").addEventListener("click", () => {
+    if (spinning || freeActive) return;
+    betIndex = Math.max(0, betIndex - 1);
+    updateBet();
+  });
+  $("#bet-up").addEventListener("click", () => {
+    if (spinning || freeActive) return;
+    betIndex = Math.min(machine.bets.length - 1, betIndex + 1);
+    updateBet();
+  });
+
+  // ===============================================================
+  // Spin
+  // ===============================================================
+  async function doSpin() {
+    if (spinning) return;
+    if (pvpMode && (!pvp || pvp.done || pvp.state !== "playing")) return;
+
+    const bet = machine.bets[betIndex];
+    const wasFree = freeActive;
+    // Affordability (match-chips in PvP, account otherwise).
+    if (!wasFree) {
+      if (pvpMode) {
+        if (pvp.chips < bet) return toast("Nicht genug Match-Chips.");
+      } else if ((window.Casino.getAccount()?.chips ?? 0) < bet) {
+        return toast("Nicht genug Chips.");
+      }
+    }
+
+    spinning = true;
+    setControlsEnabled(false);
+    clearHighlights();
+    $("#win-pop").classList.remove("show");
+    $("#mult-badge").classList.remove("show");
+    $("#win-amount").textContent = "0";
+
+    if (!wasFree) {
+      if (pvpMode) { pvp.chips -= bet; updateHud(); }
+      else window.Casino.adjustChips(-bet);
+    }
+
+    const totalSpinMs = 850 + (machine.cols - 1) * 230 + 250;
+    sndLever();
+    const stopRatchet = startRatchet(totalSpinMs);
+    startRoll();
+
+    const event = pvpMode ? "pvp:spin" : "slots:spin";
+    const res = await new Promise((resolve) => socket.emit(event, { machineId: machine.id, bet }, resolve));
+
+    if (!res || !res.ok) {
+      stopRatchet();
+      buildReels(true);
+      if (!wasFree) { if (pvpMode) { pvp.chips += bet; updateHud(); } else window.Casino.adjustChips(bet); }
+      toast((res && res.error) || "Spin fehlgeschlagen.");
+      spinning = false;
+      setControlsEnabled(true);
+      return;
+    }
+
+    await landRoll(res.grid);
+    stopRatchet();
+    await resolveResult(res);
+
+    if (pvpMode) {
+      pvp.chips = res.chips;
+      pvp.spinsLeft = res.spinsLeft;
+      pvp.done = res.done;
+      updateHud();
+    } else {
+      window.Casino.setChips(res.balance);
+    }
+    spinning = false;
+
+    if (res.freeSpins && res.freeSpins.active) {
+      freeActive = true;
+      updateFreeBadge(res.freeSpins);
+      setControlsEnabled(false);
+      await sleep(800);
+      doSpin();
+    } else {
+      if (freeActive) {
+        freeActive = false;
+        $("#free-badge").classList.remove("show");
+        $("#mult-badge").classList.remove("show");
+        if (freeWinTotal > 0) bigBanner(`Freispiele vorbei!\n+${freeWinTotal.toLocaleString("de-DE")} 🪙`, "t-big");
+        freeWinTotal = 0;
+      }
+      if (pvpMode && pvp.done) {
+        setControlsEnabled(false);
+        const hint = $("#spin-hint");
+        const oppDone = !pvp.opponent || pvp.opponent.done;
+        if (hint) hint.textContent = oppDone ? "Beide fertig…" : "🤖 Bot spielt noch…";
+      } else {
+        setControlsEnabled(true);
+      }
+    }
+  }
+
+  function setControlsEnabled(on) {
+    $("#bet-up").disabled = !on;
+    $("#bet-down").disabled = !on;
+    $("#slots-back").style.opacity = on ? "1" : "0.4";
+    $("#lever").classList.toggle("disabled", !on);
+  }
+
+  // Begin rolling: give each reel a tall strip of random symbols scrolling down.
+  function startRoll() {
+    measureCells();
+    for (let c = 0; c < machine.cols; c++) {
+      const reel = document.querySelector(`.reel[data-col="${c}"]`);
+      reel.style.height = machine.rows * cellH + "px";
+      reel.classList.add("rolling");
+      const strip = reel.querySelector(".strip");
+      strip.style.transition = "none";
+      strip.style.transform = "translateY(0)";
+      strip.dataset.spin = 18 + c * 4; // travel length (cells)
+    }
+  }
+
+  // Land each reel staggered onto the final grid, scrolling top→bottom.
+  async function landRoll(grid) {
+    const stops = [];
+    for (let c = 0; c < machine.cols; c++) {
+      const reel = document.querySelector(`.reel[data-col="${c}"]`);
+      const strip = reel.querySelector(".strip");
+      const spin = parseInt(strip.dataset.spin, 10);
+
+      // Strip content: [final rows] + [spin random]. Resting at translateY 0 shows finals.
+      strip.innerHTML = "";
+      for (let r = 0; r < machine.rows; r++) strip.appendChild(makeCell(c, r, machine.emojis[grid[c][r]]));
+      for (let i = 0; i < spin; i++) strip.appendChild(rollCell(randSym()));
+
+      // Start shifted up so the random tail is in view, then animate down to finals.
+      strip.style.transition = "none";
+      strip.style.transform = `translateY(${-spin * cellH}px)`;
+      strip.getBoundingClientRect(); // reflow
+
+      const dur = 850 + c * 230;
+      strip.style.transition = `transform ${dur}ms cubic-bezier(0.16, 0.78, 0.24, 1)`;
+      strip.style.transform = "translateY(0)";
+
+      stops.push(
+        new Promise((resolve) => {
+          setTimeout(() => {
+            // Trim to just the final rows (seamless) and let rays escape the reel.
+            strip.innerHTML = "";
+            for (let r = 0; r < machine.rows; r++) strip.appendChild(makeCell(c, r, machine.emojis[grid[c][r]]));
+            strip.style.transition = "none";
+            strip.style.transform = "translateY(0)";
+            reel.classList.remove("rolling");
+            reel.style.height = "";
+            reel.classList.add("bump");
+            setTimeout(() => reel.classList.remove("bump"), 220);
+            sndReelStop(c);
+            resolve();
+          }, dur);
+        })
+      );
+    }
+    await Promise.all(stops);
+    await sleep(120);
+  }
+
+  // ===============================================================
+  // Resolve result — present each win in turn: mark it, fly its value
+  // into the central running total, accumulate. Markers stay while the
+  // counter climbs; on a cluster machine the grid tumbles only after a
+  // step's wins have been added.
+  // ===============================================================
+  async function resolveResult(res) {
+    const fsMult = res.wasFreeSpin && machine.freeSpins && machine.freeSpins.multiplier
+      ? machine.freeSpins.multiplier : 1;
+
+    if (res.multiplier && res.multiplier > 1) {
+      $("#mult-badge").textContent = "×" + res.multiplier;
+      $("#mult-badge").classList.add("show");
+    }
+
+    if (res.totalWin > 0) {
+      openCelebration(res.totalWin, res.bet);
+
+      if (machine.mode === "cluster" && res.cascades && res.cascades.length) {
+        for (const step of res.cascades) {
+          for (const w of step.wins) {
+            highlightCells(w.positions);                       // mark (stays this step)
+            await addWin(w.positions, Math.round(w.win * fsMult)); // fly + count up
+          }
+          await sleep(280);
+          // Tumble: clear winners, drop the new grid in.
+          step.wins.forEach((w) => w.positions.forEach(([c, r]) => cellEl(c, r) && cellEl(c, r).classList.add("dim")));
+          await sleep(220);
+          clearHighlights();
+          for (let c = 0; c < machine.cols; c++)
+            for (let r = 0; r < machine.rows; r++) setCell(c, r, machine.emojis[step.gridAfter[c][r]]);
+          $("#reels").classList.add("tumble");
+          await sleep(260);
+          $("#reels").classList.remove("tumble");
+        }
+      } else if (res.wins && res.wins.length) {
+        // Line/ways: mark each win and accumulate; all markers stay.
+        for (const w of res.wins) {
+          highlightCells(w.positions);
+          await addWin(w.positions, Math.round(w.win * fsMult));
+        }
+      }
+
+      await finishCelebration(res.totalWin);
+      if (freeActive) freeWinTotal += res.totalWin;
+    }
+
+    if (res.scatterPositions && res.freeSpinsAwarded) {
+      res.scatterPositions.forEach(([c, r]) => cellEl(c, r) && cellEl(c, r).classList.add("scatter-hit"));
+    }
+
+    if (res.freeSpinsAwarded) {
+      sndBig();
+      confettiBurst(150);
+      bigBanner(`🎁 ${res.freeSpinsAwarded} FREISPIELE!`, "t-big");
+      await sleep(1400);
+    }
+  }
+
+  function highlightCells(positions) {
+    positions.forEach(([c, r]) => {
+      const el = cellEl(c, r);
+      if (el) el.classList.add("win");
+    });
+  }
+
+  // Screen-space centre of a set of cells (for the flying "+amount").
+  function cellsCentroid(positions) {
+    let x = 0, y = 0, n = 0;
+    positions.forEach(([c, r]) => {
+      const el = cellEl(c, r);
+      if (el) {
+        const b = el.getBoundingClientRect();
+        x += b.left + b.width / 2;
+        y += b.top + b.height / 2;
+        n++;
+      }
+    });
+    return n ? { x: x / n, y: y / n } : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  }
+
+  // A floating "+amount" flies from the win cells to the central counter.
+  function flyPlus(from, delta) {
+    return new Promise((resolve) => {
+      const el = document.createElement("div");
+      el.className = "fly-add";
+      el.textContent = "+" + delta.toLocaleString("de-DE");
+      el.style.left = from.x + "px";
+      el.style.top = from.y + "px";
+      document.body.appendChild(el);
+      const tx = window.innerWidth / 2 - from.x;
+      const ty = window.innerHeight * 0.46 - from.y;
+      requestAnimationFrame(() => {
+        el.style.transform = `translate(${tx}px, ${ty}px) scale(0.7)`;
+        el.style.opacity = "0";
+      });
+      setTimeout(() => {
+        el.remove();
+        resolve();
+      }, 460);
+    });
+  }
+
+  // ---- Central running-total celebration ----
+  let wcRunning = 0;
+  let wcFired = [];
+  let wcBet = 0;
+  const WC = {};
+
+  function openCelebration(total, bet) {
+    WC.tier = $("#wc-tier");
+    WC.amt = $("#wc-amount");
+    WC.bottom = $("#win-amount");
+    wcRunning = 0;
+    wcBet = bet || 1;
+    wcFired = WIN_TIERS.map(() => false);
+    $("#win-celebration").classList.add("show");
+    WC.amt.textContent = "0";
+    WC.amt.className = "wc-amount";
+    // Below the first tier (4× bet) it's just a "WIN", no fanfare.
+    if (total < wcBet * WIN_TIERS[0].mult) {
+      WC.tier.textContent = "WIN";
+      WC.tier.className = "wc-tier show t-small";
+    } else {
+      WC.tier.textContent = "";
+      WC.tier.className = "wc-tier";
+    }
+  }
+
+  // Fly the win in, then ramp the running counter up by `delta`, escalating tiers.
+  async function addWin(positions, delta) {
+    if (delta <= 0) return;
+    sndWin();
+    await flyPlus(cellsCentroid(positions), delta);
+    const from = wcRunning;
+    const to = wcRunning + delta;
+    const dur = Math.min(1300, 320 + Math.sqrt(delta) * 20);
+    const start = performance.now();
+    const coinIv = setInterval(sndCoin, 80);
+    WC.amt.classList.add("wc-bump");
+    setTimeout(() => WC.amt.classList.remove("wc-bump"), 260);
+    await new Promise((resolve) => {
+      function tick(now) {
+        const t = Math.min(1, (now - start) / dur);
+        const val = Math.round(from + (to - from) * t);
+        WC.amt.textContent = val.toLocaleString("de-DE");
+        WC.bottom.textContent = val.toLocaleString("de-DE");
+        for (let i = 0; i < WIN_TIERS.length; i++) {
+          if (!wcFired[i] && val >= wcBet * WIN_TIERS[i].mult) {
+            wcFired[i] = true;
+            WC.tier.textContent = WIN_TIERS[i].name;
+            WC.tier.className = "wc-tier show " + WIN_TIERS[i].cls;
+            WC.amt.className = "wc-amount " + WIN_TIERS[i].cls;
+            WIN_TIERS[i].fx();
+          }
+        }
+        if (t < 1) requestAnimationFrame(tick);
+        else {
+          clearInterval(coinIv);
+          resolve();
+        }
+      }
+      requestAnimationFrame(tick);
+    });
+    wcRunning = to;
+  }
+
+  async function finishCelebration(total) {
+    WC.amt.textContent = total.toLocaleString("de-DE");
+    WC.bottom.textContent = total.toLocaleString("de-DE");
+    await sleep(total >= wcBet * 10 ? 1700 : total >= wcBet * 4 ? 1100 : 650);
+    $("#win-celebration").classList.remove("show");
+  }
+
+  // Escalating win tiers, RELATIVE to the bet (a win only counts as "big" if it
+  // actually beats the stake by a meaningful multiple).
+  const WIN_TIERS = [
+    { mult: 4, name: "BIG WIN", cls: "t-big", fx: () => { quake("big"); confettiBurst(120); sndBig(); } },
+    { mult: 10, name: "MEGA WIN", cls: "t-mega", fx: () => { quake("mega"); confettiBurst(180); sndBig(); } },
+    { mult: 25, name: "SUPER WIN", cls: "t-super", fx: () => { quake("mega"); confettiBurst(220); sndUltra(); } },
+    { mult: 50, name: "ULTRA WIN", cls: "t-ultra", fx: () => { quake("mega"); coinRain(3000); sndUltra(); } },
+    { mult: 100, name: "ULTRA SUPER WIN", cls: "t-ultra", fx: () => { coinRain(3800); confettiBurst(260); sndUltra(); } },
+    { mult: 250, name: "LEGENDÄRER WIN", cls: "t-ultra", fx: () => { coinRain(4800); confettiBurst(320); sndUltra(); } },
+  ];
+
+  function quake(level) {
+    const stage = $("#slot-stage");
+    const cls = level === "mega" ? "shake-strong" : "shake";
+    stage.classList.add(cls);
+    setTimeout(() => stage.classList.remove(cls), level === "mega" ? 800 : 550);
+  }
+
+  function updateFreeBadge(fs) {
+    const b = $("#free-badge");
+    b.textContent = `🎁 Freispiele: ${fs.remaining}`;
+    b.classList.add("show");
+  }
+
+  // ===============================================================
+  // Banner
+  // ===============================================================
+  let bannerTimer = null;
+  function bigBanner(text, cls) {
+    let b = $("#slot-banner");
+    if (!b) {
+      b = document.createElement("div");
+      b.id = "slot-banner";
+      b.className = "slot-banner";
+      $("#slot-stage").appendChild(b);
+    }
+    b.textContent = text;
+    b.className = "slot-banner show " + (cls || "");
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(() => b.classList.remove("show"), 1700);
+  }
+
+  // ===============================================================
+  // Canvas effects (shared canvas; later effect takes over)
+  // ===============================================================
+  let canvasRaf = null;
+  function canvasCtx() {
+    const canvas = $("#confetti");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    return { canvas, ctx: canvas.getContext("2d") };
+  }
+  function confettiBurst(count) {
+    const { canvas, ctx } = canvasCtx();
+    const rect = $("#slot-stage").getBoundingClientRect();
+    const colors = ["#f4d782", "#e7c66b", "#6fe39c", "#5aa0ff", "#ff6b8b", "#fff"];
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const parts = Array.from({ length: count }, () => ({
+      x: cx, y: cy,
+      vx: (Math.random() - 0.5) * 15, vy: Math.random() * -15 - 4,
+      g: 0.4 + Math.random() * 0.3, size: 5 + Math.random() * 7,
+      color: colors[(Math.random() * colors.length) | 0],
+      rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, life: 1,
+    }));
+    if (canvasRaf) cancelAnimationFrame(canvasRaf);
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      for (const p of parts) {
+        p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life -= 0.012;
+        if (p.life > 0 && p.y < canvas.height) {
+          alive = true;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.life);
+          ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          ctx.restore();
+        }
+      }
+      if (alive) canvasRaf = requestAnimationFrame(frame);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    frame();
+  }
+  // Raining gold coins — the "money shower" for ULTRA wins.
+  function coinRain(duration = 2600) {
+    const { canvas, ctx } = canvasCtx();
+    const coins = [];
+    const end = performance.now() + duration;
+    if (canvasRaf) cancelAnimationFrame(canvasRaf);
+    function spawn() {
+      for (let i = 0; i < 4; i++)
+        coins.push({
+          x: Math.random() * canvas.width, y: -20,
+          vy: 4 + Math.random() * 5, vx: (Math.random() - 0.5) * 2,
+          r: 9 + Math.random() * 8, spin: Math.random() * Math.PI, vs: (Math.random() - 0.5) * 0.35,
+        });
+    }
+    function frame(now) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (now < end) spawn();
+      for (const c of coins) {
+        c.vy += 0.15; c.y += c.vy; c.x += c.vx; c.spin += c.vs;
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.scale(Math.max(0.2, Math.abs(Math.cos(c.spin))), 1);
+        ctx.beginPath(); ctx.arc(0, 0, c.r, 0, Math.PI * 2);
+        ctx.fillStyle = "#f4d782"; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = "#b8860b"; ctx.stroke();
+        ctx.fillStyle = "#9c7012"; ctx.font = `bold ${c.r}px sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("$", 0, 0);
+        ctx.restore();
+      }
+      for (let i = coins.length - 1; i >= 0; i--) if (coins[i].y > canvas.height + 40) coins.splice(i, 1);
+      if (now < end || coins.length) canvasRaf = requestAnimationFrame(frame);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    canvasRaf = requestAnimationFrame(frame);
+  }
+
+  // ===============================================================
+  // Lever — pull down to spin
+  // ===============================================================
+  (function setupLever() {
+    const lever = $("#lever");
+    const arm = $("#lever-arm");
+    if (!lever || !arm) return;
+    const MAX = 92;
+    let dragging = false;
+    let startY = 0;
+    let pulled = 0;
+    let moved = false;
+
+    const setArm = (y) => {
+      arm.style.transform = `translateY(${y}px)`;
+    };
+    const release = () => {
+      arm.style.transition = "transform 0.4s cubic-bezier(0.3,1.6,0.5,1)";
+      setArm(0);
+      setTimeout(() => (arm.style.transition = ""), 420);
+    };
+    function fire() {
+      if (spinning || freeActive) {
+        release();
+        return;
+      }
+      // Snap down then spring back, and spin.
+      arm.style.transition = "transform 0.12s ease-in";
+      setArm(MAX);
+      doSpin();
+      setTimeout(release, 150);
+    }
+
+    arm.addEventListener("pointerdown", (e) => {
+      if (spinning || freeActive) return;
+      dragging = true;
+      moved = false;
+      startY = e.clientY;
+      arm.style.transition = "none";
+      arm.setPointerCapture && arm.setPointerCapture(e.pointerId);
+    });
+    arm.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      pulled = Math.max(0, Math.min(MAX, e.clientY - startY));
+      if (pulled > 4) moved = true;
+      setArm(pulled);
+    });
+    arm.addEventListener("pointerup", () => {
+      if (!dragging) return;
+      dragging = false;
+      if (pulled >= MAX * 0.55) {
+        setArm(MAX);
+        if (!spinning && !freeActive) doSpin();
+        setTimeout(release, 120);
+      } else if (!moved) {
+        fire(); // treated as a tap
+      } else {
+        release();
+      }
+      pulled = 0;
+    });
+    // Plain click fallback (and makes it testable).
+    lever.addEventListener("click", (e) => {
+      if (e.target === arm) return; // handled by pointer flow
+      fire();
+    });
+  })();
+
+  // ===============================================================
+  // PvP duel
+  // ===============================================================
+  const esc = window.Casino.escapeHtml;
+  const PVP_VIEWS = [
+    "slots-select", "slots-machine",
+    "pvp-lobby", "pvp-bot-setup", "pvp-friends-setup",
+    "pvp-room", "pvp-result",
+  ];
+  function showSlotsView(id) {
+    PVP_VIEWS.forEach((x) => $("#" + x).classList.toggle("hidden", x !== id));
+  }
+  function setHud(show) {
+    $("#pvp-hud").classList.toggle("hidden", !show);
+    $("#slots-lobby-back").classList.toggle("hidden", show);
+  }
+
+  let prevOppChips = null;
+  function updateHud() {
+    if (!pvp) return;
+    $("#pvp-you-name").textContent = pvp.youName || "Du";
+    $("#pvp-you-chips").textContent = (pvp.chips || 0).toLocaleString("de-DE");
+    $("#pvp-you-spins").textContent = (pvp.spinsLeft || 0) + " Spins";
+    if (pvp.opponent) {
+      $("#pvp-opp-name").textContent = pvp.opponent.name;
+      const oppChipsEl = $("#pvp-opp-chips");
+      const newChips = pvp.opponent.chips;
+      oppChipsEl.textContent = newChips.toLocaleString("de-DE");
+      // Flash animation when bot chips change
+      if (prevOppChips !== null && prevOppChips !== newChips) {
+        oppChipsEl.classList.remove("pvp-chip-flash");
+        void oppChipsEl.offsetWidth; // reflow
+        oppChipsEl.classList.add("pvp-chip-flash");
+        setTimeout(() => oppChipsEl.classList.remove("pvp-chip-flash"), 600);
+      }
+      prevOppChips = newChips;
+      const spinsLeft = pvp.opponent.spinsLeft;
+      $("#pvp-opp-spins").textContent = pvp.opponent.done ? "Fertig" : spinsLeft + " Spins";
+    } else {
+      $("#pvp-opp-name").textContent = "Wartet…";
+      $("#pvp-opp-chips").textContent = "–";
+      $("#pvp-opp-spins").textContent = "";
+      prevOppChips = null;
+    }
+  }
+
+  function onPvpState(st) {
+    pvp = pvp || {};
+    pvp.code = st.code;
+    pvp.buyIn = st.buyIn;
+    pvp.state = st.state;
+    pvp.isHost = st.isHost;
+    pvp.result = st.result;
+    pvp.youName = (st.you && st.you.name) || "Du";
+    pvp.opponent = st.opponent;
+    pvp.machineId = st.machineId;
+    pvp.machineName = st.machineName;
+    if (!spinning && st.you) {
+      pvp.chips = st.you.chips;
+      pvp.spinsLeft = st.you.spinsLeft;
+      pvp.done = st.you.done;
+    }
+
+    if (st.state === "waiting") {
+      pvpMode = false;
+      setHud(false);
+      showSlotsView("pvp-room");
+      renderRoom(st);
+    } else if (st.state === "playing") {
+      const justEntered = !pvpMode;
+      if (justEntered) enterPvpPlay();
+      pvpMode = true;
+      setHud(true);
+      updateHud();
+      if (justEntered && st.vsBot && st.opponent) {
+        toast(`🤖 Duell gestartet — Freispiele zählen nicht für den Bot!`);
+      }
+    } else if (st.state === "done") {
+      pvpMode = false;
+      setHud(false);
+      showPvpResult(st.result);
+    }
+  }
+
+  function renderRoom(st) {
+    $("#pvp-room-code").textContent = st.code;
+    const you = st.you ? st.you.name : "Du";
+    const opp = st.opponent ? st.opponent.name : "— wartet —";
+    $("#pvp-room-players").innerHTML =
+      `<div class="pvp-room-player">👤 ${esc(you)} <span class="muted">(du)</span></div>` +
+      `<div class="pvp-room-player">🆚 ${esc(opp)}</div>` +
+      `<div class="muted small">Buy-in ${st.buyIn} 🪙 · Pot ${st.buyIn * 2} 🪙 · ${st.startChips} Match-Chips · ${st.spins} Spins</div>`;
+    const startBtn = $("#pvp-start");
+    startBtn.disabled = !(st.isHost && st.opponent);
+    startBtn.textContent = st.isHost ? "Duell starten" : "Warten auf Host…";
+    $("#pvp-room-hint").textContent = st.opponent
+      ? (st.isHost ? "Bereit — starte das Duell!" : "Warte, bis der Host startet.")
+      : "Teile den Code mit deinem Gegner.";
+  }
+
+  function enterPvpPlay() {
+    pvpMode = true;
+    setHud(true);
+    // Hide all sub-views first, then open the assigned machine.
+    showSlotsView("slots-machine");
+    if (pvp.machineId && machines.some((m) => m.id === pvp.machineId)) {
+      openMachine(pvp.machineId);
+    } else {
+      showSlotsView("slots-select");
+    }
+    const hint = $("#spin-hint");
+    if (hint) hint.textContent = "🕹️ Hebel ziehen";
+  }
+
+  function showPvpResult(result) {
+    setBodyTheme(null);
+    showSlotsView("pvp-result");
+    const youWon = !result.tie && result.winner === (pvp && pvp.youName);
+    $("#pvp-result-icon").textContent = result.tie ? "🤝" : youWon ? "🏆" : "😢";
+    $("#pvp-result-title").textContent = result.tie
+      ? "Unentschieden"
+      : result.walkover
+      ? `${result.winner} gewinnt (Gegner weg)`
+      : `${result.winner} gewinnt!`;
+    let detail = result.players
+      .map((p) => `${esc(p.name)}: <b>${p.chips.toLocaleString("de-DE")}</b> Match-🪙`)
+      .join("<br>");
+    detail += `<br>Pot: <b>${result.pot.toLocaleString("de-DE")} 🪙</b>`;
+    if (result.tie) {
+      detail += `<br><span class="muted">Unentschieden — Buy-ins zurückerstattet.</span>`;
+    } else {
+      detail += `<br><span class="muted">−15% Gebühr (${result.rake.toLocaleString("de-DE")} 🪙)</span>`;
+      detail += youWon
+        ? `<div class="pvp-win-msg">🎉 +${result.payout.toLocaleString("de-DE")} 🪙 gewonnen!</div>`
+        : `<div class="pvp-lose-msg">Diesmal verloren.</div>`;
+    }
+    $("#pvp-result-detail").innerHTML = detail;
+    if (youWon) {
+      confettiBurst(180);
+      sndBig();
+    }
+  }
+
+  function pvpExit() {
+    if (pvp && pvp.code) socket.emit("pvp:leave");
+    pvpMode = false;
+    pvp = null;
+    prevOppChips = null;
+    setHud(false);
+    setBodyTheme(null);
+    const hint = $("#spin-hint");
+    if (hint) hint.textContent = "🕹️ Hebel ziehen";
+  }
+
+  // ---- PvP entry & navigation ----
+  $("#pvp-entry").addEventListener("click", () => {
+    pvp = null; pvpMode = false; setHud(false); prevOppChips = null;
+    showSlotsView("pvp-lobby");
+  });
+  $("#pvp-lobby-back").addEventListener("click", () => showSlotsView("slots-select"));
+
+  // Mode selection
+  $("#pvp-choose-bot").addEventListener("click", () => showSlotsView("pvp-bot-setup"));
+  $("#pvp-choose-friend").addEventListener("click", () => showSlotsView("pvp-friends-setup"));
+  $("#pvp-bot-back").addEventListener("click", () => showSlotsView("pvp-lobby"));
+  $("#pvp-friends-back").addEventListener("click", () => showSlotsView("pvp-lobby"));
+
+  // Bot start
+  $("#pvp-bot-start").addEventListener("click", () => {
+    const buyIn = parseInt($("#pvp-bot-buyin").value, 10);
+    socket.emit("pvp:createBot", { buyIn }, (res) => {
+      if (!res || !res.ok) toast((res && res.error) || "Konnte Bot-Duell nicht starten.");
+    });
+  });
+
+  // Friends: create / join
+  $("#pvp-create").addEventListener("click", () => {
+    const buyIn = parseInt($("#pvp-buyin").value, 10);
+    socket.emit("pvp:create", { buyIn }, (res) => {
+      if (!res || !res.ok) toast((res && res.error) || "Konnte Duell nicht erstellen.");
+    });
+  });
+  $("#pvp-join").addEventListener("click", pvpJoinFromInput);
+  $("#pvp-code").addEventListener("input", (e) => {
+    e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+  });
+  $("#pvp-code").addEventListener("keydown", (e) => { if (e.key === "Enter") pvpJoinFromInput(); });
+  function pvpJoinFromInput() {
+    const code = $("#pvp-code").value.trim().toUpperCase();
+    $("#pvp-join-error").textContent = "";
+    if (code.length !== 4) { $("#pvp-join-error").textContent = "Code besteht aus 4 Zeichen."; return; }
+    socket.emit("pvp:join", { code }, (res) => {
+      if (!res || !res.ok) $("#pvp-join-error").textContent = (res && res.error) || "Match nicht gefunden.";
+    });
+  }
+
+  // Room / result navigation
+  $("#pvp-room-back").addEventListener("click", () => { pvpExit(); showSlotsView("pvp-lobby"); });
+  $("#pvp-start").addEventListener("click", () => socket.emit("pvp:start"));
+  $("#pvp-quit").addEventListener("click", () => { pvpExit(); showSlotsView("pvp-lobby"); });
+  $("#pvp-result-back").addEventListener("click", () => { pvp = null; prevOppChips = null; showSlotsView("pvp-lobby"); });
+  socket.on("pvp:state", onPvpState);
+
+  // Leaving the slots screen during a duel forfeits it.
+  new MutationObserver(() => {
+    if (pvpMode && !slotsScreen.classList.contains("active") && !spinning && !freeActive) pvpExit();
+  }).observe(slotsScreen, { attributes: true, attributeFilter: ["class"] });
+
+  // ===============================================================
+  // Paytable modal
+  // ===============================================================
+  $("#paytable-btn").addEventListener("click", showPaytable);
+  $("#paytable-close").addEventListener("click", () => $("#paytable-modal").classList.add("hidden"));
+
+  function showPaytable() {
+    const body = $("#paytable-body");
+    const bet = machine.bets[betIndex];
+    const scale = machine.payScale;
+    const coins = (raw) => Math.round((raw * scale) / 20 * bet); // payout in coins at current bet
+    $("#paytable-title").textContent = machine.name;
+    const rows = [];
+
+    if (machine.mode === "cluster") {
+      rows.push(`<p class="pt-note">Auszahlung in 🪙 bei Einsatz <b>${bet}</b> — bei 5+ verbundenen Symbolen (Cluster).</p>`);
+      const syms = Object.keys(machine.clusterPays).sort(
+        (a, b) => coins(topVal(machine.clusterPays[b])) - coins(topVal(machine.clusterPays[a]))
+      );
+      for (const sym of syms) {
+        const table = machine.clusterPays[sym];
+        const parts = Object.keys(table).map(Number).sort((a, b) => a - b)
+          .map((sz) => `<span class="pt-cnt">${sz}+</span> ${coins(table[sz]).toLocaleString("de-DE")}`).join("");
+        rows.push(`<div class="pt-row"><span class="pt-sym">${machine.emojis[sym]}</span><div class="pt-vals">${parts}</div></div>`);
+      }
+    } else {
+      const label = machine.mode === "ways" ? "pro Way" : "pro Linie";
+      rows.push(`<p class="pt-note">Auszahlung in 🪙 bei Einsatz <b>${bet}</b> (${label}). Wild ${machine.emojis[machine.wild]} ersetzt alle außer Scatter.</p>`);
+      const syms = Object.keys(machine.pays).sort(
+        (a, b) => coins(topVal(machine.pays[b])) - coins(topVal(machine.pays[a]))
+      );
+      for (const sym of syms) {
+        const table = machine.pays[sym];
+        const parts = Object.keys(table).map(Number).sort((a, b) => a - b)
+          .map((n) => `<span class="pt-cnt">${n}×</span> ${coins(table[n]).toLocaleString("de-DE")}`).join("");
+        rows.push(`<div class="pt-row"><span class="pt-sym">${machine.emojis[sym]}</span><div class="pt-vals">${parts}</div></div>`);
+      }
+    }
+    if (machine.scatter) {
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${machine.emojis[machine.scatter]}</span><div class="pt-vals">Scatter — ${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus</div></div>`);
+    }
+    body.innerHTML = rows.join("");
+    $("#paytable-modal").classList.remove("hidden");
+  }
+  function topVal(table) {
+    return Math.max(...Object.values(table));
+  }
+})();
