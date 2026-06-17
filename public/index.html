@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <!-- iPad/Mobile: passt sich an, verhindert ungewolltes Zoomen beim Tippen -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b2a1d" />
+  <title>🎰 Fake Casino</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <!-- ===================== TOP BAR (in der Lobby sichtbar) ===================== -->
+  <header id="topbar" class="topbar hidden">
+    <div class="brand" data-nav="lobby">🎰 <span>Fake Casino</span></div>
+    <div class="topbar-right">
+      <button id="bonus-btn" class="chip-btn" title="Täglicher Bonus">🎁 Bonus</button>
+      <div class="balance" id="balance">
+        <span class="coin">🪙</span><span id="balance-amount">0</span>
+      </div>
+      <div class="profile-chip" id="profile-chip" data-nav="profile">
+        <span class="avatar" id="avatar">🙂</span>
+        <span id="player-name">Spieler</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="app">
+
+    <!-- ===================== LOGIN ===================== -->
+    <section class="screen active" data-screen="login">
+      <div class="login-card">
+        <div class="logo">🎰</div>
+        <h1>Fake Casino</h1>
+        <p class="subtitle">Spielgeld-Casino — kein echtes Geld, nur Spaß.</p>
+
+        <form id="login-form" autocomplete="off">
+          <label>Spielername
+            <input id="login-name" type="text" inputmode="text" maxlength="16"
+                   placeholder="z. B. Vincent" required />
+          </label>
+          <label>4-stellige PIN
+            <input id="login-pin" type="password" inputmode="numeric" pattern="\d{4}"
+                   maxlength="4" placeholder="••••" required />
+          </label>
+          <p class="hint">Neuer Name? → Account wird automatisch erstellt (Start: 1000 🪙).</p>
+          <div class="form-error" id="login-error"></div>
+          <button type="submit" class="btn-primary">Eintreten</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===================== LOBBY / HOMESCREEN ===================== -->
+    <section class="screen" data-screen="lobby">
+      <div class="lobby-inner">
+        <h2 class="section-title">Spiele</h2>
+        <div class="game-grid">
+          <button class="game-tile" data-nav="poker">
+            <span class="tile-icon">🃏</span>
+            <span class="tile-name">Texas Hold'em</span>
+            <span class="tile-sub">Pokern mit Freunden</span>
+          </button>
+          <button class="game-tile" data-nav="slots">
+            <span class="tile-icon">🎰</span>
+            <span class="tile-name">Slots</span>
+            <span class="tile-sub">Einarmiger Bandit</span>
+          </button>
+          <button class="game-tile" data-nav="blackjack">
+            <span class="tile-icon">♠️</span>
+            <span class="tile-name">Blackjack</span>
+            <span class="tile-sub">21 schlagen</span>
+          </button>
+          <button class="game-tile" data-nav="roulette">
+            <span class="tile-icon">🎡</span>
+            <span class="tile-name">Roulette</span>
+            <span class="tile-sub">Bald verfügbar</span>
+          </button>
+        </div>
+
+        <h2 class="section-title">Mehr</h2>
+        <div class="action-grid">
+          <button class="action-tile" data-nav="leaderboard">🏆<span>Bestenliste</span></button>
+          <button class="action-tile" id="bonus-tile">🎁<span>Täglicher Bonus</span></button>
+          <button class="action-tile" data-nav="profile">👤<span>Profil</span></button>
+          <button class="action-tile" data-nav="settings">⚙️<span>Einstellungen</span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== GENERISCHE "BALD VERFÜGBAR" SCREENS ===================== -->
+    <section class="screen" data-screen="poker">
+      <!-- Sub-Ansicht: Tisch erstellen oder beitreten -->
+      <div id="poker-lobby">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon">🃏</div><h2>Texas Hold'em</h2></div>
+        <div class="panel bots-panel">
+          <h3>🤖 Gegen Bots spielen</h3>
+          <div class="bots-config">
+            <label>Bots
+              <select id="bot-count">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3" selected>3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </label>
+            <label>Buy-in
+              <input id="bot-buyin" type="number" inputmode="numeric" min="20" step="10" value="1000" />
+            </label>
+            <button class="btn-primary" id="poker-bots-entry">Spielen</button>
+          </div>
+          <p class="muted small">Sofort loslegen — gewinne den Bots ihre Chips ab.</p>
+        </div>
+        <div class="poker-actions">
+          <div class="panel">
+            <h3>Tisch erstellen</h3>
+            <label>Blinds (Small / Big)
+              <select id="blind-select">
+                <option value="10">5 / 10</option>
+                <option value="20" selected>10 / 20</option>
+                <option value="50">25 / 50</option>
+                <option value="100">50 / 100</option>
+              </select>
+            </label>
+            <button class="btn-primary" id="create-table-btn">Tisch erstellen</button>
+          </div>
+          <div class="panel">
+            <h3>Tisch beitreten</h3>
+            <label>Tisch-Code
+              <input id="join-code" maxlength="4" placeholder="z. B. K3PQ" autocomplete="off" />
+            </label>
+            <button class="btn-primary" id="join-table-btn">Beitreten</button>
+            <div class="form-error" id="poker-join-error"></div>
+          </div>
+        </div>
+        <p class="muted small" style="text-align:center">
+          Erstelle einen Tisch und teile den Code mit deinen Freunden — sie treten von überall bei.
+        </p>
+      </div>
+
+      <!-- Sub-Ansicht: der Tisch selbst -->
+      <div id="poker-table-view" class="hidden">
+        <div class="table-header">
+          <button class="back-btn" id="leave-table-btn">‹ Verlassen</button>
+          <div class="table-code">Code <b id="table-code">----</b></div>
+          <button class="add-bot-btn" id="add-bot-btn" title="Bot hinzufügen">🤖 + Bot</button>
+        </div>
+        <div class="felt" id="felt">
+          <div class="pot" id="pot"></div>
+          <div class="board" id="board"></div>
+          <div class="table-banner" id="table-banner"></div>
+          <!-- Sitze werden per JS eingefügt -->
+        </div>
+        <div class="table-controls" id="table-controls"></div>
+        <div class="table-log" id="table-log"></div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="slots">
+      <!-- PvP-HUD (während eines Duells oben sichtbar) -->
+      <div id="pvp-hud" class="hidden">
+        <div class="pvp-side you">
+          <span class="pvp-pname" id="pvp-you-name">Du</span>
+          <b class="pvp-pchips" id="pvp-you-chips">0</b>
+          <span class="pvp-pspins" id="pvp-you-spins">–</span>
+        </div>
+        <div class="pvp-vs">VS</div>
+        <div class="pvp-side opp">
+          <span class="pvp-pname" id="pvp-opp-name">Gegner</span>
+          <b class="pvp-pchips" id="pvp-opp-chips">0</b>
+          <span class="pvp-pspins" id="pvp-opp-spins">–</span>
+        </div>
+        <button class="pvp-quit" id="pvp-quit" title="Duell verlassen">✕</button>
+      </div>
+
+      <!-- Automaten-Auswahl -->
+      <div id="slots-select">
+        <button class="back-btn" data-nav="lobby" id="slots-lobby-back">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon">🎰</div><h2>Slots</h2></div>
+        <button class="pvp-entry" id="pvp-entry"><span>🆚 PvP-Duell</span><small>Gegeneinander — größerer Gewinn gewinnt den Pot</small></button>
+        <div class="machine-grid" id="machine-grid"></div>
+      </div>
+
+      <!-- PvP: Modus-Auswahl -->
+      <div id="pvp-lobby" class="hidden">
+        <button class="back-btn" id="pvp-lobby-back">‹ Slots</button>
+        <div style="text-align:center"><div class="ph-icon">🆚</div><h2>Slots-Duell</h2></div>
+        <div class="pvp-mode-grid">
+          <button class="pvp-mode-card" id="pvp-choose-bot">
+            <span class="pvp-mode-icon">🤖</span>
+            <span class="pvp-mode-name">Gegen Bot</span>
+            <span class="pvp-mode-sub">Sofort loslegen · keine Gebühr · zufällige Maschine</span>
+          </button>
+          <button class="pvp-mode-card" id="pvp-choose-friend">
+            <span class="pvp-mode-icon">👥</span>
+            <span class="pvp-mode-name">Gegen Freunde</span>
+            <span class="pvp-mode-sub">Code teilen · 15% Gebühr auf den Pot</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- PvP: Bot-Setup -->
+      <div id="pvp-bot-setup" class="hidden">
+        <button class="back-btn" id="pvp-bot-back">‹ Zurück</button>
+        <div style="text-align:center"><div class="ph-icon">🤖</div><h2>Gegen Bot spielen</h2></div>
+        <div class="panel">
+          <p class="muted small" style="margin-top:0">Wähle deinen Einsatz. Du und der Bot spielen je 20 Spins auf derselben zufälligen Maschine — wer am Ende mehr Match-Chips hat, gewinnt den Pot.</p>
+          <label>Buy-in
+            <input id="pvp-bot-buyin" type="number" inputmode="numeric" min="10" step="10" value="500" />
+          </label>
+          <button class="btn-primary" id="pvp-bot-start" style="margin-top:12px">Duell starten</button>
+          <p class="muted small">15% Gebühr auf den Pot. Gewinner bekommt 85%.</p>
+        </div>
+      </div>
+
+      <!-- PvP: Freunde-Setup (erstellen / beitreten) -->
+      <div id="pvp-friends-setup" class="hidden">
+        <button class="back-btn" id="pvp-friends-back">‹ Zurück</button>
+        <div style="text-align:center"><div class="ph-icon">👥</div><h2>Gegen Freunde</h2></div>
+        <div class="poker-actions">
+          <div class="panel">
+            <h3>Duell erstellen</h3>
+            <label>Buy-in
+              <input id="pvp-buyin" type="number" inputmode="numeric" min="10" step="10" value="500" />
+            </label>
+            <button class="btn-primary" id="pvp-create">Erstellen</button>
+            <p class="muted small">15% Gebühr auf den Pot. Gewinner bekommt 85%.</p>
+          </div>
+          <div class="panel">
+            <h3>Duell beitreten</h3>
+            <label>Code <input id="pvp-code" maxlength="4" placeholder="z. B. R89M" autocomplete="off" /></label>
+            <button class="btn-primary" id="pvp-join">Beitreten</button>
+            <div class="form-error" id="pvp-join-error"></div>
+          </div>
+        </div>
+        <p class="muted small" style="text-align:center">Beide zahlen den Buy-in in den Pot. 20 Spins — wer mehr Match-Chips übrig hat, gewinnt alles.</p>
+      </div>
+
+      <!-- PvP: Warteraum -->
+      <div id="pvp-room" class="hidden">
+        <button class="back-btn" id="pvp-room-back">‹ Verlassen</button>
+        <div class="panel" style="text-align:center">
+          <h2>Warteraum</h2>
+          <div class="pvp-room-code">Code <b id="pvp-room-code">----</b></div>
+          <div id="pvp-room-players" class="pvp-room-players"></div>
+          <button class="btn-primary" id="pvp-start" disabled>Duell starten</button>
+          <p class="muted small" id="pvp-room-hint">Teile den Code mit deinem Gegner.</p>
+        </div>
+      </div>
+
+      <!-- PvP: Ergebnis -->
+      <div id="pvp-result" class="hidden">
+        <div class="panel pvp-result-card">
+          <div id="pvp-result-icon">🏆</div>
+          <h2 id="pvp-result-title">…</h2>
+          <div id="pvp-result-detail" class="pvp-result-detail"></div>
+          <button class="btn-primary" id="pvp-result-back">Zurück zum Duell-Menü</button>
+        </div>
+      </div>
+
+      <!-- Einzelner Automat -->
+      <div id="slots-machine" class="hidden">
+        <div class="slots-mtopbar">
+          <button class="back-btn" id="slots-back">‹ Automaten</button>
+          <div class="machine-title" id="machine-title"></div>
+          <button class="paytable-btn" id="paytable-btn">ℹ︎</button>
+        </div>
+
+        <div class="machine-body">
+          <div class="slot-stage" id="slot-stage">
+            <div class="reels-window" id="reels-window">
+              <div class="reels" id="reels"></div>
+              <div class="payline" id="payline"><span class="pl-arrow left">▶</span><span class="pl-arrow right">◀</span></div>
+            </div>
+            <div class="free-badge" id="free-badge"></div>
+            <div class="multiplier-badge" id="mult-badge"></div>
+            <div class="win-pop" id="win-pop"></div>
+          </div>
+          <div class="lever" id="lever" title="Hebel ziehen zum Drehen">
+            <div class="lever-track"></div>
+            <div class="lever-arm" id="lever-arm"><div class="lever-knob"></div></div>
+            <div class="lever-hint" id="lever-hint">ziehen</div>
+          </div>
+        </div>
+
+        <div class="slot-controls">
+          <div class="bet-control">
+            <button class="bet-step" id="bet-down">−</button>
+            <div class="bet-display"><span class="lbl">Einsatz</span><b id="bet-amount">20</b></div>
+            <button class="bet-step" id="bet-up">+</button>
+          </div>
+          <div class="spin-hint">🕹️ Hebel ziehen</div>
+          <div class="win-display"><span class="lbl">Gewinn</span><b id="win-amount">0</b></div>
+        </div>
+
+        <!-- Paytable-Modal -->
+        <div class="paytable-modal hidden" id="paytable-modal">
+          <div class="paytable-card">
+            <h3 id="paytable-title">Gewinntabelle</h3>
+            <div id="paytable-body"></div>
+            <button class="btn-primary" id="paytable-close">Schließen</button>
+          </div>
+        </div>
+      </div>
+
+      <canvas id="confetti" class="confetti-canvas"></canvas>
+
+      <!-- Zentrale Gewinn-Feier (zählt in der Bildschirmmitte hoch) -->
+      <div id="win-celebration" class="win-celebration">
+        <div class="wc-tier" id="wc-tier"></div>
+        <div class="wc-amount" id="wc-amount">0</div>
+        <div class="wc-coins" id="wc-coins">🪙</div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="blackjack">
+      <div class="bj-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+
+        <!-- Dealer -->
+        <div class="bj-dealer-area">
+          <div class="bj-area-label">Dealer <span id="bj-dealer-value" class="bj-value-chip"></span></div>
+          <div class="bj-cards" id="bj-dealer-cards"></div>
+        </div>
+
+        <!-- Meldung (Gewonnen / Verloren etc.) -->
+        <div class="bj-message" id="bj-message"></div>
+
+        <!-- Spieler-Hände -->
+        <div id="bj-player-hands" class="bj-player-hands"></div>
+
+        <!-- Aktions-Controls: Treffen / Passen / … -->
+        <div class="bj-controls-wrap">
+
+          <div id="bj-actions" class="bj-actions hidden">
+            <button class="bj-btn bj-btn-hit"    id="bj-btn-hit">Karte</button>
+            <button class="bj-btn bj-btn-stand"  id="bj-btn-stand">Passen</button>
+            <button class="bj-btn bj-btn-double" id="bj-btn-double">Doppeln</button>
+            <button class="bj-btn bj-btn-split"  id="bj-btn-split">Teilen</button>
+          </div>
+
+          <!-- Ergebnis-Zeile -->
+          <div id="bj-done" class="bj-done hidden">
+            <button class="btn-primary bj-btn-again" id="bj-btn-again">Nochmal spielen</button>
+          </div>
+
+          <!-- Einsatz-Bereich -->
+          <div id="bj-betting" class="bj-betting">
+            <div class="bj-bet-row">
+              <button class="bet-step" id="bj-bet-down">−</button>
+              <div class="bj-bet-display-wrap">
+                <span class="lbl">Einsatz</span>
+                <b id="bj-bet-display">100</b>
+                <span class="lbl">🪙</span>
+              </div>
+              <button class="bet-step" id="bj-bet-up">+</button>
+            </div>
+            <div id="bj-chip-bar" class="bj-chip-bar"></div>
+            <button class="btn-primary bj-deal-btn" id="bj-btn-deal">Karten geben</button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="roulette">
+      <div class="placeholder">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div class="ph-icon">🎡</div>
+        <h2>Roulette</h2>
+        <p>Geplant für eine spätere Version.</p>
+        <span class="badge">Bald</span>
+      </div>
+    </section>
+
+    <!-- ===================== LEADERBOARD ===================== -->
+    <section class="screen" data-screen="leaderboard">
+      <div class="panel">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <h2>🏆 Bestenliste</h2>
+        <ol class="leaderboard" id="leaderboard-list">
+          <li class="muted">Lädt…</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===================== PROFIL ===================== -->
+    <section class="screen" data-screen="profile">
+      <div class="panel">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <h2>👤 Profil</h2>
+        <div class="profile-big" id="profile-big">🙂</div>
+        <h3 id="profile-name">Spieler</h3>
+        <div class="stat-row"><span>Guthaben</span><b id="profile-chips">0 🪙</b></div>
+        <div class="stat-row"><span>Gespielte Spiele</span><b id="profile-games">0</b></div>
+        <div class="stat-row"><span>Größter Gewinn</span><b id="profile-biggest">0 🪙</b></div>
+        <div class="stat-row"><span>Mitglied seit</span><b id="profile-since">–</b></div>
+        <button class="btn-danger" id="logout-btn">Abmelden</button>
+      </div>
+    </section>
+
+    <!-- ===================== EINSTELLUNGEN ===================== -->
+    <section class="screen" data-screen="settings">
+      <div class="panel">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <h2>⚙️ Einstellungen</h2>
+        <label class="toggle-row">
+          <span>Soundeffekte</span>
+          <input type="checkbox" id="set-sound" checked />
+        </label>
+        <p class="muted small">Mehr Einstellungen kommen, wenn die Spiele fertig sind.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast für Hinweise (z. B. Bonus erhalten) -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/poker.js"></script>
+  <script src="/js/slots.js"></script>
+  <script src="/js/blackjack.js"></script>
+</body>
+</html>

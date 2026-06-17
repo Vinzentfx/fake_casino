@@ -1,0 +1,19 @@
+{
+  "name": "fake-casino",
+  "version": "0.1.0",
+  "description": "Browser-based play-money casino (Texas Hold'em, Slots & more) with a lobby/homescreen.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}
