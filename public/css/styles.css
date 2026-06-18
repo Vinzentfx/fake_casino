@@ -39,7 +39,6 @@ body {
     radial-gradient(700px 600px at 100% 108%, var(--bgGlow2), transparent 60%),
     radial-gradient(700px 600px at 0% 108%, var(--bgGlow2), transparent 60%),
     linear-gradient(165deg, var(--bg1), var(--bg2) 58%, var(--bg3));
-  background-size: cover;
   transition: background 0.6s ease;
 }
 /* drifting spotlight + faint pattern */
