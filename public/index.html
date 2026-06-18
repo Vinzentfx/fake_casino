@@ -82,8 +82,10 @@
         <div class="action-grid">
           <button class="action-tile" data-nav="leaderboard">🏆<span>Bestenliste</span></button>
           <button class="action-tile" id="bonus-tile">🎁<span>Täglicher Bonus</span></button>
+          <button class="action-tile" data-nav="transfer">💸<span>Chips senden</span></button>
           <button class="action-tile" data-nav="profile">👤<span>Profil</span></button>
           <button class="action-tile" data-nav="settings">⚙️<span>Einstellungen</span></button>
+          <button class="action-tile" id="admin-tile" style="display:none">🛠️<span>Admin</span></button>
         </div>
       </div>
     </section>
@@ -410,7 +412,70 @@
           <span>Soundeffekte</span>
           <input type="checkbox" id="set-sound" checked />
         </label>
-        <p class="muted small">Mehr Einstellungen kommen, wenn die Spiele fertig sind.</p>
+        <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
+        <h3>🔑 PIN ändern</h3>
+        <form id="change-pin-form" autocomplete="off">
+          <label>Alte PIN
+            <input id="cp-old" type="password" inputmode="numeric" maxlength="4" placeholder="••••" required />
+          </label>
+          <label>Neue PIN
+            <input id="cp-new" type="password" inputmode="numeric" maxlength="4" placeholder="••••" required />
+          </label>
+          <label>Neue PIN bestätigen
+            <input id="cp-confirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••" required />
+          </label>
+          <div class="form-error" id="cp-error"></div>
+          <button type="submit" class="btn-primary">PIN ändern</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===================== CHIPS SENDEN ===================== -->
+    <section class="screen" data-screen="transfer">
+      <div class="panel">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <h2>💸 Chips senden</h2>
+        <form id="transfer-form" autocomplete="off">
+          <label>Empfänger (Spielername)
+            <input id="tr-to" type="text" maxlength="16" placeholder="z. B. Max" required />
+          </label>
+          <label>Betrag
+            <input id="tr-amount" type="number" inputmode="numeric" min="1" step="1" placeholder="z. B. 500" required />
+          </label>
+          <div class="form-error" id="tr-error"></div>
+          <button type="submit" class="btn-primary">Senden</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===================== ADMIN (nur Vincent) ===================== -->
+    <section class="screen" data-screen="admin">
+      <div class="panel">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <h2>🛠️ Admin</h2>
+
+        <h3>Alle Accounts</h3>
+        <ol class="leaderboard" id="admin-account-list">
+          <li class="muted">Lädt…</li>
+        </ol>
+
+        <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
+        <h3>Chips setzen</h3>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <input id="admin-target-chips" type="text" maxlength="16" placeholder="Spielername" style="flex:1;min-width:120px" />
+          <input id="admin-amount" type="number" inputmode="numeric" min="0" step="1000" value="10000" style="flex:1;min-width:100px" />
+          <button class="btn-primary" id="admin-set-chips-btn">Setzen</button>
+        </div>
+        <div class="form-error" id="admin-chips-error"></div>
+
+        <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
+        <h3>Sperren / Entsperren</h3>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <input id="admin-target-ban" type="text" maxlength="16" placeholder="Spielername" style="flex:1;min-width:120px" />
+          <button class="btn-danger" id="admin-ban-btn">Sperren</button>
+          <button class="btn-primary" id="admin-unban-btn">Entsperren</button>
+        </div>
+        <div class="form-error" id="admin-ban-error"></div>
       </div>
     </section>
 

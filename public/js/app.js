@@ -38,6 +38,7 @@ function showScreen(name) {
   // Daten je Screen nachladen
   if (name === "leaderboard") loadLeaderboard();
   if (name === "profile") renderProfile();
+  if (name === "admin") loadAdminAccounts();
 
   window.scrollTo(0, 0);
 }
@@ -68,9 +69,11 @@ function setAccount(acc) {
   try {
     localStorage.setItem("casino_name", acc.name);
   } catch {}
-  // Tell the server who this socket is (for poker buy-in / cash-out).
   socket.emit("auth", { name: acc.name });
   renderTopbar();
+  // Admin-Tile nur für Vincent sichtbar
+  const adminTile = $("#admin-tile");
+  if (adminTile) adminTile.style.display = acc.name.toLowerCase() === "vincent" ? "" : "none";
 }
 
 // Server can push an updated bank balance (e.g. after a poker buy-in/cash-out).
@@ -214,6 +217,103 @@ try {
 // Bonus-Button-Status regelmäßig auffrischen
 setInterval(refreshBonusButton, 60 * 1000);
 
+// ---- PIN ändern ----
+$("#change-pin-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = $("#cp-error");
+  errEl.textContent = "";
+  const oldPin = $("#cp-old").value.trim();
+  const newPin = $("#cp-new").value.trim();
+  const confirm = $("#cp-confirm").value.trim();
+  if (newPin !== confirm) { errEl.textContent = "Neue PINs stimmen nicht überein."; return; }
+  try {
+    await api("/api/change-pin", { name: state.account.name, oldPin, newPin });
+    $("#cp-old").value = ""; $("#cp-new").value = ""; $("#cp-confirm").value = "";
+    toast("PIN erfolgreich geändert!");
+  } catch (err) {
+    errEl.textContent = err.message;
+  }
+});
+["cp-old","cp-new","cp-confirm"].forEach((id) => {
+  $("#" + id).addEventListener("input", (e) => {
+    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
+  });
+});
+
+// ---- Chips senden ----
+$("#transfer-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const errEl = $("#tr-error");
+  errEl.textContent = "";
+  const to = $("#tr-to").value.trim();
+  const amount = parseInt($("#tr-amount").value, 10);
+  if (!to || !Number.isFinite(amount) || amount <= 0) { errEl.textContent = "Ungültige Eingabe."; return; }
+  socket.emit("account:transfer", { to, amount }, (res) => {
+    if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
+    state.account = { ...state.account, ...res.account };
+    renderTopbar();
+    $("#tr-to").value = ""; $("#tr-amount").value = "";
+    toast(`${amount.toLocaleString("de-DE")} 🪙 an ${to} gesendet!`);
+  });
+});
+
+// Benachrichtigung wenn jemand Chips schickt
+socket.on("account:received", ({ from, amount }) => {
+  toast(`+${amount.toLocaleString("de-DE")} 🪙 von ${from} erhalten!`);
+});
+
+// Admin-Panel (nur für Vincent)
+socket.on("admin:kicked", ({ reason }) => {
+  toast(reason || "Du wurdest gesperrt.");
+  state.account = null;
+  try { localStorage.removeItem("casino_name"); } catch {}
+  showScreen("login");
+});
+
+function loadAdminAccounts() {
+  const list = $("#admin-account-list");
+  list.innerHTML = '<li class="muted">Lädt…</li>';
+  socket.emit("admin:listAccounts", (res) => {
+    if (!res || !res.ok) { list.innerHTML = '<li class="muted">Fehler.</li>'; return; }
+    if (!res.accounts.length) { list.innerHTML = '<li class="muted">Keine Accounts.</li>'; return; }
+    list.innerHTML = "";
+    res.accounts.sort((a, b) => b.chips - a.chips).forEach((p) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span>${escapeHtml(p.name)}${p.banned ? " 🚫" : ""}</span>` +
+        `<b>${p.chips.toLocaleString("de-DE")} 🪙</b>`;
+      list.appendChild(li);
+    });
+  });
+}
+
+$("#admin-set-chips-btn").addEventListener("click", () => {
+  const errEl = $("#admin-chips-error");
+  errEl.textContent = "";
+  const target = $("#admin-target-chips").value.trim();
+  const amount = parseInt($("#admin-amount").value, 10);
+  if (!target || !Number.isFinite(amount) || amount < 0) { errEl.textContent = "Ungültige Eingabe."; return; }
+  socket.emit("admin:setChips", { target, amount }, (res) => {
+    if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
+    toast(`${target}: Chips auf ${amount.toLocaleString("de-DE")} 🪙 gesetzt.`);
+    loadAdminAccounts();
+  });
+});
+
+["admin-ban-btn","admin-unban-btn"].forEach((id) => {
+  $("#" + id).addEventListener("click", () => {
+    const errEl = $("#admin-ban-error");
+    errEl.textContent = "";
+    const target = $("#admin-target-ban").value.trim();
+    if (!target) { errEl.textContent = "Spielername eingeben."; return; }
+    const event = id === "admin-ban-btn" ? "admin:ban" : "admin:unban";
+    socket.emit(event, { target }, (res) => {
+      if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
+      toast(id === "admin-ban-btn" ? `${target} gesperrt.` : `${target} entsperrt.`);
+      loadAdminAccounts();
+    });
+  });
+});
+
 // Shared API for the per-game modules (poker.js, slots.js etc.).
 window.Casino = {
   socket,
@@ -221,61 +321,24 @@ window.Casino = {
   toast,
   getAccount: () => state.account,
   escapeHtml,
-  // Set the displayed balance to an exact value (authoritative, e.g. after a slot reveal).
   setChips(n) {
     if (!state.account) return;
     state.account.chips = n;
     renderTopbar();
     if (currentScreen === "profile") renderProfile();
   },
-  // Adjust the displayed balance by a delta (optimistic, e.g. bet deducted at spin start).
   adjustChips(delta) {
     if (!state.account) return;
     state.account.chips = Math.max(0, state.account.chips + delta);
     renderTopbar();
   },
-  // Merge a full account object (chips, unlocked, …), e.g. after an unlock.
   applyAccount(account) {
     if (!account) return;
     state.account = { ...state.account, ...account };
     renderTopbar();
     if (currentScreen === "profile") renderProfile();
   },
-  // Admin/test cheat: grant chips to the logged-in account.
-  cheat(amount = 1000000, code = "casino-admin") {
-    if (!state.account) return toast("Erst einloggen.");
-    socket.emit("admin:grant", { code, amount }, (res) => {
-      if (res && res.ok) {
-        state.account.chips = res.account.chips;
-        renderTopbar();
-        if (currentScreen === "profile") renderProfile();
-        toast(`Admin: +${amount.toLocaleString("de-DE")} 🪙`);
-      } else {
-        toast((res && res.error) || "Admin fehlgeschlagen.");
-      }
-    });
-  },
 };
-
-// Hidden admin gesture: tap the balance 5× quickly → grant test chips.
-(function () {
-  let taps = 0;
-  let timer = null;
-  const bal = $("#balance");
-  if (!bal) return;
-  bal.addEventListener("click", () => {
-    taps++;
-    clearTimeout(timer);
-    timer = setTimeout(() => (taps = 0), 1500);
-    if (taps >= 5) {
-      taps = 0;
-      const input = prompt("💰 Admin — wie viele Chips hinzufügen?", "1000000");
-      if (input === null) return;
-      const amt = parseInt(input, 10);
-      if (Number.isFinite(amt)) window.Casino.cheat(amt);
-    }
-  });
-})();
 
 // Start
 showScreen("login");

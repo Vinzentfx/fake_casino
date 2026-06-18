@@ -1,35 +1,59 @@
 "use strict";
 
-/**
- * Tiny admin/cheat hook for testing: grant or set chips on the logged-in
- * account. Gated by a shared code (change ADMIN_CODE to lock it down).
- * Play money only.
- */
-
-const ADMIN_CODE = process.env.ADMIN_CODE || "casino-admin";
+const OWNER = "vincent";
 
 function setupAdmin(io, accounts) {
   io.on("connection", (socket) => {
-    // body: { code, amount, set } — set:true sets the absolute balance,
-    // otherwise amount is added. Returns the updated account.
-    socket.on("admin:grant", ({ code, amount, set } = {}, ack) => {
+    function isOwner() {
+      return socket.data.account === OWNER;
+    }
+
+    socket.on("admin:listAccounts", (ack) => {
       if (!ack) return;
-      if (code !== ADMIN_CODE) return ack({ ok: false, error: "Falscher Admin-Code." });
-      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
-      const acc = accounts.get(socket.data.account);
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      ack({ ok: true, accounts: accounts.listAll() });
+    });
+
+    socket.on("admin:setChips", ({ target, amount } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const acc = accounts.get(target);
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
-
       amount = Math.floor(Number(amount));
-      if (!Number.isFinite(amount)) return ack({ ok: false, error: "Ungültiger Betrag." });
-
-      const delta = set ? amount - acc.chips : amount;
-      const res = accounts.adjustChips(socket.data.account, delta);
+      if (!Number.isFinite(amount) || amount < 0) return ack({ ok: false, error: "Ungültiger Betrag." });
+      const delta = amount - acc.chips;
+      const res = accounts.adjustChips(String(target).toLowerCase(), delta);
       if (!res.ok) return ack({ ok: false, error: res.error });
-
-      socket.emit("account:update", { account: res.account });
+      // Notify the target if they're online
+      io.of("/").sockets.forEach((s) => {
+        if (s.data.account === String(target).toLowerCase()) {
+          s.emit("account:update", { account: res.account });
+        }
+      });
       ack({ ok: true, account: res.account });
+    });
+
+    socket.on("admin:ban", ({ target } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const res = accounts.ban(String(target).toLowerCase());
+      if (res.ok) {
+        io.of("/").sockets.forEach((s) => {
+          if (s.data.account === String(target).toLowerCase()) {
+            s.emit("admin:kicked", { reason: "Dein Account wurde gesperrt." });
+            s.disconnect(true);
+          }
+        });
+      }
+      ack(res);
+    });
+
+    socket.on("admin:unban", ({ target } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      ack(accounts.unban(String(target).toLowerCase()));
     });
   });
 }
 
-module.exports = { setupAdmin, ADMIN_CODE };
+module.exports = { setupAdmin };
