@@ -53,8 +53,14 @@ app.get("/api/leaderboard", (_req, res) => {
   res.json({ leaderboard: accounts.leaderboard(10) });
 });
 
+app.post("/api/change-pin", (req, res) => {
+  const result = accounts.changePin(req.body.name, req.body.oldPin, req.body.newPin);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ ok: true });
+});
+
 // ---------------------------------------------------------------------------
-// Server + Socket.IO (poker)
+// Server + Socket.IO
 // ---------------------------------------------------------------------------
 
 const server = http.createServer(app);
@@ -65,6 +71,26 @@ setupSlots(io, accounts);
 setupPvp(io, accounts);
 setupAdmin(io, accounts);
 setupBlackjack(io, accounts);
+
+// Chip-Transfer zwischen Spielern (socket-auth required)
+io.on("connection", (socket) => {
+  socket.on("account:transfer", ({ to, amount } = {}, ack) => {
+    if (!ack) return;
+    if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+    const res = accounts.transfer(socket.data.account, to, amount);
+    if (!res.ok) return ack({ ok: false, error: res.error });
+    // Update sender
+    socket.emit("account:update", { account: res.fromAccount });
+    // Notify recipient if online
+    io.of("/").sockets.forEach((s) => {
+      if (s.data.account === String(to).trim().toLowerCase()) {
+        s.emit("account:update", { account: res.toAccount });
+        s.emit("account:received", { from: socket.data.account, amount: Math.floor(Number(amount)) });
+      }
+    });
+    ack({ ok: true, account: res.fromAccount });
+  });
+});
 
 server.listen(PORT, () => {
   console.log(`🎰 Fake-Casino läuft auf http://localhost:${PORT}`);

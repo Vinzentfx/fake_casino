@@ -94,6 +94,7 @@ function login(name, pin) {
     return { ok: true, created: true, account: publicAccount(acc) };
   }
 
+  if (acc.banned) return { ok: false, error: "Dein Account wurde gesperrt." };
   if (acc.pinHash !== hashPin(pin, acc.salt)) {
     return { ok: false, error: "Falsche PIN für diesen Namen." };
   }
@@ -150,6 +151,60 @@ function leaderboard(limit = 10) {
     .map((a) => ({ name: a.name, chips: a.chips }));
 }
 
+function changePin(name, oldPin, newPin) {
+  const acc = get(name);
+  if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  if (acc.pinHash !== hashPin(String(oldPin), acc.salt))
+    return { ok: false, error: "Alte PIN falsch." };
+  if (!/^\d{4}$/.test(String(newPin)))
+    return { ok: false, error: "Neue PIN muss genau 4 Ziffern haben." };
+  acc.pinHash = hashPin(String(newPin), acc.salt);
+  save();
+  return { ok: true };
+}
+
+function ban(name) {
+  const acc = get(name);
+  if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  acc.banned = true;
+  save();
+  return { ok: true };
+}
+
+function unban(name) {
+  const acc = get(name);
+  if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  acc.banned = false;
+  save();
+  return { ok: true };
+}
+
+function transfer(fromName, toName, amount) {
+  const fromKey = normalizeName(fromName);
+  const toKey = normalizeName(toName);
+  if (!fromKey || !toKey) return { ok: false, error: "Ungültiger Name." };
+  if (fromKey === toKey) return { ok: false, error: "Kannst nicht an dich selbst senden." };
+  const from = accounts[fromKey];
+  const to = accounts[toKey];
+  if (!from) return { ok: false, error: "Absender nicht gefunden." };
+  if (!to) return { ok: false, error: `Spieler "${toName}" nicht gefunden.` };
+  amount = Math.floor(Number(amount));
+  if (!Number.isFinite(amount) || amount <= 0) return { ok: false, error: "Ungültiger Betrag." };
+  if (from.chips < amount) return { ok: false, error: "Nicht genug Chips." };
+  from.chips -= amount;
+  to.chips += amount;
+  save();
+  return { ok: true, fromAccount: publicAccount(from), toAccount: publicAccount(to) };
+}
+
+function listAll() {
+  return Object.values(accounts).map((a) => ({
+    name: a.name,
+    chips: a.chips,
+    banned: !!a.banned,
+  }));
+}
+
 /** Whether a machine is unlocked for this account (lucky7 is always free). */
 function isUnlocked(name, machineId) {
   if (machineId === "lucky7") return true;
@@ -184,4 +239,9 @@ module.exports = {
   leaderboard,
   isUnlocked,
   unlock,
+  changePin,
+  ban,
+  unban,
+  transfer,
+  listAll,
 };
