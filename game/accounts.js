@@ -179,6 +179,8 @@ function unban(name) {
   return { ok: true };
 }
 
+const TRANSFER_MIN_AGE_MS = 24 * 60 * 60 * 1000; // account must be 24h old to send
+
 function transfer(fromName, toName, amount) {
   const fromKey = normalizeName(fromName);
   const toKey = normalizeName(toName);
@@ -188,6 +190,8 @@ function transfer(fromName, toName, amount) {
   const to = accounts[toKey];
   if (!from) return { ok: false, error: "Absender nicht gefunden." };
   if (!to) return { ok: false, error: `Spieler "${toName}" nicht gefunden.` };
+  if (Date.now() - (from.createdAt || 0) < TRANSFER_MIN_AGE_MS)
+    return { ok: false, error: "Dein Account muss mindestens 24 Stunden alt sein um Chips zu senden." };
   amount = Math.floor(Number(amount));
   if (!Number.isFinite(amount) || amount <= 0) return { ok: false, error: "Ungültiger Betrag." };
   if (from.chips < amount) return { ok: false, error: "Nicht genug Chips." };
@@ -195,6 +199,14 @@ function transfer(fromName, toName, amount) {
   to.chips += amount;
   save();
   return { ok: true, fromAccount: publicAccount(from), toAccount: publicAccount(to) };
+}
+
+function deleteAccount(name) {
+  const key = normalizeName(name);
+  if (!accounts[key]) return { ok: false, error: "Account nicht gefunden." };
+  delete accounts[key];
+  save();
+  return { ok: true };
 }
 
 function listAll() {
@@ -243,5 +255,6 @@ module.exports = {
   ban,
   unban,
   transfer,
+  deleteAccount,
   listAll,
 };

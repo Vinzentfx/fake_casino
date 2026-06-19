@@ -53,6 +53,20 @@ function setupAdmin(io, accounts) {
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       ack(accounts.unban(String(target).toLowerCase()));
     });
+
+    socket.on("admin:deleteAccount", ({ target } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = String(target).toLowerCase();
+      // Kick them off if online
+      io.of("/").sockets.forEach((s) => {
+        if (s.data.account === key) {
+          s.emit("admin:kicked", { reason: "Dein Account wurde gelöscht." });
+          s.disconnect(true);
+        }
+      });
+      ack(accounts.deleteAccount(key));
+    });
   });
 }
 
