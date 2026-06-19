@@ -299,16 +299,19 @@ $("#admin-set-chips-btn").addEventListener("click", () => {
   });
 });
 
-["admin-ban-btn","admin-unban-btn"].forEach((id) => {
+["admin-ban-btn","admin-unban-btn","admin-delete-btn"].forEach((id) => {
   $("#" + id).addEventListener("click", () => {
     const errEl = $("#admin-ban-error");
     errEl.textContent = "";
     const target = $("#admin-target-ban").value.trim();
     if (!target) { errEl.textContent = "Spielername eingeben."; return; }
-    const event = id === "admin-ban-btn" ? "admin:ban" : "admin:unban";
+    if (id === "admin-delete-btn" && !confirm(`Account "${target}" wirklich löschen?`)) return;
+    const event = id === "admin-ban-btn" ? "admin:ban" : id === "admin-unban-btn" ? "admin:unban" : "admin:deleteAccount";
     socket.emit(event, { target }, (res) => {
       if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
-      toast(id === "admin-ban-btn" ? `${target} gesperrt.` : `${target} entsperrt.`);
+      const msg = id === "admin-ban-btn" ? `${target} gesperrt.` : id === "admin-unban-btn" ? `${target} entsperrt.` : `${target} gelöscht.`;
+      toast(msg);
+      $("#admin-target-ban").value = "";
       loadAdminAccounts();
     });
   });
