@@ -504,9 +504,14 @@
       openCelebration(res.totalWin, res.bet);
 
       if (machine.mode === "cluster" && res.cascades && res.cascades.length) {
+        // Each cascade step escalates: faster trace, more confetti, strobe deeper in.
+        let stepIdx = 0;
+        const multiStep = res.cascades.length > 1;
         for (const step of res.cascades) {
+          stepIdx++;
           for (const w of step.wins) {
-            highlightCells(w.positions);                       // mark (stays this step)
+            await traceHighlight(w.positions, Math.max(40, 90 - stepIdx * 12), stepIdx); // reveal cluster cell-by-cell
+            comboEscalate(stepIdx, multiStep);
             await addWin(w.positions, Math.round(w.win * fsMult)); // fly + count up
           }
           await sleep(280);
@@ -521,14 +526,18 @@
           $("#reels").classList.remove("tumble");
         }
       } else if (res.wins && res.wins.length) {
-        // Line/ways: show each winning line separately — dim everything else so
-        // only the current win's symbols stand out. Markers reset between lines.
+        // Line/ways: reveal each winning line in turn, tracing its connected
+        // symbols one-by-one. Each successive line builds the combo and hits harder.
+        let combo = 0;
+        const multiWin = res.wins.length > 1;
         for (const w of res.wins) {
           clearHighlights();
           dimAllCells();
-          highlightCells(w.positions);
+          combo++;
+          await traceHighlight(w.positions, Math.max(45, 100 - combo * 10), combo);
+          comboEscalate(combo, multiWin);
           await addWin(w.positions, Math.round(w.win * fsMult));
-          await sleep(260);
+          await sleep(Math.max(150, 260 - combo * 20));
         }
         clearHighlights();
       }
@@ -562,6 +571,53 @@
       const el = cellEl(c, r);
       if (el) { el.classList.remove("dim"); el.classList.add("win"); }
     });
+  }
+
+  // Rising chromatic "blip" — the classic ascending payline-reveal tick.
+  function sndBlip(i) {
+    tone(440 * Math.pow(2, Math.min(i, 28) / 12), 0.05, "triangle", 0.05);
+  }
+  // Light a win's cells ONE AT A TIME, tracing the connection. Pitch climbs
+  // across the whole sequence (comboBase) so each successive win feels bigger.
+  async function traceHighlight(positions, perMs, comboBase) {
+    for (let i = 0; i < positions.length; i++) {
+      const [c, r] = positions[i];
+      const el = cellEl(c, r);
+      if (el) {
+        el.classList.remove("dim");
+        el.classList.add("win", "trace-pop");
+        const cell = el;
+        setTimeout(() => cell.classList.remove("trace-pop"), 320);
+      }
+      sndBlip((comboBase || 0) * 2 + i);
+      if (i < positions.length - 1) await sleep(perMs);
+    }
+  }
+
+  // Climbing "COMBO ×N" badge during a multi-win reveal.
+  function showCombo(n) {
+    let el = document.getElementById("combo-badge");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "combo-badge";
+      document.body.appendChild(el);
+    }
+    el.textContent = "COMBO ×" + n;
+    el.classList.remove("go");
+    void el.offsetWidth;
+    el.classList.add("go");
+    // Auto-fade so the badge never lingers after the sequence ends.
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(() => el.classList.remove("go"), 1000);
+  }
+
+  // Ramp the celebration up as the win sequence grows — more wins back-to-back
+  // means progressively more confetti, shake and strobe (escalating dopamine).
+  function comboEscalate(n, show) {
+    if (show && n >= 1) showCombo(n);
+    if (n >= 2) { confettiBurst(28 + n * 26); zoomPunch(); }
+    if (n >= 3) casinoStrobe();
+    if (n >= 4) hypeWords(Math.min(8, n));
   }
 
   // Screen-space centre of a set of cells (for the flying "+amount").
