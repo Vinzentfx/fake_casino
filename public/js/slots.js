@@ -518,11 +518,16 @@
           $("#reels").classList.remove("tumble");
         }
       } else if (res.wins && res.wins.length) {
-        // Line/ways: mark each win and accumulate; all markers stay.
+        // Line/ways: show each winning line separately — dim everything else so
+        // only the current win's symbols stand out. Markers reset between lines.
         for (const w of res.wins) {
+          clearHighlights();
+          dimAllCells();
           highlightCells(w.positions);
           await addWin(w.positions, Math.round(w.win * fsMult));
+          await sleep(260);
         }
+        clearHighlights();
       }
 
       await finishCelebration(res.totalWin);
@@ -541,10 +546,18 @@
     }
   }
 
+  function dimAllCells() {
+    for (let c = 0; c < machine.cols; c++)
+      for (let r = 0; r < machine.rows; r++) {
+        const el = cellEl(c, r);
+        if (el) el.classList.add("dim");
+      }
+  }
+
   function highlightCells(positions) {
     positions.forEach(([c, r]) => {
       const el = cellEl(c, r);
-      if (el) el.classList.add("win");
+      if (el) { el.classList.remove("dim"); el.classList.add("win"); }
     });
   }
 
