@@ -132,7 +132,8 @@ const MACHINES = [
     scatter: "S",
     unlockCost: 50000,
     bets: [100, 250, 500, 1000, 2500, 5000],
-    payScale: 1.03,
+    payScale: 1.15,
+    // High volatility: small line hits pay little, but 5-of-a-kind tops are huge.
     freeSpins: { trigger: 3, count: 8, multiplier: 3 },
     symbols: {
       coin: { emoji: "🪙", weight: 28 },
@@ -145,13 +146,13 @@ const MACHINES = [
       S: { emoji: "🔥", weight: 5 },
     },
     pays: {
-      coin: { 3: 5, 4: 12, 5: 30 },
-      sword: { 3: 6, 4: 15, 5: 40 },
-      shield: { 3: 8, 4: 20, 5: 55 },
-      ring: { 3: 11, 4: 28, 5: 75 },
-      chest: { 3: 15, 4: 40, 5: 110 },
-      dragon: { 3: 30, 4: 90, 5: 250 },
-      W: { 3: 45, 4: 130, 5: 350 },
+      coin: { 3: 2, 4: 10, 5: 45 },
+      sword: { 3: 3, 4: 13, 5: 60 },
+      shield: { 3: 4, 4: 17, 5: 90 },
+      ring: { 3: 6, 4: 26, 5: 140 },
+      chest: { 3: 10, 4: 50, 5: 240 },
+      dragon: { 3: 25, 4: 130, 5: 600 },
+      W: { 3: 40, 4: 220, 5: 900 },
     },
   },
   {
@@ -167,7 +168,7 @@ const MACHINES = [
     scatter: "S",
     unlockCost: 200000,
     bets: [250, 500, 1000, 2500, 5000, 10000],
-    payScale: 3.95,
+    payScale: 3.8,
     freeSpins: { trigger: 4, count: 10, persistentMultiplier: true },
     symbols: {
       planet: { emoji: "🪐", weight: 24 },

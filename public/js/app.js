@@ -93,11 +93,16 @@ socket.on("account:update", ({ account }) => {
   if (currentScreen === "profile") renderProfile();
 });
 
+const RESCUE_THRESHOLD = 50; // mirror of server; controls when the help button shows
+
 function renderTopbar() {
   const acc = state.account;
   if (!acc) return;
   $("#balance-amount").textContent = acc.chips.toLocaleString("de-DE");
   $("#player-name").textContent = acc.name;
+  // Pleite-Schutz: offer the help button only when nearly broke.
+  const rescueBtn = $("#rescue-btn");
+  if (rescueBtn) rescueBtn.style.display = acc.chips < RESCUE_THRESHOLD ? "" : "none";
   refreshBonusButton();
 }
 
@@ -162,13 +167,27 @@ async function claimBonus() {
   try {
     const data = await api("/api/daily-bonus", { name: state.account.name });
     setAccount(data.account);
-    toast(`+${data.amount} 🪙 Bonus erhalten!`);
+    const streakNote = data.streak > 1 ? ` 🔥 ${data.streak}-Tage-Serie!` : "";
+    toast(`+${data.amount} 🪙 Bonus erhalten!${streakNote}`);
   } catch (err) {
     toast(err.message || "Bonus nicht verfügbar.");
   }
 }
 $("#bonus-btn").addEventListener("click", claimBonus);
 $("#bonus-tile").addEventListener("click", claimBonus);
+
+// ---- Soforthilfe (Pleite-Schutz) ----
+async function claimRescue() {
+  if (!state.account) return;
+  try {
+    const data = await api("/api/rescue", { name: state.account.name });
+    setAccount(data.account);
+    toast(`🆘 +${data.amount.toLocaleString("de-DE")} 🪙 Soforthilfe!`);
+  } catch (err) {
+    toast(err.message || "Soforthilfe nicht verfügbar.");
+  }
+}
+$("#rescue-btn").addEventListener("click", claimRescue);
 
 // ---- Leaderboard ----
 async function loadLeaderboard() {

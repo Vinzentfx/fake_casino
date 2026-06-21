@@ -7,7 +7,7 @@
  * The shoe is a 6-deck shoe reshuffled when fewer than 52 cards remain.
  *
  * Rules:
- *   Dealer hits soft 16, stands on 17+.
+ *   Dealer hits soft 17, stands on hard 17+.
  *   Blackjack pays 3:2.
  *   Double down on any first 2 cards (per hand after split).
  *   Split pairs once (no re-split, no double after split).
@@ -24,7 +24,7 @@ const BJ_PAYOUT = 1.5; // 3:2
 // Shoe
 // ---------------------------------------------------------------------------
 
-function makeShoе() {
+function makeShoe() {
   const cards = [];
   for (let i = 0; i < DECKS; i++) cards.push(...makeDeck());
   return shuffle(cards);
@@ -32,7 +32,7 @@ function makeShoе() {
 
 function ensureShoe(session) {
   if (!session.shoe || session.shoe.length < RESHUFFLE_THRESHOLD) {
-    session.shoe = makeShoе();
+    session.shoe = makeShoe();
   }
 }
 
@@ -218,7 +218,7 @@ function advanceHand(session, accounts) {
 
 function dealerPlay(session, accounts) {
   session.phase = "dealer";
-  // Dealer draws until 17+ (hit soft 16)
+  // Dealer draws until 17+ (hits soft 17)
   while (true) {
     const val = handValue(session.dealerCards);
     const soft = isSoft(session.dealerCards);
