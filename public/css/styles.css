@@ -907,6 +907,23 @@ button { font-family: inherit; cursor: pointer; }
   85%  { opacity: 1; transform: translateX(-50%) translateY(0); }
   100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
 }
+/* Pop when a cell lights up during the sequential win "trace" */
+.cell.trace-pop { animation: tracepop 0.32s ease; }
+@keyframes tracepop { 0%{transform:scale(1)} 35%{transform:scale(1.18)} 100%{transform:scale(1)} }
+/* Combo counter that climbs as more connected wins reveal in sequence */
+#combo-badge {
+  position: fixed; left: 50%; top: 21%; z-index: 196; pointer-events: none; opacity: 0;
+  font-weight: 900; font-size: clamp(1.4rem, 6vw, 2.7rem); color: #fff;
+  text-shadow: 0 0 16px var(--gold-strong, #f4d782), 0 2px 6px #000;
+  transform: translate(-50%, 0) scale(0.5);
+  transition: opacity 0.35s ease; /* fades out when .go (and its animation) is removed */
+}
+#combo-badge.go { animation: combopop 0.6s cubic-bezier(0.2,1.7,0.4,1) forwards; }
+@keyframes combopop {
+  0%   { opacity: 0; transform: translate(-50%,0) scale(0.5); }
+  30%  { opacity: 1; transform: translate(-50%,0) scale(1.25); }
+  100% { opacity: 1; transform: translate(-50%,0) scale(1); }
+}
 
 /* Paytable modal */
 .paytable-modal {
