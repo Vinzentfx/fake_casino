@@ -360,6 +360,9 @@
       else window.Casino.adjustChips(-bet);
     }
 
+    // Occasionally taunt the player with a fake "luck" popup (parody).
+    if (!wasFree && !pvpMode && Math.random() < 0.13) luckPopup();
+
     const totalSpinMs = 850 + (machine.cols - 1) * 230 + 250;
     sndLever();
     const stopRatchet = startRatchet(totalSpinMs);
@@ -628,7 +631,12 @@
   async function addWin(positions, delta) {
     if (delta <= 0) return;
     sndWin();
-    await flyPlus(cellsCentroid(positions), delta);
+    // Burst the winning symbol out of the hit cells — bigger win, bigger burst.
+    const center = cellsCentroid(positions);
+    const firstCell = positions[0] && cellEl(positions[0][0], positions[0][1]);
+    const emoji = firstCell ? firstCell.textContent.trim() : "🪙";
+    if (emoji) emojiExplosion(emoji, center, Math.min(30, 8 + Math.floor(delta / Math.max(wcBet, 1)) * 3));
+    await flyPlus(center, delta);
     const from = wcRunning;
     const to = wcRunning + delta;
     const dur = Math.min(1300, 320 + Math.sqrt(delta) * 20);
@@ -672,12 +680,13 @@
   // Escalating win tiers, RELATIVE to the bet (a win only counts as "big" if it
   // actually beats the stake by a meaningful multiple).
   const WIN_TIERS = [
-    { mult: 4, name: "BIG WIN", cls: "t-big", fx: () => { quake("big"); confettiBurst(120); sndBig(); } },
-    { mult: 10, name: "MEGA WIN", cls: "t-mega", fx: () => { quake("mega"); confettiBurst(180); sndBig(); } },
-    { mult: 25, name: "SUPER WIN", cls: "t-super", fx: () => { quake("mega"); confettiBurst(220); sndUltra(); } },
-    { mult: 50, name: "ULTRA WIN", cls: "t-ultra", fx: () => { quake("mega"); coinRain(3000); sndUltra(); } },
-    { mult: 100, name: "ULTRA SUPER WIN", cls: "t-ultra", fx: () => { coinRain(3800); confettiBurst(260); sndUltra(); } },
-    { mult: 250, name: "LEGENDÄRER WIN", cls: "t-ultra", fx: () => { coinRain(4800); confettiBurst(320); sndUltra(); } },
+    { mult: 4, name: "BIG WIN", cls: "t-big", fx: () => { quake("big"); confettiBurst(120); zoomPunch(); sndBig(); hypeWords(2); } },
+    { mult: 10, name: "MEGA WIN", cls: "t-mega", fx: () => { quake("mega"); confettiBurst(180); zoomPunch(); casinoStrobe(); sndBig(); hypeWords(4); } },
+    { mult: 25, name: "SUPER MEGA WIN", cls: "t-super", fx: () => { quake("mega"); confettiBurst(220); casinoStrobe(); zoomPunch(); sndUltra(); hypeWords(6); } },
+    { mult: 50, name: "ULTRA WIN", cls: "t-ultra", fx: () => { quake("mega"); coinRain(3000); casinoStrobe(); sndUltra(); hypeWords(8); } },
+    { mult: 100, name: "WAHNSINNS-WIN!!!", cls: "t-ultra", fx: () => { coinRain(3800); confettiBurst(260); casinoStrobe(); sndUltra(); hypeWords(11); } },
+    { mult: 250, name: "GOTTGLEICHER WIN", cls: "t-ultra", fx: () => { coinRain(4800); confettiBurst(320); casinoStrobe(); sndUltra(); hypeWords(15); } },
+    { mult: 500, name: "💥 CASINO GESPRENGT 💥", cls: "t-ultra", fx: () => { coinRain(6500); confettiBurst(420); casinoStrobe(); zoomPunch(); sndUltra(); hypeWords(22); } },
   ];
 
   function quake(level) {
@@ -789,6 +798,92 @@
       else ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     canvasRaf = requestAnimationFrame(frame);
+  }
+
+  // ===============================================================
+  // Übertriebene Dopamin-Effekte (liebevolle Parodie auf echte Casinos)
+  // ===============================================================
+  function casinoStrobe() {
+    let el = document.getElementById("casino-strobe");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "casino-strobe";
+      document.body.appendChild(el);
+    }
+    el.classList.remove("go");
+    void el.offsetWidth; // reflow
+    el.classList.add("go");
+  }
+
+  const HYPE = ["BOOM!", "WOW!", "UNGLAUBLICH!", "KRASS!", "LETS GOOO!", "🤑", "BIG MONEY!",
+    "ZU EINFACH!", "GÖNN DIR!", "💸💸💸", "NICE!", "MASCHINE!", "DU LEGENDE!"];
+  function hypeWords(n) {
+    const stage = $("#slot-stage").getBoundingClientRect();
+    for (let i = 0; i < n; i++) {
+      setTimeout(() => {
+        const el = document.createElement("div");
+        el.className = "hype-word";
+        el.textContent = HYPE[(Math.random() * HYPE.length) | 0];
+        el.style.left = (stage.left + 20 + Math.random() * (stage.width - 40)) + "px";
+        el.style.top = (stage.top + 30 + Math.random() * (stage.height - 60)) + "px";
+        el.style.setProperty("--rot", ((Math.random() - 0.5) * 26).toFixed(1) + "deg");
+        document.body.appendChild(el);
+        requestAnimationFrame(() => el.classList.add("go"));
+        setTimeout(() => el.remove(), 1000);
+      }, i * 100);
+    }
+  }
+
+  // Burst the winning symbol outward from a point.
+  function emojiExplosion(emoji, from, count) {
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement("div");
+      el.className = "emoji-bit";
+      el.textContent = emoji;
+      el.style.left = from.x + "px";
+      el.style.top = from.y + "px";
+      document.body.appendChild(el);
+      const ang = Math.random() * Math.PI * 2;
+      const sp = 120 + Math.random() * 260;
+      const dx = Math.cos(ang) * sp;
+      const dy = Math.sin(ang) * sp - 120;
+      const rot = (Math.random() - 0.5) * 720;
+      el.animate(
+        [
+          { transform: "translate(0,0) rotate(0deg) scale(1)", opacity: 1 },
+          { transform: `translate(${dx}px, ${dy + 240}px) rotate(${rot}deg) scale(0.4)`, opacity: 0 },
+        ],
+        { duration: 900 + Math.random() * 500, easing: "cubic-bezier(0.2,0.6,0.3,1)" }
+      );
+      setTimeout(() => el.remove(), 1500);
+    }
+  }
+
+  function zoomPunch() {
+    const s = $("#slot-stage");
+    s.classList.remove("zoompunch");
+    void s.offsetWidth;
+    s.classList.add("zoompunch");
+    setTimeout(() => s.classList.remove("zoompunch"), 430);
+  }
+
+  // Satirical "luck manipulation" popup — purely cosmetic, mocks predatory casino UX.
+  const LUCK_MSGS = [
+    "🍀 Glückssträhne aktiviert!", "🔥 Du bist HEUTE besonders glücklich!", "⭐ VIP-Bonus-Modus läuft!",
+    "🎯 Der Algorithmus mag dich gerade!", "💎 Nächster Spin = bestimmt Jackpot!*", "🤖 Glücks-KI auf deiner Seite!",
+    "📈 Deine Gewinnchance: SEHR JA!", "👑 Highroller erkannt!", "✨ Die Sterne stehen günstig!",
+  ];
+  function luckPopup() {
+    let el = document.getElementById("luck-popup");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "luck-popup";
+      document.body.appendChild(el);
+    }
+    el.textContent = LUCK_MSGS[(Math.random() * LUCK_MSGS.length) | 0];
+    el.classList.remove("go");
+    void el.offsetWidth;
+    el.classList.add("go");
   }
 
   // ===============================================================
