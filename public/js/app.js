@@ -12,6 +12,8 @@ const socket = io();
 // ---- Globaler Zustand ----
 const state = {
   account: null, // { name, chips, createdAt, lastBonusAt, stats }
+  token: null,   // signed session token from /api/login, proves identity to the socket
+  bonusCooldownMs: 20 * 60 * 60 * 1000, // fallback; the server sends the real value on login
 };
 
 // ---- DOM-Helfer ----
@@ -64,17 +66,24 @@ function toast(msg) {
 // ============================================================
 // Account / Anzeige
 // ============================================================
-function setAccount(acc) {
+function setAccount(acc, token) {
   state.account = acc;
+  if (token) state.token = token;
   try {
     localStorage.setItem("casino_name", acc.name);
   } catch {}
-  socket.emit("auth", { name: acc.name });
+  if (state.token) socket.emit("auth", { token: state.token });
   renderTopbar();
   // Admin-Tile nur für Vincent sichtbar
   const adminTile = $("#admin-tile");
   if (adminTile) adminTile.style.display = acc.name.toLowerCase() === "vincent" ? "" : "none";
 }
+
+// Re-authenticate after a dropped connection: the server treats a reconnect as
+// a fresh socket with no identity, so we must replay the token.
+socket.on("connect", () => {
+  if (state.token) socket.emit("auth", { token: state.token });
+});
 
 // Server can push an updated bank balance (e.g. after a poker buy-in/cash-out).
 socket.on("account:update", ({ account }) => {
@@ -95,8 +104,7 @@ function renderTopbar() {
 function refreshBonusButton() {
   const acc = state.account;
   if (!acc) return;
-  const cooldown = 20 * 60 * 60 * 1000;
-  const ready = Date.now() - (acc.lastBonusAt || 0) >= cooldown;
+  const ready = Date.now() - (acc.lastBonusAt || 0) >= state.bonusCooldownMs;
   $("#bonus-btn").disabled = !ready;
   $("#bonus-btn").textContent = ready ? "🎁 Bonus" : "🎁 ✓";
 }
@@ -138,7 +146,8 @@ $("#login-form").addEventListener("submit", async (e) => {
 
   try {
     const data = await api("/api/login", { name, pin });
-    setAccount(data.account);
+    if (data.config?.bonusCooldownMs) state.bonusCooldownMs = data.config.bonusCooldownMs;
+    setAccount(data.account, data.token);
     showScreen("lobby");
     if (data.created) toast(`Willkommen, ${data.account.name}! 1000 🪙 geschenkt.`);
     else toast(`Willkommen zurück, ${data.account.name}!`);
@@ -187,6 +196,7 @@ async function loadLeaderboard() {
 // ---- Logout ----
 $("#logout-btn").addEventListener("click", () => {
   state.account = null;
+  state.token = null;
   try {
     localStorage.removeItem("casino_name");
   } catch {}
@@ -266,6 +276,7 @@ socket.on("account:received", ({ from, amount }) => {
 socket.on("admin:kicked", ({ reason }) => {
   toast(reason || "Du wurdest gesperrt.");
   state.account = null;
+  state.token = null;
   try { localStorage.removeItem("casino_name"); } catch {}
   showScreen("login");
 });

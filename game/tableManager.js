@@ -136,8 +136,9 @@ function setupPoker(io, accounts) {
     socket.data.account = null;
     socket.data.tableCode = null;
 
-    socket.on("auth", ({ name } = {}) => {
-      const acc = accounts.get(name);
+    socket.on("auth", ({ token } = {}) => {
+      const key = accounts.verifyToken(token);
+      const acc = key ? accounts.get(key) : null;
       socket.data.account = acc ? acc.name.toLowerCase() : null;
       socket.data.displayName = acc ? acc.name : null;
     });
