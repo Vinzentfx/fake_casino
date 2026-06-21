@@ -218,6 +218,10 @@
   }
 
   // ── History ────────────────────────────────────────────────────
+  const freq = new Array(37).fill(0);   // how often each number has hit this session
+  const lastSeen = new Array(37).fill(-1); // spin index a number was last seen (-1 = never)
+  let spinCount = 0;
+
   function addHistory(number, color) {
     history.unshift({ number, color });
     if (history.length > 12) history.pop();
@@ -225,6 +229,28 @@
     if (el) el.innerHTML = history.map((h) =>
       `<span class="rt-hist-num rt-hist-${h.color}">${h.number}</span>`
     ).join("");
+
+    // Track stats for the (satirical) hot/cold board.
+    freq[number]++;
+    lastSeen[number] = spinCount++;
+    renderHotCold();
+  }
+
+  const numColor = (n) => (n === 0 ? "green" : RED.has(n) ? "red" : "black");
+
+  function renderHotCold() {
+    const box = $("#rt-hotcold");
+    if (!box) return;
+    if (spinCount < 3) { box.classList.add("hidden"); return; }
+    box.classList.remove("hidden");
+    const nums = Array.from({ length: 37 }, (_, n) => n);
+    // Hot: most frequent (ties → most recent). Cold: longest unseen (never seen is coldest).
+    const hot = [...nums].sort((a, b) => freq[b] - freq[a] || lastSeen[b] - lastSeen[a])
+      .filter((n) => freq[n] > 0).slice(0, 4);
+    const cold = [...nums].sort((a, b) => lastSeen[a] - lastSeen[b] || freq[a] - freq[b]).slice(0, 4);
+    const chip = (n) => `<span class="rt-hist-num rt-hist-${numColor(n)}">${n}</span>`;
+    $("#rt-hot").innerHTML = hot.map(chip).join("");
+    $("#rt-cold").innerHTML = cold.map(chip).join("");
   }
 
   // ── Spin ───────────────────────────────────────────────────────

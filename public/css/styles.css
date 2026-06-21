@@ -1328,6 +1328,20 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
 }
 
+/* Hot/Cold board — satirical nod to the gambler's fallacy */
+.rt-hotcold {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  margin-bottom: 10px; padding: 8px 12px;
+  background: rgba(0,0,0,0.22); border: 1px solid rgba(231,198,107,0.18); border-radius: 10px;
+}
+.rt-hotcold.hidden { display: none; }
+.rt-hc-col { display: flex; align-items: center; gap: 6px; }
+.rt-hc-label { font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
+.rt-hc-hot  { color: #ff9b54; }
+.rt-hc-cold { color: #7ec8ff; }
+.rt-hc-nums { display: flex; gap: 4px; }
+.rt-hc-note { flex-basis: 100%; font-size: 0.66rem; opacity: 0.55; font-style: italic; }
+
 /* Placed bets strip */
 .rt-placed-bets {
   min-height: 34px;
