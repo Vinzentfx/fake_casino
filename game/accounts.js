@@ -15,12 +15,64 @@ const crypto = require("crypto");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const ACCOUNTS_FILE = path.join(DATA_DIR, "accounts.json");
+const SECRET_FILE = path.join(DATA_DIR, ".secret");
 
 const STARTING_CHIPS = 1000;
 const DAILY_BONUS = 500;
 const DAILY_BONUS_COOLDOWN_MS = 20 * 60 * 60 * 1000; // 20h
 
+// Brute-force protection on PIN login.
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_LOCK_MS = 5 * 60 * 1000; // 5 min lockout after too many wrong PINs
+const loginFails = new Map(); // key -> { count, until }
+
 let accounts = load();
+
+// Server secret for signing session tokens. Persisted in the data volume so
+// tokens survive redeploys; generated once on first run.
+const SECRET = loadSecret();
+
+function loadSecret() {
+  try {
+    const s = fs.readFileSync(SECRET_FILE, "utf8").trim();
+    if (s) return s;
+  } catch {}
+  const s = crypto.randomBytes(32).toString("hex");
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(SECRET_FILE, s, { mode: 0o600 });
+  } catch {}
+  return s;
+}
+
+/** Issue a signed, stateless session token for an account name. */
+function issueToken(name) {
+  const payload = `${normalizeName(name)}|${Date.now()}`;
+  const sig = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
+  return Buffer.from(payload).toString("base64") + "." + sig;
+}
+
+/**
+ * Verify a session token. Returns the normalized account key on success,
+ * or null if the token is missing, malformed, forged, or the account is gone.
+ */
+function verifyToken(token) {
+  if (typeof token !== "string" || !token.includes(".")) return null;
+  const [b64, sig] = token.split(".");
+  let payload;
+  try {
+    payload = Buffer.from(b64, "base64").toString("utf8");
+  } catch {
+    return null;
+  }
+  const expected = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
+  const sigBuf = Buffer.from(sig || "", "hex");
+  const expBuf = Buffer.from(expected, "hex");
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
+  const key = payload.split("|")[0];
+  if (!key || !accounts[key] || accounts[key].banned) return null;
+  return key;
+}
 
 function load() {
   try {
@@ -63,7 +115,7 @@ function bonusAvailable(acc) {
   return Date.now() - (acc.lastBonusAt || 0) >= DAILY_BONUS_COOLDOWN_MS;
 }
 
-/** Create or authenticate. Returns { ok, created, account } or { ok:false, error }. */
+/** Create or authenticate. Returns { ok, created, account, token } or { ok:false, error }. */
 function login(name, pin) {
   name = String(name || "").trim();
   pin = String(pin || "").trim();
@@ -74,6 +126,13 @@ function login(name, pin) {
   }
   if (!/^\d{4}$/.test(pin)) {
     return { ok: false, error: "PIN muss genau 4 Ziffern haben." };
+  }
+
+  // Brute-force lockout (per account name).
+  const lock = loginFails.get(key);
+  if (lock && lock.until > Date.now()) {
+    const minLeft = Math.ceil((lock.until - Date.now()) / 60000);
+    return { ok: false, error: `Zu viele Fehlversuche. Versuche es in ${minLeft} Min erneut.` };
   }
 
   let acc = accounts[key];
@@ -91,14 +150,21 @@ function login(name, pin) {
     };
     accounts[key] = acc;
     save();
-    return { ok: true, created: true, account: publicAccount(acc) };
+    return { ok: true, created: true, account: publicAccount(acc), token: issueToken(name) };
   }
 
   if (acc.banned) return { ok: false, error: "Dein Account wurde gesperrt." };
   if (acc.pinHash !== hashPin(pin, acc.salt)) {
+    const fails = (lock && lock.until > Date.now() ? lock.count : (lock ? lock.count : 0)) + 1;
+    if (fails >= LOGIN_MAX_FAILS) {
+      loginFails.set(key, { count: 0, until: Date.now() + LOGIN_LOCK_MS });
+      return { ok: false, error: "Zu viele Fehlversuche. Account für 5 Min gesperrt." };
+    }
+    loginFails.set(key, { count: fails, until: 0 });
     return { ok: false, error: "Falsche PIN für diesen Namen." };
   }
-  return { ok: true, created: false, account: publicAccount(acc) };
+  loginFails.delete(key); // successful login clears the counter
+  return { ok: true, created: false, account: publicAccount(acc), token: issueToken(acc.name) };
 }
 
 /** Claim daily bonus. Returns { ok, amount, account } or { ok:false, error, msLeft }. */
@@ -245,6 +311,7 @@ module.exports = {
   get,
   publicAccount,
   login,
+  verifyToken,
   claimDailyBonus,
   adjustChips,
   recordHand,

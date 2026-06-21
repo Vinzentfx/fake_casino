@@ -35,7 +35,12 @@ app.use(express.static(path.join(__dirname, "public")));
 app.post("/api/login", (req, res) => {
   const result = accounts.login(req.body.name, req.body.pin);
   if (!result.ok) return res.status(400).json({ error: result.error });
-  res.json({ created: result.created, account: result.account });
+  res.json({
+    created: result.created,
+    account: result.account,
+    token: result.token,
+    config: { bonusCooldownMs: accounts.DAILY_BONUS_COOLDOWN_MS },
+  });
 });
 
 app.post("/api/daily-bonus", (req, res) => {

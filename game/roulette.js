@@ -77,8 +77,9 @@ function setupRoulette(io, accounts) {
 
       if (totalReturn > 0) {
         accounts.adjustChips(socket.data.account, totalReturn);
-        accounts.recordHand(socket.data.account, totalReturn - totalBet);
       }
+      // Record every spin (win or loss) so gamesPlayed stays accurate.
+      accounts.recordHand(socket.data.account, totalReturn - totalBet);
 
       ack({
         ok: true,
