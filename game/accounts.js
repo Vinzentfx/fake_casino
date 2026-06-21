@@ -21,6 +21,17 @@ const STARTING_CHIPS = 1000;
 const DAILY_BONUS = 500;
 const DAILY_BONUS_COOLDOWN_MS = 20 * 60 * 60 * 1000; // 20h
 
+// Login streak: each consecutive bonus claim (within the grace window) adds
+// STREAK_STEP to the bonus, capped at STREAK_MAX extra days.
+const STREAK_STEP = 100;
+const STREAK_MAX = 10; // streak day 11+ no longer increases the bonus
+const STREAK_GRACE_MS = 2 * DAILY_BONUS_COOLDOWN_MS; // miss this window → streak resets
+
+// Pleite-Schutz: keep a broke player in the game without waiting for the bonus.
+const RESCUE_THRESHOLD = 50;       // only available when chips are below this
+const RESCUE_TO = 150;             // tops the balance up to this amount
+const RESCUE_COOLDOWN_MS = 10 * 60 * 1000; // 10 min, bounds any farming
+
 // Brute-force protection on PIN login.
 const LOGIN_MAX_FAILS = 5;
 const LOGIN_LOCK_MS = 5 * 60 * 1000; // 5 min lockout after too many wrong PINs
@@ -106,6 +117,7 @@ function publicAccount(acc) {
     chips: acc.chips,
     createdAt: acc.createdAt,
     lastBonusAt: acc.lastBonusAt,
+    bonusStreak: acc.bonusStreak || 0,
     stats: acc.stats,
     unlocked: acc.unlocked || ["lucky7"],
   };
@@ -167,7 +179,7 @@ function login(name, pin) {
   return { ok: true, created: false, account: publicAccount(acc), token: issueToken(acc.name) };
 }
 
-/** Claim daily bonus. Returns { ok, amount, account } or { ok:false, error, msLeft }. */
+/** Claim daily bonus. Returns { ok, amount, streak, account } or { ok:false, error, msLeft }. */
 function claimDailyBonus(name) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
@@ -178,10 +190,36 @@ function claimDailyBonus(name) {
       msLeft: DAILY_BONUS_COOLDOWN_MS - (Date.now() - acc.lastBonusAt),
     };
   }
-  acc.chips += DAILY_BONUS;
-  acc.lastBonusAt = Date.now();
+  const now = Date.now();
+  // Continue the streak if claimed within the grace window, otherwise restart.
+  const onTime = acc.lastBonusAt && now - acc.lastBonusAt <= STREAK_GRACE_MS;
+  acc.bonusStreak = onTime ? (acc.bonusStreak || 1) + 1 : 1;
+  const streakBonus = Math.min(acc.bonusStreak - 1, STREAK_MAX) * STREAK_STEP;
+  const amount = DAILY_BONUS + streakBonus;
+  acc.chips += amount;
+  acc.lastBonusAt = now;
   save();
-  return { ok: true, amount: DAILY_BONUS, account: publicAccount(acc) };
+  return { ok: true, amount, streak: acc.bonusStreak, account: publicAccount(acc) };
+}
+
+/**
+ * Pleite-Schutz: top a nearly-broke balance back up so the player can keep
+ * playing instead of waiting out the bonus cooldown. Rate-limited to bound abuse.
+ * Returns { ok, amount, account } or { ok:false, error, msLeft }.
+ */
+function rescue(name) {
+  const acc = get(name);
+  if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  if (acc.chips >= RESCUE_THRESHOLD)
+    return { ok: false, error: "Du hast noch genug Chips." };
+  const since = Date.now() - (acc.lastRescueAt || 0);
+  if (since < RESCUE_COOLDOWN_MS)
+    return { ok: false, error: "Soforthilfe gerade erst genutzt.", msLeft: RESCUE_COOLDOWN_MS - since };
+  const amount = RESCUE_TO - acc.chips;
+  acc.chips = RESCUE_TO;
+  acc.lastRescueAt = Date.now();
+  save();
+  return { ok: true, amount, account: publicAccount(acc) };
 }
 
 /**
@@ -313,6 +351,7 @@ module.exports = {
   login,
   verifyToken,
   claimDailyBonus,
+  rescue,
   adjustChips,
   recordHand,
   leaderboard,

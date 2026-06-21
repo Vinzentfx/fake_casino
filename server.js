@@ -49,6 +49,12 @@ app.post("/api/daily-bonus", (req, res) => {
   res.json({ amount: result.amount, account: result.account });
 });
 
+app.post("/api/rescue", (req, res) => {
+  const result = accounts.rescue(req.body.name);
+  if (!result.ok) return res.status(429).json({ error: result.error, msLeft: result.msLeft });
+  res.json({ amount: result.amount, account: result.account });
+});
+
 app.get("/api/account/:name", (req, res) => {
   const acc = accounts.get(req.params.name);
   if (!acc) return res.status(404).json({ error: "Account nicht gefunden." });
