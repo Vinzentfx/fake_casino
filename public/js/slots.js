@@ -186,6 +186,7 @@
     machine = m;
     betIndex = pvpMode ? 0 : 1; // PvP: fixed bet = machine minimum
     freeActive = false;
+    resetSession(); // fresh streak/history per machine visit
     $("#slots-select").classList.add("hidden");
     const mv = $("#slots-machine");
     mv.classList.remove("hidden");
@@ -392,6 +393,7 @@
       updateHud();
     } else {
       window.Casino.setChips(res.balance);
+      if (!wasFree) recordSession(res.totalWin, bet); // track streak on base spins
     }
     spinning = false;
 
@@ -962,6 +964,42 @@
     el.classList.remove("go");
     void el.offsetWidth;
     el.classList.add("go");
+  }
+
+  // ===============================================================
+  // Session strip — recent spins + win/loss streak (per machine visit)
+  // ===============================================================
+  let sessionDots = []; // recent base spins: { totalWin, bet, net }
+  let streak = 0;       // +N net-win streak, -N no-net-win streak
+
+  function resetSession() {
+    sessionDots = [];
+    streak = 0;
+    const box = $("#slots-session");
+    if (box) box.classList.add("hidden");
+  }
+
+  function recordSession(totalWin, bet) {
+    const net = totalWin - bet;
+    if (net > 0) streak = streak > 0 ? streak + 1 : 1;
+    else streak = streak < 0 ? streak - 1 : -1;
+    sessionDots.push({ totalWin, bet, net });
+    if (sessionDots.length > 14) sessionDots.shift();
+    renderSession();
+  }
+
+  function renderSession() {
+    const box = $("#slots-session");
+    if (!box) return;
+    box.classList.remove("hidden");
+    $("#ss-dots").innerHTML = sessionDots.map((d) => {
+      const cls = d.net > 0 ? "ss-win" : d.totalWin > 0 ? "ss-partial" : "ss-loss";
+      return `<span class="ss-dot ${cls}"></span>`;
+    }).join("");
+    const st = $("#ss-streak");
+    if (streak >= 2) { st.textContent = `🔥 ${streak} Gewinne in Folge!`; st.className = "ss-streak ss-hot"; }
+    else if (streak <= -3) { st.textContent = `🥶 ${-streak} Spins ohne Plus…`; st.className = "ss-streak ss-cold"; }
+    else { st.textContent = ""; st.className = "ss-streak"; }
   }
 
   // ===============================================================
