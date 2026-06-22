@@ -976,6 +976,14 @@ button { font-family: inherit; cursor: pointer; }
 }
 .cd-build:hover { background: rgba(255,255,255,0.13); }
 .cd-build small { font-weight: 600; font-size: 0.65rem; opacity: 0.7; }
+.cd-section { padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 6px; }
+.cd-section:first-of-type { border-top: none; margin-top: 0; }
+.cd-sub { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; opacity: 0.6; text-transform: uppercase; margin-bottom: 4px; }
+.cd-pnl { margin: 6px 0; font-size: 0.85rem; }
+.cd-pnl > div { display: flex; justify-content: space-between; padding: 2px 0; }
+.cd-pnl .cd-net { border-top: 1px solid rgba(255,255,255,0.12); margin-top: 3px; padding-top: 4px; font-weight: 800; }
+.cd-pnl .pos { color: #4ade80; }
+.cd-pnl .neg { color: #f0a0a0; }
 
 /* Floating "+N" when clicking the work button */
 .click-float {
