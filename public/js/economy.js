@@ -11,6 +11,7 @@
   const { socket, toast, applyAccount, showScreen, escapeHtml } = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
+  const dec = (n) => Number(n).toLocaleString("de-DE", { maximumFractionDigits: 2 });
 
   // ── Work (capped clicker) ────────────────────────────────────────────────
   function applyWorkState(s) {
@@ -88,7 +89,7 @@
   }
 
   function updateIncomePanel() {
-    $("#biz-rate").textContent = fmt(incomeRate) + " 🪙";
+    $("#biz-rate").textContent = dec(incomeRate) + " 🪙";
     $("#biz-pending").textContent = fmt(pending) + " 🪙";
   }
 
@@ -117,6 +118,11 @@
   function renderMap() {
     const svg = $("#city-map");
     if (!svg || !cityData) return;
+    const lp = $("#land-price");
+    if (lp) {
+      const arrow = cityData.landIndex >= 1 ? "📈" : "📉";
+      lp.innerHTML = `🏷️ Bodenpreis: <b>${fmt(cityData.landPrice)} 🪙</b> ${arrow} (Index ${cityData.landIndex})`;
+    }
     const W = cityData.cols * CELL, H = cityData.rows * CELL;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
@@ -137,7 +143,9 @@
       else if (lot.rival) { stroke = "#d65a5a"; sw = 2.5; }
       if (selected) { stroke = "#7ec8ff"; sw = 4; }
 
-      const label = lot.biz ? (lot.biz.ownerName || "frei kaufbar") : (lot.landOwnerName || "Grundstück");
+      const label = lot.biz
+        ? (lot.biz.operatorName || "frei kaufbar")
+        : (lot.landOwnerName ? (lot.forRent ? lot.landOwnerName + " 🔑" : lot.landOwnerName) : "Grundstück");
       parts.push(`<g class="lot" data-lot-id="${lot.id}" style="cursor:pointer">`);
       parts.push(`<rect x="${lx}" y="${ly}" width="${LOT}" height="${LOT}" rx="9" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`);
       if (lot.emoji)
@@ -172,41 +180,59 @@
       box.innerHTML = '<p class="muted small" style="text-align:center;padding:14px">Tippe ein Feld auf der Karte an.</p>';
       return;
     }
-    const head = `<div class="cd-head">${lot.emoji || "🟩"} <b>${lot.biz ? escapeHtml(lot.biz.name) : "Leeres Grundstück"}</b></div>`;
+    const b = lot.biz;
+    const head = `<div class="cd-head">${lot.emoji || "🟩"} <b>${b ? escapeHtml(b.name) : "Leeres Grundstück"}</b></div>`;
     let body = "";
 
     // ── Grundstück (land) ──
     body += `<div class="cd-section"><div class="cd-sub">🟩 Grundstück</div>`;
     body += `<div class="cd-row">Besitzer: <b>${lot.landMine ? "Du" : lot.landOwnerName ? escapeHtml(lot.landOwnerName) : "— frei (Stadt) —"}</b></div>`;
-    if (lot.landAction === "buyLand")
-      body += `<button class="btn-primary cd-btn" data-act="buyLand">Grundstück kaufen — ${fmt(lot.landPrice)} 🪙</button>`;
+    if (lot.landOwner === null) {
+      body += `<button class="btn-primary cd-btn" data-act="buyLand">Grundstück kaufen — ${fmt(cityData.landPrice)} 🪙</button>`;
+    } else if (lot.landMine && !b) {
+      body += `<button class="btn-primary cd-btn" data-act="sellLand">An Markt verkaufen — ${fmt(cityData.landSellPrice)} 🪙</button>`;
+      body += lot.forRent
+        ? `<button class="cd-toggle on" data-act="setForRent" data-val="0">🔑 Vermietet — Vermietung beenden</button>`
+        : `<button class="cd-toggle" data-act="setForRent" data-val="1">🔑 Zum Bebauen vermieten</button>`;
+    }
     body += `</div>`;
 
     // ── Unternehmen (business) ──
     body += `<div class="cd-section"><div class="cd-sub">🏢 Unternehmen</div>`;
-    if (lot.biz) {
-      const p = lot.biz.pnl;
-      body += `<div class="cd-row">Betreiber: <b>${lot.biz.mine ? "Du" : lot.biz.ownerName ? escapeHtml(lot.biz.ownerName) : "— frei kaufbar —"}</b></div>`;
+    if (b) {
+      const p = b.pnl;
+      const leased = b.builtBy && b.operator && b.builtBy !== b.operator;
+      body += `<div class="cd-row">Betreiber: <b>${b.operatorMine ? "Du" : b.operatorName ? escapeHtml(b.operatorName) : "— frei kaufbar —"}</b></div>`;
+      if (leased) body += `<div class="cd-row">Gebäude: <b>${b.builtMine ? "Du (verpachtet)" : escapeHtml(b.builtByName)}</b></div>`;
       body += `<div class="cd-pnl">`;
-      body += `<div><span>Umsatz</span><b class="pos">${money(p.gross)} 🪙/s</b></div>`;
-      body += `<div><span>Löhne</span><b class="neg">−${fmt(p.wages)}</b></div>`;
-      body += `<div><span>Miete${p.rent === 0 ? " (eig. Land)" : ""}</span><b class="neg">−${fmt(p.rent)}</b></div>`;
-      body += `<div><span>Steuern</span><b class="neg">−${fmt(p.tax)}</b></div>`;
-      body += `<div class="cd-net"><span>= Gewinn</span><b class="${p.net >= 0 ? "pos" : "neg"}">${money(p.net)} 🪙/s</b></div>`;
+      body += `<div><span>Umsatz</span><b class="pos">${dec(p.gross)} 🪙/s</b></div>`;
+      body += `<div><span>Löhne</span><b class="neg">−${dec(p.wages)}</b></div>`;
+      body += `<div><span>Miete${p.rent === 0 ? " (eig. Land)" : ""}</span><b class="neg">−${dec(p.rent)}</b></div>`;
+      body += `<div><span>Steuern</span><b class="neg">−${dec(p.tax)}</b></div>`;
+      body += `<div class="cd-net"><span>= Gewinn (Betreiber)</span><b class="${p.net >= 0 ? "pos" : "neg"}">${dec(p.net)} 🪙/s</b></div>`;
       body += `</div>`;
-      if (lot.bizAction === "buy")
-        body += `<button class="btn-primary cd-btn" data-act="buyBiz">Unternehmen kaufen — ${fmt(lot.bizPrice)} 🪙</button>`;
-      else if (lot.bizAction === "takeover")
-        body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen (+50%) — ${fmt(lot.bizPrice)} 🪙</button>`;
-    } else if (lot.bizAction === "build") {
-      body += `<div class="cd-row">Bebaue dein Grundstück:</div><div class="cd-builds">`;
+      const t = cityData.buildingTypes[b.type];
+      if (b.operator === null && b.builtBy === null) {
+        body += `<button class="btn-primary cd-btn" data-act="buyBiz">Unternehmen kaufen — ${fmt(t.cost)} 🪙</button>`;
+      } else if (b.operatorMine && b.builtMine) {
+        body += b.forLease
+          ? `<button class="cd-toggle on" data-act="setForLease" data-val="0">Verpachtung zurückziehen</button>`
+          : `<button class="cd-toggle" data-act="setForLease" data-val="1">📜 Betrieb verpachten (Miete kassieren)</button>`;
+      } else if (b.forLease && !b.operatorMine) {
+        body += `<button class="btn-primary cd-btn" data-act="lease">Betrieb pachten (zahlt ${fmt(t.rent)} 🪙/s Miete)</button>`;
+      } else if (!b.operatorMine && b.builtBy === b.operator) {
+        body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen (+50%) — ${fmt(Math.ceil(t.cost * cityData.buyoutPremium))} 🪙</button>`;
+      }
+    } else if (lot.canBuildHere) {
+      const rented = !lot.landMine;
+      body += `<div class="cd-row">${rented ? "Auf gemietetem Land bauen (Miete fällt an):" : "Bebaue dein Grundstück:"}</div><div class="cd-builds">`;
       for (const [id, t] of Object.entries(cityData.buildingTypes)) {
         if (!t.buildable) continue;
         body += `<button class="cd-build" data-build="${id}">${t.emoji} ${escapeHtml(t.name)}<small>${fmt(t.cost)} 🪙</small></button>`;
       }
       body += `</div>`;
     } else {
-      body += `<div class="cd-row muted">Erst das Grundstück kaufen, dann bauen.</div>`;
+      body += `<div class="cd-row muted">Erst das Grundstück kaufen (oder gemietetes Land), dann bauen.</div>`;
     }
     body += `</div>`;
 
@@ -219,9 +245,12 @@
     const actBtn = e.target.closest("[data-act]");
     const buildBtn = e.target.closest("[data-build]");
     if (actBtn) {
-      const EVT = { buyLand: "city:buyLand", buyBiz: "city:buyBiz", takeover: "city:takeover" };
+      const EVT = {
+        buyLand: "city:buyLand", sellLand: "city:sellLand", setForRent: "city:setForRent",
+        buyBiz: "city:buyBiz", takeover: "city:takeover", setForLease: "city:setForLease", lease: "city:lease",
+      };
       const event = EVT[actBtn.dataset.act];
-      if (event) socket.emit(event, { plotId: lot.id }, onCityActionResult);
+      if (event) socket.emit(event, { plotId: lot.id, val: actBtn.dataset.val === "1" ? 1 : 0 }, onCityActionResult);
     } else if (buildBtn) {
       socket.emit("city:build", { plotId: lot.id, type: buildBtn.dataset.build }, onCityActionResult);
     }
@@ -234,7 +263,9 @@
     renderMap();
     renderDetail();
     loadCity(); // refresh income rate/pending after the ownership change
-    toast(`✓ −${fmt(res.cost)} 🪙`);
+    if (res.gain) toast(`✓ +${fmt(res.gain)} 🪙`);
+    else if (res.cost) toast(`✓ −${fmt(res.cost)} 🪙`);
+    else toast("✓ Erledigt");
   }
 
   // Live refresh when anyone changes the shared city.

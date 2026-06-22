@@ -125,40 +125,40 @@ function setupEconomy(io, accounts) {
       ack({ ok: true, city: city.publicCity(key), casinoOwner: city.casinoOwner() });
     });
 
-    // Generic helper for the three buy actions: settle income, check chips,
-    // charge, commit the city change, broadcast.
-    function doBuy(socket, ack, build) {
+    // Generic city action: settle income (so rate changes don't retro-apply),
+    // apply any chip cost (buy/build) or gain (sell), commit, broadcast.
+    function doAction(socket, ack, make) {
       const acc = acct(socket);
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
       const key = socket.data.account;
-      const r = build(key, acc.name);
+      const r = make(key, acc.name);
       if (!r.ok) return ack(r);
-      settleIncome(key);                 // bank income before the rate changes
-      if (r.prevOwner && r.prevOwner !== key) settleIncome(r.prevOwner); // and the seller's
-      const fresh = accounts.get(key);
-      if (fresh.chips < r.cost) return ack({ ok: false, error: "Nicht genug Chips." });
+      settleIncome(key);
+      if (r.prevOwner && r.prevOwner !== key) settleIncome(r.prevOwner);
+      if (r.cost) {
+        if (accounts.get(key).chips < r.cost) return ack({ ok: false, error: "Nicht genug Chips." });
+      }
       r.commit();
-      const res = accounts.adjustChips(key, -r.cost);
-      ack({ ok: true, account: res.account, cost: r.cost, city: city.publicCity(key), casinoOwner: city.casinoOwner() });
+      let res = accounts.get(key);
+      if (r.cost) res = accounts.adjustChips(key, -r.cost).account;
+      else if (r.gain) res = accounts.adjustChips(key, r.gain).account;
+      else res = accounts.publicAccount(res);
+      ack({ ok: true, account: res, cost: r.cost || 0, gain: r.gain || 0, city: city.publicCity(key), casinoOwner: city.casinoOwner() });
       broadcastCity();
     }
 
-    socket.on("city:buyLand", ({ plotId } = {}, ack) => {
+    const A = (fn) => ({ plotId, type, val } = {}, ack) => {
       if (typeof ack !== "function") return;
-      doBuy(socket, ack, (key, name) => city.buyLand(plotId, key, name));
-    });
-    socket.on("city:build", ({ plotId, type } = {}, ack) => {
-      if (typeof ack !== "function") return;
-      doBuy(socket, ack, (key, name) => city.build(plotId, key, type, name));
-    });
-    socket.on("city:buyBiz", ({ plotId } = {}, ack) => {
-      if (typeof ack !== "function") return;
-      doBuy(socket, ack, (key, name) => city.buyBiz(plotId, key, name));
-    });
-    socket.on("city:takeover", ({ plotId } = {}, ack) => {
-      if (typeof ack !== "function") return;
-      doBuy(socket, ack, (key, name) => city.takeover(plotId, key, name));
-    });
+      doAction(socket, ack, (key, name) => fn(plotId, key, name, type, val));
+    };
+    socket.on("city:buyLand",    A((id, key, name) => city.buyLand(id, key, name)));
+    socket.on("city:sellLand",   A((id, key) => city.sellLand(id, key)));
+    socket.on("city:setForRent", A((id, key, name, type, val) => city.setForRent(id, key, val)));
+    socket.on("city:build",      A((id, key, name, type) => city.build(id, key, type, name)));
+    socket.on("city:buyBiz",     A((id, key, name) => city.buyBiz(id, key, name)));
+    socket.on("city:takeover",   A((id, key, name) => city.takeover(id, key, name)));
+    socket.on("city:setForLease",A((id, key, name, type, val) => city.setForLease(id, key, val)));
+    socket.on("city:lease",      A((id, key, name) => city.lease(id, key, name)));
 
     socket.on("disconnect", () => clickTimes.delete(socket.id));
   });

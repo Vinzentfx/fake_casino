@@ -1,18 +1,23 @@
 "use strict";
 
 /**
- * Shared city — one world map owned by everyone together, with a per-business
- * profit-and-loss model so running a company feels real:
+ * Shared city + real-estate market.
  *
- *   net profit/sec = revenue − wages − rent − taxes
+ * Three independent roles per lot:
+ *   - landOwner : owns the land (a tradeable asset; price follows a market index)
+ *   - builtBy   : owns the building/business asset (whoever paid to build/buy it)
+ *   - operator  : runs the business — keeps the profit, pays RENT to the landOwner
  *
- * Revenue fluctuates with a per-business "performance" factor that drifts over
- * time (a little market life, not a flat number). Land and business are owned
- * SEPARATELY: if you run a business on land you don't own, you pay rent to the
- * landowner (or to the city, if it's NPC land). Owning the land too = no rent.
- * Exactly one casino lot is the endgame trophy. Persisted to data/city.json.
+ * This lets every real-estate play work:
+ *   • Buy land (market price), sell it back to the market (price fluctuates).
+ *   • Mark your empty land "for rent" → other players build there & pay you rent.
+ *   • Build on your own land and operate it yourself (no rent), …
+ *   • …or lease the operation out → a tenant runs it and pays you rent while you
+ *     keep the land + building.
+ *   • Buy NPC businesses; hostile-take-over a rival's owned business at +50%.
  *
- * Knows nothing about accounts — chip moves are the caller's job (economy.js).
+ * Business net/sec = revenue − wages − rent − taxes, revenue drifting with a
+ * per-business performance factor. Persisted to data/city.json.
  */
 
 const path = require("path");
@@ -22,8 +27,6 @@ const crypto = require("crypto");
 const DATA_DIR = path.join(__dirname, "..", "data");
 const CITY_FILE = path.join(DATA_DIR, "city.json");
 
-// Per-second figures. BALANCING NOTE: placeholders; net stays positive even at
-// the worst performance (PERF_MIN) so businesses never silently drain a bank.
 const BUILDING_TYPES = {
   kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 600,     gross: 3,    wages: 0.8,  rent: 0.6,  tax: 0.12, buildable: true },
   cafe:    { name: "Café",    emoji: "☕", cost: 3000,    gross: 14,   wages: 4.5,  rent: 2.5,  tax: 0.14, buildable: true },
@@ -33,18 +36,20 @@ const BUILDING_TYPES = {
   casino:  { name: "Casino",  emoji: "🎰", cost: 1000000, gross: 6000, wages: 1800, rent: 0,    tax: 0.10, buildable: false, unique: true },
 };
 
-const LAND_COST = 2000;        // price to buy a lot's land
-const BUYOUT_PREMIUM = 1.5;    // hostile takeover of another player's business
+const BASE_LAND = 2000;        // base land value at market index 1.0
+const SELL_SPREAD = 0.9;       // sell land back to the market at 90% (10% sink)
+const BUYOUT_PREMIUM = 1.5;    // hostile takeover of a rival's owned business
 const PERF_MIN = 0.6, PERF_MAX = 1.4;
+const LAND_MIN = 0.55, LAND_MAX = 1.9;
 
-const COLS = 5, ROWS = 4;      // 20 lots
+const COLS = 5, ROWS = 4;
 
 let city = load();
 
 function load() {
   try {
     const c = JSON.parse(fs.readFileSync(CITY_FILE, "utf8"));
-    if (c && Array.isArray(c.lots) && c.lots.length && "landOwner" in c.lots[0]) return c;
+    if (c && Array.isArray(c.lots) && c.lots.length && "forRent" in c.lots[0]) return c;
   } catch {}
   return generate();
 }
@@ -61,11 +66,10 @@ function generate() {
   let id = 0;
   for (let y = 0; y < ROWS; y++)
     for (let x = 0; x < COLS; x++)
-      lots.push({ id: id++, x, y, landOwner: null, landOwnerName: null, biz: null });
+      lots.push({ id: id++, x, y, landOwner: null, landOwnerName: null, forRent: false, biz: null });
 
-  const mkBiz = (type) => ({ type, owner: null, ownerName: null, perf: 1 });
-  const mid = lots[Math.floor(lots.length / 2)];
-  mid.biz = mkBiz("casino");
+  const mkBiz = (type) => ({ type, builtBy: null, builtByName: null, operator: null, operatorName: null, perf: 1, forLease: false });
+  lots[Math.floor(lots.length / 2)].biz = mkBiz("casino");
   const pool = ["kiosk", "kiosk", "cafe", "cafe", "shop", "hotel"];
   const free = lots.filter((l) => !l.biz);
   for (const t of pool) {
@@ -74,147 +78,188 @@ function generate() {
     free[i].biz = mkBiz(t);
     free.splice(i, 1);
   }
-  return { lots, createdAt: Date.now() };
+  return { lots, landIndex: 1, createdAt: Date.now() };
 }
 
-// ─── Market life: drift each business's performance toward 1.0 with noise ───
+// ─── Market life ────────────────────────────────────────────────────────────
 function tickMarket() {
+  // Per-business performance.
   for (const lot of city.lots) {
     if (!lot.biz) continue;
     const p = lot.biz.perf || 1;
-    const drift = (1 - p) * 0.1;
-    const noise = (Math.random() * 2 - 1) * 0.12;
-    lot.biz.perf = Math.max(PERF_MIN, Math.min(PERF_MAX, p + drift + noise));
+    lot.biz.perf = clamp(p + (1 - p) * 0.1 + (Math.random() * 2 - 1) * 0.12, PERF_MIN, PERF_MAX);
   }
+  // City-wide land price index.
+  const i = city.landIndex || 1;
+  city.landIndex = clamp(i + (1 - i) * 0.05 + (Math.random() * 2 - 1) * 0.08, LAND_MIN, LAND_MAX);
   save();
 }
 
-// ─── P&L ────────────────────────────────────────────────────────────────────
-function bizPnl(lot) {
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const round = (n) => Math.round(n * 100) / 100;
+const landPrice = () => Math.round(BASE_LAND * (city.landIndex || 1));
+const landSellPrice = () => Math.round(landPrice() * SELL_SPREAD);
+
+// ─── P&L ──────────────────────────────────────────────────────────────────
+function bizNet(lot) {
   const t = BUILDING_TYPES[lot.biz.type];
   const gross = t.gross * (lot.biz.perf || 1);
-  const rent = lot.biz.owner !== lot.landOwner ? t.rent : 0; // rent unless you own the land
-  const tax = gross * t.tax;
-  const net = gross - t.wages - rent - tax;
-  return { gross, wages: t.wages, rent, tax, net };
+  const rent = lot.biz.operator !== lot.landOwner ? t.rent : 0;
+  return gross - t.wages - rent - gross * t.tax;
 }
 
 function lotById(id) { return city.lots.find((l) => l.id === id) || null; }
 
-/** Passive income/sec for `key`: net profit of businesses they run + rent from land they let. */
+/** Income/sec for `key`: operating profit of businesses they run + rent from land they let. */
 function ownerIncomeRate(key) {
   let rate = 0;
   for (const lot of city.lots) {
-    if (lot.biz && lot.biz.owner === key) rate += bizPnl(lot).net;
-    // Landlord: someone else runs a business on your land → you collect its rent.
-    if (lot.landOwner === key && lot.biz && lot.biz.owner && lot.biz.owner !== key) {
+    if (lot.biz && lot.biz.operator === key) rate += bizNet(lot);
+    if (lot.landOwner === key && lot.biz && lot.biz.operator && lot.biz.operator !== key) {
       rate += BUILDING_TYPES[lot.biz.type].rent;
     }
   }
   return rate;
 }
 
-/** Chip value of land + businesses `key` owns (for net worth). */
+/** Net-worth value: land owned (at market) + building assets owned. */
 function ownerValue(key) {
   let total = 0;
   for (const lot of city.lots) {
-    if (lot.landOwner === key) total += LAND_COST;
-    if (lot.biz && lot.biz.owner === key) total += BUILDING_TYPES[lot.biz.type].cost;
+    if (lot.landOwner === key) total += landPrice();
+    if (lot.biz && lot.biz.builtBy === key) total += BUILDING_TYPES[lot.biz.type].cost;
   }
   return total;
 }
 
 function casinoOwner() {
   const lot = city.lots.find((l) => l.biz && l.biz.type === "casino");
-  return lot && lot.biz ? lot.biz.owner : null;
+  return lot && lot.biz ? lot.biz.operator : null;
 }
-
-const round = (n) => Math.round(n * 100) / 100;
 
 function publicCity(key) {
   return {
-    cols: COLS, rows: ROWS, landCost: LAND_COST, buyoutPremium: BUYOUT_PREMIUM,
-    buildingTypes: BUILDING_TYPES,
+    cols: COLS, rows: ROWS, buildingTypes: BUILDING_TYPES, buyoutPremium: BUYOUT_PREMIUM,
+    landPrice: landPrice(), landSellPrice: landSellPrice(), landIndex: round(city.landIndex || 1),
     lots: city.lots.map((l) => {
       const t = l.biz && BUILDING_TYPES[l.biz.type];
-      // P&L perspective: for a free business show what the VIEWER would earn if
-      // they bought it (rent unless they own the land); for an owned business
-      // show the actual operator's figures.
+      // P&L from the viewer's perspective (rent shown unless the viewer owns the land).
       let pnl = null;
       if (l.biz) {
-        const operator = l.biz.owner;
-        const landOwnedByOperator = operator === null ? l.landOwner === key : l.landOwner === operator;
+        const operator = l.biz.operator;
+        const landOwnedByOp = operator === null ? l.landOwner === key : l.landOwner === operator;
         const gross = t.gross * (l.biz.perf || 1);
-        const rent = landOwnedByOperator ? 0 : t.rent;
+        const rent = landOwnedByOp ? 0 : t.rent;
         const tax = gross * t.tax;
-        pnl = { gross, wages: t.wages, rent, tax, net: gross - t.wages - rent - tax };
+        pnl = { gross: round(gross), wages: round(t.wages), rent: round(rent), tax: round(tax), net: round(gross - t.wages - rent - tax) };
       }
-      // Available actions for this viewer.
-      const landAction = l.landOwner === null ? "buyLand" : null;
-      let bizAction = null, bizPrice = 0;
-      if (!l.biz) {
-        if (l.landOwner === key) bizAction = "build";
-      } else if (l.biz.owner === null) { bizAction = "buy"; bizPrice = t.cost; }
-      else if (l.biz.owner === key) bizAction = null;
-      else { bizAction = "takeover"; bizPrice = Math.ceil(t.cost * BUYOUT_PREMIUM); }
+      const landMine = l.landOwner === key;
+      const canBuildHere = !l.biz && (landMine || (l.forRent && l.landOwner && l.landOwner !== key));
       return {
         id: l.id, x: l.x, y: l.y,
-        landOwner: l.landOwner, landOwnerName: l.landOwnerName, landMine: l.landOwner === key,
-        landAction, landPrice: LAND_COST,
+        landOwner: l.landOwner, landOwnerName: l.landOwnerName, landMine, forRent: l.forRent,
         emoji: t ? t.emoji : null,
         biz: l.biz ? {
           type: l.biz.type, name: t.name, emoji: t.emoji,
-          owner: l.biz.owner, ownerName: l.biz.ownerName, mine: l.biz.owner === key,
-          pnl: { gross: round(pnl.gross), wages: round(pnl.wages), rent: round(pnl.rent), tax: round(pnl.tax), net: round(pnl.net) },
+          builtBy: l.biz.builtBy, builtByName: l.biz.builtByName, builtMine: l.biz.builtBy === key,
+          operator: l.biz.operator, operatorName: l.biz.operatorName, operatorMine: l.biz.operator === key,
+          forLease: l.biz.forLease, pnl,
         } : null,
-        bizAction, bizPrice,
-        // "mine" = viewer has any stake (land or business) on this lot.
-        mine: l.landOwner === key || (l.biz && l.biz.owner === key),
-        rival: (l.landOwner && l.landOwner !== key) || (l.biz && l.biz.owner && l.biz.owner !== key),
+        canBuildHere,
+        rival: (l.landOwner && !landMine) || (l.biz && l.biz.operator && l.biz.operator !== key),
+        mine: landMine || (l.biz && (l.biz.operator === key || l.biz.builtBy === key)),
       };
     }),
   };
 }
 
-// ─── Mutations (return { ok, cost, [prevOwner], commit } or { ok:false, error }) ──
+// ─── Mutations ──────────────────────────────────────────────────────────────
+// Buy/build cost the player chips → { ok, cost, commit }.
+// Selling pays the player → { ok, gain, commit }. Toggles are free → { ok, commit }.
+
 function buyLand(id, key, name) {
   const lot = lotById(id);
-  if (!lot) return { ok: false, error: "Grundstück nicht gefunden." };
-  if (lot.landOwner !== null) return { ok: false, error: "Grundstück ist nicht frei." };
-  return { ok: true, cost: LAND_COST, commit: () => { lot.landOwner = key; lot.landOwnerName = name; save(); } };
+  if (!lot) return err("Grundstück nicht gefunden.");
+  if (lot.landOwner !== null) return err("Grundstück ist nicht frei.");
+  return { ok: true, cost: landPrice(), commit: () => { lot.landOwner = key; lot.landOwnerName = name; save(); } };
+}
+
+function sellLand(id, key) {
+  const lot = lotById(id);
+  if (!lot) return err("Nicht gefunden.");
+  if (lot.landOwner !== key) return err("Gehört dir nicht.");
+  if (lot.biz) return err("Erst das Gebäude loswerden.");
+  return { ok: true, gain: landSellPrice(), commit: () => { lot.landOwner = null; lot.landOwnerName = null; lot.forRent = false; save(); } };
+}
+
+function setForRent(id, key, val) {
+  const lot = lotById(id);
+  if (!lot) return err("Nicht gefunden.");
+  if (lot.landOwner !== key) return err("Gehört dir nicht.");
+  if (lot.biz) return err("Schon bebaut.");
+  return { ok: true, commit: () => { lot.forRent = !!val; save(); } };
 }
 
 function build(id, key, typeId, name) {
   const lot = lotById(id);
-  if (!lot) return { ok: false, error: "Grundstück nicht gefunden." };
-  if (lot.landOwner !== key) return { ok: false, error: "Du musst erst das Grundstück besitzen." };
-  if (lot.biz) return { ok: false, error: "Hier steht schon etwas." };
+  if (!lot) return err("Nicht gefunden.");
+  if (lot.biz) return err("Hier steht schon etwas.");
+  const ownLand = lot.landOwner === key;
+  const rented = lot.forRent && lot.landOwner && lot.landOwner !== key;
+  if (!ownLand && !rented) return err("Erst Grundstück kaufen (oder gemietetes Land nutzen).");
   const t = BUILDING_TYPES[typeId];
-  if (!t || !t.buildable) return { ok: false, error: "Kann hier nicht gebaut werden." };
-  return { ok: true, cost: t.cost, commit: () => { lot.biz = { type: typeId, owner: key, ownerName: name, perf: 1 }; save(); } };
+  if (!t || !t.buildable) return err("Kann hier nicht gebaut werden.");
+  return { ok: true, cost: t.cost, commit: () => {
+    lot.biz = { type: typeId, builtBy: key, builtByName: name, operator: key, operatorName: name, perf: 1, forLease: false };
+    save();
+  } };
 }
 
 function buyBiz(id, key, name) {
   const lot = lotById(id);
-  if (!lot || !lot.biz) return { ok: false, error: "Kein Unternehmen hier." };
-  if (lot.biz.owner !== null) return { ok: false, error: "Gehört schon jemandem." };
+  if (!lot || !lot.biz) return err("Kein Unternehmen hier.");
+  if (lot.biz.operator !== null || lot.biz.builtBy !== null) return err("Gehört schon jemandem.");
   const t = BUILDING_TYPES[lot.biz.type];
-  return { ok: true, cost: t.cost, commit: () => { lot.biz.owner = key; lot.biz.ownerName = name; save(); } };
+  return { ok: true, cost: t.cost, commit: () => {
+    lot.biz.builtBy = key; lot.biz.builtByName = name; lot.biz.operator = key; lot.biz.operatorName = name; save();
+  } };
 }
 
 function takeover(id, key, name) {
   const lot = lotById(id);
-  if (!lot || !lot.biz) return { ok: false, error: "Kein Unternehmen hier." };
-  if (lot.biz.owner === null) return { ok: false, error: "Nutze „kaufen“." };
-  if (lot.biz.owner === key) return { ok: false, error: "Gehört dir bereits." };
+  if (!lot || !lot.biz) return err("Kein Unternehmen hier.");
+  if (lot.biz.operator === null) return err("Nutze „kaufen“.");
+  if (lot.biz.operator === key) return err("Gehört dir bereits.");
+  if (lot.biz.builtBy !== lot.biz.operator) return err("Verpachtetes Unternehmen — nicht übernehmbar.");
   const t = BUILDING_TYPES[lot.biz.type];
-  const cost = Math.ceil(t.cost * BUYOUT_PREMIUM);
-  const prevOwner = lot.biz.owner;
-  return { ok: true, cost, prevOwner, commit: () => { lot.biz.owner = key; lot.biz.ownerName = name; save(); } };
+  const prevOwner = lot.biz.operator;
+  return { ok: true, cost: Math.ceil(t.cost * BUYOUT_PREMIUM), prevOwner, commit: () => {
+    lot.biz.builtBy = key; lot.biz.builtByName = name; lot.biz.operator = key; lot.biz.operatorName = name; lot.biz.forLease = false; save();
+  } };
 }
 
+function setForLease(id, key, val) {
+  const lot = lotById(id);
+  if (!lot || !lot.biz) return err("Kein Unternehmen.");
+  if (lot.biz.builtBy !== key) return err("Du besitzt das Gebäude nicht.");
+  return { ok: true, commit: () => { lot.biz.forLease = !!val; save(); } };
+}
+
+function lease(id, key, name) {
+  const lot = lotById(id);
+  if (!lot || !lot.biz) return err("Kein Unternehmen.");
+  if (!lot.biz.forLease) return err("Nicht zur Pacht angeboten.");
+  if (lot.biz.operator === key) return err("Betreibst du schon.");
+  const prevOwner = lot.biz.operator; // previous operator (the builder) — settle their income
+  return { ok: true, cost: 0, prevOwner, commit: () => {
+    lot.biz.operator = key; lot.biz.operatorName = name; lot.biz.forLease = false; save();
+  } };
+}
+
+function err(error) { return { ok: false, error }; }
+
 module.exports = {
-  BUILDING_TYPES, LAND_COST,
+  BUILDING_TYPES,
   publicCity, ownerIncomeRate, ownerValue, casinoOwner, tickMarket,
-  buyLand, build, buyBiz, takeover, lotById,
+  buyLand, sellLand, setForRent, build, buyBiz, takeover, setForLease, lease, lotById,
 };
