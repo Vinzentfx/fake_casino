@@ -21,6 +21,7 @@ const { setupPvp } = require("./game/slotsPvp");
 const { setupAdmin } = require("./game/admin");
 const { setupBlackjack } = require("./game/blackjack");
 const { setupRoulette } = require("./game/roulette");
+const { setupEconomy } = require("./game/economy");
 
 const PORT = process.env.PORT || 3000;
 
@@ -84,6 +85,7 @@ setupPvp(io, accounts);
 setupAdmin(io, accounts);
 setupBlackjack(io, accounts);
 setupRoulette(io, accounts);
+setupEconomy(io, accounts);
 
 // Chip-Transfer zwischen Spielern (socket-auth required)
 io.on("connection", (socket) => {

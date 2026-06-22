@@ -1327,6 +1327,161 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* ============================================================
+   Wirtschaft – Arbeiten & Unternehmen
+   ============================================================ */
+
+/* ── Arbeiten (Klicker) ── */
+.work-wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 32px;
+}
+
+.clicker-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0 8px;
+}
+
+.clicker-btn {
+  font-size: 5rem;
+  line-height: 1;
+  background: radial-gradient(circle at 38% 36%, var(--felt-light), var(--felt-dark));
+  border: 3px solid rgba(231, 198, 107, 0.45);
+  border-radius: 50%;
+  width: 130px;
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 28px rgba(0,0,0,0.5), 0 0 0 0 rgba(231,198,107,0);
+  transition: transform 0.08s ease, box-shadow 0.12s ease;
+  user-select: none;
+}
+.clicker-btn:active, .clicker-btn.clicker-press {
+  transform: scale(0.9);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.4), 0 0 0 6px rgba(231,198,107,0.18);
+}
+.clicker-sub {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+/* Floating "+N" popup on click */
+.clicker-popup {
+  position: fixed;
+  pointer-events: none;
+  z-index: 200;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--gold-strong);
+  text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+  transform: translate(-50%, -50%);
+  animation: clickpop 0.75s ease forwards;
+}
+@keyframes clickpop {
+  0%   { opacity: 1; transform: translate(calc(-50% + var(--drift, 0px)), -50%) scale(0.8); }
+  30%  { opacity: 1; transform: translate(calc(-50% + var(--drift, 0px)), -80%) scale(1.2); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--drift, 0px)), -130%) scale(0.9); }
+}
+
+/* ── Unternehmen ── */
+.biz-wrap {
+  max-width: 540px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 32px;
+}
+
+.biz-collect-panel {}
+.biz-pending-val { color: var(--gold-strong); font-size: 1.1rem; }
+
+.biz-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.biz-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(231,198,107,0.2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.biz-card-icon {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+  width: 44px;
+  text-align: center;
+}
+
+.biz-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.biz-card-name {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.biz-card-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 3px;
+  font-size: 0.78rem;
+}
+
+.biz-owned { color: var(--text-dim); }
+.biz-income { color: var(--gold-strong); font-weight: 700; }
+
+.biz-card-buy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.biz-cost {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.biz-buy-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #3a2a05;
+  background: linear-gradient(180deg, var(--gold-strong), var(--gold));
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  white-space: nowrap;
+}
+.biz-buy-btn:active { transform: scale(0.96); }
+
+@media (max-width: 480px) {
+  .biz-card { padding: 12px; gap: 10px; }
+  .biz-card-icon { font-size: 1.8rem; width: 36px; }
+}
+
+/* ============================================================
    Roulette
    ============================================================ */
 .roulette-wrap {

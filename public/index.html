@@ -79,6 +79,20 @@
           </button>
         </div>
 
+        <h2 class="section-title">Wirtschaft</h2>
+        <div class="game-grid">
+          <button class="game-tile" data-nav="work">
+            <span class="tile-icon">💼</span>
+            <span class="tile-name">Arbeiten</span>
+            <span class="tile-sub">Chips per Klick verdienen</span>
+          </button>
+          <button class="game-tile" data-nav="businesses">
+            <span class="tile-icon">🏢</span>
+            <span class="tile-name">Unternehmen</span>
+            <span class="tile-sub">Passives Einkommen</span>
+          </button>
+        </div>
+
         <h2 class="section-title">Mehr</h2>
         <div class="action-grid">
           <button class="action-tile" data-nav="leaderboard">🏆<span>Bestenliste</span></button>
@@ -494,6 +508,63 @@
       </div>
     </section>
 
+    <!-- ===================== ARBEITEN (Klicker) ===================== -->
+    <section class="screen" data-screen="work">
+      <div class="work-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center">
+          <div class="ph-icon">💼</div>
+          <h2>Arbeiten</h2>
+          <p class="muted small">Klicke um Chips zu verdienen!</p>
+        </div>
+
+        <div class="clicker-area">
+          <button class="clicker-btn" id="clicker-btn">💼</button>
+          <div class="clicker-sub" id="clicker-sub">+<span id="clicker-power">1</span> 🪙 pro Klick</div>
+        </div>
+
+        <div class="panel">
+          <div class="stat-row">
+            <span>Klick-Stärke</span>
+            <b id="work-power">1 🪙</b>
+          </div>
+          <div class="stat-row">
+            <span>Upgrade-Kosten</span>
+            <b id="work-upgrade-cost">50 🪙</b>
+          </div>
+          <button class="btn-primary" id="work-upgrade-btn" style="margin-top:14px">⬆️ Upgrade kaufen</button>
+          <div class="form-error" id="work-error"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== UNTERNEHMEN (Passives Einkommen) ===================== -->
+    <section class="screen" data-screen="businesses">
+      <div class="biz-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center">
+          <div class="ph-icon">🏢</div>
+          <h2>Unternehmen</h2>
+        </div>
+
+        <div class="panel biz-collect-panel">
+          <div class="stat-row">
+            <span>Einkommen / Sek.</span>
+            <b id="biz-rate">0 🪙</b>
+          </div>
+          <div class="stat-row" style="border:none">
+            <span>Aufgelaufen</span>
+            <b id="biz-pending" class="biz-pending-val">0 🪙</b>
+          </div>
+          <button class="btn-primary" id="biz-collect-btn" style="margin-top:10px">💰 Einsammeln</button>
+        </div>
+
+        <div class="biz-list" id="biz-list">
+          <p class="muted small" style="text-align:center;padding:16px">Lädt…</p>
+        </div>
+      </div>
+    </section>
+
     <!-- ===================== ADMIN (nur Vincent) ===================== -->
     <section class="screen" data-screen="admin">
       <div class="panel">
@@ -537,5 +608,6 @@
   <script src="/js/slots.js"></script>
   <script src="/js/blackjack.js"></script>
   <script src="/js/roulette.js"></script>
+  <script src="/js/economy.js"></script>
 </body>
 </html>
