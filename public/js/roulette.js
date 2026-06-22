@@ -17,6 +17,72 @@
     red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1–18", high: "19–36",
   };
 
+  // ── Sound (Web Audio) — ball rattle, settle thunk, win/lose, chip click ──
+  let audioCtx = null;
+  const soundOn = () => {
+    const cb = $("#set-sound");
+    return !cb || cb.checked;
+  };
+  function ac() {
+    if (!soundOn()) return null;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    } catch { return null; }
+  }
+  function tone(freq, dur, type = "sine", gain = 0.05, delay = 0, to = null) {
+    const ctx = ac();
+    if (!ctx) return;
+    const t = ctx.currentTime + delay;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (to) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+  function click(freq = 2600, gain = 0.03) {
+    const ctx = ac();
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const len = Math.floor(ctx.sampleRate * 0.012);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filt = ctx.createBiquadFilter();
+    filt.type = "bandpass"; filt.frequency.value = freq; filt.Q.value = 6;
+    const g = ctx.createGain(); g.gain.value = gain;
+    src.connect(filt).connect(g).connect(ctx.destination);
+    src.start(t);
+  }
+  const sndChip   = () => { tone(880, 0.05, "square", 0.05, 0, 1300); click(3000, 0.025); };
+  const sndSettle = () => { tone(180, 0.18, "sine", 0.09, 0, 70); click(1200, 0.05); };
+  const sndWin    = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, "triangle", 0.07, i * 0.08));
+  const sndLose   = () => tone(200, 0.4, "sawtooth", 0.06, 0, 90);
+
+  // Decelerating ball rattle synced to the ~4.8s wheel spin.
+  function startBallRattle(totalMs) {
+    let stopped = false, elapsed = 0, id = null;
+    function step() {
+      if (stopped) return;
+      click(1600 + Math.random() * 1400, 0.03);
+      const p = Math.min(1, elapsed / totalMs);
+      const gap = 28 + 230 * Math.pow(p, 2.2); // ticks slow down as the ball loses speed
+      elapsed += gap;
+      if (elapsed < totalMs) id = setTimeout(step, gap);
+    }
+    step();
+    return () => { stopped = true; if (id) clearTimeout(id); };
+  }
+
   // ── Canvas wheel ───────────────────────────────────────────────
   const canvas = $("#roulette-canvas");
   const ctx    = canvas.getContext("2d");
@@ -90,6 +156,7 @@
     const startAngle = wheelAngle;
     const duration   = 4800;
     const t0         = performance.now();
+    const stopRattle = startBallRattle(duration);
 
     function ease(t) { return 1 - Math.pow(1 - t, 3.5); }
 
@@ -98,7 +165,7 @@
       wheelAngle = startAngle + (target - startAngle) * ease(t);
       drawWheel();
       if (t < 1) requestAnimationFrame(frame);
-      else { wheelAngle = target; drawWheel(); onDone(); }
+      else { wheelAngle = target; drawWheel(); stopRattle(); sndSettle(); onDone(); }
     }
     requestAnimationFrame(frame);
   }
@@ -188,6 +255,7 @@
     if (!cell) return;
     const key  = betKey(cell);
     bets[key]  = (bets[key] || 0) + chipValue;
+    sndChip();
     renderBets();
     updateIndicators();
   }
@@ -304,7 +372,8 @@
         $("#rt-result").style.display = "";
 
         window.Casino.setChips(res.balance);
-        if (res.netWin > 0) toast("🎉 +" + res.netWin.toLocaleString("de-DE") + " 🪙!");
+        if (res.netWin > 0) { sndWin(); toast("🎉 +" + res.netWin.toLocaleString("de-DE") + " 🪙!"); }
+        else if (res.netWin < 0) sndLose();
 
         // Highlight winning / losing cells
         document.querySelectorAll("#rt-table .rt-has-bet").forEach((cell) => {
