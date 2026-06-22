@@ -78,7 +78,11 @@ function setupPvp(io, accounts) {
     socket.leave(match.code);
     socket.data.pvpCode = null;
 
-    if (match.players.size === 0) {
+    // Tear the match down once no human (socket-bearing) player remains. This
+    // also reaps finished bot matches, whose socketless bot would otherwise
+    // keep players.size > 0 and leak the match object forever.
+    const humansLeft = [...match.players.values()].some((p) => p.socket);
+    if (!humansLeft) {
       matches.delete(match.code);
       return;
     }
@@ -104,10 +108,11 @@ function setupPvp(io, accounts) {
     }
 
     // 15% of the pot is raked (removed from circulation); winner gets the rest.
+    // Bot duels are house-funded and rake-free (see pvp:createBot).
     let rake = 0;
     let payout = 0;
     if (winner) {
-      rake = Math.floor(match.pot * RAKE);
+      rake = match.vsBot ? 0 : Math.floor(match.pot * RAKE);
       payout = match.pot - rake;
       accounts.adjustChips(winner.id, payout);
     } else {
