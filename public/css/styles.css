@@ -938,6 +938,22 @@ button { font-family: inherit; cursor: pointer; }
 #reels-window.flickwin { animation: reelflick 0.4s steps(1) 1; }
 @keyframes reelflick { 0%{filter:brightness(1)} 20%{filter:brightness(1.6)} 40%{filter:brightness(1)} 60%{filter:brightness(1.4)} 100%{filter:brightness(1)} }
 
+/* Slots session strip — win/loss streak + recent-spin dots */
+.slots-session {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 2px 14px 0; min-height: 18px;
+}
+.slots-session.hidden { display: none; }
+.ss-streak { font-size: 0.8rem; font-weight: 800; white-space: nowrap; }
+.ss-streak.ss-hot  { color: #ff9b54; animation: ssPulse 0.8s ease-in-out infinite alternate; }
+.ss-streak.ss-cold { color: #7ec8ff; }
+@keyframes ssPulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+.ss-dots { display: flex; gap: 4px; flex-wrap: nowrap; }
+.ss-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.13); flex-shrink: 0; }
+.ss-dot.ss-win { background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,0.7); }
+.ss-dot.ss-partial { background: #e7c66b; }
+.ss-dot.ss-loss { background: rgba(255,255,255,0.14); }
+
 /* Paytable modal */
 .paytable-modal {
   position: fixed; inset: 0; z-index: 150;
