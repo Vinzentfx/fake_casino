@@ -1,209 +1,163 @@
 "use strict";
 
-// ─── Business catalog ───────────────────────────────────────────────────────
-// BALANCING NOTE (Vincent): baseCost, incomePerSec, and the upgrade cost
-// formula below are placeholder values. Adjust freely after seeing them
-// in practice — numbers are not locked in.
-const BUSINESSES = [
-  { id: "kiosk",  name: "Kiosk",  emoji: "🏪", baseCost: 100,    incomePerSec: 0.5  },
-  { id: "cafe",   name: "Café",   emoji: "☕", baseCost: 500,    incomePerSec: 2    },
-  { id: "imbiss", name: "Imbiss", emoji: "🌭", baseCost: 2000,   incomePerSec: 8    },
-  { id: "hotel",  name: "Hotel",  emoji: "🏨", baseCost: 10000,  incomePerSec: 35   },
-  { id: "fabrik", name: "Fabrik", emoji: "🏭", baseCost: 50000,  incomePerSec: 150  },
-  { id: "kasino", name: "Kasino", emoji: "🎰", baseCost: 250000, incomePerSec: 700  },
-];
+/**
+ * Economy: the work clicker (a capped bootstrap, NOT an idle game) plus passive
+ * income from buildings owned in the shared city (game/city.js).
+ *
+ * The clicker exists only to help a broke/new player afford their first lot —
+ * it's deliberately capped so it never competes with the casino or businesses.
+ * Real money comes from owning the city and the games.
+ */
 
-const MAX_OFFLINE_SEC = 8 * 60 * 60; // 8-hour cap on offline earnings
+const city = require("./city");
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Work clicker (capped) ──────────────────────────────────────────────────
+const CLICK_BASE = 1;          // chips per click at level 0
+const MAX_CLICK_LEVEL = 5;     // a few upgrades, then it's maxed out
+const clickUpgradeCost = (lvl) => 200 * (lvl + 1); // lvl 0→200, 1→400, … 4→1000
+
+const MAX_OFFLINE_SEC = 8 * 60 * 60; // passive income capped at 8h offline
 
 function ensureEconomy(acc) {
-  if (!acc.economy) {
-    acc.economy = { clickPower: 1, businesses: {}, lastCollect: Date.now() };
-    return true; // signals: was just initialized, caller should save
+  if (!acc.economy) acc.economy = {};
+  const e = acc.economy;
+  if (typeof e.clickLevel !== "number") {
+    // Migrate from the old clickPower field if present, else start fresh.
+    e.clickLevel = e.clickPower ? Math.min(MAX_CLICK_LEVEL, e.clickPower - 1) : 0;
   }
-  if (!acc.economy.clickPower) acc.economy.clickPower = 1;
-  if (!acc.economy.businesses) acc.economy.businesses = {};
-  if (!acc.economy.lastCollect) acc.economy.lastCollect = Date.now();
-  return false;
+  if (typeof e.lastCollect !== "number") e.lastCollect = Date.now();
+  return e;
 }
 
-// BALANCING NOTE: cost = 50 * 1.5^(clickPower-1), rounded up.
-function clickUpgradeCost(clickPower) {
-  return Math.ceil(50 * Math.pow(1.5, clickPower - 1));
-}
+const clickPower = (e) => CLICK_BASE + e.clickLevel;
 
-// BALANCING NOTE: cost = baseCost * 1.15^owned, rounded up.
-function buyCost(business, owned) {
-  return Math.ceil(business.baseCost * Math.pow(1.15, owned));
+// ─── Passive income ───────────────────────────────────────────────────────
+function pendingIncome(key, e) {
+  const rate = city.ownerIncomeRate(key);
+  const elapsed = Math.min((Date.now() - e.lastCollect) / 1000, MAX_OFFLINE_SEC);
+  return Math.floor(rate * elapsed);
 }
-
-function incomeRatePerSec(eco) {
-  let rate = 0;
-  for (const b of BUSINESSES) {
-    rate += b.incomePerSec * (eco.businesses[b.id] || 0);
-  }
-  return rate;
-}
-
-function pendingIncome(acc) {
-  const eco = acc.economy;
-  if (!eco) return 0;
-  const elapsedSec = Math.min((Date.now() - eco.lastCollect) / 1000, MAX_OFFLINE_SEC);
-  return Math.floor(incomeRatePerSec(eco) * elapsedSec);
-}
-
-// Total chips spent purchasing businesses (used for netWorth).
-// Keep in sync with BUSINESSES catalog above.
-function businessesSpent(eco) {
-  if (!eco) return 0;
-  let total = 0;
-  for (const b of BUSINESSES) {
-    const count = (eco.businesses || {})[b.id] || 0;
-    for (let i = 0; i < count; i++) {
-      total += Math.ceil(b.baseCost * Math.pow(1.15, i));
-    }
-  }
-  return total;
-}
-
-// ─── Socket setup ───────────────────────────────────────────────────────────
 
 function setupEconomy(io, accounts) {
-  // Per-socket click rate limiter (max ~20 clicks / second)
-  const clickTimes = new Map(); // socketId -> timestamp[]
-  const CLICK_MAX = 20;
-  const CLICK_WINDOW_MS = 1000;
+  const acct = (s) => (s.data.account ? accounts.get(s.data.account) : null);
+
+  /** Bank a player's accrued passive income and reset their timer. Returns amount. */
+  function settleIncome(key) {
+    const acc = accounts.get(key);
+    if (!acc) return 0;
+    const e = ensureEconomy(acc);
+    const amount = pendingIncome(key, e);
+    e.lastCollect = Date.now();
+    accounts.adjustChips(key, amount); // delta 0 still persists the timer
+    return amount;
+  }
+
+  /** Tell everyone the shared city changed; clients re-pull city:state. */
+  function broadcastCity() {
+    io.emit("city:update");
+  }
+
+  // Per-socket click rate limiter (~20/s).
+  const clickTimes = new Map();
+  const CLICK_MAX = 20, CLICK_WINDOW = 1000;
 
   io.on("connection", (socket) => {
-    // ── work:click ──────────────────────────────────────────────────────────
+    // ── Work clicker ────────────────────────────────────────────────────────
     socket.on("work:click", (ack) => {
       if (typeof ack !== "function") return;
-      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
-
-      // Rate limit
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
       const now = Date.now();
-      const times = (clickTimes.get(socket.id) || []).filter((t) => now - t < CLICK_WINDOW_MS);
-      if (times.length >= CLICK_MAX) {
-        clickTimes.set(socket.id, times);
-        return ack({ ok: false, error: "Zu schnell." });
-      }
-      times.push(now);
-      clickTimes.set(socket.id, times);
+      const times = (clickTimes.get(socket.id) || []).filter((t) => now - t < CLICK_WINDOW);
+      if (times.length >= CLICK_MAX) { clickTimes.set(socket.id, times); return ack({ ok: false, error: "Zu schnell." }); }
+      times.push(now); clickTimes.set(socket.id, times);
 
-      const acc = accounts.get(socket.data.account);
-      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
-      const justInit = ensureEconomy(acc);
-
-      const delta = acc.economy.clickPower;
-      const res = accounts.adjustChips(socket.data.account, delta); // also saves economy if justInit
-      if (!res.ok) return ack({ ok: false, error: res.error });
-      if (justInit) accounts.adjustChips(socket.data.account, 0); // ensure init is persisted
-      ack({ ok: true, account: res.account, earned: delta });
+      const e = ensureEconomy(acc);
+      const earned = clickPower(e);
+      const res = accounts.adjustChips(socket.data.account, earned);
+      ack({ ok: res.ok, account: res.account, earned });
     });
 
-    // ── work:upgrade ────────────────────────────────────────────────────────
     socket.on("work:upgrade", (ack) => {
       if (typeof ack !== "function") return;
-      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
-
-      const acc = accounts.get(socket.data.account);
-      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
-      ensureEconomy(acc);
-
-      const cost = clickUpgradeCost(acc.economy.clickPower);
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const e = ensureEconomy(acc);
+      if (e.clickLevel >= MAX_CLICK_LEVEL) return ack({ ok: false, error: "Schon voll ausgebaut — der Rest kommt aus Unternehmen & Casino." });
+      const cost = clickUpgradeCost(e.clickLevel);
       if (acc.chips < cost) return ack({ ok: false, error: "Nicht genug Chips." });
-
-      acc.economy.clickPower += 1;
-      const newPower = acc.economy.clickPower;
-      const res = accounts.adjustChips(socket.data.account, -cost); // saves
-      if (!res.ok) {
-        acc.economy.clickPower -= 1; // rollback (shouldn't happen after the chip check)
-        return ack({ ok: false, error: res.error });
-      }
-      ack({ ok: true, account: res.account, clickPower: newPower });
+      e.clickLevel += 1;
+      const res = accounts.adjustChips(socket.data.account, -cost);
+      if (!res.ok) { e.clickLevel -= 1; return ack({ ok: false, error: res.error }); }
+      ack({ ok: true, account: res.account, clickPower: clickPower(e), clickLevel: e.clickLevel, maxed: e.clickLevel >= MAX_CLICK_LEVEL });
     });
 
-    // ── economy:state ───────────────────────────────────────────────────────
     socket.on("economy:state", (ack) => {
       if (typeof ack !== "function") return;
-      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
-
-      const acc = accounts.get(socket.data.account);
-      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
-      const justInit = ensureEconomy(acc);
-      if (justInit) accounts.adjustChips(socket.data.account, 0); // persist init
-
-      const eco = acc.economy;
-      const owned = {};
-      for (const b of BUSINESSES) owned[b.id] = eco.businesses[b.id] || 0;
-
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const e = ensureEconomy(acc);
+      const maxed = e.clickLevel >= MAX_CLICK_LEVEL;
       ack({
         ok: true,
-        catalog: BUSINESSES,
-        owned,
-        clickPower: eco.clickPower,
-        pending: pendingIncome(acc),
-        ratePerSec: incomeRatePerSec(eco),
-        lastCollect: eco.lastCollect,
+        clickPower: clickPower(e),
+        clickLevel: e.clickLevel,
+        maxClickLevel: MAX_CLICK_LEVEL,
+        upgradeCost: maxed ? null : clickUpgradeCost(e.clickLevel),
+        maxed,
+        ratePerSec: city.ownerIncomeRate(socket.data.account),
+        pending: pendingIncome(socket.data.account, e),
       });
     });
 
-    // ── economy:buy ─────────────────────────────────────────────────────────
-    socket.on("economy:buy", ({ id } = {}, ack) => {
-      if (typeof ack !== "function") return;
-      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
-
-      const business = BUSINESSES.find((b) => b.id === id);
-      if (!business) return ack({ ok: false, error: "Unbekanntes Unternehmen." });
-
-      const acc = accounts.get(socket.data.account);
-      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
-      ensureEconomy(acc);
-
-      const prevOwned = acc.economy.businesses[id] || 0;
-      const cost = buyCost(business, prevOwned);
-      if (acc.chips < cost) return ack({ ok: false, error: "Nicht genug Chips." });
-
-      acc.economy.businesses[id] = prevOwned + 1;
-      const newOwned = acc.economy.businesses[id];
-      const res = accounts.adjustChips(socket.data.account, -cost); // saves
-      if (!res.ok) {
-        acc.economy.businesses[id] = prevOwned; // rollback
-        return ack({ ok: false, error: res.error });
-      }
-      ack({
-        ok: true,
-        account: res.account,
-        id,
-        owned: newOwned,
-        nextCost: buyCost(business, newOwned),
-        ratePerSec: incomeRatePerSec(acc.economy),
-      });
-    });
-
-    // ── economy:collect ─────────────────────────────────────────────────────
     socket.on("economy:collect", (ack) => {
       if (typeof ack !== "function") return;
-      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
-
-      const acc = accounts.get(socket.data.account);
-      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
-      ensureEconomy(acc);
-
-      const amount = pendingIncome(acc);
-      acc.economy.lastCollect = Date.now(); // always reset the timer
-
-      // adjustChips(delta=0) is used as a save-only call when no chips change
-      const res = accounts.adjustChips(socket.data.account, amount); // saves (works for delta=0 too)
-      if (!res.ok) return ack({ ok: false, error: res.error });
-      ack({ ok: true, amount, account: res.account });
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const amount = settleIncome(socket.data.account);
+      ack({ ok: true, amount, account: accounts.publicAccount(accounts.get(socket.data.account)) });
     });
 
-    socket.on("disconnect", () => {
-      clickTimes.delete(socket.id);
+    // ── Shared city ───────────────────────────────────────────────────────
+    socket.on("city:state", (ack) => {
+      if (typeof ack !== "function") return;
+      const key = socket.data.account || null;
+      ack({ ok: true, city: city.publicCity(key), casinoOwner: city.casinoOwner() });
     });
+
+    // Generic helper for the three buy actions: settle income, check chips,
+    // charge, commit the city change, broadcast.
+    function doBuy(socket, ack, build) {
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const key = socket.data.account;
+      const r = build(key, acc.name);
+      if (!r.ok) return ack(r);
+      settleIncome(key);                 // bank income before the rate changes
+      if (r.prevOwner && r.prevOwner !== key) settleIncome(r.prevOwner); // and the seller's
+      const fresh = accounts.get(key);
+      if (fresh.chips < r.cost) return ack({ ok: false, error: "Nicht genug Chips." });
+      r.commit();
+      const res = accounts.adjustChips(key, -r.cost);
+      ack({ ok: true, account: res.account, cost: r.cost, city: city.publicCity(key), casinoOwner: city.casinoOwner() });
+      broadcastCity();
+    }
+
+    socket.on("city:buyLand", ({ plotId } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      doBuy(socket, ack, (key, name) => city.buyLand(plotId, key, name));
+    });
+    socket.on("city:build", ({ plotId, type } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      doBuy(socket, ack, (key, name) => city.build(plotId, key, type, name));
+    });
+    socket.on("city:buyout", ({ plotId } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      doBuy(socket, ack, (key, name) => city.buyout(plotId, key, name));
+    });
+
+    socket.on("disconnect", () => clickTimes.delete(socket.id));
   });
 }
 
-module.exports = { setupEconomy, BUSINESSES, businessesSpent };
+module.exports = { setupEconomy };

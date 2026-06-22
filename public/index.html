@@ -84,12 +84,12 @@
           <button class="game-tile" data-nav="work">
             <span class="tile-icon">💼</span>
             <span class="tile-name">Arbeiten</span>
-            <span class="tile-sub">Chips per Klick verdienen</span>
+            <span class="tile-sub">Starthilfe per Klick</span>
           </button>
           <button class="game-tile" data-nav="businesses">
-            <span class="tile-icon">🏢</span>
-            <span class="tile-name">Unternehmen</span>
-            <span class="tile-sub">Passives Einkommen</span>
+            <span class="tile-icon">🏙️</span>
+            <span class="tile-name">Stadt</span>
+            <span class="tile-sub">Grundstücke & Unternehmen</span>
           </button>
         </div>
 
@@ -538,13 +538,14 @@
       </div>
     </section>
 
-    <!-- ===================== UNTERNEHMEN (Passives Einkommen) ===================== -->
+    <!-- ===================== STADT (geteilte Karte) ===================== -->
     <section class="screen" data-screen="businesses">
-      <div class="biz-wrap">
+      <div class="city-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <div style="text-align:center">
-          <div class="ph-icon">🏢</div>
-          <h2>Unternehmen</h2>
+          <div class="ph-icon">🏙️</div>
+          <h2>Stadt</h2>
+          <p class="muted small">Eine Stadt für alle — kauf Grundstücke, bau Unternehmen, übernimm das Casino.</p>
         </div>
 
         <div class="panel biz-collect-panel">
@@ -559,8 +560,12 @@
           <button class="btn-primary" id="biz-collect-btn" style="margin-top:10px">💰 Einsammeln</button>
         </div>
 
-        <div class="biz-list" id="biz-list">
-          <p class="muted small" style="text-align:center;padding:16px">Lädt…</p>
+        <div class="city-map-box">
+          <svg id="city-map" viewBox="0 0 500 400" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+
+        <div class="city-detail" id="city-detail">
+          <p class="muted small" style="text-align:center;padding:14px">Tippe ein Feld auf der Karte an.</p>
         </div>
       </div>
     </section>
