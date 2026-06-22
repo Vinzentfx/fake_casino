@@ -322,15 +322,19 @@
 
       const range = raiseWrap.querySelector("#raise-range");
       const amount = raiseWrap.querySelector("#raise-amount");
+      const clamp = (v) => Math.max(min, Math.min(max, Math.floor(v) || min));
       const sync = (v) => {
-        v = Math.max(min, Math.min(max, Math.floor(v) || min));
+        v = clamp(v);
         range.value = v;
         amount.value = v;
       };
       range.addEventListener("input", () => sync(range.value));
-      amount.addEventListener("input", () => sync(amount.value));
+      // While typing, only move the slider — don't rewrite the field (so a custom
+      // amount can be typed freely). Clamp the field once on blur.
+      amount.addEventListener("input", () => { range.value = clamp(amount.value); });
+      amount.addEventListener("change", () => sync(amount.value));
       raiseWrap.querySelector("#raise-btn").addEventListener("click", () =>
-        sendAction("raise", parseInt(amount.value, 10))
+        sendAction("raise", clamp(amount.value))
       );
       raiseWrap.querySelectorAll(".raise-quick button").forEach((b) =>
         b.addEventListener("click", () => {
