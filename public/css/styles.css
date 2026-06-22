@@ -984,6 +984,14 @@ button { font-family: inherit; cursor: pointer; }
 .cd-pnl .cd-net { border-top: 1px solid rgba(255,255,255,0.12); margin-top: 3px; padding-top: 4px; font-weight: 800; }
 .cd-pnl .pos { color: #4ade80; }
 .cd-pnl .neg { color: #f0a0a0; }
+.cd-toggle {
+  width: 100%; margin-top: 8px; padding: 9px; border-radius: 10px; cursor: pointer;
+  font-weight: 700; font-size: 0.85rem;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18); color: #cfe3d6;
+}
+.cd-toggle.on { background: rgba(74,222,128,0.16); border-color: #4ade80; color: #bff5d0; }
+.city-landprice { text-align: center; font-size: 0.85rem; opacity: 0.85; margin: 4px 0 0; }
+.city-landprice b { color: var(--gold-strong, #f4d782); }
 
 /* Floating "+N" when clicking the work button */
 .click-float {
