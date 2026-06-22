@@ -7,10 +7,11 @@
  * with a bet, the server rolls the grid, evaluates wins, updates the account,
  * and returns a structured result for the client to animate.
  *
- * Four config-driven machines share three evaluators:
- *   - "lines"   : fixed paylines, left-aligned, wild substitutes
- *   - "ways"    : N-ways (product of matching symbols per consecutive reel)
- *   - "cluster" : connected groups of 5+ with cascading/tumbling reels
+ * Config-driven machines share four evaluators:
+ *   - "lines"    : fixed paylines, left-aligned, wild substitutes
+ *   - "anywhere" : N+ of a symbol anywhere on the grid pays (wild substitutes)
+ *   - "ways"     : N-ways (product of matching symbols per consecutive reel)
+ *   - "cluster"  : connected groups of 5+ with cascading/tumbling reels
  *
  * Internally every win is `unit * payMultiplier`, where unit = bet / 20.
  * This keeps payouts comparable across machines regardless of line count.
@@ -49,18 +50,19 @@ const MACHINES = [
   {
     id: "lucky7",
     name: "Lucky 7s",
-    tagline: "Klassisch · 3×3 · 5 Linien",
+    tagline: "Klassisch · 3×3 · zahlt überall",
     theme: "classic",
     cols: 3,
     rows: 3,
-    mode: "lines",
-    lines: LINES_3x3,
+    mode: "anywhere",
     minMatch: 3,
     wild: "W",
     scatter: null,
     unlockCost: 0,
     bets: [10, 20, 50, 100, 250, 500],
-    payScale: 6.1,
+    payScale: 3.1,
+    // "Pays anywhere": 3+ of the same symbol ANYWHERE on the grid wins. Tons of
+    // small, frequent wins → constant flashing (the casino-parody dopamine drip).
     symbols: {
       cherry: { emoji: "🍒", weight: 28 },
       lemon: { emoji: "🍋", weight: 24 },
@@ -72,14 +74,13 @@ const MACHINES = [
       W: { emoji: "⭐", weight: 4 },
     },
     pays: {
-      cherry: { 3: 6 },
-      lemon: { 3: 9 },
-      orange: { 3: 12 },
-      grape: { 3: 18 },
-      bell: { 3: 30 },
-      gem: { 3: 60 },
-      seven: { 3: 150 },
-      W: { 3: 300 },
+      cherry: { 3: 1, 4: 2, 5: 6, 6: 16, 7: 40 },
+      lemon: { 3: 1.5, 4: 3, 5: 8, 6: 20, 7: 50 },
+      orange: { 3: 2, 4: 4, 5: 11, 6: 28, 7: 70 },
+      grape: { 3: 3, 4: 7, 5: 16, 6: 40, 7: 100 },
+      bell: { 3: 5, 4: 12, 5: 28, 6: 70, 7: 180 },
+      gem: { 3: 9, 4: 22, 5: 55, 6: 140, 7: 350 },
+      seven: { 3: 18, 4: 50, 5: 150, 6: 400, 7: 777 },
     },
   },
   {
@@ -282,6 +283,45 @@ function evaluateLines(machine, grid, unit) {
   return wins;
 }
 
+// Highest pay tier whose threshold is <= count (so 6 of a kind still pays the "5+" tier).
+function thresholdPay(table, count) {
+  let pay = 0;
+  for (const k of Object.keys(table).map(Number).sort((a, b) => a - b)) if (count >= k) pay = table[k];
+  return pay;
+}
+
+// "Pays anywhere" — N+ of the same symbol ANYWHERE on the grid pays, regardless
+// of position. Wild substitutes for every symbol. Generous & flashy by design.
+function evaluateAnywhere(machine, grid, unit) {
+  const wild = machine.wild;
+  const wildPos = [];
+  const symPos = {};
+  for (let c = 0; c < machine.cols; c++)
+    for (let r = 0; r < machine.rows; r++) {
+      const s = grid[c][r];
+      if (s === wild) wildPos.push([c, r]);
+      else if (s === machine.scatter) continue;
+      else (symPos[s] = symPos[s] || []).push([c, r]);
+    }
+  const wins = [];
+  for (const sym of Object.keys(machine.pays)) {
+    if (sym === wild) continue; // wild only substitutes here
+    const base = symPos[sym] || [];
+    const count = base.length + wildPos.length;
+    if (count < machine.minMatch) continue;
+    const pay = thresholdPay(machine.pays[sym], count);
+    if (!pay) continue;
+    wins.push({
+      type: "any", symbol: sym, count,
+      win: unit * pay * (machine.payScale || 1),
+      positions: base.concat(wildPos),
+    });
+  }
+  // Bigger symbol wins first → nicer escalating reveal.
+  wins.sort((a, b) => b.win - a.win);
+  return wins;
+}
+
 function evaluateWays(machine, grid, unit) {
   const wild = machine.wild;
   const wins = [];
@@ -422,6 +462,9 @@ function evaluateSpin(machine, bet, session) {
   if (machine.mode === "lines") {
     wins = evaluateLines(machine, grid, unit);
     baseWin = wins.reduce((s, w) => s + w.win, 0);
+  } else if (machine.mode === "anywhere") {
+    wins = evaluateAnywhere(machine, grid, unit);
+    baseWin = wins.reduce((s, w) => s + w.win, 0);
   } else if (machine.mode === "ways") {
     wins = evaluateWays(machine, grid, unit);
     baseWin = wins.reduce((s, w) => s + w.win, 0);
@@ -545,4 +588,5 @@ module.exports._internals = {
   evaluateLines,
   evaluateWays,
   evaluateCluster,
+  evaluateAnywhere,
 };

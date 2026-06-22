@@ -924,6 +924,19 @@ button { font-family: inherit; cursor: pointer; }
   30%  { opacity: 1; transform: translate(-50%,0) scale(1.25); }
   100% { opacity: 1; transform: translate(-50%,0) scale(1); }
 }
+/* Rapid screen flicker on EVERY win — the constant-flashing casino-parody drip */
+#win-flash {
+  position: fixed; inset: 0; z-index: 174; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 50% 46%, rgba(255,240,180,0.5), transparent 62%);
+}
+#win-flash.go { animation: winflick 0.46s steps(1) 1; }
+@keyframes winflick {
+  0%{opacity:0} 12%{opacity:.75} 24%{opacity:0} 38%{opacity:.6}
+  52%{opacity:0} 66%{opacity:.45} 80%{opacity:0} 100%{opacity:0}
+}
+/* Quick brightness pop on the reel window with each win */
+#reels-window.flickwin { animation: reelflick 0.4s steps(1) 1; }
+@keyframes reelflick { 0%{filter:brightness(1)} 20%{filter:brightness(1.6)} 40%{filter:brightness(1)} 60%{filter:brightness(1.4)} 100%{filter:brightness(1)} }
 
 /* Paytable modal */
 .paytable-modal {
