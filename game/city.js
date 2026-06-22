@@ -110,6 +110,42 @@ function bizNet(lot) {
 
 function lotById(id) { return city.lots.find((l) => l.id === id) || null; }
 
+// ─── Per-business income accrual (collect each business individually) ──────
+const COLLECT_CAP_MS = 8 * 60 * 60 * 1000; // 8h offline cap per business
+const elapsedMs = (since, now) => Math.min(now - (since || now), COLLECT_CAP_MS);
+
+/** Chips `key` has accrued from one lot (operating profit if they run it, else
+ *  rent if they're the landlord letting a tenant operate). */
+function lotPending(lot, key, now = Date.now()) {
+  if (!lot.biz) return 0;
+  if (lot.biz.operator === key)
+    return Math.max(0, bizNet(lot)) * elapsedMs(lot.biz.opAt, now) / 1000;
+  if (lot.landOwner === key && lot.biz.operator && lot.biz.operator !== key)
+    return BUILDING_TYPES[lot.biz.type].rent * elapsedMs(lot.biz.rentAt, now) / 1000;
+  return 0;
+}
+
+function totalPending(key) {
+  let sum = 0;
+  for (const lot of city.lots) sum += lotPending(lot, key);
+  return sum;
+}
+
+/** Collect one business's accrued income for `key`; resets that timer. */
+function collectLot(id, key) {
+  const lot = lotById(id);
+  const now = Date.now();
+  if (!lot || !lot.biz) return err("Nichts einzusammeln.");
+  const isOp = lot.biz.operator === key;
+  const isLandlord = lot.landOwner === key && lot.biz.operator && lot.biz.operator !== key;
+  if (!isOp && !isLandlord) return err("Hier hast du kein Einkommen.");
+  const amount = Math.floor(lotPending(lot, key, now));
+  return {
+    ok: true, amount,
+    commit: () => { if (isOp) lot.biz.opAt = now; else lot.biz.rentAt = now; save(); },
+  };
+}
+
 /** Income/sec for `key`: operating profit of businesses they run + rent from land they let. */
 function ownerIncomeRate(key) {
   let rate = 0;
@@ -166,6 +202,7 @@ function publicCity(key) {
           forLease: l.biz.forLease, pnl,
         } : null,
         canBuildHere,
+        pending: round(lotPending(l, key)),
         rival: (l.landOwner && !landMine) || (l.biz && l.biz.operator && l.biz.operator !== key),
         mine: landMine || (l.biz && (l.biz.operator === key || l.biz.builtBy === key)),
       };
@@ -210,7 +247,8 @@ function build(id, key, typeId, name) {
   const t = BUILDING_TYPES[typeId];
   if (!t || !t.buildable) return err("Kann hier nicht gebaut werden.");
   return { ok: true, cost: t.cost, commit: () => {
-    lot.biz = { type: typeId, builtBy: key, builtByName: name, operator: key, operatorName: name, perf: 1, forLease: false };
+    const now = Date.now();
+    lot.biz = { type: typeId, builtBy: key, builtByName: name, operator: key, operatorName: name, perf: 1, forLease: false, opAt: now, rentAt: now };
     save();
   } };
 }
@@ -221,7 +259,9 @@ function buyBiz(id, key, name) {
   if (lot.biz.operator !== null || lot.biz.builtBy !== null) return err("Gehört schon jemandem.");
   const t = BUILDING_TYPES[lot.biz.type];
   return { ok: true, cost: t.cost, commit: () => {
-    lot.biz.builtBy = key; lot.biz.builtByName = name; lot.biz.operator = key; lot.biz.operatorName = name; save();
+    const now = Date.now();
+    lot.biz.builtBy = key; lot.biz.builtByName = name; lot.biz.operator = key; lot.biz.operatorName = name;
+    lot.biz.opAt = now; lot.biz.rentAt = now; save();
   } };
 }
 
@@ -234,7 +274,9 @@ function takeover(id, key, name) {
   const t = BUILDING_TYPES[lot.biz.type];
   const prevOwner = lot.biz.operator;
   return { ok: true, cost: Math.ceil(t.cost * BUYOUT_PREMIUM), prevOwner, commit: () => {
-    lot.biz.builtBy = key; lot.biz.builtByName = name; lot.biz.operator = key; lot.biz.operatorName = name; lot.biz.forLease = false; save();
+    const now = Date.now();
+    lot.biz.builtBy = key; lot.biz.builtByName = name; lot.biz.operator = key; lot.biz.operatorName = name; lot.biz.forLease = false;
+    lot.biz.opAt = now; lot.biz.rentAt = lot.biz.rentAt || now; save();
   } };
 }
 
@@ -252,7 +294,9 @@ function lease(id, key, name) {
   if (lot.biz.operator === key) return err("Betreibst du schon.");
   const prevOwner = lot.biz.operator; // previous operator (the builder) — settle their income
   return { ok: true, cost: 0, prevOwner, commit: () => {
-    lot.biz.operator = key; lot.biz.operatorName = name; lot.biz.forLease = false; save();
+    const now = Date.now();
+    lot.biz.operator = key; lot.biz.operatorName = name; lot.biz.forLease = false;
+    lot.biz.opAt = now; lot.biz.rentAt = now; save();
   } };
 }
 
@@ -262,4 +306,5 @@ module.exports = {
   BUILDING_TYPES,
   publicCity, ownerIncomeRate, ownerValue, casinoOwner, tickMarket,
   buyLand, sellLand, setForRent, build, buyBiz, takeover, setForLease, lease, lotById,
+  collectLot, totalPending,
 };

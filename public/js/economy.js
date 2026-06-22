@@ -101,16 +101,17 @@
     $("#biz-pending").textContent = fmt(pending) + " 🪙";
   }, 1000);
 
-  $("#biz-collect-btn").addEventListener("click", () => {
-    socket.emit("economy:collect", (res) => {
-      if (!res || !res.ok) return;
+  function collectLot(plotId) {
+    socket.emit("economy:collectLot", { plotId }, (res) => {
+      if (!res || !res.ok) { toast((res && res.error) || "Nichts einzusammeln."); return; }
       applyAccount(res.account);
-      pending = 0;
-      updateIncomePanel();
-      if (res.amount > 0) toast(`💰 +${fmt(res.amount)} 🪙 eingesammelt!`);
-      else toast("Noch nichts aufgelaufen.");
+      if (res.city) cityData = res.city;
+      renderMap();
+      renderDetail();
+      loadCity();
+      toast(res.amount > 0 ? `💰 +${fmt(res.amount)} 🪙 eingesammelt!` : "Noch nichts aufgelaufen.");
     });
-  });
+  }
 
   // ── SVG map ──────────────────────────────────────────────────────────────
   const CELL = 100, INSET = 12, LOT = CELL - INSET * 2;
@@ -153,6 +154,10 @@
       else
         parts.push(`<text x="${lx + LOT / 2}" y="${ly + LOT / 2 + 2}" text-anchor="middle" dominant-baseline="central" font-size="26" fill="rgba(255,255,255,0.4)">＋</text>`);
       parts.push(`<text x="${lx + LOT / 2}" y="${ly + LOT - 7}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.85)">${escapeHtml(String(label)).slice(0, 14)}</text>`);
+      if (lot.pending >= 1) {
+        parts.push(`<circle cx="${lx + LOT - 10}" cy="${ly + 11}" r="9" fill="#f4d782" stroke="#7a5a10" stroke-width="1.5"/>`);
+        parts.push(`<text x="${lx + LOT - 10}" y="${ly + 12}" text-anchor="middle" dominant-baseline="central" font-size="11">💰</text>`);
+      }
       parts.push(`</g>`);
     }
     svg.innerHTML = parts.join("");
@@ -183,6 +188,10 @@
     const b = lot.biz;
     const head = `<div class="cd-head">${lot.emoji || "🟩"} <b>${b ? escapeHtml(b.name) : "Leeres Grundstück"}</b></div>`;
     let body = "";
+
+    // Per-business income to collect (you must tap each one).
+    if (lot.pending >= 1)
+      body += `<button class="btn-primary cd-collect" data-act="collect">💰 ${fmt(lot.pending)} 🪙 einsammeln</button>`;
 
     // ── Grundstück (land) ──
     body += `<div class="cd-section"><div class="cd-sub">🟩 Grundstück</div>`;
@@ -245,6 +254,7 @@
     const actBtn = e.target.closest("[data-act]");
     const buildBtn = e.target.closest("[data-build]");
     if (actBtn) {
+      if (actBtn.dataset.act === "collect") { collectLot(lot.id); return; }
       const EVT = {
         buyLand: "city:buyLand", sellLand: "city:sellLand", setForRent: "city:setForRent",
         buyBiz: "city:buyBiz", takeover: "city:takeover", setForLease: "city:setForLease", lease: "city:lease",
