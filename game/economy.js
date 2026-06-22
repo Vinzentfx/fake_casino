@@ -31,26 +31,8 @@ function ensureEconomy(acc) {
 
 const clickPower = (e) => CLICK_BASE + e.clickLevel;
 
-// ─── Passive income ───────────────────────────────────────────────────────
-function pendingIncome(key, e) {
-  const rate = city.ownerIncomeRate(key);
-  const elapsed = Math.min((Date.now() - e.lastCollect) / 1000, MAX_OFFLINE_SEC);
-  return Math.floor(rate * elapsed);
-}
-
 function setupEconomy(io, accounts) {
   const acct = (s) => (s.data.account ? accounts.get(s.data.account) : null);
-
-  /** Bank a player's accrued passive income and reset their timer. Returns amount. */
-  function settleIncome(key) {
-    const acc = accounts.get(key);
-    if (!acc) return 0;
-    const e = ensureEconomy(acc);
-    const amount = pendingIncome(key, e);
-    e.lastCollect = Date.now();
-    accounts.adjustChips(key, amount); // delta 0 still persists the timer
-    return amount;
-  }
 
   /** Tell everyone the shared city changed; clients re-pull city:state. */
   function broadcastCity() {
@@ -106,16 +88,21 @@ function setupEconomy(io, accounts) {
         upgradeCost: maxed ? null : clickUpgradeCost(e.clickLevel),
         maxed,
         ratePerSec: city.ownerIncomeRate(socket.data.account),
-        pending: pendingIncome(socket.data.account, e),
+        pending: city.totalPending(socket.data.account),
       });
     });
 
-    socket.on("economy:collect", (ack) => {
+    // Collect ONE business's accrued income (you must tap each business).
+    socket.on("economy:collectLot", ({ plotId } = {}, ack) => {
       if (typeof ack !== "function") return;
       const acc = acct(socket);
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
-      const amount = settleIncome(socket.data.account);
-      ack({ ok: true, amount, account: accounts.publicAccount(accounts.get(socket.data.account)) });
+      const key = socket.data.account;
+      const r = city.collectLot(plotId, key);
+      if (!r.ok) return ack(r);
+      r.commit();
+      const res = accounts.adjustChips(key, r.amount);
+      ack({ ok: true, amount: r.amount, account: res.account, city: city.publicCity(key) });
     });
 
     // ── Shared city ───────────────────────────────────────────────────────
@@ -125,31 +112,32 @@ function setupEconomy(io, accounts) {
       ack({ ok: true, city: city.publicCity(key), casinoOwner: city.casinoOwner() });
     });
 
-    // Generic city action: settle income (so rate changes don't retro-apply),
-    // apply any chip cost (buy/build) or gain (sell), commit, broadcast.
-    function doAction(socket, ack, make) {
+    // Generic city action: validate, pay any chip cost (buy/build) or gain
+    // (sell), commit, broadcast. On a takeover/lease the previous operator's
+    // accrued income for that lot is banked to them first (so it isn't lost).
+    function doAction(socket, ack, make, plotId) {
       const acc = acct(socket);
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
       const key = socket.data.account;
       const r = make(key, acc.name);
       if (!r.ok) return ack(r);
-      settleIncome(key);
-      if (r.prevOwner && r.prevOwner !== key) settleIncome(r.prevOwner);
-      if (r.cost) {
-        if (accounts.get(key).chips < r.cost) return ack({ ok: false, error: "Nicht genug Chips." });
+      if (r.cost && accounts.get(key).chips < r.cost) return ack({ ok: false, error: "Nicht genug Chips." });
+      if (r.prevOwner && r.prevOwner !== key && plotId != null) {
+        const pc = city.collectLot(plotId, r.prevOwner); // bank their pending before they lose it
+        if (pc.ok && pc.amount > 0) { accounts.adjustChips(r.prevOwner, pc.amount); pc.commit(); }
       }
       r.commit();
-      let res = accounts.get(key);
+      let res;
       if (r.cost) res = accounts.adjustChips(key, -r.cost).account;
       else if (r.gain) res = accounts.adjustChips(key, r.gain).account;
-      else res = accounts.publicAccount(res);
+      else res = accounts.publicAccount(accounts.get(key));
       ack({ ok: true, account: res, cost: r.cost || 0, gain: r.gain || 0, city: city.publicCity(key), casinoOwner: city.casinoOwner() });
       broadcastCity();
     }
 
     const A = (fn) => ({ plotId, type, val } = {}, ack) => {
       if (typeof ack !== "function") return;
-      doAction(socket, ack, (key, name) => fn(plotId, key, name, type, val));
+      doAction(socket, ack, (key, name) => fn(plotId, key, name, type, val), plotId);
     };
     socket.on("city:buyLand",    A((id, key, name) => city.buyLand(id, key, name)));
     socket.on("city:sellLand",   A((id, key) => city.sellLand(id, key)));
