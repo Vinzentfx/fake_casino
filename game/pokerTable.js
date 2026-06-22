@@ -366,6 +366,12 @@ class PokerTable {
       if (prev && sameSeatSet(prev.eligible, eligible)) prev.amount += amount;
       else pots.push({ amount, eligible });
     }
+    // Chips committed by players who left mid-hand are no longer on any seat,
+    // so the layered pots above sum to less than this.pot. Fold that orphaned
+    // "dead money" into the main pot so it's still awarded (chip conservation).
+    const built = pots.reduce((sum, p) => sum + p.amount, 0);
+    const orphan = this.pot - built;
+    if (orphan > 0 && pots.length) pots[0].amount += orphan;
     return pots;
   }
 
