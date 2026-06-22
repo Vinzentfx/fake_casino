@@ -1201,7 +1201,8 @@
     if (result.tie) {
       detail += `<br><span class="muted">Unentschieden — Buy-ins zurückerstattet.</span>`;
     } else {
-      detail += `<br><span class="muted">−15% Gebühr (${result.rake.toLocaleString("de-DE")} 🪙)</span>`;
+      if (result.rake > 0)
+        detail += `<br><span class="muted">−15% Gebühr (${result.rake.toLocaleString("de-DE")} 🪙)</span>`;
       detail += youWon
         ? `<div class="pvp-win-msg">🎉 +${result.payout.toLocaleString("de-DE")} 🪙 gewonnen!</div>`
         : `<div class="pvp-lose-msg">Diesmal verloren.</div>`;
