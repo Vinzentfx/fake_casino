@@ -41,6 +41,8 @@ function showScreen(name) {
   if (name === "leaderboard") loadLeaderboard();
   if (name === "profile") renderProfile();
   if (name === "admin") loadAdminAccounts();
+  if (name === "work" && window.Casino._loadWork) window.Casino._loadWork();
+  if (name === "businesses" && window.Casino._loadBusinesses) window.Casino._loadBusinesses();
 
   window.scrollTo(0, 0);
 }

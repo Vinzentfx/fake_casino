@@ -110,6 +110,23 @@ function get(name) {
   return accounts[normalizeName(name)] || null;
 }
 
+// BALANCING: baseCosts kept in sync with BUSINESSES catalog in game/economy.js
+const _BIZ_BASE = { kiosk: 100, cafe: 500, imbiss: 2000, hotel: 10000, fabrik: 50000, kasino: 250000 };
+
+function _netWorth(acc) {
+  let worth = acc.chips || 0;
+  const eco = acc.economy;
+  if (!eco || !eco.businesses) return worth;
+  for (const [id, count] of Object.entries(eco.businesses)) {
+    const base = _BIZ_BASE[id];
+    if (!base || !count) continue;
+    for (let i = 0; i < count; i++) {
+      worth += Math.ceil(base * Math.pow(1.15, i));
+    }
+  }
+  return worth;
+}
+
 function publicAccount(acc) {
   if (!acc) return null;
   return {
@@ -120,6 +137,7 @@ function publicAccount(acc) {
     bonusStreak: acc.bonusStreak || 0,
     stats: acc.stats,
     unlocked: acc.unlocked || ["lucky7"],
+    netWorth: _netWorth(acc),
   };
 }
 
