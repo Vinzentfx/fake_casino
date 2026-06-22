@@ -235,24 +235,48 @@ function adjustChips(name, delta) {
   return { ok: true, account: publicAccount(acc) };
 }
 
-/** Record a hand result for stats (winnings = net chips won in a hand). */
+/** Record a hand result for stats (winnings = net chips won/lost in a single round). */
 function recordHand(name, winnings) {
   const acc = get(name);
   if (!acc) return;
-  acc.stats = acc.stats || { gamesPlayed: 0, handsWon: 0, biggestWin: 0 };
+  acc.stats = acc.stats || { gamesPlayed: 0, handsWon: 0, biggestWin: 0, biggestLoss: 0 };
+  if (acc.stats.biggestLoss === undefined) acc.stats.biggestLoss = 0;
   acc.stats.gamesPlayed += 1;
   if (winnings > 0) {
     acc.stats.handsWon += 1;
     if (winnings > acc.stats.biggestWin) acc.stats.biggestWin = winnings;
+  } else if (winnings < 0) {
+    const loss = -winnings;
+    if (loss > acc.stats.biggestLoss) acc.stats.biggestLoss = loss;
   }
   save();
 }
 
-function leaderboard(limit = 10) {
+const LEADERBOARD_CATS = {
+  rich:    { sort: (a) => a.chips,                    label: "💰 Reichste" },
+  bigwin:  { sort: (a) => (a.stats && a.stats.biggestWin) || 0,  label: "🎰 Größter Einzelgewinn" },
+  bigloss: { sort: (a) => (a.stats && a.stats.biggestLoss) || 0, label: "💸 Größter Einzelverlust" },
+  games:   { sort: (a) => (a.stats && a.stats.gamesPlayed) || 0, label: "🎲 Aktivste" },
+};
+
+/** One ranked list for a single category. */
+function leaderboardBy(cat, limit = 10) {
+  const c = LEADERBOARD_CATS[cat];
+  if (!c) return [];
   return Object.values(accounts)
-    .sort((a, b) => b.chips - a.chips)
-    .slice(0, limit)
-    .map((a) => ({ name: a.name, chips: a.chips }));
+    .map((a) => ({ name: a.name, value: c.sort(a), chips: a.chips }))
+    .filter((x) => x.value > 0 || cat === "rich")
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+/** All leaderboard categories at once (one fetch, client switches tabs). */
+function leaderboard(limit = 10) {
+  const out = {};
+  for (const cat of Object.keys(LEADERBOARD_CATS)) {
+    out[cat] = { label: LEADERBOARD_CATS[cat].label, entries: leaderboardBy(cat, limit) };
+  }
+  return out;
 }
 
 function changePin(name, oldPin, newPin) {

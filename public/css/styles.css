@@ -293,6 +293,9 @@ button { font-family: inherit; cursor: pointer; }
   min-width: 1.4em;
 }
 .leaderboard li b { color: var(--gold-strong); }
+/* Player leaderboard supplies its own rank (medals + numbers) in JS, so hide the
+   CSS counter here (the admin list still uses it). */
+#leaderboard-list li::before { content: none; }
 
 /* ---------------- Profile ---------------- */
 .profile-big { font-size: 4rem; text-align: center; }
@@ -937,6 +940,29 @@ button { font-family: inherit; cursor: pointer; }
 /* Quick brightness pop on the reel window with each win */
 #reels-window.flickwin { animation: reelflick 0.4s steps(1) 1; }
 @keyframes reelflick { 0%{filter:brightness(1)} 20%{filter:brightness(1.6)} 40%{filter:brightness(1)} 60%{filter:brightness(1.4)} 100%{filter:brightness(1)} }
+
+/* Slots auto-roll toggle */
+.auto-roll-btn {
+  margin-left: 8px; padding: 3px 9px; border-radius: 999px; cursor: pointer;
+  font-size: 0.72rem; font-weight: 800;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #cfe3d6;
+}
+.auto-roll-btn.active {
+  background: linear-gradient(135deg, #4ade80, #16a34a); color: #06210f;
+  border-color: #4ade80; box-shadow: 0 0 10px rgba(74,222,128,0.5);
+}
+
+/* Leaderboard category tabs */
+.lb-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.lb-tab {
+  flex: 1 1 auto; padding: 7px 10px; border-radius: 8px; cursor: pointer;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: #cfe3d6; font-size: 0.8rem; font-weight: 700; white-space: nowrap;
+}
+.lb-tab.active {
+  background: linear-gradient(135deg, var(--gold, #e7c66b), #c8920a);
+  color: #1a1209; border-color: var(--gold-strong, #f4d782);
+}
 
 /* Slots session strip — win/loss streak + recent-spin dots */
 .slots-session {

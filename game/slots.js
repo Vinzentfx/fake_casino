@@ -60,7 +60,7 @@ const MACHINES = [
     scatter: null,
     unlockCost: 0,
     bets: [10, 20, 50, 100, 250, 500],
-    payScale: 3.1,
+    payScale: 3.16,
     // "Pays anywhere": 3+ of the same symbol ANYWHERE on the grid wins. Tons of
     // small, frequent wins → constant flashing (the casino-parody dopamine drip).
     symbols: {
@@ -133,7 +133,7 @@ const MACHINES = [
     scatter: "S",
     unlockCost: 50000,
     bets: [100, 250, 500, 1000, 2500, 5000],
-    payScale: 1.15,
+    payScale: 1.18,
     // High volatility: small line hits pay little, but 5-of-a-kind tops are huge.
     freeSpins: { trigger: 3, count: 8, multiplier: 3 },
     symbols: {
@@ -169,7 +169,7 @@ const MACHINES = [
     scatter: "S",
     unlockCost: 200000,
     bets: [250, 500, 1000, 2500, 5000, 10000],
-    payScale: 3.8,
+    payScale: 3.9,
     freeSpins: { trigger: 4, count: 10, persistentMultiplier: true },
     symbols: {
       planet: { emoji: "🪐", weight: 24 },

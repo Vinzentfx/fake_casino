@@ -245,21 +245,20 @@ function settleAll(session, accounts) {
     }
   }
 
-  // Pay out
-  let totalWin = 0;
+  // Pay out. Track the true net (won − wagered) so biggest win/loss stats are accurate.
+  let net = 0;
   for (const hand of session.playerHands) {
     if (hand.result === "win") {
-      const payout = hand.bet * 2;
-      accounts.adjustChips(session.name, payout);
-      totalWin += hand.bet;
+      accounts.adjustChips(session.name, hand.bet * 2);
+      net += hand.bet;
     } else if (hand.result === "push") {
       accounts.adjustChips(session.name, hand.bet);
+    } else {
+      net -= hand.bet; // lose/bust: stake already taken at deal
     }
-    // lose/bust: chips already taken
   }
 
-  if (totalWin > 0) accounts.recordHand(session.name, totalWin);
-  else accounts.recordHand(session.name, 0);
+  accounts.recordHand(session.name, net);
 
   session.phase = "done";
   session.message = buildResultMessage(session.playerHands, dealerBust, dealerVal);
@@ -278,9 +277,11 @@ function resolveHand(session, accounts, outcome) {
     session.message = `🃏 Blackjack! +${Math.floor(bet * BJ_PAYOUT).toLocaleString("de-DE")} 🪙`;
   } else if (outcome === "push") {
     accounts.adjustChips(session.name, session.playerHands[0].bet);
+    accounts.recordHand(session.name, 0);
     session.playerHands[0].result = "push";
     session.message = "Unentschieden — Einsatz zurück.";
   } else if (outcome === "lose_all") {
+    accounts.recordHand(session.name, -session.playerHands[0].bet);
     session.playerHands[0].result = "lose";
     session.message = "Dealer hat Blackjack.";
   }

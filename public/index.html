@@ -299,7 +299,7 @@
             <div class="bet-display"><span class="lbl">Einsatz</span><b id="bet-amount">20</b></div>
             <button class="bet-step" id="bet-up">+</button>
           </div>
-          <div class="spin-hint">🕹️ Hebel ziehen</div>
+          <div class="spin-hint">🕹️ Hebel ziehen <button id="auto-roll" class="auto-roll-btn">🔄 Auto</button></div>
           <div class="win-display"><span class="lbl">Gewinn</span><b id="win-amount">0</b></div>
         </div>
 
@@ -427,6 +427,7 @@
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <h2>🏆 Bestenliste</h2>
+        <div class="lb-tabs" id="lb-tabs"></div>
         <ol class="leaderboard" id="leaderboard-list">
           <li class="muted">Lädt…</li>
         </ol>

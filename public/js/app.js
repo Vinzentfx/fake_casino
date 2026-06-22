@@ -189,27 +189,62 @@ async function claimRescue() {
 }
 $("#rescue-btn").addEventListener("click", claimRescue);
 
-// ---- Leaderboard ----
+// ---- Leaderboard (multi-category, tabbed) ----
+const LB_ORDER = ["rich", "bigwin", "bigloss", "games"];
+let lbData = null;
+let lbActiveCat = "rich";
+
 async function loadLeaderboard() {
   const list = $("#leaderboard-list");
   list.innerHTML = '<li class="muted">Lädt…</li>';
   try {
     const { leaderboard } = await api("/api/leaderboard");
-    if (!leaderboard.length) {
-      list.innerHTML = '<li class="muted">Noch keine Spieler.</li>';
-      return;
-    }
-    list.innerHTML = "";
-    leaderboard.forEach((p) => {
-      const li = document.createElement("li");
-      const me = state.account && p.name === state.account.name;
-      li.innerHTML = `<span>${escapeHtml(p.name)}${me ? " (du)" : ""}</span>` +
-        `<b>${p.chips.toLocaleString("de-DE")} 🪙</b>`;
-      list.appendChild(li);
-    });
+    lbData = leaderboard;
+    renderLbTabs();
+    renderLbList();
   } catch {
     list.innerHTML = '<li class="muted">Konnte Bestenliste nicht laden.</li>';
   }
+}
+
+function renderLbTabs() {
+  const tabs = $("#lb-tabs");
+  if (!tabs || !lbData) return;
+  tabs.innerHTML = "";
+  LB_ORDER.forEach((cat) => {
+    if (!lbData[cat]) return;
+    const b = document.createElement("button");
+    b.className = "lb-tab" + (cat === lbActiveCat ? " active" : "");
+    b.textContent = lbData[cat].label;
+    b.addEventListener("click", () => {
+      lbActiveCat = cat;
+      renderLbTabs();
+      renderLbList();
+    });
+    tabs.appendChild(b);
+  });
+}
+
+function renderLbList() {
+  const list = $("#leaderboard-list");
+  if (!lbData) return;
+  const cat = lbData[lbActiveCat];
+  const entries = (cat && cat.entries) || [];
+  if (!entries.length) {
+    list.innerHTML = '<li class="muted">Noch keine Einträge.</li>';
+    return;
+  }
+  const medals = ["🥇", "🥈", "🥉"];
+  list.innerHTML = "";
+  entries.forEach((p, i) => {
+    const li = document.createElement("li");
+    const me = state.account && p.name === state.account.name;
+    const rank = medals[i] || `${i + 1}.`;
+    li.innerHTML =
+      `<span>${rank} ${escapeHtml(p.name)}${me ? " (du)" : ""}</span>` +
+      `<b>${p.value.toLocaleString("de-DE")} 🪙</b>`;
+    list.appendChild(li);
+  });
 }
 
 // ---- Logout ----

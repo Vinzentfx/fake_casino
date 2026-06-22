@@ -18,6 +18,7 @@
   let betIndex = 1;
   let spinning = false;
   let freeActive = false;
+  let autoRoll = false;
   let freeWinTotal = 0;
   let cellH = 70; // measured at runtime
 
@@ -212,9 +213,15 @@
     $("#bet-down").style.display = lockBet ? "none" : "";
     $("#bet-up").style.display = lockBet ? "none" : "";
     $("#slots-back").style.display = lockBet ? "none" : "";
+    autoRoll = false;
+    const autoBtn = $("#auto-roll");
+    if (autoBtn) { autoBtn.classList.remove("active"); autoBtn.style.display = lockBet ? "none" : ""; }
     if (pvpMode) $("#machine-title").textContent = machine.name + " 🎲";
   }
   function closeMachine() {
+    autoRoll = false;
+    const ab = $("#auto-roll");
+    if (ab) ab.classList.remove("active");
     $("#slots-machine").classList.add("hidden");
     $("#slots-select").classList.remove("hidden");
     setBodyTheme(null);
@@ -420,7 +427,26 @@
         setControlsEnabled(true);
       }
     }
+
+    // Auto-Roll: queue the next spin once idle (base game only, not in PvP).
+    if (autoRoll && !pvpMode && !freeActive && !spinning) {
+      if ((window.Casino.getAccount()?.chips ?? 0) >= machine.bets[betIndex]) {
+        setTimeout(() => { if (autoRoll && !spinning && !freeActive) doSpin(); }, 850);
+      } else {
+        setAuto(false);
+        toast("Auto-Roll gestoppt — nicht genug Chips.");
+      }
+    }
   }
+
+  // Toggle continuous auto-spinning.
+  function setAuto(on) {
+    autoRoll = on && !pvpMode;
+    const btn = $("#auto-roll");
+    if (btn) btn.classList.toggle("active", autoRoll);
+    if (autoRoll && !spinning && !freeActive && !pvpMode) doSpin();
+  }
+  $("#auto-roll").addEventListener("click", () => setAuto(!autoRoll));
 
   function setControlsEnabled(on) {
     $("#bet-up").disabled = !on;
