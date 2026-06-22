@@ -615,6 +615,7 @@
   // means progressively more confetti, shake and strobe (escalating dopamine).
   function comboEscalate(n, show) {
     if (show && n >= 1) showCombo(n);
+    if (n >= 1) confettiBurst(14 + n * 8);   // even the first win pops
     if (n >= 2) { confettiBurst(28 + n * 26); zoomPunch(); }
     if (n >= 3) casinoStrobe();
     if (n >= 4) hypeWords(Math.min(8, n));
@@ -687,6 +688,7 @@
   async function addWin(positions, delta) {
     if (delta <= 0) return;
     sndWin();
+    flicker(); // every win flashes
     // Burst the winning symbol out of the hit cells — bigger win, bigger burst.
     const center = cellsCentroid(positions);
     const firstCell = positions[0] && cellEl(positions[0][0], positions[0][1]);
@@ -869,6 +871,26 @@
     el.classList.remove("go");
     void el.offsetWidth; // reflow
     el.classList.add("go");
+  }
+
+  // A rapid screen + reel flicker fired on EVERY win — constant flashing.
+  function flicker() {
+    let el = document.getElementById("win-flash");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "win-flash";
+      document.body.appendChild(el);
+    }
+    el.classList.remove("go");
+    void el.offsetWidth;
+    el.classList.add("go");
+    const win = $("#reels-window");
+    if (win) {
+      win.classList.remove("flickwin");
+      void win.offsetWidth;
+      win.classList.add("flickwin");
+      setTimeout(() => win.classList.remove("flickwin"), 420);
+    }
   }
 
   const HYPE = ["BOOM!", "WOW!", "UNGLAUBLICH!", "KRASS!", "LETS GOOO!", "🤑", "BIG MONEY!",
@@ -1244,15 +1266,20 @@
         rows.push(`<div class="pt-row"><span class="pt-sym">${machine.emojis[sym]}</span><div class="pt-vals">${parts}</div></div>`);
       }
     } else {
-      const label = machine.mode === "ways" ? "pro Way" : "pro Linie";
+      const anywhere = machine.mode === "anywhere";
+      const label = machine.mode === "ways" ? "pro Way" : anywhere ? "irgendwo auf dem Feld" : "pro Linie";
       rows.push(`<p class="pt-note">Auszahlung in 🪙 bei Einsatz <b>${bet}</b> (${label}). Wild ${machine.emojis[machine.wild]} ersetzt alle außer Scatter.</p>`);
       const syms = Object.keys(machine.pays).sort(
         (a, b) => coins(topVal(machine.pays[b])) - coins(topVal(machine.pays[a]))
       );
       for (const sym of syms) {
         const table = machine.pays[sym];
-        const parts = Object.keys(table).map(Number).sort((a, b) => a - b)
-          .map((n) => `<span class="pt-cnt">${n}×</span> ${coins(table[n]).toLocaleString("de-DE")}`).join("");
+        const cnts = Object.keys(table).map(Number).sort((a, b) => a - b);
+        const parts = cnts.map((n) => {
+          // "anywhere" pays use thresholds (3+, 4+, …); lines/ways use exact counts.
+          const suffix = anywhere ? "+" : "×";
+          return `<span class="pt-cnt">${n}${suffix}</span> ${coins(table[n]).toLocaleString("de-DE")}`;
+        }).join("");
         rows.push(`<div class="pt-row"><span class="pt-sym">${machine.emojis[sym]}</span><div class="pt-vals">${parts}</div></div>`);
       }
     }
