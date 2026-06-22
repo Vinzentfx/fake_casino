@@ -151,13 +151,21 @@ function setupEconomy(io, accounts) {
       if (typeof ack !== "function") return;
       doBuy(socket, ack, (key, name) => city.build(plotId, key, type, name));
     });
-    socket.on("city:buyout", ({ plotId } = {}, ack) => {
+    socket.on("city:buyBiz", ({ plotId } = {}, ack) => {
       if (typeof ack !== "function") return;
-      doBuy(socket, ack, (key, name) => city.buyout(plotId, key, name));
+      doBuy(socket, ack, (key, name) => city.buyBiz(plotId, key, name));
+    });
+    socket.on("city:takeover", ({ plotId } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      doBuy(socket, ack, (key, name) => city.takeover(plotId, key, name));
     });
 
     socket.on("disconnect", () => clickTimes.delete(socket.id));
   });
+
+  // Market life: every 15s nudge each business's performance and let open
+  // city screens refresh, so income figures visibly move instead of sitting flat.
+  setInterval(() => { city.tickMarket(); io.emit("city:update"); }, 15000);
 }
 
 module.exports = { setupEconomy };
