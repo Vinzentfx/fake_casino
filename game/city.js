@@ -27,13 +27,16 @@ const crypto = require("crypto");
 const DATA_DIR = path.join(__dirname, "..", "data");
 const CITY_FILE = path.join(DATA_DIR, "city.json");
 
+// Balanced so efficiency (income/cost) rises with tier (progression rewarded)
+// and rent stays roughly flat ≈ land-based (uniform landlord ROI, ~13–37 min,
+// meaningful for small businesses, negligible for big ones — realistic).
 const BUILDING_TYPES = {
-  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 600,     gross: 3,    wages: 0.8,  rent: 0.6,  tax: 0.12, buildable: true },
-  cafe:    { name: "Café",    emoji: "☕", cost: 3000,    gross: 14,   wages: 4.5,  rent: 2.5,  tax: 0.14, buildable: true },
-  shop:    { name: "Laden",   emoji: "🛍️", cost: 12000,   gross: 48,   wages: 15,   rent: 8,    tax: 0.15, buildable: true },
-  hotel:   { name: "Hotel",   emoji: "🏨", cost: 45000,   gross: 160,  wages: 52,   rent: 26,   tax: 0.16, buildable: true },
-  factory: { name: "Fabrik",  emoji: "🏭", cost: 160000,  gross: 700,  wages: 200,  rent: 95,   tax: 0.15, buildable: true },
-  casino:  { name: "Casino",  emoji: "🎰", cost: 1000000, gross: 6000, wages: 1800, rent: 0,    tax: 0.10, buildable: false, unique: true },
+  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 600,     gross: 2.5,  wages: 0.75, rent: 0.9, tax: 0.12, buildable: true },
+  cafe:    { name: "Café",    emoji: "☕", cost: 3000,    gross: 13.5, wages: 4,    rent: 1.1, tax: 0.13, buildable: true },
+  shop:    { name: "Laden",   emoji: "🛍️", cost: 12000,   gross: 60,   wages: 18,   rent: 1.4, tax: 0.14, buildable: true },
+  hotel:   { name: "Hotel",   emoji: "🏨", cost: 45000,   gross: 250,  wages: 75,   rent: 1.8, tax: 0.15, buildable: true },
+  factory: { name: "Fabrik",  emoji: "🏭", cost: 160000,  gross: 1000, wages: 300,  rent: 2.5, tax: 0.17, buildable: true },
+  casino:  { name: "Casino",  emoji: "🎰", cost: 1000000, gross: 6200, wages: 1860, rent: 0,   tax: 0.10, buildable: false, unique: true },
 };
 
 const BASE_LAND = 2000;        // base land value at market index 1.0
