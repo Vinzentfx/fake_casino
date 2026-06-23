@@ -110,12 +110,15 @@ function get(name) {
   return accounts[normalizeName(name)] || null;
 }
 
-// Net worth = liquid chips + value of everything owned in the shared city.
+// Net worth = liquid chips + value of everything owned in the shared city
+// minus any outstanding loan (a liability).
 const city = require("./city");
+const bank = require("./bank");
 
 function _netWorth(acc) {
   const worth = acc.chips || 0;
-  return worth + city.ownerValue(normalizeName(acc.name));
+  const debt = acc.loan ? bank.loanOwed(acc.loan) : 0;
+  return worth + city.ownerValue(normalizeName(acc.name)) - debt;
 }
 
 function publicAccount(acc) {
