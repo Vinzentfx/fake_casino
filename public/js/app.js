@@ -97,11 +97,36 @@ socket.on("account:update", ({ account }) => {
 
 const RESCUE_THRESHOLD = 50; // mirror of server; controls when the help button shows
 
+// Active product buffs shown in the topbar.
+const BUFF_META = {
+  fastSpins:  { icon: "⚡", label: "2× Spins" },
+  clickBoost: { icon: "☕", label: "×5 Arbeit" },
+  winBoost:   { icon: "🍀", label: "+Gewinn" },
+  vip:        { icon: "🎟️", label: "VIP" },
+};
+function renderBuffs() {
+  const el = $("#buff-strip");
+  if (!el) return;
+  const buffs = (state.account && state.account.buffs) || {};
+  const now = Date.now();
+  const items = Object.entries(buffs)
+    .filter(([, b]) => b.until > now)
+    .map(([type, b]) => {
+      const m = BUFF_META[type] || { icon: "✨", label: type };
+      const mins = Math.ceil((b.until - now) / 60000);
+      const lbl = type === "winBoost" ? `+${Math.round((b.mult - 1) * 100)}%` : m.label;
+      return `<span class="buff-chip" title="${m.label}">${m.icon} ${lbl} <small>${mins}m</small></span>`;
+    });
+  el.innerHTML = items.join("");
+}
+setInterval(renderBuffs, 5000); // keep countdowns fresh
+
 function renderTopbar() {
   const acc = state.account;
   if (!acc) return;
   $("#balance-amount").textContent = acc.chips.toLocaleString("de-DE");
   $("#player-name").textContent = acc.name;
+  renderBuffs();
   // Pleite-Schutz: offer the help button only when nearly broke.
   const rescueBtn = $("#rescue-btn");
   if (rescueBtn) rescueBtn.style.display = acc.chips < RESCUE_THRESHOLD ? "" : "none";

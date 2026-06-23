@@ -12,6 +12,12 @@
   const { socket, toast } = window.Casino;
   const $ = (s) => document.querySelector(s);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // 🍋 Zitrone buff: spins twice as fast (animation durations halved).
+  function spinSpeed() {
+    const a = window.Casino.getAccount();
+    const b = a && a.buffs && a.buffs.fastSpins;
+    return b && b.until > Date.now() ? 1 / (b.mult || 2) : 1;
+  }
 
   let machines = [];
   let machine = null;
@@ -371,7 +377,7 @@
     // Occasionally taunt the player with a fake "luck" popup (parody).
     if (!wasFree && !pvpMode && Math.random() < 0.13) luckPopup();
 
-    const totalSpinMs = 850 + (machine.cols - 1) * 230 + 250;
+    const totalSpinMs = (850 + (machine.cols - 1) * 230 + 250) * spinSpeed();
     sndLever();
     const stopRatchet = startRatchet(totalSpinMs);
     startRoll();
@@ -487,7 +493,7 @@
       strip.style.transform = `translateY(${-spin * cellH}px)`;
       strip.getBoundingClientRect(); // reflow
 
-      const dur = 850 + c * 230;
+      const dur = (850 + c * 230) * spinSpeed();
       strip.style.transition = `transform ${dur}ms cubic-bezier(0.16, 0.78, 0.24, 1)`;
       strip.style.transform = "translateY(0)";
 

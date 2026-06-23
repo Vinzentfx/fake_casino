@@ -56,7 +56,7 @@ function setupEconomy(io, accounts) {
       times.push(now); clickTimes.set(socket.id, times);
 
       const e = ensureEconomy(acc);
-      const earned = clickPower(e);
+      const earned = Math.round(clickPower(e) * accounts.buffMult(socket.data.account, "clickBoost")); // Espresso boost
       const res = accounts.adjustChips(socket.data.account, earned);
       ack({ ok: res.ok, account: res.account, earned });
     });
@@ -88,7 +88,7 @@ function setupEconomy(io, accounts) {
         maxClickLevel: MAX_CLICK_LEVEL,
         upgradeCost: maxed ? null : clickUpgradeCost(e.clickLevel),
         maxed,
-        ratePerSec: city.ownerIncomeRate(socket.data.account),
+        ratePerMin: city.ownerIncomeRate(socket.data.account),
         pending: city.totalPending(socket.data.account),
       });
     });
@@ -148,6 +148,22 @@ function setupEconomy(io, accounts) {
     socket.on("city:takeover",   A((id, key, name) => city.takeover(id, key, name)));
     socket.on("city:setForLease",A((id, key, name, type, val) => city.setForLease(id, key, val)));
     socket.on("city:lease",      A((id, key, name) => city.lease(id, key, name)));
+
+    // Buy a business's product → grants a buff. Buyer pays (discount if it's their
+    // own business); a rival's purchase pays the operator.
+    socket.on("city:buyProduct", ({ plotId } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const key = socket.data.account;
+      const r = city.buyProduct(plotId, key);
+      if (!r.ok) return ack(r);
+      if (acc.chips < r.cost) return ack({ ok: false, error: "Nicht genug Chips." });
+      const res = accounts.adjustChips(key, -r.cost);
+      if (r.seller && r.seller !== key) accounts.adjustChips(r.seller, r.cost); // pay the operator
+      accounts.grantBuff(key, r.product.buff, r.product.mins, r.product.mult);
+      ack({ ok: true, cost: r.cost, product: r.product, account: accounts.publicAccount(accounts.get(key)) });
+    });
 
     // List one of your built companies on the stock market (IPO): raise capital
     // now, and it starts trading for everyone.

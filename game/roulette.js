@@ -75,6 +75,10 @@ function setupRoulette(io, accounts) {
         return { ...b, factor, ret };
       });
 
+      // Glücksklee / Goldbarren: boost winnings on a win.
+      const boost = accounts.buffMult(socket.data.account, "winBoost");
+      if (boost > 1 && totalReturn > 0) totalReturn = Math.round(totalReturn * boost);
+
       if (totalReturn > 0) {
         accounts.adjustChips(socket.data.account, totalReturn);
       }
