@@ -23,6 +23,7 @@ const { setupBlackjack } = require("./game/blackjack");
 const { setupRoulette } = require("./game/roulette");
 const { setupEconomy } = require("./game/economy");
 const { setupBank } = require("./game/bank");
+const { setupStocks } = require("./game/stocks");
 
 const PORT = process.env.PORT || 3000;
 
@@ -88,6 +89,7 @@ setupBlackjack(io, accounts);
 setupRoulette(io, accounts);
 setupEconomy(io, accounts);
 setupBank(io, accounts);
+setupStocks(io, accounts);
 
 // Chip-Transfer zwischen Spielern (socket-auth required)
 io.on("connection", (socket) => {

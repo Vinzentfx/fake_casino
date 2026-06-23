@@ -96,6 +96,11 @@
             <span class="tile-name">Bank</span>
             <span class="tile-sub">Kredite & Zinsen</span>
           </button>
+          <button class="game-tile" data-nav="stocks">
+            <span class="tile-icon">📈</span>
+            <span class="tile-name">Börse</span>
+            <span class="tile-sub">Aktien · Long / Short</span>
+          </button>
         </div>
 
         <h2 class="section-title">Mehr</h2>
@@ -597,6 +602,28 @@
       </div>
     </section>
 
+    <!-- ===================== BÖRSE (Aktien) ===================== -->
+    <section class="screen" data-screen="stocks">
+      <div class="biz-wrap" style="max-width:620px;margin:0 auto;padding:12px">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center">
+          <div class="ph-icon">📈</div>
+          <h2>Börse</h2>
+          <p class="muted small">Long oder Short mit Hebel. Vorsicht: Aktien können insolvent gehen — dann ist alles weg.</p>
+        </div>
+
+        <div class="stk-news" id="stk-news"></div>
+        <div class="stk-list" id="stk-list"></div>
+
+        <div class="stk-trade hidden" id="stk-trade"></div>
+
+        <h3 style="margin:16px 0 6px">📂 Dein Portfolio</h3>
+        <div class="stk-portfolio" id="stk-portfolio">
+          <p class="muted small">Keine offenen Positionen.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- ===================== ADMIN (nur Vincent) ===================== -->
     <section class="screen" data-screen="admin">
       <div class="panel">
@@ -642,5 +669,6 @@
   <script src="/js/roulette.js"></script>
   <script src="/js/economy.js"></script>
   <script src="/js/bank.js"></script>
+  <script src="/js/stocks.js"></script>
 </body>
 </html>
