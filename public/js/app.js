@@ -376,6 +376,33 @@ function loadAdminAccounts() {
       list.appendChild(li);
     });
   });
+  loadAdminLots();
+}
+
+function loadAdminLots() {
+  const list = $("#admin-lot-list");
+  if (!list) return;
+  list.innerHTML = '<li class="muted">Lädt…</li>';
+  socket.emit("admin:cityLots", (res) => {
+    if (!res || !res.ok) { list.innerHTML = '<li class="muted">Fehler.</li>'; return; }
+    if (!res.lots.length) { list.innerHTML = '<li class="muted">Keine Gebäude im Besitz.</li>'; return; }
+    list.innerHTML = "";
+    res.lots.forEach((l) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span>${l.emoji} ${escapeHtml(l.name)} — ${l.owner ? escapeHtml(l.owner) : "?"}</span>`;
+      const btn = document.createElement("button");
+      btn.className = "btn-danger";
+      btn.textContent = "Freigeben";
+      btn.addEventListener("click", () => {
+        socket.emit("admin:clearLot", { plotId: l.id }, (r) => {
+          if (r && r.ok) { toast("Gebäude freigegeben."); loadAdminLots(); }
+          else toast((r && r.error) || "Fehler.");
+        });
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  });
 }
 
 $("#admin-set-chips-btn").addEventListener("click", () => {
