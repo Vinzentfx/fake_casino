@@ -160,6 +160,27 @@ function hasBuff(name, type) {
   return !!(b && b.until > Date.now());
 }
 
+// ─── Inventory (product items you can use or resell) ────────────────────────
+function getInventory(name) {
+  const acc = get(name);
+  return (acc && acc.inventory) || {};
+}
+function addItem(name, key, n = 1) {
+  const acc = get(name);
+  if (!acc) return;
+  acc.inventory = acc.inventory || {};
+  acc.inventory[key] = (acc.inventory[key] || 0) + n;
+  save();
+}
+function removeItem(name, key, n = 1) {
+  const acc = get(name);
+  if (!acc || !acc.inventory || (acc.inventory[key] || 0) < n) return false;
+  acc.inventory[key] -= n;
+  if (acc.inventory[key] <= 0) delete acc.inventory[key];
+  save();
+  return true;
+}
+
 function publicAccount(acc) {
   if (!acc) return null;
   return {
@@ -462,4 +483,7 @@ module.exports = {
   buffMult,
   hasBuff,
   activeBuffs,
+  getInventory,
+  addItem,
+  removeItem,
 };

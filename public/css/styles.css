@@ -993,6 +993,24 @@ button { font-family: inherit; cursor: pointer; }
   background: rgba(74,222,128,0.16); border: 1px solid #4ade80; color: #bff5d0;
 }
 .buff-chip small { opacity: 0.75; font-weight: 600; }
+
+/* Marktplatz */
+.mkt-item, .mkt-offer {
+  background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 12px; margin-bottom: 8px;
+}
+.mkt-item-head { font-size: 0.95rem; margin-bottom: 8px; }
+.mkt-item-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.mkt-item-actions .btn-primary { flex: 0 0 auto; }
+.mkt-sell { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+.mkt-price { width: 90px; padding: 7px; border-radius: 8px; }
+.mkt-list, .mkt-buy, .mkt-unlist {
+  padding: 7px 12px; border-radius: 8px; cursor: pointer; font-weight: 700;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #cfe3d6;
+}
+.mkt-buy { background: linear-gradient(135deg, #4ade80, #16a34a); color: #06210f; border: none; }
+.mkt-offer { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mkt-offer-buy { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
 .cd-toggle {
   width: 100%; margin-top: 8px; padding: 9px; border-radius: 10px; cursor: pointer;
   font-weight: 700; font-size: 0.85rem;
