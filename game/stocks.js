@@ -192,7 +192,7 @@ function open(key, sym, dir, margin, lev) {
   if (!s || s.bankrupt) return { ok: false, error: "Aktie nicht handelbar." };
   margin = Math.floor(Number(margin));
   lev = Math.floor(Number(lev));
-  if (!Number.isFinite(margin) || margin < 10) return { ok: false, error: "Mindest-Einsatz 10 🪙." };
+  if (!Number.isFinite(margin) || margin < 1000) return { ok: false, error: "Mindest-Einsatz 1.000 🪙." };
   if (!Number.isFinite(lev) || lev < 1 || lev > MAX_LEVERAGE) return { ok: false, error: `Hebel 1–${MAX_LEVERAGE}.` };
   dir = dir < 0 ? -1 : 1;
   const shares = (margin * lev) / s.price;

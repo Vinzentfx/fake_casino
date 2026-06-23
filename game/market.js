@@ -18,7 +18,8 @@ const FILE = path.join(DATA_DIR, "market.json");
 
 // Product metadata keyed by item key (from the city building catalog).
 const PRODUCTS = {};
-for (const t of Object.values(city.BUILDING_TYPES)) if (t.product) PRODUCTS[t.product.key] = t.product;
+for (const t of Object.values(city.BUILDING_TYPES))
+  if (t.products) for (const p of t.products) PRODUCTS[p.key] = p;
 
 let store = load();
 function load() {

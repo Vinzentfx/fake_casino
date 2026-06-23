@@ -985,7 +985,9 @@ button { font-family: inherit; cursor: pointer; }
 .cd-pnl .pos { color: #4ade80; }
 .cd-pnl .neg { color: #f0a0a0; }
 .cd-product { margin-top: 10px; padding: 10px; border-radius: 10px; background: rgba(126,200,255,0.1); border: 1px solid rgba(126,200,255,0.3); }
-.cd-prod-head { font-size: 0.85rem; margin-bottom: 8px; }
+.cd-prod-head { font-size: 0.85rem; margin-bottom: 8px; font-weight: 800; }
+.cd-prodbtn { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; margin-bottom: 6px; text-align: left; }
+.cd-prodbtn small { font-weight: 600; font-size: 0.68rem; opacity: 0.8; }
 /* Active-buff strip in the topbar */
 .buff-strip { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; justify-content: center; }
 .buff-chip {
@@ -1044,7 +1046,17 @@ button { font-family: inherit; cursor: pointer; }
 .stk-px .up, .stk-pos-pnl.up { color: #4ade80; }
 .stk-px .down, .stk-pos-pnl.down { color: #f0707a; }
 
-.stk-trade { margin: 12px 0; padding: 12px; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1); }
+.stk-trade { margin: 12px 0; padding: 12px; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1); position: relative; }
+.stk-detclose { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #cfe3d6; opacity: 0.6; cursor: pointer; font-size: 0.85rem; }
+.stk-detprice { font-size: 1.4rem; font-weight: 900; margin: 2px 0 8px; }
+.stk-detprice .up { color: #4ade80; font-size: 0.9rem; } .stk-detprice .down { color: #f0707a; font-size: 0.9rem; }
+.stk-bigchart { width: 100%; height: 130px; display: block; background: rgba(0,0,0,0.25); border-radius: 8px; margin-bottom: 10px; }
+.stk-bigchart-empty { text-align: center; padding: 30px; }
+.stk-axis { fill: rgba(255,255,255,0.45); font-size: 8px; }
+.stk-detpos-wrap { margin-bottom: 10px; }
+.stk-detpos { display: flex; align-items: center; gap: 8px; justify-content: space-between; padding: 6px 0; border-top: 1px solid rgba(255,255,255,0.08); }
+.stk-detpos .stk-close { display: flex; flex-direction: column; align-items: center; padding: 6px 10px; border-radius: 8px; cursor: pointer; background: linear-gradient(135deg,#ff8a5c,#e0563b); border: none; color: #2a1206; font-weight: 800; font-size: 0.8rem; }
+.stk-detpos .stk-close small { font-weight: 600; opacity: 0.8; }
 .stk-trade.hidden { display: none; }
 .stk-trade-head { font-weight: 700; margin-bottom: 6px; }
 .stk-lev-row { display: flex; align-items: center; gap: 6px; margin: 10px 0; }

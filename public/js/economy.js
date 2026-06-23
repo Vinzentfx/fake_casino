@@ -219,10 +219,12 @@
       body += `<div class="cd-net"><span>= Gewinn</span><b class="${p.net >= 0 ? "pos" : "neg"}">${fmt(p.net)} 🪙/Min</b></div>`;
       body += `</div>`;
       // Product / buff this business sells.
-      if (b.product) {
-        const pr = b.product;
-        body += `<div class="cd-product"><div class="cd-prod-head">${pr.emoji} <b>${escapeHtml(pr.name)}</b> — ${escapeHtml(pr.desc)} (${pr.mins} Min)</div>`;
-        body += `<button class="btn-primary cd-btn" data-act="buyProduct">${pr.emoji} Kaufen — ${fmt(pr.payPrice)} 🪙${pr.owned ? " (dein Rabatt)" : ""}</button></div>`;
+      if (b.products && b.products.length) {
+        body += `<div class="cd-product"><div class="cd-prod-head">🛒 Produkte${b.products[0].owned ? " (dein Rabatt)" : ""}:</div>`;
+        for (const pr of b.products) {
+          body += `<button class="btn-primary cd-btn cd-prodbtn" data-act="buyProduct" data-pkey="${pr.key}">${pr.emoji} ${escapeHtml(pr.name)} — ${fmt(pr.payPrice)} 🪙<small>${escapeHtml(pr.desc)} · ${pr.mins} Min</small></button>`;
+        }
+        body += `</div>`;
       }
       const t = cityData.buildingTypes[b.type];
       if (b.operator === null && b.builtBy === null) {
@@ -265,7 +267,7 @@
     const buildBtn = e.target.closest("[data-build]");
     if (actBtn) {
       if (actBtn.dataset.act === "collect") { collectLot(lot.id); return; }
-      if (actBtn.dataset.act === "buyProduct") { buyProduct(lot.id); return; }
+      if (actBtn.dataset.act === "buyProduct") { buyProduct(lot.id, actBtn.dataset.pkey); return; }
       const EVT = {
         buyLand: "city:buyLand", sellLand: "city:sellLand", setForRent: "city:setForRent",
         buyBiz: "city:buyBiz", takeover: "city:takeover", setForLease: "city:setForLease",
@@ -278,13 +280,13 @@
     }
   });
 
-  function buyProduct(plotId) {
-    socket.emit("city:buyProduct", { plotId }, (res) => {
+  function buyProduct(plotId, productKey) {
+    socket.emit("city:buyProduct", { plotId, productKey }, (res) => {
       if (!res || !res.ok) { toast((res && res.error) || "Kauf fehlgeschlagen."); return; }
       applyAccount(res.account);
       renderDetail();
       const pr = res.product;
-      toast(`${pr.emoji} ${pr.name} aktiv: ${pr.desc} (${pr.mins} Min)!`);
+      toast(`${pr.emoji} ${pr.name} gekauft — im Inventar (🛒 Markt)!`);
     });
   }
 

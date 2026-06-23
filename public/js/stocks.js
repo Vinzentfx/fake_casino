@@ -82,9 +82,24 @@
     const levBtns = [];
     for (let i = 1; i <= data.maxLeverage; i++)
       levBtns.push(`<button class="stk-lev ${lev === i ? "on" : ""}" data-lev="${i}">${i}×</button>`);
+    const cls = s.changePct > 0 ? "up" : s.changePct < 0 ? "down" : "";
+    const arrow = s.changePct > 0 ? "▲" : s.changePct < 0 ? "▼" : "•";
+    // Your open positions in THIS stock (sell them right here).
+    const mine = (data.positions || []).filter((p) => p.sym === s.sym);
+    const posHtml = mine.map((p) => `
+      <div class="stk-detpos">
+        <span>${p.dir > 0 ? "📈 Long" : "📉 Short"} ${p.lev}× <span class="muted small">@${fmt(p.entry)}</span></span>
+        <b class="${p.pnl >= 0 ? "up" : "down"}">${p.pnl >= 0 ? "+" : ""}${fmt(p.pnl)} 🪙</b>
+        <button class="stk-close" data-id="${p.id}">Verkaufen<small>${fmt(p.equity)} 🪙</small></button>
+      </div>`).join("");
+
     el.innerHTML = `
-      <div class="stk-trade-head">${escapeHtml(s.name)} <b>(${s.sym})</b> — ${fmt(s.price)} 🪙</div>
-      <label class="bank-input-row"><span>Einsatz (Margin)</span><input id="stk-margin" type="number" min="10" value="1000"/></label>
+      <button class="stk-detclose" id="stk-detclose">✕ Schließen</button>
+      <div class="stk-trade-head">${escapeHtml(s.name)} <b>(${s.sym})</b></div>
+      <div class="stk-detprice"><b>${fmt(s.price)} 🪙</b> <span class="${cls}">${arrow} ${fmt(Math.abs(s.changePct))}%</span></div>
+      ${bigChart(s.history)}
+      ${mine.length ? `<div class="stk-detpos-wrap"><div class="muted small">Deine Positionen:</div>${posHtml}</div>` : ""}
+      <label class="bank-input-row"><span>Einsatz (Margin)</span><input id="stk-margin" type="number" min="1000" value="5000"/></label>
       <div class="stk-lev-row"><span class="muted small">Hebel</span>${levBtns.join("")}</div>
       <div class="stk-actions">
         <button class="stk-long" id="stk-long">📈 Long (steigt)</button>
@@ -92,8 +107,31 @@
       </div>`;
     el.querySelectorAll(".stk-lev").forEach((b) =>
       b.addEventListener("click", () => { lev = +b.dataset.lev; renderTrade(); }));
+    el.querySelectorAll(".stk-close").forEach((b) =>
+      b.addEventListener("click", () => closePos(b.dataset.id)));
+    $("#stk-detclose").addEventListener("click", () => { selected = null; render(); });
     $("#stk-long").addEventListener("click", () => openPos(1));
     $("#stk-short").addEventListener("click", () => openPos(-1));
+  }
+
+  // Large detail chart with a baseline and min/max labels.
+  function bigChart(history) {
+    if (!history || history.length < 2) return '<div class="stk-bigchart-empty muted small">Noch kein Verlauf.</div>';
+    const w = 320, h = 120, pad = 4;
+    const min = Math.min(...history), max = Math.max(...history);
+    const range = max - min || 1;
+    const X = (i) => pad + (i / (history.length - 1)) * (w - 2 * pad);
+    const Y = (v) => pad + (1 - (v - min) / range) * (h - 2 * pad);
+    const pts = history.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+    const up = history[history.length - 1] >= history[0];
+    const col = up ? "#4ade80" : "#f0707a";
+    const area = `${X(0)},${h - pad} ${pts} ${X(history.length - 1)},${h - pad}`;
+    return `<svg class="stk-bigchart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <polygon points="${area}" fill="${col}" opacity="0.12"/>
+      <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2"/>
+      <text x="${pad}" y="11" class="stk-axis">${fmt(max)}</text>
+      <text x="${pad}" y="${h - 4}" class="stk-axis">${fmt(min)}</text>
+    </svg>`;
   }
 
   function openPos(dir) {
