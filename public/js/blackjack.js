@@ -166,7 +166,7 @@
   }
 
   // ---- Bet controls ----
-  const BET_STEPS = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000];
+  const BET_STEPS = [50, 100, 500, 1000, 5000, 10000, 25000, 100000, 250000, 500000, 1000000, 2000000];
   function stepBet(dir) {
     const idx = BET_STEPS.findIndex(v => v >= betAmount);
     let next;
@@ -185,10 +185,10 @@
     const bar = $("bj-chip-bar");
     if (!bar || chipsSetup) return;
     chipsSetup = true;
-    [10, 50, 100, 500, 1000, 5000].forEach(v => {
+    [100, 1000, 10000, 50000, 250000, 1000000].forEach(v => {
       const btn = document.createElement("button");
       btn.className = "bj-chip-btn";
-      btn.textContent = v >= 1000 ? (v/1000) + "k" : v;
+      btn.textContent = v >= 1e6 ? (v/1e6) + "M" : v >= 1000 ? (v/1000) + "k" : v;
       btn.addEventListener("click", () => {
         betAmount = v;
         const bd = $("bj-bet-display");

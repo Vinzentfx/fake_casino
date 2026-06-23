@@ -26,8 +26,8 @@ function payoutFactor(type, value, number) {
 }
 
 const VALID_TYPES = new Set(["number","red","black","odd","even","low","high","dozen","column"]);
-const MIN_BET = 10;
-const MAX_TOTAL = 500000;
+const MIN_BET = 50;
+const MAX_TOTAL = 100000000;
 
 function setupRoulette(io, accounts) {
   io.on("connection", (socket) => {
