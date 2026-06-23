@@ -27,23 +27,30 @@ const crypto = require("crypto");
 const DATA_DIR = path.join(__dirname, "..", "data");
 const CITY_FILE = path.join(DATA_DIR, "city.json");
 
-// Balanced so efficiency (income/cost) rises with tier (progression rewarded)
-// and rent stays roughly flat ≈ land-based (uniform landlord ROI, ~13–37 min,
-// meaningful for small businesses, negligible for big ones — realistic).
+// Each building yields chunky income PER MINUTE and (the real reason to own it)
+// produces a PRODUCT that grants a gameplay buff. Others buy the product from the
+// operator (revenue to them); the operator buys it at OWNER_DISCOUNT. Buildings
+// are deliberately expensive (~40-min income payback) — the buff/product economy
+// is the point, not the trickle of passive income.
 const BUILDING_TYPES = {
-  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 600,     gross: 2.5,  wages: 0.75, rent: 0.9, tax: 0.12, buildable: true },
-  cafe:    { name: "Café",    emoji: "☕", cost: 3000,    gross: 13.5, wages: 4,    rent: 1.1, tax: 0.13, buildable: true },
-  shop:    { name: "Laden",   emoji: "🛍️", cost: 12000,   gross: 60,   wages: 18,   rent: 1.4, tax: 0.14, buildable: true },
-  hotel:   { name: "Hotel",   emoji: "🏨", cost: 45000,   gross: 250,  wages: 75,   rent: 1.8, tax: 0.15, buildable: true },
-  factory: { name: "Fabrik",  emoji: "🏭", cost: 160000,  gross: 1000, wages: 300,  rent: 2.5, tax: 0.17, buildable: true },
-  casino:  { name: "Casino",  emoji: "🎰", cost: 1000000, gross: 6200, wages: 1860, rent: 0,   tax: 0.10, buildable: false, unique: true },
-  // The Bank earns passive "NPC lending" income via this P&L (volatile = default
-  // risk) AND collects the interest from every player loan (see game/bank.js), so
-  // its base income sits a bit under the casino's — the loan interest is the upside.
-  bank:    { name: "Bank",    emoji: "🏦", cost: 500000,  gross: 2400, wages: 660,  rent: 0,   tax: 0.10, buildable: false, unique: true },
+  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 5000,      income: 120,    rent: 40,    buildable: true,
+             product: { key: "zitrone",  name: "Zitrone",     emoji: "🍋", price: 2500,   buff: "fastSpins",  mult: 2,    mins: 10, desc: "Slots drehen 2× schneller" } },
+  cafe:    { name: "Café",    emoji: "☕", cost: 25000,     income: 600,    rent: 120,   buildable: true,
+             product: { key: "espresso", name: "Espresso",    emoji: "☕", price: 4000,   buff: "clickBoost", mult: 5,    mins: 10, desc: "Arbeiten bringt 5× Chips" } },
+  shop:    { name: "Laden",   emoji: "🛍️", cost: 120000,    income: 3000,   rent: 400,   buildable: true,
+             product: { key: "klee",     name: "Glücksklee",  emoji: "🍀", price: 12000,  buff: "winBoost",   mult: 1.2,  mins: 10, desc: "Haus-Gewinne +20 %" } },
+  hotel:   { name: "Hotel",   emoji: "🏨", cost: 600000,    income: 15000,  rent: 1500,  buildable: true,
+             product: { key: "vip",      name: "VIP-Pass",    emoji: "🎟️", price: 40000,  buff: "vip",        mult: 2,    mins: 30, desc: "Bonus & Soforthilfe ×2, kein Casino-Rake" } },
+  factory: { name: "Fabrik",  emoji: "🏭", cost: 3000000,   income: 80000,  rent: 6000,  buildable: true,
+             product: { key: "gold",     name: "Goldbarren",  emoji: "💎", price: 120000, buff: "winBoost",   mult: 1.5,  mins: 8,  desc: "Haus-Gewinne +50 %" } },
+  // The Casino owner also collects the house rake (see accounts.recordHand).
+  casino:  { name: "Casino",  emoji: "🎰", cost: 15000000,  income: 400000, rent: 0,     buildable: false, unique: true },
+  // The Bank also collects interest from every player loan (see game/bank.js).
+  bank:    { name: "Bank",    emoji: "🏦", cost: 8000000,   income: 200000, rent: 0,     buildable: false, unique: true },
 };
 
-const BASE_LAND = 2000;        // base land value at market index 1.0
+const OWNER_DISCOUNT = 0.5;    // the business operator buys their own product at 50% off
+const BASE_LAND = 8000;        // base land value at market index 1.0 (pricier world)
 const SELL_SPREAD = 0.9;       // sell land back to the market at 90% (10% sink)
 const BUYOUT_PREMIUM = 1.5;    // hostile takeover of a rival's owned business
 const PERF_MIN = 0.6, PERF_MAX = 1.4;
@@ -108,28 +115,29 @@ const round = (n) => Math.round(n * 100) / 100;
 const landPrice = () => Math.round(BASE_LAND * (city.landIndex || 1));
 const landSellPrice = () => Math.round(landPrice() * SELL_SPREAD);
 
-// ─── P&L ──────────────────────────────────────────────────────────────────
+// ─── P&L (all figures are PER MINUTE) ─────────────────────────────────────
 function bizNet(lot) {
   const t = BUILDING_TYPES[lot.biz.type];
-  const gross = t.gross * (lot.biz.perf || 1);
-  const rent = lot.biz.operator !== lot.landOwner ? t.rent : 0;
-  return gross - t.wages - rent - gross * t.tax;
+  const income = t.income * (lot.biz.perf || 1);
+  const rent = lot.biz.operator !== lot.landOwner ? t.rent : 0; // pay rent if you don't own the land
+  return income - rent;
 }
 
 function lotById(id) { return city.lots.find((l) => l.id === id) || null; }
 
 // ─── Per-business income accrual (collect each business individually) ──────
-const COLLECT_CAP_MS = 8 * 60 * 60 * 1000; // 8h offline cap per business
+const COLLECT_CAP_MS = 12 * 60 * 60 * 1000; // 12h offline cap per business
+const MS_PER_MIN = 60000;
 const elapsedMs = (since, now) => Math.min(now - (since || now), COLLECT_CAP_MS);
 
 /** Chips `key` has accrued from one lot (operating profit if they run it, else
- *  rent if they're the landlord letting a tenant operate). */
+ *  rent if they're the landlord letting a tenant operate). Income is per minute. */
 function lotPending(lot, key, now = Date.now()) {
   if (!lot.biz) return 0;
   if (lot.biz.operator === key)
-    return Math.max(0, bizNet(lot)) * elapsedMs(lot.biz.opAt, now) / 1000;
+    return Math.max(0, bizNet(lot)) * elapsedMs(lot.biz.opAt, now) / MS_PER_MIN;
   if (lot.landOwner === key && lot.biz.operator && lot.biz.operator !== key)
-    return BUILDING_TYPES[lot.biz.type].rent * elapsedMs(lot.biz.rentAt, now) / 1000;
+    return BUILDING_TYPES[lot.biz.type].rent * elapsedMs(lot.biz.rentAt, now) / MS_PER_MIN;
   return 0;
 }
 
@@ -192,15 +200,20 @@ function publicCity(key) {
     landPrice: landPrice(), landSellPrice: landSellPrice(), landIndex: round(city.landIndex || 1),
     lots: city.lots.map((l) => {
       const t = l.biz && BUILDING_TYPES[l.biz.type];
-      // P&L from the viewer's perspective (rent shown unless the viewer owns the land).
+      // P&L per minute, from the viewer's perspective (rent shown unless they own the land).
       let pnl = null;
       if (l.biz) {
         const operator = l.biz.operator;
         const landOwnedByOp = operator === null ? l.landOwner === key : l.landOwner === operator;
-        const gross = t.gross * (l.biz.perf || 1);
+        const income = t.income * (l.biz.perf || 1);
         const rent = landOwnedByOp ? 0 : t.rent;
-        const tax = gross * t.tax;
-        pnl = { gross: round(gross), wages: round(t.wages), rent: round(rent), tax: round(tax), net: round(gross - t.wages - rent - tax) };
+        pnl = { income: round(income), rent: round(rent), net: round(income - rent) };
+      }
+      // Product the viewer would pay for (operator pays the discounted price).
+      let product = null;
+      if (t && t.product) {
+        const mine = l.biz.operator === key;
+        product = { ...t.product, payPrice: Math.round(t.product.price * (mine ? OWNER_DISCOUNT : 1)), owned: mine };
       }
       const landMine = l.landOwner === key;
       const canBuildHere = !l.biz && (landMine || (l.forRent && l.landOwner && l.landOwner !== key));
@@ -212,7 +225,7 @@ function publicCity(key) {
           type: l.biz.type, name: t.name, emoji: t.emoji,
           builtBy: l.biz.builtBy, builtByName: l.biz.builtByName, builtMine: l.biz.builtBy === key,
           operator: l.biz.operator, operatorName: l.biz.operatorName, operatorMine: l.biz.operator === key,
-          forLease: l.biz.forLease, listed: !!l.biz.listed, pnl,
+          forLease: l.biz.forLease, listed: !!l.biz.listed, pnl, product,
         } : null,
         canBuildHere,
         pending: round(lotPending(l, key)),
@@ -327,11 +340,24 @@ function listCompany(id, key) {
   return { ok: true, name, seedPrice, raise, commit: () => { lot.biz.listed = true; save(); } };
 }
 
+/** Buy a business's product (grants a buff). Operator pays a discount; a rival
+ *  buyer pays full price to the operator. Returns { ok, cost, product, seller }. */
+function buyProduct(id, key) {
+  const lot = lotById(id);
+  if (!lot || !lot.biz) return err("Kein Unternehmen hier.");
+  const t = BUILDING_TYPES[lot.biz.type];
+  if (!t.product) return err("Dieses Gebäude verkauft kein Produkt.");
+  const mine = lot.biz.operator === key;
+  const cost = Math.round(t.product.price * (mine ? OWNER_DISCOUNT : 1));
+  const seller = !mine && lot.biz.operator ? lot.biz.operator : null;
+  return { ok: true, cost, product: t.product, seller };
+}
+
 function err(error) { return { ok: false, error }; }
 
 module.exports = {
   BUILDING_TYPES,
   publicCity, ownerIncomeRate, ownerValue, casinoOwner, bankOwner, tickMarket,
   buyLand, sellLand, setForRent, build, buyBiz, takeover, setForLease, lease, lotById,
-  collectLot, totalPending, listCompany,
+  collectLot, totalPending, listCompany, buyProduct,
 };

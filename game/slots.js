@@ -560,8 +560,21 @@ function setupSlots(io, accounts) {
         if (!deduct.ok) return ack({ ok: false, error: "Nicht genug Chips." });
       }
 
-      const { result, session: newSession, totalWin } = evaluateSpin(machine, bet, session);
+      let { result, session: newSession, totalWin } = evaluateSpin(machine, bet, session);
       socket.data.slots = newSession;
+
+      // Glücksklee / Goldbarren: boost wins. Scale the result figures too so the
+      // count-up animation matches the credited amount.
+      const boost = accounts.buffMult(socket.data.account, "winBoost");
+      if (boost > 1 && totalWin > 0) {
+        totalWin = Math.round(totalWin * boost);
+        result.totalWin = totalWin;
+        if (result.wins) result.wins.forEach((w) => (w.win = Math.round(w.win * boost)));
+        if (result.cascades) result.cascades.forEach((st) => {
+          st.stepWin = Math.round((st.stepWin || 0) * boost);
+          (st.wins || []).forEach((w) => (w.win = Math.round(w.win * boost)));
+        });
+      }
 
       // Pay out (no account:update — client applies bet at spin start, win after reveal).
       let balance = accounts.get(socket.data.account).chips;
@@ -573,7 +586,7 @@ function setupSlots(io, accounts) {
         }
       }
 
-      ack({ ...result, balance });
+      ack({ ...result, balance, winBoost: boost > 1 ? boost : 1 });
     });
   });
 }

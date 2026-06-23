@@ -123,6 +123,43 @@ function _netWorth(acc) {
   return worth + city.ownerValue(key) + stocks.portfolioValue(key) - debt;
 }
 
+// ─── Buffs (from business products) ─────────────────────────────────────────
+/** Active buffs for an account, with expired ones pruned. { type: {until, mult} } */
+function activeBuffs(acc) {
+  if (!acc || !acc.buffs) return {};
+  const now = Date.now();
+  let changed = false;
+  for (const k of Object.keys(acc.buffs)) {
+    if (acc.buffs[k].until <= now) { delete acc.buffs[k]; changed = true; }
+  }
+  if (changed) save();
+  return acc.buffs;
+}
+
+function grantBuff(name, type, mins, mult) {
+  const acc = get(name);
+  if (!acc) return;
+  acc.buffs = acc.buffs || {};
+  const until = Date.now() + mins * 60000;
+  // Refresh/extend: keep the stronger multiplier and the later expiry.
+  const cur = acc.buffs[type];
+  acc.buffs[type] = { until: Math.max(until, cur ? cur.until : 0), mult: Math.max(mult || 1, cur ? cur.mult || 1 : 1) };
+  save();
+}
+
+/** Multiplier for a buff (1 if inactive). For flag buffs like "vip", mult is 2. */
+function buffMult(name, type) {
+  const acc = get(name);
+  const b = acc && acc.buffs && acc.buffs[type];
+  return b && b.until > Date.now() ? (b.mult || 1) : 1;
+}
+/** Whether a (flag) buff is currently active. */
+function hasBuff(name, type) {
+  const acc = get(name);
+  const b = acc && acc.buffs && acc.buffs[type];
+  return !!(b && b.until > Date.now());
+}
+
 function publicAccount(acc) {
   if (!acc) return null;
   return {
@@ -134,6 +171,7 @@ function publicAccount(acc) {
     stats: acc.stats,
     unlocked: acc.unlocked || ["lucky7"],
     netWorth: _netWorth(acc),
+    buffs: acc.buffs ? activeBuffs(acc) : {},
   };
 }
 
@@ -209,7 +247,8 @@ function claimDailyBonus(name) {
   const onTime = acc.lastBonusAt && now - acc.lastBonusAt <= STREAK_GRACE_MS;
   acc.bonusStreak = onTime ? (acc.bonusStreak || 1) + 1 : 1;
   const streakBonus = Math.min(acc.bonusStreak - 1, STREAK_MAX) * STREAK_STEP;
-  const amount = DAILY_BONUS + streakBonus;
+  const vip = hasBuff(acc.name, "vip") ? 2 : 1; // VIP-Pass doubles the bonus
+  const amount = (DAILY_BONUS + streakBonus) * vip;
   acc.chips += amount;
   acc.lastBonusAt = now;
   save();
@@ -229,8 +268,9 @@ function rescue(name) {
   const since = Date.now() - (acc.lastRescueAt || 0);
   if (since < RESCUE_COOLDOWN_MS)
     return { ok: false, error: "Soforthilfe gerade erst genutzt.", msLeft: RESCUE_COOLDOWN_MS - since };
-  const amount = RESCUE_TO - acc.chips;
-  acc.chips = RESCUE_TO;
+  const target = RESCUE_TO * (hasBuff(acc.name, "vip") ? 2 : 1); // VIP-Pass doubles the top-up
+  const amount = target - acc.chips;
+  acc.chips = target;
   acc.lastRescueAt = Date.now();
   save();
   return { ok: true, amount, account: publicAccount(acc) };
@@ -269,8 +309,9 @@ function recordHand(name, winnings, house = true) {
   } else if (winnings < 0) {
     const loss = -winnings;
     if (loss > acc.stats.biggestLoss) acc.stats.biggestLoss = loss;
-    // Casino owner's house edge: a cut of the loss materialises as their income.
-    if (house) {
+    // Casino owner's house edge: a cut of the loss materialises as their income
+    // (unless the player holds a VIP-Pass, which exempts their losses from rake).
+    if (house && !hasBuff(name, "vip")) {
       const owner = city.casinoOwner();
       if (owner && owner !== normalizeName(name)) {
         const rake = Math.floor(loss * CASINO_RAKE);
@@ -417,4 +458,8 @@ module.exports = {
   transfer,
   deleteAccount,
   listAll,
+  grantBuff,
+  buffMult,
+  hasBuff,
+  activeBuffs,
 };

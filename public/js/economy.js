@@ -82,22 +82,22 @@
     });
     socket.emit("economy:state", (s) => {
       if (!s || !s.ok) return;
-      incomeRate = s.ratePerSec;
+      incomeRate = s.ratePerMin; // chips per MINUTE
       pending = s.pending;
       updateIncomePanel();
     });
   }
 
   function updateIncomePanel() {
-    $("#biz-rate").textContent = dec(incomeRate) + " 🪙";
+    $("#biz-rate").textContent = fmt(incomeRate) + " 🪙/Min";
     $("#biz-pending").textContent = fmt(pending) + " 🪙";
   }
 
-  // Visual ticker: grow the pending counter each second by the income rate.
+  // Visual ticker: grow the accrued counter each second by 1/60 of the per-minute rate.
   setInterval(() => {
     const screen = document.querySelector('[data-screen="businesses"]');
     if (!screen || !screen.classList.contains("active") || incomeRate <= 0) return;
-    pending += incomeRate;
+    pending += incomeRate / 60;
     $("#biz-pending").textContent = fmt(pending) + " 🪙";
   }, 1000);
 
@@ -214,12 +214,16 @@
       body += `<div class="cd-row">Betreiber: <b>${b.operatorMine ? "Du" : b.operatorName ? escapeHtml(b.operatorName) : "— frei kaufbar —"}</b></div>`;
       if (leased) body += `<div class="cd-row">Gebäude: <b>${b.builtMine ? "Du (verpachtet)" : escapeHtml(b.builtByName)}</b></div>`;
       body += `<div class="cd-pnl">`;
-      body += `<div><span>Umsatz</span><b class="pos">${dec(p.gross)} 🪙/s</b></div>`;
-      body += `<div><span>Löhne</span><b class="neg">−${dec(p.wages)}</b></div>`;
-      body += `<div><span>Miete${p.rent === 0 ? " (eig. Land)" : ""}</span><b class="neg">−${dec(p.rent)}</b></div>`;
-      body += `<div><span>Steuern</span><b class="neg">−${dec(p.tax)}</b></div>`;
-      body += `<div class="cd-net"><span>= Gewinn (Betreiber)</span><b class="${p.net >= 0 ? "pos" : "neg"}">${dec(p.net)} 🪙/s</b></div>`;
+      body += `<div><span>Einkommen</span><b class="pos">${fmt(p.income)} 🪙/Min</b></div>`;
+      if (p.rent > 0) body += `<div><span>Miete</span><b class="neg">−${fmt(p.rent)}/Min</b></div>`;
+      body += `<div class="cd-net"><span>= Gewinn</span><b class="${p.net >= 0 ? "pos" : "neg"}">${fmt(p.net)} 🪙/Min</b></div>`;
       body += `</div>`;
+      // Product / buff this business sells.
+      if (b.product) {
+        const pr = b.product;
+        body += `<div class="cd-product"><div class="cd-prod-head">${pr.emoji} <b>${escapeHtml(pr.name)}</b> — ${escapeHtml(pr.desc)} (${pr.mins} Min)</div>`;
+        body += `<button class="btn-primary cd-btn" data-act="buyProduct">${pr.emoji} Kaufen — ${fmt(pr.payPrice)} 🪙${pr.owned ? " (dein Rabatt)" : ""}</button></div>`;
+      }
       const t = cityData.buildingTypes[b.type];
       if (b.operator === null && b.builtBy === null) {
         body += `<button class="btn-primary cd-btn" data-act="buyBiz">Unternehmen kaufen — ${fmt(t.cost)} 🪙</button>`;
@@ -261,6 +265,7 @@
     const buildBtn = e.target.closest("[data-build]");
     if (actBtn) {
       if (actBtn.dataset.act === "collect") { collectLot(lot.id); return; }
+      if (actBtn.dataset.act === "buyProduct") { buyProduct(lot.id); return; }
       const EVT = {
         buyLand: "city:buyLand", sellLand: "city:sellLand", setForRent: "city:setForRent",
         buyBiz: "city:buyBiz", takeover: "city:takeover", setForLease: "city:setForLease",
@@ -272,6 +277,16 @@
       socket.emit("city:build", { plotId: lot.id, type: buildBtn.dataset.build }, onCityActionResult);
     }
   });
+
+  function buyProduct(plotId) {
+    socket.emit("city:buyProduct", { plotId }, (res) => {
+      if (!res || !res.ok) { toast((res && res.error) || "Kauf fehlgeschlagen."); return; }
+      applyAccount(res.account);
+      renderDetail();
+      const pr = res.product;
+      toast(`${pr.emoji} ${pr.name} aktiv: ${pr.desc} (${pr.mins} Min)!`);
+    });
+  }
 
   function onCityActionResult(res) {
     if (!res || !res.ok) { toast((res && res.error) || "Aktion fehlgeschlagen."); return; }
