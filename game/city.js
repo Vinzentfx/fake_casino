@@ -33,30 +33,30 @@ const CITY_FILE = path.join(DATA_DIR, "city.json");
 // are deliberately expensive (~40-min income payback) — the buff/product economy
 // is the point, not the trickle of passive income.
 const BUILDING_TYPES = {
-  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 5000,      income: 120,    rent: 40,    buildable: true,
-             product: { key: "zitrone",  name: "Zitrone",     emoji: "🍋", price: 2500,   buff: "fastSpins",  mult: 2,    mins: 10, desc: "Slots drehen 2× schneller" } },
-  cafe:    { name: "Café",    emoji: "☕", cost: 25000,     income: 600,    rent: 120,   buildable: true,
-             product: { key: "espresso", name: "Espresso",    emoji: "☕", price: 4000,   buff: "clickBoost", mult: 5,    mins: 10, desc: "Arbeiten bringt 5× Chips" } },
-  shop:    { name: "Laden",   emoji: "🛍️", cost: 120000,    income: 3000,   rent: 400,   buildable: true,
-             product: { key: "klee",     name: "Glücksklee",  emoji: "🍀", price: 12000,  buff: "winBoost",   mult: 1.2,  mins: 10, desc: "Haus-Gewinne +20 %" } },
-  hotel:   { name: "Hotel",   emoji: "🏨", cost: 600000,    income: 15000,  rent: 1500,  buildable: true,
-             product: { key: "vip",      name: "VIP-Pass",    emoji: "🎟️", price: 40000,  buff: "vip",        mult: 2,    mins: 30, desc: "Bonus & Soforthilfe ×2, kein Casino-Rake" } },
-  factory: { name: "Fabrik",  emoji: "🏭", cost: 3000000,   income: 80000,  rent: 6000,  buildable: true,
-             product: { key: "gold",     name: "Goldbarren",  emoji: "💎", price: 120000, buff: "winBoost",   mult: 1.5,  mins: 8,  desc: "Haus-Gewinne +50 %" } },
+  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 50000,      income: 480,     rent: 160,   buildable: true,
+             product: { key: "zitrone",  name: "Zitrone",     emoji: "🍋", price: 20000,    buff: "fastSpins",  mult: 2,    mins: 10, desc: "Slots drehen 2× schneller" } },
+  cafe:    { name: "Café",    emoji: "☕", cost: 250000,     income: 2400,    rent: 600,   buildable: true,
+             product: { key: "espresso", name: "Espresso",    emoji: "☕", price: 35000,    buff: "clickBoost", mult: 5,    mins: 10, desc: "Arbeiten bringt 5× Chips" } },
+  shop:    { name: "Laden",   emoji: "🛍️", cost: 1200000,    income: 12000,   rent: 2000,  buildable: true,
+             product: { key: "klee",     name: "Glücksklee",  emoji: "🍀", price: 100000,   buff: "winBoost",   mult: 1.2,  mins: 10, desc: "Haus-Gewinne +20 %" } },
+  hotel:   { name: "Hotel",   emoji: "🏨", cost: 6000000,    income: 60000,   rent: 8000,  buildable: true,
+             product: { key: "vip",      name: "VIP-Pass",    emoji: "🎟️", price: 350000,   buff: "vip",        mult: 2,    mins: 30, desc: "Bonus & Soforthilfe ×2, kein Casino-Rake" } },
+  factory: { name: "Fabrik",  emoji: "🏭", cost: 30000000,   income: 320000,  rent: 30000, buildable: true,
+             product: { key: "gold",     name: "Goldbarren",  emoji: "💎", price: 1000000,  buff: "winBoost",   mult: 1.5,  mins: 8,  desc: "Haus-Gewinne +50 %" } },
   // The Casino owner also collects the house rake (see accounts.recordHand).
-  casino:  { name: "Casino",  emoji: "🎰", cost: 15000000,  income: 400000, rent: 0,     buildable: false, unique: true },
+  casino:  { name: "Casino",  emoji: "🎰", cost: 150000000,  income: 1600000, rent: 0,     buildable: false, unique: true },
   // The Bank also collects interest from every player loan (see game/bank.js).
-  bank:    { name: "Bank",    emoji: "🏦", cost: 8000000,   income: 200000, rent: 0,     buildable: false, unique: true },
+  bank:    { name: "Bank",    emoji: "🏦", cost: 80000000,   income: 800000,  rent: 0,     buildable: false, unique: true },
 };
 
 const OWNER_DISCOUNT = 0.5;    // the business operator buys their own product at 50% off
-const BASE_LAND = 8000;        // base land value at market index 1.0 (pricier world)
+const BASE_LAND = 60000;       // base land value at market index 1.0 (pricey world, hard to monopolise)
 const SELL_SPREAD = 0.9;       // sell land back to the market at 90% (10% sink)
 const BUYOUT_PREMIUM = 1.5;    // hostile takeover of a rival's owned business
 const PERF_MIN = 0.6, PERF_MAX = 1.4;
 const LAND_MIN = 0.55, LAND_MAX = 1.9;
 
-const COLS = 5, ROWS = 4;
+const COLS = 6, ROWS = 5;
 
 let city = load();
 
@@ -85,7 +85,7 @@ function generate() {
   const mkBiz = (type) => ({ type, builtBy: null, builtByName: null, operator: null, operatorName: null, perf: 1, forLease: false });
   lots[Math.floor(lots.length / 2)].biz = mkBiz("casino");
   lots[2].biz = mkBiz("bank"); // the one Bank (NPC-owned until someone buys it)
-  const pool = ["kiosk", "kiosk", "cafe", "cafe", "shop", "hotel"];
+  const pool = ["kiosk", "kiosk", "kiosk", "cafe", "cafe", "cafe", "shop", "shop", "hotel", "factory"];
   const free = lots.filter((l) => !l.biz);
   for (const t of pool) {
     if (!free.length) break;
@@ -353,11 +353,39 @@ function buyProduct(id, key) {
   return { ok: true, cost, product: t.product, seller };
 }
 
+/** Admin: strip all ownership from a lot (land + business → NPC/unowned). The
+ *  building stays as a buyable NPC business. */
+function adminClearLot(id) {
+  const lot = lotById(id);
+  if (!lot) return { ok: false, error: "Feld nicht gefunden." };
+  lot.landOwner = null; lot.landOwnerName = null; lot.forRent = false;
+  if (lot.biz) {
+    lot.biz.operator = null; lot.biz.operatorName = null;
+    lot.biz.builtBy = null; lot.biz.builtByName = null;
+    lot.biz.listed = false; lot.biz.forLease = false;
+  }
+  save();
+  return { ok: true };
+}
+
+/** Admin/UI helper: all lots currently owned by someone (land or business). */
+function ownedLots() {
+  return city.lots
+    .filter((l) => l.landOwner || (l.biz && (l.biz.operator || l.biz.builtBy)))
+    .map((l) => ({
+      id: l.id,
+      type: l.biz ? l.biz.type : null,
+      name: l.biz ? BUILDING_TYPES[l.biz.type].name : "Grundstück",
+      emoji: l.biz ? BUILDING_TYPES[l.biz.type].emoji : "🟩",
+      owner: (l.biz && l.biz.operatorName) || l.landOwnerName || null,
+    }));
+}
+
 function err(error) { return { ok: false, error }; }
 
 module.exports = {
   BUILDING_TYPES,
   publicCity, ownerIncomeRate, ownerValue, casinoOwner, bankOwner, tickMarket,
   buyLand, sellLand, setForRent, build, buyBiz, takeover, setForLease, lease, lotById,
-  collectLot, totalPending, listCompany, buyProduct,
+  collectLot, totalPending, listCompany, buyProduct, adminClearLot, ownedLots,
 };

@@ -1,6 +1,7 @@
 "use strict";
 
 const OWNER = "vincent";
+const city = require("./city");
 
 function setupAdmin(io, accounts) {
   io.on("connection", (socket) => {
@@ -66,6 +67,23 @@ function setupAdmin(io, accounts) {
         }
       });
       ack(accounts.deleteAccount(key));
+    });
+
+    // List all owned city lots (for the admin "free a building" panel).
+    socket.on("admin:cityLots", (ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      ack({ ok: true, lots: city.ownedLots() });
+    });
+
+    // Strip a building/lot from its owner (back to NPC). Broadcast so all open
+    // city screens refresh.
+    socket.on("admin:clearLot", ({ plotId } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const res = city.adminClearLot(plotId);
+      if (res.ok) io.emit("city:update");
+      ack(res);
     });
   });
 }
