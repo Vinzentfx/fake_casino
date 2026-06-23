@@ -91,6 +91,11 @@
             <span class="tile-name">Stadt</span>
             <span class="tile-sub">Grundstücke & Unternehmen</span>
           </button>
+          <button class="game-tile" data-nav="bank">
+            <span class="tile-icon">🏦</span>
+            <span class="tile-name">Bank</span>
+            <span class="tile-sub">Kredite & Zinsen</span>
+          </button>
         </div>
 
         <h2 class="section-title">Mehr</h2>
@@ -571,6 +576,27 @@
       </div>
     </section>
 
+    <!-- ===================== BANK (Kredite) ===================== -->
+    <section class="screen" data-screen="bank">
+      <div class="biz-wrap" style="max-width:520px;margin:0 auto;padding:12px">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center">
+          <div class="ph-icon">🏦</div>
+          <h2>Bank</h2>
+          <p class="muted small" id="bank-owner-line">Kredite gegen dein Vermögen — die Zinsen kassiert der Bank-Besitzer.</p>
+        </div>
+
+        <div class="panel" id="bank-loan-panel">
+          <p class="muted small" style="text-align:center;padding:14px">Lädt…</p>
+        </div>
+
+        <p class="muted small" style="text-align:center;margin-top:10px">
+          5 % Zinsen pro Stunde. Du kannst immer nur <b>einen</b> Kredit haben — erst abzahlen, dann neuer.
+          Wer die 🏦 in der Stadt besitzt, kassiert alle Kredit-Zinsen.
+        </p>
+      </div>
+    </section>
+
     <!-- ===================== ADMIN (nur Vincent) ===================== -->
     <section class="screen" data-screen="admin">
       <div class="panel">
@@ -615,5 +641,6 @@
   <script src="/js/blackjack.js"></script>
   <script src="/js/roulette.js"></script>
   <script src="/js/economy.js"></script>
+  <script src="/js/bank.js"></script>
 </body>
 </html>

@@ -37,6 +37,9 @@ const BUILDING_TYPES = {
   hotel:   { name: "Hotel",   emoji: "🏨", cost: 45000,   gross: 250,  wages: 75,   rent: 1.8, tax: 0.15, buildable: true },
   factory: { name: "Fabrik",  emoji: "🏭", cost: 160000,  gross: 1000, wages: 300,  rent: 2.5, tax: 0.17, buildable: true },
   casino:  { name: "Casino",  emoji: "🎰", cost: 1000000, gross: 6200, wages: 1860, rent: 0,   tax: 0.10, buildable: false, unique: true },
+  // The Bank earns passive "NPC lending" income via this P&L (volatile = default
+  // risk) AND collects the interest from every player loan (see game/bank.js).
+  bank:    { name: "Bank",    emoji: "🏦", cost: 500000,  gross: 3200, wages: 700,  rent: 0,   tax: 0.10, buildable: false, unique: true },
 };
 
 const BASE_LAND = 2000;        // base land value at market index 1.0
@@ -73,6 +76,7 @@ function generate() {
 
   const mkBiz = (type) => ({ type, builtBy: null, builtByName: null, operator: null, operatorName: null, perf: 1, forLease: false });
   lots[Math.floor(lots.length / 2)].biz = mkBiz("casino");
+  lots[2].biz = mkBiz("bank"); // the one Bank (NPC-owned until someone buys it)
   const pool = ["kiosk", "kiosk", "cafe", "cafe", "shop", "hotel"];
   const free = lots.filter((l) => !l.biz);
   for (const t of pool) {
@@ -173,6 +177,11 @@ function ownerValue(key) {
 
 function casinoOwner() {
   const lot = city.lots.find((l) => l.biz && l.biz.type === "casino");
+  return lot && lot.biz ? lot.biz.operator : null;
+}
+
+function bankOwner() {
+  const lot = city.lots.find((l) => l.biz && l.biz.type === "bank");
   return lot && lot.biz ? lot.biz.operator : null;
 }
 
@@ -307,7 +316,7 @@ function err(error) { return { ok: false, error }; }
 
 module.exports = {
   BUILDING_TYPES,
-  publicCity, ownerIncomeRate, ownerValue, casinoOwner, tickMarket,
+  publicCity, ownerIncomeRate, ownerValue, casinoOwner, bankOwner, tickMarket,
   buyLand, sellLand, setForRent, build, buyBiz, takeover, setForLease, lease, lotById,
   collectLot, totalPending,
 };
