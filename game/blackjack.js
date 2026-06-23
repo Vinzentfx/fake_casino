@@ -123,7 +123,7 @@ function startHand(session, bet, accounts) {
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
   if (bet < 10 || !Number.isFinite(bet)) return { ok: false, error: "Mindesteinsatz: 10 Chips." };
   if (bet > acc.chips) return { ok: false, error: "Nicht genug Chips." };
-  if (bet > 50000) return { ok: false, error: "Maximaleinsatz: 50.000 Chips." };
+  if (bet > 2000000) return { ok: false, error: "Maximaleinsatz: 2.000.000 Chips." };
 
   const r = accounts.adjustChips(session.name, -bet);
   if (!r.ok) return { ok: false, error: r.error };

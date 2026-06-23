@@ -35,30 +35,34 @@ const CITY_FILE = path.join(DATA_DIR, "city.json");
 // Each building yields income/MINUTE (~70-min payback) and sells SEVERAL products,
 // each granting a buff. Products are priced by buff utility: cosmetic/weak buffs
 // (fastSpins, clickBoost) are cheap; money buffs (winBoost) scale with strength.
+// Buildings are EXPENSIVE; passive income is deliberately modest (big buildings
+// don't pay back through income alone — they're bought for their buffs/products,
+// the casino rake and prestige). The casino games (high bets) are the real money
+// engine. Each building sells several buff-products.
 const BUILDING_TYPES = {
-  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 50000,      income: 720,     rent: 600,   buildable: true, products: [
-             { key: "zitrone",    name: "Zitrone",      emoji: "🍋", price: 8000,    buff: "fastSpins",  mult: 2,    mins: 10, desc: "Slots 2× schneller" },
-             { key: "energy",     name: "Energy-Drink", emoji: "🥤", price: 10000,   buff: "clickBoost", mult: 3,    mins: 10, desc: "Arbeiten ×3" } ] },
-  cafe:    { name: "Café",    emoji: "☕", cost: 250000,     income: 3600,    rent: 800,   buildable: true, products: [
-             { key: "espresso",   name: "Espresso",     emoji: "☕", price: 18000,   buff: "clickBoost", mult: 5,    mins: 15, desc: "Arbeiten ×5" },
-             { key: "kuchen",     name: "Glückskuchen", emoji: "🍰", price: 45000,   buff: "winBoost",   mult: 1.1,  mins: 10, desc: "Haus-Gewinne +10 %" } ] },
-  shop:    { name: "Laden",   emoji: "🛍️", cost: 1200000,    income: 18000,   rent: 1200,  buildable: true, products: [
-             { key: "klee",       name: "Glücksklee",   emoji: "🍀", price: 90000,   buff: "winBoost",   mult: 1.2,  mins: 10, desc: "Haus-Gewinne +20 %" },
-             { key: "jeton",      name: "Glücks-Jeton", emoji: "🎰", price: 20000,   buff: "fastSpins",  mult: 3,    mins: 10, desc: "Slots 3× schneller" } ] },
-  hotel:   { name: "Hotel",   emoji: "🏨", cost: 6000000,    income: 90000,   rent: 2000,  buildable: true, products: [
-             { key: "vip",        name: "VIP-Pass",     emoji: "🎟️", price: 150000,  buff: "vip",        mult: 2,    mins: 30, desc: "Bonus & Soforthilfe ×2, kein Rake" },
-             { key: "champagner", name: "Champagner",   emoji: "🍾", price: 200000,  buff: "winBoost",   mult: 1.3,  mins: 12, desc: "Haus-Gewinne +30 %" } ] },
-  factory: { name: "Fabrik",  emoji: "🏭", cost: 30000000,   income: 450000,  rent: 3000,  buildable: true, products: [
-             { key: "gold",       name: "Goldbarren",   emoji: "💎", price: 400000,  buff: "winBoost",   mult: 1.5,  mins: 8,  desc: "Haus-Gewinne +50 %" },
-             { key: "turbo",      name: "Turbo-Chip",   emoji: "⚙️", price: 50000,   buff: "fastSpins",  mult: 4,    mins: 12, desc: "Slots 4× schneller" } ] },
+  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 400000,       income: 1200,    rent: 1000,   buildable: true, products: [
+             { key: "zitrone",    name: "Zitrone",      emoji: "🍋", price: 50000,    buff: "fastSpins",  mult: 2,    mins: 10, desc: "Slots 2× schneller" },
+             { key: "energy",     name: "Energy-Drink", emoji: "🥤", price: 60000,    buff: "clickBoost", mult: 3,    mins: 10, desc: "Arbeiten ×3" } ] },
+  cafe:    { name: "Café",    emoji: "☕", cost: 2000000,      income: 5000,    rent: 2000,   buildable: true, products: [
+             { key: "espresso",   name: "Espresso",     emoji: "☕", price: 120000,   buff: "clickBoost", mult: 5,    mins: 15, desc: "Arbeiten ×5" },
+             { key: "kuchen",     name: "Glückskuchen", emoji: "🍰", price: 300000,   buff: "winBoost",   mult: 1.1,  mins: 10, desc: "Haus-Gewinne +10 %" } ] },
+  shop:    { name: "Laden",   emoji: "🛍️", cost: 10000000,     income: 18000,   rent: 4000,   buildable: true, products: [
+             { key: "klee",       name: "Glücksklee",   emoji: "🍀", price: 600000,   buff: "winBoost",   mult: 1.2,  mins: 10, desc: "Haus-Gewinne +20 %" },
+             { key: "jeton",      name: "Glücks-Jeton", emoji: "🎰", price: 150000,   buff: "fastSpins",  mult: 3,    mins: 10, desc: "Slots 3× schneller" } ] },
+  hotel:   { name: "Hotel",   emoji: "🏨", cost: 50000000,     income: 60000,   rent: 8000,   buildable: true, products: [
+             { key: "vip",        name: "VIP-Pass",     emoji: "🎟️", price: 900000,   buff: "vip",        mult: 2,    mins: 30, desc: "Bonus & Soforthilfe ×2, kein Rake" },
+             { key: "champagner", name: "Champagner",   emoji: "🍾", price: 1200000,  buff: "winBoost",   mult: 1.3,  mins: 12, desc: "Haus-Gewinne +30 %" } ] },
+  factory: { name: "Fabrik",  emoji: "🏭", cost: 250000000,    income: 200000,  rent: 15000,  buildable: true, products: [
+             { key: "gold",       name: "Goldbarren",   emoji: "💎", price: 2500000,  buff: "winBoost",   mult: 1.5,  mins: 8,  desc: "Haus-Gewinne +50 %" },
+             { key: "turbo",      name: "Turbo-Chip",   emoji: "⚙️", price: 400000,   buff: "fastSpins",  mult: 4,    mins: 12, desc: "Slots 4× schneller" } ] },
   // The Casino owner also collects the house rake (see accounts.recordHand).
-  casino:  { name: "Casino",  emoji: "🎰", cost: 150000000,  income: 2400000, rent: 0,     buildable: false, unique: true },
+  casino:  { name: "Casino",  emoji: "🎰", cost: 1200000000,   income: 600000,  rent: 0,      buildable: false, unique: true },
   // The Bank also collects interest from every player loan (see game/bank.js).
-  bank:    { name: "Bank",    emoji: "🏦", cost: 80000000,   income: 1200000, rent: 0,     buildable: false, unique: true },
+  bank:    { name: "Bank",    emoji: "🏦", cost: 600000000,    income: 350000,  rent: 0,      buildable: false, unique: true },
 };
 
 const OWNER_DISCOUNT = 0.5;    // the business operator buys their own product at 50% off
-const BASE_LAND = 60000;       // base land value at market index 1.0 (pricey world, hard to monopolise)
+const BASE_LAND = 500000;      // base land value at market index 1.0 (pricey world, hard to monopolise)
 const SELL_SPREAD = 0.9;       // sell land back to the market at 90% (10% sink)
 const BUYOUT_PREMIUM = 1.5;    // hostile takeover of a rival's owned business
 const PERF_MIN = 0.6, PERF_MAX = 1.4;
@@ -134,7 +138,7 @@ function bizNet(lot) {
 function lotById(id) { return city.lots.find((l) => l.id === id) || null; }
 
 // ─── Per-business income accrual (collect each business individually) ──────
-const COLLECT_CAP_MS = 12 * 60 * 60 * 1000; // 12h offline cap per business
+const COLLECT_CAP_MS = 3 * 60 * 60 * 1000; // 3h offline cap per business (income stays modest)
 const MS_PER_MIN = 60000;
 const elapsedMs = (since, now) => Math.min(now - (since || now), COLLECT_CAP_MS);
 

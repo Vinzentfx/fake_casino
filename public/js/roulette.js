@@ -267,7 +267,7 @@
       let badge = cell.querySelector(".rt-bet-badge");
       if (amt > 0) {
         if (!badge) { badge = document.createElement("span"); badge.className = "rt-bet-badge"; cell.appendChild(badge); }
-        badge.textContent = amt >= 1000 ? Math.round(amt / 1000) + "k" : String(amt);
+        badge.textContent = amt >= 1e6 ? (amt/1e6) + "M" : amt >= 1000 ? Math.round(amt / 1000) + "k" : String(amt);
       } else if (badge) badge.remove();
     });
   }
@@ -414,11 +414,11 @@
   function setupChips() {
     const container = $("#rt-chips");
     container.innerHTML = "";
-    [10, 50, 100, 500, 1000, 5000].forEach((v) => {
+    [100, 1000, 10000, 50000, 250000, 1000000].forEach((v) => {
       const btn = document.createElement("button");
       btn.className = "rt-chip" + (v === chipValue ? " active" : "");
       btn.dataset.v = v;
-      btn.textContent = v >= 1000 ? v / 1000 + "k" : v;
+      btn.textContent = v >= 1e6 ? v / 1e6 + "M" : v >= 1000 ? v / 1000 + "k" : v;
       btn.addEventListener("click", () => {
         chipValue = v;
         container.querySelectorAll(".rt-chip").forEach((b) => b.classList.toggle("active", +b.dataset.v === v));
