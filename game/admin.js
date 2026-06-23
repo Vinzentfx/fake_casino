@@ -85,6 +85,15 @@ function setupAdmin(io, accounts) {
       if (res.ok) io.emit("city:update");
       ack(res);
     });
+
+    // Wipe the whole shared city back to a fresh NPC start (after a price rebalance).
+    socket.on("admin:resetCity", (ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      city.resetCity();
+      io.emit("city:update");
+      ack({ ok: true });
+    });
   });
 }
 

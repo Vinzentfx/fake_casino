@@ -405,6 +405,14 @@ function loadAdminLots() {
   });
 }
 
+$("#admin-reset-city-btn")?.addEventListener("click", () => {
+  if (!confirm("Wirklich die GANZE Stadt zurücksetzen? Alle Grundstücke & Unternehmen gehen an NPC zurück.")) return;
+  socket.emit("admin:resetCity", (r) => {
+    if (r && r.ok) { toast("Stadt zurückgesetzt."); loadAdminLots(); }
+    else toast((r && r.error) || "Fehler.");
+  });
+});
+
 $("#admin-set-chips-btn").addEventListener("click", () => {
   const errEl = $("#admin-chips-error");
   errEl.textContent = "";

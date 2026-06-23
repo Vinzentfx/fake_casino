@@ -366,6 +366,13 @@ function buyProduct(id, key, productKey) {
   return { ok: true, cost, product, seller };
 }
 
+/** Admin: wipe the whole city back to a fresh NPC-owned start (e.g. after a big
+ *  price rebalance, so early cheap buyers don't keep a permanent monopoly). */
+function resetCity() {
+  city = generate();
+  save();
+}
+
 /** Admin: strip all ownership from a lot (land + business → NPC/unowned). The
  *  building stays as a buyable NPC business. */
 function adminClearLot(id) {
@@ -400,5 +407,5 @@ module.exports = {
   BUILDING_TYPES,
   publicCity, ownerIncomeRate, ownerValue, casinoOwner, bankOwner, tickMarket,
   buyLand, sellLand, setForRent, build, buyBiz, takeover, setForLease, lease, lotById,
-  collectLot, totalPending, listCompany, buyProduct, adminClearLot, ownedLots,
+  collectLot, totalPending, listCompany, buyProduct, adminClearLot, ownedLots, resetCity,
 };
