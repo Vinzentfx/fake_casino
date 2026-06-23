@@ -10,6 +10,7 @@
  */
 
 const city = require("./city");
+const stocks = require("./stocks");
 
 // ─── Work clicker (capped) ──────────────────────────────────────────────────
 const CLICK_BASE = 1;          // chips per click at level 0
@@ -147,6 +148,22 @@ function setupEconomy(io, accounts) {
     socket.on("city:takeover",   A((id, key, name) => city.takeover(id, key, name)));
     socket.on("city:setForLease",A((id, key, name, type, val) => city.setForLease(id, key, val)));
     socket.on("city:lease",      A((id, key, name) => city.lease(id, key, name)));
+
+    // List one of your built companies on the stock market (IPO): raise capital
+    // now, and it starts trading for everyone.
+    socket.on("city:ipo", ({ plotId } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const key = socket.data.account;
+      const r = city.listCompany(plotId, key);
+      if (!r.ok) return ack(r);
+      const listed = stocks.ipo(key, r.name, r.seedPrice);
+      r.commit();
+      const res = accounts.adjustChips(key, r.raise);
+      ack({ ok: true, raised: r.raise, sym: listed.sym, account: res.account, city: city.publicCity(key), casinoOwner: city.casinoOwner() });
+      broadcastCity();
+    });
 
     socket.on("disconnect", () => clickTimes.delete(socket.id));
   });

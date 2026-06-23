@@ -87,7 +87,7 @@ function setupPoker(io, accounts) {
     const { table } = entry;
     // Stats per hand (net chips won/lost), via the account store.
     table.onResults = (results) => {
-      for (const r of results) accounts.recordHand(r.id, r.amount);
+      for (const r of results) accounts.recordHand(r.id, r.amount, false); // poker is PvP — no casino rake
     };
     // After a hand ends: show result, then auto-start the next one.
     table.onHandComplete = () => {
