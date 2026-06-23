@@ -161,7 +161,7 @@ function setupEconomy(io, accounts) {
       if (acc.chips < r.cost) return ack({ ok: false, error: "Nicht genug Chips." });
       const res = accounts.adjustChips(key, -r.cost);
       if (r.seller && r.seller !== key) accounts.adjustChips(r.seller, r.cost); // pay the operator
-      accounts.grantBuff(key, r.product.buff, r.product.mins, r.product.mult);
+      accounts.addItem(key, r.product.key, 1); // goes to your inventory — use it or resell it
       ack({ ok: true, cost: r.cost, product: r.product, account: accounts.publicAccount(accounts.get(key)) });
     });
 

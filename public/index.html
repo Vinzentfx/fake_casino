@@ -102,6 +102,11 @@
             <span class="tile-name">Börse</span>
             <span class="tile-sub">Aktien · Long / Short</span>
           </button>
+          <button class="game-tile" data-nav="market">
+            <span class="tile-icon">🛒</span>
+            <span class="tile-name">Markt</span>
+            <span class="tile-sub">Produkte nutzen & handeln</span>
+          </button>
         </div>
 
         <h2 class="section-title">Mehr</h2>
@@ -625,6 +630,24 @@
       </div>
     </section>
 
+    <!-- ===================== MARKT (Produkt-Handel) ===================== -->
+    <section class="screen" data-screen="market">
+      <div class="biz-wrap" style="max-width:620px;margin:0 auto;padding:12px">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center">
+          <div class="ph-icon">🛒</div>
+          <h2>Markt</h2>
+          <p class="muted small">Produkte aus deinen Unternehmen: selbst benutzen (Buff) oder teurer an andere verkaufen.</p>
+        </div>
+
+        <h3 style="margin:14px 0 6px">🎒 Dein Inventar</h3>
+        <div class="mkt-inventory" id="mkt-inventory"><p class="muted small">Lädt…</p></div>
+
+        <h3 style="margin:16px 0 6px">🏷️ Angebote anderer Spieler</h3>
+        <div class="mkt-offers" id="mkt-offers"><p class="muted small">Lädt…</p></div>
+      </div>
+    </section>
+
     <!-- ===================== ADMIN (nur Vincent) ===================== -->
     <section class="screen" data-screen="admin">
       <div class="panel">
@@ -678,5 +701,6 @@
   <script src="/js/economy.js"></script>
   <script src="/js/bank.js"></script>
   <script src="/js/stocks.js"></script>
+  <script src="/js/market.js"></script>
 </body>
 </html>
