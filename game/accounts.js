@@ -114,11 +114,13 @@ function get(name) {
 // minus any outstanding loan (a liability).
 const city = require("./city");
 const bank = require("./bank");
+const stocks = require("./stocks");
 
 function _netWorth(acc) {
   const worth = acc.chips || 0;
   const debt = acc.loan ? bank.loanOwed(acc.loan) : 0;
-  return worth + city.ownerValue(normalizeName(acc.name)) - debt;
+  const key = normalizeName(acc.name);
+  return worth + city.ownerValue(key) + stocks.portfolioValue(key) - debt;
 }
 
 function publicAccount(acc) {
