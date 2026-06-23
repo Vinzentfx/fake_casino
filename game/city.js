@@ -38,8 +38,9 @@ const BUILDING_TYPES = {
   factory: { name: "Fabrik",  emoji: "🏭", cost: 160000,  gross: 1000, wages: 300,  rent: 2.5, tax: 0.17, buildable: true },
   casino:  { name: "Casino",  emoji: "🎰", cost: 1000000, gross: 6200, wages: 1860, rent: 0,   tax: 0.10, buildable: false, unique: true },
   // The Bank earns passive "NPC lending" income via this P&L (volatile = default
-  // risk) AND collects the interest from every player loan (see game/bank.js).
-  bank:    { name: "Bank",    emoji: "🏦", cost: 500000,  gross: 3200, wages: 700,  rent: 0,   tax: 0.10, buildable: false, unique: true },
+  // risk) AND collects the interest from every player loan (see game/bank.js), so
+  // its base income sits a bit under the casino's — the loan interest is the upside.
+  bank:    { name: "Bank",    emoji: "🏦", cost: 500000,  gross: 2400, wages: 660,  rent: 0,   tax: 0.10, buildable: false, unique: true },
 };
 
 const BASE_LAND = 2000;        // base land value at market index 1.0
@@ -211,7 +212,7 @@ function publicCity(key) {
           type: l.biz.type, name: t.name, emoji: t.emoji,
           builtBy: l.biz.builtBy, builtByName: l.biz.builtByName, builtMine: l.biz.builtBy === key,
           operator: l.biz.operator, operatorName: l.biz.operatorName, operatorMine: l.biz.operator === key,
-          forLease: l.biz.forLease, pnl,
+          forLease: l.biz.forLease, listed: !!l.biz.listed, pnl,
         } : null,
         canBuildHere,
         pending: round(lotPending(l, key)),
@@ -312,11 +313,25 @@ function lease(id, key, name) {
   } };
 }
 
+/** Validate that `key` can list this lot's business on the stock market. */
+function listCompany(id, key) {
+  const lot = lotById(id);
+  if (!lot || !lot.biz) return err("Kein Unternehmen hier.");
+  if (lot.biz.builtBy !== key) return err("Du musst das Gebäude besitzen.");
+  const t = BUILDING_TYPES[lot.biz.type];
+  if (!t.buildable) return err("Casino & Bank können nicht an die Börse.");
+  if (lot.biz.listed) return err("Schon börsennotiert.");
+  const seedPrice = Math.max(20, Math.round(bizNet(lot) * 25));
+  const raise = Math.round(t.cost * 0.5);
+  const name = `${lot.biz.builtByName || "Spieler"} ${t.name} AG`;
+  return { ok: true, name, seedPrice, raise, commit: () => { lot.biz.listed = true; save(); } };
+}
+
 function err(error) { return { ok: false, error }; }
 
 module.exports = {
   BUILDING_TYPES,
   publicCity, ownerIncomeRate, ownerValue, casinoOwner, bankOwner, tickMarket,
   buyLand, sellLand, setForRent, build, buyBiz, takeover, setForLease, lease, lotById,
-  collectLot, totalPending,
+  collectLot, totalPending, listCompany,
 };

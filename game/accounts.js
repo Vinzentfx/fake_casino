@@ -249,8 +249,15 @@ function adjustChips(name, delta) {
   return { ok: true, account: publicAccount(acc) };
 }
 
-/** Record a hand result for stats (winnings = net chips won/lost in a single round). */
-function recordHand(name, winnings) {
+const CASINO_RAKE = 0.05; // 5% of a player's house-game losses go to the casino owner
+
+/**
+ * Record a hand result for stats (winnings = net chips won/lost in a single round).
+ * For house games (slots/roulette/blackjack — `house` true), 5% of any loss is
+ * raked to whoever owns the Casino in the shared city. Pass house=false for
+ * player-vs-player games (poker, PvP slots) so they stay zero-sum.
+ */
+function recordHand(name, winnings, house = true) {
   const acc = get(name);
   if (!acc) return;
   acc.stats = acc.stats || { gamesPlayed: 0, handsWon: 0, biggestWin: 0, biggestLoss: 0 };
@@ -262,6 +269,15 @@ function recordHand(name, winnings) {
   } else if (winnings < 0) {
     const loss = -winnings;
     if (loss > acc.stats.biggestLoss) acc.stats.biggestLoss = loss;
+    // Casino owner's house edge: a cut of the loss materialises as their income.
+    if (house) {
+      const owner = city.casinoOwner();
+      if (owner && owner !== normalizeName(name)) {
+        const rake = Math.floor(loss * CASINO_RAKE);
+        const o = accounts[owner];
+        if (rake > 0 && o) o.chips += rake; // save() below persists it
+      }
+    }
   }
   save();
 }

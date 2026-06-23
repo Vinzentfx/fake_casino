@@ -139,10 +139,13 @@ function tick() {
     }
   }
 
-  // Relist any bankrupt company as a fresh one.
+  // After a bankruptcy: relist NPC companies fresh; delist player-IPO stocks.
   for (const sym of bankruptcies) {
-    const seed = Object.keys(market.stocks).indexOf(sym);
-    market.stocks[sym] = newCompany(sym, seed < 0 ? 0 : seed);
+    if (market.stocks[sym] && market.stocks[sym].ipo) delete market.stocks[sym];
+    else {
+      const seed = Object.keys(market.stocks).indexOf(sym);
+      market.stocks[sym] = newCompany(sym, seed < 0 ? 0 : seed);
+    }
   }
 
   save();
@@ -265,6 +268,23 @@ function setupStocks(io, accounts) {
   }, 6000);
 }
 
+/** List a player's company as a tradeable stock. Returns { ok, sym }. */
+function ipo(key, name, seedPrice) {
+  const base = (name || "CO").replace(/[^A-Za-z]/g, "").toUpperCase();
+  let sym = (base.slice(0, 4) || "CO");
+  let n = 1;
+  while (market.stocks[sym]) sym = (base.slice(0, 3) || "CO") + (n++);
+  const price = Math.max(20, Math.round(seedPrice || 100));
+  market.stocks[sym] = {
+    sym, name, price, basePrice: price,
+    vol: 0.05, drift: 0.0012, history: [price], bankrupt: false,
+    ipo: true, founder: key,
+  };
+  pushNews(`🚀 ${name} (${sym}) ist an die Börse gegangen!`);
+  save();
+  return { ok: true, sym };
+}
+
 module.exports = {
-  MAX_LEVERAGE, tick, publicStocks, positionsFor, portfolioValue, open, close, setupStocks,
+  MAX_LEVERAGE, tick, publicStocks, positionsFor, portfolioValue, open, close, ipo, setupStocks,
 };

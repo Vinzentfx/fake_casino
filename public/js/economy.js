@@ -232,6 +232,12 @@
       } else if (!b.operatorMine && b.builtBy === b.operator) {
         body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen (+50%) — ${fmt(Math.ceil(t.cost * cityData.buyoutPremium))} 🪙</button>`;
       }
+      // IPO: list a company you own (not casino/bank) on the stock market.
+      if (b.builtMine && t.buildable) {
+        body += b.listed
+          ? `<div class="cd-row" style="color:#7ec8ff">📈 Börsennotiert</div>`
+          : `<button class="cd-toggle" data-act="ipo">📈 An die Börse bringen (IPO — Kapital sammeln)</button>`;
+      }
     } else if (lot.canBuildHere) {
       const rented = !lot.landMine;
       body += `<div class="cd-row">${rented ? "Auf gemietetem Land bauen (Miete fällt an):" : "Bebaue dein Grundstück:"}</div><div class="cd-builds">`;
@@ -257,7 +263,8 @@
       if (actBtn.dataset.act === "collect") { collectLot(lot.id); return; }
       const EVT = {
         buyLand: "city:buyLand", sellLand: "city:sellLand", setForRent: "city:setForRent",
-        buyBiz: "city:buyBiz", takeover: "city:takeover", setForLease: "city:setForLease", lease: "city:lease",
+        buyBiz: "city:buyBiz", takeover: "city:takeover", setForLease: "city:setForLease",
+        lease: "city:lease", ipo: "city:ipo",
       };
       const event = EVT[actBtn.dataset.act];
       if (event) socket.emit(event, { plotId: lot.id, val: actBtn.dataset.val === "1" ? 1 : 0 }, onCityActionResult);
@@ -273,7 +280,8 @@
     renderMap();
     renderDetail();
     loadCity(); // refresh income rate/pending after the ownership change
-    if (res.gain) toast(`✓ +${fmt(res.gain)} 🪙`);
+    if (res.raised) toast(`🚀 Börsengang! +${fmt(res.raised)} 🪙 Kapital (${res.sym}).`);
+    else if (res.gain) toast(`✓ +${fmt(res.gain)} 🪙`);
     else if (res.cost) toast(`✓ −${fmt(res.cost)} 🪙`);
     else toast("✓ Erledigt");
   }
