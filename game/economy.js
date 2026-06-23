@@ -151,12 +151,12 @@ function setupEconomy(io, accounts) {
 
     // Buy a business's product → grants a buff. Buyer pays (discount if it's their
     // own business); a rival's purchase pays the operator.
-    socket.on("city:buyProduct", ({ plotId } = {}, ack) => {
+    socket.on("city:buyProduct", ({ plotId, productKey } = {}, ack) => {
       if (typeof ack !== "function") return;
       const acc = acct(socket);
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
       const key = socket.data.account;
-      const r = city.buyProduct(plotId, key);
+      const r = city.buyProduct(plotId, key, productKey);
       if (!r.ok) return ack(r);
       if (acc.chips < r.cost) return ack({ ok: false, error: "Nicht genug Chips." });
       const res = accounts.adjustChips(key, -r.cost);

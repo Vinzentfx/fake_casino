@@ -32,21 +32,29 @@ const CITY_FILE = path.join(DATA_DIR, "city.json");
 // operator (revenue to them); the operator buys it at OWNER_DISCOUNT. Buildings
 // are deliberately expensive (~40-min income payback) — the buff/product economy
 // is the point, not the trickle of passive income.
+// Each building yields income/MINUTE (~70-min payback) and sells SEVERAL products,
+// each granting a buff. Products are priced by buff utility: cosmetic/weak buffs
+// (fastSpins, clickBoost) are cheap; money buffs (winBoost) scale with strength.
 const BUILDING_TYPES = {
-  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 50000,      income: 480,     rent: 160,   buildable: true,
-             product: { key: "zitrone",  name: "Zitrone",     emoji: "🍋", price: 20000,    buff: "fastSpins",  mult: 2,    mins: 10, desc: "Slots drehen 2× schneller" } },
-  cafe:    { name: "Café",    emoji: "☕", cost: 250000,     income: 2400,    rent: 600,   buildable: true,
-             product: { key: "espresso", name: "Espresso",    emoji: "☕", price: 35000,    buff: "clickBoost", mult: 5,    mins: 10, desc: "Arbeiten bringt 5× Chips" } },
-  shop:    { name: "Laden",   emoji: "🛍️", cost: 1200000,    income: 12000,   rent: 2000,  buildable: true,
-             product: { key: "klee",     name: "Glücksklee",  emoji: "🍀", price: 100000,   buff: "winBoost",   mult: 1.2,  mins: 10, desc: "Haus-Gewinne +20 %" } },
-  hotel:   { name: "Hotel",   emoji: "🏨", cost: 6000000,    income: 60000,   rent: 8000,  buildable: true,
-             product: { key: "vip",      name: "VIP-Pass",    emoji: "🎟️", price: 350000,   buff: "vip",        mult: 2,    mins: 30, desc: "Bonus & Soforthilfe ×2, kein Casino-Rake" } },
-  factory: { name: "Fabrik",  emoji: "🏭", cost: 30000000,   income: 320000,  rent: 30000, buildable: true,
-             product: { key: "gold",     name: "Goldbarren",  emoji: "💎", price: 1000000,  buff: "winBoost",   mult: 1.5,  mins: 8,  desc: "Haus-Gewinne +50 %" } },
+  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 50000,      income: 720,     rent: 600,   buildable: true, products: [
+             { key: "zitrone",    name: "Zitrone",      emoji: "🍋", price: 8000,    buff: "fastSpins",  mult: 2,    mins: 10, desc: "Slots 2× schneller" },
+             { key: "energy",     name: "Energy-Drink", emoji: "🥤", price: 10000,   buff: "clickBoost", mult: 3,    mins: 10, desc: "Arbeiten ×3" } ] },
+  cafe:    { name: "Café",    emoji: "☕", cost: 250000,     income: 3600,    rent: 800,   buildable: true, products: [
+             { key: "espresso",   name: "Espresso",     emoji: "☕", price: 18000,   buff: "clickBoost", mult: 5,    mins: 15, desc: "Arbeiten ×5" },
+             { key: "kuchen",     name: "Glückskuchen", emoji: "🍰", price: 45000,   buff: "winBoost",   mult: 1.1,  mins: 10, desc: "Haus-Gewinne +10 %" } ] },
+  shop:    { name: "Laden",   emoji: "🛍️", cost: 1200000,    income: 18000,   rent: 1200,  buildable: true, products: [
+             { key: "klee",       name: "Glücksklee",   emoji: "🍀", price: 90000,   buff: "winBoost",   mult: 1.2,  mins: 10, desc: "Haus-Gewinne +20 %" },
+             { key: "jeton",      name: "Glücks-Jeton", emoji: "🎰", price: 20000,   buff: "fastSpins",  mult: 3,    mins: 10, desc: "Slots 3× schneller" } ] },
+  hotel:   { name: "Hotel",   emoji: "🏨", cost: 6000000,    income: 90000,   rent: 2000,  buildable: true, products: [
+             { key: "vip",        name: "VIP-Pass",     emoji: "🎟️", price: 150000,  buff: "vip",        mult: 2,    mins: 30, desc: "Bonus & Soforthilfe ×2, kein Rake" },
+             { key: "champagner", name: "Champagner",   emoji: "🍾", price: 200000,  buff: "winBoost",   mult: 1.3,  mins: 12, desc: "Haus-Gewinne +30 %" } ] },
+  factory: { name: "Fabrik",  emoji: "🏭", cost: 30000000,   income: 450000,  rent: 3000,  buildable: true, products: [
+             { key: "gold",       name: "Goldbarren",   emoji: "💎", price: 400000,  buff: "winBoost",   mult: 1.5,  mins: 8,  desc: "Haus-Gewinne +50 %" },
+             { key: "turbo",      name: "Turbo-Chip",   emoji: "⚙️", price: 50000,   buff: "fastSpins",  mult: 4,    mins: 12, desc: "Slots 4× schneller" } ] },
   // The Casino owner also collects the house rake (see accounts.recordHand).
-  casino:  { name: "Casino",  emoji: "🎰", cost: 150000000,  income: 1600000, rent: 0,     buildable: false, unique: true },
+  casino:  { name: "Casino",  emoji: "🎰", cost: 150000000,  income: 2400000, rent: 0,     buildable: false, unique: true },
   // The Bank also collects interest from every player loan (see game/bank.js).
-  bank:    { name: "Bank",    emoji: "🏦", cost: 80000000,   income: 800000,  rent: 0,     buildable: false, unique: true },
+  bank:    { name: "Bank",    emoji: "🏦", cost: 80000000,   income: 1200000, rent: 0,     buildable: false, unique: true },
 };
 
 const OWNER_DISCOUNT = 0.5;    // the business operator buys their own product at 50% off
@@ -209,11 +217,11 @@ function publicCity(key) {
         const rent = landOwnedByOp ? 0 : t.rent;
         pnl = { income: round(income), rent: round(rent), net: round(income - rent) };
       }
-      // Product the viewer would pay for (operator pays the discounted price).
-      let product = null;
-      if (t && t.product) {
+      // Products the viewer can buy (operator pays the discounted price).
+      let products = null;
+      if (t && t.products) {
         const mine = l.biz.operator === key;
-        product = { ...t.product, payPrice: Math.round(t.product.price * (mine ? OWNER_DISCOUNT : 1)), owned: mine };
+        products = t.products.map((pr) => ({ ...pr, payPrice: Math.round(pr.price * (mine ? OWNER_DISCOUNT : 1)), owned: mine }));
       }
       const landMine = l.landOwner === key;
       const canBuildHere = !l.biz && (landMine || (l.forRent && l.landOwner && l.landOwner !== key));
@@ -225,7 +233,7 @@ function publicCity(key) {
           type: l.biz.type, name: t.name, emoji: t.emoji,
           builtBy: l.biz.builtBy, builtByName: l.biz.builtByName, builtMine: l.biz.builtBy === key,
           operator: l.biz.operator, operatorName: l.biz.operatorName, operatorMine: l.biz.operator === key,
-          forLease: l.biz.forLease, listed: !!l.biz.listed, pnl, product,
+          forLease: l.biz.forLease, listed: !!l.biz.listed, pnl, products,
         } : null,
         canBuildHere,
         pending: round(lotPending(l, key)),
@@ -342,15 +350,16 @@ function listCompany(id, key) {
 
 /** Buy a business's product (grants a buff). Operator pays a discount; a rival
  *  buyer pays full price to the operator. Returns { ok, cost, product, seller }. */
-function buyProduct(id, key) {
+function buyProduct(id, key, productKey) {
   const lot = lotById(id);
   if (!lot || !lot.biz) return err("Kein Unternehmen hier.");
   const t = BUILDING_TYPES[lot.biz.type];
-  if (!t.product) return err("Dieses Gebäude verkauft kein Produkt.");
+  const product = t.products && t.products.find((p) => p.key === productKey);
+  if (!product) return err("Produkt nicht gefunden.");
   const mine = lot.biz.operator === key;
-  const cost = Math.round(t.product.price * (mine ? OWNER_DISCOUNT : 1));
+  const cost = Math.round(product.price * (mine ? OWNER_DISCOUNT : 1));
   const seller = !mine && lot.biz.operator ? lot.biz.operator : null;
-  return { ok: true, cost, product: t.product, seller };
+  return { ok: true, cost, product, seller };
 }
 
 /** Admin: strip all ownership from a lot (land + business → NPC/unowned). The
