@@ -772,20 +772,21 @@
   // Escalating win tiers, RELATIVE to the bet (a win only counts as "big" if it
   // actually beats the stake by a meaningful multiple).
   const WIN_TIERS = [
-    { mult: 4, name: "BIG WIN", cls: "t-big", fx: () => { quake("big"); confettiBurst(120); zoomPunch(); sndBig(); hypeWords(2); } },
-    { mult: 10, name: "MEGA WIN", cls: "t-mega", fx: () => { quake("mega"); confettiBurst(180); zoomPunch(); casinoStrobe(); sndBig(); hypeWords(4); } },
-    { mult: 25, name: "SUPER MEGA WIN", cls: "t-super", fx: () => { quake("mega"); confettiBurst(220); casinoStrobe(); zoomPunch(); sndUltra(); hypeWords(6); } },
-    { mult: 50, name: "ULTRA WIN", cls: "t-ultra", fx: () => { quake("mega"); coinRain(3000); casinoStrobe(); sndUltra(); hypeWords(8); } },
-    { mult: 100, name: "WAHNSINNS-WIN!!!", cls: "t-ultra", fx: () => { coinRain(3800); confettiBurst(260); casinoStrobe(); sndUltra(); hypeWords(11); } },
-    { mult: 250, name: "GOTTGLEICHER WIN", cls: "t-ultra", fx: () => { coinRain(4800); confettiBurst(320); casinoStrobe(); sndUltra(); hypeWords(15); } },
-    { mult: 500, name: "💥 CASINO GESPRENGT 💥", cls: "t-ultra", fx: () => { coinRain(6500); confettiBurst(420); casinoStrobe(); zoomPunch(); sndUltra(); hypeWords(22); } },
+    { mult: 3,   name: "BIG WIN",            cls: "t-big",   fx: () => { quake("big"); confettiBurst(180); zoomPunch(); shockwave(); sndBig(); hypeWords(4); } },
+    { mult: 7,   name: "MEGA WIN",           cls: "t-mega",  fx: () => { quake("mega"); confettiBurst(260); zoomPunch(); shockwave(); casinoStrobe(); sndBig(); hypeWords(7); } },
+    { mult: 15,  name: "SUPER MEGA WIN",     cls: "t-super", fx: () => { quake("mega"); confettiBurst(320); shockwave(); casinoStrobe(); zoomPunch(); screenRainbow(1500); sndUltra(); hypeWords(10); } },
+    { mult: 30,  name: "ULTRA WIN",          cls: "t-ultra", fx: () => { quake("mega"); coinRain(3500); shockwave(); casinoStrobe(); screenRainbow(2000); sndUltra(); hypeWords(14); } },
+    { mult: 60,  name: "WAHNSINNS-WIN!!!",   cls: "t-ultra", fx: () => { quake("mega"); coinRain(4500); confettiBurst(400); shockwave(); casinoStrobe(); screenRainbow(2500); zoomPunch(); sndUltra(); hypeWords(20); } },
+    { mult: 150, name: "GOTTGLEICHER WIN",   cls: "t-ultra", fx: () => { coinRain(6000); confettiBurst(500); shockwave(); casinoStrobe(); screenRainbow(3000); zoomPunch(); sndUltra(); hypeWords(28); } },
+    { mult: 400, name: "💥 CASINO GESPRENGT 💥", cls: "t-ultra", fx: () => { coinRain(9000); confettiBurst(700); shockwave(); casinoStrobe(); screenRainbow(4000); zoomPunch(); sndUltra(); hypeWords(40); } },
   ];
 
   function quake(level) {
-    const stage = $("#slot-stage");
+    // Shake the whole app, not just the stage, for a more violent feel.
+    const stage = document.getElementById("app") || $("#slot-stage");
     const cls = level === "mega" ? "shake-strong" : "shake";
     stage.classList.add(cls);
-    setTimeout(() => stage.classList.remove(cls), level === "mega" ? 800 : 550);
+    setTimeout(() => stage.classList.remove(cls), level === "mega" ? 900 : 600);
   }
 
   function updateFreeBadge(fs) {
@@ -829,11 +830,11 @@
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
     const parts = Array.from({ length: count }, () => ({
-      x: cx, y: cy,
-      vx: (Math.random() - 0.5) * 15, vy: Math.random() * -15 - 4,
-      g: 0.4 + Math.random() * 0.3, size: 5 + Math.random() * 7,
+      x: cx + (Math.random() - 0.5) * rect.width, y: cy + (Math.random() - 0.5) * 60,
+      vx: (Math.random() - 0.5) * 26, vy: Math.random() * -24 - 6,
+      g: 0.45 + Math.random() * 0.35, size: 7 + Math.random() * 12,
       color: colors[(Math.random() * colors.length) | 0],
-      rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, life: 1,
+      rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.4, life: 1,
     }));
     if (canvasRaf) cancelAnimationFrame(canvasRaf);
     function frame() {
@@ -863,11 +864,11 @@
     const end = performance.now() + duration;
     if (canvasRaf) cancelAnimationFrame(canvasRaf);
     function spawn() {
-      for (let i = 0; i < 4; i++)
+      for (let i = 0; i < 11; i++)
         coins.push({
           x: Math.random() * canvas.width, y: -20,
-          vy: 4 + Math.random() * 5, vx: (Math.random() - 0.5) * 2,
-          r: 9 + Math.random() * 8, spin: Math.random() * Math.PI, vs: (Math.random() - 0.5) * 0.35,
+          vy: 6 + Math.random() * 8, vx: (Math.random() - 0.5) * 3,
+          r: 11 + Math.random() * 12, spin: Math.random() * Math.PI, vs: (Math.random() - 0.5) * 0.45,
         });
     }
     function frame(now) {
@@ -906,6 +907,20 @@
     void el.offsetWidth; // reflow
     el.classList.add("go");
   }
+
+  // One-shot helper to fire a CSS animation by toggling .go on a singleton div.
+  function fireFx(id, ms) {
+    let el = document.getElementById(id);
+    if (!el) { el = document.createElement("div"); el.id = id; document.body.appendChild(el); }
+    el.classList.remove("go");
+    void el.offsetWidth;
+    el.classList.add("go");
+    if (ms) { clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("go"), ms); }
+  }
+  // Expanding shockwave ring from the centre.
+  function shockwave() { fireFx("shockwave", 750); setTimeout(() => fireFx("shockwave2", 750), 120); }
+  // Full-screen rainbow pulse that hue-cycles for the duration.
+  function screenRainbow(ms = 1600) { fireFx("screen-rainbow", ms); }
 
   // A rapid screen + reel flicker fired on EVERY win — constant flashing.
   function flicker() {

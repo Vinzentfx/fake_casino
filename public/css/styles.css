@@ -555,10 +555,11 @@ button { font-family: inherit; cursor: pointer; }
   box-shadow: 0 0 24px -4px var(--glow, var(--gold)), inset 0 0 40px rgba(0,0,0,0.5);
   overflow: visible;
 }
-.slot-stage.shake { animation: shake 0.5s; }
+.slot-stage.shake, .shake { animation: shake 0.6s; }
 @keyframes shake {
-  0%,100%{transform:translate(0,0)} 20%{transform:translate(-6px,3px)}
-  40%{transform:translate(6px,-3px)} 60%{transform:translate(-5px,-2px)} 80%{transform:translate(5px,2px)}
+  0%,100%{transform:translate(0,0) rotate(0)} 15%{transform:translate(-12px,6px) rotate(-1deg)}
+  30%{transform:translate(12px,-6px) rotate(1deg)} 45%{transform:translate(-10px,-5px) rotate(-1deg)}
+  60%{transform:translate(10px,5px) rotate(1deg)} 75%{transform:translate(-7px,4px) rotate(-0.5deg)} 90%{transform:translate(7px,-4px)}
 }
 
 /* Machine body = reel stage + lever side by side */
@@ -713,14 +714,14 @@ button { font-family: inherit; cursor: pointer; }
 }
 @keyframes ultrahue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
 
-.slot-stage.shake-strong { animation: shakeStrong 0.8s; }
+.slot-stage.shake-strong, .shake-strong { animation: shakeStrong 0.9s; }
 @keyframes shakeStrong {
   0%,100%{transform:translate(0,0)}
-  10%{transform:translate(-10px,5px) rotate(-1deg)}
-  30%{transform:translate(11px,-6px) rotate(1deg)}
-  50%{transform:translate(-9px,-4px) rotate(-1deg)}
-  70%{transform:translate(9px,5px) rotate(0.6deg)}
-  90%{transform:translate(-5px,-3px)}
+  10%{transform:translate(-22px,11px) rotate(-2.2deg)}
+  30%{transform:translate(24px,-13px) rotate(2.2deg)}
+  50%{transform:translate(-20px,-9px) rotate(-2deg)}
+  70%{transform:translate(20px,11px) rotate(1.4deg)}
+  90%{transform:translate(-11px,-6px)}
 }
 
 /* Lever — fixed size, independent of the reel grid */
@@ -866,21 +867,44 @@ button { font-family: inherit; cursor: pointer; }
   position: fixed; inset: 0; z-index: 175; pointer-events: none;
   opacity: 0; mix-blend-mode: screen;
 }
-#casino-strobe.go { animation: strobe 0.7s steps(1) 1; }
+#casino-strobe.go { animation: strobe 0.6s steps(1) 2; }
 @keyframes strobe {
   0%   { opacity: 0;   background: #ff2e88; }
-  16%  { opacity: .55; background: #ffe24a; }
-  33%  { opacity: .55; background: #2effe1; }
-  50%  { opacity: .55; background: #8a5cff; }
-  66%  { opacity: .55; background: #ff6b3d; }
-  83%  { opacity: .55; background: #5aff7a; }
+  12%  { opacity: .7;  background: #ffe24a; }
+  25%  { opacity: .7;  background: #2effe1; }
+  37%  { opacity: .7;  background: #8a5cff; }
+  50%  { opacity: .7;  background: #ff6b3d; }
+  62%  { opacity: .7;  background: #5aff7a; }
+  75%  { opacity: .7;  background: #ff2eff; }
+  87%  { opacity: .7;  background: #fff; }
   100% { opacity: 0;   background: #ff2e88; }
 }
+/* Expanding shockwave rings */
+#shockwave, #shockwave2 {
+  position: fixed; left: 50%; top: 44%; width: 24px; height: 24px; border-radius: 50%;
+  border: 8px solid #f4d782; z-index: 185; pointer-events: none; opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+}
+#shockwave2 { border-color: #7ec8ff; }
+#shockwave.go, #shockwave2.go { animation: shockwave 0.75s ease-out; }
+@keyframes shockwave {
+  0%   { opacity: 0.9; transform: translate(-50%,-50%) scale(0); border-width: 10px; }
+  100% { opacity: 0;   transform: translate(-50%,-50%) scale(38); border-width: 1px; }
+}
+/* Full-screen rainbow pulse */
+#screen-rainbow {
+  position: fixed; inset: 0; z-index: 173; pointer-events: none; opacity: 0; mix-blend-mode: overlay;
+  background: linear-gradient(45deg, #ff004c, #ffb300, #00e676, #00b0ff, #d500f9, #ff004c);
+  background-size: 400% 400%;
+}
+#screen-rainbow.go { animation: scrainbow 0.4s linear infinite, scrainbowfade 0.8s ease-in-out infinite alternate; }
+@keyframes scrainbow { to { background-position: 400% 0; } }
+@keyframes scrainbowfade { from { opacity: 0.18; } to { opacity: 0.5; } }
 /* Herausspringende Hype-Wörter */
 .hype-word {
   position: fixed; z-index: 195; pointer-events: none; font-weight: 900;
-  font-size: clamp(1.5rem, 7vw, 3.2rem); color: #fff; white-space: nowrap;
-  text-shadow: 0 0 14px var(--gold-strong, #f4d782), 0 2px 6px #000; letter-spacing: 1px;
+  font-size: clamp(2rem, 9vw, 4.5rem); color: #fff; white-space: nowrap;
+  text-shadow: 0 0 18px var(--gold-strong, #f4d782), 0 0 36px #ff6b3d, 0 2px 6px #000; letter-spacing: 1px;
   transform: translate(-50%,-50%) scale(0.3) rotate(var(--rot,0deg)); opacity: 0;
 }
 .hype-word.go { animation: hypepop 0.95s cubic-bezier(0.2,1.7,0.4,1) forwards; }
