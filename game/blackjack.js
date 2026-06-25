@@ -15,6 +15,7 @@
  */
 
 const { makeDeck, shuffle } = require("./cards");
+const bjLobby = require("./blackjackLobby");
 
 const DECKS = 6;
 const RESHUFFLE_THRESHOLD = 52;
@@ -133,6 +134,8 @@ function startHand(session, bet, accounts) {
   session.split = false;
   session.activeHand = 0;
   session.message = "";
+  session.lastNet = 0;
+  session.reported = false;
   session.playerHands = [{ cards: [deal(session), deal(session)], bet, doubled: false, done: false, result: null }];
   session.dealerCards = [deal(session), deal(session)];
 
@@ -260,6 +263,7 @@ function settleAll(session, accounts) {
 
   accounts.recordHand(session.name, net);
 
+  session.lastNet = net;
   session.phase = "done";
   session.message = buildResultMessage(session.playerHands, dealerBust, dealerVal);
   return { ok: true };
@@ -272,15 +276,18 @@ function resolveHand(session, accounts, outcome) {
     const bet = session.playerHands[0].bet;
     const payout = Math.floor(bet * BJ_PAYOUT) + bet;
     accounts.adjustChips(session.name, payout);
-    accounts.recordHand(session.name, Math.floor(bet * BJ_PAYOUT));
+    session.lastNet = Math.floor(bet * BJ_PAYOUT);
+    accounts.recordHand(session.name, session.lastNet);
     session.playerHands[0].result = "blackjack";
     session.message = `🃏 Blackjack! +${Math.floor(bet * BJ_PAYOUT).toLocaleString("de-DE")} 🪙`;
   } else if (outcome === "push") {
     accounts.adjustChips(session.name, session.playerHands[0].bet);
+    session.lastNet = 0;
     accounts.recordHand(session.name, 0);
     session.playerHands[0].result = "push";
     session.message = "Unentschieden — Einsatz zurück.";
   } else if (outcome === "lose_all") {
+    session.lastNet = -session.playerHands[0].bet;
     accounts.recordHand(session.name, -session.playerHands[0].bet);
     session.playerHands[0].result = "lose";
     session.message = "Dealer hat Blackjack.";
@@ -320,6 +327,12 @@ function setupBlackjack(io, accounts) {
     function push() {
       const session = getSession();
       socket.emit("bj:state", clientState(session, accounts));
+      // Report a finished hand's net to the player's blackjack lobby (if any),
+      // so everyone at the table sees who won/lost how much. Once per hand.
+      if (session.phase === "done" && !session.reported) {
+        session.reported = true;
+        bjLobby.report(socket, session.lastNet || 0);
+      }
     }
 
     socket.on("bj:init", () => {

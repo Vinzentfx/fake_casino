@@ -206,12 +206,8 @@
     setupChipButtons();
   }
 
-  // Hook into screen navigation
-  const origShow = window.Casino.showScreen.bind(window.Casino);
-  window.Casino.showScreen = function (name) {
-    origShow(name);
-    if (name === "blackjack") onEnterBlackjack();
-  };
+  // Called by app.js's showScreen when the blackjack screen opens.
+  window.Casino._loadBlackjack = onEnterBlackjack;
 
   // Wire up buttons after DOM is ready
   document.addEventListener("DOMContentLoaded", () => {
