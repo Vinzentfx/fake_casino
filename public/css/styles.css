@@ -1929,3 +1929,9 @@ button { font-family: inherit; cursor: pointer; }
 .rt-lobby-bets-head { margin-top: 2px; }
 .rt-lobby-bets { display: flex; flex-wrap: wrap; gap: 6px; }
 .rt-lobby-bets .rt-bet-tag { font-size: 0.78rem; }
+
+/* ===================== City location-factor tags ===================== */
+.cd-boost { display: inline-block; margin-left: 6px; font-size: 0.72rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; }
+.cd-boost.hot  { background: rgba(255, 138, 60, 0.22); color: #ffb074; }
+.cd-boost.cold { background: rgba(120, 160, 200, 0.18); color: #a9c2d6; }
+.cd-build { position: relative; }

@@ -70,12 +70,37 @@ const LAND_MIN = 0.55, LAND_MAX = 1.9;
 
 const COLS = 6, ROWS = 5;
 
+// ─── Location factors ─────────────────────────────────────────────────────
+// Non-ownable NPC landmarks placed on fixed tiles. They pull foot traffic to
+// the 8 ADJACENT lots, boosting revenue of nearby businesses — more for the
+// types that fit (a kiosk next to a school sells far more snacks). Generic
+// adjacency (a type not listed) still gets a small foot-traffic bump.
+const MAGNET_GENERIC = 1.12;
+const MAGNET_TYPES = {
+  school:  { name: "Schule",  emoji: "🏫", affinity: { kiosk: 1.6, cafe: 1.35 } },
+  station: { name: "Bahnhof", emoji: "🚉", affinity: { kiosk: 1.4, shop: 1.4, hotel: 1.5 } },
+  park:    { name: "Park",    emoji: "🏞️", affinity: { cafe: 1.5, hotel: 1.3, shop: 1.15 } },
+  stadium: { name: "Stadion", emoji: "🏟️", affinity: { kiosk: 1.5, shop: 1.35, hotel: 1.4 } },
+};
+// Fixed magnet placements (x,y) on the 6×5 grid — spread to the quadrants.
+const MAGNET_PLACEMENT = [
+  { type: "school",  x: 1, y: 1 },
+  { type: "station", x: 4, y: 1 },
+  { type: "park",    x: 1, y: 3 },
+  { type: "stadium", x: 4, y: 3 },
+];
+const DEMAND_CAP = 2.2;        // hard ceiling on a business's location demand multiplier
+const LAND_FACTOR_CAP = 2.1;   // hard ceiling on a lot's location land-price factor
+// Types whose revenue is location-INSENSITIVE (production, not foot traffic).
+const LOCATION_INSENSITIVE = new Set(["factory", "casino", "bank"]);
+
 let city = load();
 
 function load() {
   try {
     const c = JSON.parse(fs.readFileSync(CITY_FILE, "utf8"));
-    if (c && Array.isArray(c.lots) && c.lots.length && "forRent" in c.lots[0]) return c;
+    // "central" marks the location-factors format; older saves regenerate.
+    if (c && Array.isArray(c.lots) && c.lots.length && "central" in c.lots[0]) return c;
   } catch {}
   return generate();
 }
@@ -92,13 +117,33 @@ function generate() {
   let id = 0;
   for (let y = 0; y < ROWS; y++)
     for (let x = 0; x < COLS; x++)
-      lots.push({ id: id++, x, y, landOwner: null, landOwnerName: null, forRent: false, biz: null });
+      lots.push({ id: id++, x, y, landOwner: null, landOwnerName: null, forRent: false, biz: null, magnet: null });
+
+  const at = (x, y) => lots.find((l) => l.x === x && l.y === y);
+
+  // Place the fixed NPC landmarks (magnets) — these tiles can't be owned/built.
+  for (const m of MAGNET_PLACEMENT) {
+    const lot = at(m.x, m.y);
+    if (lot) lot.magnet = m.type;
+  }
+
+  // Per-lot centrality (1 = dead centre, 0 = far corner) and adjacent magnets.
+  const cx = (COLS - 1) / 2, cy = (ROWS - 1) / 2;
+  const maxDist = Math.hypot(cx, cy) || 1;
+  for (const lot of lots) {
+    lot.central = Math.round((1 - Math.hypot(lot.x - cx, lot.y - cy) / maxDist) * 1000) / 1000;
+    lot.adj = lots
+      .filter((o) => o.magnet && o !== lot && Math.max(Math.abs(o.x - lot.x), Math.abs(o.y - lot.y)) === 1)
+      .map((o) => o.magnet);
+  }
 
   const mkBiz = (type) => ({ type, builtBy: null, builtByName: null, operator: null, operatorName: null, perf: 1, forLease: false });
-  lots[Math.floor(lots.length / 2)].biz = mkBiz("casino");
-  lots[2].biz = mkBiz("bank"); // the one Bank (NPC-owned until someone buys it)
+  at(cx | 0, cy | 0).biz = mkBiz("casino"); // casino dead centre (prime spot)
+  lots[0].biz = mkBiz("bank");              // the one Bank (NPC-owned until someone buys it)
+
+  // Seed NPC businesses on free, non-magnet lots.
   const pool = ["kiosk", "kiosk", "kiosk", "cafe", "cafe", "cafe", "shop", "shop", "hotel", "factory"];
-  const free = lots.filter((l) => !l.biz);
+  const free = lots.filter((l) => !l.biz && !l.magnet);
   for (const t of pool) {
     if (!free.length) break;
     const i = crypto.randomInt(free.length);
@@ -124,14 +169,39 @@ function tickMarket() {
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const round = (n) => Math.round(n * 100) / 100;
-const landPrice = () => Math.round(BASE_LAND * (city.landIndex || 1));
+const landPrice = () => Math.round(BASE_LAND * (city.landIndex || 1)); // index-only base (display fallback)
 const landSellPrice = () => Math.round(landPrice() * SELL_SPREAD);
+
+// ─── Location maths ───────────────────────────────────────────────────────
+/** Per-lot land-price factor: central tiles + tiles next to landmarks cost more. */
+function landFactor(lot) {
+  const central = 0.70 + 0.65 * (lot.central ?? 0.5);
+  const magnetBoost = 1 + 0.18 * ((lot.adj && lot.adj.length) || 0);
+  return clamp(central * magnetBoost, 0.5, LAND_FACTOR_CAP);
+}
+/** Per-lot, per-type revenue demand: foot traffic from centrality × landmark fit.
+ *  Production buildings (factory/casino/bank) are location-insensitive (= 1). */
+function demand(lot, type) {
+  if (LOCATION_INSENSITIVE.has(type)) return 1;
+  let mult = 0.75 + 0.50 * (lot.central ?? 0.5);
+  for (const m of lot.adj || []) {
+    const a = MAGNET_TYPES[m];
+    mult *= (a && a.affinity[type]) || MAGNET_GENERIC;
+  }
+  return clamp(mult, 0.5, DEMAND_CAP);
+}
+const lotLandPrice = (lot) => Math.round(BASE_LAND * (city.landIndex || 1) * landFactor(lot));
+const lotLandSellPrice = (lot) => Math.round(lotLandPrice(lot) * SELL_SPREAD);
+/** Rent scales with location too — prime land costs the tenant more. */
+const rentFor = (lot) => Math.round(BUILDING_TYPES[lot.biz.type].rent * landFactor(lot));
+/** Names of landmarks adjacent to a lot, for display. */
+const adjMagnetNames = (lot) => (lot.adj || []).map((m) => MAGNET_TYPES[m] && MAGNET_TYPES[m].name).filter(Boolean);
 
 // ─── P&L (all figures are PER MINUTE) ─────────────────────────────────────
 function bizNet(lot) {
   const t = BUILDING_TYPES[lot.biz.type];
-  const income = t.income * (lot.biz.perf || 1);
-  const rent = lot.biz.operator !== lot.landOwner ? t.rent : 0; // pay rent if you don't own the land
+  const income = t.income * (lot.biz.perf || 1) * demand(lot, lot.biz.type); // location demand
+  const rent = lot.biz.operator !== lot.landOwner ? rentFor(lot) : 0; // pay rent if you don't own the land
   return income - rent;
 }
 
@@ -149,7 +219,7 @@ function lotPending(lot, key, now = Date.now()) {
   if (lot.biz.operator === key)
     return Math.max(0, bizNet(lot)) * elapsedMs(lot.biz.opAt, now) / MS_PER_MIN;
   if (lot.landOwner === key && lot.biz.operator && lot.biz.operator !== key)
-    return BUILDING_TYPES[lot.biz.type].rent * elapsedMs(lot.biz.rentAt, now) / MS_PER_MIN;
+    return rentFor(lot) * elapsedMs(lot.biz.rentAt, now) / MS_PER_MIN;
   return 0;
 }
 
@@ -180,7 +250,7 @@ function ownerIncomeRate(key) {
   for (const lot of city.lots) {
     if (lot.biz && lot.biz.operator === key) rate += bizNet(lot);
     if (lot.landOwner === key && lot.biz && lot.biz.operator && lot.biz.operator !== key) {
-      rate += BUILDING_TYPES[lot.biz.type].rent;
+      rate += rentFor(lot);
     }
   }
   return rate;
@@ -190,7 +260,7 @@ function ownerIncomeRate(key) {
 function ownerValue(key) {
   let total = 0;
   for (const lot of city.lots) {
-    if (lot.landOwner === key) total += landPrice();
+    if (lot.landOwner === key) total += lotLandPrice(lot);
     if (lot.biz && lot.biz.builtBy === key) total += BUILDING_TYPES[lot.biz.type].cost;
   }
   return total;
@@ -225,10 +295,15 @@ function publicCity(key) {
       if (l.biz) {
         const operator = l.biz.operator;
         const landOwnedByOp = operator === null ? l.landOwner === key : l.landOwner === operator;
-        const income = t.income * (l.biz.perf || 1);
-        const rent = landOwnedByOp ? 0 : t.rent;
-        pnl = { income: round(income), rent: round(rent), net: round(income - rent) };
+        const income = t.income * (l.biz.perf || 1) * demand(l, l.biz.type);
+        const rent = landOwnedByOp ? 0 : rentFor(l);
+        pnl = { income: round(income), rent: round(rent), net: round(income - rent), demand: round(demand(l, l.biz.type)) };
       }
+      // Demand preview per buildable type, so the build menu can flag where a
+      // given business would thrive (e.g. a kiosk next to a school).
+      const demandByType = {};
+      for (const [tid, tt] of Object.entries(BUILDING_TYPES))
+        if (tt.buildable) demandByType[tid] = round(demand(l, tid));
       // Products are PRIVATE to the business operator: only the owner sees them
       // (and buys them at the owner discount). Outsiders get `products: null` —
       // they can't even see which products exist; they buy them off the player
@@ -242,7 +317,14 @@ function publicCity(key) {
       return {
         id: l.id, x: l.x, y: l.y,
         landOwner: l.landOwner, landOwnerName: l.landOwnerName, landMine, forRent: l.forRent,
-        emoji: t ? t.emoji : null,
+        emoji: l.magnet ? MAGNET_TYPES[l.magnet].emoji : (t ? t.emoji : null),
+        // Location factors.
+        magnet: l.magnet ? { type: l.magnet, name: MAGNET_TYPES[l.magnet].name, emoji: MAGNET_TYPES[l.magnet].emoji } : null,
+        price: l.magnet ? null : lotLandPrice(l),
+        sellPrice: l.magnet ? null : lotLandSellPrice(l),
+        central: round(l.central ?? 0.5),
+        nearby: adjMagnetNames(l),
+        demandByType,
         biz: l.biz ? {
           type: l.biz.type, name: t.name, emoji: t.emoji,
           builtBy: l.biz.builtBy, builtByName: l.biz.builtByName, builtMine: l.biz.builtBy === key,
@@ -265,8 +347,9 @@ function publicCity(key) {
 function buyLand(id, key, name) {
   const lot = lotById(id);
   if (!lot) return err("Grundstück nicht gefunden.");
+  if (lot.magnet) return err("Öffentliches Gelände — nicht kaufbar.");
   if (lot.landOwner !== null) return err("Grundstück ist nicht frei.");
-  return { ok: true, cost: landPrice(), commit: () => { lot.landOwner = key; lot.landOwnerName = name; save(); } };
+  return { ok: true, cost: lotLandPrice(lot), commit: () => { lot.landOwner = key; lot.landOwnerName = name; save(); } };
 }
 
 function sellLand(id, key) {
@@ -274,7 +357,7 @@ function sellLand(id, key) {
   if (!lot) return err("Nicht gefunden.");
   if (lot.landOwner !== key) return err("Gehört dir nicht.");
   if (lot.biz) return err("Erst das Gebäude loswerden.");
-  return { ok: true, gain: landSellPrice(), commit: () => { lot.landOwner = null; lot.landOwnerName = null; lot.forRent = false; save(); } };
+  return { ok: true, gain: lotLandSellPrice(lot), commit: () => { lot.landOwner = null; lot.landOwnerName = null; lot.forRent = false; save(); } };
 }
 
 function setForRent(id, key, val) {

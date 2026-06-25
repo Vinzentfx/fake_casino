@@ -122,7 +122,7 @@
     const lp = $("#land-price");
     if (lp) {
       const arrow = cityData.landIndex >= 1 ? "📈" : "📉";
-      lp.innerHTML = `🏷️ Bodenpreis: <b>${fmt(cityData.landPrice)} 🪙</b> ${arrow} (Index ${cityData.landIndex})`;
+      lp.innerHTML = `🏷️ Basis-Bodenpreis: <b>${fmt(cityData.landPrice)} 🪙</b> ${arrow} (Index ${cityData.landIndex}) · ±Lage`;
     }
     const W = cityData.cols * CELL, H = cityData.rows * CELL;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
@@ -137,14 +137,17 @@
       const lx = lot.x * CELL + INSET, ly = lot.y * CELL + INSET;
       const selected = lot.id === selectedId;
       let fill, stroke = "rgba(255,255,255,0.15)", sw = 1;
-      if (lot.biz && lot.biz.type === "casino") fill = "#5a2a6e";
+      if (lot.magnet) fill = "#36506e";      // civic landmark (school/station/park/stadium)
+      else if (lot.biz && lot.biz.type === "casino") fill = "#5a2a6e";
       else if (lot.biz) fill = "#2f5840";   // a business
       else fill = "#3b6b4a";                // empty land
       if (lot.mine) { stroke = "#f4d782"; sw = 3; }
       else if (lot.rival) { stroke = "#d65a5a"; sw = 2.5; }
       if (selected) { stroke = "#7ec8ff"; sw = 4; }
 
-      const label = lot.biz
+      const label = lot.magnet
+        ? lot.magnet.name
+        : lot.biz
         ? (lot.biz.operatorName || "frei kaufbar")
         : (lot.landOwnerName ? (lot.forRent ? lot.landOwnerName + " 🔑" : lot.landOwnerName) : "Grundstück");
       parts.push(`<g class="lot" data-lot-id="${lot.id}" style="cursor:pointer">`);
@@ -185,6 +188,14 @@
       box.innerHTML = '<p class="muted small" style="text-align:center;padding:14px">Tippe ein Feld auf der Karte an.</p>';
       return;
     }
+    // Civic landmark — not ownable; it pulls foot traffic to its neighbours.
+    if (lot.magnet) {
+      box.innerHTML = `<div class="cd-head">${lot.magnet.emoji} <b>${escapeHtml(lot.magnet.name)}</b></div>`
+        + `<div class="cd-section"><div class="cd-row muted">Öffentliches Gelände — nicht kaufbar.</div>`
+        + `<div class="cd-row">Zieht Laufkundschaft an: Betriebe auf den <b>8 Nachbarfeldern</b> machen mehr Umsatz — je nach Branche unterschiedlich stark. 🔥</div></div>`;
+      return;
+    }
+
     const b = lot.biz;
     const head = `<div class="cd-head">${lot.emoji || "🟩"} <b>${b ? escapeHtml(b.name) : "Leeres Grundstück"}</b></div>`;
     let body = "";
@@ -193,13 +204,18 @@
     if (lot.pending >= 1)
       body += `<button class="btn-primary cd-collect" data-act="collect">💰 ${fmt(lot.pending)} 🪙 einsammeln</button>`;
 
+    // ── Lage (location) ──
+    const zone = lot.central >= 0.78 ? "Zentrum" : lot.central >= 0.45 ? "Innenstadt" : "Stadtrand";
+    const nearbyStr = lot.nearby && lot.nearby.length ? ` · nahe ${escapeHtml(lot.nearby.join(", "))}` : "";
+    body += `<div class="cd-row muted small">📍 Lage: <b>${zone}</b>${nearbyStr}</div>`;
+
     // ── Grundstück (land) ──
     body += `<div class="cd-section"><div class="cd-sub">🟩 Grundstück</div>`;
     body += `<div class="cd-row">Besitzer: <b>${lot.landMine ? "Du" : lot.landOwnerName ? escapeHtml(lot.landOwnerName) : "— frei (Stadt) —"}</b></div>`;
     if (lot.landOwner === null) {
-      body += `<button class="btn-primary cd-btn" data-act="buyLand">Grundstück kaufen — ${fmt(cityData.landPrice)} 🪙</button>`;
+      body += `<button class="btn-primary cd-btn" data-act="buyLand">Grundstück kaufen — ${fmt(lot.price)} 🪙</button>`;
     } else if (lot.landMine && !b) {
-      body += `<button class="btn-primary cd-btn" data-act="sellLand">An Markt verkaufen — ${fmt(cityData.landSellPrice)} 🪙</button>`;
+      body += `<button class="btn-primary cd-btn" data-act="sellLand">An Markt verkaufen — ${fmt(lot.sellPrice)} 🪙</button>`;
       body += lot.forRent
         ? `<button class="cd-toggle on" data-act="setForRent" data-val="0">🔑 Vermietet — Vermietung beenden</button>`
         : `<button class="cd-toggle" data-act="setForRent" data-val="1">🔑 Zum Bebauen vermieten</button>`;
@@ -218,6 +234,8 @@
       if (p.rent > 0) body += `<div><span>Miete</span><b class="neg">−${fmt(p.rent)}/Min</b></div>`;
       body += `<div class="cd-net"><span>= Gewinn</span><b class="${p.net >= 0 ? "pos" : "neg"}">${fmt(p.net)} 🪙/Min</b></div>`;
       body += `</div>`;
+      if (p.demand && Math.abs(p.demand - 1) >= 0.02)
+        body += `<div class="cd-row muted small">📍 Standort-Nachfrage: <b>×${p.demand.toFixed(2)}</b>${p.demand >= 1.2 ? " 🔥" : p.demand <= 0.85 ? " 🥶" : ""}</div>`;
       // Product / buff this business sells.
       if (b.products && b.products.length) {
         body += `<div class="cd-product"><div class="cd-prod-head">🛒 Produkte${b.products[0].owned ? " (dein Rabatt)" : ""}:</div>`;
@@ -249,7 +267,10 @@
       body += `<div class="cd-row">${rented ? "Auf gemietetem Land bauen (Miete fällt an):" : "Bebaue dein Grundstück:"}</div><div class="cd-builds">`;
       for (const [id, t] of Object.entries(cityData.buildingTypes)) {
         if (!t.buildable) continue;
-        body += `<button class="cd-build" data-build="${id}">${t.emoji} ${escapeHtml(t.name)}<small>${fmt(t.cost)} 🪙</small></button>`;
+        const dm = lot.demandByType && lot.demandByType[id];
+        const boost = dm && dm >= 1.15 ? `<span class="cd-boost hot">×${dm.toFixed(2)} 🔥</span>`
+          : dm && dm <= 0.85 ? `<span class="cd-boost cold">×${dm.toFixed(2)}</span>` : "";
+        body += `<button class="cd-build" data-build="${id}">${t.emoji} ${escapeHtml(t.name)}<small>${fmt(t.cost)} 🪙</small>${boost}</button>`;
       }
       body += `</div>`;
     } else {
