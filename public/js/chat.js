@@ -1,26 +1,32 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – reusable chat widget.
+   Fake Casino – floating chat dock (bottom-left, every screen).
 
-   Markup convention (any container):
-     <div class="chat-box" data-chat-room="global">
-       <div class="chat-log" data-chat-log></div>
-       <form class="chat-input" data-chat-form>
-         <input data-chat-text /><button type="submit">Senden</button>
-       </form>
-     </div>
-
-   Mount with window.Casino.chat.mount(boxEl[, room]) — room defaults to the
-   box's data-chat-room. Re-mounting (e.g. a lobby code changes) is safe.
+   Idle state: only the 💬 bubble shows; the message log is faded out and
+   click-through (pointer-events:none) so it never blocks game buttons. A new
+   message or a tap reveals the log briefly, then it fades again. Tapping the
+   bubble opens the input. One dock, whose room switches with the screen
+   (global on the home/lobby, a lobby code inside a game lobby — set later).
    ============================================================ */
 
 (function () {
   const { socket, escapeHtml } = window.Casino;
   const fmtTime = (ts) => new Date(ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  const FADE_MS = 7000; // hide the log this long after the last message/interaction
 
-  // boxEl -> { room } so incoming messages route to the right open widget.
-  const mounted = new Map();
+  const dock = document.getElementById("chat-dock");
+  if (!dock) return;
+  const logEl = dock.querySelector("[data-chat-log]");
+  const formEl = dock.querySelector("[data-chat-form]");
+  const textEl = dock.querySelector("[data-chat-text]");
+  const toggleEl = dock.querySelector("[data-chat-toggle]");
+  const tagEl = dock.querySelector("[data-chat-tag]");
+
+  let room = dock.dataset.chatRoom || "global";
+  let open = false;
+  let fadeTimer = null;
+  let loadToken = 0;
 
   function rowHtml(msg) {
     const me = window.Casino.getAccount && window.Casino.getAccount();
@@ -28,73 +34,92 @@
     return `<div class="chat-row${mine ? " mine" : ""}">
       <span class="chat-name">${escapeHtml(msg.name)}</span>
       <span class="chat-text">${escapeHtml(msg.text)}</span>
-      <span class="chat-time">${fmtTime(msg.ts)}</span>
     </div>`;
   }
-
-  function append(logEl, msg, scroll = true) {
+  function append(msg, scroll = true) {
+    const empty = logEl.querySelector(".chat-empty");
+    if (empty) empty.remove();
     logEl.insertAdjacentHTML("beforeend", rowHtml(msg));
+    while (logEl.children.length > 40) logEl.removeChild(logEl.firstChild);
     if (scroll) logEl.scrollTop = logEl.scrollHeight;
   }
 
-  function mount(boxEl, room) {
-    if (!boxEl) return;
-    room = room || boxEl.dataset.chatRoom || "global";
-    const logEl = boxEl.querySelector("[data-chat-log]");
-    const formEl = boxEl.querySelector("[data-chat-form]");
-    const textEl = boxEl.querySelector("[data-chat-text]");
-    if (!logEl || !formEl || !textEl) return;
+  // ── Reveal / fade ──────────────────────────────────────────────────────
+  function reveal() {
+    dock.classList.add("show");
+    clearTimeout(fadeTimer);
+    if (!open) fadeTimer = setTimeout(hide, FADE_MS);
+  }
+  function hide() {
+    if (open) return;
+    dock.classList.remove("show");
+  }
+  function setOpen(v) {
+    open = v;
+    dock.classList.toggle("open", v);
+    if (v) { reveal(); clearTimeout(fadeTimer); textEl.focus(); }
+    else { fadeTimer = setTimeout(hide, FADE_MS); }
+  }
 
-    mounted.set(boxEl, { room, logEl });
-
-    // Load recent history.
+  // ── Room / history ─────────────────────────────────────────────────────
+  function loadRoom(r) {
+    room = r || "global";
+    dock.dataset.chatRoom = room;
+    if (tagEl) tagEl.textContent = room === "global" ? "" : "•";
+    const token = ++loadToken;
     logEl.innerHTML = '<div class="chat-empty muted small">Lädt…</div>';
     socket.emit("chat:history", { room }, (res) => {
-      if (mounted.get(boxEl)?.room !== room) return; // re-mounted meanwhile
+      if (token !== loadToken) return;
       logEl.innerHTML = "";
       if (!res || !res.ok || !res.messages.length) {
-        logEl.innerHTML = '<div class="chat-empty muted small">Noch keine Nachrichten — sag Hallo! 👋</div>';
+        logEl.innerHTML = '<div class="chat-empty muted small">Noch keine Nachrichten 👋</div>';
         return;
       }
-      res.messages.forEach((m) => append(logEl, m, false));
+      res.messages.forEach((m) => append(m, false));
       logEl.scrollTop = logEl.scrollHeight;
     });
-
-    // Bind the form once per box.
-    if (!boxEl.dataset.chatBound) {
-      boxEl.dataset.chatBound = "1";
-      formEl.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const text = textEl.value.trim();
-        if (!text) return;
-        const cur = mounted.get(boxEl);
-        if (!cur) return;
-        socket.emit("chat:send", { room: cur.room, text }, (res) => {
-          if (res && !res.ok) window.Casino.toast(res.error || "Konnte nicht senden.");
-        });
-        textEl.value = "";
-      });
-    }
   }
 
-  function unmount(boxEl) {
-    mounted.delete(boxEl);
-  }
+  // ── Wiring ─────────────────────────────────────────────────────────────
+  toggleEl.addEventListener("click", () => setOpen(!open));
 
-  socket.on("chat:msg", ({ room, msg }) => {
-    for (const [boxEl, info] of mounted) {
-      if (info.room !== room) continue;
-      const empty = info.logEl.querySelector(".chat-empty");
-      if (empty) empty.remove();
-      append(info.logEl, msg);
-    }
+  formEl.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const text = textEl.value.trim();
+    if (!text) return;
+    socket.emit("chat:send", { room, text }, (res) => {
+      if (res && !res.ok) window.Casino.toast(res.error || "Konnte nicht senden.");
+    });
+    textEl.value = "";
+    reveal();
   });
 
-  window.Casino.chat = { mount, unmount };
+  // Collapse the input shortly after it loses focus if left empty (keeps the
+  // screen clear on iPad once you're done typing).
+  textEl.addEventListener("blur", () => {
+    setTimeout(() => { if (open && !textEl.value.trim() && document.activeElement !== textEl) setOpen(false); }, 250);
+  });
 
-  // Mount the global lobby chat whenever the lobby screen opens.
-  window.Casino._loadChatGlobal = () => {
-    const box = document.querySelector("#global-chat");
-    if (box) mount(box, "global");
+  // Any interaction with the dock keeps it awake.
+  dock.addEventListener("pointerdown", reveal);
+
+  socket.on("chat:msg", ({ room: r, msg }) => {
+    if (r !== room) return;
+    append(msg);
+    reveal();
+  });
+
+  // ── Public API ─────────────────────────────────────────────────────────
+  window.Casino.chat = {
+    setRoom: (r) => { if (r !== room) loadRoom(r); },
+    // Show/hide the whole dock (hidden on the login screen). Switches room too.
+    update: (screen) => {
+      if (screen === "login") { dock.classList.add("hidden"); setOpen(false); return; }
+      dock.classList.remove("hidden");
+      // Game lobbies set their own room; everywhere else is the global channel.
+      if (room !== "global" && !dock.dataset.lobbyRoom) loadRoom("global");
+    },
   };
+
+  loadRoom("global");
 })();

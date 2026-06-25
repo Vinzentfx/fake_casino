@@ -118,15 +118,6 @@
           <button class="action-tile" data-nav="settings">⚙️<span>Einstellungen</span></button>
           <button class="action-tile" id="admin-tile" data-nav="admin" style="display:none">🛠️<span>Admin</span></button>
         </div>
-
-        <h2 class="section-title">💬 Lobby-Chat</h2>
-        <div class="chat-box" id="global-chat" data-chat-room="global">
-          <div class="chat-log" data-chat-log></div>
-          <form class="chat-input" data-chat-form>
-            <input type="text" data-chat-text maxlength="280" placeholder="Schreib etwas…" autocomplete="off" />
-            <button type="submit" class="btn-primary">Senden</button>
-          </form>
-        </div>
       </div>
     </section>
 
@@ -698,6 +689,18 @@
     </section>
 
   </main>
+
+  <!-- ===================== SCHWEBENDER CHAT (unten links, jeder Screen) ===================== -->
+  <!-- Ruhezustand: nur die 💬-Blase, Log ausgeblendet & klick-durchlässig, damit
+       Spiel-Buttons (v. a. Blackjack) frei bleiben. Neue Nachricht / Tippen blendet ein. -->
+  <div id="chat-dock" class="chat-dock hidden" data-chat-room="global">
+    <div class="chat-log" data-chat-log></div>
+    <form class="chat-input" data-chat-form>
+      <input type="text" data-chat-text maxlength="280" placeholder="Nachricht…" autocomplete="off" />
+      <button type="submit" class="chat-send" title="Senden">➤</button>
+    </form>
+    <button type="button" class="chat-fab" data-chat-toggle title="Chat">💬<span class="chat-room-tag" data-chat-tag></span></button>
+  </div>
 
   <!-- Toast für Hinweise (z. B. Bonus erhalten) -->
   <div id="toast" class="toast"></div>
