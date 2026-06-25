@@ -86,6 +86,11 @@
             <span class="tile-name">Roulette</span>
             <span class="tile-sub">Europäisches Roulette</span>
           </button>
+          <button class="game-tile" data-nav="sports">
+            <span class="tile-icon">⚽</span>
+            <span class="tile-name">Sportwetten</span>
+            <span class="tile-sub">Quoten · sieh fremde Tipps</span>
+          </button>
         </div>
 
         <h2 class="section-title">Wirtschaft</h2>
@@ -487,6 +492,18 @@
       </div>
     </section>
 
+    <!-- ===================== SPORTWETTEN ===================== -->
+    <section class="screen" data-screen="sports">
+      <div class="sb-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <h2 style="text-align:center;margin:4px 0 2px">⚽ Sportwetten</h2>
+        <p class="muted small" style="text-align:center;margin:0 0 10px">Simulierte Ligen · ständig neue Spiele · du siehst, worauf andere tippen</p>
+        <div id="sb-matches" class="sb-matches"></div>
+        <h3 class="section-title" style="margin-top:14px">📣 Letzte Tipps</h3>
+        <div id="sb-feed" class="sb-feed"></div>
+      </div>
+    </section>
+
     <!-- ===================== LEADERBOARD ===================== -->
     <section class="screen" data-screen="leaderboard">
       <div class="panel">
@@ -750,6 +767,7 @@
   <script src="/js/blackjack.js"></script>
   <script src="/js/roulette.js"></script>
   <script src="/js/rouletteLobby.js"></script>
+  <script src="/js/sports.js"></script>
   <script src="/js/economy.js"></script>
   <script src="/js/bank.js"></script>
   <script src="/js/stocks.js"></script>
