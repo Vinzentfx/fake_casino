@@ -1924,3 +1924,8 @@ button { font-family: inherit; cursor: pointer; }
 .bj-feed-row { display: flex; justify-content: space-between; gap: 10px; font-size: 0.85rem; }
 .bj-lobby-panel .pos { color: #7ee0a0; }
 .bj-lobby-panel .neg { color: #ff8a8a; }
+
+/* ===================== Roulette lobby panel ===================== */
+.rt-lobby-bets-head { margin-top: 2px; }
+.rt-lobby-bets { display: flex; flex-wrap: wrap; gap: 6px; }
+.rt-lobby-bets .rt-bet-tag { font-size: 0.78rem; }

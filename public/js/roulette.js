@@ -12,6 +12,7 @@
   let spinning = false;
   let wheelAngle = 0;
   let history = [];
+  let lobbyMode = null; // { code, isHost } when playing a shared-lobby table
 
   const BET_LABELS = {
     red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1–18", high: "19–36",
@@ -230,6 +231,7 @@
     table.addEventListener("click", onTableClick);
     table.addEventListener("contextmenu", (e) => {
       e.preventDefault();
+      if (lobbyMode) return; // in a lobby, clearing is all-or-nothing (server-side)
       const cell = e.target.closest("[data-type]");
       if (cell) { delete bets[betKey(cell)]; renderBets(); updateIndicators(); }
     });
@@ -253,6 +255,14 @@
     if (spinning) return;
     const cell = e.target.closest("[data-type]");
     if (!cell) return;
+    if (lobbyMode) {
+      const bet = { type: cell.dataset.type, amount: chipValue };
+      if (cell.dataset.value !== undefined)
+        bet.value = Number.isNaN(Number(cell.dataset.value)) ? cell.dataset.value : Number(cell.dataset.value);
+      socket.emit("rlobby:bet", bet, (res) => { if (res && !res.ok) toast(res.error || "Fehler."); });
+      sndChip();
+      return; // board updates from the server broadcast
+    }
     const key  = betKey(cell);
     bets[key]  = (bets[key] || 0) + chipValue;
     sndChip();
@@ -322,8 +332,47 @@
   }
 
   // ── Spin ───────────────────────────────────────────────────────
+  function showResult(number, color, netWin) {
+    const numEl = $("#rt-result-num");
+    numEl.textContent = number;
+    numEl.className = "rt-result-num rt-hist-" + color;
+    $("#rt-result-color").textContent = { red: "ROT", black: "SCHWARZ", green: "GRÜN" }[color];
+    const netEl = $("#rt-net-win");
+    if (netWin > 0) {
+      netEl.textContent = "+" + netWin.toLocaleString("de-DE") + " 🪙";
+      netEl.className = "rt-net-win rt-win";
+    } else if (netWin < 0) {
+      netEl.textContent = netWin.toLocaleString("de-DE") + " 🪙";
+      netEl.className = "rt-net-win rt-lose";
+    } else {
+      netEl.textContent = "±0 🪙"; netEl.className = "rt-net-win";
+    }
+    $("#rt-result").style.display = "";
+    if (netWin > 0) { sndWin(); toast("🎉 +" + netWin.toLocaleString("de-DE") + " 🪙!"); }
+    else if (netWin < 0) sndLose();
+  }
+
+  function highlightBetCells(number) {
+    document.querySelectorAll("#rt-table .rt-has-bet").forEach((cell) => {
+      const [type, val] = betKey(cell).split(":");
+      const v   = val !== undefined ? (Number.isNaN(Number(val)) ? val : Number(val)) : undefined;
+      const win = clientPayout(type, v, number) > 0;
+      cell.classList.add(win ? "rt-win-cell" : "rt-lose-cell");
+    });
+    setTimeout(() => {
+      document.querySelectorAll(".rt-win-cell, .rt-lose-cell").forEach((el) =>
+        el.classList.remove("rt-win-cell", "rt-lose-cell"));
+    }, 2600);
+  }
+
   function doSpin() {
     if (spinning) return;
+    // In a lobby only the leader spins, and the whole table shares one result.
+    if (lobbyMode) {
+      socket.emit("rlobby:spin", (res) => { if (res && !res.ok) $("#rt-error").textContent = res.error || "Fehler."; });
+      return;
+    }
+
     const tot = Object.values(bets).reduce((s, v) => s + v, 0);
     if (!tot) { toast("Bitte erst eine Wette setzen."); return; }
 
@@ -353,41 +402,9 @@
         spinning = false;
         $("#rt-spin").disabled  = false;
         $("#rt-clear").disabled = false;
-
-        // Show result
-        const numEl = $("#rt-result-num");
-        numEl.textContent = res.number;
-        numEl.className = "rt-result-num rt-hist-" + res.color;
-        $("#rt-result-color").textContent = { red: "ROT", black: "SCHWARZ", green: "GRÜN" }[res.color];
-        const netEl = $("#rt-net-win");
-        if (res.netWin > 0) {
-          netEl.textContent = "+" + res.netWin.toLocaleString("de-DE") + " 🪙";
-          netEl.className = "rt-net-win rt-win";
-        } else if (res.netWin < 0) {
-          netEl.textContent = res.netWin.toLocaleString("de-DE") + " 🪙";
-          netEl.className = "rt-net-win rt-lose";
-        } else {
-          netEl.textContent = "±0 🪙"; netEl.className = "rt-net-win";
-        }
-        $("#rt-result").style.display = "";
-
+        showResult(res.number, res.color, res.netWin);
         window.Casino.setChips(res.balance);
-        if (res.netWin > 0) { sndWin(); toast("🎉 +" + res.netWin.toLocaleString("de-DE") + " 🪙!"); }
-        else if (res.netWin < 0) sndLose();
-
-        // Highlight winning / losing cells
-        document.querySelectorAll("#rt-table .rt-has-bet").forEach((cell) => {
-          const [type, val] = betKey(cell).split(":");
-          const v   = val !== undefined ? (Number.isNaN(Number(val)) ? val : Number(val)) : undefined;
-          const win = clientPayout(type, v, res.number) > 0;
-          cell.classList.add(win ? "rt-win-cell" : "rt-lose-cell");
-        });
-        setTimeout(() => {
-          document.querySelectorAll(".rt-win-cell, .rt-lose-cell").forEach((el) =>
-            el.classList.remove("rt-win-cell", "rt-lose-cell")
-          );
-        }, 2600);
-
+        highlightBetCells(res.number);
         addHistory(res.number, res.color);
         bets = {};
         renderBets();
@@ -430,10 +447,76 @@
   $("#rt-spin").addEventListener("click", doSpin);
   $("#rt-clear").addEventListener("click", () => {
     if (spinning) return;
+    if (lobbyMode) { socket.emit("rlobby:clear"); return; }
     bets = {};
     renderBets();
     updateIndicators();
   });
+
+  // ── Shared-lobby integration (driven by public/js/rouletteLobby.js) ──────
+  const RT_LBL = { red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1–18", high: "19–36" };
+
+  function renderLobbyPanel(state) {
+    const me = window.Casino.getAccount && window.Casino.getAccount();
+    const pEl = $("#rt-lobby-players");
+    if (pEl) pEl.innerHTML = state.players.map((p) => {
+      const mine = me && p.name && me.name && p.name.toLowerCase() === me.name.toLowerCase();
+      const cls = p.net > 0 ? "pos" : p.net < 0 ? "neg" : "";
+      const sign = p.net > 0 ? "+" : p.net < 0 ? "−" : "±";
+      return `<div class="bj-lp${mine ? " mine" : ""}"><span>${esc(p.name)} <span class="muted small">(${p.staked.toLocaleString("de-DE")} 🪙)</span></span><b class="${cls}">${sign}${Math.abs(p.net).toLocaleString("de-DE")} 🪙</b></div>`;
+    }).join("");
+    const bEl = $("#rt-lobby-bets");
+    if (bEl) bEl.innerHTML = state.bets.length
+      ? state.bets.map((b) => `<span class="rt-bet-tag">${esc(b.name)}: ${esc(b.label)} ${b.amount.toLocaleString("de-DE")} 🪙</span>`).join("")
+      : '<span class="muted small">Noch keine Wetten — tippt auf den Tisch.</span>';
+  }
+  function esc(s) { return window.Casino.escapeHtml(String(s == null ? "" : s)); }
+
+  window.Casino._roulette = {
+    setLobby(code, isHost) {
+      if (code) { lobbyMode = { code, isHost }; bets = {}; }
+      else {
+        lobbyMode = null; bets = {}; spinning = false;
+        $("#rt-spin").disabled = false; $("#rt-clear").disabled = false;
+        $("#rt-spin").textContent = "🎡 Drehen";
+        renderBets(); updateIndicators();
+      }
+    },
+    applyState(state) {
+      if (!lobbyMode) return;
+      lobbyMode.isHost = state.isHost;
+      spinning = state.spinning;
+      // My bets → the local board.
+      bets = {};
+      for (const b of state.myBets) {
+        const key = b.value !== undefined ? b.type + ":" + b.value : b.type;
+        bets[key] = (bets[key] || 0) + b.amount;
+      }
+      renderBets(); updateIndicators();
+      renderLobbyPanel(state);
+      // Shared roll board.
+      history = state.history.slice(0, 12);
+      const hEl = $("#rt-history");
+      if (hEl) hEl.innerHTML = history.map((h) => `<span class="rt-hist-num rt-hist-${h.color}">${h.number}</span>`).join("");
+      // Spin button: only the host, and not mid-spin.
+      const spinBtn = $("#rt-spin");
+      spinBtn.disabled = spinning || !state.isHost;
+      spinBtn.textContent = state.isHost ? (spinning ? "Dreht…" : "🎡 Drehen") : "Warten auf Anführer…";
+      $("#rt-clear").disabled = spinning;
+    },
+    playResult(result) {
+      spinning = true;
+      $("#rt-spin").disabled = true; $("#rt-clear").disabled = true;
+      $("#rt-result").style.display = "none";
+      spinToNumber(result.number, () => {
+        const me = window.Casino.getAccount && window.Casino.getAccount();
+        const mine = me && result.perPlayer.find((p) => p.name && me.name && p.name.toLowerCase() === me.name.toLowerCase());
+        showResult(result.number, result.color, mine ? mine.net : 0);
+        highlightBetCells(result.number);
+        // Balance, bets and history refresh arrive via the next rlobby:state.
+      });
+    },
+  };
 
   // ── Boot on screen entry ───────────────────────────────────────
   const screen = document.querySelector('[data-screen="roulette"]');

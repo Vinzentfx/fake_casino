@@ -427,8 +427,22 @@
     <!-- ===================== ROULETTE ===================== -->
     <section class="screen" data-screen="roulette">
       <div class="roulette-wrap">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div class="bj-top-row">
+          <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+          <button class="chip-btn" id="rt-lobby-btn">👥 Lobby</button>
+        </div>
         <h2 style="text-align:center;margin:4px 0 8px">🎡 Roulette</h2>
+
+        <!-- Geteilte Lobby: alle setzen auf denselben Kessel, Anführer dreht einmal -->
+        <div id="rt-lobby-panel" class="bj-lobby-panel hidden">
+          <div class="bj-lobby-head">
+            <span>🎡 Tisch <b id="rt-lobby-code"></b></span>
+            <button class="chip-btn" id="rt-lobby-leave">Verlassen</button>
+          </div>
+          <div class="bj-lobby-players" id="rt-lobby-players"></div>
+          <div class="rt-lobby-bets-head muted small">Einsätze am Tisch:</div>
+          <div class="rt-lobby-bets" id="rt-lobby-bets"></div>
+        </div>
 
         <div class="roulette-wheel-area">
           <canvas id="roulette-canvas" width="280" height="280"></canvas>
@@ -735,6 +749,7 @@
   <script src="/js/slots.js"></script>
   <script src="/js/blackjack.js"></script>
   <script src="/js/roulette.js"></script>
+  <script src="/js/rouletteLobby.js"></script>
   <script src="/js/economy.js"></script>
   <script src="/js/bank.js"></script>
   <script src="/js/stocks.js"></script>

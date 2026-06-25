@@ -100,4 +100,7 @@ function setupRoulette(io, accounts) {
   });
 }
 
-module.exports = { setupRoulette, WHEEL_SEQ, RED_NUMS: [...RED_NUMS] };
+module.exports = {
+  setupRoulette, WHEEL_SEQ, RED_NUMS: [...RED_NUMS],
+  numColor, payoutFactor, VALID_TYPES, MIN_BET, MAX_TOTAL,
+};
