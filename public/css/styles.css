@@ -1985,3 +1985,7 @@ button { font-family: inherit; cursor: pointer; }
 .sb-feed-sel { color: var(--gold-strong); }
 .sb-match .pos { color: #7ee0a0; }
 .sb-match .neg { color: #ff8a8a; }
+
+/* Real-fixture badge in sportsbook */
+.sb-real { display: inline-block; margin-left: 6px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 999px; background: rgba(126, 224, 160, 0.18); color: #7ee0a0; vertical-align: middle; }
+.sb-real-match { border-color: rgba(126, 224, 160, 0.35); }

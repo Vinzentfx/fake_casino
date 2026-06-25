@@ -38,6 +38,60 @@ const LEAGUES = {
     ["Sociedad", 76], ["Betis", 72], ["Valencia", 70], ["Sevilla", 71], ["Cádiz", 60] ] },
 };
 
+// Master strength ratings (0–100). Sim teams come from LEAGUES; the extras below
+// cover clubs/nations that real fixtures (football-data.org) may bring in, so we
+// can price odds for them too. Unknown teams fall back to STRENGTH_DEFAULT.
+const STRENGTH_DEFAULT = 70;
+const TEAM_STRENGTHS = {};
+for (const lg of Object.values(LEAGUES)) for (const [n, s] of lg.teams) TEAM_STRENGTHS[n] = s;
+Object.assign(TEAM_STRENGTHS, {
+  // More top clubs (UCL / other leagues)
+  "Inter": 86, "Milan": 81, "Juventus": 82, "Napoli": 82, "Roma": 78, "Atalanta": 80,
+  "PSG": 89, "Monaco": 76, "Marseille": 74, "Porto": 78, "Benfica": 79, "Sporting": 79,
+  "Ajax": 75, "PSV": 77, "Feyenoord": 76, "Celtic": 72, "Galatasaray": 74,
+  "Union Berlin": 70, "Mönchengladbach": 71, "Wolfsburg": 72, "Hoffenheim": 70, "Mainz": 67, "Köln": 66, "Heidenheim": 64, "Darmstadt": 60,
+  "Aston Villa": 80, "West Ham": 74, "Man United": 81, "Brentford": 71, "Crystal Palace": 70, "Wolves": 69, "Nottingham": 66, "Bournemouth": 68, "Burnley": 61, "Sheffield United": 59,
+  "Villarreal": 74, "Osasuna": 70, "Mallorca": 68, "Getafe": 68, "Celta": 66, "Granada": 61, "Almería": 60, "Las Palmas": 67, "Rayo": 67, "Alavés": 65,
+  // National teams (for World Cup / Euro)
+  "Deutschland": 86, "Frankreich": 91, "Spanien": 89, "England": 88, "Brasilien": 90,
+  "Argentinien": 91, "Portugal": 87, "Niederlande": 85, "Italien": 84, "Belgien": 83,
+  "Kroatien": 82, "Uruguay": 81, "Marokko": 79, "USA": 74, "Japan": 76, "Schweiz": 76,
+});
+// Aliases map the long names some APIs use onto our canonical keys.
+const TEAM_ALIASES = {
+  "FC Bayern München": "Bayern", "Bayer 04 Leverkusen": "Leverkusen", "Borussia Dortmund": "Dortmund",
+  "RB Leipzig": "Leipzig", "VfB Stuttgart": "Stuttgart", "Eintracht Frankfurt": "Frankfurt",
+  "SC Freiburg": "Freiburg", "SV Werder Bremen": "Bremen", "FC Augsburg": "Augsburg", "VfL Bochum 1848": "Bochum",
+  "Manchester City FC": "Man City", "Arsenal FC": "Arsenal", "Liverpool FC": "Liverpool",
+  "Tottenham Hotspur FC": "Tottenham", "Chelsea FC": "Chelsea", "Newcastle United FC": "Newcastle",
+  "Manchester United FC": "Man United", "Aston Villa FC": "Aston Villa", "West Ham United FC": "West Ham",
+  "Real Madrid CF": "Real Madrid", "FC Barcelona": "Barcelona", "Girona FC": "Girona",
+  "Club Atlético de Madrid": "Atlético", "Athletic Club": "Bilbao", "Real Sociedad de Fútbol": "Sociedad",
+  "Real Betis Balompié": "Betis", "Valencia CF": "Valencia", "Sevilla FC": "Sevilla",
+};
+function normName(s) { return String(s || "").replace(/\s+(FC|CF|SC|SV|AFC|AC)\b/gi, "").trim(); }
+function strengthOf(name) {
+  if (!name) return STRENGTH_DEFAULT;
+  if (TEAM_STRENGTHS[name] != null) return TEAM_STRENGTHS[name];
+  if (TEAM_ALIASES[name] && TEAM_STRENGTHS[TEAM_ALIASES[name]] != null) return TEAM_STRENGTHS[TEAM_ALIASES[name]];
+  const n = normName(name);
+  if (TEAM_STRENGTHS[n] != null) return TEAM_STRENGTHS[n];
+  for (const k of Object.keys(TEAM_STRENGTHS)) if (name.includes(k) || n.includes(k)) return TEAM_STRENGTHS[k];
+  return STRENGTH_DEFAULT;
+}
+
+// ── Real fixtures (football-data.org) — activates only when a token is set ──
+const FD_TOKEN = process.env.FOOTBALL_DATA_TOKEN || "";
+const FD_COMPS = (process.env.FOOTBALL_DATA_COMPS || "BL1,PL,PD").split(",").map((s) => s.trim()).filter(Boolean);
+const FD_POLL_MS = 3 * 60 * 1000;              // refresh fixtures every 3 min (free tier = 10 req/min)
+const REAL_ID_BASE = 1_000_000_000;            // keep real match ids in a separate numeric space
+const COMP_META = {
+  BL1: { name: "Bundesliga", emoji: "🇩🇪" }, PL: { name: "Premier League", emoji: "🏴" },
+  PD: { name: "La Liga", emoji: "🇪🇸" }, SA: { name: "Serie A", emoji: "🇮🇹" },
+  FL1: { name: "Ligue 1", emoji: "🇫🇷" }, CL: { name: "Champions League", emoji: "🏆" },
+  WC: { name: "WM", emoji: "🌍" }, EC: { name: "EM", emoji: "🇪🇺" },
+};
+
 let nextId = 1;
 const matches = new Map(); // id -> match
 const feed = [];           // recent bets across the board
@@ -153,10 +207,19 @@ function setupSportsbook(io, accounts) {
     m.kickoff = Date.now() + 15_000 + Math.floor(Math.random() * BET_WINDOW_MS);
   }
 
+  const simCount = () => [...matches.values()].filter((m) => !m.real).length;
+
   function tick() {
     const now = Date.now();
     let changed = false;
     for (const m of matches.values()) {
+      if (m.real) {
+        // Real fixtures are driven by the poller; here we just lock betting at
+        // the real kickoff and reap long-finished ones.
+        if (m.state === "open" && now >= m.kickoff) { m.state = "live"; changed = true; }
+        else if (m.state === "done" && now - m.doneAt > 6 * 60 * 60 * 1000) { matches.delete(m.id); changed = true; }
+        continue;
+      }
       if (m.state === "open" && now >= m.kickoff) {
         // Kick off: simulate the final score + goal minutes for a live reveal.
         m.state = "live";
@@ -188,10 +251,65 @@ function setupSportsbook(io, accounts) {
         changed = true;
       }
     }
-    while (matches.size < MAX_OPEN) { staggerCreate(); changed = true; }
+    while (simCount() < MAX_OPEN) { staggerCreate(); changed = true; }
     if (changed) io.emit("sports:update");
   }
   setInterval(tick, 1000);
+
+  // ── Real fixtures poller (football-data.org) ──────────────────────────────
+  async function pollReal() {
+    if (!FD_TOKEN) return;
+    const today = new Date();
+    const dateFrom = new Date(today.getTime() - 2 * 864e5).toISOString().slice(0, 10);
+    const dateTo = new Date(today.getTime() + 10 * 864e5).toISOString().slice(0, 10);
+    for (const code of FD_COMPS) {
+      try {
+        const res = await fetch(`https://api.football-data.org/v4/competitions/${code}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`,
+          { headers: { "X-Auth-Token": FD_TOKEN } });
+        if (!res.ok) { console.warn(`[sports] ${code} fixtures HTTP ${res.status}`); continue; }
+        const data = await res.json();
+        for (const am of data.matches || []) upsertReal(am, code);
+      } catch (e) { console.warn(`[sports] poll ${code} failed:`, e.message); }
+      await new Promise((r) => setTimeout(r, 6500)); // space calls (free tier: 10/min)
+    }
+    io.emit("sports:update");
+  }
+
+  function upsertReal(am, code) {
+    const id = REAL_ID_BASE + am.id;
+    const home = am.homeTeam && (am.homeTeam.shortName || am.homeTeam.name);
+    const away = am.awayTeam && (am.awayTeam.shortName || am.awayTeam.name);
+    if (!home || !away) return;
+    const st = am.status;
+    const ft = (am.score && am.score.fullTime) || {};
+    const score = { h: ft.home ?? 0, a: ft.away ?? 0 };
+    let m = matches.get(id);
+    if (!m) {
+      const homeStr = strengthOf(home), awayStr = strengthOf(away);
+      const { lh, la } = lambdas(homeStr, awayStr);
+      const meta = COMP_META[code] || { name: code, emoji: "⚽" };
+      m = {
+        id, real: true, league: meta.name, leagueEmoji: meta.emoji, competition: meta.name,
+        home, away, homeStr, awayStr, lh, la,
+        kickoff: new Date(am.utcDate).getTime(), kickoffAt: am.utcDate,
+        state: "open", minute: 0, score: { h: 0, a: 0 }, doneAt: 0,
+        markets: buildMarkets(lh, la), bets: [], result: null, settled: false, apiStatus: st,
+      };
+      matches.set(id, m);
+    }
+    m.apiStatus = st;
+    if (st === "IN_PLAY" || st === "PAUSED") { m.state = "live"; m.score = score; m.minute = am.minute || 0; }
+    else if (st === "FINISHED") {
+      m.score = score;
+      if (!m.settled) { m.settled = true; settle(m, accounts, io); m.state = "done"; m.doneAt = Date.now(); }
+    } else if (Date.now() < m.kickoff) m.state = "open"; // SCHEDULED / TIMED
+  }
+
+  if (FD_TOKEN) {
+    console.log(`[sports] real fixtures ON (${FD_COMPS.join(",")})`);
+    pollReal();
+    setInterval(pollReal, FD_POLL_MS);
+  }
 
   io.on("connection", (socket) => {
     socket.on("sports:state", (ack) => {
@@ -247,7 +365,8 @@ function publicMatch(m, viewerKey, now) {
     if (b.user === viewerKey) myBets.push({ market: b.market, selection: b.selection, amount: b.amount, odds: b.odds, won: b.won, payout: b.payout });
   }
   return {
-    id: m.id, league: m.leagueName, leagueEmoji: m.leagueEmoji,
+    id: m.id, league: m.leagueName || m.league, leagueEmoji: m.leagueEmoji,
+    real: !!m.real, kickoffAt: m.kickoffAt || null,
     home: m.home, away: m.away, state: m.state,
     kickoffIn: Math.max(0, Math.round((m.kickoff - now) / 1000)),
     minute: m.minute, score: m.score,
@@ -271,4 +390,11 @@ function pickTwo(arr) {
   return [arr[i], arr[j]];
 }
 
-module.exports = { setupSportsbook };
+/** For tooling/tests: a team's outcome chances + fair home odds vs an opponent. */
+function teamChances(strength, oppStrength = 75) {
+  const { lh, la } = lambdas(strength, oppStrength);
+  const p = marketProbs(lh, la);
+  return { win: p.pHome, draw: p.pDraw, loss: p.pAway, homeOdds: odds(p.pHome) };
+}
+
+module.exports = { setupSportsbook, TEAM_STRENGTHS, LEAGUES, teamChances, strengthOf };

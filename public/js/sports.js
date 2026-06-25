@@ -37,10 +37,16 @@
   }
 
   function statusHtml(m) {
-    if (m.state === "live") return `<span class="sb-live">🔴 LIVE ${m.minute}'</span>`;
+    if (m.state === "live") return `<span class="sb-live">🔴 LIVE${m.minute ? ` ${m.minute}'` : ""}</span>`;
     if (m.state === "done") {
       const o = m.result ? (m.result.outcome === "home" ? m.home : m.result.outcome === "away" ? m.away : "Unentschieden") : "";
       return `<span class="sb-final">Schluss · ${escapeHtml(o)}</span>`;
+    }
+    if (m.real && m.kickoffAt) {
+      const d = new Date(m.kickoffAt);
+      const day = d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+      const time = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+      return `<span class="sb-kick">⏱ ${day} ${time}</span>`;
     }
     const s = m.kickoffIn;
     const mm = Math.floor(s / 60), ss = s % 60;
@@ -89,8 +95,8 @@
         <button class="btn-primary sb-place" data-id="${m.id}">Wetten ${fmt(betAmount)} 🪙</button>
       </div>` : "";
 
-      return `<div class="sb-match" data-id="${m.id}">
-        <div class="sb-head"><span>${m.leagueEmoji} ${escapeHtml(m.league)}</span>${statusHtml(m)}</div>
+      return `<div class="sb-match${m.real ? " sb-real-match" : ""}" data-id="${m.id}">
+        <div class="sb-head"><span>${m.leagueEmoji} ${escapeHtml(m.league)}${m.real ? ' <span class="sb-real">ECHT</span>' : ""}</span>${statusHtml(m)}</div>
         <div class="sb-teams"><span>${escapeHtml(m.home)}</span>${showScore ? `<b class="sb-score">${m.score.h} : ${m.score.a}</b>` : `<span class="sb-vs">vs</span>`}<span>${escapeHtml(m.away)}</span></div>
         ${markets}
         ${myb ? `<div class="sb-myb">${myb}</div>` : ""}
