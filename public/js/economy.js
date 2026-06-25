@@ -309,11 +309,7 @@
     if (screen && screen.classList.contains("active")) loadCity();
   });
 
-  // ── Screen-entry hooks ───────────────────────────────────────────────────
-  const origShow = showScreen;
-  window.Casino.showScreen = function (name) {
-    origShow(name);
-    if (name === "work") loadWork();
-    if (name === "businesses") { selectedId = null; loadCity(); }
-  };
+  // ── Screen-entry hooks (called by app.js's showScreen) ───────────────────
+  window.Casino._loadWork = loadWork;
+  window.Casino._loadBusinesses = () => { selectedId = null; loadCity(); };
 })();

@@ -207,8 +207,16 @@ function bankOwner() {
 }
 
 function publicCity(key) {
+  // Strip product lists from the catalog: products are private to each business's
+  // operator, so the generic "this type sells X" list must not leak either. The
+  // client only needs name/emoji/cost/income/rent here for the build menu.
+  const buildingTypes = {};
+  for (const [id, t] of Object.entries(BUILDING_TYPES)) {
+    const { products, ...rest } = t;
+    buildingTypes[id] = rest;
+  }
   return {
-    cols: COLS, rows: ROWS, buildingTypes: BUILDING_TYPES, buyoutPremium: BUYOUT_PREMIUM,
+    cols: COLS, rows: ROWS, buildingTypes, buyoutPremium: BUYOUT_PREMIUM,
     landPrice: landPrice(), landSellPrice: landSellPrice(), landIndex: round(city.landIndex || 1),
     lots: city.lots.map((l) => {
       const t = l.biz && BUILDING_TYPES[l.biz.type];
@@ -221,11 +229,13 @@ function publicCity(key) {
         const rent = landOwnedByOp ? 0 : t.rent;
         pnl = { income: round(income), rent: round(rent), net: round(income - rent) };
       }
-      // Products the viewer can buy (operator pays the discounted price).
+      // Products are PRIVATE to the business operator: only the owner sees them
+      // (and buys them at the owner discount). Outsiders get `products: null` —
+      // they can't even see which products exist; they buy them off the player
+      // market once the operator lists them there.
       let products = null;
-      if (t && t.products) {
-        const mine = l.biz.operator === key;
-        products = t.products.map((pr) => ({ ...pr, payPrice: Math.round(pr.price * (mine ? OWNER_DISCOUNT : 1)), owned: mine }));
+      if (t && t.products && l.biz.operator === key) {
+        products = t.products.map((pr) => ({ ...pr, payPrice: Math.round(pr.price * OWNER_DISCOUNT), owned: true }));
       }
       const landMine = l.landOwner === key;
       const canBuildHere = !l.biz && (landMine || (l.forRent && l.landOwner && l.landOwner !== key));
@@ -360,10 +370,11 @@ function buyProduct(id, key, productKey) {
   const t = BUILDING_TYPES[lot.biz.type];
   const product = t.products && t.products.find((p) => p.key === productKey);
   if (!product) return err("Produkt nicht gefunden.");
-  const mine = lot.biz.operator === key;
-  const cost = Math.round(product.price * (mine ? OWNER_DISCOUNT : 1));
-  const seller = !mine && lot.biz.operator ? lot.biz.operator : null;
-  return { ok: true, cost, product, seller };
+  // Products are private to the operator — only they can buy them (at a discount),
+  // then resell on the player market. Outsiders are rejected.
+  if (lot.biz.operator !== key) return err("Nur der Besitzer kann hier Produkte kaufen.");
+  const cost = Math.round(product.price * OWNER_DISCOUNT);
+  return { ok: true, cost, product, seller: null };
 }
 
 /** Admin: wipe the whole city back to a fresh NPC-owned start (e.g. after a big

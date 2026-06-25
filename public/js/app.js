@@ -43,6 +43,9 @@ function showScreen(name) {
   if (name === "admin") loadAdminAccounts();
   if (name === "work" && window.Casino._loadWork) window.Casino._loadWork();
   if (name === "businesses" && window.Casino._loadBusinesses) window.Casino._loadBusinesses();
+  if (name === "bank" && window.Casino._loadBank) window.Casino._loadBank();
+  if (name === "market" && window.Casino._loadMarket) window.Casino._loadMarket();
+  if (name === "stocks" && window.Casino._loadStocks) window.Casino._loadStocks();
 
   window.scrollTo(0, 0);
 }

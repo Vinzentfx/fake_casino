@@ -105,9 +105,6 @@
 
   socket.on("market:update", () => { if (onScreen()) load(); });
 
-  const origShow = showScreen;
-  window.Casino.showScreen = function (name) {
-    origShow(name);
-    if (name === "market") load();
-  };
+  // app.js's showScreen calls this when the market screen opens.
+  window.Casino._loadMarket = load;
 })();

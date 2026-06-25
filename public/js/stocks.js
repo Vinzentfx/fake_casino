@@ -181,9 +181,6 @@
     if (onScreen()) load();
   });
 
-  const origShow = showScreen;
-  window.Casino.showScreen = function (name) {
-    origShow(name);
-    if (name === "stocks") load();
-  };
+  // app.js's showScreen calls this when the stocks screen opens.
+  window.Casino._loadStocks = load;
 })();
