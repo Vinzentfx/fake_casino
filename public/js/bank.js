@@ -92,9 +92,6 @@
     render();
   }, 1000);
 
-  const origShow = showScreen;
-  window.Casino.showScreen = function (name) {
-    origShow(name);
-    if (name === "bank") loadBank();
-  };
+  // app.js's showScreen calls this when the bank screen opens.
+  window.Casino._loadBank = loadBank;
 })();
