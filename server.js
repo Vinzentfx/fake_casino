@@ -25,6 +25,7 @@ const { setupEconomy } = require("./game/economy");
 const { setupBank } = require("./game/bank");
 const { setupStocks } = require("./game/stocks");
 const { setupMarket } = require("./game/market");
+const { setupChat } = require("./game/chat");
 
 const PORT = process.env.PORT || 3000;
 
@@ -92,6 +93,7 @@ setupEconomy(io, accounts);
 setupBank(io, accounts);
 setupStocks(io, accounts);
 setupMarket(io, accounts);
+setupChat(io, accounts);
 
 // Chip-Transfer zwischen Spielern (socket-auth required)
 io.on("connection", (socket) => {
