@@ -96,7 +96,17 @@
     lobbyView.classList.remove("hidden");
     $("#join-code").value = "";
     $("#poker-join-error").textContent = "";
+    if (window.Casino.chat) window.Casino.chat.leaveLobby();
   }
+
+  // Joined from the home-screen lobby browser → open the poker screen; the
+  // poker:state broadcast then drops us into the table view automatically.
+  window.Casino._pokerJoinCode = (code) => {
+    window.Casino.showScreen("poker");
+    socket.emit("poker:join", { code }, (res) => {
+      if (res && !res.ok) toast(res.error || "Tisch nicht gefunden.");
+    });
+  };
 
   $("#leave-table-btn").addEventListener("click", () => {
     socket.emit("poker:leave");
@@ -118,6 +128,9 @@
   socket.on("poker:state", (s) => {
     state = s;
     if (!joined) enterTable();
+    // Friend tables get their own chat channel; solo bot tables stay on global.
+    if (window.Casino.chat && state.code && !state.vsBots)
+      window.Casino.chat.enterLobby(state.code);
     render();
   });
 
@@ -266,11 +279,15 @@
       div.textContent = who ? `Am Zug: ${who.name}…` : "Warte…";
       c.appendChild(div);
     } else {
-      // No active hand → start / waiting
+      // No active hand → start / waiting. Only the lobby leader may start;
+      // bot tables (solo) have no leader gate.
       const row = document.createElement("div");
       row.className = "start-row";
-      if (state.canStart) {
+      const canIStart = state.vsBots || state.isHost;
+      if (state.canStart && canIStart) {
         row.innerHTML = `<button class="btn-primary" id="start-btn">Hand starten</button>`;
+      } else if (state.canStart) {
+        row.innerHTML = `<span class="muted">Warte auf Anführer${state.hostName ? ` (${state.hostName})` : ""}…</span>`;
       } else {
         row.innerHTML = `<span class="muted">Warte auf Spieler (mind. 2 mit Chips)…</span>`;
       }

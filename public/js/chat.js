@@ -111,12 +111,14 @@
 
   // ── Public API ─────────────────────────────────────────────────────────
   window.Casino.chat = {
-    setRoom: (r) => { if (r !== room) loadRoom(r); },
-    // Show/hide the whole dock (hidden on the login screen). Switches room too.
+    // Enter/leave a game lobby's private chat channel (keyed by lobby code).
+    enterLobby: (code) => { dock.dataset.lobbyRoom = code; if (code !== room) loadRoom(code); },
+    leaveLobby: () => { delete dock.dataset.lobbyRoom; loadRoom("global"); },
+    // Show/hide the whole dock (hidden on the login screen).
     update: (screen) => {
       if (screen === "login") { dock.classList.add("hidden"); setOpen(false); return; }
       dock.classList.remove("hidden");
-      // Game lobbies set their own room; everywhere else is the global channel.
+      // In a game lobby? keep that channel; otherwise the global channel.
       if (room !== "global" && !dock.dataset.lobbyRoom) loadRoom("global");
     },
   };

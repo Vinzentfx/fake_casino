@@ -46,6 +46,7 @@ function showScreen(name) {
   if (name === "bank" && window.Casino._loadBank) window.Casino._loadBank();
   if (name === "market" && window.Casino._loadMarket) window.Casino._loadMarket();
   if (name === "stocks" && window.Casino._loadStocks) window.Casino._loadStocks();
+  if (name === "lobby" && window.Casino._loadLobbies) window.Casino._loadLobbies();
   if (window.Casino.chat) window.Casino.chat.update(name);
 
   window.scrollTo(0, 0);
