@@ -37,6 +37,7 @@
   function join(game, code) {
     if (game === "poker" && window.Casino._pokerJoinCode) window.Casino._pokerJoinCode(code);
     else if (game === "pvp" && window.Casino._pvpJoinCode) window.Casino._pvpJoinCode(code);
+    else if (game === "blackjack" && window.Casino._bjJoinCode) window.Casino._bjJoinCode(code);
     else toast("Diese Lobby lässt sich gerade nicht beitreten.");
   }
 
