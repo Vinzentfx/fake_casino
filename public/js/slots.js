@@ -1174,6 +1174,8 @@
     pvp.opponent = st.opponent;
     pvp.machineId = st.machineId;
     pvp.machineName = st.machineName;
+    // Friend duels get their own chat channel; bot duels stay on global.
+    if (window.Casino.chat && st.code && !st.vsBot) window.Casino.chat.enterLobby(st.code);
     if (!spinning && st.you) {
       pvp.chips = st.you.chips;
       pvp.spinsLeft = st.you.spinsLeft;
@@ -1270,7 +1272,18 @@
     setBodyTheme(null);
     const hint = $("#spin-hint");
     if (hint) hint.textContent = "🕹️ Hebel ziehen";
+    if (window.Casino.chat) window.Casino.chat.leaveLobby();
   }
+
+  // Joined a slots-duel from the home-screen lobby browser → open slots; the
+  // pvp:state broadcast then shows the duel room automatically.
+  window.Casino._pvpJoinCode = (code) => {
+    window.Casino.showScreen("slots");
+    pvp = null; pvpMode = false; setHud(false); prevOppChips = null;
+    socket.emit("pvp:join", { code }, (res) => {
+      if (!res || !res.ok) { toast((res && res.error) || "Duell nicht gefunden."); showSlotsView("pvp-lobby"); }
+    });
+  };
 
   // ---- PvP entry & navigation ----
   $("#pvp-entry").addEventListener("click", () => {

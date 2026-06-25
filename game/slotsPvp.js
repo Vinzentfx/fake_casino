@@ -8,6 +8,7 @@
  */
 
 const { evaluateSpin, MACHINE_BY_ID, MACHINES, BET_LEVELS } = require("./slots");
+const lobby = require("./lobby");
 
 const MACHINE_IDS = MACHINES.map((m) => m.id);
 function randomMachineId() {
@@ -64,6 +65,23 @@ function setupPvp(io, accounts) {
     }
   }
 
+  // Public lobby descriptor for the shared browser (only open friend duels).
+  function describe(match) {
+    const host = match.players.get(match.host);
+    return {
+      code: match.code,
+      game: "pvp",
+      label: "🎰 Slots-Duell",
+      host: host ? host.name : "?",
+      players: [...match.players.values()].filter((p) => p.socket).length,
+      max: 2,
+      buyIn: match.buyIn,
+      joinable: match.state === "waiting" && !match.vsBot && match.players.size < 2,
+    };
+  }
+  const registerLobby = (code) =>
+    lobby.add(code, () => (matches.has(code) ? describe(matches.get(code)) : null));
+
   function currentMatch(socket) {
     const code = socket.data.pvpCode;
     return code ? matches.get(code) : null;
@@ -84,6 +102,7 @@ function setupPvp(io, accounts) {
     const humansLeft = [...match.players.values()].some((p) => p.socket);
     if (!humansLeft) {
       matches.delete(match.code);
+      lobby.remove(match.code);
       return;
     }
     // Walkover: someone left mid-match → remaining player wins the pot.
@@ -91,6 +110,7 @@ function setupPvp(io, accounts) {
       settle(match);
     } else {
       broadcast(match.code);
+      lobby.changed();
     }
   }
 
@@ -165,6 +185,7 @@ function setupPvp(io, accounts) {
       matches.set(code, match);
       socket.join(code);
       socket.data.pvpCode = code;
+      registerLobby(code);
       ack && ack({ ok: true, code });
       broadcast(code);
     });
@@ -255,6 +276,7 @@ function setupPvp(io, accounts) {
       socket.data.pvpCode = code;
       ack && ack({ ok: true, code });
       broadcast(code);
+      lobby.changed();
     });
 
     socket.on("pvp:start", (ack) => {
@@ -292,6 +314,7 @@ function setupPvp(io, accounts) {
       match.result = null;
       ack && ack && ack({ ok: true });
       broadcast(match.code);
+      lobby.changed(); // now playing → drops out of the open-lobby list
     });
 
     socket.on("pvp:spin", (_payload, ack) => {

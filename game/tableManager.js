@@ -10,6 +10,7 @@
 
 const { PokerTable } = require("./pokerTable");
 const { decide: botDecide, BOT_NAMES } = require("./pokerBot");
+const lobby = require("./lobby");
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
 const NEXT_HAND_DELAY_MS = 4500;
@@ -33,7 +34,11 @@ function setupPoker(io, accounts) {
     if (!entry) return;
     for (const sock of entry.sockets) {
       const viewerId = sock.data.account || null;
-      sock.emit("poker:state", entry.table.getStateFor(viewerId));
+      const st = entry.table.getStateFor(viewerId);
+      st.isHost = !entry.vsBots && entry.hostKey === viewerId;
+      st.hostName = entry.hostName || null;
+      st.vsBots = !!entry.vsBots;
+      sock.emit("poker:state", st);
     }
   }
 
@@ -45,8 +50,28 @@ function setupPoker(io, accounts) {
       clearTimeout(entry.timer);
       clearTimeout(entry.botTimer);
       tables.delete(code);
+      lobby.remove(code);
     }
   }
+
+  // Public lobby descriptor for the shared browser (only open friend tables,
+  // not private solo-vs-bots games).
+  function describePoker(entry) {
+    const { table } = entry;
+    const maxSeats = table.seats.length;
+    return {
+      code: table.code,
+      game: "poker",
+      label: "🃏 Poker",
+      host: entry.hostName || "?",
+      players: entry.sockets.size,
+      max: maxSeats,
+      buyIn: `Blinds ${table.smallBlind}/${table.bigBlind}`,
+      joinable: !entry.vsBots && entry.sockets.size < maxSeats,
+    };
+  }
+  const registerLobby = (code) =>
+    lobby.add(code, () => (tables.has(code) ? describePoker(tables.get(code)) : null));
 
   function humanHasChips(table) {
     return table.seats.some((s) => s && !s.isBot && s.chips > 0);
@@ -130,6 +155,7 @@ function setupPoker(io, accounts) {
     socket.data.tableCode = null;
     broadcast(code);
     destroyIfEmpty(code);
+    if (tables.has(code)) lobby.changed(); // player left but table lives on
   }
 
   io.on("connection", (socket) => {
@@ -150,13 +176,18 @@ function setupPoker(io, accounts) {
       const sb = clampInt(smallBlind, 1, 100000, 10);
       const bb = Math.max(clampInt(bigBlind, 2, 200000, 20), sb * 2);
       const table = new PokerTable(code, { smallBlind: sb, bigBlind: bb });
-      const entry = { table, sockets: new Set(), timer: null };
+      const acc = accounts.get(socket.data.account);
+      const entry = {
+        table, sockets: new Set(), timer: null,
+        hostKey: socket.data.account, hostName: (acc && acc.name) || socket.data.displayName || "?",
+      };
       tables.set(code, entry);
       attachHooks(entry, code);
 
       entry.sockets.add(socket);
       socket.join(code);
       socket.data.tableCode = code;
+      registerLobby(code);
       ack && ack({ ok: true, code });
       broadcast(code);
     });
@@ -216,6 +247,7 @@ function setupPoker(io, accounts) {
       socket.data.tableCode = code;
       ack && ack({ ok: true, code });
       broadcast(code);
+      lobby.changed();
     });
 
     socket.on("poker:sit", ({ buyIn } = {}, ack) => {
@@ -274,13 +306,18 @@ function setupPoker(io, accounts) {
 
     socket.on("poker:leave", () => leaveCurrent(socket));
 
-    socket.on("poker:start", () => {
+    socket.on("poker:start", (ack) => {
       const entry = currentEntry(socket);
       if (!entry) return;
+      // Only the lobby leader (table creator) may start the first hand. Bot
+      // tables have no human host gate (the solo player runs the show).
+      if (!entry.vsBots && entry.hostKey && entry.hostKey !== socket.data.account)
+        return ack && ack({ ok: false, error: "Nur der Anführer kann starten." });
       if (entry.table.startHand()) {
         broadcast(entry.table.code);
         scheduleBots(entry);
       }
+      ack && ack({ ok: true });
     });
 
     socket.on("poker:action", ({ action, amount } = {}) => {
