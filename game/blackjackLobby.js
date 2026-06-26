@@ -47,7 +47,7 @@ function stateFor(room) {
   return {
     code: room.code,
     host: room.hostName,
-    players: [...room.players.values()].map((p) => ({ name: p.name, net: p.net, hands: p.hands })),
+    players: [...room.players.values()].map((p) => ({ name: p.name, net: p.net, hands: p.hands, hand: p.hand || null })),
     feed: room.feed.slice(-20),
   };
 }
@@ -90,6 +90,18 @@ function report(socket, net) {
   p.hands += 1;
   room.feed.push({ name: p.name, net, ts: Date.now() });
   if (room.feed.length > FEED_MAX) room.feed.splice(0, room.feed.length - FEED_MAX);
+  broadcast(room);
+}
+
+/** Called by game/blackjack.js on every state change — share the live hand. */
+function reportHand(socket, snap) {
+  const code = socket && socket.data && socket.data.bjRoom;
+  if (!code) return;
+  const room = rooms.get(code);
+  if (!room) return;
+  const p = room.players.get(socket.data.account);
+  if (!p) return;
+  p.hand = snap;
   broadcast(room);
 }
 
@@ -144,4 +156,4 @@ function setupBlackjackLobby(io, accounts) {
   });
 }
 
-module.exports = { setupBlackjackLobby, report };
+module.exports = { setupBlackjackLobby, report, reportHand };
