@@ -23,7 +23,7 @@ const { setupBlackjack } = require("./game/blackjack");
 const { setupBlackjackLobby } = require("./game/blackjackLobby");
 const { setupRoulette } = require("./game/roulette");
 const { setupRouletteLobby } = require("./game/rouletteLobby");
-const { setupSportsbook } = require("./game/sportsbook");
+const { setupSportsbook, refundOpenBets } = require("./game/sportsbook");
 const { setupEconomy } = require("./game/economy");
 const { setupBank } = require("./game/bank");
 const { setupStocks } = require("./game/stocks");
@@ -127,3 +127,19 @@ io.on("connection", (socket) => {
 server.listen(PORT, () => {
   console.log(`🎰 Fake-Casino läuft auf http://localhost:${PORT}`);
 });
+
+// On a graceful shutdown (e.g. a Railway redeploy), refund open sports bets so
+// no stake is lost when the in-memory match state resets.
+let shuttingDown = false;
+function gracefulShutdown(sig) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  try {
+    const r = refundOpenBets(accounts);
+    if (r.count) console.log(`[shutdown] refunded ${r.count} open bet(s), ${r.total} 🪙`);
+  } catch (e) { console.error("[shutdown] refund failed:", e.message); }
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 2500).unref();
+}
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));

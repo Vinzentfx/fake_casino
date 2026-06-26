@@ -531,4 +531,21 @@ function teamChances(strength, oppStrength = 75) {
   return { win: p.pHome, draw: p.pDraw, loss: p.pAway, homeOdds: odds(p.pHome) };
 }
 
-module.exports = { setupSportsbook, TEAM_STRENGTHS, LEAGUES, teamChances, strengthOf };
+/** On shutdown (e.g. a redeploy), refund every open bet/combo so no stake is
+ *  lost when the in-memory matches reset. adjustChips saves synchronously. */
+function refundOpenBets(accounts) {
+  let n = 0, total = 0;
+  for (const m of matches.values()) {
+    if (m.state === "done") continue; // already settled
+    for (const b of m.bets) { accounts.adjustChips(b.user, b.amount); n++; total += b.amount; }
+    m.bets = [];
+  }
+  for (const c of combos) {
+    if (c.settled) continue;
+    c.settled = true; c.voided = true; c.payout = c.amount;
+    accounts.adjustChips(c.user, c.amount); n++; total += c.amount;
+  }
+  return { count: n, total };
+}
+
+module.exports = { setupSportsbook, refundOpenBets, TEAM_STRENGTHS, LEAGUES, teamChances, strengthOf };
