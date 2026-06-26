@@ -165,8 +165,8 @@
         }
       }
       const myb = (m.myBets || []).map((b) => {
-        const st = m.state === "done" ? (b.won ? `<span class="pos">✓ +${fmt(b.payout)}</span>` : `<span class="neg">✗</span>`) : `<span class="muted">offen</span>`;
-        const cashout = m.state === "open" && b.id ? `<button class="sb-cashout" data-id="${m.id}" data-bet="${b.id}">Cash-out ${fmt(b.amount * 0.95)} 🪙</button>` : "";
+        const st = m.state === "done" ? (b.won ? `<span class="pos">✓ +${fmt(b.payout)}</span>` : `<span class="neg">✗</span>`) : m.state === "live" ? `<span class="sb-live">live</span>` : `<span class="muted">offen</span>`;
+        const cashout = (b.cashout != null && b.id) ? `<button class="sb-cashout" data-id="${m.id}" data-bet="${b.id}">Cash-out ${fmt(b.cashout)} 🪙</button>` : "";
         return `<div class="sb-myb-row">${escapeHtml(selLabel(m, b.market, b.selection))} @${b.odds.toFixed(2)} · ${fmt(b.amount)} 🪙 ${st} ${cashout}</div>`;
       }).join("");
       return `<div class="sb-match${m.real ? " sb-real-match" : ""}" data-id="${m.id}">
