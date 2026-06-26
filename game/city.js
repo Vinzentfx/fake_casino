@@ -75,12 +75,12 @@ const COLS = 6, ROWS = 5;
 // the 8 ADJACENT lots, boosting revenue of nearby businesses — more for the
 // types that fit (a kiosk next to a school sells far more snacks). Generic
 // adjacency (a type not listed) still gets a small foot-traffic bump.
-const MAGNET_GENERIC = 1.12;
+const MAGNET_GENERIC = 1.07;
 const MAGNET_TYPES = {
-  school:  { name: "Schule",  emoji: "🏫", affinity: { kiosk: 1.6, cafe: 1.35 } },
-  station: { name: "Bahnhof", emoji: "🚉", affinity: { kiosk: 1.4, shop: 1.4, hotel: 1.5 } },
-  park:    { name: "Park",    emoji: "🏞️", affinity: { cafe: 1.5, hotel: 1.3, shop: 1.15 } },
-  stadium: { name: "Stadion", emoji: "🏟️", affinity: { kiosk: 1.5, shop: 1.35, hotel: 1.4 } },
+  school:  { name: "Schule",  emoji: "🏫", affinity: { kiosk: 1.35, cafe: 1.22 } },
+  station: { name: "Bahnhof", emoji: "🚉", affinity: { kiosk: 1.28, shop: 1.28, hotel: 1.32 } },
+  park:    { name: "Park",    emoji: "🏞️", affinity: { cafe: 1.32, hotel: 1.22, shop: 1.12 } },
+  stadium: { name: "Stadion", emoji: "🏟️", affinity: { kiosk: 1.3, shop: 1.22, hotel: 1.28 } },
 };
 // Fixed magnet placements (x,y) on the 6×5 grid — spread to the quadrants.
 const MAGNET_PLACEMENT = [
@@ -89,8 +89,8 @@ const MAGNET_PLACEMENT = [
   { type: "park",    x: 1, y: 3 },
   { type: "stadium", x: 4, y: 3 },
 ];
-const DEMAND_CAP = 2.2;        // hard ceiling on a business's location demand multiplier
-const LAND_FACTOR_CAP = 2.1;   // hard ceiling on a lot's location land-price factor
+const DEMAND_CAP = 1.55;       // hard ceiling on a business's location demand multiplier
+const LAND_FACTOR_CAP = 1.6;   // hard ceiling on a lot's location land-price factor
 // Types whose revenue is location-INSENSITIVE (production, not foot traffic).
 const LOCATION_INSENSITIVE = new Set(["factory", "casino", "bank"]);
 
@@ -175,20 +175,20 @@ const landSellPrice = () => Math.round(landPrice() * SELL_SPREAD);
 // ─── Location maths ───────────────────────────────────────────────────────
 /** Per-lot land-price factor: central tiles + tiles next to landmarks cost more. */
 function landFactor(lot) {
-  const central = 0.70 + 0.65 * (lot.central ?? 0.5);
-  const magnetBoost = 1 + 0.18 * ((lot.adj && lot.adj.length) || 0);
-  return clamp(central * magnetBoost, 0.5, LAND_FACTOR_CAP);
+  const central = 0.82 + 0.36 * (lot.central ?? 0.5);   // ~0.82 (edge) … 1.18 (centre)
+  const magnetBoost = 1 + 0.12 * ((lot.adj && lot.adj.length) || 0);
+  return clamp(central * magnetBoost, 0.6, LAND_FACTOR_CAP);
 }
 /** Per-lot, per-type revenue demand: foot traffic from centrality × landmark fit.
  *  Production buildings (factory/casino/bank) are location-insensitive (= 1). */
 function demand(lot, type) {
   if (LOCATION_INSENSITIVE.has(type)) return 1;
-  let mult = 0.75 + 0.50 * (lot.central ?? 0.5);
+  let mult = 0.82 + 0.36 * (lot.central ?? 0.5);          // ~0.82 (edge) … 1.18 (centre)
   for (const m of lot.adj || []) {
     const a = MAGNET_TYPES[m];
     mult *= (a && a.affinity[type]) || MAGNET_GENERIC;
   }
-  return clamp(mult, 0.5, DEMAND_CAP);
+  return clamp(mult, 0.6, DEMAND_CAP);
 }
 const lotLandPrice = (lot) => Math.round(BASE_LAND * (city.landIndex || 1) * landFactor(lot));
 const lotLandSellPrice = (lot) => Math.round(lotLandPrice(lot) * SELL_SPREAD);
