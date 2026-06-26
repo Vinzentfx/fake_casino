@@ -16,6 +16,10 @@
  */
 
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
+const SPORTS_FILE = path.join(__dirname, "..", "data", "sports.json");
+const restoreSingles = new Map(); // real-match single bets awaiting their match to be re-created after restart
 
 const MARGIN = 0.08;            // house overround baked into the odds
 const MAX_OPEN = 5;            // keep this many matches taking bets
@@ -242,6 +246,8 @@ const SIM_ENABLED = process.env.SPORTS_SIM !== "off";
 
 // ── Tick loop ─────────────────────────────────────────────────────────────
 function setupSportsbook(io, accounts) {
+  loadSports(accounts); // restore open bets/combos + results from before the restart
+  setInterval(persistSports, 60000).unref(); // periodic snapshot (a crash loses ≤60s)
   if (SIM_ENABLED) while (matches.size < MAX_OPEN) staggerCreate();
 
   function staggerCreate() {
@@ -338,8 +344,9 @@ function setupSportsbook(io, accounts) {
         home, away, homeStr, awayStr, lh, la,
         kickoff: new Date(am.utcDate).getTime(), kickoffAt: am.utcDate,
         state: "open", minute: 0, score: { h: 0, a: 0 }, doneAt: 0,
-        markets: buildMarkets(lh, la), bets: [], result: null, settled: false, apiStatus: st,
+        markets: buildMarkets(lh, la), bets: restoreSingles.get(id) || [], result: null, settled: false, apiStatus: st,
       };
+      restoreSingles.delete(id); // re-attached persisted bets (survives deploys)
       matches.set(id, m);
     }
     m.apiStatus = st;
@@ -566,21 +573,61 @@ function teamChances(strength, oppStrength = 75) {
   return { win: p.pHome, draw: p.pDraw, loss: p.pAway, homeOdds: odds(p.pHome) };
 }
 
-/** On shutdown (e.g. a redeploy), refund every open bet/combo so no stake is
- *  lost when the in-memory matches reset. adjustChips saves synchronously. */
-function refundOpenBets(accounts) {
-  let n = 0, total = 0;
-  for (const m of matches.values()) {
-    if (m.state === "done") continue; // already settled
-    for (const b of m.bets) { accounts.adjustChips(b.user, b.amount); n++; total += b.amount; }
-    m.bets = [];
-  }
-  for (const c of combos) {
-    if (c.settled) continue;
-    c.settled = true; c.voided = true; c.payout = c.amount;
-    accounts.adjustChips(c.user, c.amount); n++; total += c.amount;
-  }
-  return { count: n, total };
+// ── Persistence: open bets/combos + results survive restarts/deploys ────────
+function persistSports() {
+  try {
+    const singles = [];
+    for (const m of matches.values()) {
+      if (m.state === "done") continue; // settled bets already paid out
+      for (const b of m.bets) singles.push({ ...b, matchId: m.id });
+    }
+    const data = {
+      combos: combos.filter((c) => !c.settled),
+      singles,
+      matchResults: [...matchResults.entries()],
+      savedAt: Date.now(),
+    };
+    fs.mkdirSync(path.dirname(SPORTS_FILE), { recursive: true });
+    fs.writeFileSync(SPORTS_FILE, JSON.stringify(data));
+  } catch (e) { console.warn("[sports] persist failed:", e.message); }
 }
 
-module.exports = { setupSportsbook, refundOpenBets, TEAM_STRENGTHS, LEAGUES, teamChances, strengthOf };
+function settleRestoredSingle(b, accounts) {
+  const r = matchResults.get(Number(b.matchId));
+  if (!r) return false;
+  if (r.void) { accounts.adjustChips(b.user, b.amount); return true; }
+  if (selWins(b.market, b.selection, r)) {
+    let payout = Math.floor(b.amount * b.odds);
+    const boost = accounts.buffMult(b.user, "winBoost"); if (boost > 1) payout = Math.round(payout * boost);
+    accounts.adjustChips(b.user, payout);
+    accounts.recordHand(b.user, payout - b.amount, true, "sportwetten");
+  } else accounts.recordHand(b.user, -b.amount, true, "sportwetten");
+  return true;
+}
+
+function loadSports(accounts) {
+  let data;
+  try { data = JSON.parse(fs.readFileSync(SPORTS_FILE, "utf8")); } catch { return; }
+  if (!data) return;
+  for (const [id, r] of data.matchResults || []) matchResults.set(Number(id), r);
+  // Combos: restore; orphaned sim legs (match gone, no result) → refund the combo.
+  for (const c of data.combos || []) {
+    if (c.settled) continue;
+    const orphan = c.legs.some((l) => l.matchId < REAL_ID_BASE && !matchResults.has(l.matchId));
+    if (orphan) { c.settled = true; c.voided = true; c.payout = c.amount; accounts.adjustChips(c.user, c.amount); }
+    combos.push(c); // settleCombos (tick) finishes the rest once all legs have results
+  }
+  // Singles: settle if the result is already known; real → re-attach to the
+  // match when the poller recreates it; vanished sim → refund.
+  for (const b of data.singles || []) {
+    const id = Number(b.matchId);
+    if (settleRestoredSingle(b, accounts)) continue;
+    if (id >= REAL_ID_BASE) {
+      const arr = restoreSingles.get(id) || []; arr.push(b); restoreSingles.set(id, arr);
+    } else {
+      accounts.adjustChips(b.user, b.amount); // sim match is gone → refund
+    }
+  }
+}
+
+module.exports = { setupSportsbook, persistSports, TEAM_STRENGTHS, LEAGUES, teamChances, strengthOf };
