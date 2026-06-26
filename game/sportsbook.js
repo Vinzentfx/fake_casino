@@ -55,7 +55,17 @@ Object.assign(TEAM_STRENGTHS, {
   // National teams (for World Cup / Euro)
   "Deutschland": 86, "Frankreich": 91, "Spanien": 89, "England": 88, "Brasilien": 90,
   "Argentinien": 91, "Portugal": 87, "Niederlande": 85, "Italien": 84, "Belgien": 83,
-  "Kroatien": 82, "Uruguay": 81, "Marokko": 79, "USA": 74, "Japan": 76, "Schweiz": 76,
+  "Kroatien": 82, "Marokko": 80, "Japan": 78, "Schweiz": 78,
+  // WC 2026 squads — football-data.org returns ENGLISH shortNames, so key on those.
+  "France": 91, "Argentina": 91, "Brazil": 90, "Spain": 89, "England": 88, "Portugal": 87,
+  "Germany": 86, "Netherlands": 85, "Belgium": 84, "Croatia": 82, "Uruguay": 82, "Colombia": 80,
+  "Morocco": 80, "Senegal": 79, "Switzerland": 78, "Austria": 78, "Norway": 78, "Japan": 78,
+  "Mexico": 77, "USA": 77, "Turkey": 77, "Ecuador": 77, "Korea Republic": 76, "Sweden": 75,
+  "Bosnia-H.": 75, "Egypt": 75, "Ivory Coast": 75, "Algeria": 74, "Iran": 73, "Czechia": 74,
+  "Scotland": 73, "Canada": 73, "Ghana": 73, "Paraguay": 72, "Tunisia": 72, "Congo DR": 72,
+  "Australia": 72, "South Africa": 71, "Saudi Arabia": 70, "Panama": 70, "Qatar": 69,
+  "Uzbekistan": 68, "Iraq": 68, "Jordan": 67, "Cape Verde": 67, "New Zealand": 66,
+  "Haiti": 64, "Curaçao": 63,
 });
 // Aliases map the long names some APIs use onto our canonical keys.
 const TEAM_ALIASES = {
@@ -82,7 +92,7 @@ function strengthOf(name) {
 
 // ── Real fixtures (football-data.org) — activates only when a token is set ──
 const FD_TOKEN = process.env.FOOTBALL_DATA_TOKEN || "";
-const FD_COMPS = (process.env.FOOTBALL_DATA_COMPS || "BL1,PL,PD").split(",").map((s) => s.trim()).filter(Boolean);
+const FD_COMPS = (process.env.FOOTBALL_DATA_COMPS || "WC").split(",").map((s) => s.trim()).filter(Boolean);
 const FD_POLL_MS = 3 * 60 * 1000;              // refresh fixtures every 3 min (free tier = 10 req/min)
 const REAL_ID_BASE = 1_000_000_000;            // keep real match ids in a separate numeric space
 const COMP_META = {
@@ -91,6 +101,7 @@ const COMP_META = {
   FL1: { name: "Ligue 1", emoji: "🇫🇷" }, CL: { name: "Champions League", emoji: "🏆" },
   WC: { name: "WM", emoji: "🌍" }, EC: { name: "EM", emoji: "🇪🇺" },
 };
+const NEUTRAL_COMPS = new Set(["WC", "EC", "CL"]); // played at neutral venues → no home edge
 
 let nextId = 1;
 const matches = new Map(); // id -> match
@@ -109,10 +120,14 @@ function samplePoisson(lambda) {
   return k - 1;
 }
 
-function lambdas(homeStr, awayStr) {
+function lambdas(homeStr, awayStr, neutral = false) {
+  const BASE = 1.32;                 // average goals per side
+  const K = 1.25;                    // strength sensitivity (higher → clearer favourites)
   const ratio = homeStr / awayStr;
-  const lh = Math.max(0.25, Math.min(4, 1.35 * Math.pow(ratio, 0.8) * 1.12)); // home advantage
-  const la = Math.max(0.2, Math.min(4, 1.15 * Math.pow(1 / ratio, 0.8)));
+  const homeAdv = neutral ? 1.0 : 1.12;  // no venue edge at neutral tournaments (World Cup)
+  const awayAdv = neutral ? 1.0 : 0.90;
+  const lh = Math.max(0.2, Math.min(4.5, BASE * Math.pow(ratio, K) * homeAdv));
+  const la = Math.max(0.2, Math.min(4.5, BASE * Math.pow(1 / ratio, K) * awayAdv));
   return { lh, la };
 }
 
@@ -286,7 +301,7 @@ function setupSportsbook(io, accounts) {
     let m = matches.get(id);
     if (!m) {
       const homeStr = strengthOf(home), awayStr = strengthOf(away);
-      const { lh, la } = lambdas(homeStr, awayStr);
+      const { lh, la } = lambdas(homeStr, awayStr, NEUTRAL_COMPS.has(code)); // WC/EC/CL = neutral venue
       const meta = COMP_META[code] || { name: code, emoji: "⚽" };
       m = {
         id, real: true, league: meta.name, leagueEmoji: meta.emoji, competition: meta.name,
@@ -343,7 +358,11 @@ function setupSportsbook(io, accounts) {
   function stateFor(viewerKey) {
     const now = Date.now();
     const list = [...matches.values()]
-      .sort((a, b) => (a.state === b.state ? a.kickoff - b.kickoff : order(a.state) - order(b.state)))
+      .sort((a, b) => {
+        if (!!a.real !== !!b.real) return a.real ? -1 : 1;       // real (WC) highlights first
+        if (a.state !== b.state) return order(a.state) - order(b.state); // live, then open, then done
+        return a.kickoff - b.kickoff;
+      })
       .map((m) => publicMatch(m, viewerKey, now));
     return { matches: list, feed: feed.slice(0, FEED_MAX) };
   }

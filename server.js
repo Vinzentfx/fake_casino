@@ -86,6 +86,7 @@ app.post("/api/change-pin", (req, res) => {
 
 const server = http.createServer(app);
 const io = new Server(server);
+io.sockets.setMaxListeners(50); // many game modules each add a connection listener
 
 setupPoker(io, accounts);
 setupSlots(io, accounts);
