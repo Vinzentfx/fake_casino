@@ -64,7 +64,7 @@
     // Don't redraw mid-typing — it would wipe the amount field / cursor.
     if (document.activeElement && document.activeElement.classList.contains("sb-amount")) return;
     if (!data.matches.length) { el.innerHTML = '<p class="muted small">Neue Spiele werden angesetzt…</p>'; return; }
-    el.innerHTML = data.matches.map((m) => {
+    const cardHtml = (m) => {
       const showScore = m.state === "live" || m.state === "done";
       if (m.state !== "open" && picks[m.id]) delete picks[m.id]; // match kicked off → drop the slip
       const pick = picks[m.id];
@@ -109,7 +109,16 @@
         ${myb ? `<div class="sb-myb">${myb}</div>` : ""}
         ${slip}
       </div>`;
-    }).join("");
+    };
+
+    const real = data.matches.filter((m) => m.real);
+    const sim = data.matches.filter((m) => !m.real);
+    let html = "";
+    if (real.length)
+      html += `<div class="sb-section-head">🌍 Echte WM-Spiele <span class="muted small">· hier zählt das echte Endergebnis</span></div>` + real.map(cardHtml).join("");
+    if (sim.length)
+      html += `<div class="sb-section-head">🎮 Simulierte Spiele <span class="muted small">· sofortige Action zwischendurch</span></div>` + sim.map(cardHtml).join("");
+    el.innerHTML = html;
 
     el.querySelectorAll(".sb-sel").forEach((b) => b.addEventListener("click", () => {
       const card = b.closest(".sb-match");

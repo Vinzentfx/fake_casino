@@ -212,9 +212,13 @@ function settle(m, accounts, io) {
   }
 }
 
+// Simulated filler games can be turned off (SPORTS_SIM=off) to show ONLY real
+// fixtures (e.g. World-Cup-only). On by default.
+const SIM_ENABLED = process.env.SPORTS_SIM !== "off";
+
 // ── Tick loop ─────────────────────────────────────────────────────────────
 function setupSportsbook(io, accounts) {
-  while (matches.size < MAX_OPEN) staggerCreate();
+  if (SIM_ENABLED) while (matches.size < MAX_OPEN) staggerCreate();
 
   function staggerCreate() {
     const m = createMatch();
@@ -266,7 +270,7 @@ function setupSportsbook(io, accounts) {
         changed = true;
       }
     }
-    while (simCount() < MAX_OPEN) { staggerCreate(); changed = true; }
+    while (SIM_ENABLED && simCount() < MAX_OPEN) { staggerCreate(); changed = true; }
     if (changed) io.emit("sports:update");
   }
   setInterval(tick, 1000);
