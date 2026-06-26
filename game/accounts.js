@@ -18,6 +18,10 @@ const ACCOUNTS_FILE = path.join(DATA_DIR, "accounts.json");
 const SECRET_FILE = path.join(DATA_DIR, ".secret");
 
 const STARTING_CHIPS = 1000;
+// Hard anti-cheat ceiling: no account may hold more than this. Enforced on every
+// chip change AND swept periodically (see startChipCapSweep), so old exploited
+// balances (the bot-faucet trillions) get clamped down automatically and forever.
+const MAX_CHIPS = 100_000_000_000; // 100 Mrd. — far above any legit balance
 const DAILY_BONUS = 500;
 const DAILY_BONUS_COOLDOWN_MS = 20 * 60 * 60 * 1000; // 20h
 
@@ -38,6 +42,7 @@ const LOGIN_LOCK_MS = 5 * 60 * 1000; // 5 min lockout after too many wrong PINs
 const loginFails = new Map(); // key -> { count, until }
 
 let accounts = load();
+startChipCapSweep(); // permanent anti-cheat chip ceiling
 
 // Server secret for signing session tokens. Persisted in the data volume so
 // tokens survive redeploys; generated once on first run.
@@ -96,6 +101,19 @@ function load() {
 function save() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2));
+}
+
+// Permanently-active anti-cheat: every few minutes, clamp any account over the
+// ceiling (catches direct chip mutations like casino rake, and cleans up old
+// exploited balances even if the player is offline).
+function startChipCapSweep() {
+  setInterval(() => {
+    let changed = false;
+    for (const acc of Object.values(accounts)) {
+      if (acc && typeof acc.chips === "number" && acc.chips > MAX_CHIPS) { acc.chips = MAX_CHIPS; changed = true; }
+    }
+    if (changed) save();
+  }, 3 * 60 * 1000).unref();
 }
 
 function hashPin(pin, salt) {
@@ -306,6 +324,7 @@ function adjustChips(name, delta) {
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
   if (acc.chips + delta < 0) return { ok: false, error: "Nicht genug Chips." };
   acc.chips += delta;
+  if (acc.chips > MAX_CHIPS) acc.chips = MAX_CHIPS; // anti-cheat ceiling
   save();
   return { ok: true, account: publicAccount(acc) };
 }
