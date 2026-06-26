@@ -194,11 +194,11 @@ function settle(m, accounts, io) {
       const boost = accounts.buffMult(b.user, "winBoost");
       if (boost > 1) payout = Math.round(payout * boost);
       accounts.adjustChips(b.user, payout);
-      accounts.recordHand(b.user, payout - b.amount); // house game → casino rake on the margin
+      accounts.recordHand(b.user, payout - b.amount, true, "sportwetten"); // house game → casino rake on the margin
       b.won = true; b.payout = payout;
       winners.add(b.user);
     } else {
-      accounts.recordHand(b.user, -b.amount);
+      accounts.recordHand(b.user, -b.amount, true, "sportwetten");
       b.won = false; b.payout = 0;
     }
   }
@@ -469,13 +469,13 @@ function settleCombos(accounts, io) {
       const boost = accounts.buffMult(c.user, "winBoost");
       if (boost > 1) payout = Math.round(payout * boost);
       accounts.adjustChips(c.user, payout);
-      accounts.recordHand(c.user, payout - c.amount);
+      accounts.recordHand(c.user, payout - c.amount, true, "sportwetten");
       c.payout = payout;
       for (const s of io.of("/").sockets.values()) {
         if (s.data.account === c.user) { const a = accounts.get(c.user); if (a) s.emit("account:update", { account: accounts.publicAccount(a) }); }
       }
     } else {
-      accounts.recordHand(c.user, -c.amount);
+      accounts.recordHand(c.user, -c.amount, true, "sportwetten");
     }
     changed = true;
   }

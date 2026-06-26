@@ -589,7 +589,7 @@ function setupSlots(io, accounts) {
         const credit = accounts.adjustChips(socket.data.account, totalWin);
         if (credit.ok) {
           balance = credit.account.chips;
-          accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet));
+          accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots");
         }
       }
 

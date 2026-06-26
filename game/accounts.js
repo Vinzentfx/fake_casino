@@ -318,12 +318,18 @@ const CASINO_RAKE = 0.05; // 5% of a player's house-game losses go to the casino
  * raked to whoever owns the Casino in the shared city. Pass house=false for
  * player-vs-player games (poker, PvP slots) so they stay zero-sum.
  */
-function recordHand(name, winnings, house = true) {
+function recordHand(name, winnings, house = true, game = null) {
   const acc = get(name);
   if (!acc) return;
   acc.stats = acc.stats || { gamesPlayed: 0, handsWon: 0, biggestWin: 0, biggestLoss: 0 };
   if (acc.stats.biggestLoss === undefined) acc.stats.biggestLoss = 0;
   acc.stats.gamesPlayed += 1;
+  // Per-game breakdown (plays / wins / net) for the stats screen.
+  if (game) {
+    acc.stats.perGame = acc.stats.perGame || {};
+    const g = acc.stats.perGame[game] || (acc.stats.perGame[game] = { plays: 0, wins: 0, net: 0 });
+    g.plays += 1; g.net += winnings; if (winnings > 0) g.wins += 1;
+  }
   if (winnings > 0) {
     acc.stats.handsWon += 1;
     if (winnings > acc.stats.biggestWin) acc.stats.biggestWin = winnings;

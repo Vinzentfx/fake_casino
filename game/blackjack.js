@@ -261,7 +261,7 @@ function settleAll(session, accounts) {
     }
   }
 
-  accounts.recordHand(session.name, net);
+  accounts.recordHand(session.name, net, true, "blackjack");
 
   session.lastNet = net;
   session.phase = "done";
@@ -277,18 +277,18 @@ function resolveHand(session, accounts, outcome) {
     const payout = Math.floor(bet * BJ_PAYOUT) + bet;
     accounts.adjustChips(session.name, payout);
     session.lastNet = Math.floor(bet * BJ_PAYOUT);
-    accounts.recordHand(session.name, session.lastNet);
+    accounts.recordHand(session.name, session.lastNet, true, "blackjack");
     session.playerHands[0].result = "blackjack";
     session.message = `🃏 Blackjack! +${Math.floor(bet * BJ_PAYOUT).toLocaleString("de-DE")} 🪙`;
   } else if (outcome === "push") {
     accounts.adjustChips(session.name, session.playerHands[0].bet);
     session.lastNet = 0;
-    accounts.recordHand(session.name, 0);
+    accounts.recordHand(session.name, 0, true, "blackjack");
     session.playerHands[0].result = "push";
     session.message = "Unentschieden — Einsatz zurück.";
   } else if (outcome === "lose_all") {
     session.lastNet = -session.playerHands[0].bet;
-    accounts.recordHand(session.name, -session.playerHands[0].bet);
+    accounts.recordHand(session.name, -session.playerHands[0].bet, true, "blackjack");
     session.playerHands[0].result = "lose";
     session.message = "Dealer hat Blackjack.";
   }
