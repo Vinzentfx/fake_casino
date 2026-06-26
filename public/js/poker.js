@@ -119,6 +119,15 @@
 
   socket.on("poker:error", ({ message }) => toast(message));
 
+  // Live turn-timer countdown (server auto-folds at the deadline).
+  setInterval(() => {
+    const els = document.querySelectorAll(".pk-timer");
+    if (!els.length) return;
+    if (!joined || !state || !state.turnDeadline) { els.forEach((e) => (e.textContent = "")); return; }
+    const secs = Math.max(0, Math.ceil((state.turnDeadline - Date.now()) / 1000));
+    els.forEach((e) => { e.textContent = `⏱ ${secs}s`; e.classList.toggle("low", secs <= 10); });
+  }, 500);
+
   // ----------------------------------------------------------------
   // Rendering
   // ----------------------------------------------------------------
@@ -254,12 +263,16 @@
     const myTurn = state.options && state.yourSeat === state.toAct && state.handActive;
 
     if (myTurn) {
+      const t = document.createElement("div");
+      t.className = "waiting-row";
+      t.innerHTML = `Du bist dran <span class="pk-timer"></span>`;
+      c.appendChild(t);
       c.appendChild(buildActionRow(state.options));
     } else if (state.handActive) {
       const who = state.seats[state.toAct];
       const div = document.createElement("div");
       div.className = "waiting-row";
-      div.textContent = who ? `Am Zug: ${who.name}…` : "Warte…";
+      div.innerHTML = who ? `Am Zug: ${escapeHtml(who.name)} <span class="pk-timer"></span>` : "Warte…";
       c.appendChild(div);
     } else {
       // No active hand → start / waiting. Only the lobby leader may start;
