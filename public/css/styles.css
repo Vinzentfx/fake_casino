@@ -2000,3 +2000,28 @@ button { font-family: inherit; cursor: pointer; }
 .sb-section-head:first-child { margin-top: 0; }
 
 .sb-pending { color: #d9c463; font-weight: 600; }
+
+/* ===================== Sportwetten bet slip + combos ===================== */
+.sb-slip-panel {
+  position: sticky; top: 8px; z-index: 30;
+  background: linear-gradient(180deg, rgba(20,40,30,0.97), rgba(10,25,18,0.97));
+  border: 1px solid var(--gold); border-radius: var(--radius);
+  padding: 12px 14px; margin-bottom: 12px;
+  box-shadow: var(--shadow); backdrop-filter: blur(8px);
+}
+.sb-slip-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sb-slip-head .sb-odds { color: var(--gold-strong); font-size: 1.1rem; }
+.sb-legs { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.sb-leg { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.25); border-radius: 8px; padding: 5px 8px; }
+.sb-leg b { color: var(--gold-strong); }
+.sb-leg-x { background: none; border: none; color: #ff8a8a; font-size: 0.95rem; cursor: pointer; flex: 0 0 auto; }
+.sb-slip-actions { display: flex; gap: 8px; margin-top: 4px; }
+.sb-slip-clear { flex: 0 0 auto; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.3); color: var(--text); cursor: pointer; }
+.sb-slip-place { flex: 1; }
+.sb-combos { display: flex; flex-direction: column; gap: 8px; }
+.sb-combo { background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 10px 12px; }
+.sb-combo-head { font-size: 0.9rem; margin-bottom: 6px; }
+.sb-combo-head b { color: var(--gold-strong); }
+.sb-combo-leg { font-size: 0.8rem; color: var(--text-dim); padding: 1px 0; }
+.sb-combo .pos, .sb-combos .pos { color: #7ee0a0; }
+.sb-combo .neg, .sb-combos .neg { color: #ff8a8a; }
