@@ -328,9 +328,12 @@ function setupSportsbook(io, accounts) {
     }
     m.apiStatus = st;
     if (st === "IN_PLAY" || st === "PAUSED") { m.state = "live"; m.score = score; m.minute = am.minute || 0; }
-    else if (st === "FINISHED") {
+    else if (st === "FINISHED" || st === "AWARDED") {
       m.score = score;
       if (!m.settled) { m.settled = true; settle(m, accounts, io); m.state = "done"; m.doneAt = Date.now(); }
+    } else if (st === "CANCELLED" || st === "POSTPONED" || st === "SUSPENDED") {
+      // Match won't be played → void it: refund single bets, void combos, drop it.
+      if (!m.settled) { m.settled = true; voidMatch(m, accounts, io); matches.delete(id); }
     } else m.state = Date.now() < m.kickoff ? "open" : "pending"; // TIMED/SCHEDULED → bettable or kicked-off-awaiting-result
   }
 
@@ -418,13 +421,29 @@ function setupSportsbook(io, accounts) {
       })
       .map((m) => publicMatch(m, viewerKey, now));
     const myCombos = combos.filter((c) => c.user === viewerKey).slice(-12).reverse().map((c) => ({
-      legs: c.legs.map((l) => ({
-        label: l.label, odds: l.odds,
-        result: matchResults.has(l.matchId) ? (selWins(l.market, l.selection, matchResults.get(l.matchId)) ? "win" : "lose") : "open",
-      })),
-      amount: c.amount, comboOdds: c.comboOdds, settled: c.settled, won: c.won, payout: c.payout,
+      legs: c.legs.map((l) => {
+        const r = matchResults.get(l.matchId);
+        return { label: l.label, odds: l.odds, result: !r ? "open" : r.void ? "void" : (selWins(l.market, l.selection, r) ? "win" : "lose") };
+      }),
+      amount: c.amount, comboOdds: c.comboOdds, settled: c.settled, won: c.won, payout: c.payout, voided: !!c.voided,
     }));
     return { matches: list, feed: feed.slice(0, FEED_MAX), myCombos };
+  }
+}
+
+/** A cancelled/postponed match is voided: single bets refunded, combos with this
+ *  leg refunded too. */
+function voidMatch(m, accounts, io) {
+  const touched = new Set();
+  for (const b of m.bets) {
+    accounts.adjustChips(b.user, b.amount); // stake back
+    b.won = null; b.void = true; b.payout = b.amount;
+    touched.add(b.user);
+  }
+  matchResults.set(m.id, { void: true });
+  while (matchResults.size > RESULTS_KEEP) matchResults.delete(matchResults.keys().next().value);
+  for (const s of io.of("/").sockets.values()) {
+    if (touched.has(s.data.account)) { const a = accounts.get(s.data.account); if (a) s.emit("account:update", { account: accounts.publicAccount(a) }); }
   }
 }
 
@@ -434,6 +453,15 @@ function settleCombos(accounts, io) {
   for (const c of combos) {
     if (c.settled) continue;
     if (!c.legs.every((l) => matchResults.has(l.matchId))) continue;
+    // Any voided leg → refund the whole combo stake.
+    if (c.legs.some((l) => matchResults.get(l.matchId).void)) {
+      c.settled = true; c.won = null; c.payout = c.amount; c.voided = true;
+      accounts.adjustChips(c.user, c.amount);
+      for (const s of io.of("/").sockets.values()) {
+        if (s.data.account === c.user) { const a = accounts.get(c.user); if (a) s.emit("account:update", { account: accounts.publicAccount(a) }); }
+      }
+      changed = true; continue;
+    }
     const won = c.legs.every((l) => selWins(l.market, l.selection, matchResults.get(l.matchId)));
     c.settled = true; c.won = won;
     if (won) {

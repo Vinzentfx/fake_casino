@@ -184,9 +184,10 @@
     if (!cs.length) { el.innerHTML = '<p class="muted small">Noch keine Kombi. Tippe mehrere Spiele an → Wettschein.</p>'; return; }
     el.innerHTML = cs.map((c) => {
       const status = !c.settled ? '<span class="muted">offen</span>'
+        : c.voided ? `<span class="muted">↩ Erstattet (Spiel abgesagt) ${fmt(c.payout)} 🪙</span>`
         : c.won ? `<span class="pos">✓ Gewonnen +${fmt(c.payout)} 🪙</span>` : '<span class="neg">✗ Verloren</span>';
       const legs = c.legs.map((l) => {
-        const ic = l.result === "win" ? "✓" : l.result === "lose" ? "✗" : "•";
+        const ic = l.result === "win" ? "✓" : l.result === "lose" ? "✗" : l.result === "void" ? "↩" : "•";
         const cl = l.result === "win" ? "pos" : l.result === "lose" ? "neg" : "muted";
         return `<div class="sb-combo-leg"><span class="${cl}">${ic}</span> ${escapeHtml(l.label)} <b>@${l.odds.toFixed(2)}</b></div>`;
       }).join("");
