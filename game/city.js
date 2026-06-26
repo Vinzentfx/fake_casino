@@ -40,7 +40,7 @@ const CITY_FILE = path.join(DATA_DIR, "city.json");
 // the casino rake and prestige). The casino games (high bets) are the real money
 // engine. Each building sells several buff-products.
 const BUILDING_TYPES = {
-  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 400000,       income: 1200,    rent: 1000,   buildable: true, products: [
+  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 400000,       income: 2000,    rent: 1000,   buildable: true, products: [
              { key: "zitrone",    name: "Zitrone",      emoji: "🍋", price: 50000,    buff: "fastSpins",  mult: 2,    mins: 10, desc: "Slots 2× schneller" },
              { key: "energy",     name: "Energy-Drink", emoji: "🥤", price: 60000,    buff: "clickBoost", mult: 3,    mins: 10, desc: "Arbeiten ×3" } ] },
   cafe:    { name: "Café",    emoji: "☕", cost: 2000000,      income: 5000,    rent: 2000,   buildable: true, products: [
@@ -218,8 +218,10 @@ function lotPending(lot, key, now = Date.now()) {
   if (!lot.biz) return 0;
   if (lot.biz.operator === key)
     return Math.max(0, bizNet(lot)) * elapsedMs(lot.biz.opAt, now) / MS_PER_MIN;
-  if (lot.landOwner === key && lot.biz.operator && lot.biz.operator !== key)
-    return rentFor(lot) * elapsedMs(lot.biz.rentAt, now) / MS_PER_MIN;
+  // Land owner collects rent from any business on their land they don't run
+  // themselves — including NPC-operated businesses (operator === null).
+  if (lot.landOwner === key && lot.biz.operator !== key)
+    return rentFor(lot) * elapsedMs(lot.biz.rentAt || lot.biz.opAt, now) / MS_PER_MIN;
   return 0;
 }
 
@@ -235,7 +237,7 @@ function collectLot(id, key) {
   const now = Date.now();
   if (!lot || !lot.biz) return err("Nichts einzusammeln.");
   const isOp = lot.biz.operator === key;
-  const isLandlord = lot.landOwner === key && lot.biz.operator && lot.biz.operator !== key;
+  const isLandlord = lot.landOwner === key && lot.biz.operator !== key; // incl. NPC business
   if (!isOp && !isLandlord) return err("Hier hast du kein Einkommen.");
   const amount = Math.floor(lotPending(lot, key, now));
   return {
@@ -249,8 +251,8 @@ function ownerIncomeRate(key) {
   let rate = 0;
   for (const lot of city.lots) {
     if (lot.biz && lot.biz.operator === key) rate += bizNet(lot);
-    if (lot.landOwner === key && lot.biz && lot.biz.operator && lot.biz.operator !== key) {
-      rate += rentFor(lot);
+    if (lot.landOwner === key && lot.biz && lot.biz.operator !== key) {
+      rate += rentFor(lot); // rent from a tenant or an NPC business on your land
     }
   }
   return rate;
@@ -349,7 +351,12 @@ function buyLand(id, key, name) {
   if (!lot) return err("Grundstück nicht gefunden.");
   if (lot.magnet) return err("Öffentliches Gelände — nicht kaufbar.");
   if (lot.landOwner !== null) return err("Grundstück ist nicht frei.");
-  return { ok: true, cost: lotLandPrice(lot), commit: () => { lot.landOwner = key; lot.landOwnerName = name; save(); } };
+  return { ok: true, cost: lotLandPrice(lot), commit: () => {
+    lot.landOwner = key; lot.landOwnerName = name;
+    // Buying land under an NPC business → start the rent clock from now.
+    if (lot.biz && lot.biz.operator !== key) lot.biz.rentAt = Date.now();
+    save();
+  } };
 }
 
 function sellLand(id, key) {
