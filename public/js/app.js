@@ -379,8 +379,20 @@ function loadAdminAccounts() {
     list.innerHTML = "";
     res.accounts.sort((a, b) => b.chips - a.chips).forEach((p) => {
       const li = document.createElement("li");
-      li.innerHTML = `<span>${escapeHtml(p.name)}${p.banned ? " 🚫" : ""}</span>` +
-        `<b>${p.chips.toLocaleString("de-DE")} 🪙</b>`;
+      li.className = "admin-acc";
+      li.innerHTML =
+        `<div class="admin-acc-top"><span>${escapeHtml(p.name)}${p.banned ? " 🚫" : ""}</span><b>${p.chips.toLocaleString("de-DE")} 🪙</b></div>` +
+        `<div class="admin-acc-lb">Leaderboard löschen:` +
+        ` <button class="chip-btn" data-stat="bigwin" title="Größter Gewinn">🎰✖</button>` +
+        ` <button class="chip-btn" data-stat="bigloss" title="Größter Verlust">💸✖</button>` +
+        ` <button class="chip-btn" data-stat="games" title="Aktivste">🎲✖</button></div>`;
+      li.querySelectorAll("[data-stat]").forEach((b) =>
+        b.addEventListener("click", () => {
+          socket.emit("admin:resetStat", { target: p.name, stat: b.dataset.stat }, (r) => {
+            if (r && r.ok) toast(`${p.name}: aus Leaderboard entfernt.`);
+            else toast((r && r.error) || "Fehler.");
+          });
+        }));
       list.appendChild(li);
     });
   });

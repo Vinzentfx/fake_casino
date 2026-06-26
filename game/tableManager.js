@@ -14,6 +14,11 @@ const lobby = require("./lobby");
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
 const NEXT_HAND_DELAY_MS = 4500;
+// Caps: bot tables fund the bots' stacks, so an uncapped buy-in is a money
+// faucet (beat the bots → pocket created chips). Bound the buy-in (and blinds,
+// so the buy-in always covers them).
+const MAX_BUYIN = 100000;
+const MAX_BB = 2000;
 
 function setupPoker(io, accounts) {
   /** code -> { table, sockets:Set<Socket>, timer } */
@@ -173,8 +178,8 @@ function setupPoker(io, accounts) {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       leaveCurrent(socket);
       const code = makeCode();
-      const sb = clampInt(smallBlind, 1, 100000, 10);
-      const bb = Math.max(clampInt(bigBlind, 2, 200000, 20), sb * 2);
+      const sb = clampInt(smallBlind, 1, MAX_BB / 2, 10);
+      const bb = Math.max(clampInt(bigBlind, 2, MAX_BB, 20), sb * 2);
       const table = new PokerTable(code, { smallBlind: sb, bigBlind: bb });
       const acc = accounts.get(socket.data.account);
       const entry = {
@@ -198,10 +203,11 @@ function setupPoker(io, accounts) {
       if (!acc) return ack && ack({ ok: false, error: "Account nicht gefunden." });
       leaveCurrent(socket);
 
-      const bb = clampInt(bigBlind, 2, 200000, 20);
+      const bb = clampInt(bigBlind, 2, MAX_BB, 20);
       const sb = Math.max(1, Math.floor(bb / 2));
       const botCount = clampInt(bots, 1, 5, 3);
-      const amount = clampInt(buyIn, bb, acc.chips, Math.min(acc.chips, bb * 100));
+      const cap = Math.min(acc.chips, MAX_BUYIN);
+      const amount = clampInt(buyIn, bb, cap, Math.min(cap, bb * 100));
       if (amount < bb || amount > acc.chips)
         return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
@@ -259,7 +265,8 @@ function setupPoker(io, accounts) {
 
       const acc = accounts.get(socket.data.account);
       if (!acc) return ack && ack({ ok: false, error: "Account nicht gefunden." });
-      const amount = clampInt(buyIn, table.bigBlind, acc.chips, Math.min(acc.chips, table.bigBlind * 50));
+      const cap = Math.min(acc.chips, MAX_BUYIN);
+      const amount = clampInt(buyIn, table.bigBlind, cap, Math.min(cap, table.bigBlind * 50));
       if (amount < table.bigBlind || amount > acc.chips)
         return ack && ack({ ok: false, error: "Ungültiger Buy-in." });
 
@@ -284,7 +291,7 @@ function setupPoker(io, accounts) {
       if (table.seats.every((s) => s !== null)) return ack && ack && ack({ ok: false, error: "Tisch ist voll." });
       let n = 0;
       while (table.findSeat("bot:" + n) !== -1) n++;
-      const idx = table.sit("bot:" + n, pickBotName(table), table.bigBlind * 50);
+      const idx = table.sit("bot:" + n, pickBotName(table), Math.min(MAX_BUYIN, table.bigBlind * 50));
       if (idx !== -1) table.seats[idx].isBot = true;
       ack && ack && ack({ ok: true });
       broadcast(table.code);

@@ -2056,3 +2056,9 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Sportsbook cash-out button */
 .sb-cashout { margin-left: 6px; padding: 2px 8px; border-radius: 8px; border: 1px solid var(--gold); background: rgba(231,198,107,0.14); color: var(--gold-strong); font-size: 0.72rem; font-weight: 700; cursor: pointer; }
+
+/* Admin: per-account leaderboard reset */
+.admin-acc { display: block; }
+.admin-acc-top { display: flex; align-items: center; justify-content: space-between; }
+.admin-acc-lb { margin-top: 4px; font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.admin-acc-lb .chip-btn { padding: 2px 6px; font-size: 0.72rem; }
