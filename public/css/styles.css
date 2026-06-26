@@ -2038,3 +2038,6 @@ button { font-family: inherit; cursor: pointer; }
   pointer-events: none; z-index: 60; animation: slotShock 0.6s cubic-bezier(0.2,0.7,0.3,1) forwards;
 }
 @keyframes slotShock { 0% { transform: scale(0.3); opacity: 0.95; } 100% { transform: scale(7.5); opacity: 0; } }
+
+/* Slots: auto-spin count selector */
+.auto-count-sel { background: rgba(0,0,0,0.35); color: var(--text); border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 4px 6px; font-size: 0.8rem; }

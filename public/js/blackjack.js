@@ -28,6 +28,7 @@
   }
   function playTone(freq, dur, type = "sine", vol = 0.18) {
     if (!soundOn) return;
+    vol *= (window.Casino.vol ?? 1);
     try {
       const ctx = getAudio();
       const osc = ctx.createOscillator();
