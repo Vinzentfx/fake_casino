@@ -342,7 +342,11 @@
             <div class="bet-display"><span class="lbl">Einsatz</span><b id="bet-amount">20</b></div>
             <button class="bet-step" id="bet-up">+</button>
           </div>
-          <div class="spin-hint">🕹️ Hebel ziehen <button id="auto-roll" class="auto-roll-btn">🔄 Auto</button></div>
+          <div class="spin-hint">🕹️ Hebel ziehen
+            <button id="buy-bonus" class="auto-roll-btn" style="display:none">🎁 Bonus</button>
+            <button id="auto-roll" class="auto-roll-btn">🔄 Auto</button>
+            <select id="auto-count" class="auto-count-sel" title="Auto-Spins"><option value="0">∞</option><option value="10">10×</option><option value="25">25×</option><option value="50">50×</option><option value="100">100×</option></select>
+          </div>
           <div class="win-display"><span class="lbl">Gewinn</span><b id="win-amount">0</b></div>
         </div>
 
@@ -542,6 +546,10 @@
         <label class="toggle-row">
           <span>Soundeffekte</span>
           <input type="checkbox" id="set-sound" checked />
+        </label>
+        <label class="toggle-row">
+          <span>🔊 Lautstärke</span>
+          <input type="range" id="set-volume" min="0" max="100" value="80" style="flex:1;max-width:200px" />
         </label>
         <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
         <h3>🔑 PIN ändern</h3>

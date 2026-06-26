@@ -99,6 +99,7 @@ const MACHINES = [
     bets: [100, 500, 1000, 5000, 25000, 100000],
     payScale: 1.34, // ~96% RTP incl. scaling free spins
     freeSpins: { trigger: 3, count: 10, multiplier: 2 },
+    buyBonus: 17, // cost to buy free spins = 17× bet (~93% RTP)
     symbols: {
       blue: { emoji: "💙", weight: 28 },
       green: { emoji: "💚", weight: 24 },
@@ -136,6 +137,7 @@ const MACHINES = [
     payScale: 1.01, // ~96% RTP incl. scaling free spins (high volatility)
     // High volatility: small line hits pay little, but 5-of-a-kind tops are huge.
     freeSpins: { trigger: 3, count: 8, multiplier: 3 },
+    buyBonus: 13,
     symbols: {
       coin: { emoji: "🪙", weight: 28 },
       sword: { emoji: "🗡️", weight: 24 },
@@ -171,6 +173,7 @@ const MACHINES = [
     bets: [1000, 5000, 25000, 100000, 250000, 1000000],
     payScale: 3.11, // ~96% RTP incl. scaling free spins (persistent multiplier)
     freeSpins: { trigger: 4, count: 10, persistentMultiplier: true },
+    buyBonus: 23,
     symbols: {
       planet: { emoji: "🪐", weight: 24 },
       moon: { emoji: "🌙", weight: 22 },
@@ -208,6 +211,7 @@ function publicMachines() {
     wild: m.wild,
     scatter: m.scatter || null,
     freeSpins: m.freeSpins || null,
+    buyBonus: m.buyBonus || null,
     unlockCost: m.unlockCost || 0,
     bets: m.bets,
     emojis: Object.fromEntries(Object.entries(m.symbols).map(([k, v]) => [k, v.emoji])),
@@ -590,6 +594,28 @@ function setupSlots(io, accounts) {
       }
 
       ack({ ...result, balance, winBoost: boost > 1 ? boost : 1 });
+    });
+
+    // Bonus-Buy: pay a multiple of the bet to start free spins immediately.
+    socket.on("slots:buyBonus", ({ machineId, bet } = {}, ack) => {
+      if (!ack) return;
+      if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
+      const machine = MACHINE_BY_ID[machineId];
+      if (!machine || !machine.buyBonus || !machine.freeSpins) return ack({ ok: false, error: "Kein Bonus-Kauf hier." });
+      if (!accounts.isUnlocked(socket.data.account, machineId)) return ack({ ok: false, error: "Automat noch nicht freigeschaltet." });
+      if (socket.data.slots && socket.data.slots.remaining > 0) return ack({ ok: false, error: "Freispiele laufen schon." });
+      bet = Math.floor(Number(bet));
+      if (!machine.bets.includes(bet)) return ack({ ok: false, error: "Ungültiger Einsatz." });
+      const cost = bet * machine.buyBonus;
+      const acc = accounts.get(socket.data.account);
+      if (!acc || acc.chips < cost) return ack({ ok: false, error: "Nicht genug Chips für den Bonus-Kauf." });
+      const deduct = accounts.adjustChips(socket.data.account, -cost);
+      if (!deduct.ok) return ack({ ok: false, error: deduct.error });
+      socket.data.slots = {
+        machineId, bet, remaining: machine.freeSpins.count,
+        multiplier: machine.freeSpins.persistentMultiplier ? 1 : machine.freeSpins.multiplier,
+      };
+      ack({ ok: true, cost, balance: deduct.account.chips, freeSpins: { active: true, remaining: machine.freeSpins.count, multiplier: socket.data.slots.multiplier } });
     });
   });
 }

@@ -35,6 +35,7 @@
   function tone(freq, dur, type = "sine", gain = 0.05, delay = 0, to = null) {
     const ctx = ac();
     if (!ctx) return;
+    gain *= (window.Casino.vol ?? 1);
     const t = ctx.currentTime + delay;
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
@@ -51,6 +52,7 @@
   function click(freq = 2600, gain = 0.03) {
     const ctx = ac();
     if (!ctx) return;
+    gain *= (window.Casino.vol ?? 1);
     const t = ctx.currentTime;
     const len = Math.floor(ctx.sampleRate * 0.012);
     const buf = ctx.createBuffer(1, len, ctx.sampleRate);

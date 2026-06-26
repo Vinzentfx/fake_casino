@@ -475,7 +475,20 @@ window.Casino = {
     renderTopbar();
     if (currentScreen === "profile") renderProfile();
   },
+  // Master volume (0–1) — every game's WebAudio gain multiplies by this.
+  vol: Math.min(1, Math.max(0, (parseInt(localStorage.getItem("casino_vol"), 10) || 80) / 100)),
 };
+
+// Master volume slider (settings).
+(function () {
+  const slider = document.getElementById("set-volume");
+  if (!slider) return;
+  slider.value = Math.round(window.Casino.vol * 100);
+  slider.addEventListener("input", () => {
+    window.Casino.vol = Math.min(1, Math.max(0, slider.value / 100));
+    localStorage.setItem("casino_vol", String(slider.value));
+  });
+})();
 
 // Start
 showScreen("login");

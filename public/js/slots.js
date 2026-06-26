@@ -25,6 +25,7 @@
   let spinning = false;
   let freeActive = false;
   let autoRoll = false;
+  let autoRemaining = Infinity; // remaining auto-spins (Infinity = ∞)
   let freeWinTotal = 0;
   let cellH = 70; // measured at runtime
 
@@ -53,6 +54,7 @@
   function tone(freq, dur, type = "square", gain = 0.05, delay = 0, to = null) {
     const ctx = ac();
     if (!ctx) return;
+    gain *= (window.Casino.vol ?? 1);
     const t = ctx.currentTime + delay;
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
@@ -69,6 +71,7 @@
   function noise(dur, gain = 0.05, delay = 0, freq = 1000, q = 1) {
     const ctx = ac();
     if (!ctx) return;
+    gain *= (window.Casino.vol ?? 1);
     const t = ctx.currentTime + delay;
     const len = Math.max(1, Math.floor(ctx.sampleRate * dur));
     const buf = ctx.createBuffer(1, len, ctx.sampleRate);
@@ -332,6 +335,16 @@
   // ===============================================================
   function updateBet() {
     $("#bet-amount").textContent = machine.bets[betIndex].toLocaleString("de-DE");
+    updateBonusBtn();
+  }
+  function updateBonusBtn() {
+    const btn = $("#buy-bonus");
+    if (!btn) return;
+    if (machine && machine.buyBonus && !pvpMode) {
+      const cost = machine.bets[betIndex] * machine.buyBonus;
+      btn.style.display = "";
+      btn.textContent = `🎁 Bonus ${cost.toLocaleString("de-DE")}`;
+    } else btn.style.display = "none";
   }
   $("#bet-down").addEventListener("click", () => {
     if (spinning || freeActive) return;
@@ -436,7 +449,10 @@
 
     // Auto-Roll: queue the next spin once idle (base game only, not in PvP).
     if (autoRoll && !pvpMode && !freeActive && !spinning) {
-      if ((window.Casino.getAccount()?.chips ?? 0) >= machine.bets[betIndex]) {
+      autoRemaining -= 1;
+      if (autoRemaining <= 0) {
+        setAuto(false);
+      } else if ((window.Casino.getAccount()?.chips ?? 0) >= machine.bets[betIndex]) {
         setTimeout(() => { if (autoRoll && !spinning && !freeActive) doSpin(); }, 850);
       } else {
         setAuto(false);
@@ -445,14 +461,35 @@
     }
   }
 
-  // Toggle continuous auto-spinning.
+  // Toggle continuous auto-spinning (with optional spin count).
   function setAuto(on) {
     autoRoll = on && !pvpMode;
+    if (autoRoll) {
+      const n = parseInt($("#auto-count") ? $("#auto-count").value : "0", 10) || 0;
+      autoRemaining = n > 0 ? n : Infinity;
+    }
     const btn = $("#auto-roll");
     if (btn) btn.classList.toggle("active", autoRoll);
     if (autoRoll && !spinning && !freeActive && !pvpMode) doSpin();
   }
   $("#auto-roll").addEventListener("click", () => setAuto(!autoRoll));
+
+  // Bonus-Buy: pay to start free spins immediately.
+  $("#buy-bonus").addEventListener("click", () => {
+    if (!machine || !machine.buyBonus || spinning || freeActive || pvpMode) return;
+    const bet = machine.bets[betIndex];
+    const cost = bet * machine.buyBonus;
+    if ((window.Casino.getAccount()?.chips ?? 0) < cost) return toast("Nicht genug Chips für den Bonus-Kauf.");
+    socket.emit("slots:buyBonus", { machineId: machine.id, bet }, (res) => {
+      if (!res || !res.ok) return toast((res && res.error) || "Bonus-Kauf fehlgeschlagen.");
+      window.Casino.setChips(res.balance);
+      freeActive = true;
+      updateFreeBadge(res.freeSpins);
+      setControlsEnabled(false);
+      bigBanner(`🎁 Bonus gekauft!\n${res.freeSpins.remaining} Freispiele`, "t-big");
+      setTimeout(() => doSpin(), 900);
+    });
+  });
 
   function setControlsEnabled(on) {
     $("#bet-up").disabled = !on;
