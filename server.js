@@ -23,7 +23,7 @@ const { setupBlackjack } = require("./game/blackjack");
 const { setupBlackjackLobby } = require("./game/blackjackLobby");
 const { setupRoulette } = require("./game/roulette");
 const { setupRouletteLobby } = require("./game/rouletteLobby");
-const { setupSportsbook, refundOpenBets } = require("./game/sportsbook");
+const { setupSportsbook, persistSports } = require("./game/sportsbook");
 const { setupEconomy } = require("./game/economy");
 const { setupBank } = require("./game/bank");
 const { setupStocks } = require("./game/stocks");
@@ -157,9 +157,9 @@ function gracefulShutdown(sig) {
   if (shuttingDown) return;
   shuttingDown = true;
   try {
-    const r = refundOpenBets(accounts);
-    if (r.count) console.log(`[shutdown] refunded ${r.count} open bet(s), ${r.total} 🪙`);
-  } catch (e) { console.error("[shutdown] refund failed:", e.message); }
+    persistSports(); // save open bets/combos so they survive the redeploy
+    console.log("[shutdown] sports bets persisted");
+  } catch (e) { console.error("[shutdown] persist failed:", e.message); }
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 2500).unref();
 }
