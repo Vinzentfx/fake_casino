@@ -462,6 +462,7 @@ module.exports = {
   STARTING_CHIPS,
   DAILY_BONUS,
   DAILY_BONUS_COOLDOWN_MS,
+  save,
   get,
   publicAccount,
   login,
