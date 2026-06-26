@@ -2025,3 +2025,16 @@ button { font-family: inherit; cursor: pointer; }
 .sb-combo-leg { font-size: 0.8rem; color: var(--text-dim); padding: 1px 0; }
 .sb-combo .pos, .sb-combos .pos { color: #7ee0a0; }
 .sb-combo .neg, .sb-combos .neg { color: #ff8a8a; }
+
+/* ===================== Slots: blue lightning + shockwave ===================== */
+#slot-bolts { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 62; overflow: visible; }
+#slot-zap-flash { position: fixed; inset: 0; pointer-events: none; z-index: 61; opacity: 0; background: radial-gradient(circle at 50% 45%, rgba(90,180,255,0.30), transparent 62%); }
+#slot-zap-flash.go { animation: zapflash 0.34s ease-out; }
+@keyframes zapflash { 0% { opacity: 0; } 22% { opacity: 1; } 100% { opacity: 0; } }
+.slot-shockwave {
+  position: fixed; width: 22px; height: 22px; margin: -11px 0 0 -11px;
+  border-radius: 50%; border: 3px solid rgba(125,212,255,0.95);
+  box-shadow: 0 0 20px rgba(90,180,255,0.85), inset 0 0 12px rgba(120,210,255,0.6);
+  pointer-events: none; z-index: 60; animation: slotShock 0.6s cubic-bezier(0.2,0.7,0.3,1) forwards;
+}
+@keyframes slotShock { 0% { transform: scale(0.3); opacity: 0.95; } 100% { transform: scale(7.5); opacity: 0; } }

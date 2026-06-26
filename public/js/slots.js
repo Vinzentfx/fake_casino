@@ -611,6 +611,11 @@
   function sndBlip(i) {
     tone(440 * Math.pow(2, Math.min(i, 28) / 12), 0.05, "triangle", 0.05);
   }
+  // Electric crackle for the lightning arcs.
+  function sndZap() {
+    tone(1600 + Math.random() * 600, 0.08, "sawtooth", 0.05);
+    tone(2600 + Math.random() * 800, 0.05, "square", 0.03);
+  }
   // Light a win's cells ONE AT A TIME, tracing the connection. Pitch climbs
   // across the whole sequence (comboBase) so each successive win feels bigger.
   async function traceHighlight(positions, perMs, comboBase) {
@@ -692,6 +697,65 @@
     });
   }
 
+  // ---- Blue electric lightning between connected winning symbols ----
+  const SVGNS = "http://www.w3.org/2000/svg";
+  let boltSvg = null;
+  function boltLayer() {
+    if (boltSvg && document.body.contains(boltSvg)) return boltSvg;
+    boltSvg = document.createElementNS(SVGNS, "svg");
+    boltSvg.id = "slot-bolts";
+    boltSvg.innerHTML =
+      `<defs><filter id="boltGlow" x="-60%" y="-60%" width="220%" height="220%">
+         <feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+       </filter></defs>`;
+    document.body.appendChild(boltSvg);
+    return boltSvg;
+  }
+  function jaggedPath(x1, y1, x2, y2, segs = 7, amp = 16) {
+    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    let d = `M ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+    for (let i = 1; i < segs; i++) {
+      const t = i / segs, o = (Math.random() * 2 - 1) * amp * Math.sin(Math.PI * t);
+      d += ` L ${(x1 + dx * t + nx * o).toFixed(1)} ${(y1 + dy * t + ny * o).toFixed(1)}`;
+    }
+    return d + ` L ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+  }
+  function zap(x1, y1, x2, y2) {
+    const svg = boltLayer();
+    const g = document.createElementNS(SVGNS, "g");
+    const glow = document.createElementNS(SVGNS, "path");
+    const core = document.createElementNS(SVGNS, "path");
+    glow.setAttribute("stroke", "#3aa0ff"); glow.setAttribute("stroke-width", "6"); glow.setAttribute("opacity", "0.85");
+    core.setAttribute("stroke", "#eaffff"); core.setAttribute("stroke-width", "2");
+    for (const p of [glow, core]) { p.setAttribute("fill", "none"); p.setAttribute("stroke-linecap", "round"); p.setAttribute("filter", "url(#boltGlow)"); g.appendChild(p); }
+    const redraw = () => { const d = jaggedPath(x1, y1, x2, y2); glow.setAttribute("d", d); core.setAttribute("d", d); };
+    redraw();
+    svg.appendChild(g);
+    let n = 0; const iv = setInterval(() => { redraw(); if (++n > 3) clearInterval(iv); }, 65);
+    setTimeout(() => { g.style.transition = "opacity .22s"; g.style.opacity = "0"; setTimeout(() => g.remove(), 240); }, 380);
+  }
+  // Draw bolts along the chain of a win's cells + a quick blue screen pulse.
+  function lightningChain(positions) {
+    if (!positions || positions.length < 2) return;
+    const pts = positions.map(([c, r]) => { const el = cellEl(c, r); if (!el) return null; const b = el.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }).filter(Boolean);
+    for (let i = 0; i < pts.length - 1; i++) zap(pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y);
+    bluePulse();
+  }
+  let pulseEl = null;
+  function bluePulse() {
+    if (!pulseEl) { pulseEl = document.createElement("div"); pulseEl.id = "slot-zap-flash"; document.body.appendChild(pulseEl); }
+    pulseEl.classList.remove("go"); void pulseEl.offsetWidth; pulseEl.classList.add("go");
+  }
+  // Expanding shockwave ring at a win's centre.
+  function shockwave(center) {
+    const r = document.createElement("div");
+    r.className = "slot-shockwave";
+    r.style.left = center.x + "px"; r.style.top = center.y + "px";
+    document.body.appendChild(r);
+    setTimeout(() => r.remove(), 620);
+  }
+
   // ---- Central running-total celebration ----
   let wcRunning = 0;
   let wcFired = [];
@@ -723,11 +787,15 @@
     if (delta <= 0) return;
     sndWin();
     flicker(); // every win flashes
-    // Burst the winning symbol out of the hit cells — bigger win, bigger burst.
+    // Blue electric arcs between the connected winning symbols + a shockwave.
     const center = cellsCentroid(positions);
+    lightningChain(positions);
+    sndZap();
+    shockwave(center);
+    // Burst the winning symbol out of the hit cells — bigger win, bigger burst.
     const firstCell = positions[0] && cellEl(positions[0][0], positions[0][1]);
     const emoji = firstCell ? firstCell.textContent.trim() : "🪙";
-    if (emoji) emojiExplosion(emoji, center, Math.min(30, 8 + Math.floor(delta / Math.max(wcBet, 1)) * 3));
+    if (emoji) emojiExplosion(emoji, center, Math.min(36, 10 + Math.floor(delta / Math.max(wcBet, 1)) * 3));
     await flyPlus(center, delta);
     const from = wcRunning;
     const to = wcRunning + delta;
