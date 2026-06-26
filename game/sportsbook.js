@@ -107,7 +107,13 @@ let nextId = 1;
 const matches = new Map(); // id -> match
 const feed = [];           // recent bets across the board
 const combos = [];         // active accumulator (parlay) bets across players
+const betLog = [];         // recent settled single bets (per user history)
 const matchResults = new Map(); // matchId -> { h, a } kept after a match is reaped, so combos can still settle
+const BETLOG_KEEP = 400;
+function logBet(user, entry) {
+  betLog.push({ user, ts: Date.now(), ...entry });
+  if (betLog.length > BETLOG_KEEP) betLog.splice(0, betLog.length - BETLOG_KEEP);
+}
 const MAX_LEGS = 6;
 const SAME_GAME_HAIRCUT = 0.90; // correlation discount per extra leg from the SAME match
 const RESULTS_KEEP = 400;
@@ -138,16 +144,18 @@ function lambdas(homeStr, awayStr, neutral = false) {
 
 /** Fair market probabilities from the goal model (grid 0..8). */
 function marketProbs(lh, la) {
-  let pHome = 0, pDraw = 0, pAway = 0, pOver = 0, pBtts = 0;
+  let pHome = 0, pDraw = 0, pAway = 0, pOver = 0, pO15 = 0, pO35 = 0, pBtts = 0;
   const ph = [], pa = [];
   for (let i = 0; i <= 8; i++) { ph[i] = poissonPmf(lh, i); pa[i] = poissonPmf(la, i); }
   for (let h = 0; h <= 8; h++) for (let a = 0; a <= 8; a++) {
     const p = ph[h] * pa[a];
     if (h > a) pHome += p; else if (h === a) pDraw += p; else pAway += p;
     if (h + a >= 3) pOver += p;
+    if (h + a >= 2) pO15 += p;
+    if (h + a >= 4) pO35 += p;
     if (h >= 1 && a >= 1) pBtts += p;
   }
-  return { pHome, pDraw, pAway, pOver, pUnder: 1 - pOver, pBtts, pNoBtts: 1 - pBtts };
+  return { pHome, pDraw, pAway, pOver, pUnder: 1 - pOver, pO15, pO35, pBtts, pNoBtts: 1 - pBtts };
 }
 const odds = (p) => Math.max(1.04, Math.round((1 / Math.max(p, 0.001)) / (1 + MARGIN) * 100) / 100);
 
@@ -155,7 +163,10 @@ function buildMarkets(lh, la) {
   const p = marketProbs(lh, la);
   return {
     "1x2":  { label: "Sieger",          sels: { home: odds(p.pHome), draw: odds(p.pDraw), away: odds(p.pAway) } },
+    "dc":   { label: "Doppelte Chance", sels: { hd: odds(p.pHome + p.pDraw), ha: odds(p.pHome + p.pAway), da: odds(p.pDraw + p.pAway) } },
     "ou25": { label: "Über/Unter 2,5",  sels: { over: odds(p.pOver), under: odds(p.pUnder) } },
+    "ou15": { label: "Über/Unter 1,5",  sels: { over15: odds(p.pO15), under15: odds(1 - p.pO15) } },
+    "ou35": { label: "Über/Unter 3,5",  sels: { over35: odds(p.pO35), under35: odds(1 - p.pO35) } },
     "btts": { label: "Beide treffen",   sels: { yes: odds(p.pBtts), no: odds(p.pNoBtts) } },
   };
 }
@@ -180,8 +191,12 @@ function createMatch() {
 // ── Settlement ────────────────────────────────────────────────────────────
 function selWins(market, selection, score) {
   const tot = score.h + score.a;
-  if (market === "1x2") return selection === (score.h > score.a ? "home" : score.h === score.a ? "draw" : "away");
+  const oc = score.h > score.a ? "home" : score.h === score.a ? "draw" : "away";
+  if (market === "1x2") return selection === oc;
+  if (market === "dc") return selection === "hd" ? (oc === "home" || oc === "draw") : selection === "ha" ? (oc === "home" || oc === "away") : (oc === "draw" || oc === "away");
   if (market === "ou25") return selection === (tot >= 3 ? "over" : "under");
+  if (market === "ou15") return selection === (tot >= 2 ? "over15" : "under15");
+  if (market === "ou35") return selection === (tot >= 4 ? "over35" : "under35");
   if (market === "btts") return selection === (score.h >= 1 && score.a >= 1 ? "yes" : "no");
   return false;
 }
@@ -201,6 +216,7 @@ function settle(m, accounts, io) {
       accounts.recordHand(b.user, -b.amount, true, "sportwetten");
       b.won = false; b.payout = 0;
     }
+    logBet(b.user, { match: `${m.home}–${m.away}`, sel: selLabel(b.market, b.selection, m), amount: b.amount, odds: b.odds, won: b.won, payout: b.payout });
   }
   m.result = {
     score: { ...m.score },
@@ -369,6 +385,21 @@ function setupSportsbook(io, accounts) {
       io.emit("sports:update");
     });
 
+    // Cash-out: cancel an own OPEN (pre-kickoff) single bet for 95% of the stake.
+    socket.on("sports:cashout", ({ matchId, betId } = {}, ack) => {
+      if (!socket.data.account) return ack && ack({ ok: false, error: "Nicht eingeloggt." });
+      const m = matches.get(Number(matchId));
+      if (!m || m.state !== "open") return ack && ack({ ok: false, error: "Nur vor Anpfiff möglich." });
+      const i = m.bets.findIndex((b) => b.id === betId && b.user === socket.data.account);
+      if (i < 0) return ack && ack({ ok: false, error: "Wette nicht gefunden." });
+      const b = m.bets[i];
+      const refund = Math.floor(b.amount * 0.95);
+      const r = accounts.adjustChips(socket.data.account, refund);
+      m.bets.splice(i, 1);
+      ack && ack({ ok: true, refund, account: r.account });
+      io.emit("sports:update");
+    });
+
     // Combo / parlay: 2+ legs, ALL must win, odds multiply (more risk, more money).
     socket.on("sports:combo", ({ legs, amount } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
@@ -427,7 +458,8 @@ function setupSportsbook(io, accounts) {
       }),
       amount: c.amount, comboOdds: c.comboOdds, settled: c.settled, won: c.won, payout: c.payout, voided: !!c.voided,
     }));
-    return { matches: list, feed: feed.slice(0, FEED_MAX), myCombos };
+    const myBetLog = betLog.filter((b) => b.user === viewerKey).slice(-15).reverse();
+    return { matches: list, feed: feed.slice(0, FEED_MAX), myCombos, myBetLog };
   }
 }
 
@@ -496,7 +528,7 @@ function publicMatch(m, viewerKey, now) {
   for (const b of m.bets) {
     const cell = book[b.market] && book[b.market][b.selection];
     if (cell) { cell.stake += b.amount; cell.backers += 1; }
-    if (b.user === viewerKey) myBets.push({ market: b.market, selection: b.selection, amount: b.amount, odds: b.odds, won: b.won, payout: b.payout });
+    if (b.user === viewerKey) myBets.push({ id: b.id, market: b.market, selection: b.selection, amount: b.amount, odds: b.odds, won: b.won, payout: b.payout });
   }
   return {
     id: m.id, league: m.leagueName || m.league, leagueEmoji: m.leagueEmoji,
@@ -511,7 +543,10 @@ function publicMatch(m, viewerKey, now) {
 
 function selLabel(market, selection, m) {
   if (market === "1x2") return selection === "home" ? m.home : selection === "away" ? m.away : "Unentschieden";
+  if (market === "dc") return selection === "hd" ? `${m.home} oder X` : selection === "ha" ? `${m.home} oder ${m.away}` : `X oder ${m.away}`;
   if (market === "ou25") return selection === "over" ? "Über 2,5" : "Unter 2,5";
+  if (market === "ou15") return selection === "over15" ? "Über 1,5" : "Unter 1,5";
+  if (market === "ou35") return selection === "over35" ? "Über 3,5" : "Unter 3,5";
   if (market === "btts") return selection === "yes" ? "Beide treffen" : "Nicht beide";
   return selection;
 }
