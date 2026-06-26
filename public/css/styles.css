@@ -2041,3 +2041,7 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Slots: auto-spin count selector */
 .auto-count-sel { background: rgba(0,0,0,0.35); color: var(--text); border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 4px 6px; font-size: 0.8rem; }
+
+/* Stats screen accent colors */
+#stats-overview .pos, #stats-by-game .pos { color: #7ee0a0; }
+#stats-overview .neg, #stats-by-game .neg { color: #ff8a8a; }

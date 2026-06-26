@@ -235,7 +235,7 @@ function setupRouletteLobby(io, accounts) {
           const sock = [...room.sockets].find((s) => s.data.account === p.key);
           if (sock && r.ok) sock.emit("account:update", { account: r.account });
         }
-        accounts.recordHand(p.key, ret - staked); // win or loss → keeps stats accurate
+        accounts.recordHand(p.key, ret - staked, true, "roulette"); // win or loss → keeps stats accurate
         p.net += ret - staked;
         if (staked > 0 || ret > 0) perPlayer.push({ name: p.name, staked, ret, net: ret - staked });
         p.bets = [];
