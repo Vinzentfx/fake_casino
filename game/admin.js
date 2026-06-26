@@ -69,6 +69,21 @@ function setupAdmin(io, accounts) {
       ack(accounts.deleteAccount(key));
     });
 
+    // Remove a player from a specific leaderboard by zeroing the stat behind it.
+    socket.on("admin:resetStat", ({ target, stat } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const acc = accounts.get(String(target).toLowerCase());
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      acc.stats = acc.stats || { gamesPlayed: 0, handsWon: 0, biggestWin: 0, biggestLoss: 0 };
+      if (stat === "bigwin") acc.stats.biggestWin = 0;
+      else if (stat === "bigloss") acc.stats.biggestLoss = 0;
+      else if (stat === "games") { acc.stats.gamesPlayed = 0; acc.stats.handsWon = 0; acc.stats.perGame = {}; }
+      else return ack({ ok: false, error: "Unbekannte Kategorie." });
+      accounts.save();
+      ack({ ok: true });
+    });
+
     // List all owned city lots (for the admin "free a building" panel).
     socket.on("admin:cityLots", (ack) => {
       if (!ack) return;
