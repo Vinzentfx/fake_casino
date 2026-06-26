@@ -484,7 +484,10 @@ function evaluateSpin(machine, bet, session) {
   let freeSpinsAwarded = 0;
   let newSession = session;
   if (machine.freeSpins && scatters.count >= machine.freeSpins.trigger) {
-    freeSpinsAwarded = machine.freeSpins.count;
+    // More scatters than required → more free spins (e.g. 3→10, 4→15, 5→20…).
+    const fs = machine.freeSpins;
+    const extra = fs.extra != null ? fs.extra : Math.round(fs.count / 2);
+    freeSpinsAwarded = fs.count + Math.max(0, scatters.count - fs.trigger) * extra;
     if (inFree) {
       session.remaining += freeSpinsAwarded;
     } else {
