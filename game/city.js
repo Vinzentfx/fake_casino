@@ -40,19 +40,19 @@ const CITY_FILE = path.join(DATA_DIR, "city.json");
 // the casino rake and prestige). The casino games (high bets) are the real money
 // engine. Each building sells several buff-products.
 const BUILDING_TYPES = {
-  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 400000,       income: 2000,    rent: 1000,   buildable: true, products: [
+  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 400000,       income: 1600,    rent: 800,    buildable: true, products: [
              { key: "zitrone",    name: "Zitrone",      emoji: "🍋", price: 50000,    buff: "fastSpins",  mult: 2,    mins: 10, desc: "Slots 2× schneller" },
              { key: "energy",     name: "Energy-Drink", emoji: "🥤", price: 60000,    buff: "clickBoost", mult: 3,    mins: 10, desc: "Arbeiten ×3" } ] },
-  cafe:    { name: "Café",    emoji: "☕", cost: 2000000,      income: 5000,    rent: 2000,   buildable: true, products: [
+  cafe:    { name: "Café",    emoji: "☕", cost: 2000000,      income: 4000,    rent: 1600,   buildable: true, products: [
              { key: "espresso",   name: "Espresso",     emoji: "☕", price: 120000,   buff: "clickBoost", mult: 5,    mins: 15, desc: "Arbeiten ×5" },
              { key: "kuchen",     name: "Glückskuchen", emoji: "🍰", price: 300000,   buff: "winBoost",   mult: 1.1,  mins: 10, desc: "Haus-Gewinne +10 %" } ] },
-  shop:    { name: "Laden",   emoji: "🛍️", cost: 10000000,     income: 18000,   rent: 4000,   buildable: true, products: [
+  shop:    { name: "Laden",   emoji: "🛍️", cost: 10000000,     income: 14000,   rent: 3200,   buildable: true, products: [
              { key: "klee",       name: "Glücksklee",   emoji: "🍀", price: 600000,   buff: "winBoost",   mult: 1.2,  mins: 10, desc: "Haus-Gewinne +20 %" },
              { key: "jeton",      name: "Glücks-Jeton", emoji: "🎰", price: 150000,   buff: "fastSpins",  mult: 3,    mins: 10, desc: "Slots 3× schneller" } ] },
-  hotel:   { name: "Hotel",   emoji: "🏨", cost: 50000000,     income: 60000,   rent: 8000,   buildable: true, products: [
+  hotel:   { name: "Hotel",   emoji: "🏨", cost: 50000000,     income: 48000,   rent: 6400,   buildable: true, products: [
              { key: "vip",        name: "VIP-Pass",     emoji: "🎟️", price: 900000,   buff: "vip",        mult: 2,    mins: 30, desc: "Bonus & Soforthilfe ×2, kein Rake" },
              { key: "champagner", name: "Champagner",   emoji: "🍾", price: 1200000,  buff: "winBoost",   mult: 1.3,  mins: 12, desc: "Haus-Gewinne +30 %" } ] },
-  factory: { name: "Fabrik",  emoji: "🏭", cost: 250000000,    income: 200000,  rent: 15000,  buildable: true, products: [
+  factory: { name: "Fabrik",  emoji: "🏭", cost: 250000000,    income: 160000,  rent: 12000,  buildable: true, products: [
              { key: "gold",       name: "Goldbarren",   emoji: "💎", price: 2500000,  buff: "winBoost",   mult: 1.5,  mins: 8,  desc: "Haus-Gewinne +50 %" },
              { key: "turbo",      name: "Turbo-Chip",   emoji: "⚙️", price: 400000,   buff: "fastSpins",  mult: 4,    mins: 12, desc: "Slots 4× schneller" } ] },
   // The Casino owner also collects the house rake (see accounts.recordHand).
