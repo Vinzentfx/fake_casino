@@ -2062,3 +2062,7 @@ button { font-family: inherit; cursor: pointer; }
 .admin-acc-top { display: flex; align-items: center; justify-content: space-between; }
 .admin-acc-lb { margin-top: 4px; font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .admin-acc-lb .chip-btn { padding: 2px 6px; font-size: 0.72rem; }
+
+/* Poker turn-timer countdown */
+.pk-timer { color: var(--gold-strong); font-weight: 700; margin-left: 6px; }
+.pk-timer.low { color: #ff7a7a; }

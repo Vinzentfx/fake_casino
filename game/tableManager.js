@@ -19,6 +19,7 @@ const NEXT_HAND_DELAY_MS = 4500;
 // so the buy-in always covers them).
 const MAX_BUYIN = 100000;
 const MAX_BB = 2000;
+const TURN_MS = 30000; // auto-fold a stalling player after 30s
 
 function setupPoker(io, accounts) {
   /** code -> { table, sockets:Set<Socket>, timer } */
@@ -37,14 +38,35 @@ function setupPoker(io, accounts) {
   function broadcast(code) {
     const entry = tables.get(code);
     if (!entry) return;
+    scheduleTurnTimer(entry); // (re)arm the auto-fold timer for whoever's to act
     for (const sock of entry.sockets) {
       const viewerId = sock.data.account || null;
       const st = entry.table.getStateFor(viewerId);
       st.isHost = !entry.vsBots && entry.hostKey === viewerId;
       st.hostName = entry.hostName || null;
       st.vsBots = !!entry.vsBots;
+      st.turnDeadline = entry.turnDeadline || null;
       sock.emit("poker:state", st);
     }
+  }
+
+  // Auto-fold a player who stalls so they can't freeze the table.
+  function scheduleTurnTimer(entry) {
+    const { table } = entry;
+    clearTimeout(entry.turnTimer);
+    entry.turnDeadline = null;
+    if (!table.handActive || table.toAct < 0) return;
+    const idx = table.toAct;
+    const seat = table.seats[idx];
+    if (!seat || seat.isBot) return; // bots act via scheduleBots
+    entry.turnDeadline = Date.now() + TURN_MS;
+    entry.turnTimer = setTimeout(() => {
+      if (!tables.has(table.code) || !table.handActive || table.toAct !== idx) return;
+      const toCall = table.currentBet - seat.bet;
+      table.act(seat.id, toCall > 0 ? "fold" : "check", 0); // auto-fold (or free check)
+      broadcast(table.code);
+      scheduleBots(entry);
+    }, TURN_MS);
   }
 
   function destroyIfEmpty(code) {
@@ -54,6 +76,7 @@ function setupPoker(io, accounts) {
     if (entry.sockets.size === 0) {
       clearTimeout(entry.timer);
       clearTimeout(entry.botTimer);
+      clearTimeout(entry.turnTimer);
       tables.delete(code);
       lobby.remove(code);
     }
