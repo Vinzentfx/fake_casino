@@ -1989,3 +1989,8 @@ button { font-family: inherit; cursor: pointer; }
 /* Real-fixture badge in sportsbook */
 .sb-real { display: inline-block; margin-left: 6px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 999px; background: rgba(126, 224, 160, 0.18); color: #7ee0a0; vertical-align: middle; }
 .sb-real-match { border-color: rgba(126, 224, 160, 0.35); }
+
+/* Sportsbook free amount entry */
+.sb-amount-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.sb-amount { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.3); color: var(--text); font-size: 1rem; }
+.sb-amount:focus { outline: 2px solid var(--gold); }

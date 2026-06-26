@@ -61,9 +61,12 @@
   function renderMatches() {
     const el = $("sb-matches");
     if (!el) return;
+    // Don't redraw mid-typing — it would wipe the amount field / cursor.
+    if (document.activeElement && document.activeElement.classList.contains("sb-amount")) return;
     if (!data.matches.length) { el.innerHTML = '<p class="muted small">Neue Spiele werden angesetzt…</p>'; return; }
     el.innerHTML = data.matches.map((m) => {
       const showScore = m.state === "live" || m.state === "done";
+      if (m.state !== "open" && picks[m.id]) delete picks[m.id]; // match kicked off → drop the slip
       const pick = picks[m.id];
       let markets = "";
       if (m.state === "open") {
@@ -90,8 +93,12 @@
       }).join("");
 
       const slip = pick ? `<div class="sb-slip">
-        <div class="sb-slip-info">${escapeHtml(selLabel(m, pick.market, pick.selection))} @${pick.odds.toFixed(2)} → <b>${fmt(betAmount * pick.odds)} 🪙</b></div>
-        <div class="sb-chips">${[100, 1000, 10000, 100000].map((v) => `<button class="sb-chip${v === betAmount ? " on" : ""}" data-amt="${v}">${v >= 1000 ? v / 1000 + "k" : v}</button>`).join("")}</div>
+        <div class="sb-slip-info">${escapeHtml(selLabel(m, pick.market, pick.selection))} @${pick.odds.toFixed(2)} → möglicher Gewinn <b class="sb-payout">${fmt(betAmount * pick.odds)} 🪙</b></div>
+        <div class="sb-amount-row">
+          <input type="number" class="sb-amount" min="50" step="50" value="${betAmount}" inputmode="numeric" />
+          <span class="muted small">🪙 Einsatz</span>
+        </div>
+        <div class="sb-chips">${[100, 1000, 10000, 100000, 1000000].map((v) => `<button class="sb-chip${v === betAmount ? " on" : ""}" data-amt="${v}">${v >= 1e6 ? v / 1e6 + "M" : v >= 1000 ? v / 1000 + "k" : v}</button>`).join("")}</div>
         <button class="btn-primary sb-place" data-id="${m.id}">Wetten ${fmt(betAmount)} 🪙</button>
       </div>` : "";
 
@@ -113,6 +120,19 @@
       render();
     }));
     el.querySelectorAll(".sb-chip").forEach((b) => b.addEventListener("click", () => { betAmount = +b.dataset.amt; render(); }));
+    // Free amount entry: update the payout + place-button live without a full redraw.
+    el.querySelectorAll(".sb-amount").forEach((inp) => inp.addEventListener("input", () => {
+      const v = Math.max(0, Math.floor(Number(inp.value) || 0));
+      betAmount = v;
+      const card = inp.closest(".sb-match");
+      const id = +card.dataset.id;
+      const pick = picks[id];
+      const pay = card.querySelector(".sb-payout");
+      if (pay && pick) pay.textContent = `${fmt(v * pick.odds)} 🪙`;
+      const place = card.querySelector(".sb-place");
+      if (place) place.textContent = `Wetten ${fmt(v)} 🪙`;
+      card.querySelectorAll(".sb-chip").forEach((c) => c.classList.toggle("on", +c.dataset.amt === v));
+    }));
     el.querySelectorAll(".sb-place").forEach((b) => b.addEventListener("click", () => placeBet(+b.dataset.id)));
   }
 
