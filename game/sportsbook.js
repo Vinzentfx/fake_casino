@@ -205,6 +205,26 @@ function selWins(market, selection, score) {
   return false;
 }
 
+// ── Live odds / cash-out ────────────────────────────────────────────────────
+const CASHOUT_FEE = 0.06;
+/** Probability the bet still WINS given the current score + remaining time. */
+function liveWinProb(m, market, selection) {
+  const remFrac = Math.max(0, (90 - (m.minute || 0)) / 90);
+  const rlh = (m.lh || 1.3) * remFrac, rla = (m.la || 1.15) * remFrac;
+  const ph = [], pa = [];
+  for (let i = 0; i <= 8; i++) { ph[i] = poissonPmf(rlh, i); pa[i] = poissonPmf(rla, i); }
+  let p = 0;
+  for (let dh = 0; dh <= 8; dh++) for (let da = 0; da <= 8; da++) {
+    if (selWins(market, selection, { h: m.score.h + dh, a: m.score.a + da })) p += ph[dh] * pa[da];
+  }
+  return p;
+}
+/** Dynamic cash-out value of an open/live bet (live fair value minus a small fee). */
+function liveCashout(m, b) {
+  const v = b.amount * liveWinProb(m, b.market, b.selection) * b.odds * (1 - CASHOUT_FEE);
+  return Math.max(0, Math.min(Math.floor(v), Math.floor(b.amount * b.odds)));
+}
+
 function settle(m, accounts, io) {
   const winners = new Set();
   for (const b of m.bets) {
@@ -392,16 +412,18 @@ function setupSportsbook(io, accounts) {
       io.emit("sports:update");
     });
 
-    // Cash-out: cancel an own OPEN (pre-kickoff) single bet for 95% of the stake.
+    // Cash-out: settle an own OPEN or LIVE single bet early for its current
+    // (dynamic) value — high if it's winning, low if it's losing.
     socket.on("sports:cashout", ({ matchId, betId } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Nicht eingeloggt." });
       const m = matches.get(Number(matchId));
-      if (!m || m.state !== "open") return ack && ack({ ok: false, error: "Nur vor Anpfiff möglich." });
+      if (!m || (m.state !== "open" && m.state !== "live")) return ack && ack({ ok: false, error: "Cash-out gerade nicht möglich." });
       const i = m.bets.findIndex((b) => b.id === betId && b.user === socket.data.account);
       if (i < 0) return ack && ack({ ok: false, error: "Wette nicht gefunden." });
       const b = m.bets[i];
-      const refund = Math.floor(b.amount * 0.95);
+      const refund = liveCashout(m, b);
       const r = accounts.adjustChips(socket.data.account, refund);
+      accounts.recordHand(socket.data.account, refund - b.amount, true, "sportwetten"); // realize the P&L
       m.bets.splice(i, 1);
       ack && ack({ ok: true, refund, account: r.account });
       io.emit("sports:update");
@@ -535,7 +557,8 @@ function publicMatch(m, viewerKey, now) {
   for (const b of m.bets) {
     const cell = book[b.market] && book[b.market][b.selection];
     if (cell) { cell.stake += b.amount; cell.backers += 1; }
-    if (b.user === viewerKey) myBets.push({ id: b.id, market: b.market, selection: b.selection, amount: b.amount, odds: b.odds, won: b.won, payout: b.payout });
+    if (b.user === viewerKey) myBets.push({ id: b.id, market: b.market, selection: b.selection, amount: b.amount, odds: b.odds, won: b.won, payout: b.payout,
+      cashout: (m.state === "open" || m.state === "live") ? liveCashout(m, b) : null });
   }
   return {
     id: m.id, league: m.leagueName || m.league, leagueEmoji: m.leagueEmoji,
