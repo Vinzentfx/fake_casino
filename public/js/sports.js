@@ -34,7 +34,10 @@
   // ── Labels ──────────────────────────────────────────────────────────────
   function selLabel(m, market, sel) {
     if (market === "1x2") return sel === "home" ? m.home : sel === "away" ? m.away : "Unent.";
+    if (market === "dc") return sel === "hd" ? "1X" : sel === "ha" ? "12" : "X2";
     if (market === "ou25") return sel === "over" ? "Über 2,5" : "Unter 2,5";
+    if (market === "ou15") return sel === "over15" ? "Über 1,5" : "Unter 1,5";
+    if (market === "ou35") return sel === "over35" ? "Über 3,5" : "Unter 3,5";
     if (market === "btts") return sel === "yes" ? "Beide" : "Keiner";
     return sel;
   }
@@ -122,7 +125,18 @@
   }
 
   // ── Match board ─────────────────────────────────────────────────────────
-  function render() { renderSlip(); renderMatches(); renderCombos(); renderFeed(); }
+  function render() { renderSlip(); renderMatches(); renderCombos(); renderHistory(); renderFeed(); }
+
+  function renderHistory() {
+    const el = $("sb-history");
+    if (!el) return;
+    const log = data.myBetLog || [];
+    if (!log.length) { el.innerHTML = '<p class="muted small">Noch keine abgeschlossenen Wetten.</p>'; return; }
+    el.innerHTML = log.map((b) => {
+      const res = b.won ? `<span class="pos">✓ +${fmt(b.payout)} 🪙</span>` : `<span class="neg">✗ −${fmt(b.amount)} 🪙</span>`;
+      return `<div class="sb-feed-row"><span class="sb-feed-sel">${escapeHtml(b.sel)}</span> <span class="muted">(${escapeHtml(b.match)})</span> @${b.odds.toFixed(2)} · ${fmt(b.amount)} 🪙 → ${res}</div>`;
+    }).join("");
+  }
 
   function renderMatches() {
     const el = $("sb-matches");
@@ -152,7 +166,8 @@
       }
       const myb = (m.myBets || []).map((b) => {
         const st = m.state === "done" ? (b.won ? `<span class="pos">✓ +${fmt(b.payout)}</span>` : `<span class="neg">✗</span>`) : `<span class="muted">offen</span>`;
-        return `<div class="sb-myb-row">${escapeHtml(selLabel(m, b.market, b.selection))} @${b.odds.toFixed(2)} · ${fmt(b.amount)} 🪙 ${st}</div>`;
+        const cashout = m.state === "open" && b.id ? `<button class="sb-cashout" data-id="${m.id}" data-bet="${b.id}">Cash-out ${fmt(b.amount * 0.95)} 🪙</button>` : "";
+        return `<div class="sb-myb-row">${escapeHtml(selLabel(m, b.market, b.selection))} @${b.odds.toFixed(2)} · ${fmt(b.amount)} 🪙 ${st} ${cashout}</div>`;
       }).join("");
       return `<div class="sb-match${m.real ? " sb-real-match" : ""}" data-id="${m.id}">
         <div class="sb-head"><span>${m.leagueEmoji} ${escapeHtml(m.league)}${m.real ? ' <span class="sb-real">ECHT</span>' : ""}</span>${statusHtml(m)}</div>
@@ -174,6 +189,15 @@
       if (!m) return;
       toggleLeg(m, b.dataset.mk, b.dataset.sel);
       render();
+    }));
+    el.querySelectorAll(".sb-cashout").forEach((b) => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      socket.emit("sports:cashout", { matchId: +b.dataset.id, betId: b.dataset.bet }, (res) => {
+        if (!res || !res.ok) { toast((res && res.error) || "Cash-out fehlgeschlagen."); return; }
+        if (res.account) applyAccount(res.account);
+        toast(`💸 Cash-out: +${fmt(res.refund)} 🪙`);
+        load();
+      });
     }));
   }
 

@@ -2053,3 +2053,6 @@ button { font-family: inherit; cursor: pointer; }
 .bj-lp-hand { font-size: 0.85rem; }
 .bj-mini { display: inline-block; background: #f5f5f5; color: #111; border-radius: 4px; padding: 0 4px; margin: 0 1px; font-weight: 700; font-size: 0.78rem; }
 .bj-mini.red { color: #c0392b; }
+
+/* Sportsbook cash-out button */
+.sb-cashout { margin-left: 6px; padding: 2px 8px; border-radius: 8px; border: 1px solid var(--gold); background: rgba(231,198,107,0.14); color: var(--gold-strong); font-size: 0.72rem; font-weight: 700; cursor: pointer; }
