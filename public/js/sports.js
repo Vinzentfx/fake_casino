@@ -38,6 +38,7 @@
 
   function statusHtml(m) {
     if (m.state === "live") return `<span class="sb-live">🔴 LIVE${m.minute ? ` ${m.minute}'` : ""}</span>`;
+    if (m.state === "pending") return `<span class="sb-pending">⏳ läuft · Ergebnis folgt</span>`;
     if (m.state === "done") {
       const o = m.result ? (m.result.outcome === "home" ? m.home : m.result.outcome === "away" ? m.away : "Unentschieden") : "";
       return `<span class="sb-final">Schluss · ${escapeHtml(o)}</span>`;
