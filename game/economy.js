@@ -40,7 +40,8 @@ function setupEconomy(io, accounts) {
     io.emit("city:update");
   }
 
-  // Per-socket click rate limiter (~20/s).
+  // Per-ACCOUNT click rate limiter (~20/s) — keyed by account, not socket, so
+  // opening extra tabs/sockets can't multiply the click faucet.
   const clickTimes = new Map();
   const CLICK_MAX = 20, CLICK_WINDOW = 1000;
 
@@ -51,9 +52,10 @@ function setupEconomy(io, accounts) {
       const acc = acct(socket);
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
       const now = Date.now();
-      const times = (clickTimes.get(socket.id) || []).filter((t) => now - t < CLICK_WINDOW);
-      if (times.length >= CLICK_MAX) { clickTimes.set(socket.id, times); return ack({ ok: false, error: "Zu schnell." }); }
-      times.push(now); clickTimes.set(socket.id, times);
+      const key = socket.data.account;
+      const times = (clickTimes.get(key) || []).filter((t) => now - t < CLICK_WINDOW);
+      if (times.length >= CLICK_MAX) { clickTimes.set(key, times); return ack({ ok: false, error: "Zu schnell." }); }
+      times.push(now); clickTimes.set(key, times);
 
       const e = ensureEconomy(acc);
       const earned = Math.round(clickPower(e) * accounts.buffMult(socket.data.account, "clickBoost")); // Espresso boost
