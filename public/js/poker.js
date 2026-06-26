@@ -44,23 +44,6 @@
     });
   });
 
-  $("#poker-bots-entry").addEventListener("click", () => {
-    const bots = parseInt($("#bot-count").value, 10) || 3;
-    const buyIn = parseInt($("#bot-buyin").value, 10);
-    if (!Number.isFinite(buyIn) || buyIn < 20) return toast("Buy-in muss mind. 20 sein.");
-    socket.emit("poker:createBots", { bots, buyIn, bigBlind: 20 }, (res) => {
-      if (res && res.ok) enterTable(res.code);
-      else toast((res && res.error) || "Konnte Bot-Tisch nicht erstellen.");
-    });
-  });
-
-  // Fill the current table with a bot (works on friend tables too).
-  $("#add-bot-btn").addEventListener("click", () => {
-    socket.emit("poker:addBot", (res) => {
-      if (res && !res.ok) toast(res.error || "Konnte keinen Bot hinzufügen.");
-    });
-  });
-
   $("#join-table-btn").addEventListener("click", joinFromInput);
   $("#join-code").addEventListener("keydown", (e) => {
     if (e.key === "Enter") joinFromInput();
