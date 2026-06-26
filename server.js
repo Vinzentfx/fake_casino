@@ -38,12 +38,34 @@ const PORT = process.env.PORT || 3000;
 // ---------------------------------------------------------------------------
 
 const app = express();
+app.set("trust proxy", true); // Railway runs behind a proxy → real client IP in x-forwarded-for
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+// Anti-multi-account faucet: cap how many NEW accounts one IP can create per day
+// (each new account is free start chips). Generous enough for friends sharing a
+// network, tight enough to stop mass account farming.
+const ACCOUNTS_PER_IP_PER_DAY = 8;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const ipCreations = new Map(); // ip -> [timestamps]
+function recentCreations(ip) {
+  const now = Date.now();
+  const list = (ipCreations.get(ip) || []).filter((t) => now - t < DAY_MS);
+  ipCreations.set(ip, list);
+  return list;
+}
+
 app.post("/api/login", (req, res) => {
-  const result = accounts.login(req.body.name, req.body.pin);
+  const name = req.body.name;
+  const ip = req.ip || "unknown";
+  // If this login would CREATE a new account, enforce the per-IP creation cap.
+  const willCreate = name && !accounts.get(name);
+  if (willCreate && recentCreations(ip).length >= ACCOUNTS_PER_IP_PER_DAY) {
+    return res.status(429).json({ error: "Zu viele neue Accounts aus diesem Netzwerk. Bitte später erneut versuchen." });
+  }
+  const result = accounts.login(name, req.body.pin);
   if (!result.ok) return res.status(400).json({ error: result.error });
+  if (result.created) recentCreations(ip).push(Date.now());
   res.json({
     created: result.created,
     account: result.account,
