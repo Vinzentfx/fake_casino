@@ -2045,3 +2045,11 @@ button { font-family: inherit; cursor: pointer; }
 /* Stats screen accent colors */
 #stats-overview .pos, #stats-by-game .pos { color: #7ee0a0; }
 #stats-overview .neg, #stats-by-game .neg { color: #ff8a8a; }
+
+/* Blackjack lobby: live hands (scoped so roulette roster keeps its row) */
+#bj-lobby-players .bj-lp { flex-direction: column; align-items: stretch; gap: 4px; }
+.bj-lp-top { display: flex; align-items: center; justify-content: space-between; }
+.bj-lp-dealer { margin-top: 2px; }
+.bj-lp-hand { font-size: 0.85rem; }
+.bj-mini { display: inline-block; background: #f5f5f5; color: #111; border-radius: 4px; padding: 0 4px; margin: 0 1px; font-weight: 700; font-size: 0.78rem; }
+.bj-mini.red { color: #c0392b; }

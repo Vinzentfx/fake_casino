@@ -115,6 +115,18 @@ function clientState(session, accounts) {
   };
 }
 
+/** Compact live-hand snapshot for the lobby table (others see your cards). */
+function handSnapshot(session) {
+  if (!session.playerHands || !session.playerHands.length) return { phase: session.phase || "betting" };
+  return {
+    phase: session.phase,
+    hands: session.playerHands.map((h) => ({ value: handValue(h.cards), result: h.result, doubled: h.doubled, cards: h.cards.map((c) => ({ r: c.rank, s: c.suit })) })),
+    dealer: session.phase === "player"
+      ? { up: { r: session.dealerCards[0].rank, s: session.dealerCards[0].suit } }
+      : { value: handValue(session.dealerCards), cards: session.dealerCards.map((c) => ({ r: c.rank, s: c.suit })) },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Game logic
 // ---------------------------------------------------------------------------
@@ -327,6 +339,8 @@ function setupBlackjack(io, accounts) {
     function push() {
       const session = getSession();
       socket.emit("bj:state", clientState(session, accounts));
+      // Share the live hand with the lobby table (everyone sees everyone's cards).
+      bjLobby.reportHand(socket, handSnapshot(session));
       // Report a finished hand's net to the player's blackjack lobby (if any),
       // so everyone at the table sees who won/lost how much. Once per hand.
       if (session.phase === "done" && !session.reported) {

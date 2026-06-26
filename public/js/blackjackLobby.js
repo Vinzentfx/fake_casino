@@ -37,13 +37,28 @@
     return `<b class="${cls}">${sign}${fmt(n)} 🪙</b>`;
   }
 
+  const SUIT = { h: "♥", d: "♦", s: "♠", c: "♣" };
+  const RANKL = { 11: "J", 12: "Q", 13: "K", 14: "A" };
+  const rl = (r) => RANKL[r] || String(r);
+  const miniCard = (c) => `<span class="bj-mini${c.s === "h" || c.s === "d" ? " red" : ""}">${rl(c.r)}${SUIT[c.s]}</span>`;
+  const resLabel = (r) => r === "win" ? '<b class="pos">✓</b>' : r === "blackjack" ? '<b class="pos">BJ</b>' : (r === "lose" || r === "bust") ? '<b class="neg">✗</b>' : r === "push" ? "=" : "";
+  function renderHand(h) {
+    if (!h || h.phase === "betting" || !h.hands) return '<div class="bj-lp-hand muted small">— setzt —</div>';
+    const d = h.dealer;
+    const dealer = d ? (d.up ? `Dealer ${miniCard(d.up)} 🂠` : `Dealer ${d.cards.map(miniCard).join(" ")} =${d.value}`) : "";
+    const hands = h.hands.map((hh) => `<div class="bj-lp-hand">${hh.cards.map(miniCard).join(" ")} <b>=${hh.value}</b> ${resLabel(hh.result)}</div>`).join("");
+    return `<div class="bj-lp-dealer muted small">${dealer}</div>${hands}`;
+  }
+
   function render() {
     if (!state) return;
     $("bj-lobby-code").textContent = state.code;
     const me = window.Casino.getAccount && window.Casino.getAccount();
     $("bj-lobby-players").innerHTML = state.players.map((p) => {
       const mine = me && p.name && me.name && p.name.toLowerCase() === me.name.toLowerCase();
-      return `<div class="bj-lp${mine ? " mine" : ""}"><span>${escapeHtml(p.name)} <span class="muted small">(${p.hands})</span></span>${netStr(p.net)}</div>`;
+      return `<div class="bj-lp${mine ? " mine" : ""}">
+        <div class="bj-lp-top"><span>${escapeHtml(p.name)} <span class="muted small">(${p.hands})</span></span>${netStr(p.net)}</div>
+        ${renderHand(p.hand)}</div>`;
     }).join("");
     const feed = state.feed.slice().reverse().map((f) => {
       const cls = f.net > 0 ? "pos" : f.net < 0 ? "neg" : "";
