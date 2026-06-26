@@ -1994,3 +1994,7 @@ button { font-family: inherit; cursor: pointer; }
 .sb-amount-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .sb-amount { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.3); color: var(--text); font-size: 1rem; }
 .sb-amount:focus { outline: 2px solid var(--gold); }
+
+/* Sportsbook section headers (real WC vs simulated) */
+.sb-section-head { margin: 14px 2px 8px; font-weight: 700; color: var(--gold-strong); font-size: 1rem; }
+.sb-section-head:first-child { margin-top: 0; }
