@@ -106,6 +106,11 @@ const NEUTRAL_COMPS = new Set(["WC", "EC", "CL"]); // played at neutral venues �
 let nextId = 1;
 const matches = new Map(); // id -> match
 const feed = [];           // recent bets across the board
+const combos = [];         // active accumulator (parlay) bets across players
+const matchResults = new Map(); // matchId -> { h, a } kept after a match is reaped, so combos can still settle
+const MAX_LEGS = 6;
+const SAME_GAME_HAIRCUT = 0.90; // correlation discount per extra leg from the SAME match
+const RESULTS_KEEP = 400;
 
 // ── Poisson maths (for both the simulation and the odds) ──────────────────
 function poissonPmf(lambda, k) {
@@ -201,6 +206,9 @@ function settle(m, accounts, io) {
     score: { ...m.score },
     outcome: m.score.h > m.score.a ? "home" : m.score.h === m.score.a ? "draw" : "away",
   };
+  // Keep the final score so combo bets can still settle after the match is reaped.
+  matchResults.set(m.id, { h: m.score.h, a: m.score.a });
+  while (matchResults.size > RESULTS_KEEP) matchResults.delete(matchResults.keys().next().value);
   // Winnings are credited server-side; push fresh balances so the topbar updates live.
   if (io && winners.size) {
     for (const s of io.of("/").sockets.values()) {
@@ -272,6 +280,7 @@ function setupSportsbook(io, accounts) {
       }
     }
     while (SIM_ENABLED && simCount() < MAX_OPEN) { staggerCreate(); changed = true; }
+    settleCombos(accounts, io);
     if (changed) io.emit("sports:update");
   }
   setInterval(tick, 1000);
@@ -357,6 +366,45 @@ function setupSportsbook(io, accounts) {
       io.emit("sports:update");
     });
 
+    // Combo / parlay: 2+ legs, ALL must win, odds multiply (more risk, more money).
+    socket.on("sports:combo", ({ legs, amount } = {}, ack) => {
+      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!Array.isArray(legs) || legs.length < 2) return ack && ack({ ok: false, error: "Kombi braucht mind. 2 Tipps." });
+      if (legs.length > MAX_LEGS) return ack && ack({ ok: false, error: `Max. ${MAX_LEGS} Tipps pro Kombi.` });
+      amount = Math.floor(Number(amount));
+      if (!Number.isFinite(amount) || amount < MIN_BET) return ack && ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
+      if (amount > MAX_BET) return ack && ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} 🪙.` });
+
+      const seen = new Set();
+      const clean = [];
+      for (const leg of legs || []) {
+        const m = matches.get(Number(leg && leg.matchId));
+        if (!m || m.state !== "open") return ack && ack({ ok: false, error: "Ein Spiel nimmt keine Wetten mehr an." });
+        const mk = m.markets[leg.market];
+        if (!mk || !(leg.selection in mk.sels)) return ack && ack({ ok: false, error: "Ungültiger Tipp in der Kombi." });
+        const key = m.id + ":" + leg.market;
+        if (seen.has(key)) return ack && ack({ ok: false, error: "Pro Spiel & Markt nur ein Tipp." });
+        seen.add(key);
+        clean.push({ matchId: m.id, market: leg.market, selection: leg.selection, odds: mk.sels[leg.selection],
+                     label: `${m.home}–${m.away}: ${selLabel(leg.market, leg.selection, m)}` });
+      }
+      // Combined odds = product, minus a correlation haircut for same-match legs.
+      const perMatch = {};
+      for (const l of clean) perMatch[l.matchId] = (perMatch[l.matchId] || 0) + 1;
+      let comboOdds = clean.reduce((o, l) => o * l.odds, 1);
+      for (const k of Object.values(perMatch)) if (k > 1) comboOdds *= Math.pow(SAME_GAME_HAIRCUT, k - 1);
+      comboOdds = Math.round(comboOdds * 100) / 100;
+
+      const acc = accounts.get(socket.data.account);
+      if (!acc || acc.chips < amount) return ack && ack({ ok: false, error: "Nicht genug Chips." });
+      const r = accounts.adjustChips(socket.data.account, -amount);
+      combos.push({ id: crypto.randomUUID(), user: socket.data.account, name: acc.name, legs: clean, amount, comboOdds, settled: false, won: null, payout: 0 });
+      feed.unshift({ name: acc.name, match: `${clean.length}er-Kombi`, sel: `${clean.length} Tipps`, amount, odds: comboOdds });
+      if (feed.length > FEED_MAX) feed.length = FEED_MAX;
+      ack && ack({ ok: true, account: r.account, comboOdds });
+      io.emit("sports:update");
+    });
+
     socket.on("disconnect", () => {});
   });
 
@@ -369,8 +417,42 @@ function setupSportsbook(io, accounts) {
         return a.kickoff - b.kickoff;
       })
       .map((m) => publicMatch(m, viewerKey, now));
-    return { matches: list, feed: feed.slice(0, FEED_MAX) };
+    const myCombos = combos.filter((c) => c.user === viewerKey).slice(-12).reverse().map((c) => ({
+      legs: c.legs.map((l) => ({
+        label: l.label, odds: l.odds,
+        result: matchResults.has(l.matchId) ? (selWins(l.market, l.selection, matchResults.get(l.matchId)) ? "win" : "lose") : "open",
+      })),
+      amount: c.amount, comboOdds: c.comboOdds, settled: c.settled, won: c.won, payout: c.payout,
+    }));
+    return { matches: list, feed: feed.slice(0, FEED_MAX), myCombos };
   }
+}
+
+/** Settle any combo whose legs all have a known result. */
+function settleCombos(accounts, io) {
+  let changed = false;
+  for (const c of combos) {
+    if (c.settled) continue;
+    if (!c.legs.every((l) => matchResults.has(l.matchId))) continue;
+    const won = c.legs.every((l) => selWins(l.market, l.selection, matchResults.get(l.matchId)));
+    c.settled = true; c.won = won;
+    if (won) {
+      let payout = Math.floor(c.amount * c.comboOdds);
+      const boost = accounts.buffMult(c.user, "winBoost");
+      if (boost > 1) payout = Math.round(payout * boost);
+      accounts.adjustChips(c.user, payout);
+      accounts.recordHand(c.user, payout - c.amount);
+      c.payout = payout;
+      for (const s of io.of("/").sockets.values()) {
+        if (s.data.account === c.user) { const a = accounts.get(c.user); if (a) s.emit("account:update", { account: accounts.publicAccount(a) }); }
+      }
+    } else {
+      accounts.recordHand(c.user, -c.amount);
+    }
+    changed = true;
+  }
+  if (combos.length > 300) combos.splice(0, combos.length - 300);
+  if (changed) io.emit("sports:update");
 }
 
 const order = (s) => (s === "live" ? 0 : s === "pending" ? 1 : s === "open" ? 2 : 3);
