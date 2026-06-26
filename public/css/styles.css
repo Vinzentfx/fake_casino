@@ -1998,3 +1998,5 @@ button { font-family: inherit; cursor: pointer; }
 /* Sportsbook section headers (real WC vs simulated) */
 .sb-section-head { margin: 14px 2px 8px; font-weight: 700; color: var(--gold-strong); font-size: 1rem; }
 .sb-section-head:first-child { margin-top: 0; }
+
+.sb-pending { color: #d9c463; font-weight: 600; }

@@ -234,8 +234,9 @@ function setupSportsbook(io, accounts) {
     for (const m of matches.values()) {
       if (m.real) {
         // Real fixtures are driven by the poller; here we just lock betting at
-        // the real kickoff and reap long-finished ones.
-        if (m.state === "open" && now >= m.kickoff) { m.state = "live"; changed = true; }
+        // the real kickoff (→ "pending", no fabricated score) and reap old ones.
+        // The poller then sets the real live score / final result.
+        if (m.state === "open" && now >= m.kickoff) { m.state = "pending"; changed = true; }
         else if (m.state === "done" && now - m.doneAt > 6 * 60 * 60 * 1000) { matches.delete(m.id); changed = true; }
         continue;
       }
@@ -321,7 +322,7 @@ function setupSportsbook(io, accounts) {
     else if (st === "FINISHED") {
       m.score = score;
       if (!m.settled) { m.settled = true; settle(m, accounts, io); m.state = "done"; m.doneAt = Date.now(); }
-    } else if (Date.now() < m.kickoff) m.state = "open"; // SCHEDULED / TIMED
+    } else m.state = Date.now() < m.kickoff ? "open" : "pending"; // TIMED/SCHEDULED → bettable or kicked-off-awaiting-result
   }
 
   if (FD_TOKEN) {
@@ -372,7 +373,7 @@ function setupSportsbook(io, accounts) {
   }
 }
 
-const order = (s) => (s === "live" ? 0 : s === "open" ? 1 : 2);
+const order = (s) => (s === "live" ? 0 : s === "pending" ? 1 : s === "open" ? 2 : 3);
 
 function publicMatch(m, viewerKey, now) {
   // Per-selection book: total stake + backer count, so everyone sees the action.
