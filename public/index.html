@@ -141,25 +141,7 @@
       <div id="poker-lobby">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <div style="text-align:center"><div class="ph-icon">🃏</div><h2>Texas Hold'em</h2></div>
-        <div class="panel bots-panel">
-          <h3>🤖 Gegen Bots spielen</h3>
-          <div class="bots-config">
-            <label>Bots
-              <select id="bot-count">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3" selected>3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </label>
-            <label>Buy-in
-              <input id="bot-buyin" type="number" inputmode="numeric" min="20" max="100000" step="10" value="1000" title="max. 100.000" />
-            </label>
-            <button class="btn-primary" id="poker-bots-entry">Spielen</button>
-          </div>
-          <p class="muted small">Sofort loslegen — gewinne den Bots ihre Chips ab.</p>
-        </div>
+        <p class="muted small" style="text-align:center;margin:0 0 8px">Spiele gegen echte Spieler — erstelle einen Tisch oder tritt einem über die Lobby bei.</p>
         <div class="poker-actions">
           <div class="panel">
             <h3>Tisch erstellen</h3>
@@ -192,7 +174,7 @@
         <div class="table-header">
           <button class="back-btn" id="leave-table-btn">‹ Verlassen</button>
           <div class="table-code">Code <b id="table-code">----</b></div>
-          <button class="add-bot-btn" id="add-bot-btn" title="Bot hinzufügen">🤖 + Bot</button>
+          <span></span>
         </div>
         <div class="felt" id="felt">
           <div class="pot" id="pot"></div>

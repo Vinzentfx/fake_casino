@@ -197,50 +197,8 @@ function setupPoker(io, accounts) {
       broadcast(code);
     });
 
-    socket.on("poker:createBots", ({ bots = 3, buyIn, bigBlind = 20 } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
-      const acc = accounts.get(socket.data.account);
-      if (!acc) return ack && ack({ ok: false, error: "Account nicht gefunden." });
-      leaveCurrent(socket);
-
-      const bb = clampInt(bigBlind, 2, MAX_BB, 20);
-      const sb = Math.max(1, Math.floor(bb / 2));
-      const botCount = clampInt(bots, 1, 5, 3);
-      const cap = Math.min(acc.chips, MAX_BUYIN);
-      const amount = clampInt(buyIn, bb, cap, Math.min(cap, bb * 100));
-      if (amount < bb || amount > acc.chips)
-        return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
-
-      const code = makeCode();
-      const table = new PokerTable(code, { smallBlind: sb, bigBlind: bb });
-      const entry = { table, sockets: new Set(), timer: null, botTimer: null, vsBots: true };
-      tables.set(code, entry);
-      attachHooks(entry, code);
-      entry.sockets.add(socket);
-      socket.join(code);
-      socket.data.tableCode = code;
-
-      const deduct = accounts.adjustChips(socket.data.account, -amount);
-      if (!deduct.ok) {
-        tables.delete(code);
-        return ack && ack({ ok: false, error: deduct.error });
-      }
-      table.sit(socket.data.account, acc.name, amount);
-      socket.emit("account:update", { account: deduct.account });
-
-      for (let i = 0; i < botCount; i++) {
-        const bidx = table.sit("bot:" + i, pickBotName(table), amount);
-        if (bidx !== -1) table.seats[bidx].isBot = true;
-      }
-
-      ack && ack({ ok: true, code });
-      if (table.startHand()) {
-        broadcast(code);
-        scheduleBots(entry);
-      } else {
-        broadcast(code);
-      }
-    });
+    // Poker bots removed: their stacks were house-funded, so beating them
+    // printed chips (a money faucet). Poker is now human-vs-human only.
 
     socket.on("poker:join", ({ code } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
@@ -283,20 +241,6 @@ function setupPoker(io, accounts) {
       broadcast(table.code);
     });
 
-    // Add a single bot to the current table (e.g. to fill a friends' lobby).
-    socket.on("poker:addBot", (ack) => {
-      const entry = currentEntry(socket);
-      if (!entry) return ack && ack && ack({ ok: false, error: "Du bist an keinem Tisch." });
-      const { table } = entry;
-      if (table.seats.every((s) => s !== null)) return ack && ack && ack({ ok: false, error: "Tisch ist voll." });
-      let n = 0;
-      while (table.findSeat("bot:" + n) !== -1) n++;
-      const idx = table.sit("bot:" + n, pickBotName(table), Math.min(MAX_BUYIN, table.bigBlind * 50));
-      if (idx !== -1) table.seats[idx].isBot = true;
-      ack && ack && ack({ ok: true });
-      broadcast(table.code);
-      scheduleBots(entry);
-    });
 
     socket.on("poker:stand", (ack) => {
       const entry = currentEntry(socket);

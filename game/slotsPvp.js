@@ -19,6 +19,7 @@ const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const START_CHIPS = 1000; // match-chips each player starts with
 const SPINS = 20; // paid spins each (free spins don't count)
 const MIN_BUYIN = 10; // free-form buy-in, this is just the floor
+const MAX_BUYIN = 1000000; // ceiling (the bot is fair 50/50, but bound stakes anyway)
 const RAKE = 0.15; // 15% of the pot is removed (economy sink); winner gets the rest
 const MIN_BET = BET_LEVELS[0];
 
@@ -163,7 +164,7 @@ function setupPvp(io, accounts) {
     socket.on("pvp:create", ({ buyIn } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
-      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN) return ack && ack({ ok: false, error: `Mindest-Buy-in ${MIN_BUYIN} 🪙.` });
+      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} 🪙.` });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
@@ -190,13 +191,13 @@ function setupPvp(io, accounts) {
       broadcast(code);
     });
 
-    // Play a duel against a bot — no rake, bot is slightly handicapped.
-    // Bot spins are pre-simulated but revealed one at a time (800ms after
-    // each player spin) so the duel feels live rather than instant.
+    // Play a duel against a bot — no rake, FAIR 50/50 (no handicap, so it isn't a
+    // money faucet). Bot spins are pre-simulated but revealed one at a time
+    // (800ms after each player spin) so the duel feels live rather than instant.
     socket.on("pvp:createBot", ({ buyIn } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
-      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN) return ack && ack({ ok: false, error: `Mindest-Buy-in ${MIN_BUYIN} 🪙.` });
+      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} 🪙.` });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
@@ -219,12 +220,12 @@ function setupPvp(io, accounts) {
         simChips -= bet;
         const { result, session: s1 } = evaluateSpin(m, bet, null);
         botFreeSession = s1;
-        simChips += Math.floor(result.totalWin * 0.88);
+        simChips += Math.floor(result.totalWin);
         // Play out any earned free spins immediately (no chip cost).
         while (botFreeSession && botFreeSession.remaining > 0) {
           const { result: fr, session: s2 } = evaluateSpin(m, bet, botFreeSession);
           botFreeSession = s2;
-          simChips += Math.floor(fr.totalWin * 0.88);
+          simChips += Math.floor(fr.totalWin);
         }
         botSimSpins.push(simChips);
       }
