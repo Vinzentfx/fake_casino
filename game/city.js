@@ -45,7 +45,7 @@ const CLASSES = {
 
 // Unique trophy buildings: title + small thematic perk. Price = normal × mult.
 const TROPHIES = {
-  bahnhof:     { title: "Bahnhofs-Baron",   emoji: "🚉", perk: "Pendler-Bonus: Täglicher Bonus ×1,5", mult: 10 },
+  bahnhof:     { title: "Bahnhofs-Baron",   emoji: "🚉", perk: "Pendler-Bonus: Stunden-Bonus ×1,5", mult: 10 },
   kirche:      { title: "Kirchenpatron",    emoji: "⛪", perk: "Segen: Soforthilfe ×2 & halber Cooldown", mult: 8 },
   schule:      { title: "Schulleiter",      emoji: "🏫", perk: "Bildung: Arbeiten-Klicks ×3", mult: 8 },
   wahrzeichen: { title: "Wahrzeichen",      emoji: "🏛️", perk: "Prestige: das größte Gebäude des Ortsteils", mult: 12 },
@@ -175,21 +175,28 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const round2 = (n) => Math.round(n * 100) / 100;
 
 // ─── Market life: per-district index drift + local news events ─────────────
+
+/** Fire a random local news event (optionally in a chosen district). */
+function fireEvent(districtId) {
+  if (!MAP.districts.length) return null;
+  const d = (districtId && MAP.districts.find((x) => x.id === districtId))
+    || MAP.districts[Math.floor(Math.random() * MAP.districts.length)];
+  const ev = EVENT_POOL[Math.floor(Math.random() * EVENT_POOL.length)];
+  state.idx[d.id] = clamp(idxOf(d.id) * ev.f, IDX_MIN, IDX_MAX);
+  const event = { txt: ev.txt.replace(/\{d\}/g, d.name), district: d.id, up: ev.f > 1, at: Date.now() };
+  state.news.unshift(event);
+  state.news = state.news.slice(0, 6);
+  save();
+  return event;
+}
+
 function tickMarket() {
   for (const d of MAP.districts) {
     const i = idxOf(d.id);
     state.idx[d.id] = clamp(i + (1 - i) * 0.04 + (Math.random() * 2 - 1) * 0.015, IDX_MIN, IDX_MAX);
   }
   // Roughly every ~8 minutes (60s ticks) a local event shakes one district.
-  let event = null;
-  if (MAP.districts.length && Math.random() < 0.12) {
-    const d = MAP.districts[Math.floor(Math.random() * MAP.districts.length)];
-    const ev = EVENT_POOL[Math.floor(Math.random() * EVENT_POOL.length)];
-    state.idx[d.id] = clamp(idxOf(d.id) * ev.f, IDX_MIN, IDX_MAX);
-    event = { txt: ev.txt.replace(/\{d\}/g, d.name), district: d.id, up: ev.f > 1, at: Date.now() };
-    state.news.unshift(event);
-    state.news = state.news.slice(0, 6);
-  }
+  const event = MAP.districts.length && Math.random() < 0.12 ? fireEvent() : null;
   save();
   return event;
 }
@@ -494,7 +501,7 @@ function err(error) { return { ok: false, error }; }
 
 module.exports = {
   CLASSES, TROPHIES, colorFor,
-  publicOverview, publicDistrict, ownerValue, casinoOwner, bankOwner, tickMarket,
+  publicOverview, publicDistrict, ownerValue, casinoOwner, bankOwner, tickMarket, fireEvent,
   streetCount, trophiesOf, hasTrophy, bldExists, bldInfo, isBoss,
   territorySnapshot, territoryDiff,
   buyBuilding, sellBuilding, takeover,

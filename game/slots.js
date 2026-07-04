@@ -249,6 +249,34 @@ function spinGrid(machine) {
   return grid;
 }
 
+// ── Admin: force the maximum possible roll (animation showcase) ────────────
+// The owner can arm a one-shot flag; the NEXT base-game spin comes up as a
+// full grid of the machine's best-paying symbol → every line/way/cluster hits
+// its top tier at once (thresholdPay pays the highest tier on overshoot).
+const forcedWin = new Set(); // account keys with an armed force-win
+
+function armForceWin(key) {
+  forcedWin.add(String(key).toLowerCase());
+}
+function consumeForceWin(key) {
+  return forcedWin.delete(String(key).toLowerCase());
+}
+
+/** Full grid of the best-paying symbol (scatter excluded). */
+function bestGrid(machine) {
+  const pays = machine.pays || machine.clusterPays || {};
+  let best = null, bestPay = -1;
+  for (const [sym, table] of Object.entries(pays)) {
+    if (sym === machine.scatter) continue;
+    const top = Math.max(...Object.values(table).map(Number));
+    if (top > bestPay) { bestPay = top; best = sym; }
+  }
+  if (!best) best = Object.keys(machine.symbols)[0];
+  const grid = [];
+  for (let c = 0; c < machine.cols; c++) grid.push(new Array(machine.rows).fill(best));
+  return grid;
+}
+
 function countScatters(machine, grid) {
   if (!machine.scatter) return { count: 0, positions: [] };
   const positions = [];
@@ -449,13 +477,13 @@ function evaluateCluster(machine, grid, unit, startMultiplier) {
 // Returns { result, session, spinBet, totalWin, inFree }.
 // ---------------------------------------------------------------------------
 
-function evaluateSpin(machine, bet, session) {
+function evaluateSpin(machine, bet, session, forceGrid = null) {
   const inFree = !!(session && session.remaining > 0);
   const spinBet = inFree ? session.bet : bet;
   const unit = spinBet / 20;
   if (inFree) session.remaining -= 1;
 
-  const grid = spinGrid(machine);
+  const grid = forceGrid || spinGrid(machine);
   const scatters = countScatters(machine, grid);
 
   let wins = [];
@@ -567,7 +595,9 @@ function setupSlots(io, accounts) {
         if (!deduct.ok) return ack({ ok: false, error: "Nicht genug Chips." });
       }
 
-      let { result, session: newSession, totalWin } = evaluateSpin(machine, bet, session);
+      // Admin showcase: an armed force-win turns this spin into the maximum roll.
+      const forced = consumeForceWin(socket.data.account) ? bestGrid(machine) : null;
+      let { result, session: newSession, totalWin } = evaluateSpin(machine, bet, session, forced);
       socket.data.slots = newSession;
 
       // Glücksklee / Goldbarren: boost wins. Scale the result figures too so the
@@ -620,7 +650,7 @@ function setupSlots(io, accounts) {
   });
 }
 
-module.exports = { setupSlots, evaluateSpin, MACHINE_BY_ID, MACHINES, publicMachines, BET_LEVELS };
+module.exports = { setupSlots, evaluateSpin, MACHINE_BY_ID, MACHINES, publicMachines, BET_LEVELS, armForceWin };
 
 // Exposed for offline RTP simulation / tests.
 module.exports._internals = {

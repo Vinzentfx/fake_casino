@@ -22,25 +22,27 @@ const STARTING_CHIPS = 5000; // ein erster Abend Spielgeld — weit unter jedem 
 // chip change AND swept periodically (see startChipCapSweep), so old exploited
 // balances (the bot-faucet trillions) get clamped down automatically and forever.
 const MAX_CHIPS = 100_000_000_000; // 100 Mrd. — far above any legit balance
-// The daily bonus is the economy's "salary": generous enough that a few days
-// of showing up fund a first house (~15-20k) — the games stay <100% RTP.
-const DAILY_BONUS = 2000;
-const DAILY_BONUS_COOLDOWN_MS = 20 * 60 * 60 * 1000; // 20h
+// HOURLY bonus — the economy's "salary". Hourly instead of daily so active
+// players progress fast (user request): an evening of play funds a house, the
+// games themselves stay <100% RTP. (Export names keep the legacy DAILY_ prefix
+// for API stability.)
+const DAILY_BONUS = 1000;                    // per claim (1×/hour)
+const DAILY_BONUS_COOLDOWN_MS = 60 * 60 * 1000; // 1h
 
-// Login streak: each consecutive bonus claim (within the grace window) adds
-// STREAK_STEP to the bonus, capped at STREAK_MAX extra days.
-const STREAK_STEP = 500;
-const STREAK_MAX = 10; // streak day 11+ no longer increases the bonus
+// Claim streak: each consecutive hourly claim (within the grace window) adds
+// STREAK_STEP, capped at STREAK_MAX extra claims → max +2.500.
+const STREAK_STEP = 250;
+const STREAK_MAX = 10;
 
-// Street tribute: each complete street monopoly adds to the daily bonus.
-const STREET_TRIBUTE = 1000;
-const STREET_TRIBUTE_CAP = 10; // at most 10 streets pay tribute
+// Street tribute: each complete street monopoly adds to every hourly bonus.
+const STREET_TRIBUTE = 500;
+const STREET_TRIBUTE_CAP = 10; // at most 10 streets pay tribute (max +5.000/h)
 
 // Cashback (like a real casino's loyalty program): a cut of your house-game
-// losses since the last bonus claim comes back with the next daily. Bounded by
+// losses since the last claim comes back with the next bonus. Bounded by
 // actual losses → mathematically safe, can't be farmed.
 const CASHBACK_RATE = 0.10;
-const CASHBACK_CAP = 50000;
+const CASHBACK_CAP = 25000; // per hourly claim
 const STREAK_GRACE_MS = 2 * DAILY_BONUS_COOLDOWN_MS; // miss this window → streak resets
 
 // Pleite-Schutz: keep a broke player in the game without waiting for the bonus.

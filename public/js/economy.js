@@ -289,6 +289,10 @@
   const mapEl = $("#city-map");
   const pointers = new Map();
   let panStart = null, moved = false, pinchStart = null;
+  // Selection happens on pointerup using the pointerdown target: after
+  // setPointerCapture the browser retargets the eventual click to the SVG
+  // itself, so a plain click handler never sees the .bld path (mouse bug).
+  let downTarget = null;
 
   const clientToMap = (cx, cy) => {
     const r = mapEl.getBoundingClientRect();
@@ -308,7 +312,7 @@
   mapEl.addEventListener("pointerdown", (e) => {
     if (view !== "district") return;
     pointers.set(e.pointerId, e);
-    if (pointers.size === 1) { panStart = { x: e.clientX, y: e.clientY, vb: { ...vb } }; moved = false; }
+    if (pointers.size === 1) { panStart = { x: e.clientX, y: e.clientY, vb: { ...vb } }; moved = false; downTarget = e.target; }
     else if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       pinchStart = { dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), vb: { ...vb } };
@@ -340,9 +344,19 @@
     }
   });
   const endPointer = (e) => {
+    // A tap (no drag) selects the building under the initial pointerdown.
+    if (e.type === "pointerup" && view === "district" && !moved && pointers.size === 1 && downTarget) {
+      const bEl = downTarget.closest && downTarget.closest(".bld");
+      if (bEl) {
+        selectedId = parseInt(bEl.dataset.b, 10);
+        renderDistrict();
+        renderDetail();
+        $("#city-detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }
     pointers.delete(e.pointerId);
     if (pointers.size < 2) pinchStart = null;
-    if (pointers.size === 0) panStart = null;
+    if (pointers.size === 0) { panStart = null; downTarget = null; }
   };
   mapEl.addEventListener("pointerup", endPointer);
   mapEl.addEventListener("pointercancel", endPointer);
@@ -360,17 +374,12 @@
     loadCity();
   });
 
+  // Overview has no pointer capture, so a plain click works there.
+  // (District selection happens in endPointer — see note at downTarget.)
   mapEl.addEventListener("click", (e) => {
     if (moved) return;
     const dEl = e.target.closest(".dist");
-    if (dEl && view === "overview") { loadDistrict(dEl.dataset.d); return; }
-    const bEl = e.target.closest(".bld");
-    if (bEl && view === "district") {
-      selectedId = parseInt(bEl.dataset.b, 10);
-      renderDistrict();
-      renderDetail();
-      $("#city-detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
+    if (dEl && view === "overview") loadDistrict(dEl.dataset.d);
   });
 
   // ── Detail panel ─────────────────────────────────────────────────────────

@@ -11,7 +11,7 @@ Einsätze und Strategie. **Spielgeld** (🪙), kein echtes Geld.
 ---
 
 ## 🆕 Basics
-- **Start:** 1.000 🪙. **Täglicher Bonus:** 500 🪙 alle 20 Std. **Pleite-Hilfe:** Soforthilfe wenn blank.
+- **Start:** 5.000 🪙. **Stunden-Bonus:** 1.000 🪙 + Serie/Tribut/Cashback, jede Stunde abholbar. **Pleite-Hilfe:** Soforthilfe wenn blank.
 - **Netto-Vermögen** = Chips + Stadt-Besitz + Aktien-Portfolio − Kreditschuld.
 - **Casino-Besitzer** kassiert **5 % Rake** auf alle Haus-Spiel-Verluste der Spieler (Slots, Blackjack, Roulette, Sportwetten — nicht Poker).
 
@@ -108,15 +108,15 @@ z. B. 3 → 10, 4 → 15, 5 → 20 Freispiele. Während Freispielen kann erneut 
 
 ## 💼 Wirtschaft (geteilte Welt)
 
-**Grundprinzip:** Geld kommt aus den **Spielen** (+ Daily/Cashback/Achievements). Die Stadt ist **kein** Geld-Automat — sie ist das, **wofür** du deine Gewinne ausgibst: Territorium, Status, Trophäen, Spekulation.
+**Grundprinzip:** Geld kommt aus den **Spielen** (+ Stunden-Bonus/Cashback/Achievements). Die Stadt ist **kein** Geld-Automat — sie ist das, **wofür** du deine Gewinne ausgibst: Territorium, Status, Trophäen, Spekulation.
 
 ### 💰 Woher kommen Chips?
 | Quelle | Betrag |
 |---|---|
 | Startguthaben | 5.000 |
-| Daily-Bonus | 2.000 + Streak (bis +5.000) |
-| 👑 Straßen-Tribut | +1.000 je kompletter Straße (max. 10) — mit dem Daily |
-| 💸 Verlust-Cashback | 10 % deiner Hausspiel-Verluste seit letztem Daily (Cap 50.000) |
+| ⏰ Stunden-Bonus | 1.000/Std + Serie (bis +2.500) |
+| 👑 Straßen-Tribut | +500 je kompletter Straße (max. 10) — mit jedem Stunden-Bonus |
+| 💸 Verlust-Cashback | 10 % deiner Hausspiel-Verluste seit letztem Bonus (Cap 25.000/Std) |
 | 🏆 Achievements | einmalig 1.000 … 1.000.000 (19 Stück) |
 | Klick-Job | gedeckelte Starthilfe |
 | Spiele | Varianz: RTP 93–99 %, die großen Sprünge kommen von Big Wins & Poker |
@@ -126,7 +126,7 @@ z. B. 3 → 10, 4 → 15, 5 → 20 Freispiele. Während Freispielen kann erneut 
 
 - **👑 Straßen-Monopol:** Alle Häuser einer Straße (ab 3) besitzen → die Straße färbt sich für alle in deiner Farbe („👑 vincents Bergstraße") + täglicher Tribut.
 - **🥇 Stadtteil-Boss:** höchster Immobilienwert im Ortsteil → Name auf der Karte + **10 % Rabatt** auf Käufe dort.
-- **🏆 Trophäen** (einzigartig, je ~5 Mio): 🚉 Bahnhof = Daily ×1,5 · ⛪ Kirche = Soforthilfe ×2 & halber Cooldown · 🏫 Schule = Klick-Job ×3 · 🏛️ Wahrzeichen (größtes Gebäude je Ort, bis 500 Mio) = Prestige.
+- **🏆 Trophäen** (einzigartig, je ~5 Mio): 🚉 Bahnhof = Stunden-Bonus ×1,5 · ⛪ Kirche = Soforthilfe ×2 & halber Cooldown · 🏫 Schule = Klick-Job ×3 · 🏛️ Wahrzeichen (größtes Gebäude je Ort, bis 500 Mio) = Prestige.
 - **📰 Spekulation:** Jeder Ortsteil hat einen Preis-Index (0,55–1,9), bewegt von Orts-News (Schützenfest 📈, Hochwasser 📉 …). Billig kaufen, teuer verkaufen — Verkauf bringt 90 %.
 - **⚔️ Übernahme:** fremdes Haus für 150 % schnappen — der Vorbesitzer bekommt 100 % (Marktwert) erstattet.
 - **🛏️ Wohnsitz:** kostenlos in jedes Haus „einziehen" — reiner Spaß.
