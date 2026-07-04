@@ -108,43 +108,48 @@ z. B. 3 → 10, 4 → 15, 5 → 20 Freispiele. Während Freispielen kann erneut 
 
 ## 💼 Wirtschaft (geteilte Welt)
 
-### Arbeiten (Klick-Job)
-Gedeckelter Klicker für **Starthilfe**, wenn du blank bist. Bewusst klein — das echte Geld kommt aus den Spielen.
+**Grundprinzip:** Geld kommt aus den **Spielen** (+ Daily/Cashback/Achievements). Die Stadt ist **kein** Geld-Automat — sie ist das, **wofür** du deine Gewinne ausgibst: Territorium, Status, Trophäen, Spekulation.
 
-### 🏙️ Stadt — Grundstücke & Unternehmen
-Drei Rollen pro Feld: **Land-Besitzer** (kassiert Miete), **Gebäude-Besitzer**, **Betreiber** (kassiert Gewinn, zahlt Miete).
-
-| Gebäude | Kosten | Einkommen/Min | Miete/Min |
-|---|---|---|---|
-| 🏪 Kiosk | 400.000 | 2.000 | 1.000 |
-| ☕ Café | 2.000.000 | 5.000 | 2.000 |
-| 🛍️ Laden | 10.000.000 | 18.000 | 4.000 |
-| 🏨 Hotel | 50.000.000 | 60.000 | 8.000 |
-| 🏭 Fabrik | 250.000.000 | 200.000 | 15.000 |
-| 🏦 Bank | 600.000.000 | kassiert alle Kredit-Zinsen | — |
-| 🎰 Casino | 1.200.000.000 | kassiert 5 % Haus-Rake | — |
-
-- **Standortfaktoren (Lage):** zentrale Felder & Felder neben **NPC-Magneten** (🏫 Schule, 🚉 Bahnhof, 🏞️ Park, 🏟️ Stadion) haben **mehr Umsatz** (bis ~×1,55 für die passende Branche) — kosten aber **mehr Land & Miete**. Die **Fabrik** ist lage-**un**abhängig (will billiges Rand-Land).
-- **Miete von NPC-Unternehmen (neu):** Kaufst du das **Land unter einem NPC-Betrieb**, kassierst du dessen Miete — ohne den Betrieb zu kaufen.
-- **Produkte/Buffs:** Jeder Betrieb verkauft Buff-Produkte (nur der Besitzer sieht/kauft sie, mit Rabatt) → selbst nutzen **oder** auf dem **Markt** an Spieler weiterverkaufen.
-- **Passives Einkommen ist bewusst moderat** (Payback ~5–20 Std.) — die Stadt ist ein Supplement, das Casino bleibt die Geld-Engine. Sammle Einkommen pro Betrieb einzeln ein (Offline-Cap 3 Std.).
-
-### 🪙 Buffs (aus Produkten)
-| Buff | Wirkung |
+### 💰 Woher kommen Chips?
+| Quelle | Betrag |
 |---|---|
-| ⚡ fastSpins | Slots 2–4× schneller |
-| 💰 winBoost | Haus-Gewinne +10…+50 % |
-| 👆 clickBoost | Arbeiten ×3–×5 |
-| 🎟️ VIP | Bonus & Soforthilfe ×2, **kein Rake** |
+| Startguthaben | 5.000 |
+| Daily-Bonus | 2.000 + Streak (bis +5.000) |
+| 👑 Straßen-Tribut | +1.000 je kompletter Straße (max. 10) — mit dem Daily |
+| 💸 Verlust-Cashback | 10 % deiner Hausspiel-Verluste seit letztem Daily (Cap 50.000) |
+| 🏆 Achievements | einmalig 1.000 … 1.000.000 (19 Stück) |
+| Klick-Job | gedeckelte Starthilfe |
+| Spiele | Varianz: RTP 93–99 %, die großen Sprünge kommen von Big Wins & Poker |
 
-### 🏦 Bank — Kredite
-- **5 % Zinsen pro Stunde** (einfach). Nur **ein** Kredit gleichzeitig, voll zurückzahlen vor dem nächsten. Limit: 50 % vom Netto-Vermögen. Zinsen gehen an den **Bank-Besitzer**.
+### 🏙️ Stadt — echte Karte von Porta Westfalica
+5 echte Ortsteile (Eisbergen, Hausberge, Kleinenbremen, Lerbeck, Nammen) mit **7.222 echten Häusern** aus OpenStreetMap, inkl. Straßen & Adressen. Übersicht → Ortsteil antippen → Haus kaufen. **Kein Einkommen, kein Einsammeln** — Besitz gibt Status & Perks:
+
+- **👑 Straßen-Monopol:** Alle Häuser einer Straße (ab 3) besitzen → die Straße färbt sich für alle in deiner Farbe („👑 vincents Bergstraße") + täglicher Tribut.
+- **🥇 Stadtteil-Boss:** höchster Immobilienwert im Ortsteil → Name auf der Karte + **10 % Rabatt** auf Käufe dort.
+- **🏆 Trophäen** (einzigartig, je ~5 Mio): 🚉 Bahnhof = Daily ×1,5 · ⛪ Kirche = Soforthilfe ×2 & halber Cooldown · 🏫 Schule = Klick-Job ×3 · 🏛️ Wahrzeichen (größtes Gebäude je Ort, bis 500 Mio) = Prestige.
+- **📰 Spekulation:** Jeder Ortsteil hat einen Preis-Index (0,55–1,9), bewegt von Orts-News (Schützenfest 📈, Hochwasser 📉 …). Billig kaufen, teuer verkaufen — Verkauf bringt 90 %.
+- **⚔️ Übernahme:** fremdes Haus für 150 % schnappen — der Vorbesitzer bekommt 100 % (Marktwert) erstattet.
+- **🛏️ Wohnsitz:** kostenlos in jedes Haus „einziehen" — reiner Spaß.
+
+| Objekt | Preis (je nach Größe/Lage/Index) |
+|---|---|
+| 🏠 Wohnhaus | ~15.000–75.000 |
+| 🏛️ Öffentlich | ~80.000–350.000 |
+| 🏪 Kiosk | ~0,3–1 Mio |
+| ☕ Café | ~1,5–5 Mio |
+| 🛍️ Laden | ~7–25 Mio |
+| 🏨 Hotel | ~35–120 Mio |
+| 🏭 Fabrik | ~150–600 Mio |
+| 🏆 Trophäen | ~5 Mio (Wahrzeichen bis 500 Mio) |
+| 🏦 Bank | 600 Mio — kassiert alle Kredit-Zinsen |
+| 🎰 Casino | 1,2 Mrd — kassiert 5 % Haus-Rake |
+
+### 🏦 Bank — Kredite & Sparkonto
+- Kredit: **5 % Zinsen/Std** (einfach), einer gleichzeitig, Limit 50 % vom Netto-Vermögen. Zinsen an den **Bank-Besitzer**.
+- Sparkonto: ~2,9 %/Tag, Cap 25 Mio — sicher, aber schlägt nie aktives Spielen.
 
 ### 📈 Börse — Aktien
-- Simulierter Markt: NPC-Aktien + Spieler-**IPOs**. **Long & Short** mit **Hebel 1–5**. Hebel = mehr Gewinn **und** Verlust; bei zu großem Verlust **Liquidation** (Margin weg). Kurse schwanken per Zufall + News; Firmen können **insolvent** gehen (Short zahlt sich aus).
-
-### 🛒 Markt
-Gekaufte Produkte landen im Inventar → **benutzen** (Buff) oder **an Spieler verkaufen** zu deinem Preis.
+- Simulierter Markt: NPC-Aktien + Spieler-**IPOs** (eigene Betriebe listen). **Long & Short** mit **Hebel 1–5**; bei zu großem Verlust **Liquidation**. Kurse: Zufall + News + Insolvenzen (Short zahlt sich aus).
 
 ---
 

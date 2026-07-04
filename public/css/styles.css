@@ -982,8 +982,27 @@ button { font-family: inherit; cursor: pointer; }
   margin: 12px 0; border-radius: 14px; overflow: hidden;
   border: 1px solid rgba(255,255,255,0.12); background: #2a2e32;
   box-shadow: inset 0 0 30px rgba(0,0,0,0.4);
+  position: relative;
 }
-#city-map { width: 100%; height: auto; display: block; touch-action: manipulation; }
+#city-map { width: 100%; height: auto; display: block; touch-action: none; min-height: 320px; }
+
+/* Overlay controls on the real-city map. */
+.city-back-btn {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  background: rgba(0,0,0,0.55); color: #f4d782; border: 1px solid rgba(244,215,130,0.4);
+  border-radius: 999px; padding: 7px 14px; font-weight: 800; font-size: 0.85rem; cursor: pointer;
+}
+.city-zoom {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.city-zoom button {
+  width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
+  background: rgba(0,0,0,0.55); color: #fff; border: 1px solid rgba(255,255,255,0.25);
+  font-size: 1.15rem; font-weight: 800; line-height: 1;
+}
+.city-zoom button:active { background: rgba(244,215,130,0.3); }
+.dist text { user-select: none; pointer-events: none; }
 .lot text { user-select: none; pointer-events: none; }
 .city-detail {
   background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1);
@@ -1935,6 +1954,61 @@ button { font-family: inherit; cursor: pointer; }
 .cd-boost.hot  { background: rgba(255, 138, 60, 0.22); color: #ffb074; }
 .cd-boost.cold { background: rgba(120, 160, 200, 0.18); color: #a9c2d6; }
 .cd-build { position: relative; }
+/* Buff label pill inside a build button (default, when no hot/cold variant). */
+.cd-build .cd-boost { display: block; margin: 4px 0 0; white-space: normal; line-height: 1.2;
+  background: rgba(126, 200, 255, 0.16); color: #bfe0ff; }
+
+/* Active-buffs panel on the city screen. */
+.biz-buffs { display: flex; flex-wrap: wrap; gap: 8px; }
+.buff-chip { display: inline-block; font-size: 0.78rem; font-weight: 700; padding: 4px 10px;
+  border-radius: 999px; background: rgba(126, 200, 255, 0.14); color: #bfe0ff;
+  border: 1px solid rgba(126, 200, 255, 0.3); }
+
+/* Info block (address, type, size) at the top of the building detail. */
+.cd-info {
+  margin: 6px 0 10px; padding: 9px 11px; border-radius: 10px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
+}
+.cd-info .cd-row { margin: 2px 0; }
+
+/* "what owning this gives you" row in the lot detail. */
+.cd-buff { margin-top: 6px; padding: 6px 9px; border-radius: 9px; font-size: 0.82rem;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); }
+.cd-buff.on { background: rgba(74, 222, 128, 0.12); border-color: rgba(74, 222, 128, 0.35); }
+.cd-buff .pos { color: #4ade80; font-weight: 800; }
+
+/* Street-monopoly progress row + trophy tag + news feed. */
+.cd-street { margin-top: 6px; padding: 6px 9px; border-radius: 9px; font-size: 0.82rem;
+  background: rgba(244, 215, 130, 0.08); border: 1px solid rgba(244, 215, 130, 0.25); }
+.cd-trophy-tag { font-size: 0.62rem; font-weight: 900; letter-spacing: 0.08em; vertical-align: middle;
+  background: linear-gradient(135deg, #f4d782, #c9962e); color: #3a2c05;
+  border-radius: 999px; padding: 2px 8px; margin-left: 6px; }
+.news-up { color: #7fd79a; }
+.news-down { color: #e89a9a; }
+
+/* Achievements grid (profile). */
+.badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.badge-grid > p { grid-column: 1 / -1; }
+.badge {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
+  padding: 10px 6px; border-radius: 12px; opacity: 0.45;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+}
+.badge.on { opacity: 1; background: rgba(244,215,130,0.10); border-color: rgba(244,215,130,0.4); }
+.badge-emoji { font-size: 1.5rem; }
+.badge-label { font-weight: 800; font-size: 0.78rem; }
+.badge small { font-size: 0.64rem; opacity: 0.65; line-height: 1.25; }
+
+/* "Meine Immobilien" list inside the empire panel. */
+.empire-list { width: 100%; margin-top: 8px; }
+.empire-list summary { cursor: pointer; font-weight: 800; font-size: 0.85rem; opacity: 0.85; }
+.empire-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 8px; max-height: 220px; overflow-y: auto; }
+.empire-item {
+  text-align: left; padding: 7px 9px; border-radius: 9px; cursor: pointer; font-size: 0.8rem; font-weight: 700;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: inherit;
+}
+.empire-item small { display: block; font-weight: 600; opacity: 0.6; font-size: 0.68rem; }
+.empire-item:hover { background: rgba(255,255,255,0.12); }
 
 /* ===================== Sportwetten ===================== */
 .sb-wrap { max-width: 720px; margin: 0 auto; }

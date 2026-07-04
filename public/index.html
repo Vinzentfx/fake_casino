@@ -115,7 +115,8 @@
             <span class="tile-name">Börse</span>
             <span class="tile-sub">Aktien · Long / Short</span>
           </button>
-          <button class="game-tile" data-nav="market">
+          <!-- Markt stillgelegt: Buffs kommen jetzt aus Gebäude-Besitz, nicht aus Produkten. -->
+          <button class="game-tile" data-nav="market" style="display:none">
             <span class="tile-icon">🛒</span>
             <span class="tile-name">Markt</span>
             <span class="tile-sub">Produkte nutzen & handeln</span>
@@ -530,6 +531,8 @@
         <div class="stat-row"><span>Gespielte Spiele</span><b id="profile-games">0</b></div>
         <div class="stat-row"><span>Größter Gewinn</span><b id="profile-biggest">0 🪙</b></div>
         <div class="stat-row"><span>Mitglied seit</span><b id="profile-since">–</b></div>
+        <div class="cd-sub" style="margin:16px 0 6px">🏆 Achievements</div>
+        <div id="profile-badges" class="badge-grid"><p class="muted small">Lade…</p></div>
         <button class="btn-danger" id="logout-btn">Abmelden</button>
       </div>
     </section>
@@ -619,29 +622,30 @@
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <div style="text-align:center">
           <div class="ph-icon">🏙️</div>
-          <h2>Stadt</h2>
-          <p class="muted small">Eine Stadt für alle — kauf Grundstücke, bau Unternehmen, übernimm das Casino.</p>
+          <h2 id="city-title">Porta Westfalica</h2>
+          <p class="muted small" id="city-subtitle">Die echte Stadt — tippe einen Stadtteil an und kauf echte Häuser. Besitz bringt kein Einkommen, sondern dauerhafte <b>Buffs</b> — und das Casino kassiert den Rake aller Hausspiele.</p>
         </div>
 
         <div class="panel biz-collect-panel">
-          <div class="stat-row">
-            <span>Einkommen / Min.</span>
-            <b id="biz-rate">0 🪙</b>
+          <div class="cd-sub" style="margin-bottom:8px">🏆 Dein Imperium</div>
+          <div id="biz-buffs" class="biz-buffs">
+            <p class="muted small" style="margin:0;text-align:center">Noch kein Besitz. Kauf dein erstes Haus — komplette Straßen färben die Karte in deiner Farbe!</p>
           </div>
-          <div class="stat-row" style="border:none">
-            <span>Aufgelaufen (gesamt)</span>
-            <b id="biz-pending" class="biz-pending-val">0 🪙</b>
-          </div>
-          <p class="muted small" style="margin:8px 0 0;text-align:center">💰 Tippe ein Unternehmen 🏢 auf der Karte an und sammle dort einzeln ein.</p>
         </div>
 
         <p class="city-landprice" id="land-price"></p>
-        <div class="city-map-box">
+        <div class="city-map-box" id="city-map-box">
+          <button class="city-back-btn hidden" id="city-back">‹ Stadtteile</button>
+          <div class="city-zoom" id="city-zoom">
+            <button id="zoom-in">＋</button>
+            <button id="zoom-out">−</button>
+            <button id="zoom-fit">⌂</button>
+          </div>
           <svg id="city-map" viewBox="0 0 500 400" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
 
         <div class="city-detail" id="city-detail">
-          <p class="muted small" style="text-align:center;padding:14px">Tippe ein Feld auf der Karte an.</p>
+          <p class="muted small" style="text-align:center;padding:14px">Tippe einen Stadtteil an.</p>
         </div>
       </div>
     </section>

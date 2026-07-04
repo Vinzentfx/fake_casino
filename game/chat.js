@@ -35,6 +35,13 @@ function clearRoom(room) {
   rooms.delete(room);
 }
 
+/** System announcement into the global chat (conquests, achievements …). */
+function announce(io, text) {
+  const msg = { name: "📣 Stadt", text: String(text).slice(0, MAX_LEN), ts: Date.now(), system: true };
+  push("global", msg);
+  io.emit("chat:msg", { room: "global", msg });
+}
+
 function setupChat(io, accounts) {
   io.on("connection", (socket) => {
     socket.on("chat:history", ({ room } = {}, ack) => {
@@ -71,4 +78,4 @@ function setupChat(io, accounts) {
   });
 }
 
-module.exports = { setupChat, clearRoom, CHAT_HISTORY: HISTORY };
+module.exports = { setupChat, clearRoom, announce, CHAT_HISTORY: HISTORY };

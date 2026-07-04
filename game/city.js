@@ -1,512 +1,502 @@
 "use strict";
 
 /**
- * Shared city + real-estate market.
+ * Shared city — REAL MAP EDITION (Porta Westfalica), territory & status model.
  *
- * Three independent roles per lot:
- *   - landOwner : owns the land (a tradeable asset; price follows a market index)
- *   - builtBy   : owns the building/business asset (whoever paid to build/buy it)
- *   - operator  : runs the business — keeps the profit, pays RENT to the landOwner
+ * The map is a one-time OSM snapshot (game/data/porta.json): 5 real Stadtteile
+ * with their real buildings, streets and landmarks. The city is a chip SINK +
+ * a TERRITORY/STATUS layer — money comes from playing the games. There are no
+ * ownership buffs any more. Instead, owning real estate gives you:
  *
- * This lets every real-estate play work:
- *   • Buy land (market price), sell it back to the market (price fluctuates).
- *   • Mark your empty land "for rent" → other players build there & pay you rent.
- *   • Build on your own land and operate it yourself (no rent), …
- *   • …or lease the operation out → a tenant runs it and pays you rent while you
- *     keep the land + building.
- *   • Buy NPC businesses; hostile-take-over a rival's owned business at +50%.
+ *   • STRASSEN-MONOPOLE — own every addressed house of a street (≥3 houses)
+ *     and the street lights up in your colour on the map, for everyone.
+ *   • STADTTEIL-BOSS — the player with the highest property value in a
+ *     district wears the crown on the overview map.
+ *   • TROPHÄEN — unique real buildings (Bahnhof, Kirchen, Schulen, plus the
+ *     biggest building of each district) with a title and a small thematic
+ *     perk. Only one owner each.
+ *   • SPEKULATION — every district has its own price index, moved by drift
+ *     and by silly local news events. Buy low, sell high (10% spread).
+ *   • The CASINO (rake) and the BANK (loan interest) stay the two apex
+ *     assets, tied to other players actively gambling.
  *
- * Business net/sec = revenue − wages − rent − taxes, revenue drifting with a
- * per-business performance factor. Persisted to data/city.json.
+ * Static geometry lives in the repo; ownership lives in data/city.json.
  */
 
 const path = require("path");
 const fs = require("fs");
-const crypto = require("crypto");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
-const CITY_FILE = path.join(DATA_DIR, "city.json");
+const STATE_FILE = path.join(DATA_DIR, "city.json");
+const MAP_FILE = path.join(__dirname, "data", "porta.json");
 
-// Each building yields chunky income PER MINUTE and (the real reason to own it)
-// produces a PRODUCT that grants a gameplay buff. Others buy the product from the
-// operator (revenue to them); the operator buys it at OWNER_DISCOUNT. Buildings
-// are deliberately expensive (~40-min income payback) — the buff/product economy
-// is the point, not the trickle of passive income.
-// Each building yields income/MINUTE (~70-min payback) and sells SEVERAL products,
-// each granting a buff. Products are priced by buff utility: cosmetic/weak buffs
-// (fastSpins, clickBoost) are cheap; money buffs (winBoost) scale with strength.
-// Buildings are EXPENSIVE; passive income is deliberately modest (big buildings
-// don't pay back through income alone — they're bought for their buffs/products,
-// the casino rake and prestige). The casino games (high bets) are the real money
-// engine. Each building sells several buff-products.
-const BUILDING_TYPES = {
-  kiosk:   { name: "Kiosk",   emoji: "🏪", cost: 400000,       income: 1600,    rent: 800,    buildable: true, products: [
-             { key: "zitrone",    name: "Zitrone",      emoji: "🍋", price: 50000,    buff: "fastSpins",  mult: 2,    mins: 10, desc: "Slots 2× schneller" },
-             { key: "energy",     name: "Energy-Drink", emoji: "🥤", price: 60000,    buff: "clickBoost", mult: 3,    mins: 10, desc: "Arbeiten ×3" } ] },
-  cafe:    { name: "Café",    emoji: "☕", cost: 2000000,      income: 4000,    rent: 1600,   buildable: true, products: [
-             { key: "espresso",   name: "Espresso",     emoji: "☕", price: 120000,   buff: "clickBoost", mult: 5,    mins: 15, desc: "Arbeiten ×5" },
-             { key: "kuchen",     name: "Glückskuchen", emoji: "🍰", price: 300000,   buff: "winBoost",   mult: 1.1,  mins: 10, desc: "Haus-Gewinne +10 %" } ] },
-  shop:    { name: "Laden",   emoji: "🛍️", cost: 10000000,     income: 14000,   rent: 3200,   buildable: true, products: [
-             { key: "klee",       name: "Glücksklee",   emoji: "🍀", price: 600000,   buff: "winBoost",   mult: 1.2,  mins: 10, desc: "Haus-Gewinne +20 %" },
-             { key: "jeton",      name: "Glücks-Jeton", emoji: "🎰", price: 150000,   buff: "fastSpins",  mult: 3,    mins: 10, desc: "Slots 3× schneller" } ] },
-  hotel:   { name: "Hotel",   emoji: "🏨", cost: 50000000,     income: 48000,   rent: 6400,   buildable: true, products: [
-             { key: "vip",        name: "VIP-Pass",     emoji: "🎟️", price: 900000,   buff: "vip",        mult: 2,    mins: 30, desc: "Bonus & Soforthilfe ×2, kein Rake" },
-             { key: "champagner", name: "Champagner",   emoji: "🍾", price: 1200000,  buff: "winBoost",   mult: 1.3,  mins: 12, desc: "Haus-Gewinne +30 %" } ] },
-  factory: { name: "Fabrik",  emoji: "🏭", cost: 250000000,    income: 160000,  rent: 12000,  buildable: true, products: [
-             { key: "gold",       name: "Goldbarren",   emoji: "💎", price: 2500000,  buff: "winBoost",   mult: 1.5,  mins: 8,  desc: "Haus-Gewinne +50 %" },
-             { key: "turbo",      name: "Turbo-Chip",   emoji: "⚙️", price: 400000,   buff: "fastSpins",  mult: 4,    mins: 12, desc: "Slots 4× schneller" } ] },
-  // The Casino owner also collects the house rake (see accounts.recordHand).
-  casino:  { name: "Casino",  emoji: "🎰", cost: 1200000000,   income: 600000,  rent: 0,      buildable: false, unique: true },
-  // The Bank also collects interest from every player loan (see game/bank.js).
-  bank:    { name: "Bank",    emoji: "🏦", cost: 600000000,    income: 350000,  rent: 0,      buildable: false, unique: true },
+// Building classes drive the PRICE only (no buffs).
+const CLASSES = {
+  residential: { name: "Wohnhaus",   emoji: "🏠", base: 25000,      refA: 140 },
+  civic:       { name: "Öffentlich", emoji: "🏛️", base: 120000,     refA: 400 },
+  kiosk:       { name: "Kiosk",      emoji: "🏪", base: 400000,     refA: 100 },
+  cafe:        { name: "Café",       emoji: "☕", base: 2000000,    refA: 150 },
+  shop:        { name: "Laden",      emoji: "🛍️", base: 10000000,   refA: 300 },
+  hotel:       { name: "Hotel",      emoji: "🏨", base: 50000000,   refA: 500 },
+  factory:     { name: "Fabrik",     emoji: "🏭", base: 250000000,  refA: 1500 },
+  casino:      { name: "Casino",     emoji: "🎰", base: 1200000000, refA: 0, perk: "Kassiert den Rake aller Hausspiele." },
+  bank:        { name: "Bank",       emoji: "🏦", base: 600000000,  refA: 0, perk: "Kassiert die Zinsen aller Kredite." },
 };
 
-const OWNER_DISCOUNT = 0.5;    // the business operator buys their own product at 50% off
-const BASE_LAND = 500000;      // base land value at market index 1.0 (pricey world, hard to monopolise)
-const SELL_SPREAD = 0.9;       // sell land back to the market at 90% (10% sink)
-const BUYOUT_PREMIUM = 1.5;    // hostile takeover of a rival's owned business
-const PERF_MIN = 0.6, PERF_MAX = 1.4;
-const LAND_MIN = 0.55, LAND_MAX = 1.9;
-
-const COLS = 6, ROWS = 5;
-
-// ─── Location factors ─────────────────────────────────────────────────────
-// Non-ownable NPC landmarks placed on fixed tiles. They pull foot traffic to
-// the 8 ADJACENT lots, boosting revenue of nearby businesses — more for the
-// types that fit (a kiosk next to a school sells far more snacks). Generic
-// adjacency (a type not listed) still gets a small foot-traffic bump.
-const MAGNET_GENERIC = 1.07;
-const MAGNET_TYPES = {
-  school:  { name: "Schule",  emoji: "🏫", affinity: { kiosk: 1.35, cafe: 1.22 } },
-  station: { name: "Bahnhof", emoji: "🚉", affinity: { kiosk: 1.28, shop: 1.28, hotel: 1.32 } },
-  park:    { name: "Park",    emoji: "🏞️", affinity: { cafe: 1.32, hotel: 1.22, shop: 1.12 } },
-  stadium: { name: "Stadion", emoji: "🏟️", affinity: { kiosk: 1.3, shop: 1.22, hotel: 1.28 } },
+// Unique trophy buildings: title + small thematic perk. Price = normal × mult.
+const TROPHIES = {
+  bahnhof:     { title: "Bahnhofs-Baron",   emoji: "🚉", perk: "Pendler-Bonus: Täglicher Bonus ×1,5", mult: 10 },
+  kirche:      { title: "Kirchenpatron",    emoji: "⛪", perk: "Segen: Soforthilfe ×2 & halber Cooldown", mult: 8 },
+  schule:      { title: "Schulleiter",      emoji: "🏫", perk: "Bildung: Arbeiten-Klicks ×3", mult: 8 },
+  wahrzeichen: { title: "Wahrzeichen",      emoji: "🏛️", perk: "Prestige: das größte Gebäude des Ortsteils", mult: 12 },
 };
-// Fixed magnet placements (x,y) on the 6×5 grid — spread to the quadrants.
-const MAGNET_PLACEMENT = [
-  { type: "school",  x: 1, y: 1 },
-  { type: "station", x: 4, y: 1 },
-  { type: "park",    x: 1, y: 3 },
-  { type: "stadium", x: 4, y: 3 },
+
+const SELL_SPREAD = 0.9;     // sell back at 90% (10% sink) → speculation needs real moves
+const BUYOUT_PREMIUM = 1.5;  // takeover: buyer pays 150%, ex-owner gets 100%, 50% burns
+const IDX_MIN = 0.55, IDX_MAX = 1.9;
+const LANDMARK_BOOST = 1.25;
+const LANDMARK_RADIUS = 120;
+const MONOPOly_MIN = 3;      // a street needs ≥3 addressed houses to be a monopoly target
+
+// Stable player colours for territory painting (same hash client-side).
+const PLAYER_COLORS = ["#e6b04b", "#5ea8e0", "#66c07a", "#c86bd6", "#e0705e", "#4fc7c0", "#d1a35e", "#8f9fe8"];
+function colorFor(key) {
+  let h = 0;
+  for (const ch of String(key || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return PLAYER_COLORS[h % PLAYER_COLORS.length];
+}
+
+// Local news that move a district's price index (Spekulation).
+const EVENT_POOL = [
+  { txt: "🎪 Schützenfest in {d} — alle wollen hin!", f: 1.15 },
+  { txt: "🚧 Großbaustelle in {d} — der Lärm nervt.", f: 0.87 },
+  { txt: "🚌 Neue Buslinie nach {d}!", f: 1.10 },
+  { txt: "🌊 Weser-Hochwasser bei {d} — Keller unter Wasser.", f: 0.84 },
+  { txt: "🛜 Glasfaser-Ausbau in {d} abgeschlossen.", f: 1.12 },
+  { txt: "🦫 Biber blockieren Neubaugebiet in {d}.", f: 0.91 },
+  { txt: "🏆 {d} gewinnt den „Schönstes Dorf“-Wettbewerb!", f: 1.18 },
+  { txt: "👻 Spuk-Gerüchte in {d} — Makler verzweifelt.", f: 0.89 },
+  { txt: "☕ Hippes Café eröffnet in {d}.", f: 1.08 },
+  { txt: "🛣️ Umgehungsstraße entlastet {d}.", f: 1.07 },
+  { txt: "🐗 Wildschwein-Rotte wühlt Gärten in {d} um.", f: 0.93 },
+  { txt: "🎬 Filmteam dreht in {d} — {d} ist berühmt!", f: 1.14 },
 ];
-const DEMAND_CAP = 1.55;       // hard ceiling on a business's location demand multiplier
-const LAND_FACTOR_CAP = 1.6;   // hard ceiling on a lot's location land-price factor
-// Types whose revenue is location-INSENSITIVE (production, not foot traffic).
-const LOCATION_INSENSITIVE = new Set(["factory", "casino", "bank"]);
 
-let city = load();
+// ─── Static map (repo snapshot) ─────────────────────────────────────────────
+let MAP = { city: "?", districts: [] };
+const bldIndex = new Map();   // building id -> { b, district }
+let CASINO_ID = null, BANK_ID = null;
 
-function load() {
+function loadMap() {
   try {
-    const c = JSON.parse(fs.readFileSync(CITY_FILE, "utf8"));
-    // "central" marks the location-factors format; older saves regenerate.
-    if (c && Array.isArray(c.lots) && c.lots.length && "central" in c.lots[0]) return c;
+    MAP = JSON.parse(fs.readFileSync(MAP_FILE, "utf8"));
+  } catch (e) {
+    console.error("city: Karten-Snapshot fehlt (game/data/porta.json) — Stadt ist leer.", e.message);
+    MAP = { city: "Porta Westfalica", districts: [] };
+  }
+  bldIndex.clear();
+  for (const d of MAP.districts) {
+    for (const b of d.buildings) {
+      b._did = d.id;
+      // Street key: only buildings with a real house number belong to a street
+      // set ("Zur Porta 88" → "Zur Porta"); borrowed street names don't count.
+      const m = b.n && b.n.match(/^(.+?)\s+(\d.*)$/);
+      b.st = m ? m[1] : null;
+      b.lm = 0;
+      for (const l of d.landmarks || []) {
+        if (Math.abs(l.x - b.c[0]) < LANDMARK_RADIUS && Math.abs(l.y - b.c[1]) < LANDMARK_RADIUS) { b.lm = 1; break; }
+      }
+      bldIndex.set(b.id, { b, district: d });
+    }
+  }
+  // Unique prestige assets: Casino = largest non-residential in Hausberge,
+  // Bank = largest real bank building.
+  const hb = MAP.districts.find((d) => d.id === "hausberge");
+  if (hb) {
+    const cand = hb.buildings.filter((b) => b.cls !== "residential").sort((a, z) => z.a - a.a);
+    if (cand.length) { CASINO_ID = cand[0].id; cand[0].cls = "casino"; }
+  }
+  let banks = [];
+  for (const d of MAP.districts) banks = banks.concat(d.buildings.filter((b) => b.bank && b.id !== CASINO_ID));
+  if (!banks.length) for (const d of MAP.districts) banks = banks.concat(d.buildings.filter((b) => b.cls === "civic" && b.id !== CASINO_ID));
+  banks.sort((a, z) => z.a - a.a);
+  if (banks.length) { BANK_ID = banks[0].id; banks[0].cls = "bank"; }
+
+  // Trophies: Bahnhöfe, Kirchen, Schulgebäude — plus the biggest building of
+  // each district as its "Wahrzeichen". One owner each, real names included.
+  for (const d of MAP.districts) {
+    for (const b of d.buildings) {
+      if (b.id === CASINO_ID || b.id === BANK_ID) continue;
+      if (b.t === "train_station") b.trophy = "bahnhof";
+      else if (b.t === "church" || b.t === "chapel") b.trophy = "kirche";
+      else if (b.t === "school" || (b.nm && /schule/i.test(b.nm))) b.trophy = "schule";
+    }
+    const biggest = d.buildings
+      .filter((b) => !b.trophy && b.id !== CASINO_ID && b.id !== BANK_ID)
+      .sort((a, z) => z.a - a.a)[0];
+    if (biggest) biggest.trophy = "wahrzeichen";
+  }
+
+  // Street groups per district (monopoly targets).
+  for (const d of MAP.districts) {
+    d._streets = new Map();
+    for (const b of d.buildings) {
+      if (!b.st) continue;
+      if (!d._streets.has(b.st)) d._streets.set(b.st, []);
+      d._streets.get(b.st).push(b.id);
+    }
+    for (const [st, ids] of d._streets) if (ids.length < MONOPOly_MIN) d._streets.delete(st);
+  }
+}
+loadMap();
+
+// ─── Ownership state (data volume) ──────────────────────────────────────────
+let state = loadState();
+
+function loadState() {
+  try {
+    const s = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+    if (s && s.v === "porta2" && s.own) return s;
+    if (s && s.v === "porta1" && s.own) return { v: "porta2", own: s.own, idx: {}, news: [], createdAt: s.createdAt || Date.now() };
   } catch {}
-  return generate();
+  return { v: "porta2", own: {}, idx: {}, news: [], createdAt: Date.now() };
 }
 
 function save() {
+  derivedDirty = true;
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(CITY_FILE, JSON.stringify(city, null, 2));
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state));
   } catch {}
 }
 
-function generate() {
-  const lots = [];
-  let id = 0;
-  for (let y = 0; y < ROWS; y++)
-    for (let x = 0; x < COLS; x++)
-      lots.push({ id: id++, x, y, landOwner: null, landOwnerName: null, forRent: false, biz: null, magnet: null });
-
-  const at = (x, y) => lots.find((l) => l.x === x && l.y === y);
-
-  // Place the fixed NPC landmarks (magnets) — these tiles can't be owned/built.
-  for (const m of MAGNET_PLACEMENT) {
-    const lot = at(m.x, m.y);
-    if (lot) lot.magnet = m.type;
-  }
-
-  // Per-lot centrality (1 = dead centre, 0 = far corner) and adjacent magnets.
-  const cx = (COLS - 1) / 2, cy = (ROWS - 1) / 2;
-  const maxDist = Math.hypot(cx, cy) || 1;
-  for (const lot of lots) {
-    lot.central = Math.round((1 - Math.hypot(lot.x - cx, lot.y - cy) / maxDist) * 1000) / 1000;
-    lot.adj = lots
-      .filter((o) => o.magnet && o !== lot && Math.max(Math.abs(o.x - lot.x), Math.abs(o.y - lot.y)) === 1)
-      .map((o) => o.magnet);
-  }
-
-  const mkBiz = (type) => ({ type, builtBy: null, builtByName: null, operator: null, operatorName: null, perf: 1, forLease: false });
-  at(cx | 0, cy | 0).biz = mkBiz("casino"); // casino dead centre (prime spot)
-  lots[0].biz = mkBiz("bank");              // the one Bank (NPC-owned until someone buys it)
-
-  // Seed NPC businesses on free, non-magnet lots.
-  const pool = ["kiosk", "kiosk", "kiosk", "cafe", "cafe", "cafe", "shop", "shop", "hotel", "factory"];
-  const free = lots.filter((l) => !l.biz && !l.magnet);
-  for (const t of pool) {
-    if (!free.length) break;
-    const i = crypto.randomInt(free.length);
-    free[i].biz = mkBiz(t);
-    free.splice(i, 1);
-  }
-  return { lots, landIndex: 1, createdAt: Date.now() };
-}
-
-// ─── Market life ────────────────────────────────────────────────────────────
-function tickMarket() {
-  // Per-business performance.
-  for (const lot of city.lots) {
-    if (!lot.biz) continue;
-    const p = lot.biz.perf || 1;
-    lot.biz.perf = clamp(p + (1 - p) * 0.1 + (Math.random() * 2 - 1) * 0.12, PERF_MIN, PERF_MAX);
-  }
-  // City-wide land price index.
-  const i = city.landIndex || 1;
-  city.landIndex = clamp(i + (1 - i) * 0.05 + (Math.random() * 2 - 1) * 0.08, LAND_MIN, LAND_MAX);
-  save();
-}
-
+const idxOf = (did) => state.idx[did] || 1;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const round = (n) => Math.round(n * 100) / 100;
-const landPrice = () => Math.round(BASE_LAND * (city.landIndex || 1)); // index-only base (display fallback)
-const landSellPrice = () => Math.round(landPrice() * SELL_SPREAD);
+const round2 = (n) => Math.round(n * 100) / 100;
 
-// ─── Location maths ───────────────────────────────────────────────────────
-/** Per-lot land-price factor: central tiles + tiles next to landmarks cost more. */
-function landFactor(lot) {
-  const central = 0.82 + 0.36 * (lot.central ?? 0.5);   // ~0.82 (edge) … 1.18 (centre)
-  const magnetBoost = 1 + 0.12 * ((lot.adj && lot.adj.length) || 0);
-  return clamp(central * magnetBoost, 0.6, LAND_FACTOR_CAP);
-}
-/** Per-lot, per-type revenue demand: foot traffic from centrality × landmark fit.
- *  Production buildings (factory/casino/bank) are location-insensitive (= 1). */
-function demand(lot, type) {
-  if (LOCATION_INSENSITIVE.has(type)) return 1;
-  let mult = 0.82 + 0.36 * (lot.central ?? 0.5);          // ~0.82 (edge) … 1.18 (centre)
-  for (const m of lot.adj || []) {
-    const a = MAGNET_TYPES[m];
-    mult *= (a && a.affinity[type]) || MAGNET_GENERIC;
+// ─── Market life: per-district index drift + local news events ─────────────
+function tickMarket() {
+  for (const d of MAP.districts) {
+    const i = idxOf(d.id);
+    state.idx[d.id] = clamp(i + (1 - i) * 0.04 + (Math.random() * 2 - 1) * 0.015, IDX_MIN, IDX_MAX);
   }
-  return clamp(mult, 0.6, DEMAND_CAP);
-}
-const lotLandPrice = (lot) => Math.round(BASE_LAND * (city.landIndex || 1) * landFactor(lot));
-const lotLandSellPrice = (lot) => Math.round(lotLandPrice(lot) * SELL_SPREAD);
-/** Rent scales with location too — prime land costs the tenant more. */
-const rentFor = (lot) => Math.round(BUILDING_TYPES[lot.biz.type].rent * landFactor(lot));
-/** Names of landmarks adjacent to a lot, for display. */
-const adjMagnetNames = (lot) => (lot.adj || []).map((m) => MAGNET_TYPES[m] && MAGNET_TYPES[m].name).filter(Boolean);
-
-// ─── P&L (all figures are PER MINUTE) ─────────────────────────────────────
-function bizNet(lot) {
-  const t = BUILDING_TYPES[lot.biz.type];
-  const income = t.income * (lot.biz.perf || 1) * demand(lot, lot.biz.type); // location demand
-  const rent = lot.biz.operator !== lot.landOwner ? rentFor(lot) : 0; // pay rent if you don't own the land
-  return income - rent;
+  // Roughly every ~8 minutes (60s ticks) a local event shakes one district.
+  let event = null;
+  if (MAP.districts.length && Math.random() < 0.12) {
+    const d = MAP.districts[Math.floor(Math.random() * MAP.districts.length)];
+    const ev = EVENT_POOL[Math.floor(Math.random() * EVENT_POOL.length)];
+    state.idx[d.id] = clamp(idxOf(d.id) * ev.f, IDX_MIN, IDX_MAX);
+    event = { txt: ev.txt.replace(/\{d\}/g, d.name), district: d.id, up: ev.f > 1, at: Date.now() };
+    state.news.unshift(event);
+    state.news = state.news.slice(0, 6);
+  }
+  save();
+  return event;
 }
 
-function lotById(id) { return city.lots.find((l) => l.id === id) || null; }
+/** Price: class base × footprint scale × landmark × trophy premium × district index.
+ *  Trophies are clamped into a 5M–500M band: always a serious purchase, but
+ *  always below Bank (600M) and Casino (1.2B). */
+function priceOf(b) {
+  const c = CLASSES[b.cls];
+  if (b.cls === "casino" || b.cls === "bank") return c.base;
+  const sizeScale = clamp(Math.pow(b.a / c.refA, 0.6), 0.6, 2.5);
+  const lm = b.lm ? LANDMARK_BOOST : 1;
+  let price = c.base * sizeScale * lm;
+  if (b.trophy) price = clamp(price * TROPHIES[b.trophy].mult, 5_000_000, 500_000_000);
+  return Math.round((price * idxOf(b._did)) / 100) * 100;
+}
+const sellPriceOf = (b) => Math.round(priceOf(b) * SELL_SPREAD);
+const ownerOf = (id) => (state.own[id] ? state.own[id].owner : null);
 
-// ─── Per-business income accrual (collect each business individually) ──────
-const COLLECT_CAP_MS = 3 * 60 * 60 * 1000; // 3h offline cap per business (income stays modest)
-const MS_PER_MIN = 60000;
-const elapsedMs = (since, now) => Math.min(now - (since || now), COLLECT_CAP_MS);
+// ─── Derived territory stats (cached, recomputed after every change) ───────
+let derivedDirty = true;
+let derived = null;
 
-/** Chips `key` has accrued from one lot (operating profit if they run it, else
- *  rent if they're the landlord letting a tenant operate). Income is per minute. */
-function lotPending(lot, key, now = Date.now()) {
-  if (!lot.biz) return 0;
-  if (lot.biz.operator === key)
-    return Math.max(0, bizNet(lot)) * elapsedMs(lot.biz.opAt, now) / MS_PER_MIN;
-  // Land owner collects rent from any business on their land they don't run
-  // themselves — including NPC-operated businesses (operator === null).
-  if (lot.landOwner === key && lot.biz.operator !== key)
-    return rentFor(lot) * elapsedMs(lot.biz.rentAt || lot.biz.opAt, now) / MS_PER_MIN;
-  return 0;
+function getDerived() {
+  if (!derivedDirty && derived) return derived;
+  const monopolies = {};       // did -> [{ st, owner, ownerName, color, count }]
+  const streetsByOwner = {};   // key -> count of complete streets
+  const bossByDistrict = {};   // did -> { owner, name, color, value }
+  const valueByOwner = {};     // key -> total property value
+
+  for (const d of MAP.districts) {
+    monopolies[d.id] = [];
+    const perOwner = {};
+    for (const b of d.buildings) {
+      const o = state.own[b.id];
+      if (!o) continue;
+      perOwner[o.owner] = perOwner[o.owner] || { value: 0, name: o.ownerName };
+      perOwner[o.owner].value += priceOf(b);
+      valueByOwner[o.owner] = (valueByOwner[o.owner] || 0) + priceOf(b);
+    }
+    let boss = null;
+    for (const [k, v] of Object.entries(perOwner)) {
+      if (!boss || v.value > boss.value) boss = { owner: k, name: v.name, value: v.value };
+    }
+    if (boss) bossByDistrict[d.id] = { ...boss, color: colorFor(boss.owner) };
+
+    for (const [st, ids] of d._streets) {
+      const first = state.own[ids[0]];
+      if (!first) continue;
+      const owner = first.owner;
+      if (ids.every((id) => state.own[id] && state.own[id].owner === owner)) {
+        monopolies[d.id].push({ st, owner, ownerName: first.ownerName, color: colorFor(owner), count: ids.length });
+        streetsByOwner[owner] = (streetsByOwner[owner] || 0) + 1;
+      }
+    }
+  }
+  derived = { monopolies, streetsByOwner, bossByDistrict, valueByOwner };
+  derivedDirty = false;
+  return derived;
 }
 
-function totalPending(key) {
-  let sum = 0;
-  for (const lot of city.lots) sum += lotPending(lot, key);
-  return sum;
+/** Complete streets a player owns (Straßenkönig leaderboard). */
+const streetCount = (key) => getDerived().streetsByOwner[key] || 0;
+
+/** Total city property value of a player (net worth + Immobilien-Mogul). */
+function ownerValue(key) {
+  return getDerived().valueByOwner[key] || 0;
 }
 
-/** Collect one business's accrued income for `key`; resets that timer. */
-function collectLot(id, key) {
-  const lot = lotById(id);
-  const now = Date.now();
-  if (!lot || !lot.biz) return err("Nichts einzusammeln.");
-  const isOp = lot.biz.operator === key;
-  const isLandlord = lot.landOwner === key && lot.biz.operator !== key; // incl. NPC business
-  if (!isOp && !isLandlord) return err("Hier hast du kein Einkommen.");
-  const amount = Math.floor(lotPending(lot, key, now));
+/** Trophies a player holds → [{kind, title, emoji, name}] */
+function trophiesOf(key) {
+  const out = [];
+  for (const [id, o] of Object.entries(state.own)) {
+    if (o.owner !== key) continue;
+    const e = bldIndex.get(Number(id));
+    if (e && e.b.trophy) out.push({ kind: e.b.trophy, ...TROPHIES[e.b.trophy], name: e.b.nm || e.b.n || e.district.name });
+  }
+  return out;
+}
+const hasTrophy = (key, kind) => trophiesOf(key).some((t) => t.kind === kind);
+
+const casinoOwner = () => (CASINO_ID != null ? ownerOf(CASINO_ID) : null);
+const bankOwner = () => (BANK_ID != null ? ownerOf(BANK_ID) : null);
+
+/** Is `key` the current boss of a district? (Boss buys 10% cheaper there.) */
+const BOSS_DISCOUNT = 0.9;
+function isBoss(key, did) {
+  const b = getDerived().bossByDistrict[did];
+  return !!(b && b.owner === key);
+}
+
+/** Cheap territory snapshot for conquest broadcasts (diff before/after). */
+function territorySnapshot() {
+  const der = getDerived();
+  const monos = new Set();
+  for (const [did, list] of Object.entries(der.monopolies))
+    for (const m of list) monos.add(`${did}|${m.st}|${m.owner}`);
+  const boss = {};
+  for (const [did, b] of Object.entries(der.bossByDistrict)) boss[did] = b.owner;
+  return { monos, boss };
+}
+
+/** Human messages for everything that changed between two snapshots. */
+function territoryDiff(before, after) {
+  const msgs = [];
+  const nameOf = (did) => { const d = MAP.districts.find((x) => x.id === did); return d ? d.name : did; };
+  for (const entry of after.monos) {
+    if (before.monos.has(entry)) continue;
+    const [, st, owner] = entry.split("|");
+    const o = Object.values(state.own).find((x) => x.owner === owner);
+    msgs.push(`👑 ${o ? o.ownerName : owner} hat die ${st} erobert — Straßen-Monopol!`);
+  }
+  for (const [did, owner] of Object.entries(after.boss)) {
+    if (before.boss[did] === owner) continue;
+    const o = Object.values(state.own).find((x) => x.owner === owner);
+    msgs.push(`🥇 ${o ? o.ownerName : owner} ist jetzt der Boss von ${nameOf(did)}!`);
+  }
+  return msgs;
+}
+
+// ─── Public views ───────────────────────────────────────────────────────────
+function publicOverview(key) {
+  const der = getDerived();
+  let me = null;
+  if (key) {
+    // "Meine Immobilien": every owned building, for the jump-to list.
+    const properties = [];
+    for (const [id, o] of Object.entries(state.own)) {
+      if (o.owner !== key) continue;
+      const e = bldIndex.get(Number(id));
+      if (!e) continue;
+      properties.push({
+        id: Number(id), did: e.district.id, districtName: e.district.name,
+        label: e.b.nm || e.b.n || CLASSES[e.b.cls].name,
+        emoji: e.b.trophy ? TROPHIES[e.b.trophy].emoji : CLASSES[e.b.cls].emoji,
+        price: priceOf(e.b),
+      });
+    }
+    properties.sort((a, z) => z.price - a.price);
+    me = {
+      houses: properties.length,
+      value: ownerValue(key),
+      streets: streetCount(key),
+      trophies: trophiesOf(key),
+      bossOf: MAP.districts.filter((d) => der.bossByDistrict[d.id] && der.bossByDistrict[d.id].owner === key).map((d) => d.name),
+      color: colorFor(key),
+      properties: properties.slice(0, 200),
+    };
+  }
   return {
-    ok: true, amount,
-    commit: () => { if (isOp) lot.biz.opAt = now; else lot.biz.rentAt = now; save(); },
+    city: MAP.city,
+    news: state.news,
+    me,
+    casinoOwnerName: CASINO_ID != null && state.own[CASINO_ID] ? state.own[CASINO_ID].ownerName : null,
+    bankOwnerName: BANK_ID != null && state.own[BANK_ID] ? state.own[BANK_ID].ownerName : null,
+    districts: MAP.districts.map((d) => {
+      let mine = 0, taken = 0;
+      for (const b of d.buildings) {
+        const o = state.own[b.id];
+        if (!o) continue;
+        if (o.owner === key) mine++; else taken++;
+      }
+      const boss = der.bossByDistrict[d.id] || null;
+      return {
+        id: d.id, name: d.name, ring: d.ring,
+        total: d.buildings.length, mine, taken,
+        idx: round2(idxOf(d.id)),
+        boss: boss ? { name: boss.name, color: boss.color, isMe: boss.owner === key } : null,
+        monos: (der.monopolies[d.id] || []).length,
+        hasCasino: d.buildings.some((b) => b.id === CASINO_ID),
+        hasBank: d.buildings.some((b) => b.id === BANK_ID),
+      };
+    }),
   };
 }
 
-/** Income/sec for `key`: operating profit of businesses they run + rent from land they let. */
-function ownerIncomeRate(key) {
-  let rate = 0;
-  for (const lot of city.lots) {
-    if (lot.biz && lot.biz.operator === key) rate += bizNet(lot);
-    if (lot.landOwner === key && lot.biz && lot.biz.operator !== key) {
-      rate += rentFor(lot); // rent from a tenant or an NPC business on your land
-    }
-  }
-  return rate;
-}
-
-/** Net-worth value: land owned (at market) + building assets owned. */
-function ownerValue(key) {
-  let total = 0;
-  for (const lot of city.lots) {
-    if (lot.landOwner === key) total += lotLandPrice(lot);
-    if (lot.biz && lot.biz.builtBy === key) total += BUILDING_TYPES[lot.biz.type].cost;
-  }
-  return total;
-}
-
-function casinoOwner() {
-  const lot = city.lots.find((l) => l.biz && l.biz.type === "casino");
-  return lot && lot.biz ? lot.biz.operator : null;
-}
-
-function bankOwner() {
-  const lot = city.lots.find((l) => l.biz && l.biz.type === "bank");
-  return lot && lot.biz ? lot.biz.operator : null;
-}
-
-function publicCity(key) {
-  // Strip product lists from the catalog: products are private to each business's
-  // operator, so the generic "this type sells X" list must not leak either. The
-  // client only needs name/emoji/cost/income/rent here for the build menu.
-  const buildingTypes = {};
-  for (const [id, t] of Object.entries(BUILDING_TYPES)) {
-    const { products, ...rest } = t;
-    buildingTypes[id] = rest;
-  }
+function publicDistrict(id, key) {
+  const d = MAP.districts.find((x) => x.id === id);
+  if (!d) return null;
+  const der = getDerived();
+  // Street progress info for the panel: total addressed houses per street.
+  const streetTotals = {};
+  for (const [st, ids] of d._streets) streetTotals[st] = ids.length;
   return {
-    cols: COLS, rows: ROWS, buildingTypes, buyoutPremium: BUYOUT_PREMIUM,
-    landPrice: landPrice(), landSellPrice: landSellPrice(), landIndex: round(city.landIndex || 1),
-    lots: city.lots.map((l) => {
-      const t = l.biz && BUILDING_TYPES[l.biz.type];
-      // P&L per minute, from the viewer's perspective (rent shown unless they own the land).
-      let pnl = null;
-      if (l.biz) {
-        const operator = l.biz.operator;
-        const landOwnedByOp = operator === null ? l.landOwner === key : l.landOwner === operator;
-        const income = t.income * (l.biz.perf || 1) * demand(l, l.biz.type);
-        const rent = landOwnedByOp ? 0 : rentFor(l);
-        pnl = { income: round(income), rent: round(rent), net: round(income - rent), demand: round(demand(l, l.biz.type)) };
-      }
-      // Demand preview per buildable type, so the build menu can flag where a
-      // given business would thrive (e.g. a kiosk next to a school).
-      const demandByType = {};
-      for (const [tid, tt] of Object.entries(BUILDING_TYPES))
-        if (tt.buildable) demandByType[tid] = round(demand(l, tid));
-      // Products are PRIVATE to the business operator: only the owner sees them
-      // (and buys them at the owner discount). Outsiders get `products: null` —
-      // they can't even see which products exist; they buy them off the player
-      // market once the operator lists them there.
-      let products = null;
-      if (t && t.products && l.biz.operator === key) {
-        products = t.products.map((pr) => ({ ...pr, payPrice: Math.round(pr.price * OWNER_DISCOUNT), owned: true }));
-      }
-      const landMine = l.landOwner === key;
-      const canBuildHere = !l.biz && (landMine || (l.forRent && l.landOwner && l.landOwner !== key));
+    id: d.id, name: d.name, ring: d.ring,
+    idx: round2(idxOf(d.id)),
+    classes: Object.fromEntries(Object.entries(CLASSES).map(([k, c]) => [k, { name: c.name, emoji: c.emoji, perk: c.perk || null }])),
+    trophies: TROPHIES,
+    monopolies: der.monopolies[d.id] || [],
+    boss: der.bossByDistrict[d.id] ? { name: der.bossByDistrict[d.id].name, color: der.bossByDistrict[d.id].color } : null,
+    streetTotals,
+    landmarks: (d.landmarks || []).map((l) => ({ type: l.type, name: l.name, x: l.x, y: l.y, pts: l.pts || null })),
+    roads: d.roads || [],
+    iAmBoss: !!key && isBoss(key, d.id),
+    buildings: d.buildings.map((b) => {
+      const o = state.own[b.id];
+      const price = priceOf(b);
       return {
-        id: l.id, x: l.x, y: l.y,
-        landOwner: l.landOwner, landOwnerName: l.landOwnerName, landMine, forRent: l.forRent,
-        emoji: l.magnet ? MAGNET_TYPES[l.magnet].emoji : (t ? t.emoji : null),
-        // Location factors.
-        magnet: l.magnet ? { type: l.magnet, name: MAGNET_TYPES[l.magnet].name, emoji: MAGNET_TYPES[l.magnet].emoji } : null,
-        price: l.magnet ? null : lotLandPrice(l),
-        sellPrice: l.magnet ? null : lotLandSellPrice(l),
-        central: round(l.central ?? 0.5),
-        nearby: adjMagnetNames(l),
-        demandByType,
-        biz: l.biz ? {
-          type: l.biz.type, name: t.name, emoji: t.emoji,
-          builtBy: l.biz.builtBy, builtByName: l.biz.builtByName, builtMine: l.biz.builtBy === key,
-          operator: l.biz.operator, operatorName: l.biz.operatorName, operatorMine: l.biz.operator === key,
-          forLease: l.biz.forLease, listed: !!l.biz.listed, pnl, products,
-        } : null,
-        canBuildHere,
-        pending: round(lotPending(l, key)),
-        rival: (l.landOwner && !landMine) || (l.biz && l.biz.operator && l.biz.operator !== key),
-        mine: landMine || (l.biz && (l.biz.operator === key || l.biz.builtBy === key)),
+        id: b.id, pts: b.pts, c: b.c, a: b.a, cls: b.cls, n: b.n, st: b.st, lm: b.lm,
+        t: b.t || null, nm: b.nm || null, lv: b.lv || null,
+        trophy: b.trophy || null,
+        price, sellPrice: sellPriceOf(b),
+        myPrice: key && isBoss(key, d.id) ? Math.round(price * BOSS_DISCOUNT) : price,
+        owner: o ? o.owner : null, ownerName: o ? o.ownerName : null,
+        color: o ? colorFor(o.owner) : null,
+        mine: !!o && o.owner === key, listed: !!(o && o.listed),
       };
     }),
   };
 }
 
 // ─── Mutations ──────────────────────────────────────────────────────────────
-// Buy/build cost the player chips → { ok, cost, commit }.
-// Selling pays the player → { ok, gain, commit }. Toggles are free → { ok, commit }.
-
-function buyLand(id, key, name) {
-  const lot = lotById(id);
-  if (!lot) return err("Grundstück nicht gefunden.");
-  if (lot.magnet) return err("Öffentliches Gelände — nicht kaufbar.");
-  if (lot.landOwner !== null) return err("Grundstück ist nicht frei.");
-  return { ok: true, cost: lotLandPrice(lot), commit: () => {
-    lot.landOwner = key; lot.landOwnerName = name;
-    // Buying land under an NPC business → start the rent clock from now.
-    if (lot.biz && lot.biz.operator !== key) lot.biz.rentAt = Date.now();
+function buyBuilding(id, key, name) {
+  const e = bldIndex.get(Number(id));
+  if (!e) return err("Gebäude nicht gefunden.");
+  if (ownerOf(e.b.id)) return err("Gehört schon jemandem — nutze „Übernehmen“.");
+  // District boss buys 10% cheaper in "his" district (territory rewards territory).
+  const discount = isBoss(key, e.b._did) ? BOSS_DISCOUNT : 1;
+  return { ok: true, cost: Math.round(priceOf(e.b) * discount), commit: () => {
+    state.own[e.b.id] = { owner: key, ownerName: name };
     save();
   } };
 }
 
-function sellLand(id, key) {
-  const lot = lotById(id);
-  if (!lot) return err("Nicht gefunden.");
-  if (lot.landOwner !== key) return err("Gehört dir nicht.");
-  if (lot.biz) return err("Erst das Gebäude loswerden.");
-  return { ok: true, gain: lotLandSellPrice(lot), commit: () => { lot.landOwner = null; lot.landOwnerName = null; lot.forRent = false; save(); } };
-}
-
-function setForRent(id, key, val) {
-  const lot = lotById(id);
-  if (!lot) return err("Nicht gefunden.");
-  if (lot.landOwner !== key) return err("Gehört dir nicht.");
-  if (lot.biz) return err("Schon bebaut.");
-  return { ok: true, commit: () => { lot.forRent = !!val; save(); } };
-}
-
-function build(id, key, typeId, name) {
-  const lot = lotById(id);
-  if (!lot) return err("Nicht gefunden.");
-  if (lot.biz) return err("Hier steht schon etwas.");
-  const ownLand = lot.landOwner === key;
-  const rented = lot.forRent && lot.landOwner && lot.landOwner !== key;
-  if (!ownLand && !rented) return err("Erst Grundstück kaufen (oder gemietetes Land nutzen).");
-  const t = BUILDING_TYPES[typeId];
-  if (!t || !t.buildable) return err("Kann hier nicht gebaut werden.");
-  return { ok: true, cost: t.cost, commit: () => {
-    const now = Date.now();
-    lot.biz = { type: typeId, builtBy: key, builtByName: name, operator: key, operatorName: name, perf: 1, forLease: false, opAt: now, rentAt: now };
-    save();
-  } };
-}
-
-function buyBiz(id, key, name) {
-  const lot = lotById(id);
-  if (!lot || !lot.biz) return err("Kein Unternehmen hier.");
-  if (lot.biz.operator !== null || lot.biz.builtBy !== null) return err("Gehört schon jemandem.");
-  const t = BUILDING_TYPES[lot.biz.type];
-  return { ok: true, cost: t.cost, commit: () => {
-    const now = Date.now();
-    lot.biz.builtBy = key; lot.biz.builtByName = name; lot.biz.operator = key; lot.biz.operatorName = name;
-    lot.biz.opAt = now; lot.biz.rentAt = now; save();
-  } };
+function sellBuilding(id, key) {
+  const e = bldIndex.get(Number(id));
+  if (!e) return err("Gebäude nicht gefunden.");
+  const o = state.own[e.b.id];
+  if (!o || o.owner !== key) return err("Gehört dir nicht.");
+  return { ok: true, gain: sellPriceOf(e.b), commit: () => { delete state.own[e.b.id]; save(); } };
 }
 
 function takeover(id, key, name) {
-  const lot = lotById(id);
-  if (!lot || !lot.biz) return err("Kein Unternehmen hier.");
-  if (lot.biz.operator === null) return err("Nutze „kaufen“.");
-  if (lot.biz.operator === key) return err("Gehört dir bereits.");
-  if (lot.biz.builtBy !== lot.biz.operator) return err("Verpachtetes Unternehmen — nicht übernehmbar.");
-  const t = BUILDING_TYPES[lot.biz.type];
-  const prevOwner = lot.biz.operator;
-  return { ok: true, cost: Math.ceil(t.cost * BUYOUT_PREMIUM), prevOwner, commit: () => {
-    const now = Date.now();
-    lot.biz.builtBy = key; lot.biz.builtByName = name; lot.biz.operator = key; lot.biz.operatorName = name; lot.biz.forLease = false;
-    lot.biz.opAt = now; lot.biz.rentAt = lot.biz.rentAt || now; save();
-  } };
+  const e = bldIndex.get(Number(id));
+  if (!e) return err("Gebäude nicht gefunden.");
+  const o = state.own[e.b.id];
+  if (!o) return err("Ist frei — einfach kaufen.");
+  if (o.owner === key) return err("Gehört dir bereits.");
+  const value = priceOf(e.b);
+  return {
+    ok: true,
+    cost: Math.ceil(value * BUYOUT_PREMIUM),
+    payout: { to: o.owner, amount: value },
+    commit: () => { state.own[e.b.id] = { owner: key, ownerName: name }; save(); },
+  };
 }
 
-function setForLease(id, key, val) {
-  const lot = lotById(id);
-  if (!lot || !lot.biz) return err("Kein Unternehmen.");
-  if (lot.biz.builtBy !== key) return err("Du besitzt das Gebäude nicht.");
-  return { ok: true, commit: () => { lot.biz.forLease = !!val; save(); } };
-}
-
-function lease(id, key, name) {
-  const lot = lotById(id);
-  if (!lot || !lot.biz) return err("Kein Unternehmen.");
-  if (!lot.biz.forLease) return err("Nicht zur Pacht angeboten.");
-  if (lot.biz.operator === key) return err("Betreibst du schon.");
-  const prevOwner = lot.biz.operator; // previous operator (the builder) — settle their income
-  return { ok: true, cost: 0, prevOwner, commit: () => {
-    const now = Date.now();
-    lot.biz.operator = key; lot.biz.operatorName = name; lot.biz.forLease = false;
-    lot.biz.opAt = now; lot.biz.rentAt = now; save();
-  } };
-}
-
-/** Validate that `key` can list this lot's business on the stock market. */
 function listCompany(id, key) {
-  const lot = lotById(id);
-  if (!lot || !lot.biz) return err("Kein Unternehmen hier.");
-  if (lot.biz.builtBy !== key) return err("Du musst das Gebäude besitzen.");
-  const t = BUILDING_TYPES[lot.biz.type];
-  if (!t.buildable) return err("Casino & Bank können nicht an die Börse.");
-  if (lot.biz.listed) return err("Schon börsennotiert.");
-  const seedPrice = Math.max(20, Math.round(bizNet(lot) * 25));
-  const raise = Math.round(t.cost * 0.5);
-  const name = `${lot.biz.builtByName || "Spieler"} ${t.name} AG`;
-  return { ok: true, name, seedPrice, raise, commit: () => { lot.biz.listed = true; save(); } };
+  const e = bldIndex.get(Number(id));
+  if (!e) return err("Gebäude nicht gefunden.");
+  const o = state.own[e.b.id];
+  if (!o || o.owner !== key) return err("Du musst das Gebäude besitzen.");
+  if (!/^(kiosk|cafe|shop|hotel|factory)$/.test(e.b.cls)) return err("Nur richtige Betriebe können an die Börse.");
+  if (o.listed) return err("Schon börsennotiert.");
+  const t = CLASSES[e.b.cls];
+  const seedPrice = Math.max(20, Math.round(priceOf(e.b) / 5000));
+  const raise = Math.round(priceOf(e.b) * 0.5);
+  const name = `${o.ownerName || "Spieler"} ${t.name} AG`;
+  return { ok: true, name, seedPrice, raise, commit: () => { o.listed = true; save(); } };
 }
 
-/** Buy a business's product (grants a buff). Operator pays a discount; a rival
- *  buyer pays full price to the operator. Returns { ok, cost, product, seller }. */
-function buyProduct(id, key, productKey) {
-  const lot = lotById(id);
-  if (!lot || !lot.biz) return err("Kein Unternehmen hier.");
-  const t = BUILDING_TYPES[lot.biz.type];
-  const product = t.products && t.products.find((p) => p.key === productKey);
-  if (!product) return err("Produkt nicht gefunden.");
-  // Products are private to the operator — only they can buy them (at a discount),
-  // then resell on the player market. Outsiders are rejected.
-  if (lot.biz.operator !== key) return err("Nur der Besitzer kann hier Produkte kaufen.");
-  const cost = Math.round(product.price * OWNER_DISCOUNT);
-  return { ok: true, cost, product, seller: null };
+const bldExists = (id) => bldIndex.has(Number(id));
+/** Short display info for a building (residence line in the profile). */
+function bldInfo(id) {
+  const e = bldIndex.get(Number(id));
+  if (!e) return null;
+  const o = state.own[e.b.id];
+  return {
+    label: e.b.nm || e.b.n || CLASSES[e.b.cls].name,
+    district: e.district.name,
+    ownerName: o ? o.ownerName : null,
+  };
 }
 
-/** Admin: wipe the whole city back to a fresh NPC-owned start (e.g. after a big
- *  price rebalance, so early cheap buyers don't keep a permanent monopoly). */
 function resetCity() {
-  city = generate();
+  state = { v: "porta2", own: {}, idx: {}, news: [], createdAt: Date.now() };
   save();
 }
 
-/** Admin: strip all ownership from a lot (land + business → NPC/unowned). The
- *  building stays as a buyable NPC business. */
 function adminClearLot(id) {
-  const lot = lotById(id);
-  if (!lot) return { ok: false, error: "Feld nicht gefunden." };
-  lot.landOwner = null; lot.landOwnerName = null; lot.forRent = false;
-  if (lot.biz) {
-    lot.biz.operator = null; lot.biz.operatorName = null;
-    lot.biz.builtBy = null; lot.biz.builtByName = null;
-    lot.biz.listed = false; lot.biz.forLease = false;
-  }
+  if (!state.own[id]) return { ok: false, error: "Gebäude gehört niemandem." };
+  delete state.own[id];
   save();
   return { ok: true };
 }
 
-/** Admin/UI helper: all lots currently owned by someone (land or business). */
 function ownedLots() {
-  return city.lots
-    .filter((l) => l.landOwner || (l.biz && (l.biz.operator || l.biz.builtBy)))
-    .map((l) => ({
-      id: l.id,
-      type: l.biz ? l.biz.type : null,
-      name: l.biz ? BUILDING_TYPES[l.biz.type].name : "Grundstück",
-      emoji: l.biz ? BUILDING_TYPES[l.biz.type].emoji : "🟩",
-      owner: (l.biz && l.biz.operatorName) || l.landOwnerName || null,
-    }));
+  return Object.entries(state.own).map(([id, o]) => {
+    const e = bldIndex.get(Number(id));
+    const c = e ? CLASSES[e.b.cls] : null;
+    return {
+      id: Number(id),
+      type: e ? e.b.cls : null,
+      name: c ? `${c.name}${e.district ? " · " + e.district.name : ""}` : "Gebäude",
+      emoji: c ? c.emoji : "🏠",
+      owner: o.ownerName || null,
+    };
+  });
 }
 
 function err(error) { return { ok: false, error }; }
 
 module.exports = {
-  BUILDING_TYPES,
-  publicCity, ownerIncomeRate, ownerValue, casinoOwner, bankOwner, tickMarket,
-  buyLand, sellLand, setForRent, build, buyBiz, takeover, setForLease, lease, lotById,
-  collectLot, totalPending, listCompany, buyProduct, adminClearLot, ownedLots, resetCity,
+  CLASSES, TROPHIES, colorFor,
+  publicOverview, publicDistrict, ownerValue, casinoOwner, bankOwner, tickMarket,
+  streetCount, trophiesOf, hasTrophy, bldExists, bldInfo, isBoss,
+  territorySnapshot, territoryDiff,
+  buyBuilding, sellBuilding, takeover,
+  listCompany, adminClearLot, ownedLots, resetCity,
 };

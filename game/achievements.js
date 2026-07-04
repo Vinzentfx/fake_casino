@@ -1,0 +1,121 @@
+"use strict";
+
+/**
+ * Achievements & badges — one-time milestones with chip rewards.
+ *
+ * Server-authoritative: progress is derived from data the server already owns
+ * (acc.stats, chip balance, city territory), never from the client. Unlocks
+ * pay out instantly via adjustChips, notify the player (socket "ach:unlocked")
+ * and announce big ones (reward ≥ 100k) in the global chat.
+ *
+ * Unlocked ids live on the account: acc.ach = { [id]: timestamp }.
+ *
+ * These payouts are the "career income" of the economy — together with the
+ * daily bonus they fund a new player's first houses while the games keep a
+ * house edge (<100% RTP).
+ */
+
+const city = require("./city");
+
+// check(acc, key) → true when reached. Sorted roughly by progression.
+const DEFS = [
+  // ── Casino ────────────────────────────────────────────────────────────────
+  { id: "first_win",   emoji: "🎉", label: "Erster Gewinn",   desc: "Gewinne deine erste Runde",              reward: 1000,
+    check: (a) => ((a.stats && a.stats.handsWon) || 0) >= 1 },
+  { id: "plays_100",   emoji: "🎲", label: "Stammgast",       desc: "Spiele 100 Runden",                      reward: 10000,
+    check: (a) => ((a.stats && a.stats.gamesPlayed) || 0) >= 100 },
+  { id: "plays_1000",  emoji: "🔥", label: "Inventar",        desc: "Spiele 1.000 Runden",                    reward: 100000,
+    check: (a) => ((a.stats && a.stats.gamesPlayed) || 0) >= 1000 },
+  { id: "bigwin_10k",  emoji: "💥", label: "Dicker Fisch",    desc: "Einzelgewinn über 10.000",               reward: 5000,
+    check: (a) => ((a.stats && a.stats.biggestWin) || 0) >= 10000 },
+  { id: "bigwin_100k", emoji: "🚀", label: "Jackpot-Jäger",   desc: "Einzelgewinn über 100.000",              reward: 50000,
+    check: (a) => ((a.stats && a.stats.biggestWin) || 0) >= 100000 },
+  { id: "bigwin_1m",   emoji: "🌋", label: "Legende",         desc: "Einzelgewinn über 1 Million",            reward: 250000,
+    check: (a) => ((a.stats && a.stats.biggestWin) || 0) >= 1000000 },
+  { id: "chips_100k",  emoji: "💰", label: "Erste 100k",      desc: "Kontostand über 100.000",                reward: 10000,
+    check: (a) => (a.chips || 0) >= 100000 },
+  { id: "chips_1m",    emoji: "💎", label: "Millionär",       desc: "Kontostand über 1 Million",              reward: 50000,
+    check: (a) => (a.chips || 0) >= 1000000 },
+  { id: "chips_100m",  emoji: "👑", label: "Krösus",          desc: "Kontostand über 100 Millionen",          reward: 500000,
+    check: (a) => (a.chips || 0) >= 100000000 },
+  { id: "streak_7",    emoji: "📅", label: "Wochen-Streak",   desc: "7 Tage in Folge den Bonus abgeholt",     reward: 25000,
+    check: (a) => (a.bonusStreak || 0) >= 7 },
+  // ── Stadt ────────────────────────────────────────────────────────────────
+  { id: "first_house", emoji: "🏠", label: "Eigenheim",       desc: "Kauf dein erstes Haus",                  reward: 2500,
+    check: (a, k) => cityStats(k).houses >= 1 },
+  { id: "houses_10",   emoji: "🏘️", label: "Häuslebauer",     desc: "Besitze 10 Häuser",                      reward: 25000,
+    check: (a, k) => cityStats(k).houses >= 10 },
+  { id: "houses_50",   emoji: "🏗️", label: "Immobilienhai",   desc: "Besitze 50 Häuser",                      reward: 100000,
+    check: (a, k) => cityStats(k).houses >= 50 },
+  { id: "first_street", emoji: "👑", label: "Straßenzug",     desc: "Erstes Straßen-Monopol",                 reward: 50000,
+    check: (a, k) => city.streetCount(k) >= 1 },
+  { id: "streets_5",   emoji: "🛣️", label: "Straßenkönig",    desc: "5 komplette Straßen",                    reward: 250000,
+    check: (a, k) => city.streetCount(k) >= 5 },
+  { id: "first_trophy", emoji: "🏆", label: "Trophäen-Jäger", desc: "Kauf ein Trophäen-Gebäude",              reward: 100000,
+    check: (a, k) => city.trophiesOf(k).length >= 1 },
+  { id: "boss",        emoji: "🥇", label: "Stadtteil-Boss",  desc: "Werde Boss eines Ortsteils",             reward: 100000,
+    check: (a, k) => cityStats(k).boss >= 1 },
+  { id: "bank_baron",  emoji: "🏦", label: "Bank-Baron",      desc: "Besitze die Bank",                       reward: 500000,
+    check: (a, k) => city.bankOwner() === k },
+  { id: "casino_king", emoji: "🎰", label: "Casino-König",    desc: "Besitze das Casino",                     reward: 1000000,
+    check: (a, k) => city.casinoOwner() === k },
+];
+
+// Cheap city aggregates for the checks above.
+function cityStats(key) {
+  const ov = city.publicOverview(key);
+  return { houses: ov.me ? ov.me.houses : 0, boss: ov.me ? ov.me.bossOf.length : 0 };
+}
+
+let _io = null, _accounts = null;
+
+/** Evaluate all definitions for one player; unlock, pay & notify new ones. */
+function check(name) {
+  if (!_accounts) return;
+  const acc = _accounts.get(name);
+  if (!acc) return;
+  const key = String(name).trim().toLowerCase();
+  acc.ach = acc.ach || {};
+  for (const d of DEFS) {
+    if (acc.ach[d.id]) continue;
+    let hit = false;
+    try { hit = d.check(acc, key); } catch {}
+    if (!hit) continue;
+    acc.ach[d.id] = Date.now();
+    _accounts.adjustChips(key, d.reward); // pays + saves (chip cap applies)
+    if (_io) {
+      _io.emit("ach:unlocked", { user: acc.name, id: d.id, emoji: d.emoji, label: d.label, reward: d.reward });
+      if (d.reward >= 100000) {
+        const chat = require("./chat");
+        chat.announce(_io, `🏆 ${acc.name} hat „${d.emoji} ${d.label}“ freigeschaltet!`);
+      }
+    }
+  }
+}
+
+/** All definitions with the player's unlock state (profile badges). */
+function listFor(name) {
+  const acc = _accounts && _accounts.get(name);
+  const ach = (acc && acc.ach) || {};
+  return DEFS.map((d) => ({
+    id: d.id, emoji: d.emoji, label: d.label, desc: d.desc, reward: d.reward,
+    unlocked: !!ach[d.id], at: ach[d.id] || null,
+  }));
+}
+
+function setupAchievements(io, accounts) {
+  _io = io;
+  _accounts = accounts;
+  // Every recorded hand may complete a casino achievement.
+  accounts.onHand((name) => check(name));
+
+  io.on("connection", (socket) => {
+    socket.on("ach:list", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+      ack({ ok: true, list: listFor(socket.data.account) });
+    });
+  });
+}
+
+module.exports = { setupAchievements, check, listFor };
