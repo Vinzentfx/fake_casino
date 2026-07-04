@@ -18,7 +18,9 @@ const FILE = path.join(DATA_DIR, "market.json");
 
 // Product metadata keyed by item key (from the city building catalog).
 const PRODUCTS = {};
-for (const t of Object.values(city.BUILDING_TYPES))
+// Legacy: the buff-product economy was retired (buildings grant buffs directly
+// now), so the catalog is empty — kept only so old inventories don't crash.
+for (const t of Object.values(city.BUILDING_TYPES || {}))
   if (t.products) for (const p of t.products) PRODUCTS[p.key] = p;
 
 let store = load();

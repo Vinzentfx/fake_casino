@@ -3,21 +3,25 @@
 /* ============================================================
    Fake Casino – Economy client
    • Work: a capped clicker (starter aid only).
-   • Stadt: shared SVG city map — buy land & build, buy out
-     businesses, take over the casino. Server is authoritative.
+   • Stadt: ECHTE Karte von Porta Westfalica — Territorium & Status.
+     Übersicht (Stadtteile mit Boss & Index) → Ortsteil (echte
+     Häuser + Straßen). Besitz malt die Karte in deiner Farbe:
+     Straßen-Monopole, Stadtteil-Boss, Trophäen-Gebäude,
+     Ortsteil-Spekulation, Wohnsitz. Server ist autoritativ.
    ============================================================ */
 
 (function () {
-  const { socket, toast, applyAccount, showScreen, escapeHtml } = window.Casino;
+  const { socket, toast, applyAccount, escapeHtml } = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
-  const dec = (n) => Number(n).toLocaleString("de-DE", { maximumFractionDigits: 2 });
+  const idxStr = (i) => String(i).replace(".", ",");
 
   // ── Work (capped clicker) ────────────────────────────────────────────────
   function applyWorkState(s) {
     if (!s || !s.ok) return;
-    $("#clicker-power").textContent = s.clickPower;
-    $("#work-power").textContent = s.clickPower + " 🪙";
+    const power = s.clickPower * (s.schulleiter ? 3 : 1);
+    $("#clicker-power").textContent = power;
+    $("#work-power").textContent = power + " 🪙" + (s.schulleiter ? " (🏫 Schulleiter ×3)" : "");
     const btn = $("#work-upgrade-btn");
     const costEl = $("#work-upgrade-cost");
     if (s.maxed) {
@@ -49,7 +53,7 @@
     socket.emit("work:upgrade", (res) => {
       if (!res || !res.ok) { err.textContent = (res && res.error) || "Fehler."; return; }
       applyAccount(res.account);
-      loadWork(); // refresh exact next cost / maxed state
+      loadWork();
       toast(`Klick-Stärke: +${res.clickPower} 🪙`);
     });
   });
@@ -67,270 +71,460 @@
     setTimeout(() => el.remove(), 800);
   }
 
-  // ── Shared city ────────────────────────────────────────────────────────
-  let cityData = null;
+  // ── City state ───────────────────────────────────────────────────────────
+  let view = "overview";
+  let overview = null;
+  let district = null;
   let selectedId = null;
-  let incomeRate = 0;
-  let pending = 0;
+  let vb = null, fitVb = null;
+
+  const CLS_FILL = {
+    residential: "#3e5748", civic: "#4a4f6e", kiosk: "#5e5636", cafe: "#5d4a33",
+    shop: "#33565e", hotel: "#59335e", factory: "#5a4a3a", casino: "#5a2a6e", bank: "#6e5a2a",
+  };
+  const LM_EMOJI = { school: "🏫", station: "🚉", park: "🏞️", sport: "🏟️" };
 
   function loadCity() {
     socket.emit("city:state", (res) => {
       if (!res || !res.ok) return;
-      cityData = res.city;
-      renderMap();
+      overview = res.overview;
+      renderEmpire(overview.me);
+      if (view === "district" && district) return loadDistrict(district.id, true);
+      view = "overview";
+      renderOverview();
       renderDetail();
     });
-    socket.emit("economy:state", (s) => {
-      if (!s || !s.ok) return;
-      incomeRate = s.ratePerMin; // chips per MINUTE
-      pending = s.pending;
-      updateIncomePanel();
-    });
   }
 
-  function updateIncomePanel() {
-    $("#biz-rate").textContent = fmt(incomeRate) + " 🪙/Min";
-    $("#biz-pending").textContent = fmt(pending) + " 🪙";
-  }
-
-  // Visual ticker: grow the accrued counter each second by 1/60 of the per-minute rate.
-  setInterval(() => {
-    const screen = document.querySelector('[data-screen="businesses"]');
-    if (!screen || !screen.classList.contains("active") || incomeRate <= 0) return;
-    pending += incomeRate / 60;
-    $("#biz-pending").textContent = fmt(pending) + " 🪙";
-  }, 1000);
-
-  function collectLot(plotId) {
-    socket.emit("economy:collectLot", { plotId }, (res) => {
-      if (!res || !res.ok) { toast((res && res.error) || "Nichts einzusammeln."); return; }
-      applyAccount(res.account);
-      if (res.city) cityData = res.city;
-      renderMap();
+  function loadDistrict(id, keepView) {
+    socket.emit("city:district", { id }, (res) => {
+      if (!res || !res.ok) { toast((res && res.error) || "Stadtteil nicht ladbar."); return; }
+      district = res.district;
+      view = "district";
+      if (!keepView) { selectedId = null; vb = null; }
+      renderDistrict();
       renderDetail();
-      loadCity();
-      toast(res.amount > 0 ? `💰 +${fmt(res.amount)} 🪙 eingesammelt!` : "Noch nichts aufgelaufen.");
     });
   }
 
-  // ── SVG map ──────────────────────────────────────────────────────────────
-  const CELL = 100, INSET = 12, LOT = CELL - INSET * 2;
+  // ── "Dein Imperium" panel ────────────────────────────────────────────────
+  function renderEmpire(me) {
+    const box = $("#biz-buffs");
+    if (!box) return;
+    if (!me || !me.houses) {
+      box.innerHTML = `<p class="muted small" style="margin:0;text-align:center">Noch kein Besitz. Kauf dein erstes Haus — komplette Straßen färben die Karte in deiner Farbe!</p>`;
+      return;
+    }
+    const chips = [];
+    chips.push(`<span class="buff-chip" style="border-color:${me.color};color:${me.color}">🏠 ${me.houses} ${me.houses === 1 ? "Haus" : "Häuser"}</span>`);
+    chips.push(`<span class="buff-chip">💎 ${fmt(me.value)} 🪙 Wert</span>`);
+    if (me.streets) chips.push(`<span class="buff-chip">👑 ${me.streets} ${me.streets === 1 ? "Straße" : "Straßen"} komplett</span>`);
+    for (const t of me.trophies) chips.push(`<span class="buff-chip">${t.emoji} ${escapeHtml(t.title)}</span>`);
+    for (const d of me.bossOf) chips.push(`<span class="buff-chip">🥇 Boss von ${escapeHtml(d)}</span>`);
+    // "Meine Immobilien" — tap to jump to the building on the map.
+    let list = `<details class="empire-list"><summary>📋 Meine Immobilien (${me.houses})</summary><div class="empire-items">`;
+    for (const p of me.properties || []) {
+      list += `<button class="empire-item" data-goto-d="${p.did}" data-goto-b="${p.id}">${p.emoji} ${escapeHtml(p.label)}<small>${escapeHtml(p.districtName)} · ${fmt(p.price)} 🪙</small></button>`;
+    }
+    list += `</div></details>`;
+    box.innerHTML = chips.join("") + list;
+  }
 
-  function renderMap() {
+  // Jump from the property list straight to the building on the map.
+  $("#biz-buffs").addEventListener("click", (e) => {
+    const item = e.target.closest(".empire-item");
+    if (!item) return;
+    const did = item.dataset.gotoD, bid = parseInt(item.dataset.gotoB, 10);
+    socket.emit("city:district", { id: did }, (res) => {
+      if (!res || !res.ok) return;
+      district = res.district;
+      view = "district";
+      selectedId = bid;
+      const b = district.buildings.find((x) => x.id === bid);
+      vb = b ? { x: b.c[0] - 200, y: b.c[1] - 150, w: 400, h: 300 } : null;
+      renderDistrict();
+      renderDetail();
+      document.querySelector(".city-map-box").scrollIntoView({ behavior: "smooth" });
+    });
+  });
+
+  // ── Geometry helpers ─────────────────────────────────────────────────────
+  const pathOf = (pts) => "M" + pts.map((p) => p[0] + " " + p[1]).join("L") + "Z";
+  const openPath = (pts) => "M" + pts.map((p) => p[0] + " " + p[1]).join("L");
+  function bboxOf(ptsList) {
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    for (const pts of ptsList) for (const [x, y] of pts) {
+      if (x < x1) x1 = x; if (y < y1) y1 = y; if (x > x2) x2 = x; if (y > y2) y2 = y;
+    }
+    return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+  }
+  const ringCentroid = (pts) => {
+    let x = 0, y = 0;
+    for (const p of pts) { x += p[0]; y += p[1]; }
+    return [x / pts.length, y / pts.length];
+  };
+  const setViewBox = () => { if (vb) $("#city-map").setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); };
+
+  // ── Overview: all districts ──────────────────────────────────────────────
+  function renderOverview() {
     const svg = $("#city-map");
-    if (!svg || !cityData) return;
+    if (!svg || !overview) return;
+    $("#city-back").classList.add("hidden");
+    $("#city-zoom").classList.add("hidden");
+    $("#city-title").textContent = overview.city;
+    $("#city-subtitle").innerHTML = `Erobere die echte Stadt: Häuser kaufen, Straßen-Monopole sichern, Stadtteil-Boss werden. Chips kommen aus dem Casino — hier zeigst du sie her.`;
     const lp = $("#land-price");
     if (lp) {
-      const arrow = cityData.landIndex >= 1 ? "📈" : "📉";
-      lp.innerHTML = `🏷️ Basis-Bodenpreis: <b>${fmt(cityData.landPrice)} 🪙</b> ${arrow} (Index ${cityData.landIndex}) · ±Lage`;
+      lp.innerHTML = (overview.casinoOwnerName ? `🎰 ${escapeHtml(overview.casinoOwnerName)}` : "🎰 frei")
+        + (overview.bankOwnerName ? ` · 🏦 ${escapeHtml(overview.bankOwnerName)}` : " · 🏦 frei");
     }
-    const W = cityData.cols * CELL, H = cityData.rows * CELL;
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
-    const parts = [`<rect x="0" y="0" width="${W}" height="${H}" fill="#33383d"/>`]; // asphalt
-    for (let r = 1; r < cityData.rows; r++)
-      parts.push(`<line x1="0" y1="${r * CELL}" x2="${W}" y2="${r * CELL}" stroke="#d9c463" stroke-width="2" stroke-dasharray="10 10" opacity="0.5"/>`);
-    for (let c = 1; c < cityData.cols; c++)
-      parts.push(`<line x1="${c * CELL}" y1="0" x2="${c * CELL}" y2="${H}" stroke="#d9c463" stroke-width="2" stroke-dasharray="10 10" opacity="0.5"/>`);
+    const rings = overview.districts.filter((d) => d.ring && d.ring.length > 2);
+    const bb = bboxOf(rings.map((d) => d.ring));
+    const pad = Math.max(bb.w, bb.h) * 0.03;
+    svg.setAttribute("viewBox", `${bb.x1 - pad} ${bb.y1 - pad} ${bb.w + 2 * pad} ${bb.h + 2 * pad}`);
 
-    for (const lot of cityData.lots) {
-      const lx = lot.x * CELL + INSET, ly = lot.y * CELL + INSET;
-      const selected = lot.id === selectedId;
-      let fill, stroke = "rgba(255,255,255,0.15)", sw = 1;
-      if (lot.magnet) fill = "#36506e";      // civic landmark (school/station/park/stadium)
-      else if (lot.biz && lot.biz.type === "casino") fill = "#5a2a6e";
-      else if (lot.biz) fill = "#2f5840";   // a business
-      else fill = "#3b6b4a";                // empty land
-      if (lot.mine) { stroke = "#f4d782"; sw = 3; }
-      else if (lot.rival) { stroke = "#d65a5a"; sw = 2.5; }
-      if (selected) { stroke = "#7ec8ff"; sw = 4; }
-
-      const label = lot.magnet
-        ? lot.magnet.name
-        : lot.biz
-        ? (lot.biz.operatorName || "frei kaufbar")
-        : (lot.landOwnerName ? (lot.forRent ? lot.landOwnerName + " 🔑" : lot.landOwnerName) : "Grundstück");
-      parts.push(`<g class="lot" data-lot-id="${lot.id}" style="cursor:pointer">`);
-      parts.push(`<rect x="${lx}" y="${ly}" width="${LOT}" height="${LOT}" rx="9" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`);
-      if (lot.emoji)
-        parts.push(`<text x="${lx + LOT / 2}" y="${ly + LOT / 2 + 2}" text-anchor="middle" dominant-baseline="central" font-size="34">${lot.emoji}</text>`);
-      else
-        parts.push(`<text x="${lx + LOT / 2}" y="${ly + LOT / 2 + 2}" text-anchor="middle" dominant-baseline="central" font-size="26" fill="rgba(255,255,255,0.4)">＋</text>`);
-      parts.push(`<text x="${lx + LOT / 2}" y="${ly + LOT - 7}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.85)">${escapeHtml(String(label)).slice(0, 14)}</text>`);
-      if (lot.pending >= 1) {
-        parts.push(`<circle cx="${lx + LOT - 10}" cy="${ly + 11}" r="9" fill="#f4d782" stroke="#7a5a10" stroke-width="1.5"/>`);
-        parts.push(`<text x="${lx + LOT - 10}" y="${ly + 12}" text-anchor="middle" dominant-baseline="central" font-size="11">💰</text>`);
-      }
+    const fs = Math.max(bb.w, bb.h) / 42;
+    const parts = [];
+    for (const d of rings) {
+      const fill = d.mine > 0 ? "#3d5a3f" : "#33463a";
+      const stroke = d.boss ? d.boss.color : "rgba(255,255,255,0.35)";
+      parts.push(`<g class="dist" data-d="${d.id}" style="cursor:pointer">`);
+      parts.push(`<path d="${pathOf(d.ring)}" fill="${fill}" stroke="${stroke}" stroke-width="${d.boss ? fs / 5 : fs / 8}" />`);
+      const [cx, cy] = ringCentroid(d.ring);
+      const marks = (d.hasCasino ? "🎰" : "") + (d.hasBank ? "🏦" : "");
+      const trendPct = Math.round((d.idx - 1) * 100);
+      const trend = `${d.idx >= 1 ? "📈" : "📉"} ${trendPct >= 0 ? "+" : ""}${trendPct}%`;
+      parts.push(`<text x="${cx}" y="${cy - fs * 0.9}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#fff" stroke="#20291f" stroke-width="${fs / 9}" paint-order="stroke">${escapeHtml(d.name)}${marks ? " " + marks : ""}</text>`);
+      parts.push(`<text x="${cx}" y="${cy + fs * 0.3}" text-anchor="middle" font-size="${fs * 0.62}" fill="rgba(255,255,255,0.85)" stroke="#20291f" stroke-width="${fs / 12}" paint-order="stroke">${d.total} Häuser · ${trend}${d.monos ? ` · ${d.monos}👑` : ""}</text>`);
+      if (d.boss)
+        parts.push(`<text x="${cx}" y="${cy + fs * 1.4}" text-anchor="middle" font-size="${fs * 0.68}" font-weight="800" fill="${d.boss.color}" stroke="#20291f" stroke-width="${fs / 12}" paint-order="stroke">🥇 ${escapeHtml(d.boss.name)}${d.boss.isMe ? " (Du)" : ""}</text>`);
       parts.push(`</g>`);
     }
     svg.innerHTML = parts.join("");
   }
 
-  $("#city-map").addEventListener("click", (e) => {
-    const g = e.target.closest(".lot");
-    if (!g) return;
-    selectedId = parseInt(g.dataset.lotId, 10);
-    renderMap();
-    renderDetail();
-  });
+  // ── District: real buildings, streets, territory colours ────────────────
+  function renderDistrict() {
+    const svg = $("#city-map");
+    if (!svg || !district) return;
+    $("#city-back").classList.remove("hidden");
+    $("#city-zoom").classList.remove("hidden");
+    $("#city-title").textContent = district.name;
+    const mine = district.buildings.filter((b) => b.mine).length;
+    const monoStr = district.monopolies.length
+      ? ` · 👑 ${district.monopolies.map((m) => escapeHtml(m.st)).slice(0, 3).join(", ")}${district.monopolies.length > 3 ? "…" : ""}`
+      : "";
+    $("#city-subtitle").innerHTML = `${district.buildings.length} echte Häuser${mine ? ` — <b>${mine}</b> deins` : ""}${monoStr}`;
+    const lp = $("#land-price");
+    if (lp) {
+      const pct = Math.round((district.idx - 1) * 100);
+      lp.innerHTML = `${district.idx >= 1 ? "📈" : "📉"} ${escapeHtml(district.name)}-Index <b>${idxStr(district.idx)}</b> (${pct >= 0 ? "+" : ""}${pct}% zum Normalpreis)`
+        + (district.boss ? ` · 🥇 <b style="color:${district.boss.color}">${escapeHtml(district.boss.name)}</b>` : "");
+    }
 
-  function lotById(id) {
-    return cityData && cityData.lots.find((l) => l.id === id);
+    const bb = bboxOf([district.ring.length > 2 ? district.ring : district.buildings.flatMap((b) => b.pts)]);
+    const pad = Math.max(bb.w, bb.h) * 0.04;
+    fitVb = { x: bb.x1 - pad, y: bb.y1 - pad, w: bb.w + 2 * pad, h: bb.h + 2 * pad };
+    if (!vb) vb = { ...fitVb };
+    setViewBox();
+
+    // Street name → monopoly (colours the whole street).
+    const monoBySt = {};
+    for (const m of district.monopolies) monoBySt[m.st] = m;
+
+    const parts = [];
+    if (district.ring.length > 2)
+      parts.push(`<path d="${pathOf(district.ring)}" fill="#2c3a30" stroke="#d9c463" stroke-width="${fitVb.w / 260}" stroke-dasharray="${fitVb.w / 60} ${fitVb.w / 90}" opacity="0.9"/>`);
+
+    for (const l of district.landmarks) {
+      if (l.pts && l.pts.length > 2)
+        parts.push(`<path d="${pathOf(l.pts)}" fill="${l.type === "park" ? "#31513a" : "#33494f"}" opacity="0.8"/>`);
+    }
+
+    // Streets: monopolised streets glow in the owner's colour. 👑
+    const monoLabelAt = {}; // st -> longest road midpoint for the label
+    for (const r of district.roads || []) {
+      const mono = r.n && monoBySt[r.n];
+      const w = r.w === 2 ? 9 : r.w === 1 ? 5.5 : 2.5;
+      const col = mono ? mono.color : r.w === 2 ? "#565b63" : r.w === 1 ? "#4a4f56" : "#42464c";
+      parts.push(`<path d="${openPath(r.pts)}" fill="none" stroke="${col}" stroke-width="${mono ? w + 2 : w}" stroke-linecap="round" stroke-linejoin="round" ${mono ? 'opacity="0.95"' : ""} style="pointer-events:none"/>`);
+      if (!mono && r.w >= 1)
+        parts.push(`<path d="${openPath(r.pts)}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="${w * 0.22}" stroke-dasharray="${w * 2.2} ${w * 2.6}" stroke-linecap="round" style="pointer-events:none"/>`);
+      if (mono) {
+        const cur = monoLabelAt[r.n];
+        if (!cur || r.pts.length > cur.len) monoLabelAt[r.n] = { len: r.pts.length, p: r.pts[Math.floor(r.pts.length / 2)] };
+      }
+    }
+
+    // Buildings: territory painting — owned houses fill in the owner's colour.
+    for (const b of district.buildings) {
+      const sel = b.id === selectedId;
+      let fill = CLS_FILL[b.cls] || "#3e5748";
+      let stroke = "rgba(0,0,0,0.35)", sw = 0.4;
+      if (b.owner) { fill = b.color; stroke = b.mine ? "#f4d782" : "rgba(0,0,0,0.5)"; sw = b.mine ? 1.6 : 0.7; }
+      if (sel) { stroke = "#7ec8ff"; sw = 2.4; }
+      const special = b.cls === "casino" || b.cls === "bank" || b.trophy;
+      parts.push(`<path class="bld" data-b="${b.id}" d="${pathOf(b.pts)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${special ? 'filter="url(#glow)"' : ""} style="cursor:pointer"/>`);
+      if (b.cls === "casino" || b.cls === "bank")
+        parts.push(`<text x="${b.c[0]}" y="${b.c[1]}" text-anchor="middle" dominant-baseline="central" font-size="${Math.max(14, Math.sqrt(b.a))}" style="pointer-events:none">${b.cls === "casino" ? "🎰" : "🏦"}</text>`);
+      else if (b.trophy)
+        parts.push(`<text x="${b.c[0]}" y="${b.c[1]}" text-anchor="middle" dominant-baseline="central" font-size="${Math.max(11, Math.sqrt(b.a) * 0.9)}" style="pointer-events:none">${district.trophies[b.trophy].emoji}</text>`);
+    }
+
+    for (const l of district.landmarks) {
+      parts.push(`<text x="${l.x}" y="${l.y}" text-anchor="middle" dominant-baseline="central" font-size="26" opacity="0.95" style="pointer-events:none">${LM_EMOJI[l.type] || "📍"}</text>`);
+    }
+
+    // Monopoly street labels on top.
+    for (const [st, info] of Object.entries(monoLabelAt)) {
+      const m = monoBySt[st];
+      parts.push(`<text x="${info.p[0]}" y="${info.p[1] - 8}" text-anchor="middle" font-size="13" font-weight="800" fill="${m.color}" stroke="#1c231b" stroke-width="2.5" paint-order="stroke" style="pointer-events:none">👑 ${escapeHtml(m.ownerName)}s ${escapeHtml(st)}</text>`);
+    }
+
+    svg.innerHTML = `<defs><filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#f4d782" flood-opacity="0.85"/></filter></defs>` + parts.join("");
   }
 
-  const money = (n) => (n >= 0 ? "" : "−") + fmt(Math.abs(n));
+  // ── Pan & zoom (district view) ───────────────────────────────────────────
+  const mapEl = $("#city-map");
+  const pointers = new Map();
+  let panStart = null, moved = false, pinchStart = null;
+
+  const clientToMap = (cx, cy) => {
+    const r = mapEl.getBoundingClientRect();
+    return [vb.x + ((cx - r.left) / r.width) * vb.w, vb.y + ((cy - r.top) / r.height) * vb.h];
+  };
+
+  function zoomAt(factor, cx, cy) {
+    if (view !== "district" || !vb) return;
+    const [mx, my] = cx != null ? clientToMap(cx, cy) : [vb.x + vb.w / 2, vb.y + vb.h / 2];
+    const minW = 60, maxW = fitVb.w * 1.4;
+    const nw = Math.min(maxW, Math.max(minW, vb.w * factor));
+    const scale = nw / vb.w;
+    vb = { x: mx - (mx - vb.x) * scale, y: my - (my - vb.y) * scale, w: nw, h: vb.h * scale };
+    setViewBox();
+  }
+
+  mapEl.addEventListener("pointerdown", (e) => {
+    if (view !== "district") return;
+    pointers.set(e.pointerId, e);
+    if (pointers.size === 1) { panStart = { x: e.clientX, y: e.clientY, vb: { ...vb } }; moved = false; }
+    else if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinchStart = { dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), vb: { ...vb } };
+      panStart = null;
+    }
+    mapEl.setPointerCapture(e.pointerId);
+  });
+  mapEl.addEventListener("pointermove", (e) => {
+    if (view !== "district" || !pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, e);
+    if (pointers.size === 2 && pinchStart) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      if (d > 0) {
+        const scale = pinchStart.dist / d;
+        const cx = (a.clientX + b.clientX) / 2, cy = (a.clientY + b.clientY) / 2;
+        vb = { ...pinchStart.vb };
+        setViewBox();
+        zoomAt(scale, cx, cy);
+      }
+      moved = true;
+    } else if (panStart) {
+      const r = mapEl.getBoundingClientRect();
+      const dx = ((e.clientX - panStart.x) / r.width) * panStart.vb.w;
+      const dy = ((e.clientY - panStart.y) / r.height) * panStart.vb.h;
+      if (Math.abs(e.clientX - panStart.x) + Math.abs(e.clientY - panStart.y) > 6) moved = true;
+      vb = { ...panStart.vb, x: panStart.vb.x - dx, y: panStart.vb.y - dy };
+      setViewBox();
+    }
+  });
+  const endPointer = (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinchStart = null;
+    if (pointers.size === 0) panStart = null;
+  };
+  mapEl.addEventListener("pointerup", endPointer);
+  mapEl.addEventListener("pointercancel", endPointer);
+  mapEl.addEventListener("wheel", (e) => {
+    if (view !== "district") return;
+    e.preventDefault();
+    zoomAt(e.deltaY > 0 ? 1.18 : 0.85, e.clientX, e.clientY);
+  }, { passive: false });
+
+  $("#zoom-in").addEventListener("click", () => zoomAt(0.7));
+  $("#zoom-out").addEventListener("click", () => zoomAt(1.45));
+  $("#zoom-fit").addEventListener("click", () => { if (fitVb) { vb = { ...fitVb }; setViewBox(); } });
+  $("#city-back").addEventListener("click", () => {
+    view = "overview"; district = null; selectedId = null; vb = null;
+    loadCity();
+  });
+
+  mapEl.addEventListener("click", (e) => {
+    if (moved) return;
+    const dEl = e.target.closest(".dist");
+    if (dEl && view === "overview") { loadDistrict(dEl.dataset.d); return; }
+    const bEl = e.target.closest(".bld");
+    if (bEl && view === "district") {
+      selectedId = parseInt(bEl.dataset.b, 10);
+      renderDistrict();
+      renderDetail();
+      $("#city-detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
+
+  // ── Detail panel ─────────────────────────────────────────────────────────
+  const bldById = (id) => district && district.buildings.find((b) => b.id === id);
+
+  const OSM_TYPE = {
+    house: "Wohnhaus", detached: "Einfamilienhaus (freistehend)", residential: "Wohngebäude",
+    apartments: "Mehrfamilienhaus", semidetached_house: "Doppelhaushälfte", terrace: "Reihenhaus",
+    bungalow: "Bungalow", farm: "Bauernhaus", farm_auxiliary: "Wirtschaftsgebäude", barn: "Scheune",
+    stable: "Stall", retail: "Geschäftshaus", commercial: "Gewerbegebäude", office: "Bürogebäude",
+    supermarket: "Supermarkt", industrial: "Industriegebäude", warehouse: "Lagerhalle",
+    manufacture: "Produktionshalle", hotel: "Hotel", church: "Kirche", chapel: "Kapelle",
+    school: "Schule", kindergarten: "Kindergarten", civic: "Öffentliches Gebäude",
+    public: "Öffentliches Gebäude", government: "Behörde", fire_station: "Feuerwache",
+    hospital: "Krankenhaus", university: "Hochschule", sports_hall: "Sporthalle",
+    garage: "Garage", bunker: "Bunker", cabin: "Hütte", allotment_house: "Gartenlaube",
+    train_station: "Bahnhofsgebäude", transportation: "Verkehrsgebäude", parking: "Parkhaus",
+    sports_centre: "Sportzentrum", riding_hall: "Reithalle", silo: "Silo", works: "Werk",
+    shop: "Ladengebäude", kiosk: "Kiosk", dormitory: "Wohnheim", hall: "Halle",
+    community_centre: "Gemeindezentrum", greenhouse: "Gewächshaus", shed: "Schuppen",
+  };
 
   function renderDetail() {
     const box = $("#city-detail");
     if (!box) return;
-    const lot = lotById(selectedId);
-    if (!lot) {
-      box.innerHTML = '<p class="muted small" style="text-align:center;padding:14px">Tippe ein Feld auf der Karte an.</p>';
+    if (view === "overview") {
+      // Overview panel = local news feed (Spekulation!).
+      let html = `<div class="cd-sub" style="margin-bottom:6px">📰 Orts-News</div>`;
+      if (overview && overview.news && overview.news.length) {
+        html += overview.news.map((n) => `<div class="cd-row ${n.up ? "news-up" : "news-down"}">${escapeHtml(n.txt)}</div>`).join("");
+        html += `<p class="muted small" style="margin:8px 0 0">News bewegen den Preis-Index des Ortsteils — kauf billig, verkauf teuer (Verkauf: 90%).</p>`;
+      } else {
+        html += `<p class="muted small" style="margin:0">Noch keine Ereignisse — die Indizes driften vor sich hin. Tippe einen Stadtteil an!</p>`;
+      }
+      box.innerHTML = html;
       return;
     }
-    // Civic landmark — not ownable; it pulls foot traffic to its neighbours.
-    if (lot.magnet) {
-      box.innerHTML = `<div class="cd-head">${lot.magnet.emoji} <b>${escapeHtml(lot.magnet.name)}</b></div>`
-        + `<div class="cd-section"><div class="cd-row muted">Öffentliches Gelände — nicht kaufbar.</div>`
-        + `<div class="cd-row">Zieht Laufkundschaft an: Betriebe auf den <b>8 Nachbarfeldern</b> machen mehr Umsatz — je nach Branche unterschiedlich stark. 🔥</div></div>`;
+    const b = bldById(selectedId);
+    if (!b) {
+      box.innerHTML = '<p class="muted small" style="text-align:center;padding:14px">Zoome rein und tippe ein Haus an.</p>';
       return;
     }
+    const c = district.classes[b.cls];
+    const troph = b.trophy ? district.trophies[b.trophy] : null;
+    const title = b.nm ? escapeHtml(b.nm) : escapeHtml(c.name);
+    const head = `<div class="cd-head">${troph ? troph.emoji : c.emoji} <b>${title}</b>${troph ? ` <span class="cd-trophy-tag">TROPHÄE</span>` : ""}</div>`;
 
-    const b = lot.biz;
-    const head = `<div class="cd-head">${lot.emoji || "🟩"} <b>${b ? escapeHtml(b.name) : "Leeres Grundstück"}</b></div>`;
-    let body = "";
-
-    // Per-business income to collect (you must tap each one).
-    if (lot.pending >= 1)
-      body += `<button class="btn-primary cd-collect" data-act="collect">💰 ${fmt(lot.pending)} 🪙 einsammeln</button>`;
-
-    // ── Lage (location) ──
-    const zone = lot.central >= 0.78 ? "Zentrum" : lot.central >= 0.45 ? "Innenstadt" : "Stadtrand";
-    const nearbyStr = lot.nearby && lot.nearby.length ? ` · nahe ${escapeHtml(lot.nearby.join(", "))}` : "";
-    body += `<div class="cd-row muted small">📍 Lage: <b>${zone}</b>${nearbyStr}</div>`;
-
-    // ── Grundstück (land) ──
-    body += `<div class="cd-section"><div class="cd-sub">🟩 Grundstück</div>`;
-    body += `<div class="cd-row">Besitzer: <b>${lot.landMine ? "Du" : lot.landOwnerName ? escapeHtml(lot.landOwnerName) : "— frei (Stadt) —"}</b></div>`;
-    if (lot.landOwner === null) {
-      body += `<button class="btn-primary cd-btn" data-act="buyLand">Grundstück kaufen — ${fmt(lot.price)} 🪙</button>`;
-    } else if (lot.landMine && !b) {
-      body += `<button class="btn-primary cd-btn" data-act="sellLand">An Markt verkaufen — ${fmt(lot.sellPrice)} 🪙</button>`;
-      body += lot.forRent
-        ? `<button class="cd-toggle on" data-act="setForRent" data-val="0">🔑 Vermietet — Vermietung beenden</button>`
-        : `<button class="cd-toggle" data-act="setForRent" data-val="1">🔑 Zum Bebauen vermieten</button>`;
-    }
+    // Info block: address, type, size.
+    let body = `<div class="cd-info">`;
+    body += `<div class="cd-row">📍 ${b.n ? `<b>${escapeHtml(b.n)}</b> · ` : ""}${escapeHtml(district.name)}</div>`;
+    const art = b.t ? (OSM_TYPE[b.t] || b.t.replace(/_/g, " ")) : c.name;
+    body += `<div class="cd-row">🏗️ Art: <b>${escapeHtml(art)}</b>${b.lv ? ` · ${b.lv} ${b.lv === 1 ? "Etage" : "Etagen"}` : ""}</div>`;
+    body += `<div class="cd-row">📐 ${fmt(b.a)} m² Grundfläche${b.lm ? " · ⭐ Top-Lage" : ""}</div>`;
+    // Residents (Wohnsitz flavour).
+    const residents = (district.residents && district.residents[b.id]) || [];
+    if (residents.length)
+      body += `<div class="cd-row">🛏️ Hier wohnt: <b>${residents.map(escapeHtml).join(", ")}</b></div>`;
     body += `</div>`;
 
-    // ── Unternehmen (business) ──
-    body += `<div class="cd-section"><div class="cd-sub">🏢 Unternehmen</div>`;
-    if (b) {
-      const p = b.pnl;
-      const leased = b.builtBy && b.operator && b.builtBy !== b.operator;
-      body += `<div class="cd-row">Betreiber: <b>${b.operatorMine ? "Du" : b.operatorName ? escapeHtml(b.operatorName) : "— frei kaufbar —"}</b></div>`;
-      if (leased) body += `<div class="cd-row">Gebäude: <b>${b.builtMine ? "Du (verpachtet)" : escapeHtml(b.builtByName)}</b></div>`;
-      body += `<div class="cd-pnl">`;
-      body += `<div><span>Einkommen</span><b class="pos">${fmt(p.income)} 🪙/Min</b></div>`;
-      if (p.rent > 0) body += `<div><span>Miete</span><b class="neg">−${fmt(p.rent)}/Min</b></div>`;
-      body += `<div class="cd-net"><span>= Gewinn</span><b class="${p.net >= 0 ? "pos" : "neg"}">${fmt(p.net)} 🪙/Min</b></div>`;
-      body += `</div>`;
-      if (p.demand && Math.abs(p.demand - 1) >= 0.02)
-        body += `<div class="cd-row muted small">📍 Standort-Nachfrage: <b>×${p.demand.toFixed(2)}</b>${p.demand >= 1.2 ? " 🔥" : p.demand <= 0.85 ? " 🥶" : ""}</div>`;
-      // Product / buff this business sells.
-      if (b.products && b.products.length) {
-        body += `<div class="cd-product"><div class="cd-prod-head">🛒 Produkte${b.products[0].owned ? " (dein Rabatt)" : ""}:</div>`;
-        for (const pr of b.products) {
-          body += `<button class="btn-primary cd-btn cd-prodbtn" data-act="buyProduct" data-pkey="${pr.key}">${pr.emoji} ${escapeHtml(pr.name)} — ${fmt(pr.payPrice)} 🪙<small>${escapeHtml(pr.desc)} · ${pr.mins} Min</small></button>`;
-        }
-        body += `</div>`;
-      }
-      const t = cityData.buildingTypes[b.type];
-      if (b.operator === null && b.builtBy === null) {
-        body += `<button class="btn-primary cd-btn" data-act="buyBiz">Unternehmen kaufen — ${fmt(t.cost)} 🪙</button>`;
-      } else if (b.operatorMine && b.builtMine) {
-        body += b.forLease
-          ? `<button class="cd-toggle on" data-act="setForLease" data-val="0">Verpachtung zurückziehen</button>`
-          : `<button class="cd-toggle" data-act="setForLease" data-val="1">📜 Betrieb verpachten (Miete kassieren)</button>`;
-      } else if (b.forLease && !b.operatorMine) {
-        body += `<button class="btn-primary cd-btn" data-act="lease">Betrieb pachten (zahlt ${fmt(t.rent)} 🪙/s Miete)</button>`;
-      } else if (!b.operatorMine && b.builtBy === b.operator) {
-        body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen (+50%) — ${fmt(Math.ceil(t.cost * cityData.buyoutPremium))} 🪙</button>`;
-      }
-      // IPO: list a company you own (not casino/bank) on the stock market.
-      if (b.builtMine && t.buildable) {
+    // Trophy perk.
+    if (troph)
+      body += `<div class="cd-row cd-buff ${b.mine ? "on" : ""}">${troph.emoji} <b>${escapeHtml(troph.title)}</b> — ${escapeHtml(troph.perk)}${b.mine ? ` · <span class="pos">deins!</span>` : ""}</div>`;
+    if (c.perk)
+      body += `<div class="cd-row cd-buff ${b.mine ? "on" : ""}">⭐ <b>${escapeHtml(c.perk)}</b></div>`;
+
+    // Street monopoly progress.
+    if (b.st && district.streetTotals[b.st]) {
+      const total = district.streetTotals[b.st];
+      const ownedByMe = district.buildings.filter((x) => x.st === b.st && x.mine).length;
+      const mono = district.monopolies.find((m) => m.st === b.st);
+      if (mono)
+        body += `<div class="cd-row cd-street">👑 <b style="color:${mono.color}">${escapeHtml(mono.ownerName)}s ${escapeHtml(b.st)}</b> — Straßen-Monopol!</div>`;
+      else
+        body += `<div class="cd-row cd-street">🏘️ <b>${escapeHtml(b.st)}</b>: ${ownedByMe}/${total} Häuser deins — bei ${total}/${total} färbt sich die Straße!</div>`;
+    }
+
+    body += `<div class="cd-section">`;
+    body += `<div class="cd-row">Besitzer: <b>${b.mine ? "Du" : b.ownerName ? `<span style="color:${b.color}">${escapeHtml(b.ownerName)}</span>` : "— frei —"}</b></div>`;
+    if (!b.owner) {
+      const discounted = b.myPrice != null && b.myPrice < b.price;
+      body += `<button class="btn-primary cd-btn" data-act="buy">Kaufen — ${fmt(discounted ? b.myPrice : b.price)} 🪙${discounted ? ` <s class="muted small">${fmt(b.price)}</s>` : ""}</button>`;
+      if (discounted) body += `<div class="cd-row muted small">🥇 Boss-Rabatt: −10 % in deinem Ortsteil.</div>`;
+    } else if (b.mine) {
+      body += `<button class="btn-primary cd-btn" data-act="sell">Verkaufen — ${fmt(b.sellPrice)} 🪙</button>`;
+      if (/^(kiosk|cafe|shop|hotel|factory)$/.test(b.cls)) {
         body += b.listed
           ? `<div class="cd-row" style="color:#7ec8ff">📈 Börsennotiert</div>`
-          : `<button class="cd-toggle" data-act="ipo">📈 An die Börse bringen (IPO — Kapital sammeln)</button>`;
+          : `<button class="cd-toggle" data-act="ipo">📈 An die Börse bringen (IPO)</button>`;
       }
-    } else if (lot.canBuildHere) {
-      const rented = !lot.landMine;
-      body += `<div class="cd-row">${rented ? "Auf gemietetem Land bauen (Miete fällt an):" : "Bebaue dein Grundstück:"}</div><div class="cd-builds">`;
-      for (const [id, t] of Object.entries(cityData.buildingTypes)) {
-        if (!t.buildable) continue;
-        const dm = lot.demandByType && lot.demandByType[id];
-        const boost = dm && dm >= 1.15 ? `<span class="cd-boost hot">×${dm.toFixed(2)} 🔥</span>`
-          : dm && dm <= 0.85 ? `<span class="cd-boost cold">×${dm.toFixed(2)}</span>` : "";
-        body += `<button class="cd-build" data-build="${id}">${t.emoji} ${escapeHtml(t.name)}<small>${fmt(t.cost)} 🪙</small>${boost}</button>`;
-      }
-      body += `</div>`;
     } else {
-      body += `<div class="cd-row muted">Erst das Grundstück kaufen (oder gemietetes Land), dann bauen.</div>`;
+      body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen (+50%) — ${fmt(Math.ceil(b.price * 1.5))} 🪙</button>`;
+      body += `<div class="cd-row muted small">Der Vorbesitzer wird zum Marktwert entschädigt.</div>`;
     }
+    // Wohnsitz: free flavour on any building.
+    const myAcc = window.Casino.getAccount && window.Casino.getAccount();
+    const myName = myAcc && myAcc.name;
+    const iLiveHere = myName && residents.some((r) => r.toLowerCase() === myName.toLowerCase());
+    body += iLiveHere
+      ? `<button class="cd-toggle on" data-act="moveout">🛏️ Du wohnst hier — ausziehen</button>`
+      : `<button class="cd-toggle" data-act="movein">🛏️ Hier einziehen (kostenlos, nur Spaß)</button>`;
     body += `</div>`;
-
     box.innerHTML = head + body;
   }
 
   $("#city-detail").addEventListener("click", (e) => {
-    const lot = lotById(selectedId);
-    if (!lot) return;
-    const actBtn = e.target.closest("[data-act]");
-    const buildBtn = e.target.closest("[data-build]");
-    if (actBtn) {
-      if (actBtn.dataset.act === "collect") { collectLot(lot.id); return; }
-      if (actBtn.dataset.act === "buyProduct") { buyProduct(lot.id, actBtn.dataset.pkey); return; }
-      const EVT = {
-        buyLand: "city:buyLand", sellLand: "city:sellLand", setForRent: "city:setForRent",
-        buyBiz: "city:buyBiz", takeover: "city:takeover", setForLease: "city:setForLease",
-        lease: "city:lease", ipo: "city:ipo",
-      };
-      const event = EVT[actBtn.dataset.act];
-      if (event) socket.emit(event, { plotId: lot.id, val: actBtn.dataset.val === "1" ? 1 : 0 }, onCityActionResult);
-    } else if (buildBtn) {
-      socket.emit("city:build", { plotId: lot.id, type: buildBtn.dataset.build }, onCityActionResult);
+    const b = bldById(selectedId);
+    if (!b || view !== "district") return;
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    const act = btn.dataset.act;
+    if (act === "movein" || act === "moveout") {
+      socket.emit("city:residence", { buildingId: act === "movein" ? b.id : null }, (res) => {
+        if (!res || !res.ok) { toast((res && res.error) || "Fehler."); return; }
+        toast(act === "movein" ? "🛏️ Eingezogen!" : "📦 Ausgezogen.");
+        loadDistrict(district.id, true);
+      });
+      return;
     }
+    const EVT = { buy: "city:buy", sell: "city:sell", takeover: "city:takeover", ipo: "city:ipo" };
+    const ev = EVT[act];
+    if (!ev) return;
+    socket.emit(ev, { buildingId: b.id, districtId: district.id }, (res) => {
+      if (!res || !res.ok) { toast((res && res.error) || "Aktion fehlgeschlagen."); return; }
+      applyAccount(res.account);
+      if (res.district) { district = res.district; district.residents = district.residents || {}; }
+      renderDistrict();
+      renderDetail();
+      socket.emit("city:state", (r2) => { if (r2 && r2.ok) { overview = r2.overview; renderEmpire(overview.me); } });
+      if (res.raised) toast(`🚀 Börsengang! +${fmt(res.raised)} 🪙 Kapital (${res.sym}).`);
+      else if (res.gain) toast(`✓ +${fmt(res.gain)} 🪙`);
+      else if (res.cost) toast(`✓ −${fmt(res.cost)} 🪙`);
+      else toast("✓ Erledigt");
+    });
   });
 
-  function buyProduct(plotId, productKey) {
-    socket.emit("city:buyProduct", { plotId, productKey }, (res) => {
-      if (!res || !res.ok) { toast((res && res.error) || "Kauf fehlgeschlagen."); return; }
-      applyAccount(res.account);
-      renderDetail();
-      const pr = res.product;
-      toast(`${pr.emoji} ${pr.name} gekauft — im Inventar (🛒 Markt)!`);
-    });
-  }
-
-  function onCityActionResult(res) {
-    if (!res || !res.ok) { toast((res && res.error) || "Aktion fehlgeschlagen."); return; }
-    applyAccount(res.account);
-    if (res.city) cityData = res.city;
-    renderMap();
-    renderDetail();
-    loadCity(); // refresh income rate/pending after the ownership change
-    if (res.raised) toast(`🚀 Börsengang! +${fmt(res.raised)} 🪙 Kapital (${res.sym}).`);
-    else if (res.gain) toast(`✓ +${fmt(res.gain)} 🪙`);
-    else if (res.cost) toast(`✓ −${fmt(res.cost)} 🪙`);
-    else toast("✓ Erledigt");
-  }
-
-  // Live refresh when anyone changes the shared city.
+  // Live refresh + news toasts.
   socket.on("city:update", () => {
     const screen = document.querySelector('[data-screen="businesses"]');
     if (screen && screen.classList.contains("active")) loadCity();
   });
+  socket.on("city:news", (n) => {
+    if (n && n.txt) toast(`📰 ${n.txt}`);
+  });
+  // Achievement unlocked → celebrate (only for me; big ones hit the chat anyway).
+  socket.on("ach:unlocked", (a) => {
+    const acc = window.Casino.getAccount && window.Casino.getAccount();
+    if (!a || !acc || !a.user || a.user.toLowerCase() !== acc.name.toLowerCase()) return;
+    toast(`🏆 Achievement: ${a.emoji} ${a.label} — +${fmt(a.reward)} 🪙!`);
+  });
 
   // ── Screen-entry hooks (called by app.js's showScreen) ───────────────────
   window.Casino._loadWork = loadWork;
-  window.Casino._loadBusinesses = () => { selectedId = null; loadCity(); };
+  window.Casino._loadBusinesses = () => {
+    view = "overview"; district = null; selectedId = null; vb = null;
+    loadCity();
+  };
 })();

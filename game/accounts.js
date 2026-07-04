@@ -17,18 +17,30 @@ const DATA_DIR = path.join(__dirname, "..", "data");
 const ACCOUNTS_FILE = path.join(DATA_DIR, "accounts.json");
 const SECRET_FILE = path.join(DATA_DIR, ".secret");
 
-const STARTING_CHIPS = 1000;
+const STARTING_CHIPS = 5000; // ein erster Abend Spielgeld — weit unter jedem Hauspreis
 // Hard anti-cheat ceiling: no account may hold more than this. Enforced on every
 // chip change AND swept periodically (see startChipCapSweep), so old exploited
 // balances (the bot-faucet trillions) get clamped down automatically and forever.
 const MAX_CHIPS = 100_000_000_000; // 100 Mrd. — far above any legit balance
-const DAILY_BONUS = 500;
+// The daily bonus is the economy's "salary": generous enough that a few days
+// of showing up fund a first house (~15-20k) — the games stay <100% RTP.
+const DAILY_BONUS = 2000;
 const DAILY_BONUS_COOLDOWN_MS = 20 * 60 * 60 * 1000; // 20h
 
 // Login streak: each consecutive bonus claim (within the grace window) adds
 // STREAK_STEP to the bonus, capped at STREAK_MAX extra days.
-const STREAK_STEP = 100;
+const STREAK_STEP = 500;
 const STREAK_MAX = 10; // streak day 11+ no longer increases the bonus
+
+// Street tribute: each complete street monopoly adds to the daily bonus.
+const STREET_TRIBUTE = 1000;
+const STREET_TRIBUTE_CAP = 10; // at most 10 streets pay tribute
+
+// Cashback (like a real casino's loyalty program): a cut of your house-game
+// losses since the last bonus claim comes back with the next daily. Bounded by
+// actual losses → mathematically safe, can't be farmed.
+const CASHBACK_RATE = 0.10;
+const CASHBACK_CAP = 50000;
 const STREAK_GRACE_MS = 2 * DAILY_BONUS_COOLDOWN_MS; // miss this window → streak resets
 
 // Pleite-Schutz: keep a broke player in the game without waiting for the bonus.
@@ -165,17 +177,17 @@ function grantBuff(name, type, mins, mult) {
   save();
 }
 
-/** Multiplier for a buff (1 if inactive). For flag buffs like "vip", mult is 2. */
+/** Multiplier for a legacy timed buff (1 if inactive). Ownership no longer
+ *  grants buffs — city perks come from unique TROPHY buildings instead
+ *  (city.hasTrophy), wired directly where they apply. */
 function buffMult(name, type) {
   const acc = get(name);
   const b = acc && acc.buffs && acc.buffs[type];
   return b && b.until > Date.now() ? (b.mult || 1) : 1;
 }
-/** Whether a (flag) buff is currently active. */
+/** Whether a (legacy timed) buff is currently active. */
 function hasBuff(name, type) {
-  const acc = get(name);
-  const b = acc && acc.buffs && acc.buffs[type];
-  return !!(b && b.until > Date.now());
+  return buffMult(name, type) > 1;
 }
 
 // ─── Inventory (product items you can use or resell) ────────────────────────
@@ -211,6 +223,7 @@ function publicAccount(acc) {
     unlocked: acc.unlocked || ["lucky7"],
     netWorth: _netWorth(acc),
     buffs: acc.buffs ? activeBuffs(acc) : {},
+    residence: acc.residence != null ? { id: acc.residence, ...city.bldInfo(acc.residence) } : null,
   };
 }
 
@@ -286,12 +299,21 @@ function claimDailyBonus(name) {
   const onTime = acc.lastBonusAt && now - acc.lastBonusAt <= STREAK_GRACE_MS;
   acc.bonusStreak = onTime ? (acc.bonusStreak || 1) + 1 : 1;
   const streakBonus = Math.min(acc.bonusStreak - 1, STREAK_MAX) * STREAK_STEP;
-  const vip = hasBuff(acc.name, "vip") ? 2 : 1; // VIP-Pass doubles the bonus
-  const amount = (DAILY_BONUS + streakBonus) * vip;
+  const key = normalizeName(acc.name);
+  // Bahnhofs-Baron trophy: commuters bring money — daily bonus ×1.5.
+  const pendler = city.hasTrophy(key, "bahnhof") ? 1.5 : 1;
+  const base = Math.round((DAILY_BONUS + streakBonus) * pendler);
+  // Street tribute: complete streets pay when you show up.
+  const streets = Math.min(city.streetCount(key), STREET_TRIBUTE_CAP);
+  const tribute = streets * STREET_TRIBUTE;
+  // Loss cashback since the last claim.
+  const cashback = Math.min(CASHBACK_CAP, Math.floor((acc.lossSince || 0) * CASHBACK_RATE));
+  acc.lossSince = 0;
+  const amount = base + tribute + cashback;
   acc.chips += amount;
   acc.lastBonusAt = now;
   save();
-  return { ok: true, amount, streak: acc.bonusStreak, account: publicAccount(acc) };
+  return { ok: true, amount, base, tribute, streets, cashback, streak: acc.bonusStreak, account: publicAccount(acc) };
 }
 
 /**
@@ -304,10 +326,13 @@ function rescue(name) {
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
   if (acc.chips >= RESCUE_THRESHOLD)
     return { ok: false, error: "Du hast noch genug Chips." };
+  // Kirchenpatron trophy: blessed — double top-up, half cooldown.
+  const blessed = city.hasTrophy(normalizeName(acc.name), "kirche");
+  const cooldown = blessed ? RESCUE_COOLDOWN_MS / 2 : RESCUE_COOLDOWN_MS;
   const since = Date.now() - (acc.lastRescueAt || 0);
-  if (since < RESCUE_COOLDOWN_MS)
-    return { ok: false, error: "Soforthilfe gerade erst genutzt.", msLeft: RESCUE_COOLDOWN_MS - since };
-  const target = RESCUE_TO * (hasBuff(acc.name, "vip") ? 2 : 1); // VIP-Pass doubles the top-up
+  if (since < cooldown)
+    return { ok: false, error: "Soforthilfe gerade erst genutzt.", msLeft: cooldown - since };
+  const target = Math.round(RESCUE_TO * (blessed ? 2 : 1));
   const amount = target - acc.chips;
   acc.chips = target;
   acc.lastRescueAt = Date.now();
@@ -337,6 +362,11 @@ const CASINO_RAKE = 0.05; // 5% of a player's house-game losses go to the casino
  * raked to whoever owns the Casino in the shared city. Pass house=false for
  * player-vs-player games (poker, PvP slots) so they stay zero-sum.
  */
+// Listeners fired after every recorded hand (achievements etc.) — registered
+// via onHand() to avoid a circular require.
+const handListeners = [];
+const onHand = (cb) => handListeners.push(cb);
+
 function recordHand(name, winnings, house = true, game = null) {
   const acc = get(name);
   if (!acc) return;
@@ -355,9 +385,9 @@ function recordHand(name, winnings, house = true, game = null) {
   } else if (winnings < 0) {
     const loss = -winnings;
     if (loss > acc.stats.biggestLoss) acc.stats.biggestLoss = loss;
-    // Casino owner's house edge: a cut of the loss materialises as their income
-    // (unless the player holds a VIP-Pass, which exempts their losses from rake).
-    if (house && !hasBuff(name, "vip")) {
+    if (house) {
+      acc.lossSince = (acc.lossSince || 0) + loss; // feeds the daily cashback
+      // Casino owner's house edge: a cut of the loss materialises as their income.
       const owner = city.casinoOwner();
       if (owner && owner !== normalizeName(name)) {
         const rake = Math.floor(loss * CASINO_RAKE);
@@ -367,10 +397,13 @@ function recordHand(name, winnings, house = true, game = null) {
     }
   }
   save();
+  for (const cb of handListeners) { try { cb(name, winnings, house, game); } catch {} }
 }
 
 const LEADERBOARD_CATS = {
   rich:    { sort: (a) => a.chips,                    label: "💰 Reichste" },
+  estate:  { sort: (a) => city.ownerValue(normalizeName(a.name)), label: "🏘️ Immobilien-Mogul" },
+  streets: { sort: (a) => city.streetCount(normalizeName(a.name)), label: "👑 Straßenkönig" },
   bigwin:  { sort: (a) => (a.stats && a.stats.biggestWin) || 0,  label: "🎰 Größter Einzelgewinn" },
   bigloss: { sort: (a) => (a.stats && a.stats.biggestLoss) || 0, label: "💸 Größter Einzelverlust" },
   games:   { sort: (a) => (a.stats && a.stats.gamesPlayed) || 0, label: "🎲 Aktivste" },
@@ -462,6 +495,27 @@ function listAll() {
   }));
 }
 
+// ─── Wohnsitz (residence — pure social flavour, free) ──────────────────────
+function setResidence(name, buildingId) {
+  const acc = get(name);
+  if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  if (buildingId == null) { delete acc.residence; save(); return { ok: true, residence: null }; }
+  if (!city.bldExists(buildingId)) return { ok: false, error: "Gebäude nicht gefunden." };
+  acc.residence = Number(buildingId);
+  save();
+  return { ok: true, residence: acc.residence };
+}
+
+/** Map buildingId -> [names] of everyone who set their residence there. */
+function residentsByBuilding() {
+  const out = {};
+  for (const acc of Object.values(accounts)) {
+    if (acc.residence == null) continue;
+    (out[acc.residence] = out[acc.residence] || []).push(acc.name);
+  }
+  return out;
+}
+
 /** Whether a machine is unlocked for this account (lucky7 is always free). */
 function isUnlocked(name, machineId) {
   if (machineId === "lucky7") return true;
@@ -512,4 +566,7 @@ module.exports = {
   getInventory,
   addItem,
   removeItem,
+  setResidence,
+  residentsByBuilding,
+  onHand,
 };

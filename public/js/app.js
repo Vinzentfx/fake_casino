@@ -160,6 +160,19 @@ function renderProfile() {
   $("#profile-since").textContent = acc.createdAt
     ? new Date(acc.createdAt).toLocaleDateString("de-DE")
     : "–";
+  // Achievements/badges (server-authoritative list).
+  socket.emit("ach:list", (res) => {
+    const box = $("#profile-badges");
+    if (!box) return;
+    if (!res || !res.ok) { box.innerHTML = '<p class="muted small">–</p>'; return; }
+    const unlocked = res.list.filter((a) => a.unlocked).length;
+    box.innerHTML = `<p class="muted small" style="margin:0 0 8px">${unlocked}/${res.list.length} freigeschaltet</p>`
+      + res.list.map((a) =>
+        `<div class="badge ${a.unlocked ? "on" : ""}" title="${escapeHtml(a.desc)} · +${a.reward.toLocaleString("de-DE")} 🪙">` +
+        `<span class="badge-emoji">${a.unlocked ? a.emoji : "🔒"}</span><span class="badge-label">${escapeHtml(a.label)}</span>` +
+        `<small>${a.unlocked ? "✓" : escapeHtml(a.desc)}</small></div>`
+      ).join("");
+  });
 }
 
 // ============================================================
@@ -202,8 +215,11 @@ async function claimBonus() {
   try {
     const data = await api("/api/daily-bonus", { name: state.account.name });
     setAccount(data.account);
+    const extras = [];
+    if (data.tribute) extras.push(`👑 +${data.tribute.toLocaleString("de-DE")} Straßen-Tribut (${data.streets} Straßen)`);
+    if (data.cashback) extras.push(`💸 +${data.cashback.toLocaleString("de-DE")} Cashback`);
     const streakNote = data.streak > 1 ? ` 🔥 ${data.streak}-Tage-Serie!` : "";
-    toast(`+${data.amount} 🪙 Bonus erhalten!${streakNote}`);
+    toast(`+${data.amount.toLocaleString("de-DE")} 🪙 Bonus!${streakNote}${extras.length ? " · " + extras.join(" · ") : ""}`);
   } catch (err) {
     toast(err.message || "Bonus nicht verfügbar.");
   }
