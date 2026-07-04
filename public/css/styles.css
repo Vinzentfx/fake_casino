@@ -1991,13 +1991,19 @@ button { font-family: inherit; cursor: pointer; }
 .badge-grid > p { grid-column: 1 / -1; }
 .badge {
   display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
-  padding: 10px 6px; border-radius: 12px; opacity: 0.45;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  padding: 10px 6px; border-radius: 12px;
+  background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12);
 }
-.badge.on { opacity: 1; background: rgba(244,215,130,0.10); border-color: rgba(244,215,130,0.4); }
+.badge .badge-label { color: rgba(255,255,255,0.55); }
+.badge small { color: rgba(255,255,255,0.45); }
+.badge .badge-emoji { opacity: 0.5; }
+.badge.on { background: rgba(0,0,0,0.45); border-color: rgba(244,215,130,0.55); }
+.badge.on .badge-label { color: #ffe9a8; }
+.badge.on small { color: #9fdcaa; }
+.badge.on .badge-emoji { opacity: 1; }
 .badge-emoji { font-size: 1.5rem; }
 .badge-label { font-weight: 800; font-size: 0.78rem; }
-.badge small { font-size: 0.64rem; opacity: 0.65; line-height: 1.25; }
+.badge small { font-size: 0.64rem; line-height: 1.25; }
 
 /* "Meine Immobilien" list inside the empire panel. */
 .empire-list { width: 100%; margin-top: 8px; }

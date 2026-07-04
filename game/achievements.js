@@ -38,7 +38,7 @@ const DEFS = [
     check: (a) => (a.chips || 0) >= 1000000 },
   { id: "chips_100m",  emoji: "👑", label: "Krösus",          desc: "Kontostand über 100 Millionen",          reward: 500000,
     check: (a) => (a.chips || 0) >= 100000000 },
-  { id: "streak_7",    emoji: "📅", label: "Wochen-Streak",   desc: "7 Tage in Folge den Bonus abgeholt",     reward: 25000,
+  { id: "streak_7",    emoji: "📅", label: "Bonus-Serie",     desc: "Hol den Stunden-Bonus 7× in Folge",      reward: 25000,
     check: (a) => (a.bonusStreak || 0) >= 7 },
   // ── Stadt ────────────────────────────────────────────────────────────────
   { id: "first_house", emoji: "🏠", label: "Eigenheim",       desc: "Kauf dein erstes Haus",                  reward: 2500,

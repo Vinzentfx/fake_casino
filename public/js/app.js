@@ -209,7 +209,7 @@ $("#login-form").addEventListener("submit", async (e) => {
   }
 });
 
-// ---- Täglicher Bonus ----
+// ---- Stunden-Bonus ----
 async function claimBonus() {
   if (!state.account) return;
   try {
@@ -218,7 +218,7 @@ async function claimBonus() {
     const extras = [];
     if (data.tribute) extras.push(`👑 +${data.tribute.toLocaleString("de-DE")} Straßen-Tribut (${data.streets} Straßen)`);
     if (data.cashback) extras.push(`💸 +${data.cashback.toLocaleString("de-DE")} Cashback`);
-    const streakNote = data.streak > 1 ? ` 🔥 ${data.streak}-Tage-Serie!` : "";
+    const streakNote = data.streak > 1 ? ` 🔥 ${data.streak}er-Serie!` : "";
     toast(`+${data.amount.toLocaleString("de-DE")} 🪙 Bonus!${streakNote}${extras.length ? " · " + extras.join(" · ") : ""}`);
   } catch (err) {
     toast(err.message || "Bonus nicht verfügbar.");
@@ -476,6 +476,35 @@ $("#admin-set-chips-btn").addEventListener("click", () => {
       toast(msg);
       $("#admin-target-ban").value = "";
       loadAdminAccounts();
+    });
+  });
+});
+
+// ---- Admin: Test-Tools ----
+$("#admin-force-win-btn")?.addEventListener("click", () => {
+  socket.emit("admin:slotsForceWin", (r) => {
+    if (r && r.ok) toast("🎰 Scharf! Dein nächster Slot-Spin ist der MAXIMALGEWINN.");
+    else toast((r && r.error) || "Fehler.");
+  });
+});
+
+$("#admin-city-event-btn")?.addEventListener("click", () => {
+  socket.emit("admin:cityEvent", {}, (r) => {
+    if (r && r.ok) toast(`📰 Ausgelöst: ${r.event.txt}`);
+    else toast((r && r.error) || "Fehler.");
+  });
+});
+
+["admin-reset-bonus-btn", "admin-reset-ach-btn"].forEach((id) => {
+  $("#" + id)?.addEventListener("click", () => {
+    const errEl = $("#admin-test-error");
+    errEl.textContent = "";
+    const target = $("#admin-target-test").value.trim();
+    if (!target) { errEl.textContent = "Spielername eingeben."; return; }
+    const event = id === "admin-reset-bonus-btn" ? "admin:resetBonus" : "admin:resetAchievements";
+    socket.emit(event, { target }, (res) => {
+      if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
+      toast(id === "admin-reset-bonus-btn" ? `${target}: Bonus & Soforthilfe wieder verfügbar.` : `${target}: Achievements zurückgesetzt.`);
     });
   });
 });

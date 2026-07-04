@@ -2,6 +2,7 @@
 
 const OWNER = "vincent";
 const city = require("./city");
+const slots = require("./slots");
 
 function setupAdmin(io, accounts) {
   io.on("connection", (socket) => {
@@ -107,6 +108,50 @@ function setupAdmin(io, accounts) {
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       city.resetCity();
       io.emit("city:update");
+      ack({ ok: true });
+    });
+
+    // ── Test-Tools (owner only) ──────────────────────────────────────────
+
+    // Arm a one-shot MAX WIN on the owner's next slot spin (animation showcase).
+    socket.on("admin:slotsForceWin", (ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      slots.armForceWin(socket.data.account);
+      ack({ ok: true });
+    });
+
+    // Fire a city news event now (random district if none given).
+    socket.on("admin:cityEvent", ({ districtId } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const event = city.fireEvent(districtId || null);
+      if (!event) return ack({ ok: false, error: "Kein Event möglich (Karte leer)." });
+      io.emit("city:update");
+      io.emit("city:news", event);
+      ack({ ok: true, event });
+    });
+
+    // Reset a player's daily-bonus & rescue cooldowns (faucet testing).
+    socket.on("admin:resetBonus", ({ target } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const acc = accounts.get(String(target || "").toLowerCase());
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      acc.lastBonusAt = 0;
+      acc.lastRescueAt = 0;
+      accounts.save();
+      ack({ ok: true });
+    });
+
+    // Wipe a player's achievements (re-test unlock flow; already paid rewards stay).
+    socket.on("admin:resetAchievements", ({ target } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const acc = accounts.get(String(target || "").toLowerCase());
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      acc.ach = {};
+      accounts.save();
       ack({ ok: true });
     });
   });

@@ -345,6 +345,12 @@
       btn.style.display = "";
       btn.textContent = `🎁 Bonus ${cost.toLocaleString("de-DE")}`;
     } else btn.style.display = "none";
+    // Admin-only showcase button: arm a guaranteed max win on the next spin.
+    const fw = $("#force-win-btn");
+    if (fw) {
+      const acc = window.Casino.getAccount && window.Casino.getAccount();
+      fw.style.display = acc && acc.name && acc.name.toLowerCase() === "vincent" && !pvpMode ? "" : "none";
+    }
   }
   $("#bet-down").addEventListener("click", () => {
     if (spinning || freeActive) return;
@@ -475,6 +481,16 @@
   $("#auto-roll").addEventListener("click", () => setAuto(!autoRoll));
 
   // Bonus-Buy: pay to start free spins immediately.
+  $("#force-win-btn").addEventListener("click", () => {
+    socket.emit("admin:slotsForceWin", (r) => {
+      if (!r || !r.ok) { window.Casino.toast((r && r.error) || "Kein Zugriff."); return; }
+      const fw = $("#force-win-btn");
+      fw.textContent = "🎯 SCHARF";
+      setTimeout(() => (fw.textContent = "🎯 Max"), 4000);
+      window.Casino.toast("🎯 Nächster Spin = Maximalgewinn — zieh den Hebel!");
+    });
+  });
+
   $("#buy-bonus").addEventListener("click", () => {
     if (!machine || !machine.buyBonus || spinning || freeActive || pvpMode) return;
     const bet = machine.bets[betIndex];
