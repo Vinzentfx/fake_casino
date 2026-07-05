@@ -33,6 +33,10 @@ const DAILY_BONUS_COOLDOWN_MS = 60 * 60 * 1000; // 1h
 // STREAK_STEP, capped at STREAK_MAX extra claims → max +2.500.
 const STREAK_STEP = 250;
 const STREAK_MAX = 10;
+// Grace window to keep the streak alive: claim at least once every ~26h.
+// (Was tied to the old 20h cooldown → after the hourly switch it was only 2h,
+// so streaks silently reset overnight.)
+const STREAK_GRACE_HOURS = 26;
 
 // Street tribute: each complete street monopoly adds to every hourly bonus.
 // The weekly GOLDEN street counts double.
@@ -52,7 +56,7 @@ const CASHBACK_RATE = 0.10;
 const CASHBACK_CAP = 25000;          // per hourly claim
 const CASHBACK_RATE_BLESSED = 0.15;  // ⛪ Kirche
 const CASHBACK_CAP_BLESSED = 50000;  // ⛪ Kirche
-const STREAK_GRACE_MS = 2 * DAILY_BONUS_COOLDOWN_MS; // miss this window → streak resets
+const STREAK_GRACE_MS = STREAK_GRACE_HOURS * 60 * 60 * 1000; // miss this window → streak resets
 
 // Pleite-Schutz: keep a broke player in the game without waiting for the bonus.
 const RESCUE_THRESHOLD = 50;       // only available when chips are below this

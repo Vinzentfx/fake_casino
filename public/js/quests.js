@@ -29,6 +29,18 @@
     </div>`;
   }
 
+  function repeatRow(q) {
+    const pct = Math.min(100, Math.round((100 * q.prog) / q.target));
+    return `<div class="quest ${q.maxed ? "done" : ""}">
+      <div class="quest-top">
+        <span class="quest-label">${escapeHtml(q.label)}</span>
+        <b class="quest-reward">${q.maxed ? "🔒 morgen wieder" : "+" + fmt(q.reward) + " 🪙"}</b>
+      </div>
+      <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
+      <div class="quest-prog">${q.prog}/${q.target} · heute ${q.done}/${q.cap}× geschafft</div>
+    </div>`;
+  }
+
   function load() {
     socket.emit("quest:list", (res) => {
       const dBox = $("#quest-dailies"), wBox = $("#quest-weeklies");
@@ -37,6 +49,8 @@
         if (wBox) wBox.innerHTML = "";
         return;
       }
+      const rBox = $("#quest-repeat");
+      if (rBox) rBox.innerHTML = (res.repeatable || []).map(repeatRow).join("");
       if (dBox) dBox.innerHTML = res.dailies.map(questRow).join("");
       if (wBox) wBox.innerHTML = res.weeklies.map(questRow).join("");
       const dt = $("#quest-day-timer"), wt = $("#quest-week-timer");
