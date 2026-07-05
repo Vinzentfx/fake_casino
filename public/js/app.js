@@ -145,9 +145,7 @@ function renderTopbar() {
 function refreshBonusButton() {
   const acc = state.account;
   if (!acc) return;
-  const ready = Date.now() - (acc.lastBonusAt || 0) >= state.bonusCooldownMs;
-  $("#bonus-btn").disabled = !ready;
-  $("#bonus-btn").textContent = ready ? "🎁 Bonus" : "🎁 ✓";
+  updateBonusUI();
 }
 
 function renderProfile() {
@@ -223,6 +221,30 @@ $("#login-form").addEventListener("submit", async (e) => {
     errEl.textContent = err.message;
   }
 });
+
+// ---- Stunden-Bonus: Live-Countdown auf Button + Lobby-Kachel ----
+function updateBonusUI() {
+  const acc = state.account;
+  const btn = $("#bonus-btn");
+  const tileSpan = $("#bonus-tile span");
+  if (!acc || !btn) return;
+  const left = state.bonusCooldownMs - (Date.now() - (acc.lastBonusAt || 0));
+  const ready = left <= 0;
+  btn.disabled = !ready;
+  if (ready) {
+    btn.textContent = "🎁 Bonus";
+    if (tileSpan) tileSpan.textContent = "Stunden-Bonus abholen!";
+    $("#bonus-tile")?.classList.add("bonus-ready");
+  } else {
+    const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+    const t = (left >= 3600000 ? Math.floor(left / 3600000) + ":" : "") +
+      String(m % 60).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    btn.textContent = `⏳ ${t}`;
+    if (tileSpan) tileSpan.textContent = `Bonus in ${t}`;
+    $("#bonus-tile")?.classList.remove("bonus-ready");
+  }
+}
+setInterval(updateBonusUI, 1000);
 
 // ---- Stunden-Bonus ----
 async function claimBonus() {
