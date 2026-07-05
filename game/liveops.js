@@ -84,14 +84,17 @@ function startTourney(minutes, prize) {
   return { ok: true };
 }
 
-/** Record a slot win toward the running tournament (called from slots.js). */
-function recordTourneyWin(name, win) {
-  if (!tourneyActive() || win <= 0) return;
+/** Record a slot win toward the running tournament (called from slots.js).
+ *  Ranked by the win MULTIPLE (win / bet), not the absolute win, so a small
+ *  better with a lucky big multiplier can beat a whale — fair across stakes. */
+function recordTourneyWin(name, win, bet) {
+  if (!tourneyActive() || win <= 0 || !bet || bet <= 0) return;
+  const mult = win / bet;
   const key = String(name).trim().toLowerCase();
   const acc = _accounts && _accounts.get(key);
   const cur = state.tourney.best[key];
-  if (!cur || win > cur.win) {
-    state.tourney.best[key] = { name: acc ? acc.name : key, win };
+  if (!cur || mult > cur.mult) {
+    state.tourney.best[key] = { name: acc ? acc.name : key, mult: Math.round(mult * 100) / 100, win };
     save();
     broadcast();
   }
@@ -103,14 +106,14 @@ function settleTourney() {
   save();
   if (!t) return;
   let winner = null;
-  for (const [key, v] of Object.entries(t.best)) if (!winner || v.win > winner.win) winner = { key, ...v };
+  for (const [key, v] of Object.entries(t.best)) if (!winner || v.mult > winner.mult) winner = { key, ...v };
   if (winner && _accounts) {
     _accounts.adjustChips(winner.key, t.prize);
     const acc = _accounts.get(winner.key);
     if (acc) { acc.tourneyWins = (acc.tourneyWins || 0) + 1; _accounts.save(); }
     try { require("./achievements").check(winner.key); } catch {}
-    if (_io) chat.announce(_io, `🏆 TURNIER-SIEG: ${winner.name} mit einem ${winner.win.toLocaleString("de-DE")} 🪙 Gewinn — Preis: ${t.prize.toLocaleString("de-DE")} 🪙!`);
-    if (_io) _io.emit("liveops:tourneyWin", { name: winner.name, win: winner.win, prize: t.prize });
+    if (_io) chat.announce(_io, `🏆 TURNIER-SIEG: ${winner.name} mit ${winner.mult}× Einsatz — Preis: ${t.prize.toLocaleString("de-DE")} 🪙!`);
+    if (_io) _io.emit("liveops:tourneyWin", { name: winner.name, mult: winner.mult, prize: t.prize });
   } else if (_io) {
     chat.announce(_io, "🏁 Turnier vorbei — niemand hat gespielt, kein Sieger.");
   }
@@ -123,7 +126,7 @@ function publicState() {
   const t = state.tourney;
   let board = null;
   if (tourneyActive()) {
-    board = Object.values(t.best).sort((a, b) => b.win - a.win).slice(0, 5);
+    board = Object.values(t.best).sort((a, b) => b.mult - a.mult).slice(0, 5);
   }
   return {
     happyUntil: state.happyUntil,
