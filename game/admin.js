@@ -3,6 +3,7 @@
 const OWNER = "vincent";
 const city = require("./city");
 const slots = require("./slots");
+const liveops = require("./liveops");
 
 function setupAdmin(io, accounts) {
   io.on("connection", (socket) => {
@@ -126,6 +127,22 @@ function setupAdmin(io, accounts) {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       slots.armForceWin(socket.data.account);
+      ack({ ok: true });
+    });
+
+    // ── Live-Ops (owner only) ────────────────────────────────────────────
+    socket.on("admin:happyHour", ({ on, minutes } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (on) liveops.startHappy(minutes || 60); else liveops.stopHappy();
+      ack({ ok: true });
+    });
+
+    socket.on("admin:tourney", ({ on, minutes, prize } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (on) { const r = liveops.startTourney(minutes || 10, prize || 100000); return ack(r); }
+      liveops.stopTourney();
       ack({ ok: true });
     });
 

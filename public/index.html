@@ -56,6 +56,7 @@
     <!-- ===================== LOBBY / HOMESCREEN ===================== -->
     <section class="screen" data-screen="lobby">
       <div class="lobby-inner">
+        <div id="liveops-banner" class="liveops-banner hidden"></div>
         <div class="open-lobbies-head">
           <h2 class="section-title">🎮 Offene Lobbys</h2>
           <button class="chip-btn" id="lobby-refresh" title="Aktualisieren">↻</button>
@@ -781,6 +782,17 @@
           <button class="btn-primary" id="admin-force-win-btn">🎰 Nächster Slot-Spin = MAXIMALGEWINN (für dich)</button>
           <button class="btn-primary" id="admin-city-event-btn">📰 Zufälliges Orts-Event auslösen</button>
           <button class="btn-primary" id="admin-new-week-btn">🗓️ Wochen-Rollover jetzt (Pokal + neue Goldene Straße)</button>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <input id="admin-happy-mins" type="number" min="1" max="240" value="60" style="width:70px" title="Minuten" />
+            <button class="btn-primary" id="admin-happy-on-btn">🍹 Happy Hour AN</button>
+            <button class="btn-danger" id="admin-happy-off-btn">Happy Hour AUS</button>
+          </div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <input id="admin-tourney-mins" type="number" min="1" max="120" value="10" style="width:60px" title="Minuten" />
+            <input id="admin-tourney-prize" type="number" min="0" step="10000" value="100000" style="width:110px" title="Preis" />
+            <button class="btn-primary" id="admin-tourney-on-btn">🏁 Turnier starten</button>
+            <button class="btn-danger" id="admin-tourney-off-btn">Beenden</button>
+          </div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
             <input id="admin-target-test" type="text" maxlength="16" placeholder="Spielername" style="flex:1;min-width:120px" />
             <button class="btn-primary" id="admin-reset-bonus-btn">🎁 Bonus-Cooldown resetten</button>

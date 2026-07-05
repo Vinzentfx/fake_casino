@@ -18,6 +18,7 @@
  */
 
 const crypto = require("crypto");
+const liveops = require("./liveops");
 
 // ---------------------------------------------------------------------------
 // Machine definitions
@@ -629,7 +630,7 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
 
 function setupSlots(io, accounts) {
   io.on("connection", (socket) => {
-    socket.on("slots:machines", (ack) => ack && ack({ machines: publicMachines(), jackpot: jackpotPot() }));
+    socket.on("slots:machines", (ack) => ack && ack({ machines: publicMachines(), jackpot: jackpotPot(), slotOfDay: liveops.slotOfDay() }));
 
     // Unlock a machine for the logged-in account.
     socket.on("slots:unlock", ({ machineId } = {}, ack) => {
@@ -702,6 +703,14 @@ function setupSlots(io, accounts) {
         }
       }
 
+      // Slot des Tages: bonus on wins on the day's machine (capped/day, not on
+      // showcase spins). Boosts the paid win but keeps its own tracker.
+      let sotdBonus = 0;
+      if (!showcase && totalWin > 0) {
+        sotdBonus = liveops.slotOfDayBonus(accounts.get(socket.data.account), machineId, totalWin);
+        if (sotdBonus > 0) { totalWin += sotdBonus; result.totalWin = totalWin; result.sotdBonus = sotdBonus; }
+      }
+
       // Pay out (no account:update — client applies bet at spin start, win after reveal).
       // Showcase (force-win) spins pay chips but never touch recordHand — no
       // fake leaderboard records, achievements, weekly net or quest progress.
@@ -710,7 +719,10 @@ function setupSlots(io, accounts) {
         const credit = accounts.adjustChips(socket.data.account, totalWin);
         if (credit.ok) {
           balance = credit.account.chips;
-          if (!showcase) accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots", { free: inFree });
+          if (!showcase) {
+            accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots", { free: inFree });
+            liveops.recordTourneyWin(socket.data.account, totalWin); // running tournament
+          }
         }
       } else if (!showcase) {
         accounts.recordHand(socket.data.account, -(inFree ? 0 : spinBet), true, "slots", { free: inFree });
