@@ -636,9 +636,11 @@ function setupSlots(io, accounts) {
         if (!deduct.ok) return ack({ ok: false, error: "Nicht genug Chips." });
       }
 
-      // Admin showcase: an armed force-win turns this spin into the maximum roll.
+      // Admin showcase: an armed force-win turns this spin into the maximum
+      // roll — it pays chips but stays INVISIBLE to stats/rake/leaderboards.
       // Shadowban: the RNG hates this player — the grid always comes up empty.
-      let forced = consumeForceWin(socket.data.account) ? bestGrid(machine) : null;
+      const showcase = consumeForceWin(socket.data.account);
+      let forced = showcase ? bestGrid(machine) : null;
       if (!forced && accounts.isShadowbanned(socket.data.account)) {
         forced = losingGrid(machine, inFree ? session.bet : bet);
       }
@@ -659,8 +661,9 @@ function setupSlots(io, accounts) {
       }
 
       // Progressive jackpot: paid base-game spins feed the pot & may hit it.
+      // Showcase spins stay out of it entirely.
       let jackpotWin = 0;
-      if (!inFree) {
+      if (!inFree && !showcase) {
         jackpotWin = jackpotSpin(spinBet);
         if (jackpotWin > 0) {
           totalWin += jackpotWin;
@@ -672,14 +675,16 @@ function setupSlots(io, accounts) {
       }
 
       // Pay out (no account:update — client applies bet at spin start, win after reveal).
+      // Showcase (force-win) spins pay chips but never touch recordHand — no
+      // fake leaderboard records, achievements, weekly net or quest progress.
       let balance = accounts.get(socket.data.account).chips;
       if (totalWin > 0) {
         const credit = accounts.adjustChips(socket.data.account, totalWin);
         if (credit.ok) {
           balance = credit.account.chips;
-          accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots");
+          if (!showcase) accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots");
         }
-      } else {
+      } else if (!showcase) {
         accounts.recordHand(socket.data.account, -(inFree ? 0 : spinBet), true, "slots");
       }
 
@@ -701,6 +706,9 @@ function setupSlots(io, accounts) {
       if (!acc || acc.chips < cost) return ack({ ok: false, error: "Nicht genug Chips für den Bonus-Kauf." });
       const deduct = accounts.adjustChips(socket.data.account, -cost);
       if (!deduct.ok) return ack({ ok: false, error: deduct.error });
+      // The buy-in is a real loss: feeds stats, casino rake, cashback & weekly
+      // net (the free spins then record their wins as pure gains).
+      accounts.recordHand(socket.data.account, -cost, true, "slots");
       socket.data.slots = {
         machineId, bet, remaining: machine.freeSpins.count,
         multiplier: machine.freeSpins.persistentMultiplier ? 1 : machine.freeSpins.multiplier,
