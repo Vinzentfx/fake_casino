@@ -558,6 +558,43 @@ function listAll() {
   }));
 }
 
+// ─── Login-Kalender (7-Tage-Belohnungsreihe) ────────────────────────────────
+// Claim once per calendar day; consecutive days climb the ladder, a missed day
+// resets to day 1. Separate from the hourly bonus — a "show up daily" reward.
+const CAL_REWARDS = [2000, 3000, 5000, 8000, 12000, 20000, 50000];
+const dayIndex = () => Math.floor(Date.now() / 86400000);
+
+function calendarState(name) {
+  const acc = get(name);
+  if (!acc) return null;
+  const today = dayIndex();
+  const cal = acc.calendar || { idx: 0, lastDay: -999 };
+  const claimedToday = cal.lastDay === today;
+  // If they didn't claim yesterday or today, the ladder has reset to day 1.
+  const idx = (cal.lastDay === today || cal.lastDay === today - 1) ? cal.idx : 0;
+  return {
+    rewards: CAL_REWARDS,
+    current: idx,              // ladder position claimable next (0-based)
+    claimedToday,
+    canClaim: !claimedToday,
+  };
+}
+
+function claimCalendar(name) {
+  const acc = get(name);
+  if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  const today = dayIndex();
+  const cal = acc.calendar || { idx: 0, lastDay: -999 };
+  if (cal.lastDay === today) return { ok: false, error: "Heute schon abgeholt — komm morgen wieder!" };
+  const idx = (cal.lastDay === today - 1) ? cal.idx : 0; // consecutive? else reset
+  const reward = CAL_REWARDS[idx];
+  acc.chips += reward;
+  acc.calendar = { idx: (idx + 1) % CAL_REWARDS.length, lastDay: today };
+  if ((idx + 1) > (acc.calBest || 0)) acc.calBest = idx + 1; // for achievements
+  save();
+  return { ok: true, reward, day: idx + 1, account: publicAccount(acc) };
+}
+
 // ─── Wohnsitz (residence — pure social flavour, free) ──────────────────────
 function setResidence(name, buildingId) {
   const acc = get(name);
@@ -635,4 +672,6 @@ module.exports = {
   rawAll,
   setShadowban,
   isShadowbanned,
+  calendarState,
+  claimCalendar,
 };

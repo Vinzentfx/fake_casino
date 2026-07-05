@@ -126,6 +126,7 @@
 
         <h2 class="section-title">Mehr</h2>
         <div class="action-grid">
+          <button class="action-tile" id="calendar-tile" data-nav="calendar">📅<span>Kalender</span></button>
           <button class="action-tile" data-nav="quests">🎯<span>Aufträge</span></button>
           <button class="action-tile" data-nav="leaderboard">🏆<span>Bestenliste</span></button>
           <button class="action-tile" data-nav="stats">📊<span>Statistik</span></button>
@@ -515,6 +516,17 @@
     </section>
 
     <!-- ===================== STATISTIK ===================== -->
+    <!-- ===================== LOGIN-KALENDER ===================== -->
+    <section class="screen" data-screen="calendar">
+      <div class="panel">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <h2>📅 Login-Kalender</h2>
+        <p class="muted small">Jeden Tag einloggen & abholen — die Belohnung steigt. Ein Tag verpasst = zurück auf Tag 1. (Zusätzlich zum Stunden-Bonus.)</p>
+        <div id="calendar-grid" class="calendar-grid"><p class="muted small">Lädt…</p></div>
+        <button class="btn-primary" id="calendar-claim-btn" style="margin-top:14px;width:100%">Heutige Belohnung abholen</button>
+      </div>
+    </section>
+
     <!-- ===================== AUFTRÄGE (Quests) ===================== -->
     <section class="screen" data-screen="quests">
       <div class="panel">

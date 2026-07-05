@@ -186,6 +186,20 @@ function setupEconomy(io, accounts) {
       broadcastCity();
     });
 
+    // ── Login-Kalender ────────────────────────────────────────────────────
+    socket.on("calendar:state", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+      ack({ ok: true, ...accounts.calendarState(socket.data.account) });
+    });
+    socket.on("calendar:claim", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const r = accounts.claimCalendar(socket.data.account);
+      if (r.ok) achievements.check(socket.data.account);
+      ack(r);
+    });
+
     socket.on("disconnect", () => clickTimes.delete(socket.id));
   });
 
