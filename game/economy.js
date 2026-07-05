@@ -57,9 +57,16 @@ function setupEconomy(io, accounts) {
       times.push(now); clickTimes.set(key, times);
 
       const e = ensureEconomy(acc);
+      // Hourly earnings cap: with an autoclicker the 20/s rate limit alone
+      // would still allow ~1M+/h — the clicker is a bootstrap, not a job.
+      const HOUR = 3600000, CLICK_EARN_CAP = 10000;
+      if (!e.clickHourAt || now - e.clickHourAt >= HOUR) { e.clickHourAt = now; e.clickEarned = 0; }
+      if ((e.clickEarned || 0) >= CLICK_EARN_CAP)
+        return ack({ ok: false, error: "Feierabend! Der Klick-Job ist für diese Stunde ausgeschöpft." });
       // Schulleiter trophy: education pays — clicks ×3.
       const schule = city.hasTrophy(key, "schule") ? 3 : 1;
       const earned = Math.round(clickPower(e) * schule);
+      e.clickEarned = (e.clickEarned || 0) + earned;
       const res = accounts.adjustChips(key, earned);
       ack({ ok: res.ok, account: res.account, earned });
     });

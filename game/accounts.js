@@ -35,14 +35,17 @@ const STREAK_STEP = 250;
 const STREAK_MAX = 10;
 
 // Street tribute: each complete street monopoly adds to every hourly bonus.
-const STREET_TRIBUTE = 500;
-const STREET_TRIBUTE_CAP = 10; // at most 10 streets pay tribute (max +5.000/h)
+const STREET_TRIBUTE = 2000;
+const STREET_TRIBUTE_CAP = 10; // at most 10 streets pay tribute (max +20.000/h)
 
 // Cashback (like a real casino's loyalty program): a cut of your house-game
 // losses since the last claim comes back with the next bonus. Bounded by
-// actual losses → mathematically safe, can't be farmed.
+// actual losses → mathematically safe, can't be farmed. The Kirchenpatron
+// trophy upgrades both numbers ("Segen").
 const CASHBACK_RATE = 0.10;
-const CASHBACK_CAP = 25000; // per hourly claim
+const CASHBACK_CAP = 25000;          // per hourly claim
+const CASHBACK_RATE_BLESSED = 0.15;  // ⛪ Kirche
+const CASHBACK_CAP_BLESSED = 50000;  // ⛪ Kirche
 const STREAK_GRACE_MS = 2 * DAILY_BONUS_COOLDOWN_MS; // miss this window → streak resets
 
 // Pleite-Schutz: keep a broke player in the game without waiting for the bonus.
@@ -297,19 +300,25 @@ function claimDailyBonus(name) {
     };
   }
   const now = Date.now();
-  // Continue the streak if claimed within the grace window, otherwise restart.
-  const onTime = acc.lastBonusAt && now - acc.lastBonusAt <= STREAK_GRACE_MS;
-  acc.bonusStreak = onTime ? (acc.bonusStreak || 1) + 1 : 1;
-  const streakBonus = Math.min(acc.bonusStreak - 1, STREAK_MAX) * STREAK_STEP;
   const key = normalizeName(acc.name);
-  // Bahnhofs-Baron trophy: commuters bring money — daily bonus ×1.5.
+  // Schulleiter trophy: education sticks — the streak NEVER expires and each
+  // streak step counts double.
+  const schule = city.hasTrophy(key, "schule");
+  const onTime = schule || (acc.lastBonusAt && now - acc.lastBonusAt <= STREAK_GRACE_MS);
+  acc.bonusStreak = onTime ? (acc.bonusStreak || 1) + 1 : 1;
+  const streakBonus = Math.min(acc.bonusStreak - 1, STREAK_MAX) * STREAK_STEP * (schule ? 2 : 1);
+  // Bahnhofs-Baron trophy: commuters bring money — hourly bonus ×1.5.
   const pendler = city.hasTrophy(key, "bahnhof") ? 1.5 : 1;
   const base = Math.round((DAILY_BONUS + streakBonus) * pendler);
   // Street tribute: complete streets pay when you show up.
   const streets = Math.min(city.streetCount(key), STREET_TRIBUTE_CAP);
   const tribute = streets * STREET_TRIBUTE;
-  // Loss cashback since the last claim.
-  const cashback = Math.min(CASHBACK_CAP, Math.floor((acc.lossSince || 0) * CASHBACK_RATE));
+  // Loss cashback since the last claim — blessed players (⛪) get more back.
+  const blessed = city.hasTrophy(key, "kirche");
+  const cashback = Math.min(
+    blessed ? CASHBACK_CAP_BLESSED : CASHBACK_CAP,
+    Math.floor((acc.lossSince || 0) * (blessed ? CASHBACK_RATE_BLESSED : CASHBACK_RATE))
+  );
   acc.lossSince = 0;
   const amount = base + tribute + cashback;
   acc.chips += amount;
