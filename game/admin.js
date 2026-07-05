@@ -56,6 +56,14 @@ function setupAdmin(io, accounts) {
       ack(accounts.unban(String(target).toLowerCase()));
     });
 
+    // Shadowban ("Pechvogel"): the player silently loses every slots spin and
+    // every solo roulette round — they just think they're unlucky.
+    socket.on("admin:shadowban", ({ target, on } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      ack(accounts.setShadowban(String(target).toLowerCase(), !!on));
+    });
+
     socket.on("admin:deleteAccount", ({ target } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });

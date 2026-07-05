@@ -444,7 +444,7 @@ function loadAdminAccounts() {
       const li = document.createElement("li");
       li.className = "admin-acc";
       li.innerHTML =
-        `<div class="admin-acc-top"><span>${escapeHtml(p.name)}${p.banned ? " 🚫" : ""}</span><b>${p.chips.toLocaleString("de-DE")} 🪙</b></div>` +
+        `<div class="admin-acc-top"><span>${escapeHtml(p.name)}${p.banned ? " 🚫" : ""}${p.shadowban ? " 🌑" : ""}</span><b>${p.chips.toLocaleString("de-DE")} 🪙</b></div>` +
         `<div class="admin-acc-lb">Leaderboard löschen:` +
         ` <button class="chip-btn" data-stat="bigwin" title="Größter Gewinn">🎰✖</button>` +
         ` <button class="chip-btn" data-stat="bigloss" title="Größter Verlust">💸✖</button>` +
@@ -506,6 +506,21 @@ $("#admin-set-chips-btn").addEventListener("click", () => {
     if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
     toast(`${target}: Chips auf ${amount.toLocaleString("de-DE")} 🪙 gesetzt.`);
     loadAdminAccounts();
+  });
+});
+
+["admin-shadow-on-btn", "admin-shadow-off-btn"].forEach((id) => {
+  $("#" + id)?.addEventListener("click", () => {
+    const errEl = $("#admin-ban-error");
+    errEl.textContent = "";
+    const target = $("#admin-target-ban").value.trim();
+    if (!target) { errEl.textContent = "Spielername eingeben."; return; }
+    const on = id === "admin-shadow-on-btn";
+    socket.emit("admin:shadowban", { target, on }, (res) => {
+      if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
+      toast(on ? `🌑 ${target} ist jetzt ein Pechvogel.` : `🌞 ${target} hat wieder normales Glück.`);
+      loadAdminAccounts();
+    });
   });
 });
 

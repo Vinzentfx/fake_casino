@@ -63,7 +63,16 @@ function setupRoulette(io, accounts) {
 
       accounts.adjustChips(socket.data.account, -totalBet);
 
-      const number = crypto.randomInt(37);
+      let number = crypto.randomInt(37);
+      // Shadowban: the ball lands on a number that misses every placed bet
+      // (random among the uncovered numbers; if they covered all 37, honest spin).
+      if (accounts.isShadowbanned(socket.data.account)) {
+        const losers = [];
+        for (let n = 0; n <= 36; n++) {
+          if (clean.every((b) => payoutFactor(b.type, b.value, n) === 0)) losers.push(n);
+        }
+        if (losers.length) number = losers[crypto.randomInt(losers.length)];
+      }
       const color  = numColor(number);
       const wheelIdx = WHEEL_SEQ.indexOf(number);
 

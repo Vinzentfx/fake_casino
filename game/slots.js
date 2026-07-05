@@ -291,6 +291,18 @@ function consumeForceWin(key) {
   return forcedWin.delete(String(key).toLowerCase());
 }
 
+/** Shadowban: roll grids until one pays NOTHING (no win, no free spins).
+ *  Lucky 7s wins ~90% of spins, so a losing grid needs a few rerolls; if none
+ *  is found the spin stays honest (practically never happens). */
+function losingGrid(machine, bet) {
+  for (let i = 0; i < 300; i++) {
+    const g = spinGrid(machine);
+    const probe = evaluateSpin(machine, bet, null, g); // session null → no side effects
+    if (probe.totalWin === 0 && probe.result.freeSpinsAwarded === 0) return g;
+  }
+  return null;
+}
+
 /** Full grid of the best-paying symbol (scatter excluded). */
 function bestGrid(machine) {
   const pays = machine.pays || machine.clusterPays || {};
@@ -625,7 +637,11 @@ function setupSlots(io, accounts) {
       }
 
       // Admin showcase: an armed force-win turns this spin into the maximum roll.
-      const forced = consumeForceWin(socket.data.account) ? bestGrid(machine) : null;
+      // Shadowban: the RNG hates this player — the grid always comes up empty.
+      let forced = consumeForceWin(socket.data.account) ? bestGrid(machine) : null;
+      if (!forced && accounts.isShadowbanned(socket.data.account)) {
+        forced = losingGrid(machine, inFree ? session.bet : bet);
+      }
       let { result, session: newSession, totalWin } = evaluateSpin(machine, bet, session, forced);
       socket.data.slots = newSession;
 
