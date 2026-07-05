@@ -50,6 +50,7 @@ function showScreen(name) {
   if (name === "lobby" && window.Casino._loadLobbies) window.Casino._loadLobbies();
   if (name === "stats" && window.Casino._loadStats) window.Casino._loadStats();
   if (name === "quests" && window.Casino._loadQuests) window.Casino._loadQuests();
+  if (name === "calendar") loadCalendar();
   if (name === "sports" && window.Casino._loadSports) window.Casino._loadSports();
   if (window.Casino.chat) window.Casino.chat.update(name);
 
@@ -220,6 +221,37 @@ $("#login-form").addEventListener("submit", async (e) => {
   } catch (err) {
     errEl.textContent = err.message;
   }
+});
+
+// ---- Login-Kalender ----
+function renderCalendar(s) {
+  const grid = $("#calendar-grid");
+  const btn = $("#calendar-claim-btn");
+  if (!grid || !s || !s.rewards) return;
+  grid.innerHTML = s.rewards.map((r, i) => {
+    const claimed = i < s.current;
+    const isNext = i === s.current && s.canClaim;
+    return `<div class="cal-day ${claimed ? "claimed" : ""} ${isNext ? "next" : ""}">
+      <div class="cal-daynum">Tag ${i + 1}</div>
+      <div class="cal-reward">${r.toLocaleString("de-DE")} 🪙</div>
+      <div class="cal-mark">${claimed ? "✓" : isNext ? "★" : ""}</div>
+    </div>`;
+  }).join("");
+  if (btn) {
+    btn.disabled = !s.canClaim;
+    btn.textContent = s.canClaim ? `Tag ${s.current + 1} abholen — ${s.rewards[s.current].toLocaleString("de-DE")} 🪙` : "✓ Heute schon abgeholt — morgen wieder!";
+  }
+}
+function loadCalendar() {
+  socket.emit("calendar:state", (s) => { if (s && s.ok) renderCalendar(s); });
+}
+$("#calendar-claim-btn")?.addEventListener("click", () => {
+  socket.emit("calendar:claim", (r) => {
+    if (!r || !r.ok) { toast(r?.error || "Fehler."); return; }
+    setAccount(r.account);
+    toast(`📅 Tag ${r.day} — +${r.reward.toLocaleString("de-DE")} 🪙!`);
+    loadCalendar();
+  });
 });
 
 // ---- Live-Ops (Happy Hour / Turnier / Slot des Tages) Banner ----
