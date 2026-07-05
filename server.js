@@ -129,6 +129,7 @@ app.get("/api/account/:name", (req, res) => {
       total: achList.length,
       badge: acc.badge ? achievements.emojiOf(acc.badge) : null,
     },
+    bounty: accounts.bountyOn(key),
   });
 });
 

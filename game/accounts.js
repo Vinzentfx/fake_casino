@@ -558,6 +558,46 @@ function listAll() {
   }));
 }
 
+// ─── Rivalen / Kopfgeld ─────────────────────────────────────────────────────
+// Put chips on a rival's head; whoever takes over one of their buildings
+// collects the whole pool. Escrowed from the setter immediately.
+const MIN_BOUNTY = 1000;
+
+function placeBounty(fromName, targetName, amount) {
+  const fromKey = normalizeName(fromName), targetKey = normalizeName(targetName);
+  if (!fromKey || !targetKey) return { ok: false, error: "Ungültig." };
+  if (fromKey === targetKey) return { ok: false, error: "Kein Kopfgeld auf dich selbst." };
+  const from = accounts[fromKey], target = accounts[targetKey];
+  if (!from) return { ok: false, error: "Absender fehlt." };
+  if (!target) return { ok: false, error: `Spieler "${targetName}" nicht gefunden.` };
+  amount = Math.floor(Number(amount));
+  if (!Number.isFinite(amount) || amount < MIN_BOUNTY) return { ok: false, error: `Mindest-Kopfgeld ${MIN_BOUNTY.toLocaleString("de-DE")} 🪙.` };
+  if (from.chips < amount) return { ok: false, error: "Nicht genug Chips." };
+  from.chips -= amount;
+  target.bounty = (target.bounty || 0) + amount;
+  save();
+  return { ok: true, bounty: target.bounty, targetName: target.name, account: publicAccount(from) };
+}
+
+/** A takeover claimant collects the target's whole bounty pool. Returns amount. */
+function claimBounty(targetName, claimantName) {
+  const target = get(targetName);
+  const claimantKey = normalizeName(claimantName);
+  if (!target || !target.bounty) return 0;
+  const amount = target.bounty;
+  target.bounty = 0;
+  const res = adjustChips(claimantKey, amount);
+  if (res.ok) {
+    const c = accounts[claimantKey];
+    if (c) c.bountyClaims = (c.bountyClaims || 0) + 1; // for achievements
+    save();
+    return amount;
+  }
+  target.bounty = amount; // refund on failure
+  return 0;
+}
+const bountyOn = (name) => { const a = get(name); return (a && a.bounty) || 0; };
+
 // ─── Login-Kalender (7-Tage-Belohnungsreihe) ────────────────────────────────
 // Claim once per calendar day; consecutive days climb the ladder, a missed day
 // resets to day 1. Separate from the hourly bonus — a "show up daily" reward.
@@ -674,4 +714,7 @@ module.exports = {
   isShadowbanned,
   calendarState,
   claimCalendar,
+  placeBounty,
+  claimBounty,
+  bountyOn,
 };

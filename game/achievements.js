@@ -59,6 +59,13 @@ const DEFS = [
     check: (a, k) => city.bankOwner() === k },
   { id: "casino_king", emoji: "🎰", label: "Casino-König",    desc: "Besitze das Casino",                     reward: 1000000,
     check: (a, k) => city.casinoOwner() === k },
+  // ── Meta / Events ─────────────────────────────────────────────────────────
+  { id: "cal_week",    emoji: "📅", label: "Treuer Gast",     desc: "Hol Tag 7 im Login-Kalender",            reward: 25000,
+    check: (a) => (a.calBest || 0) >= 7 },
+  { id: "tourney_win", emoji: "🏁", label: "Turniersieger",   desc: "Gewinne ein Slot-Turnier",               reward: 50000,
+    check: (a) => (a.tourneyWins || 0) >= 1 },
+  { id: "bounty",      emoji: "🎯", label: "Kopfgeldjäger",   desc: "Kassiere ein Kopfgeld",                  reward: 50000,
+    check: (a) => (a.bountyClaims || 0) >= 1 },
 ];
 
 // Cheap city aggregates for the checks above.

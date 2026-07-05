@@ -106,6 +106,9 @@ function settleTourney() {
   for (const [key, v] of Object.entries(t.best)) if (!winner || v.win > winner.win) winner = { key, ...v };
   if (winner && _accounts) {
     _accounts.adjustChips(winner.key, t.prize);
+    const acc = _accounts.get(winner.key);
+    if (acc) { acc.tourneyWins = (acc.tourneyWins || 0) + 1; _accounts.save(); }
+    try { require("./achievements").check(winner.key); } catch {}
     if (_io) chat.announce(_io, `🏆 TURNIER-SIEG: ${winner.name} mit einem ${winner.win.toLocaleString("de-DE")} 🪙 Gewinn — Preis: ${t.prize.toLocaleString("de-DE")} 🪙!`);
     if (_io) _io.emit("liveops:tourneyWin", { name: winner.name, win: winner.win, prize: t.prize });
   } else if (_io) {

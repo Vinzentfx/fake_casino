@@ -149,8 +149,16 @@ function setupEconomy(io, accounts) {
       else if (r.gain) res = accounts.adjustChips(key, r.gain).account;
       else res = accounts.publicAccount(accounts.get(key));
       // Takeover: the previous owner is compensated (premium above value burns).
-      if (r.payout && r.payout.to && r.payout.to !== key && r.payout.amount > 0)
+      if (r.payout && r.payout.to && r.payout.to !== key && r.payout.amount > 0) {
         accounts.adjustChips(r.payout.to, r.payout.amount);
+        // …and if there's a bounty on that rival, the raider collects it.
+        const victim = accounts.get(r.payout.to);
+        const bounty = accounts.claimBounty(r.payout.to, key);
+        if (bounty > 0) {
+          chat.announce(io, `🎯 KOPFGELD! ${acc.name} hat ${victim ? victim.name : "einem Rivalen"} ein Gebäude abgenommen und ${bounty.toLocaleString("de-DE")} 🪙 Kopfgeld kassiert!`);
+          achievements.check(key);
+        }
+      }
       ack({
         ok: true, account: res, cost: r.cost || 0, gain: r.gain || 0,
         district: districtId ? city.publicDistrict(districtId, key) : null,
@@ -184,6 +192,16 @@ function setupEconomy(io, accounts) {
       const res = accounts.adjustChips(key, r.raise);
       ack({ ok: true, raised: r.raise, sym: listed.sym, account: res.account, district: districtId ? city.publicDistrict(districtId, key) : null });
       broadcastCity();
+    });
+
+    // ── Rivalen / Kopfgeld ────────────────────────────────────────────────
+    socket.on("bounty:place", ({ target, amount } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const r = accounts.placeBounty(socket.data.account, target, amount);
+      if (!r.ok) return ack(r);
+      chat.announce(io, `🎯 KOPFGELD ausgesetzt: ${(accounts.get(socket.data.account) || {}).name || "?"} setzt ${Math.floor(amount).toLocaleString("de-DE")} 🪙 auf ${r.targetName} — übernimm ein Gebäude von ${r.targetName}, um es zu kassieren!`);
+      ack(r);
     });
 
     // ── Login-Kalender ────────────────────────────────────────────────────
