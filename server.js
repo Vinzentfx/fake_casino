@@ -31,6 +31,7 @@ const { setupMarket } = require("./game/market");
 const { setupChat } = require("./game/chat");
 const { setupLobby } = require("./game/lobby");
 const achievements = require("./game/achievements");
+const city = require("./game/city");
 
 const PORT = process.env.PORT || 3000;
 
@@ -95,7 +96,23 @@ app.post("/api/rescue", (req, res) => {
 app.get("/api/account/:name", (req, res) => {
   const acc = accounts.get(req.params.name);
   if (!acc) return res.status(404).json({ error: "Account nicht gefunden." });
-  res.json({ account: accounts.publicAccount(acc) });
+  // Full public stats: account + city empire + achievements (viewable by anyone
+  // — it's a friends game, the leaderboard links here).
+  const key = req.params.name.trim().toLowerCase();
+  const cityMe = city.publicOverview(key).me;
+  const achList = achievements.listFor(key);
+  res.json({
+    account: accounts.publicAccount(acc),
+    city: cityMe ? {
+      houses: cityMe.houses, value: cityMe.value, streets: cityMe.streets,
+      trophies: cityMe.trophies, bossOf: cityMe.bossOf, color: cityMe.color,
+    } : null,
+    ach: {
+      unlocked: achList.filter((a) => a.unlocked).map((a) => ({ id: a.id, emoji: a.emoji, label: a.label })),
+      total: achList.length,
+      badge: acc.badge ? achievements.emojiOf(acc.badge) : null,
+    },
+  });
 });
 
 app.get("/api/leaderboard", (_req, res) => {

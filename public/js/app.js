@@ -160,20 +160,34 @@ function renderProfile() {
   $("#profile-since").textContent = acc.createdAt
     ? new Date(acc.createdAt).toLocaleDateString("de-DE")
     : "–";
-  // Achievements/badges (server-authoritative list).
+  // Achievements/badges (server-authoritative list). Tap an unlocked badge to
+  // wear its emoji behind your name in the leaderboard (tap again to remove).
   socket.emit("ach:list", (res) => {
     const box = $("#profile-badges");
     if (!box) return;
     if (!res || !res.ok) { box.innerHTML = '<p class="muted small">–</p>'; return; }
     const unlocked = res.list.filter((a) => a.unlocked).length;
-    box.innerHTML = `<p class="muted small" style="margin:0 0 8px">${unlocked}/${res.list.length} freigeschaltet</p>`
-      + res.list.map((a) =>
-        `<div class="badge ${a.unlocked ? "on" : ""}" title="${escapeHtml(a.desc)} · +${a.reward.toLocaleString("de-DE")} 🪙">` +
-        `<span class="badge-emoji">${a.unlocked ? a.emoji : "🔒"}</span><span class="badge-label">${escapeHtml(a.label)}</span>` +
-        `<small>${a.unlocked ? "✓" : escapeHtml(a.desc)}</small></div>`
-      ).join("");
+    box.innerHTML = `<p class="muted small" style="margin:0 0 8px">${unlocked}/${res.list.length} freigeschaltet · Tippe ein Achievement an, um sein Emoji im Leaderboard zu tragen.</p>`
+      + res.list.map((a) => {
+        const sel = res.badge === a.id;
+        return `<div class="badge ${a.unlocked ? "on" : ""}${sel ? " selected" : ""}" data-ach="${a.id}" data-unlocked="${a.unlocked ? 1 : 0}" title="${escapeHtml(a.desc)} · +${a.reward.toLocaleString("de-DE")} 🪙">` +
+          `<span class="badge-emoji">${a.unlocked ? a.emoji : "🔒"}</span><span class="badge-label">${escapeHtml(a.label)}</span>` +
+          `<small>${sel ? "★ im Leaderboard" : a.unlocked ? "✓" : escapeHtml(a.desc)}</small></div>`;
+      }).join("");
   });
 }
+
+// Pick/unpick the leaderboard title emoji.
+$("#profile-badges").addEventListener("click", (e) => {
+  const el = e.target.closest(".badge");
+  if (!el || el.dataset.unlocked !== "1") return;
+  const id = el.classList.contains("selected") ? null : el.dataset.ach;
+  socket.emit("ach:setBadge", { id }, (res) => {
+    if (!res || !res.ok) { toast(res?.error || "Fehler."); return; }
+    toast(id ? "★ Emoji wird im Leaderboard getragen." : "Emoji entfernt.");
+    renderProfile();
+  });
+});
 
 // ============================================================
 // API-Aufrufe
@@ -241,7 +255,9 @@ async function claimRescue() {
 $("#rescue-btn").addEventListener("click", claimRescue);
 
 // ---- Leaderboard (multi-category, tabbed) ----
-const LB_ORDER = ["rich", "bigwin", "bigloss", "games"];
+const LB_ORDER = ["rich", "estate", "streets", "bigwin", "bigloss", "games"];
+// How a category's value is displayed (default: chips).
+const LB_UNIT = { streets: (v) => `${v} 👑`, games: (v) => `${v.toLocaleString("de-DE")} Spiele` };
 let lbData = null;
 let lbActiveCat = "rich";
 
@@ -291,9 +307,14 @@ function renderLbList() {
     const li = document.createElement("li");
     const me = state.account && p.name === state.account.name;
     const rank = medals[i] || `${i + 1}.`;
+    const unit = LB_UNIT[lbActiveCat];
+    const badge = p.badge ? ` <span class="lb-badge" title="Achievement">${p.badge}</span>` : "";
     li.innerHTML =
-      `<span>${rank} ${escapeHtml(p.name)}${me ? " (du)" : ""}</span>` +
-      `<b>${p.value.toLocaleString("de-DE")} 🪙</b>`;
+      `<span>${rank} ${escapeHtml(p.name)}${badge}${me ? " (du)" : ""}</span>` +
+      `<b>${unit ? unit(p.value) : p.value.toLocaleString("de-DE") + " 🪙"}</b>`;
+    // Tap a row to inspect that player's stats.
+    li.classList.add("lb-clickable");
+    li.addEventListener("click", () => window.Casino.openStats && window.Casino.openStats(p.name));
     list.appendChild(li);
   });
 }

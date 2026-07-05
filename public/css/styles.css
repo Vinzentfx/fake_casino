@@ -2004,6 +2004,15 @@ button { font-family: inherit; cursor: pointer; }
 .badge-emoji { font-size: 1.5rem; }
 .badge-label { font-weight: 800; font-size: 0.78rem; }
 .badge small { font-size: 0.64rem; line-height: 1.25; }
+.badge.on { cursor: pointer; }
+.badge.on:hover { border-color: rgba(244,215,130,0.9); }
+.badge.selected { border-color: #f4d782; box-shadow: 0 0 0 2px rgba(244,215,130,0.35), 0 0 14px rgba(244,215,130,0.25); }
+.badge.selected small { color: #f4d782; font-weight: 800; }
+
+/* Leaderboard: chosen achievement emoji + clickable rows. */
+.lb-badge { font-size: 1rem; }
+.lb-clickable { cursor: pointer; }
+.lb-clickable:hover { background: rgba(255,255,255,0.06); border-radius: 8px; }
 
 /* "Meine Immobilien" list inside the empire panel. */
 .empire-list { width: 100%; margin-top: 8px; }

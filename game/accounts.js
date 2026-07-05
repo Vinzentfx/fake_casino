@@ -415,8 +415,13 @@ const LEADERBOARD_CATS = {
 function leaderboardBy(cat, limit = 10) {
   const c = LEADERBOARD_CATS[cat];
   if (!c) return [];
+  // Lazy require: achievements holds the emoji for a player's chosen title badge.
+  const achievements = require("./achievements");
   return Object.values(accounts)
-    .map((a) => ({ name: a.name, value: c.sort(a), chips: a.chips }))
+    .map((a) => ({
+      name: a.name, value: c.sort(a), chips: a.chips,
+      badge: a.badge ? achievements.emojiOf(a.badge) : null,
+    }))
     .filter((x) => x.value > 0 || cat === "rich")
     .sort((a, b) => b.value - a.value)
     .slice(0, limit);
