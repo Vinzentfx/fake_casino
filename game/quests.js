@@ -19,7 +19,7 @@ const DAILY_POOL = [
   { id: "win3",       ev: "win",              target: 3,  reward: 4000,  label: "🍀 Gewinne 3 Runden (egal was)" },
   { id: "bj5",        ev: "play_blackjack",   target: 5,  reward: 3000,  label: "♠️ Spiele 5 Blackjack-Hände" },
   { id: "roulette5",  ev: "play_roulette",    target: 5,  reward: 3000,  label: "🎡 Spiele 5 Roulette-Runden" },
-  { id: "sport1",     ev: "play_sportwetten", target: 1,  reward: 2500,  label: "⚽ Schließe 1 Sportwette ab" },
+  { id: "sport1",     ev: "bet_sport",        target: 1,  reward: 2500,  label: "⚽ Platziere 1 Sportwette" },
   { id: "any20",      ev: "play",             target: 20, reward: 5000,  label: "🎲 Spiele 20 Runden (egal was)" },
   { id: "house1",     ev: "buy_house",        target: 1,  reward: 3000,  label: "🏠 Kauf 1 Gebäude in der Stadt" },
   { id: "bonus3",     ev: "claim_bonus",      target: 3,  reward: 2500,  label: "⏰ Hol 3× den Stunden-Bonus" },
@@ -63,6 +63,7 @@ function ensureQuests(acc) {
   const q = acc.quests;
   if (q.day !== d) {
     for (const def of DAILY_POOL) { delete q.prog[def.id]; delete q.claimed[def.id]; }
+    q.bought = []; // buy-quest anti-farm list resets daily
     q.day = d;
   }
   if (q.week !== w) {
@@ -72,12 +73,20 @@ function ensureQuests(acc) {
   return q;
 }
 
-/** Count an event for a player's active quests; completed ones pay instantly. */
-function track(name, ev, n = 1) {
+/** Count an event for a player's active quests; completed ones pay instantly.
+ *  `meta` (optional): buy_house passes the buildingId so the same building
+ *  can't be sold & re-bought for quest progress. */
+function track(name, ev, n = 1, meta = null) {
   if (!_accounts) return;
   const acc = _accounts.get(name);
   if (!acc) return;
   const q = ensureQuests(acc);
+  // Anti-farm: each building counts only once per day for buy quests.
+  if (ev === "buy_house" && meta != null) {
+    q.bought = q.bought || [];
+    if (q.bought.includes(meta)) return;
+    q.bought.push(meta);
+  }
   const active = [...activeDailies(), ...activeWeeklies()];
   let changed = false;
   for (const def of active) {
@@ -118,7 +127,9 @@ function setupQuests(io, accounts) {
   _io = io;
   _accounts = accounts;
   // Game rounds feed quest progress through the shared recordHand funnel.
-  accounts.onHand((name, winnings, house, game) => {
+  // Free spins don't count — one bonus trigger must not clear a 10-spin quest.
+  accounts.onHand((name, winnings, house, game, meta) => {
+    if (meta && meta.free) return;
     track(name, "play_" + (game || "any"));
     if (winnings > 0) track(name, "win");
   });

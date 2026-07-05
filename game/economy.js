@@ -135,7 +135,7 @@ function setupEconomy(io, accounts) {
     // dispossessed ex-owner (takeover), commit, broadcast. Conquests (new
     // street monopoly, boss change) are announced in the global chat, and
     // every action may complete an achievement.
-    function doAction(socket, ack, make, districtId) {
+    function doAction(socket, ack, make, districtId, buildingId) {
       const acc = acct(socket);
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
       const key = socket.data.account;
@@ -156,14 +156,15 @@ function setupEconomy(io, accounts) {
         district: districtId ? city.publicDistrict(districtId, key) : null,
       });
       for (const msg of city.territoryDiff(before, city.territorySnapshot())) chat.announce(io, msg);
-      if (r.cost) quests.track(key, "buy_house"); // buys & takeovers count for quests
+      // Buys & takeovers count for quests, but each building only once/day.
+      if (r.cost) quests.track(key, "buy_house", 1, buildingId);
       achievements.check(key);
       broadcastCity();
     }
 
     const A = (fn) => ({ buildingId, districtId } = {}, ack) => {
       if (typeof ack !== "function") return;
-      doAction(socket, ack, (key, name) => fn(buildingId, key, name), districtId);
+      doAction(socket, ack, (key, name) => fn(buildingId, key, name), districtId, buildingId);
     };
     socket.on("city:buy",      A((id, key, name) => city.buyBuilding(id, key, name)));
     socket.on("city:sell",     A((id, key) => city.sellBuilding(id, key)));

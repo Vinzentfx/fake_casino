@@ -193,7 +193,10 @@ function fireEvent(districtId) {
 function tickMarket() {
   for (const d of MAP.districts) {
     const i = idxOf(d.id);
-    state.idx[d.id] = clamp(i + (1 - i) * 0.04 + (Math.random() * 2 - 1) * 0.015, IDX_MIN, IDX_MAX);
+    // Weak mean reversion + strong noise: after an event the index takes
+    // unpredictable HOURS to normalise (was 4%/min → a dip recovered in ~30
+    // min, which made "buy every crash" a riskless arbitrage loop).
+    state.idx[d.id] = clamp(i + (1 - i) * 0.006 + (Math.random() * 2 - 1) * 0.02, IDX_MIN, IDX_MAX);
   }
   // Roughly every ~8 minutes (60s ticks) a local event shakes one district.
   const event = MAP.districts.length && Math.random() < 0.12 ? fireEvent() : null;
