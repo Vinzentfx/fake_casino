@@ -395,7 +395,7 @@ const CASINO_RAKE = 0.05; // 5% of a player's house-game losses go to the casino
 const handListeners = [];
 const onHand = (cb) => handListeners.push(cb);
 
-function recordHand(name, winnings, house = true, game = null) {
+function recordHand(name, winnings, house = true, game = null, meta = null) {
   const acc = get(name);
   if (!acc) return;
   acc.stats = acc.stats || { gamesPlayed: 0, handsWon: 0, biggestWin: 0, biggestLoss: 0 };
@@ -426,7 +426,7 @@ function recordHand(name, winnings, house = true, game = null) {
     }
   }
   save();
-  for (const cb of handListeners) { try { cb(name, winnings, house, game); } catch {} }
+  for (const cb of handListeners) { try { cb(name, winnings, house, game, meta); } catch {} }
 }
 
 const LEADERBOARD_CATS = {

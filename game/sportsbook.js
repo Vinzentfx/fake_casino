@@ -408,6 +408,7 @@ function setupSportsbook(io, accounts) {
       m.bets.push({ id: crypto.randomUUID(), user: socket.data.account, name: acc.name, market, selection, amount, odds });
       feed.unshift({ name: acc.name, match: `${m.home}–${m.away}`, sel: selLabel(market, selection, m), amount, odds });
       if (feed.length > FEED_MAX) feed.length = FEED_MAX;
+      require("./quests").track(socket.data.account, "bet_sport"); // quest counts on PLACING
       ack && ack({ ok: true, account: r.account });
       io.emit("sports:update");
     });
@@ -464,6 +465,7 @@ function setupSportsbook(io, accounts) {
       combos.push({ id: crypto.randomUUID(), user: socket.data.account, name: acc.name, legs: clean, amount, comboOdds, settled: false, won: null, payout: 0 });
       feed.unshift({ name: acc.name, match: `${clean.length}er-Kombi`, sel: `${clean.length} Tipps`, amount, odds: comboOdds });
       if (feed.length > FEED_MAX) feed.length = FEED_MAX;
+      require("./quests").track(socket.data.account, "bet_sport");
       ack && ack({ ok: true, account: r.account, comboOdds });
       io.emit("sports:update");
     });
