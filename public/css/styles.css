@@ -2009,6 +2009,23 @@ button { font-family: inherit; cursor: pointer; }
 .badge.selected { border-color: #f4d782; box-shadow: 0 0 0 2px rgba(244,215,130,0.35), 0 0 14px rgba(244,215,130,0.25); }
 .badge.selected small { color: #f4d782; font-weight: 800; }
 
+/* Quest board (Aufträge). */
+.quest { padding: 10px 12px; border-radius: 12px; margin-bottom: 8px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+.quest.done { opacity: 0.6; border-color: rgba(74,222,128,0.4); }
+.quest-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.quest-label { font-weight: 700; font-size: 0.9rem; }
+.quest-reward { color: #f4d782; white-space: nowrap; }
+.quest.done .quest-reward { color: #4ade80; }
+.quest-bar { height: 7px; border-radius: 999px; background: rgba(0,0,0,0.4); margin: 8px 0 4px; overflow: hidden; }
+.quest-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #c9962e, #f4d782); transition: width 0.4s; }
+.quest.done .quest-fill { background: #4ade80; }
+.quest-prog { font-size: 0.72rem; opacity: 0.65; text-align: right; }
+
+/* Shared progressive jackpot (slots lobby). */
+.jackpot-line { margin: 6px 0 0; font-size: 0.95rem; color: #ffd700; }
+.jackpot-line b { font-size: 1.05rem; }
+
 /* Leaderboard: chosen achievement emoji + clickable rows. */
 .lb-badge { font-size: 1rem; }
 .lb-clickable { cursor: pointer; }

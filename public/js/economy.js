@@ -119,6 +119,8 @@
     chips.push(`<span class="buff-chip" style="border-color:${me.color};color:${me.color}">🏠 ${me.houses} ${me.houses === 1 ? "Haus" : "Häuser"}</span>`);
     chips.push(`<span class="buff-chip">💎 ${fmt(me.value)} 🪙 Wert</span>`);
     if (me.streets) chips.push(`<span class="buff-chip">👑 ${me.streets} ${me.streets === 1 ? "Straße" : "Straßen"} komplett</span>`);
+    if (me.hasGolden) chips.push(`<span class="buff-chip" style="border-color:#ffd700;color:#ffd700">✨ Goldene Straße (2× Tribut)</span>`);
+    for (const s of me.sets || []) chips.push(`<span class="buff-chip">${s.emoji} ${escapeHtml(s.label)} (+${s.tribute.toLocaleString("de-DE")}/Std)</span>`);
     for (const t of me.trophies) chips.push(`<span class="buff-chip">${t.emoji} ${escapeHtml(t.title)}</span>`);
     for (const d of me.bossOf) chips.push(`<span class="buff-chip">🥇 Boss von ${escapeHtml(d)}</span>`);
     // "Meine Immobilien" — tap to jump to the building on the map.
@@ -242,12 +244,17 @@
         parts.push(`<path d="${pathOf(l.pts)}" fill="${l.type === "park" ? "#31513a" : "#33494f"}" opacity="0.8"/>`);
     }
 
-    // Streets: monopolised streets glow in the owner's colour. 👑
+    // Streets: monopolised streets glow in the owner's colour; the weekly
+    // GOLDEN street shimmers gold underneath everything. 👑✨
     const monoLabelAt = {}; // st -> longest road midpoint for the label
+    let goldenLabelAt = null;
     for (const r of district.roads || []) {
       const mono = r.n && monoBySt[r.n];
+      const isGolden = r.n && district.golden === r.n;
       const w = r.w === 2 ? 9 : r.w === 1 ? 5.5 : 2.5;
       const col = mono ? mono.color : r.w === 2 ? "#565b63" : r.w === 1 ? "#4a4f56" : "#42464c";
+      if (isGolden)
+        parts.push(`<path d="${openPath(r.pts)}" fill="none" stroke="#ffd700" stroke-width="${w + 6}" stroke-linecap="round" stroke-linejoin="round" opacity="0.45" style="pointer-events:none"/>`);
       parts.push(`<path d="${openPath(r.pts)}" fill="none" stroke="${col}" stroke-width="${mono ? w + 2 : w}" stroke-linecap="round" stroke-linejoin="round" ${mono ? 'opacity="0.95"' : ""} style="pointer-events:none"/>`);
       if (!mono && r.w >= 1)
         parts.push(`<path d="${openPath(r.pts)}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="${w * 0.22}" stroke-dasharray="${w * 2.2} ${w * 2.6}" stroke-linecap="round" style="pointer-events:none"/>`);
@@ -255,6 +262,8 @@
         const cur = monoLabelAt[r.n];
         if (!cur || r.pts.length > cur.len) monoLabelAt[r.n] = { len: r.pts.length, p: r.pts[Math.floor(r.pts.length / 2)] };
       }
+      if (isGolden && (!goldenLabelAt || r.pts.length > goldenLabelAt.len))
+        goldenLabelAt = { len: r.pts.length, p: r.pts[Math.floor(r.pts.length / 2)] };
     }
 
     // Buildings: territory painting — owned houses fill in the owner's colour.
@@ -281,6 +290,8 @@
       const m = monoBySt[st];
       parts.push(`<text x="${info.p[0]}" y="${info.p[1] - 8}" text-anchor="middle" font-size="13" font-weight="800" fill="${m.color}" stroke="#1c231b" stroke-width="2.5" paint-order="stroke" style="pointer-events:none">👑 ${escapeHtml(m.ownerName)}s ${escapeHtml(st)}</text>`);
     }
+    if (goldenLabelAt && district.golden)
+      parts.push(`<text x="${goldenLabelAt.p[0]}" y="${goldenLabelAt.p[1] + 18}" text-anchor="middle" font-size="13" font-weight="800" fill="#ffd700" stroke="#1c231b" stroke-width="2.5" paint-order="stroke" style="pointer-events:none">✨ Goldene Straße: ${escapeHtml(district.golden)} (2× Tribut)</text>`);
 
     svg.innerHTML = `<defs><filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#f4d782" flood-opacity="0.85"/></filter></defs>` + parts.join("");
   }

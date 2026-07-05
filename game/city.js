@@ -261,6 +261,53 @@ function getDerived() {
 /** Complete streets a player owns (Straßenkönig leaderboard). */
 const streetCount = (key) => getDerived().streetsByOwner[key] || 0;
 
+/** Number of buildings a player owns (Haus-Tribut). */
+function houseCount(key) {
+  let n = 0;
+  for (const o of Object.values(state.own)) if (o.owner === key) n++;
+  return n;
+}
+
+// ─── Goldene Straße der Woche ───────────────────────────────────────────────
+// One random street per week pays DOUBLE tribute — everyone fights over it.
+function rollGoldenStreet() {
+  const candidates = [];
+  for (const d of MAP.districts)
+    for (const st of d._streets.keys()) candidates.push({ district: d.id, districtName: d.name, st });
+  if (!candidates.length) { state.golden = null; save(); return null; }
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  state.golden = pick;
+  save();
+  return pick;
+}
+const goldenStreet = () => state.golden || null;
+/** Does `key` hold the complete golden street? (→ its tribute counts double.) */
+function ownsGolden(key) {
+  const g = state.golden;
+  if (!g) return false;
+  const list = getDerived().monopolies[g.district] || [];
+  return list.some((m) => m.st === g.st && m.owner === key);
+}
+
+// ─── Haus-Sets (collection bonuses) ─────────────────────────────────────────
+/** Sets `key` has completed → [{id, label, emoji, tribute}] */
+function setsOf(key) {
+  const out = [];
+  if (!key || !MAP.districts.length) return out;
+  // 🌍 Stadtbekannt: at least one building in EVERY district.
+  const perDistrict = MAP.districts.map((d) => d.buildings.some((b) => state.own[b.id] && state.own[b.id].owner === key));
+  if (perDistrict.every(Boolean))
+    out.push({ id: "stadtbekannt", label: "Stadtbekannt", emoji: "🌍", tribute: 2000 });
+  // ☕ Kaffee-Kartell: ALL cafés of one district (needs ≥3 cafés there).
+  for (const d of MAP.districts) {
+    const cafes = d.buildings.filter((b) => b.cls === "cafe");
+    if (cafes.length >= 3 && cafes.every((b) => state.own[b.id] && state.own[b.id].owner === key)) {
+      out.push({ id: "kartell_" + d.id, label: `Kaffee-Kartell ${d.name}`, emoji: "☕", tribute: 3000 });
+    }
+  }
+  return out;
+}
+
 /** Total city property value of a player (net worth + Immobilien-Mogul). */
 function ownerValue(key) {
   return getDerived().valueByOwner[key] || 0;
@@ -343,12 +390,15 @@ function publicOverview(key) {
       trophies: trophiesOf(key),
       bossOf: MAP.districts.filter((d) => der.bossByDistrict[d.id] && der.bossByDistrict[d.id].owner === key).map((d) => d.name),
       color: colorFor(key),
+      sets: setsOf(key),
+      hasGolden: ownsGolden(key),
       properties: properties.slice(0, 200),
     };
   }
   return {
     city: MAP.city,
     news: state.news,
+    golden: state.golden || null,
     me,
     casinoOwnerName: CASINO_ID != null && state.own[CASINO_ID] ? state.own[CASINO_ID].ownerName : null,
     bankOwnerName: BANK_ID != null && state.own[BANK_ID] ? state.own[BANK_ID].ownerName : null,
@@ -391,6 +441,7 @@ function publicDistrict(id, key) {
     landmarks: (d.landmarks || []).map((l) => ({ type: l.type, name: l.name, x: l.x, y: l.y, pts: l.pts || null })),
     roads: d.roads || [],
     iAmBoss: !!key && isBoss(key, d.id),
+    golden: state.golden && state.golden.district === d.id ? state.golden.st : null,
     buildings: d.buildings.map((b) => {
       const o = state.own[b.id];
       const price = priceOf(b);
@@ -503,6 +554,7 @@ module.exports = {
   CLASSES, TROPHIES, colorFor,
   publicOverview, publicDistrict, ownerValue, casinoOwner, bankOwner, tickMarket, fireEvent,
   streetCount, trophiesOf, hasTrophy, bldExists, bldInfo, isBoss,
+  houseCount, rollGoldenStreet, goldenStreet, ownsGolden, setsOf,
   territorySnapshot, territoryDiff,
   buyBuilding, sellBuilding, takeover,
   listCompany, adminClearLot, ownedLots, resetCity,

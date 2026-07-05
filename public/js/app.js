@@ -49,6 +49,7 @@ function showScreen(name) {
   if (name === "blackjack" && window.Casino._loadBlackjack) window.Casino._loadBlackjack();
   if (name === "lobby" && window.Casino._loadLobbies) window.Casino._loadLobbies();
   if (name === "stats" && window.Casino._loadStats) window.Casino._loadStats();
+  if (name === "quests" && window.Casino._loadQuests) window.Casino._loadQuests();
   if (name === "sports" && window.Casino._loadSports) window.Casino._loadSports();
   if (window.Casino.chat) window.Casino.chat.update(name);
 
@@ -230,7 +231,9 @@ async function claimBonus() {
     const data = await api("/api/daily-bonus", { name: state.account.name });
     setAccount(data.account);
     const extras = [];
-    if (data.tribute) extras.push(`👑 +${data.tribute.toLocaleString("de-DE")} Straßen-Tribut (${data.streets} Straßen)`);
+    if (data.tribute) extras.push(`👑 +${data.tribute.toLocaleString("de-DE")} Straßen-Tribut (${data.streets} Straßen${data.golden ? " · ✨ Goldene Straße!" : ""})`);
+    if (data.houses) extras.push(`🏠 +${data.houses.toLocaleString("de-DE")} Haus-Miete (${data.housesOwned} Häuser)`);
+    if (data.sets) extras.push(`🧩 +${data.sets.toLocaleString("de-DE")} Sammel-Sets`);
     if (data.cashback) extras.push(`💸 +${data.cashback.toLocaleString("de-DE")} Cashback`);
     const streakNote = data.streak > 1 ? ` 🔥 ${data.streak}er-Serie!` : "";
     toast(`+${data.amount.toLocaleString("de-DE")} 🪙 Bonus!${streakNote}${extras.length ? " · " + extras.join(" · ") : ""}`);
@@ -309,8 +312,9 @@ function renderLbList() {
     const rank = medals[i] || `${i + 1}.`;
     const unit = LB_UNIT[lbActiveCat];
     const badge = p.badge ? ` <span class="lb-badge" title="Achievement">${p.badge}</span>` : "";
+    const champ = p.champ ? ` <span class="lb-badge" title="Spieler der Woche">🏆</span>` : "";
     li.innerHTML =
-      `<span>${rank} ${escapeHtml(p.name)}${badge}${me ? " (du)" : ""}</span>` +
+      `<span>${rank} ${escapeHtml(p.name)}${champ}${badge}${me ? " (du)" : ""}</span>` +
       `<b>${unit ? unit(p.value) : p.value.toLocaleString("de-DE") + " 🪙"}</b>`;
     // Tap a row to inspect that player's stats.
     li.classList.add("lb-clickable");
@@ -512,6 +516,14 @@ $("#admin-force-win-btn")?.addEventListener("click", () => {
 $("#admin-city-event-btn")?.addEventListener("click", () => {
   socket.emit("admin:cityEvent", {}, (r) => {
     if (r && r.ok) toast(`📰 Ausgelöst: ${r.event.txt}`);
+    else toast((r && r.error) || "Fehler.");
+  });
+});
+
+$("#admin-new-week-btn")?.addEventListener("click", () => {
+  if (!confirm("Woche JETZT beenden? Kürt den Spieler der Woche und würfelt eine neue Goldene Straße.")) return;
+  socket.emit("admin:newWeek", (r) => {
+    if (r && r.ok) toast("🗓️ Neue Woche eingeläutet — siehe Chat.");
     else toast((r && r.error) || "Fehler.");
   });
 });

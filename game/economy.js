@@ -14,6 +14,8 @@ const city = require("./city");
 const stocks = require("./stocks");
 const chat = require("./chat");
 const achievements = require("./achievements");
+const quests = require("./quests");
+const weekly = require("./weekly");
 
 // ─── Work clicker (capped) ──────────────────────────────────────────────────
 const CLICK_BASE = 1;          // chips per click at level 0
@@ -154,6 +156,7 @@ function setupEconomy(io, accounts) {
         district: districtId ? city.publicDistrict(districtId, key) : null,
       });
       for (const msg of city.territoryDiff(before, city.territorySnapshot())) chat.announce(io, msg);
+      if (r.cost) quests.track(key, "buy_house"); // buys & takeovers count for quests
       achievements.check(key);
       broadcastCity();
     }
@@ -187,11 +190,14 @@ function setupEconomy(io, accounts) {
 
   // Market life: per-district indices drift every minute; occasionally a local
   // news event shakes one district — everyone gets a toast (Spekulation!).
+  // The same heartbeat drives the weekly cycle (Spieler der Woche, Goldene Straße).
   setInterval(() => {
     const event = city.tickMarket();
     io.emit("city:update");
     if (event) io.emit("city:news", event);
+    weekly.tick(io, accounts);
   }, 60000).unref();
+  weekly.tick(io, accounts); // seed golden street on boot
 }
 
 module.exports = { setupEconomy };
