@@ -100,6 +100,7 @@ function track(name, ev, n = 1, meta = null) {
   }
   const key = String(name).trim().toLowerCase();
   const matches = (def) => def.ev === ev || (def.ev === "play" && ev.startsWith("play_"));
+  const mult = require("./liveops").questMult(); // Happy Hour doubles rewards
   let changed = false;
 
   // One-time daily & weekly quests.
@@ -109,8 +110,9 @@ function track(name, ev, n = 1, meta = null) {
     changed = true;
     if (q.prog[def.id] >= def.target) {
       q.claimed[def.id] = true;
-      _accounts.adjustChips(key, def.reward);
-      if (_io) _io.emit("quest:done", { user: acc.name, label: def.label, reward: def.reward });
+      const reward = def.reward * mult;
+      _accounts.adjustChips(key, reward);
+      if (_io) _io.emit("quest:done", { user: acc.name, label: def.label, reward, happy: mult > 1 });
     }
   }
 
@@ -125,8 +127,9 @@ function track(name, ev, n = 1, meta = null) {
     while (r.prog >= def.target && r.done < def.cap) {
       r.prog -= def.target;
       r.done += 1;
-      _accounts.adjustChips(key, def.reward);
-      if (_io) _io.emit("quest:done", { user: acc.name, label: def.label, reward: def.reward, repeat: true });
+      const reward = def.reward * mult;
+      _accounts.adjustChips(key, reward);
+      if (_io) _io.emit("quest:done", { user: acc.name, label: def.label, reward, repeat: true, happy: mult > 1 });
     }
     if (r.done >= def.cap) r.prog = def.target; // show as maxed for the day
   }

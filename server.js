@@ -33,6 +33,7 @@ const { setupLobby } = require("./game/lobby");
 const achievements = require("./game/achievements");
 const city = require("./game/city");
 const quests = require("./game/quests");
+const liveops = require("./game/liveops");
 
 const PORT = process.env.PORT || 3000;
 
@@ -166,6 +167,7 @@ setupChat(io, accounts);
 setupLobby(io);
 achievements.setupAchievements(io, accounts);
 quests.setupQuests(io, accounts);
+liveops.setup(io, accounts);
 
 // Chip-Transfer zwischen Spielern (socket-auth required)
 io.on("connection", (socket) => {

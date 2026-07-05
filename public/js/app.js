@@ -222,6 +222,30 @@ $("#login-form").addEventListener("submit", async (e) => {
   }
 });
 
+// ---- Live-Ops (Happy Hour / Turnier / Slot des Tages) Banner ----
+let liveopsState = null;
+function renderLiveops() {
+  const el = $("#liveops-banner");
+  if (!el) return;
+  const s = liveopsState;
+  const parts = [];
+  if (s && s.happyActive) {
+    const min = Math.max(0, Math.ceil((s.happyUntil - Date.now()) / 60000));
+    parts.push(`<span class="lo-chip happy">🍹 Happy Hour — doppelte Quest-Belohnungen · noch ${min} Min</span>`);
+  }
+  if (s && s.tourney) {
+    const min = Math.max(0, Math.ceil((s.tourney.endsAt - Date.now()) / 60000));
+    const lead = s.tourney.board && s.tourney.board[0];
+    parts.push(`<span class="lo-chip tourney">🏁 Slot-Turnier · ${s.tourney.prize.toLocaleString("de-DE")} 🪙 · noch ${min} Min${lead ? ` · 👑 ${escapeHtml(lead.name)} (${lead.win.toLocaleString("de-DE")})` : ""}</span>`);
+  }
+  el.innerHTML = parts.join("");
+  el.classList.toggle("hidden", parts.length === 0);
+}
+socket.on("liveops:state", (s) => { liveopsState = s; renderLiveops(); });
+socket.on("connect", () => socket.emit("liveops:state", (r) => { if (r && r.ok) { liveopsState = r; renderLiveops(); } }));
+socket.on("liveops:tourneyWin", (w) => { if (w) toast(`🏆 Turnier gewonnen: ${w.name} (+${w.prize.toLocaleString("de-DE")} 🪙)!`); });
+setInterval(renderLiveops, 20000);
+
 // ---- Stunden-Bonus: Live-Countdown auf Button + Lobby-Kachel ----
 function updateBonusUI() {
   const acc = state.account;
@@ -563,6 +587,22 @@ $("#admin-new-week-btn")?.addEventListener("click", () => {
     if (r && r.ok) toast("🗓️ Neue Woche eingeläutet — siehe Chat.");
     else toast((r && r.error) || "Fehler.");
   });
+});
+
+$("#admin-happy-on-btn")?.addEventListener("click", () => {
+  const minutes = parseInt($("#admin-happy-mins").value, 10) || 60;
+  socket.emit("admin:happyHour", { on: true, minutes }, (r) => toast(r?.ok ? `🍹 Happy Hour für ${minutes} Min gestartet.` : (r?.error || "Fehler.")));
+});
+$("#admin-happy-off-btn")?.addEventListener("click", () => {
+  socket.emit("admin:happyHour", { on: false }, (r) => toast(r?.ok ? "Happy Hour beendet." : (r?.error || "Fehler.")));
+});
+$("#admin-tourney-on-btn")?.addEventListener("click", () => {
+  const minutes = parseInt($("#admin-tourney-mins").value, 10) || 10;
+  const prize = parseInt($("#admin-tourney-prize").value, 10) || 100000;
+  socket.emit("admin:tourney", { on: true, minutes, prize }, (r) => toast(r?.ok ? `🏁 Turnier gestartet (${minutes} Min, ${prize.toLocaleString("de-DE")} 🪙).` : (r?.error || "Fehler.")));
+});
+$("#admin-tourney-off-btn")?.addEventListener("click", () => {
+  socket.emit("admin:tourney", { on: false }, (r) => toast(r?.ok ? "Turnier beendet." : (r?.error || "Fehler.")));
 });
 
 ["admin-reset-bonus-btn", "admin-reset-ach-btn"].forEach((id) => {
