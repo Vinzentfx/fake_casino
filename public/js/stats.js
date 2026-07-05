@@ -38,6 +38,21 @@
     const badge = d && d.ach && d.ach.badge ? ` ${d.ach.badge}` : "";
     $("#stats-title").textContent = isMe ? `📊 Deine Statistik${badge}` : `📊 ${acc.name || name}${badge}`;
 
+    // Rivalen / Kopfgeld panel (only when viewing someone else).
+    const rivalBox = $("#stats-rival");
+    if (rivalBox) {
+      if (isMe) {
+        rivalBox.innerHTML = (d && d.bounty)
+          ? `<div class="cd-buff on">🎯 Auf deinen Kopf sind <b>${(d.bounty).toLocaleString("de-DE")} 🪙</b> Kopfgeld ausgesetzt!</div>` : "";
+      } else {
+        const b = (d && d.bounty) || 0;
+        rivalBox.innerHTML =
+          (b ? `<div class="cd-buff">🎯 Aktuelles Kopfgeld: <b>${b.toLocaleString("de-DE")} 🪙</b></div>` : "") +
+          `<button class="btn-primary cd-btn" id="bounty-btn" data-target="${escapeHtml(acc.name || name)}">🎯 Kopfgeld aussetzen</button>` +
+          `<p class="muted small" style="margin:4px 0 0">Wer ${escapeHtml(acc.name || name)} ein Gebäude abnimmt, kassiert das Kopfgeld.</p>`;
+      }
+    }
+
     const s = acc.stats || {};
     const played = s.gamesPlayed || 0, won = s.handsWon || 0;
     const rate = played ? Math.round((100 * won) / played) : 0;
@@ -97,6 +112,23 @@
       return `<div class="stat-row"><span>${m.e} ${escapeHtml(m.n)} <span class="muted small">(${fmt(g.plays)}×, ${r}%)</span></span><b class="${cls}">${g.net >= 0 ? "+" : "−"}${fmt(Math.abs(g.net))} 🪙</b></div>`;
     }).join("");
   }
+
+  // Place a bounty on the viewed player.
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("#bounty-btn");
+    if (!btn) return;
+    const target = btn.dataset.target;
+    const raw = prompt(`Wie viel Kopfgeld auf ${target} aussetzen? (min. 1.000 🪙)`, "5000");
+    if (raw == null) return;
+    const amount = parseInt(raw, 10);
+    if (!Number.isFinite(amount) || amount < 1000) return window.Casino.toast("Mindestens 1.000 🪙.");
+    window.Casino.socket.emit("bounty:place", { target, amount }, (r) => {
+      if (!r || !r.ok) return window.Casino.toast(r?.error || "Fehler.");
+      window.Casino.applyAccount(r.account);
+      window.Casino.toast(`🎯 ${amount.toLocaleString("de-DE")} 🪙 Kopfgeld auf ${target} ausgesetzt!`);
+      load();
+    });
+  });
 
   window.Casino._loadStats = load;
   /** Leaderboard → inspect any player's stats. */
