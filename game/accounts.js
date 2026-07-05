@@ -484,6 +484,21 @@ function changePin(name, oldPin, newPin) {
   return { ok: true };
 }
 
+// ─── Shadowban ("Pechvogel-Modus") ──────────────────────────────────────────
+// A shadowbanned player silently loses every rigged-capable game (slots,
+// solo roulette). They see normal play — the RNG just hates them.
+function setShadowban(name, on) {
+  const acc = get(name);
+  if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  if (on) acc.shadowban = true; else delete acc.shadowban;
+  save();
+  return { ok: true, shadowban: !!on };
+}
+function isShadowbanned(name) {
+  const acc = get(name);
+  return !!(acc && acc.shadowban);
+}
+
 function ban(name) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
@@ -535,6 +550,7 @@ function listAll() {
     name: a.name,
     chips: a.chips,
     banned: !!a.banned,
+    shadowban: !!a.shadowban,
   }));
 }
 
@@ -613,4 +629,6 @@ module.exports = {
   residentsByBuilding,
   onHand,
   rawAll,
+  setShadowban,
+  isShadowbanned,
 };
