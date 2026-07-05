@@ -14,7 +14,8 @@
  *   No insurance.
  */
 
-const { makeDeck, shuffle } = require("./cards");
+const crypto = require("crypto");
+const { makeDeck, shuffle, SUITS } = require("./cards");
 const bjLobby = require("./blackjackLobby");
 
 const DECKS = 6;
@@ -79,6 +80,40 @@ function isSoft(cards) {
 
 function isBust(cards) { return handValue(cards) > 21; }
 function isBlackjack(cards) { return cards.length === 2 && handValue(cards) === 21; }
+
+// ---------------------------------------------------------------------------
+// Shadowban ("Pechvogel"): the dealer always ends up beating the player. Cards
+// look real — it just plays like a brutal cold streak.
+// ---------------------------------------------------------------------------
+
+/** A card object with the given blackjack value (2..10 → that rank, 11 → ace). */
+function cardOfValue(v) {
+  const suit = SUITS[crypto.randomInt(SUITS.length)];
+  return { rank: v === 11 ? 14 : v, suit };
+}
+
+/** Rig the dealer's hand (keeping the shown up-card) to beat every non-busted
+ *  player hand. A player 21 can only be tied (dealer can't top 21) → push. */
+function rigDealerToWin(session) {
+  let playerBest = -1;
+  for (const h of session.playerHands) {
+    const v = handValue(h.cards);
+    if (v <= 21 && v > playerBest) playerBest = v;
+  }
+  if (playerBest < 0) return; // all busted → already lost, dealer plays out below
+  let target = Math.max(17, playerBest + 1);
+  if (target > 21) target = 21; // can't beat a hard 21 → push
+  const cards = [session.dealerCards[0]]; // keep the revealed up-card
+  let guard = 0;
+  while (handValue(cards) < target && guard++ < 12) {
+    let rem = target - handValue(cards);
+    let c = Math.min(10, rem);
+    if (rem - c === 1) c -= 1; // never leave an unplaceable "1"
+    if (c < 2) c = 2;
+    cards.push(cardOfValue(c));
+  }
+  session.dealerCards = cards;
+}
 
 // ---------------------------------------------------------------------------
 // State for client (hides dealer hole card until reveal)
@@ -150,6 +185,15 @@ function startHand(session, bet, accounts) {
   session.reported = false;
   session.playerHands = [{ cards: [deal(session), deal(session)], bet, doubled: false, done: false, result: null }];
   session.dealerCards = [deal(session), deal(session)];
+
+  // Pechvogel: deny the player a natural blackjack (its 3:2 would be a win).
+  if (accounts.isShadowbanned(session.name)) {
+    let guard = 0;
+    while (isBlackjack(session.playerHands[0].cards) && guard++ < 25) {
+      session.playerHands[0].cards[1] = deal(session);
+    }
+    if (isBlackjack(session.playerHands[0].cards)) session.playerHands[0].cards[1] = cardOfValue(5);
+  }
 
   // Check natural blackjack
   if (isBlackjack(session.playerHands[0].cards)) {
@@ -233,6 +277,11 @@ function advanceHand(session, accounts) {
 
 function dealerPlay(session, accounts) {
   session.phase = "dealer";
+  // Pechvogel: the dealer is rigged to beat the player.
+  if (accounts.isShadowbanned(session.name)) {
+    rigDealerToWin(session);
+    return settleAll(session, accounts);
+  }
   // Dealer draws until 17+ (hits soft 17)
   while (true) {
     const val = handValue(session.dealerCards);
