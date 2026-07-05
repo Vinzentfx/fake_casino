@@ -250,7 +250,7 @@ setInterval(updateBonusUI, 1000);
 async function claimBonus() {
   if (!state.account) return;
   try {
-    const data = await api("/api/daily-bonus", { name: state.account.name });
+    const data = await api("/api/daily-bonus", { name: state.account.name, token: state.token });
     setAccount(data.account);
     const extras = [];
     if (data.tribute) extras.push(`👑 +${data.tribute.toLocaleString("de-DE")} Straßen-Tribut (${data.streets} Straßen${data.golden ? " · ✨ Goldene Straße!" : ""})`);
@@ -270,7 +270,7 @@ $("#bonus-tile").addEventListener("click", claimBonus);
 async function claimRescue() {
   if (!state.account) return;
   try {
-    const data = await api("/api/rescue", { name: state.account.name });
+    const data = await api("/api/rescue", { name: state.account.name, token: state.token });
     setAccount(data.account);
     toast(`🆘 +${data.amount.toLocaleString("de-DE")} 🪙 Soforthilfe!`);
   } catch (err) {

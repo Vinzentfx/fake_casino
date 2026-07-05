@@ -77,7 +77,18 @@ app.post("/api/login", (req, res) => {
   });
 });
 
+/** Bonus/Soforthilfe act on an account → the caller must prove it's theirs. */
+function requireOwnAccount(req, res) {
+  const key = accounts.verifyToken(req.body.token);
+  if (!key || key !== String(req.body.name || "").trim().toLowerCase()) {
+    res.status(403).json({ error: "Nicht autorisiert." });
+    return null;
+  }
+  return key;
+}
+
 app.post("/api/daily-bonus", (req, res) => {
+  if (!requireOwnAccount(req, res)) return;
   const result = accounts.claimDailyBonus(req.body.name);
   if (!result.ok) return res.status(429).json({ error: result.error, msLeft: result.msLeft });
   achievements.check(req.body.name); // streak/chips milestones
@@ -92,6 +103,7 @@ app.post("/api/daily-bonus", (req, res) => {
 });
 
 app.post("/api/rescue", (req, res) => {
+  if (!requireOwnAccount(req, res)) return;
   const result = accounts.rescue(req.body.name);
   if (!result.ok) return res.status(429).json({ error: result.error, msLeft: result.msLeft });
   res.json({ amount: result.amount, account: result.account });
