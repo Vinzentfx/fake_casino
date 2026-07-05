@@ -249,6 +249,35 @@ function spinGrid(machine) {
   return grid;
 }
 
+// ── Progressiver Gemeinschafts-Jackpot ──────────────────────────────────────
+// 0,5% of every paid base-game spin feeds a shared pot; every paid spin has a
+// bet-proportional chance to hit it (expected: one hit per ~50M wagered → pot
+// averages ~250k). Fed by bets → overall RTP stays below 100%.
+const path = require("path");
+const fs = require("fs");
+const JP_FILE = path.join(__dirname, "..", "data", "jackpot.json");
+const JP_SEED = 10000, JP_FEED = 0.005, JP_ODDS = 50_000_000;
+
+let jackpot = (() => {
+  try { const j = JSON.parse(fs.readFileSync(JP_FILE, "utf8")); if (j && j.pot >= JP_SEED) return j; } catch {}
+  return { pot: JP_SEED };
+})();
+function saveJackpot() {
+  try { fs.mkdirSync(path.dirname(JP_FILE), { recursive: true }); fs.writeFileSync(JP_FILE, JSON.stringify(jackpot)); } catch {}
+}
+/** Feed the pot and roll for a hit. Returns the payout (0 = no hit). */
+function jackpotSpin(bet) {
+  jackpot.pot += bet * JP_FEED;
+  let win = 0;
+  if (crypto.randomInt(JP_ODDS) < bet) {
+    win = Math.round(jackpot.pot);
+    jackpot.pot = JP_SEED;
+  }
+  saveJackpot();
+  return win;
+}
+const jackpotPot = () => Math.round(jackpot.pot);
+
 // ── Admin: force the maximum possible roll (animation showcase) ────────────
 // The owner can arm a one-shot flag; the NEXT base-game spin comes up as a
 // full grid of the machine's best-paying symbol → every line/way/cluster hits
@@ -560,7 +589,7 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
 
 function setupSlots(io, accounts) {
   io.on("connection", (socket) => {
-    socket.on("slots:machines", (ack) => ack && ack({ machines: publicMachines() }));
+    socket.on("slots:machines", (ack) => ack && ack({ machines: publicMachines(), jackpot: jackpotPot() }));
 
     // Unlock a machine for the logged-in account.
     socket.on("slots:unlock", ({ machineId } = {}, ack) => {
@@ -613,6 +642,19 @@ function setupSlots(io, accounts) {
         });
       }
 
+      // Progressive jackpot: paid base-game spins feed the pot & may hit it.
+      let jackpotWin = 0;
+      if (!inFree) {
+        jackpotWin = jackpotSpin(spinBet);
+        if (jackpotWin > 0) {
+          totalWin += jackpotWin;
+          result.totalWin = totalWin;
+          result.jackpot = jackpotWin;
+          const acc = accounts.get(socket.data.account);
+          require("./chat").announce(io, `💰💥 JACKPOT! ${acc ? acc.name : "?"} knackt den Gemeinschafts-Jackpot: +${jackpotWin.toLocaleString("de-DE")} 🪙!`);
+        }
+      }
+
       // Pay out (no account:update — client applies bet at spin start, win after reveal).
       let balance = accounts.get(socket.data.account).chips;
       if (totalWin > 0) {
@@ -621,9 +663,11 @@ function setupSlots(io, accounts) {
           balance = credit.account.chips;
           accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots");
         }
+      } else {
+        accounts.recordHand(socket.data.account, -(inFree ? 0 : spinBet), true, "slots");
       }
 
-      ack({ ...result, balance, winBoost: boost > 1 ? boost : 1 });
+      ack({ ...result, balance, jackpotPot: jackpotPot(), winBoost: boost > 1 ? boost : 1 });
     });
 
     // Bonus-Buy: pay a multiple of the bet to start free spins immediately.

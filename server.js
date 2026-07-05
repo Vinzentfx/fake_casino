@@ -32,6 +32,7 @@ const { setupChat } = require("./game/chat");
 const { setupLobby } = require("./game/lobby");
 const achievements = require("./game/achievements");
 const city = require("./game/city");
+const quests = require("./game/quests");
 
 const PORT = process.env.PORT || 3000;
 
@@ -80,9 +81,12 @@ app.post("/api/daily-bonus", (req, res) => {
   const result = accounts.claimDailyBonus(req.body.name);
   if (!result.ok) return res.status(429).json({ error: result.error, msLeft: result.msLeft });
   achievements.check(req.body.name); // streak/chips milestones
+  quests.track(req.body.name, "claim_bonus");
   res.json({
     amount: result.amount, base: result.base, tribute: result.tribute,
-    streets: result.streets, cashback: result.cashback, streak: result.streak,
+    streets: result.streets, golden: result.golden, houses: result.houses,
+    housesOwned: result.housesOwned, sets: result.sets, setList: result.setList,
+    cashback: result.cashback, streak: result.streak,
     account: result.account,
   });
 });
@@ -149,6 +153,7 @@ setupMarket(io, accounts);
 setupChat(io, accounts);
 setupLobby(io);
 achievements.setupAchievements(io, accounts);
+quests.setupQuests(io, accounts);
 
 // Chip-Transfer zwischen Spielern (socket-auth required)
 io.on("connection", (socket) => {

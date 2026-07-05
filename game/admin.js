@@ -144,6 +144,14 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
+    // Force the weekly rollover NOW (Spieler der Woche + neue Goldene Straße).
+    socket.on("admin:newWeek", (ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      require("./weekly").forceRollover(io, accounts);
+      ack({ ok: true });
+    });
+
     // Wipe a player's achievements (re-test unlock flow; already paid rewards stay).
     socket.on("admin:resetAchievements", ({ target } = {}, ack) => {
       if (!ack) return;

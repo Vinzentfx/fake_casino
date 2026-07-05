@@ -140,7 +140,12 @@
     socket.emit("slots:machines", (res) => {
       machines = (res && res.machines) || [];
       renderMachineGrid();
+      updateJackpotLine(res && res.jackpot);
     });
+  }
+  function updateJackpotLine(pot) {
+    const el = document.getElementById("jackpot-line");
+    if (el && pot != null) el.innerHTML = `💰 Gemeinschafts-Jackpot: <b>${pot.toLocaleString("de-DE")} 🪙</b> <span class="muted small">— 0,5 % jedes Einsatzes, kann bei jedem Spin knallen</span>`;
   }
   function isMachineUnlocked(m) {
     if (!m || m.unlockCost === 0) return true;
@@ -426,6 +431,8 @@
     } else {
       window.Casino.setChips(res.balance);
       if (!wasFree) recordSession(res.totalWin, bet); // track streak on base spins
+      if (res.jackpot) window.Casino.toast(`💰💥 JACKPOT GEKNACKT: +${res.jackpot.toLocaleString("de-DE")} 🪙!`);
+      updateJackpotLine(res.jackpotPot);
     }
     spinning = false;
 

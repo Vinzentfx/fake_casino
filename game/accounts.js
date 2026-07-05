@@ -35,8 +35,14 @@ const STREAK_STEP = 250;
 const STREAK_MAX = 10;
 
 // Street tribute: each complete street monopoly adds to every hourly bonus.
+// The weekly GOLDEN street counts double.
 const STREET_TRIBUTE = 2000;
 const STREET_TRIBUTE_CAP = 10; // at most 10 streets pay tribute (max +20.000/h)
+
+// House tribute: EVERY owned building pays a little rent with the hourly
+// bonus — capped so hoarding thousands of cheap houses isn't a money printer.
+const HOUSE_TRIBUTE = 200;
+const HOUSE_TRIBUTE_CAP = 100; // max 100 houses count (→ +20.000/h)
 
 // Cashback (like a real casino's loyalty program): a cut of your house-game
 // losses since the last claim comes back with the next bonus. Bounded by
@@ -310,9 +316,17 @@ function claimDailyBonus(name) {
   // Bahnhofs-Baron trophy: commuters bring money — hourly bonus ×1.5.
   const pendler = city.hasTrophy(key, "bahnhof") ? 1.5 : 1;
   const base = Math.round((DAILY_BONUS + streakBonus) * pendler);
-  // Street tribute: complete streets pay when you show up.
+  // Street tribute: complete streets pay when you show up; the weekly GOLDEN
+  // street pays double.
   const streets = Math.min(city.streetCount(key), STREET_TRIBUTE_CAP);
-  const tribute = streets * STREET_TRIBUTE;
+  const golden = city.ownsGolden(key) ? STREET_TRIBUTE : 0;
+  const tribute = streets * STREET_TRIBUTE + golden;
+  // House tribute: every owned building pays a little (capped).
+  const housesOwned = city.houseCount(key);
+  const houses = Math.min(housesOwned, HOUSE_TRIBUTE_CAP) * HOUSE_TRIBUTE;
+  // Collection sets (Stadtbekannt, Kaffee-Kartell …).
+  const setList = city.setsOf(key);
+  const sets = setList.reduce((s, x) => s + x.tribute, 0);
   // Loss cashback since the last claim — blessed players (⛪) get more back.
   const blessed = city.hasTrophy(key, "kirche");
   const cashback = Math.min(
@@ -320,11 +334,14 @@ function claimDailyBonus(name) {
     Math.floor((acc.lossSince || 0) * (blessed ? CASHBACK_RATE_BLESSED : CASHBACK_RATE))
   );
   acc.lossSince = 0;
-  const amount = base + tribute + cashback;
+  const amount = base + tribute + houses + sets + cashback;
   acc.chips += amount;
   acc.lastBonusAt = now;
   save();
-  return { ok: true, amount, base, tribute, streets, cashback, streak: acc.bonusStreak, account: publicAccount(acc) };
+  return {
+    ok: true, amount, base, tribute, streets, golden, houses, housesOwned,
+    sets, setList, cashback, streak: acc.bonusStreak, account: publicAccount(acc),
+  };
 }
 
 /**
@@ -384,6 +401,7 @@ function recordHand(name, winnings, house = true, game = null) {
   acc.stats = acc.stats || { gamesPlayed: 0, handsWon: 0, biggestWin: 0, biggestLoss: 0 };
   if (acc.stats.biggestLoss === undefined) acc.stats.biggestLoss = 0;
   acc.stats.gamesPlayed += 1;
+  acc.weeklyNet = (acc.weeklyNet || 0) + winnings; // Spieler-der-Woche race (weekly.js resets)
   // Per-game breakdown (plays / wins / net) for the stats screen.
   if (game) {
     acc.stats.perGame = acc.stats.perGame || {};
@@ -413,6 +431,7 @@ function recordHand(name, winnings, house = true, game = null) {
 
 const LEADERBOARD_CATS = {
   rich:    { sort: (a) => a.chips,                    label: "💰 Reichste" },
+  week:    { sort: (a) => a.weeklyNet || 0,           label: "🔥 Spieler der Woche" },
   estate:  { sort: (a) => city.ownerValue(normalizeName(a.name)), label: "🏘️ Immobilien-Mogul" },
   streets: { sort: (a) => city.streetCount(normalizeName(a.name)), label: "👑 Straßenkönig" },
   bigwin:  { sort: (a) => (a.stats && a.stats.biggestWin) || 0,  label: "🎰 Größter Einzelgewinn" },
@@ -424,16 +443,24 @@ const LEADERBOARD_CATS = {
 function leaderboardBy(cat, limit = 10) {
   const c = LEADERBOARD_CATS[cat];
   if (!c) return [];
-  // Lazy require: achievements holds the emoji for a player's chosen title badge.
+  // Lazy requires: achievements holds the title emoji, weekly the champ crown.
   const achievements = require("./achievements");
+  const weekly = require("./weekly");
+  const champ = weekly.champName();
   return Object.values(accounts)
     .map((a) => ({
       name: a.name, value: c.sort(a), chips: a.chips,
       badge: a.badge ? achievements.emojiOf(a.badge) : null,
+      champ: champ != null && normalizeName(a.name) === champ,
     }))
     .filter((x) => x.value > 0 || cat === "rich")
     .sort((a, b) => b.value - a.value)
     .slice(0, limit);
+}
+
+/** Raw account objects (weekly.js needs weeklyNet of everyone). */
+function rawAll() {
+  return Object.values(accounts);
 }
 
 /** All leaderboard categories at once (one fetch, client switches tabs). */
@@ -585,4 +612,5 @@ module.exports = {
   setResidence,
   residentsByBuilding,
   onHand,
+  rawAll,
 };
