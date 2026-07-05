@@ -268,14 +268,14 @@ function renderLiveops() {
   if (s && s.tourney) {
     const min = Math.max(0, Math.ceil((s.tourney.endsAt - Date.now()) / 60000));
     const lead = s.tourney.board && s.tourney.board[0];
-    parts.push(`<span class="lo-chip tourney">🏁 Slot-Turnier · ${s.tourney.prize.toLocaleString("de-DE")} 🪙 · noch ${min} Min${lead ? ` · 👑 ${escapeHtml(lead.name)} (${lead.win.toLocaleString("de-DE")})` : ""}</span>`);
+    parts.push(`<span class="lo-chip tourney">🏁 Slot-Turnier · ${s.tourney.prize.toLocaleString("de-DE")} 🪙 · noch ${min} Min${lead ? ` · 👑 ${escapeHtml(lead.name)} (${lead.mult}×)` : ""}</span>`);
   }
   el.innerHTML = parts.join("");
   el.classList.toggle("hidden", parts.length === 0);
 }
 socket.on("liveops:state", (s) => { liveopsState = s; renderLiveops(); });
 socket.on("connect", () => socket.emit("liveops:state", (r) => { if (r && r.ok) { liveopsState = r; renderLiveops(); } }));
-socket.on("liveops:tourneyWin", (w) => { if (w) toast(`🏆 Turnier gewonnen: ${w.name} (+${w.prize.toLocaleString("de-DE")} 🪙)!`); });
+socket.on("liveops:tourneyWin", (w) => { if (w) toast(`🏆 Turnier gewonnen: ${w.name} mit ${w.mult}× (+${w.prize.toLocaleString("de-DE")} 🪙)!`); });
 setInterval(renderLiveops, 20000);
 
 // ---- Stunden-Bonus: Live-Countdown auf Button + Lobby-Kachel ----
