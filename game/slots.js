@@ -291,9 +291,7 @@ function consumeForceWin(key) {
   return forcedWin.delete(String(key).toLowerCase());
 }
 
-/** Shadowban: roll grids until one pays NOTHING (no win, no free spins).
- *  Lucky 7s wins ~90% of spins, so a losing grid needs a few rerolls; if none
- *  is found the spin stays honest (practically never happens). */
+/** Shadowban: roll grids until one pays NOTHING (no win, no free spins). */
 function losingGrid(machine, bet) {
   for (let i = 0; i < 300; i++) {
     const g = spinGrid(machine);
@@ -301,6 +299,36 @@ function losingGrid(machine, bet) {
     if (probe.totalWin === 0 && probe.result.freeSpinsAwarded === 0) return g;
   }
   return null;
+}
+
+/** Shadowban near-miss: bias the grid toward the RAREST high-paying symbols
+ *  (e.g. lots of 7s on Lucky 7s) but never quite enough to trigger a win — the
+ *  classic tantalising "so close" cold streak. Among many biased losing
+ *  candidates, keep the one showing the most of the top symbol. */
+function teaseGrid(machine, bet) {
+  const payTable = machine.pays || machine.clusterPays || {};
+  const ranked = Object.keys(payTable)
+    .filter((s) => s !== machine.scatter && s !== machine.wild)
+    .sort((a, b) => Math.max(...Object.values(payTable[b]).map(Number)) - Math.max(...Object.values(payTable[a]).map(Number)));
+  if (!ranked.length) return losingGrid(machine, bet);
+  const topSyms = ranked.slice(0, 3);
+  const bestSym = ranked[0];
+  let best = null, bestScore = -1;
+  for (let i = 0; i < 500; i++) {
+    const g = [];
+    for (let c = 0; c < machine.cols; c++) {
+      const col = [];
+      for (let r = 0; r < machine.rows; r++)
+        col.push(Math.random() < 0.5 ? topSyms[crypto.randomInt(topSyms.length)] : weightedPick(machine));
+      g.push(col);
+    }
+    const probe = evaluateSpin(machine, bet, null, g);
+    if (probe.totalWin !== 0 || probe.result.freeSpinsAwarded !== 0) continue; // must not pay
+    let score = 0;
+    for (const col of g) for (const s of col) if (s === bestSym) score++;
+    if (score > bestScore) { best = g; bestScore = score; }
+  }
+  return best || losingGrid(machine, bet);
 }
 
 /** Full grid of the best-paying symbol (scatter excluded). */
@@ -642,7 +670,7 @@ function setupSlots(io, accounts) {
       const showcase = consumeForceWin(socket.data.account);
       let forced = showcase ? bestGrid(machine) : null;
       if (!forced && accounts.isShadowbanned(socket.data.account)) {
-        forced = losingGrid(machine, inFree ? session.bet : bet);
+        forced = teaseGrid(machine, inFree ? session.bet : bet);
       }
       let { result, session: newSession, totalWin } = evaluateSpin(machine, bet, session, forced);
       socket.data.slots = newSession;
@@ -682,10 +710,10 @@ function setupSlots(io, accounts) {
         const credit = accounts.adjustChips(socket.data.account, totalWin);
         if (credit.ok) {
           balance = credit.account.chips;
-          if (!showcase) accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots");
+          if (!showcase) accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots", { free: inFree });
         }
       } else if (!showcase) {
-        accounts.recordHand(socket.data.account, -(inFree ? 0 : spinBet), true, "slots");
+        accounts.recordHand(socket.data.account, -(inFree ? 0 : spinBet), true, "slots", { free: inFree });
       }
 
       ack({ ...result, balance, jackpotPot: jackpotPot(), winBoost: boost > 1 ? boost : 1 });
