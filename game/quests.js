@@ -31,6 +31,16 @@ const WEEKLY_POOL = [
   { id: "houses3",    ev: "buy_house", target: 3,   reward: 20000, label: "🏘️ Kauf 3 Gebäude diese Woche" },
 ];
 
+// Repeatable quests: always available, no rotation. Completing one pays and
+// resets it — but only up to `cap` times per day, so it's a bounded faucet
+// (a grind loop, not a money printer). "playtime" is active seconds actually
+// spent playing (idle gaps don't count).
+const REPEATABLE_POOL = [
+  { id: "rp_time",  ev: "playtime",   target: 300, reward: 1500, cap: 8, label: "⏱️ Spiele 5 Minuten" },
+  { id: "rp_slots", ev: "play_slots", target: 30,  reward: 2000, cap: 6, label: "🎰 Dreh 30 Slot-Runden" },
+  { id: "rp_win",   ev: "win",        target: 8,   reward: 2000, cap: 6, label: "🍀 Gewinne 8 Runden" },
+];
+
 const DAILIES_PER_DAY = 3;
 const WEEKLIES_PER_WEEK = 2;
 
@@ -64,6 +74,7 @@ function ensureQuests(acc) {
   if (q.day !== d) {
     for (const def of DAILY_POOL) { delete q.prog[def.id]; delete q.claimed[def.id]; }
     q.bought = []; // buy-quest anti-farm list resets daily
+    q.rep = {};    // repeatable quest progress + daily completion counts reset
     q.day = d;
   }
   if (q.week !== w) {
@@ -87,19 +98,39 @@ function track(name, ev, n = 1, meta = null) {
     if (q.bought.includes(meta)) return;
     q.bought.push(meta);
   }
-  const active = [...activeDailies(), ...activeWeeklies()];
+  const key = String(name).trim().toLowerCase();
+  const matches = (def) => def.ev === ev || (def.ev === "play" && ev.startsWith("play_"));
   let changed = false;
-  for (const def of active) {
-    if (q.claimed[def.id]) continue;
-    if (def.ev !== ev && !(def.ev === "play" && ev.startsWith("play_"))) continue;
+
+  // One-time daily & weekly quests.
+  for (const def of [...activeDailies(), ...activeWeeklies()]) {
+    if (q.claimed[def.id] || !matches(def)) continue;
     q.prog[def.id] = Math.min(def.target, (q.prog[def.id] || 0) + n);
     changed = true;
     if (q.prog[def.id] >= def.target) {
       q.claimed[def.id] = true;
-      _accounts.adjustChips(String(name).trim().toLowerCase(), def.reward);
+      _accounts.adjustChips(key, def.reward);
       if (_io) _io.emit("quest:done", { user: acc.name, label: def.label, reward: def.reward });
     }
   }
+
+  // Repeatable quests: complete → pay & reset, up to `cap` times per day.
+  q.rep = q.rep || {};
+  for (const def of REPEATABLE_POOL) {
+    if (!matches(def)) continue;
+    const r = q.rep[def.id] || (q.rep[def.id] = { prog: 0, done: 0 });
+    if (r.done >= def.cap) continue;
+    r.prog += n;
+    changed = true;
+    while (r.prog >= def.target && r.done < def.cap) {
+      r.prog -= def.target;
+      r.done += 1;
+      _accounts.adjustChips(key, def.reward);
+      if (_io) _io.emit("quest:done", { user: acc.name, label: def.label, reward: def.reward, repeat: true });
+    }
+    if (r.done >= def.cap) r.prog = def.target; // show as maxed for the day
+  }
+
   if (changed) _accounts.save();
 }
 
@@ -112,12 +143,22 @@ function listFor(name) {
     id: def.id, label: def.label, target: def.target, reward: def.reward,
     prog: Math.min(def.target, q.prog[def.id] || 0), done: !!q.claimed[def.id],
   });
+  q.rep = q.rep || {};
+  const repView = (def) => {
+    const r = q.rep[def.id] || { prog: 0, done: 0 };
+    return {
+      id: def.id, label: def.label, target: def.target, reward: def.reward,
+      cap: def.cap, done: r.done, prog: Math.min(def.target, r.prog),
+      maxed: r.done >= def.cap,
+    };
+  };
   const msDay = 86400000 - (Date.now() % 86400000);
   // Week w covers day indices [7w-3, 7(w+1)-3) → next rollover at day 7(w+1)-3.
   const msWeek = ((weekNow() + 1) * 7 - 3) * 86400000 - Date.now();
   return {
     dailies: activeDailies().map(view),
     weeklies: activeWeeklies().map(view),
+    repeatable: REPEATABLE_POOL.map(repView),
     msDay,
     msWeek: Math.max(0, msWeek),
   };
@@ -130,6 +171,18 @@ function setupQuests(io, accounts) {
   // Free spins don't count — one bonus trigger must not clear a 10-spin quest.
   accounts.onHand((name, winnings, house, game, meta) => {
     if (meta && meta.free) return;
+    // Active playtime = gap since the last recorded hand, capped so idle time
+    // (or leaving the tab open) doesn't count. Feeds the "Spiele 5 Min" quest.
+    const acc = accounts.get(name);
+    if (acc) {
+      const q = ensureQuests(acc);
+      const now = Date.now();
+      const gap = Math.min(now - (q.lastPlayTs || now), 30000); // cap idle gaps
+      q.lastPlayTs = now;
+      q.playAccMs = (q.playAccMs || 0) + gap; // accumulate fractional seconds
+      const secs = Math.floor(q.playAccMs / 1000);
+      if (secs > 0) { q.playAccMs -= secs * 1000; track(name, "playtime", secs); }
+    }
     track(name, "play_" + (game || "any"));
     if (winnings > 0) track(name, "win");
   });
