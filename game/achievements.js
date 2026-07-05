@@ -103,6 +103,12 @@ function listFor(name) {
   }));
 }
 
+/** Emoji of one achievement id (leaderboard title badge), or null. */
+function emojiOf(id) {
+  const d = DEFS.find((x) => x.id === id);
+  return d ? d.emoji : null;
+}
+
 function setupAchievements(io, accounts) {
   _io = io;
   _accounts = accounts;
@@ -113,9 +119,24 @@ function setupAchievements(io, accounts) {
     socket.on("ach:list", (ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
-      ack({ ok: true, list: listFor(socket.data.account) });
+      const acc = accounts.get(socket.data.account);
+      ack({ ok: true, list: listFor(socket.data.account), badge: (acc && acc.badge) || null });
+    });
+
+    // Pick ONE unlocked achievement as the title emoji shown behind your name
+    // in the leaderboard (id = null clears it).
+    socket.on("ach:setBadge", ({ id } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const acc = accounts.get(socket.data.account);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      if (id == null) { delete acc.badge; accounts.save(); return ack({ ok: true, badge: null }); }
+      if (!acc.ach || !acc.ach[id]) return ack({ ok: false, error: "Achievement noch nicht freigeschaltet." });
+      acc.badge = id;
+      accounts.save();
+      ack({ ok: true, badge: id });
     });
   });
 }
 
-module.exports = { setupAchievements, check, listFor };
+module.exports = { setupAchievements, check, listFor, emojiOf };
