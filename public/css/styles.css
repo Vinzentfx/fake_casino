@@ -2022,6 +2022,13 @@ button { font-family: inherit; cursor: pointer; }
 .quest.done .quest-fill { background: #4ade80; }
 .quest-prog { font-size: 0.72rem; opacity: 0.65; text-align: right; }
 
+/* Hourly bonus ready: gentle pulse on the lobby tile. */
+.action-tile.bonus-ready { border-color: rgba(244,215,130,0.65); animation: bonusPulse 1.6s ease-in-out infinite; }
+@keyframes bonusPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244,215,130,0.0); }
+  50% { box-shadow: 0 0 14px 2px rgba(244,215,130,0.35); }
+}
+
 /* Shared progressive jackpot (slots lobby). */
 .jackpot-line { margin: 6px 0 0; font-size: 0.95rem; color: #ffd700; }
 .jackpot-line b { font-size: 1.05rem; }
