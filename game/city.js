@@ -46,8 +46,8 @@ const CLASSES = {
 // Unique trophy buildings: title + small thematic perk. Price = normal × mult.
 const TROPHIES = {
   bahnhof:     { title: "Bahnhofs-Baron",   emoji: "🚉", perk: "Pendler-Bonus: Stunden-Bonus ×1,5", mult: 10 },
-  kirche:      { title: "Kirchenpatron",    emoji: "⛪", perk: "Segen: Soforthilfe ×2 & halber Cooldown", mult: 8 },
-  schule:      { title: "Schulleiter",      emoji: "🏫", perk: "Bildung: Arbeiten-Klicks ×3", mult: 8 },
+  kirche:      { title: "Kirchenpatron",    emoji: "⛪", perk: "Segen: 15 % Verlust-Cashback (statt 10 %) mit doppeltem Limit · Soforthilfe ×2", mult: 8 },
+  schule:      { title: "Schulleiter",      emoji: "🏫", perk: "Bildung: Serien-Bonus ×2 & Serie verfällt nie · Klicks ×3", mult: 8 },
   wahrzeichen: { title: "Wahrzeichen",      emoji: "🏛️", perk: "Prestige: das größte Gebäude des Ortsteils", mult: 12 },
 };
 
