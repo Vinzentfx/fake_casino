@@ -117,6 +117,11 @@
             <span class="tile-name">Sudoku-Race</span>
             <span class="tile-sub">Gleiches Rätsel · wer zuerst löst, gewinnt</span>
           </button>
+          <button class="game-tile" data-nav="solitaire">
+            <span class="tile-icon">🃏</span>
+            <span class="tile-name">Solitär</span>
+            <span class="tile-sub">Klondike · gegen das Haus oder PvP</span>
+          </button>
         </div>
 
         <h2 class="section-title">Wirtschaft</h2>
@@ -628,6 +633,79 @@
           <h3 id="mem-result-title">—</h3>
           <p class="muted small" id="mem-result-sub"></p>
           <button class="btn-primary" id="mem-again" style="margin-top:10px">Nochmal</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SOLITÄR (KLONDIKE) ===================== -->
+    <section class="screen" data-screen="solitaire">
+      <div class="sol-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon">🃏</div><h2>Solitär</h2></div>
+
+        <!-- Setup: choose a mode -->
+        <div id="sol-setup">
+          <div class="sol-mode-tabs">
+            <button class="sol-mode-tab active" data-mode="solo">🏠 Gegen das Haus</button>
+            <button class="sol-mode-tab" data-mode="race">⚔️ PvP-Race</button>
+          </div>
+
+          <div id="sol-solo-panel" class="mem-panel">
+            <p class="muted small">Schwer (Draw-3, nur 2 Neuauflagen). Räum das ganze Brett ab → <b>Einsatz × 3</b>. Gibst du auf, ist der Einsatz weg. Max-Einsatz bewusst niedrig.</p>
+            <label class="mem-label">Einsatz (20–500 🪙)
+              <input id="sol-bet" type="number" inputmode="numeric" min="20" max="500" step="10" value="50" />
+            </label>
+            <button class="btn-primary" id="sol-solo-start" style="width:100%;margin-top:8px">🃏 Spiel starten</button>
+          </div>
+
+          <div id="sol-race-panel" style="display:none">
+            <div class="mem-panel">
+              <p class="muted small">Beide bekommen dasselbe Spiel (Draw-1). Wer zuerst abräumt oder bei Zeitablauf mehr Karten oben hat, gewinnt den Pot minus 10% Rake.</p>
+              <label class="mem-label">Einsatz (Buy-in)
+                <input id="sol-buyin" type="number" inputmode="numeric" min="50" step="50" value="200" />
+              </label>
+              <div class="mem-visibility">
+                <label class="mem-radio"><input type="radio" name="sol-vis" value="public" checked /> 🌐 Öffentlich</label>
+                <label class="mem-radio"><input type="radio" name="sol-vis" value="private" /> 🔒 Privat (nur per Code)</label>
+              </div>
+              <button class="btn-primary" id="sol-race-create" style="width:100%;margin-top:8px">⚔️ Race erstellen</button>
+            </div>
+            <div class="mem-panel">
+              <label class="mem-label">Code eines Freundes
+                <input id="sol-code" type="text" maxlength="4" placeholder="z.B. AB12" style="text-transform:uppercase" />
+              </label>
+              <button class="btn-secondary" id="sol-join" style="width:100%;margin-top:8px">Beitreten</button>
+            </div>
+          </div>
+          <div class="form-error" id="sol-error"></div>
+        </div>
+
+        <!-- Race waiting room -->
+        <div id="sol-wait" style="display:none;text-align:center">
+          <p>Warte auf Mitspieler… Teile diesen Code:</p>
+          <div class="mem-code-big" id="sol-code-show">----</div>
+          <p class="muted small" id="sol-wait-info">1/2 Spieler</p>
+          <button class="btn-primary" id="sol-start" style="display:none">▶ Race starten</button>
+          <button class="btn-secondary" id="sol-cancel" style="margin-top:8px">Abbrechen</button>
+        </div>
+
+        <!-- Game -->
+        <div id="sol-game" style="display:none">
+          <div class="sol-hud" id="sol-hud"></div>
+          <div class="sol-board" id="sol-board"></div>
+          <div class="sol-actions">
+            <button class="btn-secondary" id="sol-auto" style="display:none">⤴ Auto-Ablage</button>
+            <button class="btn-secondary" id="sol-giveup" style="display:none">Aufgeben</button>
+          </div>
+          <div class="muted small" id="sol-movehint"></div>
+        </div>
+
+        <!-- Result -->
+        <div id="sol-result" style="display:none;text-align:center">
+          <div class="mem-result-emoji" id="sol-result-emoji">🏆</div>
+          <h3 id="sol-result-title">—</h3>
+          <p class="muted small" id="sol-result-sub"></p>
+          <button class="btn-primary" id="sol-again" style="margin-top:10px">Nochmal</button>
         </div>
       </div>
     </section>
@@ -1168,6 +1246,7 @@
   <script src="/js/memory.js"></script>
   <script src="/js/suggestions.js"></script>
   <script src="/js/sudoku.js"></script>
+  <script src="/js/solitaire.js"></script>
   <script src="/js/wheel.js"></script>
   <script src="/js/heist.js"></script>
   <script src="/js/clans.js"></script>

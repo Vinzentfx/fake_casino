@@ -2171,6 +2171,41 @@ button { font-family: inherit; cursor: pointer; }
 .mem-card.matched { background: rgba(74,222,128,0.16); border-color: rgba(74,222,128,0.45); opacity: 0.85; }
 .mem-result-emoji { font-size: 3.2rem; margin-bottom: 6px; }
 
+/* Solitär (Klondike). */
+.sol-wrap { max-width: 640px; margin: 0 auto; }
+.sol-mode-tabs { display: flex; gap: 8px; margin: 10px 0; }
+.sol-mode-tab { flex: 1; padding: 12px 6px; border-radius: 10px; cursor: pointer; font-weight: 700;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #e8ecf2; }
+.sol-mode-tab.active { background: rgba(230,176,75,0.18); border-color: #e6b04b; color: #f4d58a; }
+.sol-hud { display: flex; justify-content: space-around; gap: 8px; margin: 6px 0 10px; }
+.sol-hud-item { text-align: center; font-size: 0.8rem; color: var(--muted, #9aa4b2);
+  display: flex; flex-direction: column; }
+.sol-hud-item b { font-size: 1.1rem; color: #fff; }
+.sol-hud-timer b { color: #e6b04b; }
+.sol-board { user-select: none; }
+.sol-top { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; }
+.sol-tableau { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; align-items: start; }
+.sol-col { min-height: 90px; display: flex; flex-direction: column; }
+.sol-slot { aspect-ratio: 0.72; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  border: 1px dashed rgba(255,255,255,0.18); color: rgba(255,255,255,0.35); font-size: 1.2rem; }
+.sol-spacer { border: none; }
+.sol-stock, .sol-waste, .sol-foundation, .sol-empty-col { cursor: pointer; }
+.sol-empty-col { width: 100%; }
+.sol-found-suit.red, .sol-card.red { color: #e0705e; }
+.sol-found-suit.black, .sol-card.black { color: #e8ecf2; }
+.sol-card { aspect-ratio: 0.72; border-radius: 6px; background: #f4f1e8; color: #1a1a1a;
+  border: 1px solid rgba(0,0,0,0.4); display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 3px 4px; font-weight: 800; font-size: 0.95rem; cursor: pointer; box-sizing: border-box; width: 100%; }
+.sol-card.red { color: #c0392b; }
+.sol-card.black { color: #1a1a1a; }
+.sol-card.down { background: repeating-linear-gradient(45deg, #2f5aa8, #2f5aa8 4px, #274d92 4px, #274d92 8px);
+  border-color: rgba(255,255,255,0.25); }
+.sol-card.sel { outline: 3px solid #e6b04b; outline-offset: -1px; box-shadow: 0 0 10px rgba(230,176,75,0.6); }
+.sol-col .sol-card { position: relative; }
+.sol-actions { display: flex; gap: 8px; justify-content: center; margin: 12px 0 4px; }
+.sol-actions .btn-secondary { flex: 0 1 auto; padding: 10px 16px; }
+#sol-movehint { text-align: center; min-height: 18px; color: #e0a05e; }
+
 /* Sudoku-Race. */
 .sdk-wrap { max-width: 520px; margin: 0 auto; }
 .sdk-topbar { display: flex; justify-content: center; margin: 6px 0; }

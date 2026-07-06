@@ -41,6 +41,7 @@
     else if (game === "roulette" && window.Casino._rouletteJoinCode) window.Casino._rouletteJoinCode(code);
     else if (game === "memory" && window.Casino._memoryJoinCode) window.Casino._memoryJoinCode(code);
     else if (game === "sudoku" && window.Casino._sudokuJoinCode) window.Casino._sudokuJoinCode(code);
+    else if (game === "solrace" && window.Casino._solraceJoinCode) window.Casino._solraceJoinCode(code);
     else toast("Diese Lobby lässt sich gerade nicht beitreten.");
   }
 
