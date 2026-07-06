@@ -898,6 +898,25 @@
   <!-- Toast für Hinweise (z. B. Bonus erhalten) -->
   <div id="toast" class="toast"></div>
 
+  <!-- Update-/Changelog-Modal (erscheint einmalig nach einem Update) -->
+  <div id="update-modal" class="update-modal hidden">
+    <div class="update-card">
+      <div class="update-emoji">🎉</div>
+      <h2>Großes Update!</h2>
+      <p class="muted small" style="text-align:center;margin-top:-4px">Das ist neu im Fake Casino:</p>
+      <div class="update-list">
+        <div class="update-item"><span>🚀</span><div><b>Crash — NEU</b><small>Geteilte Live-Runde: die Rakete steigt, steig vor dem Crash aus! Mit Auto-Cashout.</small></div></div>
+        <div class="update-item"><span>💣</span><div><b>Mines — NEU</b><small>Edelsteine sammeln, Bomben meiden, jederzeit auszahlen — je mehr Minen, desto höher der Multiplikator.</small></div></div>
+        <div class="update-item"><span>🎯</span><div><b>Aufträge & wiederholbare Quests</b><small>Verdiene Chips durchs Spielen — täglich, wöchentlich und immer wieder.</small></div></div>
+        <div class="update-item"><span>📅</span><div><b>Login-Kalender</b><small>Jeden Tag einloggen, die Belohnung steigt bis 50.000 an Tag 7.</small></div></div>
+        <div class="update-item"><span>🏆</span><div><b>Achievements & Badges</b><small>19+ Erfolge mit Belohnung; wähl ein Emoji fürs Leaderboard.</small></div></div>
+        <div class="update-item"><span>🍹</span><div><b>Happy Hour & Slot-Turniere</b><small>Zeitlich begrenzte Events mit doppelten Belohnungen und Preis-Pots.</small></div></div>
+        <div class="update-item"><span>🎯</span><div><b>Kopfgeld auf Rivalen</b><small>Setz ein Kopfgeld aus — wer dem Rivalen ein Gebäude abnimmt, kassiert.</small></div></div>
+      </div>
+      <button class="btn-primary" id="update-close" style="width:100%;margin-top:14px">Los geht's! 🎰</button>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/chat.js"></script>
