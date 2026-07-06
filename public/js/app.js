@@ -58,6 +58,7 @@ function showScreen(name) {
   if (name === "mines" && window.Casino._loadMines) window.Casino._loadMines();
   if (name === "memory" && window.Casino._loadMemory) window.Casino._loadMemory();
   if (name === "suggest" && window.Casino._loadSuggest) window.Casino._loadSuggest();
+  if (name === "sudoku" && window.Casino._loadSudoku) window.Casino._loadSudoku();
   if (name === "sports" && window.Casino._loadSports) window.Casino._loadSports();
   if (window.Casino.chat) window.Casino.chat.update(name);
 
