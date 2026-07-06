@@ -98,7 +98,7 @@ app.post("/api/daily-bonus", (req, res) => {
     amount: result.amount, base: result.base, tribute: result.tribute,
     streets: result.streets, golden: result.golden, houses: result.houses,
     housesOwned: result.housesOwned, sets: result.sets, setList: result.setList,
-    cashback: result.cashback, streak: result.streak,
+    cashback: result.cashback, streak: result.streak, taper: result.taper,
     account: result.account,
   });
 });
