@@ -92,6 +92,11 @@
             <span class="tile-name">Sportwetten</span>
             <span class="tile-sub">Quoten · sieh fremde Tipps</span>
           </button>
+          <button class="game-tile" data-nav="crash">
+            <span class="tile-icon">🚀</span>
+            <span class="tile-name">Crash</span>
+            <span class="tile-sub">Rakete · vor dem Crash raus!</span>
+          </button>
         </div>
 
         <h2 class="section-title">Wirtschaft</h2>
@@ -516,6 +521,30 @@
     </section>
 
     <!-- ===================== STATISTIK ===================== -->
+    <!-- ===================== CRASH / AVIATOR ===================== -->
+    <section class="screen" data-screen="crash">
+      <div class="crash-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon">🚀</div><h2>Crash</h2></div>
+        <div class="crash-history" id="crash-history"></div>
+        <div class="crash-stage" id="crash-stage">
+          <canvas id="crash-canvas"></canvas>
+          <div class="crash-mult" id="crash-mult">1.00×</div>
+          <div class="crash-status" id="crash-status">Verbinde…</div>
+        </div>
+        <div class="crash-controls">
+          <div class="crash-betrow">
+            <label>Einsatz<input id="crash-amount" type="number" inputmode="numeric" min="50" step="50" value="100" /></label>
+            <label>Auto-Cashout ×<input id="crash-auto" type="number" inputmode="decimal" min="1.01" step="0.1" placeholder="optional" /></label>
+          </div>
+          <button id="crash-action" class="btn-primary">Einsatz setzen</button>
+          <div class="form-error" id="crash-error"></div>
+        </div>
+        <div class="crash-players-head">Mitspieler</div>
+        <div class="crash-players" id="crash-players"></div>
+      </div>
+    </section>
+
     <!-- ===================== LOGIN-KALENDER ===================== -->
     <section class="screen" data-screen="calendar">
       <div class="panel">
@@ -847,6 +876,7 @@
   <script src="/js/lobby.js"></script>
   <script src="/js/stats.js"></script>
   <script src="/js/quests.js"></script>
+  <script src="/js/crash.js"></script>
   <script src="/js/blackjackLobby.js"></script>
   <script src="/js/poker.js"></script>
   <script src="/js/slots.js"></script>
