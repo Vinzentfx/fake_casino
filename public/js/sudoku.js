@@ -165,6 +165,11 @@
       stopTimer();
       show("sdk-result");
       renderResult(s);
+      // Walkover: opponent left mid-race → notify the winner (money already credited).
+      const r = s.result, me = getAccount(), myName = me && me.name;
+      if (r && r.walkover && r.winner && myName && r.winner.toLowerCase() === myName.toLowerCase()) {
+        toast(`🏆 Gegner hat das Race verlassen — du gewinnst ${fmt(r.payout)} 🪙!`);
+      }
     }
   }
 
@@ -199,6 +204,10 @@
   function leave() { if (myCode) socket.emit("sudoku:leave"); myCode = null; st = null; grid = null; puzzle = null; stopTimer(); }
   $("#sdk-cancel").addEventListener("click", () => { leave(); show("sdk-setup"); });
   $("#sdk-again").addEventListener("click", () => { leave(); show("sdk-setup"); });
+
+  // Leaving the game screen (‹ Lobby) mid-race forfeits → opponent wins the pot.
+  const sdkBack = document.querySelector('[data-screen="sudoku"] .back-btn');
+  if (sdkBack) sdkBack.addEventListener("click", () => { if (myCode) leave(); });
 
   window.Casino._sudokuJoinCode = (code) => { window.Casino.showScreen("sudoku"); doJoin(code); };
   window.Casino._loadSudoku = () => {

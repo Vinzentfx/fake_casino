@@ -103,7 +103,12 @@
     } else if (s.state === "done") {
       show("mem-result");
       renderResult(s);
-      if (s.result && s.result.players) { /* account:update already applied */ }
+      // Walkover: the opponent left mid-game → notify the winner even if they're
+      // no longer on this screen (money is already credited via account:update).
+      const r = s.result, me = getAccount(), myName = me && me.name;
+      if (r && r.walkover && r.winner && myName && r.winner.toLowerCase() === myName.toLowerCase()) {
+        toast(`🏆 Gegner hat das Duell verlassen — du gewinnst ${fmt(r.payout)} 🪙!`);
+      }
     }
   }
 
@@ -152,6 +157,10 @@
   }
   $("#mem-cancel").addEventListener("click", () => { leave(); show("mem-setup"); });
   $("#mem-again").addEventListener("click", () => { leave(); show("mem-setup"); });
+
+  // Leaving the game screen (‹ Lobby) mid-match forfeits → opponent wins the pot.
+  const memBack = document.querySelector('[data-screen="memory"] .back-btn');
+  if (memBack) memBack.addEventListener("click", () => { if (myCode) leave(); });
 
   // Join straight from the open-lobby browser.
   window.Casino._memoryJoinCode = (code) => { window.Casino.showScreen("memory"); doJoin(code); };
