@@ -2029,6 +2029,15 @@ button { font-family: inherit; cursor: pointer; }
   50% { box-shadow: 0 0 14px 2px rgba(244,215,130,0.35); }
 }
 
+/* Clans. */
+.clan-header { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+.clan-header b { font-size: 1.05rem; }
+.clan-roster { display: flex; flex-direction: column; gap: 4px; }
+.clan-mrow { display: flex; justify-content: space-between; padding: 7px 11px; border-radius: 8px; background: rgba(255,255,255,0.04); font-size: 0.9rem; }
+.clan-create { padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); }
+.lb-clan { font-size: 0.72rem; font-weight: 800; color: #f4d782; }
+
 /* Casino-Heist overlay. */
 .heist-overlay { position: fixed; inset: 0; z-index: 210; display: flex; align-items: center; justify-content: center;
   background: rgba(10,4,4,0.82); backdrop-filter: blur(4px); padding: 16px; }
