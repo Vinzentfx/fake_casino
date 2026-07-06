@@ -14,7 +14,7 @@
   const GAME_META = {
     slots: { e: "🎰", n: "Slots" }, blackjack: { e: "♠️", n: "Blackjack" },
     roulette: { e: "🎡", n: "Roulette" }, sportwetten: { e: "⚽", n: "Sportwetten" },
-    poker: { e: "🃏", n: "Poker" }, crash: { e: "🚀", n: "Crash" },
+    poker: { e: "🃏", n: "Poker" }, crash: { e: "🚀", n: "Crash" }, mines: { e: "💣", n: "Mines" },
   };
 
   // When set, the next load shows this player instead of yourself.

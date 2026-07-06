@@ -97,6 +97,11 @@
             <span class="tile-name">Crash</span>
             <span class="tile-sub">Rakete · vor dem Crash raus!</span>
           </button>
+          <button class="game-tile" data-nav="mines">
+            <span class="tile-icon">💣</span>
+            <span class="tile-name">Mines</span>
+            <span class="tile-sub">Edelsteine sammeln, Bomben meiden</span>
+          </button>
         </div>
 
         <h2 class="section-title">Wirtschaft</h2>
@@ -521,6 +526,29 @@
     </section>
 
     <!-- ===================== STATISTIK ===================== -->
+    <!-- ===================== MINES ===================== -->
+    <section class="screen" data-screen="mines">
+      <div class="mines-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon">💣</div><h2>Mines</h2></div>
+        <div class="mines-topbar">
+          <div class="mines-stat"><span>Multiplikator</span><b id="mines-mult">1.00×</b></div>
+          <div class="mines-stat"><span>Auszahlung</span><b id="mines-cashval">—</b></div>
+          <div class="mines-stat"><span>Nächstes Feld</span><b id="mines-next">—</b></div>
+        </div>
+        <div class="mines-grid" id="mines-grid"></div>
+        <div class="mines-setup" id="mines-setup">
+          <div class="crash-betrow">
+            <label>Einsatz<input id="mines-amount" type="number" inputmode="numeric" min="50" step="50" value="100" /></label>
+            <label>Minen<input id="mines-count" type="number" inputmode="numeric" min="1" max="24" value="3" /></label>
+          </div>
+          <button class="btn-primary" id="mines-start" style="width:100%;margin-top:10px">💣 Spiel starten</button>
+        </div>
+        <button class="btn-primary crash-cashbtn" id="mines-cashout" style="width:100%;display:none">💸 Auszahlen</button>
+        <div class="form-error" id="mines-error"></div>
+      </div>
+    </section>
+
     <!-- ===================== CRASH / AVIATOR ===================== -->
     <section class="screen" data-screen="crash">
       <div class="crash-wrap">
@@ -877,6 +905,7 @@
   <script src="/js/stats.js"></script>
   <script src="/js/quests.js"></script>
   <script src="/js/crash.js"></script>
+  <script src="/js/mines.js"></script>
   <script src="/js/blackjackLobby.js"></script>
   <script src="/js/poker.js"></script>
   <script src="/js/slots.js"></script>
