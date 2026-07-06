@@ -575,6 +575,10 @@ function placeBounty(fromName, targetName, amount) {
   if (from.chips < amount) return { ok: false, error: "Nicht genug Chips." };
   from.chips -= amount;
   target.bounty = (target.bounty || 0) + amount;
+  // Track who funded how much → so self-funded bounties (alt-account farming)
+  // don't grant the claimant the "Kopfgeldjäger" achievement.
+  target.bountyBy = target.bountyBy || {};
+  target.bountyBy[fromKey] = (target.bountyBy[fromKey] || 0) + amount;
   save();
   return { ok: true, bounty: target.bounty, targetName: target.name, account: publicAccount(from) };
 }
@@ -585,11 +589,15 @@ function claimBounty(targetName, claimantName) {
   const claimantKey = normalizeName(claimantName);
   if (!target || !target.bounty) return 0;
   const amount = target.bounty;
+  // Portion funded by OTHERS (not the claimant themselves).
+  const selfFunded = (target.bountyBy && target.bountyBy[claimantKey]) || 0;
+  const external = amount - selfFunded;
   target.bounty = 0;
+  target.bountyBy = {};
   const res = adjustChips(claimantKey, amount);
   if (res.ok) {
     const c = accounts[claimantKey];
-    if (c) c.bountyClaims = (c.bountyClaims || 0) + 1; // for achievements
+    if (c && external > 0) c.bountyClaims = (c.bountyClaims || 0) + 1; // only "real" claims count
     save();
     return amount;
   }
