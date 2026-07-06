@@ -60,6 +60,7 @@ function showScreen(name) {
   if (name === "suggest" && window.Casino._loadSuggest) window.Casino._loadSuggest();
   if (name === "sudoku" && window.Casino._loadSudoku) window.Casino._loadSudoku();
   if (name === "solitaire" && window.Casino._loadSolitaire) window.Casino._loadSolitaire();
+  if (name === "chess" && window.Casino._loadChess) window.Casino._loadChess();
   if (name === "sports" && window.Casino._loadSports) window.Casino._loadSports();
   if (window.Casino.chat) window.Casino.chat.update(name);
 
