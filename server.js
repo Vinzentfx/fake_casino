@@ -174,6 +174,18 @@ achievements.setupAchievements(io, accounts);
 quests.setupQuests(io, accounts);
 liveops.setup(io, accounts);
 
+// Level-ups: recordHand flags acc._justLeveled → notify the player's socket.
+accounts.onHand((name) => {
+  const key = String(name).trim().toLowerCase();
+  const acc = accounts.get(key);
+  if (!acc || !acc._justLeveled) return;
+  const level = acc._justLeveled; delete acc._justLeveled;
+  const info = accounts.levelInfo(acc);
+  for (const s of io.of("/").sockets.values()) {
+    if (s.data && s.data.account === key) { s.emit("level:up", { level, title: info.title, emoji: info.emoji }); break; }
+  }
+});
+
 // Chip-Transfer zwischen Spielern (socket-auth required)
 io.on("connection", (socket) => {
   socket.on("account:transfer", ({ to, amount } = {}, ack) => {

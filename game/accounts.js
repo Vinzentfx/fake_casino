@@ -185,6 +185,35 @@ function faucetFactor(name) {
   return 1 - (1 - FAUCET_FLOOR) * t;
 }
 
+// ─── Spieler-Level / XP ─────────────────────────────────────────────────────
+// XP is earned by PLAYING (not by wealth), so a rank reflects experience, not
+// chips. Level L needs 100·(L-1)² total XP → level = floor(√(xp/100)) + 1.
+const XP_PER_HAND = 8;   // per settled hand …
+const XP_PER_WIN = 4;    // … plus this on a win
+const levelFromXp = (xp) => Math.floor(Math.sqrt(Math.max(0, xp) / 100)) + 1;
+const xpForLevel = (L) => 100 * (L - 1) * (L - 1);
+
+const LEVEL_TIERS = [
+  { min: 50, title: "Casino-Ikone", emoji: "👑", color: "#f4d782" },
+  { min: 35, title: "Legende",      emoji: "🌟", color: "#c86bd6" },
+  { min: 20, title: "Hai",          emoji: "🦈", color: "#5ea8e0" },
+  { min: 10, title: "Profi",        emoji: "🎯", color: "#66c07a" },
+  { min: 5,  title: "Stammgast",    emoji: "🎲", color: "#d1a35e" },
+  { min: 1,  title: "Neuling",      emoji: "🌱", color: "#8ea0a8" },
+];
+const tierFor = (lvl) => LEVEL_TIERS.find((t) => lvl >= t.min) || LEVEL_TIERS[LEVEL_TIERS.length - 1];
+
+function levelInfo(acc) {
+  const xp = acc.xp || 0;
+  const level = levelFromXp(xp);
+  const cur = xpForLevel(level), next = xpForLevel(level + 1);
+  const t = tierFor(level);
+  return {
+    level, xp, title: t.title, emoji: t.emoji, color: t.color,
+    xpInLevel: xp - cur, xpForNext: next - cur,
+  };
+}
+
 // ─── Buffs (from business products) ─────────────────────────────────────────
 /** Active buffs for an account, with expired ones pruned. { type: {until, mult} } */
 function activeBuffs(acc) {
@@ -256,6 +285,7 @@ function publicAccount(acc) {
     netWorth: _netWorth(acc),
     buffs: acc.buffs ? activeBuffs(acc) : {},
     residence: acc.residence != null ? { id: acc.residence, ...city.bldInfo(acc.residence) } : null,
+    level: levelInfo(acc),
   };
 }
 
@@ -429,6 +459,11 @@ function recordHand(name, winnings, house = true, game = null, meta = null) {
   if (acc.stats.biggestLoss === undefined) acc.stats.biggestLoss = 0;
   acc.stats.gamesPlayed += 1;
   acc.weeklyNet = (acc.weeklyNet || 0) + winnings; // Spieler-der-Woche race (weekly.js resets)
+  // XP for playing (level up = experience, not wealth).
+  const lvlBefore = levelFromXp(acc.xp || 0);
+  acc.xp = (acc.xp || 0) + XP_PER_HAND + (winnings > 0 ? XP_PER_WIN : 0);
+  const lvlAfter = levelFromXp(acc.xp);
+  if (lvlAfter > lvlBefore) acc._justLeveled = lvlAfter; // picked up by setupLevel
   // Per-game breakdown (plays / wins / net) for the stats screen.
   if (game) {
     acc.stats.perGame = acc.stats.perGame || {};
@@ -479,6 +514,7 @@ function leaderboardBy(cat, limit = 10) {
       name: a.name, value: c.sort(a), chips: a.chips,
       badge: a.badge ? achievements.emojiOf(a.badge) : null,
       champ: champ != null && normalizeName(a.name) === champ,
+      level: levelFromXp(a.xp || 0),
     }))
     .filter((x) => x.value > 0 || cat === "rich")
     .sort((a, b) => b.value - a.value)
@@ -745,6 +781,7 @@ module.exports = {
   isShadowbanned,
   calendarState,
   claimCalendar,
+  levelInfo,
   faucetFactor,
   placeBounty,
   claimBounty,
