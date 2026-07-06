@@ -53,6 +53,7 @@ function showScreen(name) {
   if (name === "calendar") loadCalendar();
   if (name === "wheel" && window.Casino._loadWheel) window.Casino._loadWheel();
   if (name === "clans" && window.Casino._loadClans) window.Casino._loadClans();
+  if (name === "cosmetics" && window.Casino._loadCosmetics) window.Casino._loadCosmetics();
   if (name === "crash" && window.Casino._loadCrash) window.Casino._loadCrash();
   if (name === "mines" && window.Casino._loadMines) window.Casino._loadMines();
   if (name === "sports" && window.Casino._loadSports) window.Casino._loadSports();
@@ -155,6 +156,8 @@ function renderTopbar() {
   if (!acc) return;
   $("#balance-amount").textContent = acc.chips.toLocaleString("de-DE");
   $("#player-name").textContent = acc.name;
+  if (acc.avatar) $("#avatar").textContent = acc.avatar;
+  $("#player-name").style.color = acc.nameColor || "";
   const lc = $("#level-chip");
   if (lc && acc.level) {
     lc.style.display = "";
@@ -179,6 +182,8 @@ function renderProfile() {
   const acc = state.account;
   if (!acc) return;
   $("#profile-name").textContent = acc.name;
+  if (acc.avatar) $("#profile-big").textContent = acc.avatar;
+  $("#profile-name").style.color = acc.nameColor || "";
   const renderLevel = (l) => {
     const lb = $("#profile-level");
     if (!lb || !l) return;
@@ -437,8 +442,10 @@ function renderLbList() {
     const champ = p.champ ? ` <span class="lb-badge" title="Spieler der Woche">🏆</span>` : "";
     const lvl = p.level ? ` <span class="lb-level" title="Level ${p.level}">Lv ${p.level}</span>` : "";
     const clan = p.clan ? ` <span class="lb-clan">[${escapeHtml(p.clan)}]</span>` : "";
+    const ava = p.avatar ? `${p.avatar} ` : "";
+    const nameCol = p.nameColor ? ` style="color:${p.nameColor}"` : "";
     li.innerHTML =
-      `<span>${rank}${clan} ${escapeHtml(p.name)}${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
+      `<span>${rank}${clan} ${ava}<b${nameCol}>${escapeHtml(p.name)}</b>${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
       `<b>${unit ? unit(p.value) : p.value.toLocaleString("de-DE") + " 🪙"}</b>`;
     // Tap a row to inspect that player's stats.
     li.classList.add("lb-clickable");
