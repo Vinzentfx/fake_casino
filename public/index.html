@@ -105,6 +105,15 @@
           </button>
         </div>
 
+        <h2 class="section-title">🧩 Denkspiele</h2>
+        <div class="game-grid">
+          <button class="game-tile" data-nav="memory">
+            <span class="tile-icon">🧠</span>
+            <span class="tile-name">Memory-Duell</span>
+            <span class="tile-sub">Paare finden · gegeneinander um Chips</span>
+          </button>
+        </div>
+
         <h2 class="section-title">Wirtschaft</h2>
         <div class="game-grid">
           <button class="game-tile" data-nav="work">
@@ -148,6 +157,7 @@
           <button class="action-tile" data-nav="transfer">💸<span>Chips senden</span></button>
           <button class="action-tile" data-nav="profile">👤<span>Profil</span></button>
           <button class="action-tile" data-nav="settings">⚙️<span>Einstellungen</span></button>
+          <button class="action-tile" data-nav="suggest">💡<span>Vorschläge</span></button>
           <button class="action-tile" id="admin-tile" data-nav="admin" style="display:none">🛠️<span>Admin</span></button>
         </div>
       </div>
@@ -550,6 +560,87 @@
         </div>
         <button class="btn-primary crash-cashbtn" id="mines-cashout" style="width:100%;display:none">💸 Auszahlen</button>
         <div class="form-error" id="mines-error"></div>
+      </div>
+    </section>
+
+    <!-- ===================== MEMORY-DUELL ===================== -->
+    <section class="screen" data-screen="memory">
+      <div class="mem-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon">🧠</div><h2>Memory-Duell</h2></div>
+
+        <!-- Setup: create or join -->
+        <div id="mem-setup">
+          <p class="muted small" style="text-align:center">Finde mehr Paare als dein Gegner und gewinn den Pot (beide Einsätze, minus 10% Rake). Gleichstand = Einsatz zurück.</p>
+          <div class="mem-panel">
+            <label class="mem-label">Einsatz (Buy-in)
+              <input id="mem-buyin" type="number" inputmode="numeric" min="50" step="50" value="200" />
+            </label>
+            <div class="mem-visibility">
+              <label class="mem-radio"><input type="radio" name="mem-vis" value="public" checked /> 🌐 Öffentlich <span class="muted small">(in Lobby sichtbar)</span></label>
+              <label class="mem-radio"><input type="radio" name="mem-vis" value="private" /> 🔒 Privat <span class="muted small">(nur per Code)</span></label>
+            </div>
+            <button class="btn-primary" id="mem-create" style="width:100%;margin-top:8px">🧠 Duell erstellen</button>
+          </div>
+          <div class="mem-panel">
+            <label class="mem-label">Code eines Freundes
+              <input id="mem-code" type="text" maxlength="4" placeholder="z.B. AB12" style="text-transform:uppercase" />
+            </label>
+            <button class="btn-secondary" id="mem-join" style="width:100%;margin-top:8px">Beitreten</button>
+          </div>
+          <div class="form-error" id="mem-error"></div>
+        </div>
+
+        <!-- Waiting room -->
+        <div id="mem-wait" style="display:none;text-align:center">
+          <p>Warte auf Mitspieler… Teile diesen Code:</p>
+          <div class="mem-code-big" id="mem-code-show">----</div>
+          <p class="muted small" id="mem-wait-players">1/2 Spieler</p>
+          <button class="btn-primary" id="mem-start" style="display:none">▶ Spiel starten</button>
+          <button class="btn-secondary" id="mem-cancel" style="margin-top:8px">Abbrechen</button>
+        </div>
+
+        <!-- Board -->
+        <div id="mem-game" style="display:none">
+          <div class="mem-scorebar">
+            <div class="mem-score" id="mem-you"><span class="mem-name">Du</span><b class="mem-pairs">0</b></div>
+            <div class="mem-turn" id="mem-turn">…</div>
+            <div class="mem-score" id="mem-opp"><span class="mem-name">Gegner</span><b class="mem-pairs">0</b></div>
+          </div>
+          <div class="mem-pot muted small" id="mem-pot"></div>
+          <div class="mem-grid" id="mem-grid"></div>
+        </div>
+
+        <!-- Result -->
+        <div id="mem-result" style="display:none;text-align:center">
+          <div class="mem-result-emoji" id="mem-result-emoji">🏆</div>
+          <h3 id="mem-result-title">—</h3>
+          <p class="muted small" id="mem-result-sub"></p>
+          <button class="btn-primary" id="mem-again" style="margin-top:10px">Nochmal</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== VORSCHLÄGE ===================== -->
+    <section class="screen" data-screen="suggest">
+      <div class="panel">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <h2>💡 Vorschläge</h2>
+        <p class="muted small">Welches Spiel oder Feature wünschst du dir? Schreib es hier rein — es landet direkt beim Casino-Betreiber.</p>
+        <div id="suggest-form">
+          <textarea id="suggest-text" rows="4" maxlength="500" placeholder="Dein Vorschlag…"></textarea>
+          <div class="suggest-row">
+            <span class="muted small" id="suggest-remaining"></span>
+            <button class="btn-primary" id="suggest-send">Absenden</button>
+          </div>
+          <div class="form-error" id="suggest-error"></div>
+          <div class="suggest-ok" id="suggest-thanks" style="display:none">✅ Danke! Dein Vorschlag ist angekommen.</div>
+        </div>
+        <!-- Owner-only inbox -->
+        <div id="suggest-inbox" style="display:none">
+          <h3 class="section-title" style="margin-top:16px">📥 Eingegangene Vorschläge</h3>
+          <div id="suggest-list"></div>
+        </div>
       </div>
     </section>
 
@@ -988,6 +1079,8 @@
   <script src="/js/quests.js"></script>
   <script src="/js/crash.js"></script>
   <script src="/js/mines.js"></script>
+  <script src="/js/memory.js"></script>
+  <script src="/js/suggestions.js"></script>
   <script src="/js/wheel.js"></script>
   <script src="/js/heist.js"></script>
   <script src="/js/clans.js"></script>
