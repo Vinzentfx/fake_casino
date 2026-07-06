@@ -2029,6 +2029,15 @@ button { font-family: inherit; cursor: pointer; }
   50% { box-shadow: 0 0 14px 2px rgba(244,215,130,0.35); }
 }
 
+/* Spieler-Level. */
+.level-chip { font-size: 0.72rem; font-weight: 800; padding: 2px 7px; border-radius: 999px;
+  background: rgba(0,0,0,0.3); border: 1px solid currentColor; margin-left: 2px; }
+.level-box { margin: 8px 0 12px; }
+.level-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+.level-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,0.4); overflow: hidden; }
+.level-fill { height: 100%; border-radius: 999px; transition: width 0.5s; }
+.lb-level { font-size: 0.7rem; font-weight: 800; opacity: 0.7; }
+
 /* Update / changelog modal. */
 .update-modal { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); padding: 16px; }

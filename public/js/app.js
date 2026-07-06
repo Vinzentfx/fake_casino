@@ -153,6 +153,13 @@ function renderTopbar() {
   if (!acc) return;
   $("#balance-amount").textContent = acc.chips.toLocaleString("de-DE");
   $("#player-name").textContent = acc.name;
+  const lc = $("#level-chip");
+  if (lc && acc.level) {
+    lc.style.display = "";
+    lc.textContent = `${acc.level.emoji} ${acc.level.level}`;
+    lc.style.color = acc.level.color;
+    lc.title = `Level ${acc.level.level} · ${acc.level.title}`;
+  }
   renderBuffs();
   // Pleite-Schutz: offer the help button only when nearly broke.
   const rescueBtn = $("#rescue-btn");
@@ -170,6 +177,18 @@ function renderProfile() {
   const acc = state.account;
   if (!acc) return;
   $("#profile-name").textContent = acc.name;
+  const renderLevel = (l) => {
+    const lb = $("#profile-level");
+    if (!lb || !l) return;
+    const pct = l.xpForNext ? Math.min(100, Math.round((100 * l.xpInLevel) / l.xpForNext)) : 100;
+    lb.innerHTML =
+      `<div class="level-head"><b style="color:${l.color}">${l.emoji} Level ${l.level}</b><span class="muted small">${escapeHtml(l.title)} · ${l.xpInLevel}/${l.xpForNext} XP</span></div>` +
+      `<div class="level-bar"><div class="level-fill" style="width:${pct}%;background:${l.color}"></div></div>`;
+  };
+  renderLevel(acc.level);
+  // Refresh level/XP from the server (slots don't push a full account).
+  fetch("/api/account/" + encodeURIComponent(acc.name)).then((r) => r.json())
+    .then((d) => { if (d.account && d.account.level) { state.account.level = d.account.level; renderLevel(d.account.level); } }).catch(() => {});
   $("#profile-chips").textContent = acc.chips.toLocaleString("de-DE") + " 🪙";
   $("#profile-games").textContent = acc.stats?.gamesPlayed ?? 0;
   $("#profile-biggest").textContent =
@@ -293,6 +312,12 @@ function renderLiveops() {
 socket.on("liveops:state", (s) => { liveopsState = s; renderLiveops(); });
 socket.on("connect", () => socket.emit("liveops:state", (r) => { if (r && r.ok) { liveopsState = r; renderLiveops(); } }));
 socket.on("liveops:tourneyWin", (w) => { if (w) toast(`🏆 Turnier gewonnen: ${w.name} mit ${w.mult}× (+${w.prize.toLocaleString("de-DE")} 🪙)!`); });
+socket.on("level:up", (d) => {
+  if (!d) return;
+  if (state.account) state.account.level = { ...(state.account.level || {}), level: d.level, title: d.title, emoji: d.emoji };
+  renderTopbar();
+  toast(`${d.emoji} LEVEL UP! Du bist jetzt Level ${d.level} — ${d.title}!`);
+});
 setInterval(renderLiveops, 20000);
 
 // ---- Stunden-Bonus: Live-Countdown auf Button + Lobby-Kachel ----
@@ -408,8 +433,9 @@ function renderLbList() {
     const unit = LB_UNIT[lbActiveCat];
     const badge = p.badge ? ` <span class="lb-badge" title="Achievement">${p.badge}</span>` : "";
     const champ = p.champ ? ` <span class="lb-badge" title="Spieler der Woche">🏆</span>` : "";
+    const lvl = p.level ? ` <span class="lb-level" title="Level ${p.level}">Lv ${p.level}</span>` : "";
     li.innerHTML =
-      `<span>${rank} ${escapeHtml(p.name)}${champ}${badge}${me ? " (du)" : ""}</span>` +
+      `<span>${rank} ${escapeHtml(p.name)}${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
       `<b>${unit ? unit(p.value) : p.value.toLocaleString("de-DE") + " 🪙"}</b>`;
     // Tap a row to inspect that player's stats.
     li.classList.add("lb-clickable");
