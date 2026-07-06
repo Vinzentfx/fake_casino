@@ -4,6 +4,8 @@ const OWNER = "vincent";
 const city = require("./city");
 const slots = require("./slots");
 const liveops = require("./liveops");
+let _heist = null;
+function setHeist(h) { _heist = h; }
 
 function setupAdmin(io, accounts) {
   io.on("connection", (socket) => {
@@ -146,6 +148,15 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
+    socket.on("admin:heist", ({ on, loot, seconds } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!_heist) return ack({ ok: false, error: "Heist nicht bereit." });
+      if (on) return ack(_heist.start(loot || 500000, seconds || 60));
+      _heist.stop();
+      ack({ ok: true });
+    });
+
     // Fire a city news event now (random district if none given).
     socket.on("admin:cityEvent", ({ districtId } = {}, ack) => {
       if (!ack) return;
@@ -190,4 +201,4 @@ function setupAdmin(io, accounts) {
   });
 }
 
-module.exports = { setupAdmin };
+module.exports = { setupAdmin, setHeist };

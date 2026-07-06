@@ -680,6 +680,14 @@ $("#admin-tourney-on-btn")?.addEventListener("click", () => {
 $("#admin-tourney-off-btn")?.addEventListener("click", () => {
   socket.emit("admin:tourney", { on: false }, (r) => toast(r?.ok ? "Turnier beendet." : (r?.error || "Fehler.")));
 });
+$("#admin-heist-on-btn")?.addEventListener("click", () => {
+  const seconds = parseInt($("#admin-heist-secs").value, 10) || 60;
+  const loot = parseInt($("#admin-heist-loot").value, 10) || 500000;
+  socket.emit("admin:heist", { on: true, seconds, loot }, (r) => toast(r?.ok ? "🚨 Heist gestartet!" : (r?.error || "Fehler.")));
+});
+$("#admin-heist-off-btn")?.addEventListener("click", () => {
+  socket.emit("admin:heist", { on: false }, (r) => toast(r?.ok ? "Heist abgebrochen." : (r?.error || "Fehler.")));
+});
 
 ["admin-reset-bonus-btn", "admin-reset-ach-btn"].forEach((id) => {
   $("#" + id)?.addEventListener("click", () => {
