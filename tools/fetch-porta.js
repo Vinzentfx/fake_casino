@@ -14,16 +14,24 @@ const fs = require("fs");
 const path = require("path");
 
 const OUT = path.join(__dirname, "..", "game", "data", "porta.json");
-const API = "https://overpass-api.de/api/interpreter";
+// Several Overpass mirrors — the main endpoint rate-limits (429/504) under load,
+// so we rotate through mirrors and back off between tries.
+const APIS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+];
 
 // The playable Stadtteile of Porta Westfalica (OSM relation ids, admin_level 10).
-// Deliberately only 5 of the 15 — keeps the map focused and the snapshot small.
+// A focused subset of the 15 — keeps the map readable and the snapshot small.
 const DISTRICTS = [
   { id: "eisbergen",     name: "Eisbergen",     rel: 1335614 },
   { id: "hausberge",     name: "Hausberge",     rel: 1335589 },
   { id: "kleinenbremen", name: "Kleinenbremen", rel: 1335571 },
   { id: "lerbeck",       name: "Lerbeck",       rel: 1335568 },
   { id: "nammen",        name: "Nammen",        rel: 1335655 },
+  { id: "neesen",        name: "Neesen",        rel: 1335647 },
 ];
 
 // Buildings that are not really "a house you could own": filtered out.
@@ -38,23 +46,31 @@ const py = (lat) => Math.round((CENTER.lat - lat) * M_PER_DEG_LAT); // screen-y 
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function overpass(query, tries = 3) {
+async function overpass(query, tries = 8) {
+  let lastStatus = "?";
   for (let i = 0; i < tries; i++) {
-    const res = await fetch(API, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        // Overpass rejects requests without a descriptive UA (406).
-        "User-Agent": "fake-casino-map-snapshot/1.0 (hobby project, one-time fetch)",
-        "Accept": "application/json",
-      },
-      body: "data=" + encodeURIComponent(query),
-    });
-    if (res.ok) return res.json();
-    console.log(`  … Overpass ${res.status}, warte 20s (Versuch ${i + 1}/${tries})`);
-    await sleep(20000);
+    const api = APIS[i % APIS.length]; // rotate through mirrors
+    try {
+      const res = await fetch(api, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          // Overpass rejects requests without a descriptive UA (406).
+          "User-Agent": "fake-casino-map-snapshot/1.0 (hobby project, one-time fetch)",
+          "Accept": "application/json",
+        },
+        body: "data=" + encodeURIComponent(query),
+      });
+      if (res.ok) return res.json();
+      lastStatus = res.status;
+    } catch (e) {
+      lastStatus = e.message;
+    }
+    const wait = Math.min(45000, 8000 + i * 6000); // backoff, cap 45s
+    console.log(`  … Overpass ${lastStatus} @ ${api.split("/")[2]}, warte ${Math.round(wait / 1000)}s (Versuch ${i + 1}/${tries})`);
+    await sleep(wait);
   }
-  throw new Error("Overpass gab dauerhaft keinen Erfolg zurück.");
+  throw new Error("Overpass gab dauerhaft keinen Erfolg zurück (letzter Status: " + lastStatus + ").");
 }
 
 // ─── Geometry helpers ───────────────────────────────────────────────────────
@@ -265,7 +281,7 @@ area(${area})->.d;
       roads,
     });
     console.log(`   ${buildings.length} Gebäude, ${landmarks.length} Landmarks, ${roads.length} Straßen`);
-    await sleep(3000); // be polite to Overpass
+    await sleep(6000); // be polite to Overpass (mirrors rate-limit under load)
   }
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
