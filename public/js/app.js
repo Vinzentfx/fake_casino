@@ -91,7 +91,22 @@ function setAccount(acc, token) {
   // Admin-Tile nur für Vincent sichtbar
   const adminTile = $("#admin-tile");
   if (adminTile) adminTile.style.display = acc.name.toLowerCase() === "vincent" ? "" : "none";
+  maybeShowUpdate();
 }
+
+// ---- Update-/Changelog-Modal (einmal pro Version) ----
+const UPDATE_VERSION = "2026-07-06-crash-mines";
+function maybeShowUpdate() {
+  let seen = null;
+  try { seen = localStorage.getItem("casino_seen_update"); } catch {}
+  if (seen === UPDATE_VERSION) return;
+  const m = $("#update-modal");
+  if (m) m.classList.remove("hidden");
+}
+$("#update-close")?.addEventListener("click", () => {
+  $("#update-modal")?.classList.add("hidden");
+  try { localStorage.setItem("casino_seen_update", UPDATE_VERSION); } catch {}
+});
 
 // Re-authenticate after a dropped connection: the server treats a reconnect as
 // a fresh socket with no identity, so we must replay the token.
@@ -256,7 +271,7 @@ $("#calendar-claim-btn")?.addEventListener("click", () => {
   });
 });
 
-// ---- Live-Ops (Happy Hour / Turnier / Slot des Tages) Banner ----
+// ---- Live-Ops (Happy Hour / Turnier) Banner ----
 let liveopsState = null;
 function renderLiveops() {
   const el = $("#liveops-banner");

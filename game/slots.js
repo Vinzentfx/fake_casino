@@ -630,7 +630,7 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
 
 function setupSlots(io, accounts) {
   io.on("connection", (socket) => {
-    socket.on("slots:machines", (ack) => ack && ack({ machines: publicMachines(), jackpot: jackpotPot(), slotOfDay: liveops.slotOfDay() }));
+    socket.on("slots:machines", (ack) => ack && ack({ machines: publicMachines(), jackpot: jackpotPot() }));
 
     // Unlock a machine for the logged-in account.
     socket.on("slots:unlock", ({ machineId } = {}, ack) => {
@@ -703,12 +703,7 @@ function setupSlots(io, accounts) {
         }
       }
 
-      // Slot des Tages bonus: computed here but credited AFTER recordHand, so
-      // it boosts the payout without inflating stats / weekly net / tournament.
-      const sotdBonus = (!showcase && totalWin > 0)
-        ? liveops.slotOfDayBonus(accounts.get(socket.data.account), machineId, totalWin) : 0;
-
-      // Pay out the HONEST win (incl. jackpot, excl. SotD bonus) & record it.
+      // Pay out the win (incl. jackpot) & record it.
       // Showcase (force-win) spins pay chips but never touch recordHand — no
       // fake leaderboard records, achievements, weekly net or quest progress.
       let balance = accounts.get(socket.data.account).chips;
@@ -723,14 +718,6 @@ function setupSlots(io, accounts) {
         }
       } else if (!showcase) {
         accounts.recordHand(socket.data.account, -(inFree ? 0 : spinBet), true, "slots", { free: inFree });
-      }
-
-      // Credit the SotD bonus separately (chips only — not stats/leaderboards).
-      if (sotdBonus > 0) {
-        const c = accounts.adjustChips(socket.data.account, sotdBonus);
-        if (c.ok) balance = c.account.chips;
-        result.totalWin = (result.totalWin || 0) + sotdBonus; // show the boosted amount
-        result.sotdBonus = sotdBonus;
       }
 
       ack({ ...result, balance, jackpotPot: jackpotPot(), winBoost: boost > 1 ? boost : 1 });

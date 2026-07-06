@@ -21,10 +21,6 @@ const chat = require("./chat");
 const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "liveops.json");
 
-const SLOT_ROTATION = ["lucky7", "gemstorm", "dragon", "cosmic"];
-const SOTD_WIN_BONUS = 0.15;     // +15% on wins on the day's machine …
-const SOTD_DAILY_CAP = 50000;    // … but at most this many bonus chips/player/day
-
 let _io = null, _accounts = null;
 let state = load();
 
@@ -54,21 +50,6 @@ function stopHappy() {
   state.happyUntil = 0;
   save();
   if (_io) { chat.announce(_io, "🍹 Happy Hour ist vorbei."); broadcast(); }
-}
-
-// ─── Slot des Tages ─────────────────────────────────────────────────────────
-const slotOfDay = () => SLOT_ROTATION[Math.floor(Date.now() / 86400000) % SLOT_ROTATION.length];
-
-/** Bonus chips to add on a win on the day's machine, respecting the per-day
- *  cap. Mutates the account's tracker. Returns the bonus (0 if none). */
-function slotOfDayBonus(acc, machineId, win) {
-  if (!acc || win <= 0 || machineId !== slotOfDay()) return 0;
-  const day = Math.floor(Date.now() / 86400000);
-  if (!acc.sotd || acc.sotd.day !== day) acc.sotd = { day, used: 0 };
-  const bonus = Math.min(Math.round(win * SOTD_WIN_BONUS), SOTD_DAILY_CAP - acc.sotd.used);
-  if (bonus <= 0) return 0;
-  acc.sotd.used += bonus;
-  return bonus;
 }
 
 // ─── Mini-Turnier ───────────────────────────────────────────────────────────
@@ -131,7 +112,6 @@ function publicState() {
   return {
     happyUntil: state.happyUntil,
     happyActive: happyActive(),
-    slotOfDay: slotOfDay(),
     tourney: tourneyActive() ? { endsAt: t.endsAt, prize: t.prize, board } : null,
   };
 }
@@ -153,7 +133,7 @@ function setup(io, accounts) {
 }
 
 module.exports = {
-  setup, tick, questMult, happyActive, slotOfDay, slotOfDayBonus,
+  setup, tick, questMult, happyActive,
   recordTourneyWin, tourneyActive,
   startHappy, stopHappy, startTourney, stopTourney,
 };

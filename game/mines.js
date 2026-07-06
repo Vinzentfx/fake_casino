@@ -34,6 +34,20 @@ function pickMines(m) {
   return new Set(idx.slice(0, m));
 }
 
+// Shadowban ("Pechvogel"): outcomes are decided per reveal, ignoring the real
+// mine layout — the player hits bombs far more often, may uncover 1–2 diamonds
+// (the tease), but never more than 2 before a guaranteed bomb.
+const SHADOW_BOMB_CHANCE = 65; // % chance each reveal is a bomb (≈5× häufiger als normal)
+const SHADOW_MAX_GEMS = 2;      // hard cap: never more than 2 diamonds before a bomb
+/** Build a believable bomb layout for a shadowban bust (clicked tile + fill). */
+function fakeMineSet(g, tile) {
+  const set = new Set([tile]);
+  const free = [...Array(TILES).keys()].filter((i) => i !== tile && !g.revealed.includes(i));
+  for (let i = free.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [free[i], free[j]] = [free[j], free[i]]; }
+  for (const t of free) { if (set.size >= g.mines) break; set.add(t); }
+  return [...set];
+}
+
 function setupMines(io, accounts) {
   io.on("connection", (socket) => {
     const acct = () => (socket.data.account ? accounts.get(socket.data.account) : null);
@@ -75,10 +89,17 @@ function setupMines(io, accounts) {
       if (!Number.isFinite(tile) || tile < 0 || tile >= TILES) return ack({ ok: false, error: "Ungültiges Feld." });
       if (g.revealed.includes(tile)) return ack({ ok: false, error: "Schon aufgedeckt." });
 
-      if (g.mineSet.has(tile)) {
+      // Pechvogel: bomb far more often + hard cap of 2 uncovered diamonds.
+      const shadow = accounts.isShadowbanned(socket.data.account);
+      const hitBomb = shadow
+        ? (g.revealed.length >= SHADOW_MAX_GEMS || crypto.randomInt(100) < SHADOW_BOMB_CHANCE)
+        : g.mineSet.has(tile);
+
+      if (hitBomb) {
         g.over = true;
         accounts.recordHand(socket.data.account, -g.bet, true, "mines");
-        return ack({ ...view(g, { bust: true, tile, mineSet: [...g.mineSet] }) });
+        const mineSet = shadow ? fakeMineSet(g, tile) : [...g.mineSet];
+        return ack({ ...view(g, { bust: true, tile, mineSet }) });
       }
       g.revealed.push(tile);
       // Cleared the whole board → auto cash-out at the max multiplier.

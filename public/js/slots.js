@@ -136,11 +136,9 @@
   // ===============================================================
   // Machine list
   // ===============================================================
-  let slotOfDay = null;
   function loadMachines() {
     socket.emit("slots:machines", (res) => {
       machines = (res && res.machines) || [];
-      slotOfDay = res && res.slotOfDay;
       renderMachineGrid();
       updateJackpotLine(res && res.jackpot);
     });
@@ -159,13 +157,11 @@
     grid.innerHTML = "";
     machines.forEach((m) => {
       const unlocked = isMachineUnlocked(m);
-      const isSotd = m.id === slotOfDay;
       const card = document.createElement("button");
-      card.className = "machine-card theme-" + m.theme + (unlocked ? "" : " locked") + (isSotd ? " sotd" : "");
+      card.className = "machine-card theme-" + m.theme + (unlocked ? "" : " locked");
       const sampleSyms = Object.values(m.emojis).slice(0, 5).join(" ");
       const feature = m.freeSpins ? "🎁 Freispiele" : "⚡ Klassisch";
       card.innerHTML = `
-        ${isSotd ? '<div class="mc-sotd">🌟 Slot des Tages · +15% auf Gewinne</div>' : ""}
         <div class="mc-syms">${sampleSyms}</div>
         <div class="mc-name">${m.name}</div>
         <div class="mc-tag">${m.tagline}</div>
