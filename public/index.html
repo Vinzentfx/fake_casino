@@ -576,6 +576,12 @@
             <label class="mem-label">Einsatz (Buy-in)
               <input id="mem-buyin" type="number" inputmode="numeric" min="50" step="50" value="200" />
             </label>
+            <div class="mem-label" style="margin-top:10px">Boardgröße</div>
+            <div class="mem-sizes" id="mem-sizes">
+              <button type="button" class="mem-size-btn" data-size="small">Klein<span>12 Karten</span></button>
+              <button type="button" class="mem-size-btn active" data-size="medium">Mittel<span>20 Karten</span></button>
+              <button type="button" class="mem-size-btn" data-size="large">Groß<span>30 Karten</span></button>
+            </div>
             <div class="mem-visibility">
               <label class="mem-radio"><input type="radio" name="mem-vis" value="public" checked /> 🌐 Öffentlich <span class="muted small">(in Lobby sichtbar)</span></label>
               <label class="mem-radio"><input type="radio" name="mem-vis" value="private" /> 🔒 Privat <span class="muted small">(nur per Code)</span></label>

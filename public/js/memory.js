@@ -13,6 +13,16 @@
 
   let st = null;        // last server state
   let myCode = null;    // code of the match I'm in
+  let chosenSize = "medium";
+
+  const SIZE_LABELS = { small: "Klein (12)", medium: "Mittel (20)", large: "Groß (30)" };
+
+  // Board-size picker (segmented buttons).
+  document.querySelectorAll("#mem-sizes .mem-size-btn").forEach((b) =>
+    b.addEventListener("click", () => {
+      chosenSize = b.dataset.size;
+      document.querySelectorAll("#mem-sizes .mem-size-btn").forEach((x) => x.classList.toggle("active", x === b));
+    }));
 
   const views = ["mem-setup", "mem-wait", "mem-game", "mem-result"];
   function show(view) {
@@ -84,7 +94,7 @@
     if (s.state === "waiting") {
       show("mem-wait");
       $("#mem-code-show").textContent = s.code;
-      $("#mem-wait-players").textContent = `${s.playerCount}/2 Spieler · ${s.public ? "🌐 öffentlich (auch in der Lobby)" : "🔒 privat (nur per Code)"}`;
+      $("#mem-wait-players").textContent = `${s.playerCount}/2 Spieler · 🧩 ${SIZE_LABELS[s.size] || s.size} · ${s.public ? "🌐 öffentlich" : "🔒 privat (nur per Code)"}`;
       $("#mem-start").style.display = (s.isHost && s.playerCount === 2) ? "" : "none";
     } else if (s.state === "playing") {
       show("mem-game");
@@ -114,7 +124,7 @@
     if (!Number.isFinite(buyIn) || buyIn < 50) { err.textContent = "Mindest-Buy-in 50 🪙."; return; }
     const visEl = document.querySelector('input[name="mem-vis"]:checked');
     const isPublic = !visEl || visEl.value === "public";
-    socket.emit("memory:create", { buyIn, isPublic }, (r) => {
+    socket.emit("memory:create", { buyIn, isPublic, size: chosenSize }, (r) => {
       if (!r || !r.ok) { err.textContent = (r && r.error) || "Fehler."; return; }
     });
   });
