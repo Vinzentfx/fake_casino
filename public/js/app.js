@@ -51,6 +51,7 @@ function showScreen(name) {
   if (name === "stats" && window.Casino._loadStats) window.Casino._loadStats();
   if (name === "quests" && window.Casino._loadQuests) window.Casino._loadQuests();
   if (name === "calendar") loadCalendar();
+  if (name === "crash" && window.Casino._loadCrash) window.Casino._loadCrash();
   if (name === "sports" && window.Casino._loadSports) window.Casino._loadSports();
   if (window.Casino.chat) window.Casino.chat.update(name);
 
