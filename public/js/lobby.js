@@ -40,6 +40,7 @@
     else if (game === "blackjack" && window.Casino._bjJoinCode) window.Casino._bjJoinCode(code);
     else if (game === "roulette" && window.Casino._rouletteJoinCode) window.Casino._rouletteJoinCode(code);
     else if (game === "memory" && window.Casino._memoryJoinCode) window.Casino._memoryJoinCode(code);
+    else if (game === "sudoku" && window.Casino._sudokuJoinCode) window.Casino._sudokuJoinCode(code);
     else toast("Diese Lobby lässt sich gerade nicht beitreten.");
   }
 

@@ -1,0 +1,208 @@
+"use strict";
+
+/* ============================================================
+   Fake Casino – Sudoku-Race (client).
+   Real-time PvP: both players fill the SAME puzzle; first correct
+   full solution wins. Server-authoritative validation.
+   ============================================================ */
+
+(function () {
+  const { socket, toast, applyAccount, getAccount, escapeHtml } = window.Casino;
+  const $ = (s) => document.querySelector(s);
+  const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
+
+  let st = null;
+  let myCode = null;
+  let chosenDiff = "medium";
+  let puzzle = null;      // given cells (0 = blank)
+  let grid = null;        // my working grid (81)
+  let selected = -1;      // selected cell index
+  let sendTimer = null;   // throttle for sudoku:update
+  let timerInt = null;
+  let endsAt = 0;
+
+  const DIFF_LABELS = { easy: "Leicht", medium: "Mittel", hard: "Schwer" };
+
+  const views = ["sdk-setup", "sdk-wait", "sdk-game", "sdk-result"];
+  function show(view) { for (const v of views) { const el = $("#" + v); if (el) el.style.display = v === view ? "" : "none"; } }
+
+  // Difficulty picker
+  document.querySelectorAll("#sdk-diffs .mem-size-btn").forEach((b) =>
+    b.addEventListener("click", () => {
+      chosenDiff = b.dataset.diff;
+      document.querySelectorAll("#sdk-diffs .mem-size-btn").forEach((x) => x.classList.toggle("active", x === b));
+    }));
+
+  // ── Grid ──────────────────────────────────────────────────
+  function buildGrid() {
+    const g = $("#sdk-grid");
+    if (g.childElementCount === 81) return;
+    g.innerHTML = "";
+    for (let i = 0; i < 81; i++) {
+      const c = document.createElement("button");
+      c.className = "sdk-cell";
+      const r = Math.floor(i / 9), col = i % 9;
+      if (col === 2 || col === 5) c.classList.add("br");
+      if (r === 2 || r === 5) c.classList.add("bb");
+      c.dataset.i = i;
+      c.addEventListener("click", () => selectCell(i));
+      g.appendChild(c);
+    }
+  }
+
+  function renderGrid() {
+    const cells = $("#sdk-grid").children;
+    for (let i = 0; i < 81; i++) {
+      const c = cells[i];
+      const given = puzzle[i] !== 0;
+      const v = grid[i];
+      c.textContent = v ? String(v) : "";
+      c.classList.toggle("given", given);
+      c.classList.toggle("sel", i === selected);
+      c.disabled = given;
+      // highlight wrong-looking duplicates lightly? keep simple: no hints (server validates).
+    }
+  }
+
+  function selectCell(i) {
+    if (puzzle[i] !== 0) return; // givens not selectable
+    selected = i;
+    renderGrid();
+  }
+
+  function setNumber(n) {
+    if (selected < 0 || !grid || puzzle[selected] !== 0) return;
+    grid[selected] = n; // 0 = erase
+    renderGrid();
+    scheduleSend();
+  }
+
+  function scheduleSend() {
+    if (sendTimer) return;
+    sendTimer = setTimeout(() => {
+      sendTimer = null;
+      if (!myCode || !grid) return;
+      socket.emit("sudoku:update", { grid }, (r) => {
+        if (r && r.ok && !r.solved && typeof r.correct === "number") {
+          $("#sdk-you-val").textContent = r.correct;
+          $("#sdk-you-bar").style.width = Math.round((r.correct / 81) * 100) + "%";
+        }
+      });
+    }, 350);
+  }
+
+  // Number pad
+  document.querySelectorAll("#sdk-pad .sdk-key").forEach((b) =>
+    b.addEventListener("click", () => setNumber(parseInt(b.dataset.n, 10))));
+  // Keyboard support while on the sudoku screen
+  document.addEventListener("keydown", (e) => {
+    if (!st || st.state !== "playing") return;
+    if (document.querySelector('[data-screen="sudoku"]') && !document.querySelector('[data-screen="sudoku"]').classList.contains("active")) return;
+    if (e.key >= "1" && e.key <= "9") setNumber(parseInt(e.key, 10));
+    else if (e.key === "Backspace" || e.key === "Delete" || e.key === "0") setNumber(0);
+  });
+
+  // ── Timer ─────────────────────────────────────────────────
+  function startTimer() {
+    stopTimer();
+    timerInt = setInterval(() => {
+      const left = Math.max(0, endsAt - Date.now());
+      const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+      $("#sdk-timer").textContent = `${m}:${String(s).padStart(2, "0")}`;
+      if (left <= 0) stopTimer();
+    }, 500);
+  }
+  function stopTimer() { if (timerInt) { clearInterval(timerInt); timerInt = null; } }
+
+  // ── State ─────────────────────────────────────────────────
+  function renderProgress(s) {
+    const you = s.you || { name: "Du", correct: 0 }, opp = s.opponent || { name: "Gegner", correct: 0 };
+    $("#sdk-you-name").textContent = you.name;
+    $("#sdk-opp-name").textContent = opp.name;
+    $("#sdk-opp-val").textContent = opp.correct || 0;
+    $("#sdk-opp-bar").style.width = Math.round(((opp.correct || 0) / 81) * 100) + "%";
+    // "you" bar is updated live from update acks; sync from state too
+    $("#sdk-you-val").textContent = you.correct || 0;
+    $("#sdk-you-bar").style.width = Math.round(((you.correct || 0) / 81) * 100) + "%";
+  }
+
+  function renderResult(s) {
+    const r = s.result, me = getAccount(), myName = me && me.name;
+    const emoji = $("#sdk-result-emoji"), title = $("#sdk-result-title"), sub = $("#sdk-result-sub");
+    if (r.tie) { emoji.textContent = "🤝"; title.textContent = "Unentschieden!"; sub.textContent = `Einsatz zurück (${fmt(s.buyIn)} 🪙 je Spieler).`; }
+    else {
+      const iWon = myName && r.winner && r.winner.toLowerCase() === myName.toLowerCase();
+      emoji.textContent = iWon ? "🏆" : "😔";
+      title.textContent = iWon ? "Gewonnen!" : `${escapeHtml(r.winner)} gewinnt`;
+      const line = r.players.map((p) => `${escapeHtml(p.name)}: ${p.correct} richtig${p.finished ? " ✅" : ""}`).join(" · ");
+      sub.innerHTML = (iWon ? `+${fmt(r.payout)} 🪙 (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)} 🪙 an ${escapeHtml(r.winner)}`) +
+        `<br>${line}` + (r.walkover ? "<br><span class='muted'>Gegner hat aufgegeben.</span>" : "");
+    }
+  }
+
+  function apply(s) {
+    const prevState = st && st.state;
+    st = s; myCode = s.code;
+    if (s.state === "waiting") {
+      show("sdk-wait");
+      $("#sdk-code-show").textContent = s.code;
+      $("#sdk-wait-info").textContent = `${s.playerCount}/2 Spieler · ${DIFF_LABELS[s.difficulty] || s.difficulty} · ${s.public ? "🌐 öffentlich" : "🔒 privat (nur per Code)"}`;
+      $("#sdk-start").style.display = (s.isHost && s.playerCount === 2) ? "" : "none";
+    } else if (s.state === "playing") {
+      show("sdk-game");
+      // First transition into playing → set up my grid from the puzzle.
+      if (prevState !== "playing" || !grid) {
+        puzzle = s.puzzle.slice();
+        grid = s.puzzle.slice();
+        selected = -1;
+        buildGrid();
+        renderGrid();
+        endsAt = Date.now() + (s.timeLeft || 0);
+        startTimer();
+      }
+      renderProgress(s);
+    } else if (s.state === "done") {
+      stopTimer();
+      show("sdk-result");
+      renderResult(s);
+    }
+  }
+
+  socket.on("sudoku:state", (s) => { if (s) apply(s); });
+  socket.on("account:update", (d) => { if (d && d.account) applyAccount(d.account); });
+
+  // ── Actions ───────────────────────────────────────────────
+  $("#sdk-create").addEventListener("click", () => {
+    const err = $("#sdk-error"); err.textContent = "";
+    const buyIn = parseInt($("#sdk-buyin").value, 10);
+    if (!Number.isFinite(buyIn) || buyIn < 50) { err.textContent = "Mindest-Buy-in 50 🪙."; return; }
+    const visEl = document.querySelector('input[name="sdk-vis"]:checked');
+    const isPublic = !visEl || visEl.value === "public";
+    socket.emit("sudoku:create", { buyIn, isPublic, difficulty: chosenDiff }, (r) => {
+      if (!r || !r.ok) { err.textContent = (r && r.error) || "Fehler."; }
+    });
+  });
+
+  function doJoin(code) {
+    const err = $("#sdk-error"); if (err) err.textContent = "";
+    socket.emit("sudoku:join", { code }, (r) => {
+      if (!r || !r.ok) { if (err) err.textContent = (r && r.error) || "Fehler."; else toast((r && r.error) || "Fehler."); }
+    });
+  }
+  $("#sdk-join").addEventListener("click", () => {
+    const code = ($("#sdk-code").value || "").trim().toUpperCase();
+    if (code.length !== 4) { $("#sdk-error").textContent = "Code hat 4 Zeichen."; return; }
+    doJoin(code);
+  });
+  $("#sdk-start").addEventListener("click", () => socket.emit("sudoku:start", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); }));
+
+  function leave() { if (myCode) socket.emit("sudoku:leave"); myCode = null; st = null; grid = null; puzzle = null; stopTimer(); }
+  $("#sdk-cancel").addEventListener("click", () => { leave(); show("sdk-setup"); });
+  $("#sdk-again").addEventListener("click", () => { leave(); show("sdk-setup"); });
+
+  window.Casino._sudokuJoinCode = (code) => { window.Casino.showScreen("sudoku"); doJoin(code); };
+  window.Casino._loadSudoku = () => {
+    if (!st || st.state === "done") { show("sdk-setup"); $("#sdk-error").textContent = ""; }
+    else apply(st);
+  };
+})();
