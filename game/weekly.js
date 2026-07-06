@@ -17,6 +17,7 @@ const path = require("path");
 const fs = require("fs");
 const city = require("./city");
 const chat = require("./chat");
+const clans = require("./clans");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "weekly.json");
@@ -72,6 +73,9 @@ function rollover(io, accounts) {
   const g = city.rollGoldenStreet();
   if (g) chat.announce(io, `✨ NEUE GOLDENE STRASSE: ${g.st} in ${g.districtName} zahlt diese Woche DOPPELTEN Tribut — holt sie euch!`);
 
+  // Clan der Woche: crown the top clan by weekly PvP-duel wins, then reset.
+  try { clans.weeklyRollover(io); } catch (e) { console.error("clan weekly rollover:", e.message); }
+
   state.week = weekNow();
   save();
   io.emit("city:update");
@@ -84,6 +88,7 @@ function tick(io, accounts) {
     const g = city.rollGoldenStreet();
     if (g) chat.announce(io, `✨ GOLDENE STRASSE: ${g.st} in ${g.districtName} zahlt diese Woche DOPPELTEN Tribut!`);
   }
+  try { clans.tickWars(io); } catch (e) { console.error("clan war tick:", e.message); }
   if (weekNow() !== state.week) rollover(io, accounts);
 }
 

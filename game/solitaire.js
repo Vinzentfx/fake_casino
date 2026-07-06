@@ -122,8 +122,10 @@ function setupSolitaire(io, accounts) {
       if (ca > cb) winner = a; else if (cb > ca) winner = b;
     }
     let rake = 0, payout = 0;
-    if (winner) { rake = walkover ? 0 : Math.floor(match.pot * RAKE); payout = match.pot - rake; accounts.adjustChips(winner.id, payout); }
-    else players.forEach((p) => accounts.adjustChips(p.id, match.buyIn));
+    if (winner) {
+      rake = walkover ? 0 : Math.floor(match.pot * RAKE); payout = match.pot - rake; accounts.adjustChips(winner.id, payout);
+      if (!walkover) { try { require("./clans").recordPvpWin(winner.id, "solitaire"); } catch {} }
+    } else players.forEach((p) => accounts.adjustChips(p.id, match.buyIn));
     match.result = {
       winner: winner ? winner.name : null, tie: !winner, pot: match.pot, rake, payout, walkover,
       players: players.map((p) => ({ name: p.name, foundations: E.foundationCount(p.state) })),
@@ -175,7 +177,8 @@ function setupSolitaire(io, accounts) {
         g.over = true;
         const payout = g.bet * WIN_MULT;
         const r = accounts.adjustChips(socket.data.account, payout);
-        accounts.recordHand(socket.data.account, payout - g.bet, true, "solitaire");
+        const wacc = accounts.get(socket.data.account); if (wacc) wacc.solitaireClears = (wacc.solitaireClears || 0) + 1;
+        accounts.recordHand(socket.data.account, payout - g.bet, true, "solitaire"); // → onHand → achievements.check
         return ack({ ...soloView(g, { won: true, payout }), account: r.account });
       }
       ack(soloView(g));

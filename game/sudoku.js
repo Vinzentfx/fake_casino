@@ -172,6 +172,7 @@ function setupSudoku(io, accounts) {
       rake = walkover ? 0 : Math.floor(match.pot * RAKE); // rake on every real win; walkover takes full pot
       payout = match.pot - rake;
       accounts.adjustChips(winner.id, payout);
+      if (!walkover) { try { require("./clans").recordPvpWin(winner.id, "sudoku"); } catch {} }
     } else {
       players.forEach((p) => accounts.adjustChips(p.id, match.buyIn)); // tie → refund
     }

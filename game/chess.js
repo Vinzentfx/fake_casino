@@ -163,6 +163,8 @@ function setupChess(io, accounts) {
       accounts.adjustChips(winner.id, payout);
       // Walkover still counts as a ranked win (opponent abandoned).
       ratingChange = applyRating(match, winner.id, false);
+      // Decisive win (not a walkover) also counts toward the clan league / war.
+      if (!walkover) { try { clans.recordPvpWin(winner.id, "chess"); } catch {} }
     }
 
     match.result = {

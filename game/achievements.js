@@ -66,6 +66,21 @@ const DEFS = [
     check: (a) => (a.tourneyWins || 0) >= 1 },
   { id: "bounty",      emoji: "🎯", label: "Kopfgeldjäger",   desc: "Kassiere ein Kopfgeld",                  reward: 50000,
     check: (a) => (a.bountyClaims || 0) >= 1 },
+  // ── Denkspiele (PvP-Duelle & Solitär) ─────────────────────────────────────
+  { id: "duel_win_1",  emoji: "🤝", label: "Erstes Duell",    desc: "Gewinne dein erstes PvP-Duell",          reward: 2500,
+    check: (a) => (a.pvpWins || 0) >= 1 },
+  { id: "duel_win_25", emoji: "⚔️", label: "Duellmeister",    desc: "Gewinne 25 PvP-Duelle",                  reward: 50000,
+    check: (a) => (a.pvpWins || 0) >= 25 },
+  { id: "memory_win",  emoji: "🧠", label: "Gedächtniskünstler", desc: "Gewinne ein Memory-Duell",            reward: 5000,
+    check: (a) => ((a.pvpWinsByGame && a.pvpWinsByGame.memory) || 0) >= 1 },
+  { id: "sudoku_win",  emoji: "🔢", label: "Zahlenjäger",     desc: "Gewinne ein Sudoku-Race",                reward: 5000,
+    check: (a) => ((a.pvpWinsByGame && a.pvpWinsByGame.sudoku) || 0) >= 1 },
+  { id: "chess_win_1", emoji: "♟️", label: "Schachmatt",      desc: "Gewinne ein Schach-Duell",               reward: 5000,
+    check: (a) => (a.chessWins || 0) >= 1 },
+  { id: "chess_win_10", emoji: "♚", label: "Großmeister",     desc: "Gewinne 10 Schach-Duelle",               reward: 75000,
+    check: (a) => (a.chessWins || 0) >= 10 },
+  { id: "sol_clear",   emoji: "🃏", label: "Patience-Profi",  desc: "Räum Solitär gegen das Haus ab",         reward: 5000,
+    check: (a) => (a.solitaireClears || 0) >= 1 },
 ];
 
 // Cheap city aggregates for the checks above.
