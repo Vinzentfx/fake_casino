@@ -20,18 +20,23 @@ const crypto = require("crypto");
 const lobby = require("./lobby");
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const PAIRS = 8;              // 16 cards → 4×4 board
 const RAKE = 0.10;            // 10% of the pot is removed (sink); winner gets the rest
 const MIN_BUYIN = 50;
 const MAX_BUYIN = 1_000_000;
 const FLIP_BACK_MS = 1100;    // how long a mismatched pair stays visible before flipping back
 
-// Card faces — one emoji per pair id (index 0..PAIRS-1).
-const FACES = ["🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🎲", "👑", "🚀", "🐬", "🦄", "🎁"];
+// Board sizes (number of PAIRS). small 12 cards, medium 20 cards, large 30 cards.
+const SIZES = { small: 6, medium: 10, large: 15 };
+const DEFAULT_SIZE = "medium";
+const sizePairs = (size) => SIZES[size] || SIZES[DEFAULT_SIZE];
 
-function shuffledBoard() {
+// Card faces — one emoji per pair id (index 0..pairs-1). Must cover the largest board.
+const FACES = ["🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🎲", "👑", "🚀", "🐬",
+  "🦄", "🎁", "🌈", "🍉", "🦋", "🐱", "🎈", "🍩"];
+
+function shuffledBoard(pairs) {
   const ids = [];
-  for (let i = 0; i < PAIRS; i++) ids.push(i, i);
+  for (let i = 0; i < pairs; i++) ids.push(i, i);
   for (let i = ids.length - 1; i > 0; i--) {
     const j = crypto.randomInt(i + 1);
     [ids[i], ids[j]] = [ids[j], ids[i]];
@@ -74,9 +79,10 @@ function setupMemory(io, accounts) {
       code: match.code,
       state: match.state,
       public: !!match.public,
+      size: match.size,
       buyIn: match.buyIn,
       pot: match.pot,
-      pairsTotal: PAIRS,
+      pairsTotal: match.pairs,
       board: publicBoard(match),
       playerCount: match.players.size,
       isHost: match.host === viewerKey,
@@ -101,7 +107,7 @@ function setupMemory(io, accounts) {
     return {
       code: match.code,
       game: "memory",
-      label: "🧠 Memory-Duell",
+      label: `🧠 Memory-Duell (${match.pairs * 2} Karten)`,
       host: host ? host.name : "?",
       players: [...match.players.values()].filter((p) => p.socket).length,
       max: 2,
@@ -177,7 +183,7 @@ function setupMemory(io, accounts) {
   }
 
   function startGame(match) {
-    match.board = shuffledBoard();
+    match.board = shuffledBoard(match.pairs);
     match.flipped = [];
     match.locked = false;
     match.pot = 0;
@@ -199,18 +205,19 @@ function setupMemory(io, accounts) {
   }
 
   io.on("connection", (socket) => {
-    socket.on("memory:create", ({ buyIn, isPublic = true } = {}, ack) => {
+    socket.on("memory:create", ({ buyIn, isPublic = true, size = DEFAULT_SIZE } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN)
         return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} 🪙.` });
+      if (!SIZES[size]) size = DEFAULT_SIZE;
       const a = acc(socket);
       if (!a || a.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
       leaveCurrent(socket);
       const code = makeCode();
       const match = {
-        code, buyIn, pot: 0, state: "waiting", public: !!isPublic,
+        code, buyIn, pot: 0, state: "waiting", public: !!isPublic, size, pairs: sizePairs(size),
         host: socket.data.account, players: new Map(),
         board: [], flipped: [], locked: false, turn: null, flipTimer: null, result: null,
       };
