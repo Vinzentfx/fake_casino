@@ -161,6 +161,8 @@ function setupMemory(io, accounts) {
       rake = forcedWinner ? 0 : Math.floor(match.pot * RAKE); // walkover: no rake, take the pot
       payout = match.pot - rake;
       accounts.adjustChips(winner.id, payout);
+      // Real win (not a walkover) counts toward the clan league / war.
+      if (!forcedWinner) { try { require("./clans").recordPvpWin(winner.id, "memory"); } catch {} }
     } else {
       players.forEach((p) => accounts.adjustChips(p.id, match.buyIn)); // tie → refund
     }
