@@ -881,6 +881,12 @@
             <button class="btn-primary" id="admin-tourney-on-btn">🏁 Turnier starten</button>
             <button class="btn-danger" id="admin-tourney-off-btn">Beenden</button>
           </div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <input id="admin-heist-secs" type="number" min="15" max="300" value="60" style="width:60px" title="Sekunden" />
+            <input id="admin-heist-loot" type="number" min="1000" step="50000" value="500000" style="width:110px" title="Beute" />
+            <button class="btn-primary" id="admin-heist-on-btn">🚨 Heist starten</button>
+            <button class="btn-danger" id="admin-heist-off-btn">Abbrechen</button>
+          </div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
             <input id="admin-target-test" type="text" maxlength="16" placeholder="Spielername" style="flex:1;min-width:120px" />
             <button class="btn-primary" id="admin-reset-bonus-btn">🎁 Bonus-Cooldown resetten</button>
@@ -916,6 +922,20 @@
   <!-- Toast für Hinweise (z. B. Bonus erhalten) -->
   <div id="toast" class="toast"></div>
 
+  <!-- Casino-Heist-Overlay (erscheint bei einem Heist-Event) -->
+  <div id="heist-overlay" class="heist-overlay hidden">
+    <div class="heist-card">
+      <div class="heist-emoji">🚨</div>
+      <h2 id="heist-title">CASINO-HEIST!</h2>
+      <p class="muted small" id="heist-sub">Knackt gemeinsam den Tresor!</p>
+      <div class="heist-loot" id="heist-loot"></div>
+      <div class="heist-vault"><div class="heist-vault-fill" id="heist-vault-fill"></div><span id="heist-vault-txt"></span></div>
+      <div class="heist-timer" id="heist-timer"></div>
+      <button class="heist-crack" id="heist-crack">💥 KNACKEN!</button>
+      <div class="heist-result" id="heist-result"></div>
+    </div>
+  </div>
+
   <!-- Update-/Changelog-Modal (erscheint einmalig nach einem Update) -->
   <div id="update-modal" class="update-modal hidden">
     <div class="update-card">
@@ -944,6 +964,7 @@
   <script src="/js/crash.js"></script>
   <script src="/js/mines.js"></script>
   <script src="/js/wheel.js"></script>
+  <script src="/js/heist.js"></script>
   <script src="/js/blackjackLobby.js"></script>
   <script src="/js/poker.js"></script>
   <script src="/js/slots.js"></script>
