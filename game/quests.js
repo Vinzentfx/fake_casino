@@ -100,7 +100,8 @@ function track(name, ev, n = 1, meta = null) {
   }
   const key = String(name).trim().toLowerCase();
   const matches = (def) => def.ev === ev || (def.ev === "play" && ev.startsWith("play_"));
-  const mult = require("./liveops").questMult(); // Happy Hour doubles rewards
+  // Happy Hour doubles rewards; the wealth taper reduces them for billionaires.
+  const mult = require("./liveops").questMult() * _accounts.faucetFactor(key);
   let changed = false;
 
   // One-time daily & weekly quests.
@@ -110,7 +111,7 @@ function track(name, ev, n = 1, meta = null) {
     changed = true;
     if (q.prog[def.id] >= def.target) {
       q.claimed[def.id] = true;
-      const reward = def.reward * mult;
+      const reward = Math.round(def.reward * mult);
       _accounts.adjustChips(key, reward);
       if (_io) _io.emit("quest:done", { user: acc.name, label: def.label, reward, happy: mult > 1 });
     }
@@ -127,7 +128,7 @@ function track(name, ev, n = 1, meta = null) {
     while (r.prog >= def.target && r.done < def.cap) {
       r.prog -= def.target;
       r.done += 1;
-      const reward = def.reward * mult;
+      const reward = Math.round(def.reward * mult);
       _accounts.adjustChips(key, reward);
       if (_io) _io.emit("quest:done", { user: acc.name, label: def.label, reward, repeat: true, happy: mult > 1 });
     }

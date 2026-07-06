@@ -168,6 +168,23 @@ function _netWorth(acc) {
   return worth + city.ownerValue(key) + stocks.portfolioValue(key) - debt;
 }
 
+// Anti-inflation: guaranteed FREE income (hourly bonus, quests, calendar) is
+// full value while you're still building up, then tapers for the wealthy — so
+// billionaires don't keep minting free chips with nothing to spend them on.
+// New/mid players (< FAUCET_FULL net worth) are completely unaffected.
+const FAUCET_FULL = 10_000_000;      // ≤10M net worth → 100%
+const FAUCET_MIN_NW = 1_000_000_000; // ≥1B net worth → FAUCET_FLOOR
+const FAUCET_FLOOR = 0.25;
+function faucetFactor(name) {
+  const acc = get(name);
+  if (!acc) return 1;
+  const nw = _netWorth(acc);
+  if (nw <= FAUCET_FULL) return 1;
+  if (nw >= FAUCET_MIN_NW) return FAUCET_FLOOR;
+  const t = (nw - FAUCET_FULL) / (FAUCET_MIN_NW - FAUCET_FULL);
+  return 1 - (1 - FAUCET_FLOOR) * t;
+}
+
 // ─── Buffs (from business products) ─────────────────────────────────────────
 /** Active buffs for an account, with expired ones pruned. { type: {until, mult} } */
 function activeBuffs(acc) {
@@ -338,13 +355,19 @@ function claimDailyBonus(name) {
     Math.floor((acc.lossSince || 0) * (blessed ? CASHBACK_RATE_BLESSED : CASHBACK_RATE))
   );
   acc.lossSince = 0;
-  const amount = base + tribute + houses + sets + cashback;
+  // Anti-inflation taper for the wealthy (cashback excluded — it's already
+  // bounded by your own losses, not free money).
+  const f = faucetFactor(acc.name);
+  const tBase = Math.round(base * f), tTribute = Math.round(tribute * f);
+  const tHouses = Math.round(houses * f), tSets = Math.round(sets * f);
+  const amount = tBase + tTribute + tHouses + tSets + cashback;
   acc.chips += amount;
   acc.lastBonusAt = now;
   save();
   return {
-    ok: true, amount, base, tribute, streets, golden, houses, housesOwned,
-    sets, setList, cashback, streak: acc.bonusStreak, account: publicAccount(acc),
+    ok: true, amount, base: tBase, tribute: tTribute, streets, golden,
+    houses: tHouses, housesOwned, sets: tSets, setList, cashback,
+    streak: acc.bonusStreak, taper: Math.round(f * 100), account: publicAccount(acc),
   };
 }
 
@@ -635,7 +658,7 @@ function claimCalendar(name) {
   const cal = acc.calendar || { idx: 0, lastDay: -999 };
   if (cal.lastDay === today) return { ok: false, error: "Heute schon abgeholt — komm morgen wieder!" };
   const idx = (cal.lastDay === today - 1) ? cal.idx : 0; // consecutive? else reset
-  const reward = CAL_REWARDS[idx];
+  const reward = Math.round(CAL_REWARDS[idx] * faucetFactor(name));
   acc.chips += reward;
   acc.calendar = { idx: (idx + 1) % CAL_REWARDS.length, lastDay: today };
   if ((idx + 1) > (acc.calBest || 0)) acc.calBest = idx + 1; // for achievements
@@ -722,6 +745,7 @@ module.exports = {
   isShadowbanned,
   calendarState,
   claimCalendar,
+  faucetFactor,
   placeBounty,
   claimBounty,
   bountyOn,
