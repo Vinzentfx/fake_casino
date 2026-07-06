@@ -19,7 +19,7 @@ const crypto = require("crypto");
 
 const TILES = 25;
 const HOUSE_EDGE = 0.02; // 98% RTP
-const MIN_BET = 50, MAX_BET = 1_000_000;
+const MIN_BET = 50, MAX_BET = 10_000;
 
 function multiplier(mines, safe) {
   if (safe <= 0) return 1;

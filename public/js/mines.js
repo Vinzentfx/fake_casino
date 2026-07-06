@@ -87,6 +87,7 @@
     const bet = parseInt($("#mines-amount").value, 10);
     const mines = parseInt($("#mines-count").value, 10);
     if (!Number.isFinite(bet) || bet < 50) { err.textContent = "Mindestens 50 🪙."; return; }
+    if (bet > 10000) { err.textContent = "Maximaleinsatz 10.000 🪙."; return; }
     if (!Number.isFinite(mines) || mines < 1 || mines > 24) { err.textContent = "1–24 Minen."; return; }
     socket.emit("mines:start", { bet, mines }, (v) => {
       if (!v || !v.ok) { err.textContent = (v && v.error) || "Fehler."; return; }
