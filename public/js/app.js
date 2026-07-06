@@ -52,6 +52,7 @@ function showScreen(name) {
   if (name === "quests" && window.Casino._loadQuests) window.Casino._loadQuests();
   if (name === "calendar") loadCalendar();
   if (name === "wheel" && window.Casino._loadWheel) window.Casino._loadWheel();
+  if (name === "clans" && window.Casino._loadClans) window.Casino._loadClans();
   if (name === "crash" && window.Casino._loadCrash) window.Casino._loadCrash();
   if (name === "mines" && window.Casino._loadMines) window.Casino._loadMines();
   if (name === "sports" && window.Casino._loadSports) window.Casino._loadSports();
@@ -435,8 +436,9 @@ function renderLbList() {
     const badge = p.badge ? ` <span class="lb-badge" title="Achievement">${p.badge}</span>` : "";
     const champ = p.champ ? ` <span class="lb-badge" title="Spieler der Woche">🏆</span>` : "";
     const lvl = p.level ? ` <span class="lb-level" title="Level ${p.level}">Lv ${p.level}</span>` : "";
+    const clan = p.clan ? ` <span class="lb-clan">[${escapeHtml(p.clan)}]</span>` : "";
     li.innerHTML =
-      `<span>${rank} ${escapeHtml(p.name)}${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
+      `<span>${rank}${clan} ${escapeHtml(p.name)}${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
       `<b>${unit ? unit(p.value) : p.value.toLocaleString("de-DE") + " 🪙"}</b>`;
     // Tap a row to inspect that player's stats.
     li.classList.add("lb-clickable");

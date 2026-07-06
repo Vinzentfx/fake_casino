@@ -515,6 +515,7 @@ function leaderboardBy(cat, limit = 10) {
       badge: a.badge ? achievements.emojiOf(a.badge) : null,
       champ: champ != null && normalizeName(a.name) === champ,
       level: levelFromXp(a.xp || 0),
+      clan: require("./clans").tagOf(normalizeName(a.name)),
     }))
     .filter((x) => x.value > 0 || cat === "rich")
     .sort((a, b) => b.value - a.value)

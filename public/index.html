@@ -140,6 +140,7 @@
           <button class="action-tile" id="calendar-tile" data-nav="calendar">📅<span>Kalender</span></button>
           <button class="action-tile" id="wheel-tile" data-nav="wheel">🎡<span>Glücksrad</span></button>
           <button class="action-tile" data-nav="quests">🎯<span>Aufträge</span></button>
+          <button class="action-tile" data-nav="clans">🛡️<span>Clans</span></button>
           <button class="action-tile" data-nav="leaderboard">🏆<span>Bestenliste</span></button>
           <button class="action-tile" data-nav="stats">📊<span>Statistik</span></button>
           <button class="action-tile" id="bonus-tile">🎁<span>Stunden-Bonus</span></button>
@@ -575,6 +576,17 @@
       </div>
     </section>
 
+    <!-- ===================== CLANS ===================== -->
+    <section class="screen" data-screen="clans">
+      <div class="panel">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <h2>🛡️ Clans</h2>
+        <div id="clan-mine"></div>
+        <h3 class="section-title" style="margin-top:14px">🏆 Clan-Rangliste</h3>
+        <ol class="leaderboard" id="clan-board"><li class="muted">Lädt…</li></ol>
+      </div>
+    </section>
+
     <!-- ===================== GLÜCKSRAD ===================== -->
     <section class="screen" data-screen="wheel">
       <div class="panel" style="text-align:center">
@@ -965,6 +977,7 @@
   <script src="/js/mines.js"></script>
   <script src="/js/wheel.js"></script>
   <script src="/js/heist.js"></script>
+  <script src="/js/clans.js"></script>
   <script src="/js/blackjackLobby.js"></script>
   <script src="/js/poker.js"></script>
   <script src="/js/slots.js"></script>
