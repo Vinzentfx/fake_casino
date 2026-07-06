@@ -218,6 +218,18 @@ function setupEconomy(io, accounts) {
       ack(r);
     });
 
+    // ── Glücksrad ─────────────────────────────────────────────────────────
+    socket.on("wheel:state", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+      ack({ ok: true, ...accounts.wheelState(socket.data.account) });
+    });
+    socket.on("wheel:spin", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+      ack(accounts.spinWheel(socket.data.account));
+    });
+
     socket.on("disconnect", () => clickTimes.delete(socket.id));
   });
 

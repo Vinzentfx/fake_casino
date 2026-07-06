@@ -138,6 +138,7 @@
         <h2 class="section-title">Mehr</h2>
         <div class="action-grid">
           <button class="action-tile" id="calendar-tile" data-nav="calendar">📅<span>Kalender</span></button>
+          <button class="action-tile" id="wheel-tile" data-nav="wheel">🎡<span>Glücksrad</span></button>
           <button class="action-tile" data-nav="quests">🎯<span>Aufträge</span></button>
           <button class="action-tile" data-nav="leaderboard">🏆<span>Bestenliste</span></button>
           <button class="action-tile" data-nav="stats">📊<span>Statistik</span></button>
@@ -574,6 +575,21 @@
       </div>
     </section>
 
+    <!-- ===================== GLÜCKSRAD ===================== -->
+    <section class="screen" data-screen="wheel">
+      <div class="panel" style="text-align:center">
+        <button class="back-btn" data-nav="lobby" style="float:left">‹ Lobby</button>
+        <h2>🎡 Glücksrad</h2>
+        <p class="muted small">Einmal am Tag gratis drehen — Chips gewinnen!</p>
+        <div class="wheel-stage">
+          <div class="wheel-pointer">▼</div>
+          <svg id="wheel-svg" viewBox="0 0 200 200"></svg>
+        </div>
+        <button class="btn-primary" id="wheel-spin" style="width:100%;margin-top:8px">🎡 Drehen</button>
+        <div class="form-error" id="wheel-error"></div>
+      </div>
+    </section>
+
     <!-- ===================== LOGIN-KALENDER ===================== -->
     <section class="screen" data-screen="calendar">
       <div class="panel">
@@ -927,6 +943,7 @@
   <script src="/js/quests.js"></script>
   <script src="/js/crash.js"></script>
   <script src="/js/mines.js"></script>
+  <script src="/js/wheel.js"></script>
   <script src="/js/blackjackLobby.js"></script>
   <script src="/js/poker.js"></script>
   <script src="/js/slots.js"></script>

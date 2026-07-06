@@ -617,6 +617,42 @@ function listAll() {
   }));
 }
 
+// ─── Glücksrad (1× täglich gratis) ──────────────────────────────────────────
+const WHEEL_COOLDOWN_MS = 20 * 60 * 60 * 1000;
+const WHEEL_SEGMENTS = [
+  { label: "500",    prize: 500,   weight: 22, color: "#5ea8e0" },
+  { label: "10.000", prize: 10000, weight: 6,  color: "#66c07a" },
+  { label: "1.000",  prize: 1000,  weight: 20, color: "#d1a35e" },
+  { label: "25.000", prize: 25000, weight: 3,  color: "#c86bd6" },
+  { label: "2.000",  prize: 2000,  weight: 16, color: "#5ea8e0" },
+  { label: "250",    prize: 250,   weight: 18, color: "#8ea0a8" },
+  { label: "5.000",  prize: 5000,  weight: 10, color: "#66c07a" },
+  { label: "JACKPOT", prize: 50000, weight: 1, color: "#f4d782" },
+];
+const wheelSegmentsPublic = () => WHEEL_SEGMENTS.map((s) => ({ label: s.label, color: s.color }));
+
+function wheelState(name) {
+  const acc = get(name);
+  if (!acc) return null;
+  const since = Date.now() - (acc.lastWheelAt || 0);
+  return { segments: wheelSegmentsPublic(), canSpin: since >= WHEEL_COOLDOWN_MS, msLeft: Math.max(0, WHEEL_COOLDOWN_MS - since) };
+}
+
+function spinWheel(name) {
+  const acc = get(name);
+  if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  const since = Date.now() - (acc.lastWheelAt || 0);
+  if (since < WHEEL_COOLDOWN_MS) return { ok: false, error: "Schon gedreht — komm später wieder!", msLeft: WHEEL_COOLDOWN_MS - since };
+  const total = WHEEL_SEGMENTS.reduce((s, x) => s + x.weight, 0);
+  let r = crypto.randomInt(total), idx = 0;
+  for (let i = 0; i < WHEEL_SEGMENTS.length; i++) { if (r < WHEEL_SEGMENTS[i].weight) { idx = i; break; } r -= WHEEL_SEGMENTS[i].weight; }
+  const prize = Math.round(WHEEL_SEGMENTS[idx].prize * faucetFactor(name)); // rich players tapered
+  acc.chips += prize;
+  acc.lastWheelAt = Date.now();
+  save();
+  return { ok: true, index: idx, prize, label: WHEEL_SEGMENTS[idx].label, account: publicAccount(acc) };
+}
+
 // ─── Rivalen / Kopfgeld ─────────────────────────────────────────────────────
 // Put chips on a rival's head; whoever takes over one of their buildings
 // collects the whole pool. Escrowed from the setter immediately.
@@ -781,6 +817,8 @@ module.exports = {
   isShadowbanned,
   calendarState,
   claimCalendar,
+  wheelState,
+  spinWheel,
   levelInfo,
   faucetFactor,
   placeBounty,
