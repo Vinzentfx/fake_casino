@@ -18,6 +18,7 @@ const accounts = require("./game/accounts");
 const { setupPoker } = require("./game/tableManager");
 const { setupSlots } = require("./game/slots");
 const { setupCrash } = require("./game/crash");
+const { setupMines } = require("./game/mines");
 const { setupPvp } = require("./game/slotsPvp");
 const { setupAdmin } = require("./game/admin");
 const { setupBlackjack } = require("./game/blackjack");
@@ -155,6 +156,7 @@ io.sockets.setMaxListeners(50); // many game modules each add a connection liste
 setupPoker(io, accounts);
 setupSlots(io, accounts);
 setupCrash(io, accounts);
+setupMines(io, accounts);
 setupPvp(io, accounts);
 setupAdmin(io, accounts);
 setupBlackjack(io, accounts);

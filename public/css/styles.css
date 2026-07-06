@@ -2029,6 +2029,22 @@ button { font-family: inherit; cursor: pointer; }
   50% { box-shadow: 0 0 14px 2px rgba(244,215,130,0.35); }
 }
 
+/* Mines. */
+.mines-wrap { max-width: 560px; margin: 0 auto; }
+.mines-topbar { display: flex; gap: 8px; margin: 10px 0; }
+.mines-stat { flex: 1; text-align: center; padding: 8px; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); }
+.mines-stat span { display: block; font-size: 0.65rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.04em; }
+.mines-stat b { font-size: 1rem; color: #f4d782; }
+.mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0; }
+.mine-tile { aspect-ratio: 1; border-radius: 12px; font-size: 1.6rem; cursor: pointer;
+  background: linear-gradient(180deg, #3a4150, #2a303c); border: 1px solid rgba(255,255,255,0.12);
+  transition: transform 0.08s, background 0.2s; display: flex; align-items: center; justify-content: center; }
+.mine-tile:hover:not(:disabled) { background: linear-gradient(180deg, #454d5e, #333a47); transform: translateY(-2px); }
+.mine-tile:disabled { cursor: default; }
+.mine-tile.gem { background: rgba(74,222,128,0.18); border-color: rgba(74,222,128,0.5); }
+.mine-tile.bomb { background: rgba(214,90,90,0.15); border-color: rgba(214,90,90,0.4); opacity: 0.75; }
+.mine-tile.boom { background: rgba(214,90,90,0.4); border-color: #d65a5a; animation: crashShake 0.4s; }
+
 /* Crash / Aviator. */
 .crash-wrap { max-width: 720px; margin: 0 auto; }
 .crash-history { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; justify-content: center; }
