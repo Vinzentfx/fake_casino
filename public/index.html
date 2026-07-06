@@ -122,6 +122,11 @@
             <span class="tile-name">Solitär</span>
             <span class="tile-sub">Klondike · gegen das Haus oder PvP</span>
           </button>
+          <button class="game-tile" data-nav="chess">
+            <span class="tile-icon">♟️</span>
+            <span class="tile-name">Schach-Duell</span>
+            <span class="tile-sub">Blitz um Chips · Wertung & Clan-Liga</span>
+          </button>
         </div>
 
         <h2 class="section-title">Wirtschaft</h2>
@@ -633,6 +638,81 @@
           <h3 id="mem-result-title">—</h3>
           <p class="muted small" id="mem-result-sub"></p>
           <button class="btn-primary" id="mem-again" style="margin-top:10px">Nochmal</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SCHACH-DUELL ===================== -->
+    <section class="screen" data-screen="chess">
+      <div class="chs-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon">♟️</div><h2>Schach-Duell</h2></div>
+
+        <!-- Setup -->
+        <div id="chs-setup">
+          <p class="muted small" style="text-align:center">Blitz-Schach um Chips. Sieg (Matt / Zeit / Aufgabe) holt den Pot minus 10% Rake, Remis gibt den Einsatz zurück. Jedes Spiel zählt für deine Wertung und die <b>Clan-Liga</b>.</p>
+          <div class="mem-panel">
+            <label class="mem-label">Einsatz (Buy-in)
+              <input id="chs-buyin" type="number" inputmode="numeric" min="50" step="50" value="200" />
+            </label>
+            <div class="mem-label" style="margin-top:10px">Bedenkzeit</div>
+            <div class="mem-sizes" id="chs-tcs">
+              <button type="button" class="mem-size-btn" data-tc="3+2">3+2<span>Blitz</span></button>
+              <button type="button" class="mem-size-btn active" data-tc="5+0">5+0<span>Blitz</span></button>
+              <button type="button" class="mem-size-btn" data-tc="10+5">10+5<span>Schnell</span></button>
+            </div>
+            <div class="mem-visibility">
+              <label class="mem-radio"><input type="radio" name="chs-vis" value="public" checked /> 🌐 Öffentlich</label>
+              <label class="mem-radio"><input type="radio" name="chs-vis" value="private" /> 🔒 Privat (nur per Code)</label>
+            </div>
+            <button class="btn-primary" id="chs-create" style="width:100%;margin-top:8px">♟️ Duell erstellen</button>
+          </div>
+          <div class="mem-panel">
+            <label class="mem-label">Code eines Freundes
+              <input id="chs-code" type="text" maxlength="4" placeholder="z.B. AB12" style="text-transform:uppercase" />
+            </label>
+            <button class="btn-secondary" id="chs-join" style="width:100%;margin-top:8px">Beitreten</button>
+          </div>
+          <button class="btn-secondary" id="chs-league-btn" style="width:100%">🏆 Schach-Liga ansehen</button>
+          <div class="form-error" id="chs-error"></div>
+        </div>
+
+        <!-- Waiting -->
+        <div id="chs-wait" style="display:none;text-align:center">
+          <p>Warte auf Gegner… Teile diesen Code:</p>
+          <div class="mem-code-big" id="chs-code-show">----</div>
+          <p class="muted small" id="chs-wait-info">1/2 Spieler</p>
+          <button class="btn-primary" id="chs-start" style="display:none">▶ Duell starten</button>
+          <button class="btn-secondary" id="chs-cancel" style="margin-top:8px">Abbrechen</button>
+        </div>
+
+        <!-- Game -->
+        <div id="chs-game" style="display:none">
+          <div class="chs-playerbar" id="chs-opp-bar"><span class="chs-pname">Gegner</span><span class="chs-clock" id="chs-opp-clock">5:00</span></div>
+          <div class="chs-board" id="chs-board"></div>
+          <div class="chs-playerbar" id="chs-you-bar"><span class="chs-pname">Du</span><span class="chs-clock" id="chs-you-clock">5:00</span></div>
+          <div class="chs-status" id="chs-status"></div>
+          <div class="chs-moves" id="chs-moves"></div>
+          <div class="sol-actions"><button class="btn-secondary" id="chs-resign">🏳️ Aufgeben</button></div>
+        </div>
+
+        <!-- Result -->
+        <div id="chs-result" style="display:none;text-align:center">
+          <div class="mem-result-emoji" id="chs-result-emoji">🏆</div>
+          <h3 id="chs-result-title">—</h3>
+          <p class="muted small" id="chs-result-sub"></p>
+          <button class="btn-primary" id="chs-again" style="margin-top:10px">Nochmal</button>
+        </div>
+
+        <!-- League -->
+        <div id="chs-league" style="display:none">
+          <button class="btn-secondary" id="chs-league-back" style="margin-bottom:10px">‹ Zurück</button>
+          <div class="chs-me-card" id="chs-me-card"></div>
+          <h3 class="section-title">🏅 Spieler-Wertung</h3>
+          <div id="chs-lb-players"></div>
+          <h3 class="section-title" style="margin-top:14px">🛡️ Clan-Liga</h3>
+          <p class="muted small">Rangliste nach Schach-Siegen aller Clan-Mitglieder.</p>
+          <div id="chs-lb-clans"></div>
         </div>
       </div>
     </section>
@@ -1247,6 +1327,7 @@
   <script src="/js/suggestions.js"></script>
   <script src="/js/sudoku.js"></script>
   <script src="/js/solitaire.js"></script>
+  <script src="/js/chess.js"></script>
   <script src="/js/wheel.js"></script>
   <script src="/js/heist.js"></script>
   <script src="/js/clans.js"></script>

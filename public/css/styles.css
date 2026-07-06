@@ -2171,6 +2171,41 @@ button { font-family: inherit; cursor: pointer; }
 .mem-card.matched { background: rgba(74,222,128,0.16); border-color: rgba(74,222,128,0.45); opacity: 0.85; }
 .mem-result-emoji { font-size: 3.2rem; margin-bottom: 6px; }
 
+/* Schach-Duell. */
+.chs-wrap { max-width: 520px; margin: 0 auto; }
+.chs-playerbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; margin: 4px 0; }
+.chs-playerbar.active { border-color: #e6b04b; background: rgba(230,176,75,0.12); }
+.chs-pname { font-weight: 700; font-size: 0.92rem; }
+.chs-clock { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 1.3rem; letter-spacing: 0.03em; }
+.chs-playerbar.active .chs-clock { color: #e6b04b; }
+.chs-board { display: grid; grid-template-columns: repeat(8, 1fr); aspect-ratio: 1; width: 100%;
+  border: 2px solid rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; margin: 4px 0; }
+.chs-cell { position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.chs-cell.light { background: #ebd8b7; }
+.chs-cell.dark { background: #a9825b; }
+.chs-cell.lastmv::after { content: ""; position: absolute; inset: 0; background: rgba(230,176,75,0.35); }
+.chs-cell.sel::after { content: ""; position: absolute; inset: 0; background: rgba(94,168,224,0.45); }
+.chs-cell.legal::before { content: ""; position: absolute; width: 32%; height: 32%; border-radius: 50%;
+  background: rgba(20,20,20,0.35); z-index: 2; }
+.chs-cell.legal:has(.chs-piece)::before { width: 92%; height: 92%; background: transparent;
+  border: 4px solid rgba(20,20,20,0.4); box-sizing: border-box; }
+.chs-piece { font-size: min(8vw, 40px); line-height: 1; z-index: 3; user-select: none; }
+.chs-piece.wp { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+.chs-piece.bp { color: #1a1a1a; text-shadow: 0 1px 1px rgba(255,255,255,0.3); }
+.chs-status { text-align: center; min-height: 20px; font-weight: 600; margin: 6px 0; color: #cdd6e4; }
+.chs-status.warn { color: #e0a05e; }
+.chs-moves { max-height: 68px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 4px 10px;
+  font-size: 0.82rem; color: var(--muted, #9aa4b2); padding: 6px 8px; background: rgba(0,0,0,0.15); border-radius: 8px; }
+.chs-mv { white-space: nowrap; }
+.chs-me-card { margin-bottom: 10px; }
+.chs-me { background: rgba(230,176,75,0.12); border: 1px solid rgba(230,176,75,0.3); border-radius: 10px; padding: 10px 12px; }
+.chs-lb-row { display: flex; align-items: center; gap: 8px; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.chs-lb-rank { flex: 0 0 22px; text-align: center; font-weight: 700; color: var(--muted, #9aa4b2); }
+.chs-lb-name { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chs-lb-rating { font-weight: 800; color: #e6b04b; }
+.chs-lb-wl { flex: 0 0 auto; }
+
 /* Solitär (Klondike). */
 .sol-wrap { max-width: 640px; margin: 0 auto; }
 .sol-mode-tabs { display: flex; gap: 8px; margin: 10px 0; }
