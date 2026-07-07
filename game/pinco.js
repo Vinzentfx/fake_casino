@@ -8,6 +8,8 @@ const MAX_PLAYERS = 8;
 const HISTORY_MAX = 24;
 const MIN_BET = 50;
 const MAX_BET = 100000;
+const BALLS_PER_RECORDED_ROUND = 10;
+const PLAYER_COLORS = ["#4ade80", "#60a5fa", "#f472b6", "#facc15", "#a78bfa", "#fb923c", "#22d3ee", "#f87171"];
 
 const BOARDS = {
   medium: {
@@ -74,7 +76,7 @@ function roomState(room, viewerKey) {
     code: room.code,
     host: room.hostName,
     isHost: room.hostKey === viewerKey,
-    players: [...room.players.values()].map((p) => ({ name: p.name, net: p.net, drops: p.drops })),
+    players: [...room.players.values()].map((p) => ({ name: p.name, net: p.net, drops: p.drops, color: p.color })),
     history: room.history.slice(0, HISTORY_MAX),
   };
 }
@@ -95,9 +97,27 @@ function describe(room) {
 const register = (code) => lobby.add(code, () => (rooms.has(code) ? describe(rooms.get(code)) : null));
 
 function setupPinco(io, accounts) {
+  function colorFor(room) {
+    const used = new Set([...room.players.values()].map((p) => p.color));
+    return PLAYER_COLORS.find((c) => !used.has(c)) || PLAYER_COLORS[room.players.size % PLAYER_COLORS.length];
+  }
   function nameOf(socket) {
     const acc = accounts.get(socket.data.account);
     return (acc && acc.name) || socket.data.displayName || "?";
+  }
+  function recordPincoBall(key, net) {
+    const acc = accounts.get(key);
+    if (!acc) return;
+    acc.pincoRoundBalls = (acc.pincoRoundBalls || 0) + 1;
+    acc.pincoRoundNet = (acc.pincoRoundNet || 0) + net;
+    if (acc.pincoRoundBalls >= BALLS_PER_RECORDED_ROUND) {
+      const roundNet = acc.pincoRoundNet || 0;
+      acc.pincoRoundBalls = 0;
+      acc.pincoRoundNet = 0;
+      accounts.recordHand(key, roundNet, true, "pinco", { balls: BALLS_PER_RECORDED_ROUND });
+    } else {
+      accounts.save();
+    }
   }
   function currentRoom(socket) {
     return rooms.get(socket.data.pincoRoom);
@@ -130,7 +150,7 @@ function setupPinco(io, accounts) {
   }
   function addPlayer(room, socket) {
     if (!room.players.has(socket.data.account)) {
-      room.players.set(socket.data.account, { key: socket.data.account, name: nameOf(socket), net: 0, drops: 0 });
+      room.players.set(socket.data.account, { key: socket.data.account, name: nameOf(socket), net: 0, drops: 0, color: colorFor(room) });
     }
     room.sockets.add(socket);
     socket.join(room.code);
@@ -160,18 +180,20 @@ function setupPinco(io, accounts) {
         const credit = accounts.adjustChips(socket.data.account, drop.payout);
         if (credit.ok) account = credit.account;
       }
-      accounts.recordHand(socket.data.account, drop.payout - bet, true, "pinco");
+      recordPincoBall(socket.data.account, drop.payout - bet);
 
+      const room = currentRoom(socket);
+      const roomPlayer = room && room.players.get(socket.data.account);
       const event = {
         ...drop,
         name: acc.name,
+        color: roomPlayer ? roomPlayer.color : PLAYER_COLORS[0],
         bet,
         net: drop.payout - bet,
         at: Date.now(),
       };
-      const room = currentRoom(socket);
       if (room) {
-        const player = room.players.get(socket.data.account);
+        const player = roomPlayer;
         if (player) {
           player.net += event.net;
           player.drops += 1;
