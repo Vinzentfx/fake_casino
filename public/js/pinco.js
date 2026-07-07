@@ -12,7 +12,7 @@
 
   let boards = {
     medium: { label: "Mittel", rows: 10, multipliers: [7, 2.6, 1.5, 1.05, 0.8, 0.65, 0.8, 1.05, 1.5, 2.6, 7] },
-    large: { label: "Groß", rows: 14, multipliers: [14, 6, 3, 1.9, 1.25, 0.9, 0.75, 0.55, 0.75, 0.9, 1.25, 1.9, 3, 6, 14] },
+    large: { label: "Groß", rows: 14, multipliers: [14, 6, 3, 1.9, 1.25, 0.9, 0.75, 0.64, 0.75, 0.9, 1.25, 1.9, 3, 6, 14] },
   };
   let selectedSize = "medium";
   let roomCode = null;
