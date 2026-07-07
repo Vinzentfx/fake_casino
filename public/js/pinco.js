@@ -17,7 +17,9 @@
   let selectedSize = "medium";
   let roomCode = null;
   let drops = [];
-  let animating = false;
+  let activeBalls = [];
+  let animationLoop = false;
+  let ballSeq = 0;
 
   const canvas = () => $("#pinco-canvas");
   const ctx = () => canvas().getContext("2d");
@@ -159,90 +161,74 @@
     draw();
   }
 
-  function batchTotals(batch) {
-    const totalBet = batch.reduce((sum, d) => sum + (d.bet || 0), 0);
-    const totalPayout = batch.reduce((sum, d) => sum + (d.payout || 0), 0);
-    return { totalBet, totalPayout, totalNet: totalPayout - totalBet };
+  function dropStatus(drop) {
+    const cls = drop.net >= 0 ? "pos" : "neg";
+    const sign = drop.net >= 0 ? "+" : "-";
+    return `${escapeHtml(drop.name)} landet auf <b>${drop.multiplier}×</b> · <span class="${cls}">${sign}${fmt(Math.abs(drop.net))} 🪙</span>`;
   }
 
-  function statusText(batch, totals) {
-    if (batch.length === 1) {
-      const drop = batch[0];
-      const cls = drop.net >= 0 ? "pos" : "neg";
-      const sign = drop.net >= 0 ? "+" : "-";
-      return `${escapeHtml(drop.name)} landet auf <b>${drop.multiplier}×</b> · <span class="${cls}">${sign}${fmt(Math.abs(drop.net))} 🪙</span>`;
-    }
-    const cls = totals.totalNet >= 0 ? "pos" : "neg";
-    const sign = totals.totalNet >= 0 ? "+" : "-";
-    return `${escapeHtml(batch[0].name)} droppt <b>${batch.length} Bälle</b> · <span class="${cls}">${sign}${fmt(Math.abs(totals.totalNet))} 🪙</span>`;
-  }
-
-  function animateDrops(batch, totals = batchTotals(batch)) {
-    batch = (Array.isArray(batch) ? batch : [batch]).filter((drop) => drop && Array.isArray(drop.path));
-    if (!batch.length) return;
-    const previousSize = selectedSize;
-    setSize(batch[0].size);
-    const paths = batch.map((drop, i) => ({ drop, pts: pathPoints(drop), delay: i * 95 }));
-    if (paths.some((p) => p.pts.length < 2)) { draw(); return; }
-    const duration = batch[0].rows === 14 ? 1900 : 1500;
-    const start = performance.now();
-    animating = true;
-    $("#pinco-drop").disabled = true;
+  function startAnimationLoop() {
+    if (animationLoop) return;
+    animationLoop = true;
     function frame(now) {
-      const active = [];
-      let done = true;
-      for (const entry of paths) {
-        const elapsed = now - start - entry.delay;
-        if (elapsed < 0) {
-          done = false;
-          continue;
-        }
-        const t = Math.min(1, elapsed / duration);
+      const visible = [];
+      const stillActive = [];
+      for (const entry of activeBalls) {
+        const elapsed = now - entry.start;
+        const t = Math.min(1, elapsed / entry.duration);
         const pts = entry.pts;
         const segmentCount = pts.length - 1;
         const pos = Math.min(segmentCount - 0.0001, t * segmentCount);
         const i = Math.max(0, Math.min(segmentCount - 1, Math.floor(pos)));
         const local = Math.max(0, Math.min(1, pos - i));
         const a = pts[i], b = pts[i + 1] || pts[i];
-        const wobble = Math.sin(t * Math.PI * entry.drop.rows + entry.drop.index) * canvas().width * 0.004;
-        active.push({
+        const wobble = Math.sin(t * Math.PI * entry.drop.rows + entry.seq) * canvas().width * 0.004;
+        visible.push({
           x: a.x + (b.x - a.x) * local + wobble,
           y: a.y + (b.y - a.y) * local,
-          color: entry.drop.index % 2 ? "#bff5d0" : "#4ade80",
+          color: entry.seq % 2 ? "#bff5d0" : "#4ade80",
         });
-        if (t < 1) done = false;
+        if (t < 1) stillActive.push(entry);
+        else $("#pinco-status").innerHTML = dropStatus(entry.drop);
       }
-      draw(active);
-      if (!done) requestAnimationFrame(frame);
+      activeBalls = stillActive;
+      draw(visible);
+      if (activeBalls.length) requestAnimationFrame(frame);
       else {
-        animating = false;
-        $("#pinco-drop").disabled = false;
+        animationLoop = false;
         draw();
-        $("#pinco-status").innerHTML = statusText(batch, totals);
-        if (roomCode && previousSize !== batch[0].size) setSize(previousSize);
       }
     }
     requestAnimationFrame(frame);
   }
 
   function animateDrop(drop) {
-    animateDrops([drop]);
+    if (!drop || !Array.isArray(drop.path)) return;
+    setSize(drop.size);
+    const pts = pathPoints(drop);
+    if (pts.length < 2) { draw(); return; }
+    activeBalls.push({
+      drop,
+      pts,
+      start: performance.now(),
+      duration: drop.rows === 14 ? 1900 : 1500,
+      seq: ballSeq++,
+    });
+    startAnimationLoop();
   }
 
   function dropBall() {
-    if (animating) return;
     setError("");
     const bet = parseInt($("#pinco-bet").value, 10);
-    const count = parseInt($("#pinco-count").value, 10) || 1;
-    socket.emit("pinco:drop", { size: selectedSize, bet, count }, (res) => {
+    socket.emit("pinco:drop", { size: selectedSize, bet }, (res) => {
       if (!res || !res.ok) { setError((res && res.error) || "Fehler."); return; }
       if (res.account) applyAccount(res.account);
       // In lobbies the broadcast animates the drop for everyone, including me.
-      if (!roomCode && Array.isArray(res.drops)) {
-        drops.unshift(...res.drops);
+      if (!roomCode && res.drop) {
+        drops.unshift(res.drop);
         drops = drops.slice(0, 24);
         renderFeed();
-        animateDrops(res.drops, { totalBet: res.totalBet, totalPayout: res.totalPayout, totalNet: res.totalNet });
+        animateDrop(res.drop);
       }
     });
   }
@@ -290,17 +276,6 @@
     renderFeed();
     animateDrop(drop);
   });
-  socket.on("pinco:drops", (batch) => {
-    const list = Array.isArray(batch && batch.drops) ? batch.drops : [];
-    if (!list.length) return;
-    for (let i = list.length - 1; i >= 0; i--) {
-      if (!drops.some((d) => d.id === list[i].id)) drops.unshift(list[i]);
-    }
-    drops = drops.slice(0, 24);
-    renderFeed();
-    animateDrops(list, batch);
-  });
-
   function wire() {
     $("#pinco-drop")?.addEventListener("click", dropBall);
     $("#pinco-create")?.addEventListener("click", createLobby);
@@ -321,7 +296,6 @@
         boards = res.boards || boards;
         $("#pinco-bet").min = res.minBet || 50;
         $("#pinco-bet").max = res.maxBet || 100000;
-        $("#pinco-count").max = res.maxBalls || 10;
       }
       setSize(selectedSize);
       renderRoom(roomCode ? { code: roomCode, players: [], history: drops } : null);
