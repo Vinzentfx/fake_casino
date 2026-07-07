@@ -110,6 +110,11 @@
             <span class="tile-name">Mines</span>
             <span class="tile-sub">Edelsteine sammeln, Bomben meiden</span>
           </button>
+          <button class="game-tile" data-nav="pinco">
+            <span class="tile-icon">🟢</span>
+            <span class="tile-name">Pinco Ball</span>
+            <span class="tile-sub">Bälle droppen · Live-Lobby</span>
+          </button>
         </div>
 
         <h2 class="section-title">🧩 Denkspiele</h2>
@@ -119,20 +124,20 @@
             <span class="tile-name">Memory-Duell</span>
             <span class="tile-sub">Paare finden · gegeneinander um Chips</span>
           </button>
-          <button class="game-tile" data-nav="sudoku">
+          <button class="game-tile locked" data-nav="sudoku" aria-disabled="true">
             <span class="tile-icon">🔢</span>
             <span class="tile-name">Sudoku-Race</span>
-            <span class="tile-sub">Gleiches Rätsel · wer zuerst löst, gewinnt</span>
+            <span class="tile-sub">Bald wieder da</span>
           </button>
-          <button class="game-tile" data-nav="solitaire">
+          <button class="game-tile locked" data-nav="solitaire" aria-disabled="true">
             <span class="tile-icon">🃏</span>
             <span class="tile-name">Solitär</span>
-            <span class="tile-sub">Klondike · gegen das Haus oder PvP</span>
+            <span class="tile-sub">Bald wieder da</span>
           </button>
-          <button class="game-tile" data-nav="chess">
+          <button class="game-tile locked" data-nav="chess" aria-disabled="true">
             <span class="tile-icon">♟️</span>
             <span class="tile-name">Schach-Duell</span>
-            <span class="tile-sub">Blitz um Chips · Wertung & Clan-Liga</span>
+            <span class="tile-sub">Bald wieder da</span>
           </button>
         </div>
 
@@ -582,6 +587,51 @@
         </div>
         <button class="btn-primary crash-cashbtn" id="mines-cashout" style="width:100%;display:none">💸 Auszahlen</button>
         <div class="form-error" id="mines-error"></div>
+      </div>
+    </section>
+
+    <!-- ===================== PINCO BALL ===================== -->
+    <section class="screen" data-screen="pinco">
+      <div class="pinco-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div class="pinco-head">
+          <div class="ph-icon">🟢</div>
+          <h2>Pinco Ball</h2>
+          <p class="muted small">Droppe Bälle durch Stäbe. Die Mitte ist kalt, außen wird es heiß.</p>
+        </div>
+
+        <div class="pinco-lobby-panel hidden" id="pinco-lobby-panel">
+          <div><b>Live-Lobby</b> <span id="pinco-lobby-code">----</span></div>
+          <button class="chip-btn" id="pinco-leave">Verlassen</button>
+        </div>
+
+        <div class="pinco-controls">
+          <div class="pinco-size-tabs" id="pinco-size-tabs">
+            <button class="pinco-size active" data-size="medium">Mittel<span>10 Reihen</span></button>
+            <button class="pinco-size" data-size="large">Groß<span>14 Reihen</span></button>
+          </div>
+          <div class="crash-betrow">
+            <label>Einsatz<input id="pinco-bet" type="number" inputmode="numeric" min="50" max="100000" step="50" value="500" /></label>
+            <label>Modus<input id="pinco-mode-readout" type="text" value="Mittel" readonly /></label>
+          </div>
+          <div class="pinco-actions">
+            <button class="chip-btn" id="pinco-create">👥 Lobby eröffnen</button>
+            <button class="btn-primary" id="pinco-drop">🟢 Ball droppen</button>
+          </div>
+          <div class="form-error" id="pinco-error"></div>
+        </div>
+
+        <div class="pinco-board-wrap">
+          <canvas id="pinco-canvas"></canvas>
+          <div class="pinco-mults" id="pinco-mults"></div>
+        </div>
+
+        <div class="pinco-status" id="pinco-status">Bereit.</div>
+        <div class="pinco-room" id="pinco-room"></div>
+        <h3 class="section-title">Live-Drops</h3>
+        <div class="pinco-feed" id="pinco-feed">
+          <p class="muted small">Noch keine Drops.</p>
+        </div>
       </div>
     </section>
 
@@ -1147,9 +1197,6 @@
         <div class="panel" id="bank-savings-panel">
           <p class="muted small" style="text-align:center;padding:14px">Lädt…</p>
         </div>
-        <p class="muted small" style="text-align:center;margin-top:10px">
-          Sparkonto-Zinsen sind bewusst klein und gedeckelt.
-        </p>
       </div>
     </section>
 
@@ -1326,6 +1373,7 @@
   <script src="/js/quests.js"></script>
   <script src="/js/crash.js"></script>
   <script src="/js/mines.js"></script>
+  <script src="/js/pinco.js"></script>
   <script src="/js/memory.js"></script>
   <script src="/js/suggestions.js"></script>
   <script src="/js/sudoku.js"></script>

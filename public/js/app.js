@@ -27,8 +27,13 @@ const screens = {};
 $$(".screen").forEach((el) => (screens[el.dataset.screen] = el));
 
 let currentScreen = "login";
+const lockedScreens = new Set(["sudoku", "solitaire", "chess"]);
 
 function showScreen(name) {
+  if (lockedScreens.has(name)) {
+    toast("Dieses Spiel ist gerade gesperrt und kommt bald zurück.");
+    return;
+  }
   if (!screens[name]) return;
   Object.values(screens).forEach((el) => el.classList.remove("active"));
   screens[name].classList.add("active");
@@ -56,6 +61,7 @@ function showScreen(name) {
   if (name === "cosmetics" && window.Casino._loadCosmetics) window.Casino._loadCosmetics();
   if (name === "crash" && window.Casino._loadCrash) window.Casino._loadCrash();
   if (name === "mines" && window.Casino._loadMines) window.Casino._loadMines();
+  if (name === "pinco" && window.Casino._loadPinco) window.Casino._loadPinco();
   if (name === "memory" && window.Casino._loadMemory) window.Casino._loadMemory();
   if (name === "suggest" && window.Casino._loadSuggest) window.Casino._loadSuggest();
   if (name === "sudoku" && window.Casino._loadSudoku) window.Casino._loadSudoku();
@@ -70,7 +76,10 @@ function showScreen(name) {
 // Alle Elemente mit data-nav="screen" navigieren dorthin
 document.addEventListener("click", (e) => {
   const navEl = e.target.closest("[data-nav]");
-  if (navEl) showScreen(navEl.dataset.nav);
+  if (navEl) {
+    if (navEl.classList.contains("locked")) e.preventDefault();
+    showScreen(navEl.dataset.nav);
+  }
 });
 
 // ============================================================
