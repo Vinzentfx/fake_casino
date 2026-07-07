@@ -6,6 +6,7 @@
 
   const RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
   const WHEEL = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+  const MAX_TOTAL = 50000;
 
   let chipValue = 100;
   let bets = {};       // betKey → amount
@@ -257,6 +258,11 @@
     if (spinning) return;
     const cell = e.target.closest("[data-type]");
     if (!cell) return;
+    const currentTotal = Object.values(bets).reduce((s, v) => s + v, 0);
+    if (currentTotal + chipValue > MAX_TOTAL) {
+      toast("Max. 50.000 Chips Gesamteinsatz.");
+      return;
+    }
     if (lobbyMode) {
       const bet = { type: cell.dataset.type, amount: chipValue };
       if (cell.dataset.value !== undefined)
@@ -433,7 +439,7 @@
   function setupChips() {
     const container = $("#rt-chips");
     container.innerHTML = "";
-    [100, 1000, 10000, 50000, 250000, 1000000].forEach((v) => {
+    [100, 1000, 10000, 50000].forEach((v) => {
       const btn = document.createElement("button");
       btn.className = "rt-chip" + (v === chipValue ? " active" : "");
       btn.dataset.v = v;

@@ -27,7 +27,7 @@ function payoutFactor(type, value, number) {
 
 const VALID_TYPES = new Set(["number","red","black","odd","even","low","high","dozen","column"]);
 const MIN_BET = 50;
-const MAX_TOTAL = 100000000;
+const MAX_TOTAL = 50000;
 
 function setupRoulette(io, accounts) {
   io.on("connection", (socket) => {
@@ -56,7 +56,7 @@ function setupRoulette(io, accounts) {
         }
         totalBet += amount;
       }
-      if (totalBet > MAX_TOTAL) return ack({ ok: false, error: "Gesamteinsatz zu hoch." });
+      if (totalBet > MAX_TOTAL) return ack({ ok: false, error: "Max. 50.000 Chips Gesamteinsatz." });
 
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < totalBet) return ack({ ok: false, error: "Nicht genug Chips." });
