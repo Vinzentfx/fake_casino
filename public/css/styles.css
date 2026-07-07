@@ -197,6 +197,51 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ---------------- Lobby ---------------- */
 .section-title { color: var(--gold-strong); font-size: 1.05rem; margin: 18px 4px 10px; }
+.online-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin: 0 0 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.online-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.8);
+}
+.online-strip > b {
+  color: #bff5d0;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+.online-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.online-list::-webkit-scrollbar { display: none; }
+.online-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.78rem;
+}
+.online-player b { color: var(--text); }
+.online-player small { font-weight: 800; opacity: 0.9; }
 .game-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

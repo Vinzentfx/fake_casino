@@ -96,6 +96,7 @@ function setAccount(acc, token) {
   } catch {}
   if (state.token) socket.emit("auth", { token: state.token });
   renderTopbar();
+  requestPresence();
   // Admin-Tile nur für Vincent sichtbar
   const adminTile = $("#admin-tile");
   if (adminTile) adminTile.style.display = acc.name.toLowerCase() === "vincent" ? "" : "none";
@@ -129,6 +130,30 @@ socket.on("account:update", ({ account }) => {
   renderTopbar();
   if (currentScreen === "profile") renderProfile();
 });
+
+function renderOnlinePlayers(players = []) {
+  const countEl = $("#online-count");
+  const listEl = $("#online-list");
+  if (!countEl || !listEl) return;
+  countEl.textContent = `${players.length} online`;
+  if (!players.length) {
+    listEl.innerHTML = '<span class="muted small">Niemand online</span>';
+    return;
+  }
+  listEl.innerHTML = players.map((p) => {
+    const level = p.level ? `<small style="color:${p.level.color || ""}">${escapeHtml(p.level.emoji || "🌱")} ${p.level.level}</small>` : "";
+    const color = p.nameColor ? ` style="color:${p.nameColor}"` : "";
+    return `<span class="online-player"><span>${escapeHtml(p.avatar || "🙂")}</span><b${color}>${escapeHtml(p.name || "?")}</b>${level}</span>`;
+  }).join("");
+}
+
+function requestPresence() {
+  socket.emit("presence:list", (res) => {
+    if (res && res.ok) renderOnlinePlayers(res.online || []);
+  });
+}
+
+socket.on("presence:update", ({ online } = {}) => renderOnlinePlayers(online || []));
 
 const RESCUE_THRESHOLD = 50; // mirror of server; controls when the help button shows
 

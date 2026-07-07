@@ -101,6 +101,31 @@ function setupPoker(io, accounts) {
   const registerLobby = (code) =>
     lobby.add(code, () => (tables.has(code) ? describePoker(tables.get(code)) : null));
 
+  function onlinePlayers() {
+    const seen = new Set();
+    const list = [];
+    for (const s of io.of("/").sockets.values()) {
+      const key = s.data && s.data.account;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      const acc = accounts.get(key);
+      if (!acc) continue;
+      const pub = accounts.publicAccount(acc);
+      list.push({
+        name: pub.name,
+        avatar: pub.avatar,
+        nameColor: pub.nameColor,
+        level: pub.level ? { level: pub.level.level, emoji: pub.level.emoji, color: pub.level.color } : null,
+      });
+    }
+    list.sort((a, b) => a.name.localeCompare(b.name, "de", { sensitivity: "base" }));
+    return list;
+  }
+
+  function broadcastPresence() {
+    io.emit("presence:update", { online: onlinePlayers() });
+  }
+
   function humanHasChips(table) {
     return table.seats.some((s) => s && !s.isBot && s.chips > 0);
   }
@@ -195,6 +220,11 @@ function setupPoker(io, accounts) {
       const acc = key ? accounts.get(key) : null;
       socket.data.account = acc ? acc.name.toLowerCase() : null;
       socket.data.displayName = acc ? acc.name : null;
+      broadcastPresence();
+    });
+
+    socket.on("presence:list", (ack) => {
+      if (typeof ack === "function") ack({ ok: true, online: onlinePlayers() });
     });
 
     socket.on("poker:create", ({ smallBlind = 10, bigBlind = 20 } = {}, ack) => {
@@ -303,7 +333,10 @@ function setupPoker(io, accounts) {
       scheduleBots(entry);
     });
 
-    socket.on("disconnect", () => leaveCurrent(socket));
+    socket.on("disconnect", () => {
+      leaveCurrent(socket);
+      setTimeout(broadcastPresence, 0);
+    });
   });
 }
 
