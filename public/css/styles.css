@@ -2263,7 +2263,11 @@ button { font-family: inherit; cursor: pointer; }
 .pinco-room { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; margin-top: 8px; }
 .pinco-player {
   display: flex; justify-content: space-between; gap: 8px; padding: 7px 9px;
-  border-radius: 10px; background: rgba(255,255,255,0.04); font-size: 0.84rem;
+  border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid transparent; font-size: 0.84rem;
+}
+.pinco-dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: 999px;
+  margin-right: 6px; box-shadow: 0 0 8px currentColor; vertical-align: middle;
 }
 .pinco-feed { display: flex; flex-direction: column; gap: 6px; max-height: 170px; overflow-y: auto; }
 .pinco-feed-row {

@@ -9,6 +9,7 @@
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
+  const DEFAULT_BALL = "#4ade80";
 
   let boards = {
     medium: { label: "Mittel", rows: 10, multipliers: [7, 2.6, 1.5, 1.05, 0.8, 0.65, 0.8, 1.05, 1.5, 2.6, 7] },
@@ -128,8 +129,9 @@
     box.innerHTML = drops.slice(0, 18).map((d) => {
       const cls = d.net >= 0 ? "pos" : "neg";
       const sign = d.net >= 0 ? "+" : "-";
+      const color = d.color || DEFAULT_BALL;
       return `<div class="pinco-feed-row">
-        <span><b>${escapeHtml(d.name)}</b> · ${fmt(d.bet)} 🪙 · ${d.multiplier}×</span>
+        <span><i class="pinco-dot" style="background:${escapeHtml(color)};color:${escapeHtml(color)}"></i><b>${escapeHtml(d.name)}</b> · ${fmt(d.bet)} 🪙 · ${d.multiplier}×</span>
         <span class="${cls}">${sign}${fmt(Math.abs(d.net))} 🪙</span>
       </div>`;
     }).join("");
@@ -144,7 +146,8 @@
     box.innerHTML = (state.players || []).map((p) => {
       const cls = p.net >= 0 ? "pos" : "neg";
       const sign = p.net >= 0 ? "+" : "-";
-      return `<div class="pinco-player"><span>${escapeHtml(p.name)} <small class="muted">${p.drops} Drops</small></span><b class="${cls}">${sign}${fmt(Math.abs(p.net))}</b></div>`;
+      const color = p.color || DEFAULT_BALL;
+      return `<div class="pinco-player" style="border-color:${escapeHtml(color)}55"><span><i class="pinco-dot" style="background:${escapeHtml(color)};color:${escapeHtml(color)}"></i>${escapeHtml(p.name)} <small class="muted">${p.drops} Drops</small></span><b class="${cls}">${sign}${fmt(Math.abs(p.net))}</b></div>`;
     }).join("");
     if (Array.isArray(state.history)) {
       drops = state.history.concat(drops.filter((d) => !state.history.some((h) => h.id === d.id))).slice(0, 24);
@@ -186,7 +189,7 @@
         visible.push({
           x: a.x + (b.x - a.x) * local + wobble,
           y: a.y + (b.y - a.y) * local,
-          color: entry.seq % 2 ? "#bff5d0" : "#4ade80",
+          color: entry.drop.color || (entry.seq % 2 ? "#bff5d0" : DEFAULT_BALL),
         });
         if (t < 1) stillActive.push(entry);
         else $("#pinco-status").innerHTML = dropStatus(entry.drop);
