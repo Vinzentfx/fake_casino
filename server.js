@@ -19,6 +19,7 @@ const { setupPoker } = require("./game/tableManager");
 const { setupSlots } = require("./game/slots");
 const { setupCrash } = require("./game/crash");
 const { setupMines } = require("./game/mines");
+const { setupPinco } = require("./game/pinco");
 const { setupMemory } = require("./game/memory");
 const { setupSuggestions } = require("./game/suggestions");
 const { setupSudoku } = require("./game/sudoku");
@@ -160,11 +161,13 @@ app.post("/api/change-pin", (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server);
 io.sockets.setMaxListeners(50); // many game modules each add a connection listener
+io.on("connection", (socket) => socket.setMaxListeners(80));
 
 setupPoker(io, accounts);
 setupSlots(io, accounts);
 setupCrash(io, accounts);
 setupMines(io, accounts);
+setupPinco(io, accounts);
 setupMemory(io, accounts);
 setupSuggestions(io, accounts);
 setupSudoku(io, accounts);

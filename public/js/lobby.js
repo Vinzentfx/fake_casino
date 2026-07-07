@@ -43,6 +43,7 @@
     else if (game === "sudoku" && window.Casino._sudokuJoinCode) window.Casino._sudokuJoinCode(code);
     else if (game === "solrace" && window.Casino._solraceJoinCode) window.Casino._solraceJoinCode(code);
     else if (game === "chess" && window.Casino._chessJoinCode) window.Casino._chessJoinCode(code);
+    else if (game === "pinco" && window.Casino._pincoJoinCode) window.Casino._pincoJoinCode(code);
     else toast("Diese Lobby lässt sich gerade nicht beitreten.");
   }
 
