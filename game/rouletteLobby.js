@@ -187,7 +187,7 @@ function setupRouletteLobby(io, accounts) {
       if (!player) return ack && ack({ ok: false, error: "Nicht am Tisch." });
       const bet = validateBet(payload);
       if (!bet) return ack && ack({ ok: false, error: "Ungültige Wette." });
-      if (player.staked + bet.amount > MAX_TOTAL) return ack && ack({ ok: false, error: "Einsatz zu hoch." });
+      if (player.staked + bet.amount > MAX_TOTAL) return ack && ack({ ok: false, error: "Max. 50.000 Chips Gesamteinsatz." });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < bet.amount) return ack && ack({ ok: false, error: "Nicht genug Chips." });
       const r = accounts.adjustChips(socket.data.account, -bet.amount);

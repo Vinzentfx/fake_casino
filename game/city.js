@@ -17,7 +17,7 @@
  *     perk. Only one owner each.
  *   • SPEKULATION — every district has its own price index, moved by drift
  *     and by silly local news events. Buy low, sell high (10% spread).
- *   • The CASINO (rake) and the BANK (loan interest) stay the two apex
+ *   • The CASINO (rake) and the BANK (prestige) stay the two apex
  *     assets, tied to other players actively gambling.
  *
  * Static geometry lives in the repo; ownership lives in data/city.json.
@@ -40,7 +40,7 @@ const CLASSES = {
   hotel:       { name: "Hotel",      emoji: "🏨", base: 50000000,   refA: 500 },
   factory:     { name: "Fabrik",     emoji: "🏭", base: 250000000,  refA: 1500 },
   casino:      { name: "Casino",     emoji: "🎰", base: 1200000000, refA: 0, perk: "Kassiert den Rake aller Hausspiele." },
-  bank:        { name: "Bank",       emoji: "🏦", base: 600000000,  refA: 0, perk: "Kassiert die Zinsen aller Kredite." },
+  bank:        { name: "Bank",       emoji: "🏦", base: 600000000,  refA: 0, perk: "Prestige-Objekt der Stadt." },
 };
 
 // Unique trophy buildings: title + small thematic perk. Price = normal × mult.
