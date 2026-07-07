@@ -8,6 +8,7 @@ const MAX_PLAYERS = 8;
 const HISTORY_MAX = 24;
 const MIN_BET = 50;
 const MAX_BET = 100000;
+const MAX_BALLS = 10;
 
 const BOARDS = {
   medium: {
@@ -139,50 +140,60 @@ function setupPinco(io, accounts) {
 
   io.on("connection", (socket) => {
     socket.on("pinco:config", (ack) => {
-      if (typeof ack === "function") ack({ ok: true, boards: publicBoards(), minBet: MIN_BET, maxBet: MAX_BET });
+      if (typeof ack === "function") ack({ ok: true, boards: publicBoards(), minBet: MIN_BET, maxBet: MAX_BET, maxBalls: MAX_BALLS });
     });
 
-    socket.on("pinco:drop", ({ size, bet } = {}, ack) => {
+    socket.on("pinco:drop", ({ size, bet, count } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       size = normalizeSize(size);
       bet = Math.floor(Number(bet));
+      count = Math.floor(Number(count || 1));
       if (!Number.isFinite(bet) || bet < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
       if (bet > MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} 🪙.` });
+      if (!Number.isFinite(count) || count < 1) return ack({ ok: false, error: "Mindestens 1 Ball." });
+      if (count > MAX_BALLS) return ack({ ok: false, error: `Maximal ${MAX_BALLS} Bälle gleichzeitig.` });
+      const totalBet = bet * count;
       const acc = accounts.get(socket.data.account);
-      if (!acc || acc.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
+      if (!acc || acc.chips < totalBet) return ack({ ok: false, error: "Nicht genug Chips." });
 
-      const drop = makeDrop(size, bet);
-      const debit = accounts.adjustChips(socket.data.account, -bet);
+      const rawDrops = Array.from({ length: count }, () => makeDrop(size, bet));
+      const totalPayout = rawDrops.reduce((sum, drop) => sum + drop.payout, 0);
+      const debit = accounts.adjustChips(socket.data.account, -totalBet);
       if (!debit.ok) return ack({ ok: false, error: debit.error });
       let account = debit.account;
-      if (drop.payout > 0) {
-        const credit = accounts.adjustChips(socket.data.account, drop.payout);
+      if (totalPayout > 0) {
+        const credit = accounts.adjustChips(socket.data.account, totalPayout);
         if (credit.ok) account = credit.account;
       }
-      accounts.recordHand(socket.data.account, drop.payout - bet, true, "pinco");
+      accounts.recordHand(socket.data.account, totalPayout - totalBet, true, "pinco");
 
-      const event = {
+      const batchId = crypto.randomUUID();
+      const events = rawDrops.map((drop, index) => ({
         ...drop,
+        batchId,
+        index,
+        count,
         name: acc.name,
         bet,
         net: drop.payout - bet,
         at: Date.now(),
-      };
+      }));
+      const totalNet = totalPayout - totalBet;
       const room = currentRoom(socket);
       if (room) {
         const player = room.players.get(socket.data.account);
         if (player) {
-          player.net += event.net;
-          player.drops += 1;
+          player.net += totalNet;
+          player.drops += count;
         }
-        room.history.unshift(event);
-        if (room.history.length > HISTORY_MAX) room.history.pop();
-        io.to(room.code).emit("pinco:drop", event);
+        room.history.unshift(...events);
+        room.history = room.history.slice(0, HISTORY_MAX);
+        io.to(room.code).emit("pinco:drops", { drops: events, totalNet, totalBet, totalPayout });
         broadcast(room);
         lobby.changed();
       }
-      ack({ ok: true, account, drop: event });
+      ack({ ok: true, account, drops: events, drop: events[0], totalNet, totalBet, totalPayout });
     });
 
     socket.on("pinco:create", (ack) => {
