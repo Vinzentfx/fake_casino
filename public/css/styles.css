@@ -2409,7 +2409,11 @@ button { font-family: inherit; cursor: pointer; }
 .sdk-cell.bb { border-bottom: 2px solid rgba(255,255,255,0.35); }
 .sdk-cell.given { color: #fff; font-weight: 800; background: #333a47; cursor: default; }
 .sdk-cell.sel { background: rgba(230,176,75,0.35); color: #fff; }
+.sdk-cell.conflict { background: rgba(214,90,90,0.32); color: #fff; box-shadow: inset 0 0 0 2px rgba(255,110,110,0.7); }
+.sdk-cell.given.conflict { background: rgba(214,90,90,0.42); }
+.sdk-cell.sel.conflict { background: rgba(214,90,90,0.46); }
 .sdk-cell:not(.given):hover { background: #39414f; }
+.sdk-cell.conflict:not(.given):hover { background: rgba(214,90,90,0.5); }
 .sdk-pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 14px auto 0; max-width: 460px; }
 .sdk-key { padding: 14px 0; border-radius: 10px; font-size: 1.2rem; font-weight: 700; cursor: pointer;
   background: linear-gradient(180deg, #3a4150, #2a303c); border: 1px solid rgba(255,255,255,0.12); color: #fff; }

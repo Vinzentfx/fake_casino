@@ -68,8 +68,35 @@
     }
   }
 
+  function conflictIndexes() {
+    const conflicts = new Set();
+    if (!Array.isArray(grid)) return conflicts;
+    const groups = [];
+    for (let r = 0; r < 9; r++) groups.push([...Array(9)].map((_, c) => r * 9 + c));
+    for (let c = 0; c < 9; c++) groups.push([...Array(9)].map((_, r) => r * 9 + c));
+    for (let br = 0; br < 3; br++) {
+      for (let bc = 0; bc < 3; bc++) {
+        groups.push([...Array(9)].map((_, k) => (br * 3 + Math.floor(k / 3)) * 9 + (bc * 3 + (k % 3))));
+      }
+    }
+    for (const group of groups) {
+      const seen = new Map();
+      for (const i of group) {
+        const v = grid[i];
+        if (!v) continue;
+        if (!seen.has(v)) seen.set(v, []);
+        seen.get(v).push(i);
+      }
+      for (const hits of seen.values()) {
+        if (hits.length > 1) hits.forEach((i) => conflicts.add(i));
+      }
+    }
+    return conflicts;
+  }
+
   function renderGrid() {
     const cells = $("#sdk-grid").children;
+    const conflicts = conflictIndexes();
     for (let i = 0; i < 81; i++) {
       const c = cells[i];
       const given = puzzle[i] !== 0;
@@ -77,8 +104,8 @@
       c.textContent = v ? String(v) : "";
       c.classList.toggle("given", given);
       c.classList.toggle("sel", i === selected);
+      c.classList.toggle("conflict", conflicts.has(i));
       c.disabled = given;
-      // highlight wrong-looking duplicates lightly? keep simple: no hints (server validates).
     }
   }
 
