@@ -116,7 +116,7 @@ function setAccount(acc, token) {
 }
 
 // ---- Update-/Changelog-Modal (einmal pro Version) ----
-const UPDATE_VERSION = "2026-07-08-feldheim-jobs-social";
+const UPDATE_VERSION = "2026-07-08-veltheim-jobs-social";
 function maybeShowUpdate() {
   let seen = null;
   try { seen = localStorage.getItem("casino_seen_update"); } catch {}
