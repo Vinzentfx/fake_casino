@@ -27,7 +27,7 @@ const screens = {};
 $$(".screen").forEach((el) => (screens[el.dataset.screen] = el));
 
 let currentScreen = "login";
-const lockedScreens = new Set(["sudoku", "solitaire", "chess", "season"]);
+const lockedScreens = new Set(["season"]);
 
 function showScreen(name) {
   if (lockedScreens.has(name)) {

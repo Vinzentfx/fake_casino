@@ -80,6 +80,11 @@ const EVENT_POOL = [
   { txt: "🛣️ Umgehungsstraße entlastet {d}.", f: 1.07 },
   { txt: "🐗 Wildschwein-Rotte wühlt Gärten in {d} um.", f: 0.93 },
   { txt: "🎬 Filmteam dreht in {d} — {d} ist berühmt!", f: 1.14 },
+  { txt: "💨 Starker Wind beschädigt Dächer in {d}.", f: 0.88 },
+  { txt: "🎡 Jahrmarkt in {d} — alle wollen hin!", f: 1.13 },
+  { txt: "🦠 Virus-Ausbruch in {d} — alle bleiben zu Hause.", f: 0.85 },
+  { txt: "🌳 Big Yahu ist in {d}.", f: 1.2 },
+  { txt: "🦗 Der Axtmörder treibt sein unwesen in {d}!", f: 0.82 },
 ];
 
 // ─── Static map (repo snapshot) ─────────────────────────────────────────────
