@@ -15,6 +15,8 @@
     slots: { e: "🎰", n: "Slots" }, blackjack: { e: "♠️", n: "Blackjack" },
     roulette: { e: "🎡", n: "Roulette" }, sportwetten: { e: "⚽", n: "Sportwetten" },
     poker: { e: "🃏", n: "Poker" }, crash: { e: "🚀", n: "Crash" }, mines: { e: "💣", n: "Mines" },
+    pinco: { e: "🟡", n: "Pinco" }, solitaire: { e: "🃏", n: "Solitär" },
+    memory: { e: "🧠", n: "Memory" }, sudoku: { e: "🔢", n: "Sudoku" }, chess: { e: "♟️", n: "Schach" },
   };
 
   // When set, the next load shows this player instead of yourself.
@@ -38,16 +40,41 @@
     const badge = d && d.ach && d.ach.badge ? ` ${d.ach.badge}` : "";
     $("#stats-title").textContent = isMe ? `📊 Deine Statistik${badge}` : `📊 ${acc.name || name}${badge}`;
 
-    // Rivalen / Kopfgeld panel (only when viewing someone else).
+    // Social profile header + Rivalen/Kopfgeld panel.
     const rivalBox = $("#stats-rival");
     if (rivalBox) {
+      const lvl = acc.level || {};
+      const city = d && d.city;
+      const ach = d && d.ach;
+      const bounty = (d && d.bounty) || 0;
+      const display = escapeHtml(acc.name || name);
+      const color = acc.nameColor ? ` style="color:${acc.nameColor}"` : "";
+      const achCount = ach ? `${(ach.unlocked || []).length}/${ach.total || 0}` : "0/0";
+      const cityLine = city && city.houses
+        ? `🏠 ${fmt(city.houses)} · 👑 ${fmt(city.streets || 0)} · 💎 ${fmt(city.value || 0)} 🪙`
+        : "Noch kein Stadt-Imperium";
+      const social = `
+        <div style="border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.8rem;margin-bottom:.75rem;background:rgba(0,0,0,.16)">
+          <div style="display:flex;gap:.75rem;align-items:center">
+            <div style="font-size:2.1rem;line-height:1">${acc.avatar || "🙂"}</div>
+            <div style="min-width:0;flex:1">
+              <div><b${color}>${display}</b> ${badge ? `<span class="lb-badge">${badge.trim()}</span>` : ""}</div>
+              <div class="muted small">Level ${lvl.level || 1} · ${escapeHtml(lvl.title || "Neuling")} · ${achCount} Achievements</div>
+            </div>
+          </div>
+          <div class="biz-buffs" style="margin-top:.65rem">
+            <span class="buff-chip">💰 ${fmt(acc.chips || 0)} 🪙</span>
+            <span class="buff-chip">📈 ${fmt(acc.netWorth || acc.chips || 0)} 🪙 Wert</span>
+            <span class="buff-chip">${cityLine}</span>
+            ${bounty ? `<span class="buff-chip">🎯 ${fmt(bounty)} 🪙 Kopfgeld</span>` : ""}
+          </div>
+        </div>`;
       if (isMe) {
-        rivalBox.innerHTML = (d && d.bounty)
-          ? `<div class="cd-buff on">🎯 Auf deinen Kopf sind <b>${(d.bounty).toLocaleString("de-DE")} 🪙</b> Kopfgeld ausgesetzt!</div>` : "";
+        rivalBox.innerHTML = social + (bounty
+          ? `<div class="cd-buff on">🎯 Auf deinen Kopf sind <b>${bounty.toLocaleString("de-DE")} 🪙</b> Kopfgeld ausgesetzt!</div>` : "");
       } else {
-        const b = (d && d.bounty) || 0;
-        rivalBox.innerHTML =
-          (b ? `<div class="cd-buff">🎯 Aktuelles Kopfgeld: <b>${b.toLocaleString("de-DE")} 🪙</b></div>` : "") +
+        rivalBox.innerHTML = social +
+          (bounty ? `<div class="cd-buff">🎯 Aktuelles Kopfgeld: <b>${bounty.toLocaleString("de-DE")} 🪙</b></div>` : "") +
           `<button class="btn-primary cd-btn" id="bounty-btn" data-target="${escapeHtml(acc.name || name)}">🎯 Kopfgeld aussetzen</button>` +
           `<p class="muted small" style="margin:4px 0 0">Wer ${escapeHtml(acc.name || name)} ein Gebäude abnimmt, kassiert das Kopfgeld.</p>`;
       }
