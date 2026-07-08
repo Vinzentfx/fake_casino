@@ -45,6 +45,7 @@ const achievements = require("./game/achievements");
 const city = require("./game/city");
 const quests = require("./game/quests");
 const { setupSeason } = require("./game/season");
+const feed = require("./game/feed");
 const liveops = require("./game/liveops");
 
 const PORT = process.env.PORT || 3000;
@@ -191,6 +192,7 @@ setupStocks(io, accounts);
 setupMarket(io, accounts);
 setupChat(io, accounts);
 setupLobby(io);
+feed.setupFeed(io, accounts);
 achievements.setupAchievements(io, accounts);
 setupSeason(io, accounts);
 quests.setupQuests(io, accounts);
@@ -203,6 +205,7 @@ accounts.onHand((name) => {
   if (!acc || !acc._justLeveled) return;
   const level = acc._justLeveled; delete acc._justLeveled;
   const info = accounts.levelInfo(acc);
+  feed.add("level", `${acc.name} erreicht Level ${level} (${info.title}).`, { user: acc.name, level });
   for (const s of io.of("/").sockets.values()) {
     if (s.data && s.data.account === key) { s.emit("level:up", { level, title: info.title, emoji: info.emoji }); break; }
   }
