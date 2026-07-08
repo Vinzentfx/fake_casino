@@ -152,6 +152,35 @@ function weeklyLeague(limit = 15) {
   }).filter((c) => c.wins > 0).sort((a, b) => b.wins - a.wins).slice(0, limit);
 }
 
+function adminRemoveMember(key) {
+  key = String(key || "").trim().toLowerCase();
+  if (!key) return { ok: false, changed: false };
+  const removedClans = new Set();
+  let changed = false;
+  for (const id of Object.keys(clans)) {
+    const c = ensureClan(clans[id]);
+    c.members = Array.isArray(c.members) ? c.members : [];
+    const beforeMembers = c.members.length;
+    const beforeFounder = c.founder;
+    c.members = c.members.filter((m) => m !== key);
+    c.officers = (c.officers || []).filter((m) => m !== key);
+    c.requests = (c.requests || []).filter((m) => m !== key);
+    if (c.founder === key) c.founder = c.members[0] || null;
+    if (c.members.length !== beforeMembers || c.founder !== beforeFounder) changed = true;
+    if (!c.members.length) {
+      delete clans[id];
+      removedClans.add(id);
+      changed = true;
+    }
+  }
+  if (removedClans.size) {
+    wars = wars.filter((w) => !removedClans.has(w.aId) && !removedClans.has(w.bId));
+    store.wars = wars;
+  }
+  if (changed) save();
+  return { ok: true, changed, removedClans: removedClans.size };
+}
+
 // ── PvP win hook (called by every PvP game on a decisive win) ───────────────
 /** Record that `winnerKey` won a PvP duel: counts toward the clan weekly league
  *  and any active clan war, plus per-account counters for achievements. */
@@ -475,4 +504,5 @@ function setupClans(io, accounts) {
 module.exports = {
   setupClans, tagOf, clanColorOf,
   recordPvpWin, tickWars, weeklyRollover,
+  adminRemoveMember,
 };

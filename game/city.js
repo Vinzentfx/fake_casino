@@ -537,6 +537,20 @@ function adminClearLot(id) {
   return { ok: true };
 }
 
+function adminRemoveOwner(key) {
+  key = String(key || "").trim().toLowerCase();
+  if (!key) return { ok: false, removed: 0 };
+  let removed = 0;
+  for (const [id, o] of Object.entries(state.own)) {
+    if (o && o.owner === key) {
+      delete state.own[id];
+      removed++;
+    }
+  }
+  if (removed > 0) save();
+  return { ok: true, removed };
+}
+
 function ownedLots() {
   return Object.entries(state.own).map(([id, o]) => {
     const e = bldIndex.get(Number(id));
@@ -560,5 +574,5 @@ module.exports = {
   houseCount, rollGoldenStreet, goldenStreet, ownsGolden, setsOf,
   territorySnapshot, territoryDiff,
   buyBuilding, sellBuilding, takeover,
-  listCompany, adminClearLot, ownedLots, resetCity,
+  listCompany, adminClearLot, adminRemoveOwner, ownedLots, resetCity,
 };

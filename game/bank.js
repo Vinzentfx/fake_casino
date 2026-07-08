@@ -6,8 +6,9 @@
  * The bank is a modest chip parking place, not a way to mint bankroll.
  */
 
-// Savings: a safe but modest yield, capped so it never out-earns active play.
-const SAVINGS_RATE_PER_HOUR = 0.0012;               // ~2.9% / day
+// Savings: a tiny parking yield, capped so it never out-earns active play.
+const SAVINGS_RATE_PER_DAY = 0.0008;                // 0.08% / day
+const SAVINGS_RATE_PER_HOUR = SAVINGS_RATE_PER_DAY / 24;
 const SAVINGS_RATE_PER_MS = SAVINGS_RATE_PER_HOUR / 3_600_000;
 const SAVINGS_CAP = 25_000_000;                     // max chips on deposit
 
@@ -15,8 +16,9 @@ const SAVINGS_CAP = 25_000_000;                     // max chips on deposit
 function accrueSavings(acc, now = Date.now()) {
   const s = acc.savings;
   if (!s || !s.amount || !s.since) return;
+  s.amount = Math.min(SAVINGS_CAP, Math.max(0, Math.floor(s.amount)));
   const interest = Math.floor(s.amount * SAVINGS_RATE_PER_MS * Math.max(0, now - s.since));
-  if (interest > 0) s.amount += interest;
+  if (interest > 0) s.amount = Math.min(SAVINGS_CAP, s.amount + interest);
   s.since = now;
 }
 function savingsState(acc) {
@@ -24,6 +26,7 @@ function savingsState(acc) {
   return {
     savings: (acc.savings && acc.savings.amount) || 0,
     savingsRatePerHour: SAVINGS_RATE_PER_HOUR,
+    savingsRatePerDay: SAVINGS_RATE_PER_DAY,
     savingsCap: SAVINGS_CAP,
   };
 }
