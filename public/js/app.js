@@ -128,6 +128,24 @@ $("#update-close")?.addEventListener("click", () => {
   try { localStorage.setItem("casino_seen_update", UPDATE_VERSION); } catch {}
 });
 
+const ONBOARDING_VERSION = "2026-07-08-first-steps";
+function maybeShowOnboarding() {
+  let seen = null;
+  try { seen = localStorage.getItem("casino_seen_onboarding"); } catch {}
+  if (seen === ONBOARDING_VERSION) return;
+  const m = $("#onboarding-modal");
+  if (m) m.classList.remove("hidden");
+}
+$("#onboarding-close")?.addEventListener("click", () => {
+  $("#onboarding-modal")?.classList.add("hidden");
+  try { localStorage.setItem("casino_seen_onboarding", ONBOARDING_VERSION); } catch {}
+});
+$("#onboarding-quests")?.addEventListener("click", () => {
+  $("#onboarding-modal")?.classList.add("hidden");
+  try { localStorage.setItem("casino_seen_onboarding", ONBOARDING_VERSION); } catch {}
+  showScreen("quests");
+});
+
 // Re-authenticate after a dropped connection: the server treats a reconnect as
 // a fresh socket with no identity, so we must replay the token.
 socket.on("connect", () => {
@@ -300,6 +318,7 @@ $("#login-form").addEventListener("submit", async (e) => {
     if (data.config?.bonusCooldownMs) state.bonusCooldownMs = data.config.bonusCooldownMs;
     setAccount(data.account, data.token);
     showScreen("lobby");
+    if (data.created) maybeShowOnboarding();
     if (data.created) toast(`Willkommen, ${data.account.name}! 1000 🪙 geschenkt.`);
     else toast(`Willkommen zurück, ${data.account.name}!`);
   } catch (err) {
