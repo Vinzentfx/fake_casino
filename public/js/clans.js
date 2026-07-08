@@ -42,9 +42,17 @@
 
     const c = data.clan;
     const manage = canManage(), founder = isFounder();
+    const lvl = c.level || { level: 1, xpInLevel: 0, xpForNext: 500 };
+    const xpPct = lvl.xpForNext ? Math.min(100, Math.round((100 * lvl.xpInLevel) / lvl.xpForNext)) : 100;
     let html =
       `<div class="clan-header" style="border-color:${c.color}"><b style="color:${c.color}">[${escapeHtml(c.tag)}] ${escapeHtml(c.name)}</b>` +
-      `<span class="muted small">${c.size} Mitglieder · ${roleIcon(data.myRole)} ${data.myRole === "founder" ? "Gründer" : data.myRole === "officer" ? "Offizier" : "Mitglied"}</span></div>`;
+      `<span class="muted small">Level ${lvl.level} · ${c.size} Mitglieder · ${roleIcon(data.myRole)} ${data.myRole === "founder" ? "Gründer" : data.myRole === "officer" ? "Offizier" : "Mitglied"}</span></div>`;
+
+    html += `<div class="clan-level-card">` +
+      `<div class="level-head"><b>Clan-Level ${lvl.level}</b><span class="muted small">${fmt(lvl.xpInLevel)} / ${fmt(lvl.xpForNext)} XP</span></div>` +
+      `<div class="level-bar"><div class="level-fill" style="width:${xpPct}%;background:${c.color}"></div></div>` +
+      `<div class="muted small">XP kommt aus echten Duell-Siegen und Clan-Aufträgen. Keine Chip-Belohnungen, nur Prestige.</div>` +
+      `</div>`;
 
     // Motto
     html += `<div class="clan-motto">${c.motto ? `„${escapeHtml(c.motto)}”` : '<span class="muted small">Kein Motto.</span>'}`;
@@ -55,6 +63,17 @@
     html += `<div class="clan-treasury"><div>💰 Schatzkammer: <b>${fmt(c.treasury)} 🪙</b></div>` +
       `<div class="clan-donate-row"><input id="clan-donate-amt" type="number" min="1" placeholder="Betrag" />` +
       `<button class="btn-secondary" id="clan-donate-btn">Spenden</button></div></div>`;
+
+    const quests = c.quests || [];
+    html += `<div class="clan-quests"><div class="cd-sub">Wöchentliche Clan-Aufträge</div>` +
+      (quests.length ? quests.map((q) => {
+        const pct = q.target ? Math.min(100, Math.round((100 * q.progress) / q.target)) : 0;
+        return `<div class="clan-quest ${q.done ? "done" : ""}">` +
+          `<div><b>${q.done ? "✓ " : ""}${escapeHtml(q.label)}</b><span>${fmt(q.progress)} / ${fmt(q.target)} · +${fmt(q.xp)} XP</span></div>` +
+          `<div class="clan-quest-bar"><i style="width:${pct}%"></i></div>` +
+          `</div>`;
+      }).join("") : `<p class="muted small">Keine Aufträge aktiv.</p>`) +
+      `</div>`;
 
     // Roster with role controls
     html += `<div class="clan-roster">` + c.members.map((m) => {

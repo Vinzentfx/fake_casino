@@ -40,6 +40,14 @@ const WAR_MIN_STAKE = 10000;
 const WAR_DAYS = { 1: 1, 3: 3, 7: 7 };   // allowed durations (days)
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEKLY_TOP_PRIZE = 250000;         // "Clan der Woche" treasury prize
+const CLAN_XP_PER_PVP_WIN = 25;
+const CLAN_LEVEL_STEP = 500;
+
+const CLAN_QUESTS = [
+  { id: "duels_5", label: "Gewinnt 5 Duelle", type: "pvp", target: 5, xp: 180 },
+  { id: "duels_20", label: "Gewinnt 20 Duelle", type: "pvp", target: 20, xp: 520 },
+  { id: "donate_250k", label: "Spendet 250k in die Schatzkammer", type: "donate", target: 250000, xp: 240 },
+];
 
 let store = load();
 let clans = store.clans;
@@ -74,7 +82,76 @@ function ensureClan(c) {
   if (!Array.isArray(c.requests)) c.requests = [];
   if (typeof c.weeklyWins !== "number") c.weeklyWins = 0;
   if (typeof c.totalWins !== "number") c.totalWins = 0;
+  if (typeof c.xp !== "number") c.xp = 0;
+  if (typeof c.totalXp !== "number") c.totalXp = c.xp || 0;
+  ensureClanQuests(c);
   return c;
+}
+
+function weekKey() {
+  const d = new Date();
+  const day = d.getUTCDay() || 7;
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d - yearStart) / DAY_MS) + 1) / 7);
+  return `${d.getUTCFullYear()}-${String(week).padStart(2, "0")}`;
+}
+
+function ensureClanQuests(c) {
+  if (!c) return;
+  const wk = weekKey();
+  if (c.questWeek !== wk || !Array.isArray(c.quests)) {
+    c.questWeek = wk;
+    c.quests = CLAN_QUESTS.map((q) => ({ id: q.id, progress: 0, done: false }));
+  }
+}
+
+function clanLevel(c) {
+  const xp = Math.max(0, Math.floor((c && c.xp) || 0));
+  const level = Math.floor(xp / CLAN_LEVEL_STEP) + 1;
+  const xpInLevel = xp % CLAN_LEVEL_STEP;
+  return { level, xp, xpInLevel, xpForNext: CLAN_LEVEL_STEP };
+}
+
+function addClanXp(c, amount) {
+  amount = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!c || !amount) return;
+  c.xp = Math.max(0, Math.floor(c.xp || 0) + amount);
+  c.totalXp = Math.max(c.totalXp || 0, c.xp);
+}
+
+function clanQuestPublic(c) {
+  ensureClanQuests(c);
+  const byId = new Map((c.quests || []).map((q) => [q.id, q]));
+  return CLAN_QUESTS.map((meta) => {
+    const q = byId.get(meta.id) || { progress: 0, done: false };
+    return {
+      id: meta.id,
+      label: meta.label,
+      target: meta.target,
+      progress: Math.min(meta.target, Math.floor(q.progress || 0)),
+      done: !!q.done,
+      xp: meta.xp,
+    };
+  });
+}
+
+function trackClanQuest(c, type, amount) {
+  ensureClanQuests(c);
+  let gained = 0;
+  for (const meta of CLAN_QUESTS) {
+    if (meta.type !== type) continue;
+    const q = c.quests.find((x) => x.id === meta.id);
+    if (!q || q.done) continue;
+    q.progress = Math.min(meta.target, Math.floor(q.progress || 0) + Math.max(1, Math.floor(amount || 1)));
+    if (q.progress >= meta.target) {
+      q.done = true;
+      gained += meta.xp;
+    }
+  }
+  if (gained) addClanXp(c, gained);
+  return gained;
 }
 
 /** Role of a member key within their clan: "founder" | "officer" | "member" | null. */
@@ -130,6 +207,7 @@ function clanPublic(id) {
     id: c.id, name: c.name, tag: c.tag, color: c.color, founder: c.founder,
     motto: c.motto || "", closed: !!c.closed,
     treasury: c.treasury || 0, weeklyWins: c.weeklyWins || 0, totalWins: c.totalWins || 0,
+    level: clanLevel(c), quests: clanQuestPublic(c),
     members, size: c.members.length, value: members.reduce((s, m) => s + m.value, 0),
     requests: (c.requests || []).map((k) => { const a = _accounts && _accounts.get(k); return { key: k, name: a ? a.name : k }; }),
     war: warPublic(activeWarOf(id)),
@@ -198,6 +276,8 @@ function recordPvpWin(winnerKey, game) {
     const c = ensureClan(clans[clanId]);
     c.weeklyWins = (c.weeklyWins || 0) + 1;
     c.totalWins = (c.totalWins || 0) + 1;
+    addClanXp(c, CLAN_XP_PER_PVP_WIN);
+    trackClanQuest(c, "pvp", 1);
     const w = activeWarOf(clanId);
     if (w && w.state === "active") {
       if (w.aId === clanId) w.aScore++; else w.bScore++;
@@ -368,7 +448,9 @@ function setupClans(io, accounts) {
       if (!Number.isFinite(amount) || amount < 1) return ack({ ok: false, error: "Ungültiger Betrag." });
       if (acc.chips < amount) return ack({ ok: false, error: "Nicht genug Chips." });
       accounts.adjustChips(socket.data.account, -amount);
-      const c = ensureClan(clans[id]); c.treasury += amount; save();
+      const c = ensureClan(clans[id]); c.treasury += amount;
+      trackClanQuest(c, "donate", amount);
+      save();
       notifyClan(id);
       ack({ ok: true, clan: clanPublic(id), account: accounts.publicAccount(acc) });
     });
