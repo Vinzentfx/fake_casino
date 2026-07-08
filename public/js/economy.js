@@ -22,6 +22,7 @@
     const power = s.clickPower * (s.schulleiter ? 3 : 1);
     $("#clicker-power").textContent = power;
     $("#work-power").textContent = power + " 🪙" + (s.schulleiter ? " (🏫 Schulleiter ×3)" : "");
+    renderHustle(s.hustle);
     const btn = $("#work-upgrade-btn");
     const costEl = $("#work-upgrade-cost");
     if (s.maxed) {
@@ -35,6 +36,16 @@
     }
   }
 
+  function renderHustle(h) {
+    const box = $("#work-hustle");
+    if (!box || !h) return;
+    const pct = h.target ? Math.min(100, Math.round((100 * (h.clicks || 0)) / h.target)) : 0;
+    box.innerHTML = `
+      <div class="stat-row"><span>Hustle-Bonus</span><b>${fmt(h.clicks || 0)}/${fmt(h.target || 25)}</b></div>
+      <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
+      <p class="muted small" style="margin:.35rem 0 0">Bonus-Cap: ${fmt(h.hourEarned || 0)}/${fmt(h.hourCap || 0)} 🪙 pro Stunde · ${fmt(h.dayEarned || 0)}/${fmt(h.dayCap || 0)} 🪙 heute</p>`;
+  }
+
   function loadWork() {
     socket.emit("economy:state", applyWorkState);
   }
@@ -43,7 +54,8 @@
     socket.emit("work:click", (res) => {
       if (!res || !res.ok) return;
       applyAccount(res.account);
-      flyFromClicker("+" + res.earned);
+      if (res.hustle) renderHustle(res.hustle);
+      flyFromClicker("+" + res.earned + (res.hustleBonus ? " Hustle!" : ""));
     });
   });
 

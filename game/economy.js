@@ -21,6 +21,11 @@ const weekly = require("./weekly");
 const CLICK_BASE = 1;          // chips per click at level 0
 const MAX_CLICK_LEVEL = 5;     // a few upgrades, then it's maxed out
 const clickUpgradeCost = (lvl) => 200 * (lvl + 1); // lvl 0→200, 1→400, … 4→1000
+const HUSTLE_TARGET = 25;      // valid work clicks per bonus
+const HUSTLE_MIN_GAP = 180;    // clicks faster than this don't build hustle
+const HUSTLE_HOUR_CAP = 5000;
+const HUSTLE_DAY_CAP = 20000;
+const dayNow = () => Math.floor(Date.now() / 86400000);
 
 function ensureEconomy(acc) {
   if (!acc.economy) acc.economy = {};
@@ -61,16 +66,45 @@ function setupEconomy(io, accounts) {
       const e = ensureEconomy(acc);
       // Hourly earnings cap: with an autoclicker the 20/s rate limit alone
       // would still allow ~1M+/h — the clicker is a bootstrap, not a job.
-      const HOUR = 3600000, CLICK_EARN_CAP = 10000;
+      const HOUR = 3600000, CLICK_EARN_CAP = 12000;
       if (!e.clickHourAt || now - e.clickHourAt >= HOUR) { e.clickHourAt = now; e.clickEarned = 0; }
       if ((e.clickEarned || 0) >= CLICK_EARN_CAP)
         return ack({ ok: false, error: "Feierabend! Der Klick-Job ist für diese Stunde ausgeschöpft." });
+      if (e.hustleDay !== dayNow()) { e.hustleDay = dayNow(); e.hustleDayEarned = 0; e.hustleClicks = 0; }
+      if (!e.hustleHourAt || now - e.hustleHourAt >= HOUR) { e.hustleHourAt = now; e.hustleHourEarned = 0; }
       // Schulleiter trophy: education pays — clicks ×3.
       const schule = city.hasTrophy(key, "schule") ? 3 : 1;
-      const earned = Math.round(clickPower(e) * schule);
+      let earned = Math.round(clickPower(e) * schule);
       e.clickEarned = (e.clickEarned || 0) + earned;
+      let hustleBonus = 0;
+      const gap = now - (e.hustleLastClickAt || 0);
+      e.hustleLastClickAt = now;
+      const hustleEligible = gap >= HUSTLE_MIN_GAP;
+      if (hustleEligible && (e.hustleDayEarned || 0) < HUSTLE_DAY_CAP && (e.hustleHourEarned || 0) < HUSTLE_HOUR_CAP) {
+        e.hustleClicks = (e.hustleClicks || 0) + 1;
+        if (e.hustleClicks >= HUSTLE_TARGET) {
+          e.hustleClicks -= HUSTLE_TARGET;
+          const rawBonus = 120 + e.clickLevel * 40;
+          const room = Math.min(HUSTLE_DAY_CAP - (e.hustleDayEarned || 0), HUSTLE_HOUR_CAP - (e.hustleHourEarned || 0));
+          hustleBonus = Math.max(0, Math.min(room, Math.round(rawBonus * accounts.faucetFactor(key))));
+          e.hustleDayEarned = (e.hustleDayEarned || 0) + hustleBonus;
+          e.hustleHourEarned = (e.hustleHourEarned || 0) + hustleBonus;
+          earned += hustleBonus;
+        }
+      }
       const res = accounts.adjustChips(key, earned);
-      ack({ ok: res.ok, account: res.account, earned });
+      ack({
+        ok: res.ok, account: res.account, earned, hustleBonus,
+        hustle: {
+          clicks: e.hustleClicks || 0,
+          target: HUSTLE_TARGET,
+          hourEarned: Math.floor(e.hustleHourEarned || 0),
+          hourCap: HUSTLE_HOUR_CAP,
+          dayEarned: Math.floor(e.hustleDayEarned || 0),
+          dayCap: HUSTLE_DAY_CAP,
+          eligible: hustleEligible,
+        },
+      });
     });
 
     socket.on("work:upgrade", (ack) => {
@@ -100,6 +134,14 @@ function setupEconomy(io, accounts) {
         maxClickLevel: MAX_CLICK_LEVEL,
         upgradeCost: maxed ? null : clickUpgradeCost(e.clickLevel),
         maxed,
+        hustle: {
+          clicks: e.hustleClicks || 0,
+          target: HUSTLE_TARGET,
+          hourEarned: Math.floor(e.hustleHourEarned || 0),
+          hourCap: HUSTLE_HOUR_CAP,
+          dayEarned: Math.floor(e.hustleDayEarned || 0),
+          dayCap: HUSTLE_DAY_CAP,
+        },
         schulleiter: city.hasTrophy(socket.data.account, "schule"), // Klicks ×3
       });
     });
