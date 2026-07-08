@@ -26,6 +26,14 @@ const HUSTLE_MIN_GAP = 180;    // clicks faster than this don't build hustle
 const HUSTLE_HOUR_CAP = 10000;
 const HUSTLE_DAY_CAP = 60000;
 const WORK_FACTOR_WINDOW = 15 * 60 * 1000;
+const JOB_HOUR_CAP = 25000;
+const JOB_DAY_CAP = 120000;
+const JOBS = {
+  delivery: { label: "Lieferdienst", cooldown: 25_000, base: 90, xp: 1 },
+  promo: { label: "Casino-Promo", cooldown: 45_000, base: 45, xp: 7 },
+  side: { label: "Riskanter Nebenjob", cooldown: 90_000, base: 130, xp: 3, risky: true },
+  shift: { label: "Schichtarbeit", duration: 75_000, cooldown: 120_000, base: 650, xp: 10 },
+};
 const dayNow = () => Math.floor(Date.now() / 86400000);
 
 function ensureEconomy(acc) {
@@ -57,6 +65,68 @@ function workFactorState(acc, e, now) {
   }
   const smoothed = Math.max(nw, e.workNwPeak || 0);
   return { netWorth: nw, smoothedNetWorth: smoothed, factor: workFactorFor(smoothed) };
+}
+
+function ensureJobState(e, now = Date.now()) {
+  e.jobs = e.jobs || { cooldowns: {} };
+  if (!e.jobs.cooldowns) e.jobs.cooldowns = {};
+  if (e.jobs.day !== dayNow()) { e.jobs.day = dayNow(); e.jobs.dayEarned = 0; }
+  if (!e.jobs.hourAt || now - e.jobs.hourAt >= 3600000) { e.jobs.hourAt = now; e.jobs.hourEarned = 0; }
+  if (e.jobs.activeShift && now - e.jobs.activeShift.startedAt > 6 * 3600000) delete e.jobs.activeShift;
+  return e.jobs;
+}
+
+function jobRoom(jobs) {
+  return Math.max(0, Math.min(JOB_HOUR_CAP - (jobs.hourEarned || 0), JOB_DAY_CAP - (jobs.dayEarned || 0)));
+}
+
+function publicJobs(acc, e, now = Date.now()) {
+  const jobs = ensureJobState(e, now);
+  const factor = workFactorState(acc, e, now);
+  return {
+    factor,
+    hourEarned: Math.floor(jobs.hourEarned || 0),
+    hourCap: JOB_HOUR_CAP,
+    dayEarned: Math.floor(jobs.dayEarned || 0),
+    dayCap: JOB_DAY_CAP,
+    activeShift: jobs.activeShift ? {
+      readyAt: jobs.activeShift.readyAt,
+      startedAt: jobs.activeShift.startedAt,
+      label: JOBS.shift.label,
+    } : null,
+    jobs: Object.entries(JOBS).map(([id, job]) => ({
+      id,
+      label: job.label,
+      cooldownMs: job.cooldown || 0,
+      durationMs: job.duration || 0,
+      readyAt: jobs.cooldowns[id] || 0,
+      payout: Math.max(1, Math.round(job.base * factor.factor)),
+      xp: job.xp || 0,
+      risky: !!job.risky,
+    })),
+  };
+}
+
+function awardJob(acc, key, e, job, now, mult = 1) {
+  const jobs = ensureJobState(e, now);
+  const factor = workFactorState(acc, e, now);
+  const room = jobRoom(jobs);
+  const raw = Math.max(1, Math.round(job.base * factor.factor * mult));
+  const earned = Math.max(0, Math.min(room, raw));
+  let publicAccount = accountsPublicAccount(acc);
+  if (earned > 0) {
+    const res = _accountsRef.adjustChips(key, earned);
+    publicAccount = res.account || publicAccount;
+    jobs.hourEarned = (jobs.hourEarned || 0) + earned;
+    jobs.dayEarned = (jobs.dayEarned || 0) + earned;
+  }
+  if (job.xp) publicAccount = _accountsRef.addXp(key, job.xp) || publicAccount;
+  try { quests.track(key, "work_job"); } catch {}
+  return { earned, xp: job.xp || 0, account: publicAccount, capped: earned < raw, jobs: publicJobs(acc, e, now) };
+}
+
+function accountsPublicAccount(acc) {
+  try { return _accountsRef.publicAccount(acc); } catch { return null; }
 }
 
 function accountsPublicNetWorth(acc) {
@@ -124,6 +194,7 @@ function setupEconomy(io, accounts) {
       const res = accounts.adjustChips(key, earned);
       ack({
         ok: res.ok, account: res.account, earned, hustleBonus,
+        jobs: publicJobs(acc, e, now),
         hustle: {
           clicks: e.hustleClicks || 0,
           target: HUSTLE_TARGET,
@@ -153,6 +224,53 @@ function setupEconomy(io, accounts) {
       ack({ ok: true, account: res.account, clickPower: clickPower(e), clickLevel: e.clickLevel, maxed: e.clickLevel >= MAX_CLICK_LEVEL });
     });
 
+    socket.on("work:jobStart", ({ id } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const e = ensureEconomy(acc);
+      const now = Date.now();
+      const jobs = ensureJobState(e, now);
+      const job = JOBS[id];
+      if (!job) return ack({ ok: false, error: "Job nicht gefunden." });
+      if ((jobs.cooldowns[id] || 0) > now) return ack({ ok: false, error: "Dieser Job hat noch Cooldown.", jobs: publicJobs(acc, e, now) });
+      if (jobRoom(jobs) <= 0) return ack({ ok: false, error: "Feierabend! Dein Job-Cap ist aktuell ausgeschöpft.", jobs: publicJobs(acc, e, now) });
+
+      if (id === "shift") {
+        if (jobs.activeShift) return ack({ ok: false, error: "Du hast schon eine Schicht laufen.", jobs: publicJobs(acc, e, now) });
+        jobs.activeShift = { startedAt: now, readyAt: now + job.duration };
+        jobs.cooldowns[id] = now + job.cooldown;
+        accounts.save();
+        return ack({ ok: true, started: true, jobs: publicJobs(acc, e, now) });
+      }
+
+      let mult = 1, outcome = null;
+      if (job.risky) {
+        const roll = Math.random();
+        if (roll < 0.22) { mult = 2.8; outcome = "bonus"; }
+        else if (roll < 0.55) { mult = 0.35; outcome = "schwach"; }
+        else outcome = "normal";
+      }
+      jobs.cooldowns[id] = now + job.cooldown;
+      const result = awardJob(acc, socket.data.account, e, job, now, mult);
+      return ack({ ok: true, ...result, outcome });
+    });
+
+    socket.on("work:shiftClaim", (ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const e = ensureEconomy(acc);
+      const now = Date.now();
+      const jobs = ensureJobState(e, now);
+      const shift = jobs.activeShift;
+      if (!shift) return ack({ ok: false, error: "Keine aktive Schicht.", jobs: publicJobs(acc, e, now) });
+      if (shift.readyAt > now) return ack({ ok: false, error: "Die Schicht läuft noch.", jobs: publicJobs(acc, e, now) });
+      delete jobs.activeShift;
+      const result = awardJob(acc, socket.data.account, e, JOBS.shift, now);
+      return ack({ ok: true, ...result, shiftDone: true });
+    });
+
     socket.on("economy:state", (ack) => {
       if (typeof ack !== "function") return;
       const acc = acct(socket);
@@ -178,6 +296,7 @@ function setupEconomy(io, accounts) {
           netWorth: factor.netWorth,
           smoothedNetWorth: factor.smoothedNetWorth,
         },
+        jobs: publicJobs(acc, e),
         schulleiter: city.hasTrophy(socket.data.account, "schule"), // Klicks ×3
       });
     });

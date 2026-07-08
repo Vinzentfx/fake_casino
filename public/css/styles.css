@@ -1597,6 +1597,37 @@ button { font-family: inherit; cursor: pointer; }
   padding-bottom: 32px;
 }
 
+.work-jobs {
+  display: grid;
+  gap: 8px;
+}
+.work-job {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.055);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.work-job-icon { font-size: 1.55rem; }
+.work-job-main { min-width: 0; }
+.work-job-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+.work-job-head b { color: #f4d782; }
+.work-job-head span { color: #bff5d0; font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
+.work-job p { margin: 2px 0 0; }
+.work-job .chip-btn { white-space: nowrap; }
+@media (max-width: 560px) {
+  .work-job { grid-template-columns: auto 1fr; }
+  .work-job .chip-btn { grid-column: 1 / -1; width: 100%; }
+}
+
 .clicker-area {
   display: flex;
   flex-direction: column;
