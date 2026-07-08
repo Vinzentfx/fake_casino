@@ -176,6 +176,7 @@
           <button class="action-tile" id="calendar-tile" data-nav="calendar">📅<span>Kalender</span></button>
           <button class="action-tile" id="wheel-tile" data-nav="wheel">🎡<span>Glücksrad</span></button>
           <button class="action-tile" data-nav="quests">🎯<span>Aufträge</span></button>
+          <button class="action-tile" data-nav="season">🎟️<span>Season</span></button>
           <button class="action-tile" data-nav="clans">🛡️<span>Clans</span></button>
           <button class="action-tile" data-nav="cosmetics">🎨<span>Kosmetik</span></button>
           <button class="action-tile" data-nav="leaderboard">🏆<span>Bestenliste</span></button>
@@ -1037,6 +1038,14 @@
       </div>
     </section>
 
+    <!-- ===================== CASINO SEASON / PASS ===================== -->
+    <section class="screen" data-screen="season">
+      <div class="panel">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div id="season-box"><p class="muted small">Lädt…</p></div>
+      </div>
+    </section>
+
     <section class="screen" data-screen="stats">
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
@@ -1374,6 +1383,7 @@
   <script src="/js/lobby.js"></script>
   <script src="/js/stats.js"></script>
   <script src="/js/quests.js"></script>
+  <script src="/js/season.js"></script>
   <script src="/js/crash.js"></script>
   <script src="/js/mines.js"></script>
   <script src="/js/pinco.js"></script>

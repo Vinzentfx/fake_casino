@@ -55,6 +55,7 @@ function showScreen(name) {
   if (name === "lobby" && window.Casino._loadLobbies) window.Casino._loadLobbies();
   if (name === "stats" && window.Casino._loadStats) window.Casino._loadStats();
   if (name === "quests" && window.Casino._loadQuests) window.Casino._loadQuests();
+  if (name === "season" && window.Casino._loadSeason) window.Casino._loadSeason();
   if (name === "calendar") loadCalendar();
   if (name === "wheel" && window.Casino._loadWheel) window.Casino._loadWheel();
   if (name === "clans" && window.Casino._loadClans) window.Casino._loadClans();

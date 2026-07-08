@@ -44,6 +44,7 @@ const { setupLobby } = require("./game/lobby");
 const achievements = require("./game/achievements");
 const city = require("./game/city");
 const quests = require("./game/quests");
+const { setupSeason } = require("./game/season");
 const liveops = require("./game/liveops");
 
 const PORT = process.env.PORT || 3000;
@@ -191,6 +192,7 @@ setupMarket(io, accounts);
 setupChat(io, accounts);
 setupLobby(io);
 achievements.setupAchievements(io, accounts);
+setupSeason(io, accounts);
 quests.setupQuests(io, accounts);
 liveops.setup(io, accounts, heist);
 
