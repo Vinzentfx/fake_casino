@@ -67,27 +67,21 @@
     stock.addEventListener("click", () => doDraw());
     top.appendChild(stock);
 
-    // Waste: fan the visible cards (up to 3) so you can see what's underneath the
-    // top one; only the TOP card is playable. Spans 2 columns for room.
+    // Waste: draw-1 everywhere → show only the TOP card (each card was already
+    // seen when it was drawn, so nothing "new" appears underneath).
     const waste = document.createElement("div");
     waste.className = "sol-slot sol-waste";
     const wcards = b.waste || [];
-    if (wcards.length) {
-      wcards.forEach((wc, wi) => {
-        const isTop = wi === wcards.length - 1;
-        const el = cardEl(wc, { sel: isTop && sel && sel.kind === "w" });
-        el.classList.add("sol-waste-card");
-        if (wi > 0) el.style.marginLeft = "-24%";
-        el.style.zIndex = String(wi + 1);
-        if (isTop) {
-          el.classList.add("sol-waste-top");
-          el.addEventListener("click", (e) => { e.stopPropagation(); clickWaste(); });
-          el.addEventListener("dblclick", (e) => { e.stopPropagation(); autoFoundation("w"); });
-        }
-        waste.appendChild(el);
-      });
+    const wtop = wcards.length ? wcards[wcards.length - 1] : null;
+    if (wtop) {
+      const el = cardEl(wtop, { sel: sel && sel.kind === "w" });
+      el.addEventListener("click", (e) => { e.stopPropagation(); clickWaste(); });
+      el.addEventListener("dblclick", (e) => { e.stopPropagation(); autoFoundation("w"); });
+      waste.appendChild(el);
     }
     top.appendChild(waste);
+
+    const spacer = document.createElement("div"); spacer.className = "sol-slot sol-spacer"; top.appendChild(spacer);
 
     b.foundations.forEach((f, fi) => {
       const slot = document.createElement("div");
