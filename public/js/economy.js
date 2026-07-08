@@ -15,6 +15,8 @@
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
   const idxStr = (i) => String(i).replace(".", ",");
+  let workState = null;
+  let workTick = null;
 
   // ── Work (capped clicker) ────────────────────────────────────────────────
   function applyWorkState(s) {
@@ -24,6 +26,7 @@
     $("#clicker-power").textContent = power;
     $("#work-power").textContent = power + " 🪙" + (s.schulleiter ? " (🏫 Schulleiter ×3)" : "");
     renderHustle(s.hustle);
+    renderJobs(s.jobs);
     const btn = $("#work-upgrade-btn");
     const costEl = $("#work-upgrade-cost");
     if (s.maxed) {
@@ -35,6 +38,53 @@
       btn.disabled = false;
       btn.textContent = "⬆️ Upgrade kaufen";
     }
+  }
+
+  function jobMeta(id) {
+    return ({
+      delivery: { icon: "🚲", text: "Sicherer kurzer Job. Gut, um schnell wieder Einsatz-Chips zu bekommen." },
+      shift: { icon: "🏭", text: "Läuft kurz im Hintergrund und wird danach aktiv abgeholt." },
+      promo: { icon: "📣", text: "Wenig Chips, dafür mehr XP. Gut für Level-Fortschritt." },
+      side: { icon: "🎲", text: "Kein Verlust möglich, aber der Bonus kann stark oder schwach ausfallen." },
+    })[id] || { icon: "💼", text: "Aktiver Job." };
+  }
+
+  function timeLeft(ts) {
+    const ms = Math.max(0, Math.ceil((Number(ts) || 0) - Date.now()));
+    if (!ms) return "";
+    const s = Math.ceil(ms / 1000);
+    return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` : `${s}s`;
+  }
+
+  function renderJobs(jobs) {
+    const box = $("#work-jobs");
+    if (!box || !jobs) return;
+    workState = jobs;
+    $("#work-job-hour").textContent = `${fmt(jobs.hourEarned || 0)}/${fmt(jobs.hourCap || 0)} 🪙`;
+    $("#work-job-day").textContent = `${fmt(jobs.dayEarned || 0)}/${fmt(jobs.dayCap || 0)} 🪙`;
+    const f = jobs.factor || {};
+    $("#work-job-factor").textContent = `Job-Faktor: ${(f.factor || 1).toLocaleString("de-DE")}× bei ${fmt(f.smoothedNetWorth || f.netWorth || 0)} 🪙 Wert.`;
+    box.innerHTML = (jobs.jobs || []).map((j) => {
+      const m = jobMeta(j.id);
+      const cool = timeLeft(j.readyAt);
+      const shift = j.id === "shift" && jobs.activeShift;
+      const shiftLeft = shift ? timeLeft(jobs.activeShift.readyAt) : "";
+      const disabled = cool || (j.id === "shift" && shift);
+      const label = shift ? (shiftLeft ? `Läuft ${shiftLeft}` : "Abholen") : (cool ? `Cooldown ${cool}` : (j.id === "shift" ? "Schicht starten" : "Job machen"));
+      return `<div class="work-job" data-job="${j.id}">
+        <div class="work-job-icon">${m.icon}</div>
+        <div class="work-job-main">
+          <div class="work-job-head"><b>${escapeHtml(j.label)}</b><span>${fmt(j.payout)} 🪙${j.xp ? ` · ${fmt(j.xp)} XP` : ""}</span></div>
+          <p class="muted small">${escapeHtml(m.text)}</p>
+        </div>
+        <button class="chip-btn" data-job-action="${j.id}" ${disabled ? "disabled" : ""}>${label}</button>
+      </div>`;
+    }).join("");
+    if (jobs.activeShift && !timeLeft(jobs.activeShift.readyAt)) {
+      const btn = box.querySelector('[data-job-action="shift"]');
+      if (btn) { btn.disabled = false; btn.textContent = "Abholen"; }
+    }
+    if (!workTick) workTick = setInterval(() => { if (workState) renderJobs(workState); }, 1000);
   }
 
   function renderHustle(h) {
@@ -56,8 +106,32 @@
       if (!res || !res.ok) return;
       applyAccount(res.account);
       if (res.hustle) renderHustle(res.hustle);
+      if (res.jobs) renderJobs(res.jobs);
       flyFromClicker("+" + res.earned + (res.hustleBonus ? " Hustle!" : ""));
     });
+  });
+
+  $("#work-jobs")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-job-action]");
+    if (!btn) return;
+    const id = btn.dataset.jobAction;
+    const event = id === "shift" && workState && workState.activeShift && !timeLeft(workState.activeShift.readyAt)
+      ? "work:shiftClaim"
+      : "work:jobStart";
+    const done = (res) => {
+      if (!res || !res.ok) {
+        if (res && res.jobs) renderJobs(res.jobs);
+        toast((res && res.error) || "Job nicht möglich.");
+        return;
+      }
+      if (res.account) applyAccount(res.account);
+      if (res.jobs) renderJobs(res.jobs);
+      if (res.started) { toast("Schicht gestartet. Gleich wieder abholen."); return; }
+      const extra = res.outcome === "bonus" ? " · Bonus!" : (res.outcome === "schwach" ? " · schwacher Auftrag" : "");
+      toast(`+${fmt(res.earned || 0)} 🪙${res.xp ? ` · +${fmt(res.xp)} XP` : ""}${extra}${res.capped ? " · Cap erreicht" : ""}`);
+    };
+    if (event === "work:shiftClaim") socket.emit(event, done);
+    else socket.emit(event, { id }, done);
   });
 
   $("#work-upgrade-btn").addEventListener("click", () => {

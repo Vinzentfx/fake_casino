@@ -211,6 +211,19 @@ function levelInfo(acc) {
   };
 }
 
+function addXp(name, amount) {
+  const acc = get(name);
+  if (!acc) return null;
+  const xp = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!xp) return publicAccount(acc);
+  const lvlBefore = levelFromXp(acc.xp || 0);
+  acc.xp = (acc.xp || 0) + xp;
+  const lvlAfter = levelFromXp(acc.xp);
+  if (lvlAfter > lvlBefore) acc._justLeveled = lvlAfter;
+  save();
+  return publicAccount(acc);
+}
+
 // ─── Buffs (from business products) ─────────────────────────────────────────
 /** Active buffs for an account, with expired ones pruned. { type: {until, mult} } */
 function activeBuffs(acc) {
@@ -810,6 +823,7 @@ module.exports = {
   rescue,
   adjustChips,
   recordHand,
+  addXp,
   leaderboard,
   isUnlocked,
   unlock,
