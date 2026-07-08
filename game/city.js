@@ -3,7 +3,7 @@
 /**
  * Shared city — REAL MAP EDITION (Porta Westfalica), territory & status model.
  *
- * The map is a one-time OSM snapshot (game/data/porta.json): 5 real Stadtteile
+ * The map is a one-time OSM snapshot (game/data/porta.json): multiple Stadtteile
  * with their real buildings, streets and landmarks. The city is a chip SINK +
  * a TERRITORY/STATUS layer — money comes from playing the games. There are no
  * ownership buffs any more. Instead, owning real estate gives you:
