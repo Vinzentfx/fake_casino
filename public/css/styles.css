@@ -2157,6 +2157,8 @@ button { font-family: inherit; cursor: pointer; }
 .player-profile-stats span { display: block; color: rgba(232,236,242,0.62); font-size: 0.72rem; margin-bottom: 3px; }
 .player-profile-stats b { color: #f4d782; font-size: 0.88rem; }
 .player-profile-badges { margin-top: 12px; }
+.player-profile-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.player-profile-actions button:only-child { grid-column: 1 / -1; }
 .mini-badge {
   display: inline-flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; margin: 6px 5px 0 0; border-radius: 999px;
@@ -2197,6 +2199,7 @@ button { font-family: inherit; cursor: pointer; }
 .clan-header { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);
   background: rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
 .clan-header b { font-size: 1.05rem; }
+.clan-level-card { padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; }
 .clan-roster { display: flex; flex-direction: column; gap: 4px; }
 .clan-mrow { display: flex; justify-content: space-between; padding: 7px 11px; border-radius: 8px; background: rgba(255,255,255,0.04); font-size: 0.9rem; }
 .clan-create { padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); }
@@ -2208,6 +2211,13 @@ button { font-family: inherit; cursor: pointer; }
 .clan-donate-row { display: flex; gap: 6px; margin-top: 8px; }
 .clan-donate-row input { flex: 1; padding: 8px; border-radius: 8px; background: #232833;
   border: 1px solid rgba(255,255,255,0.12); color: #fff; box-sizing: border-box; }
+.clan-quests { display: flex; flex-direction: column; gap: 7px; margin: 10px 0; }
+.clan-quest { padding: 9px 11px; border-radius: 10px; background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.08); }
+.clan-quest.done { border-color: rgba(102,192,122,0.45); background: rgba(102,192,122,0.08); }
+.clan-quest > div:first-child { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; font-size: 0.88rem; }
+.clan-quest span { color: rgba(232,236,242,0.64); font-size: 0.75rem; white-space: nowrap; }
+.clan-quest-bar { height: 6px; border-radius: 999px; overflow: hidden; background: rgba(0,0,0,0.28); margin-top: 7px; }
+.clan-quest-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #e6b04b, #66c07a); }
 .clan-requests { margin-top: 10px; }
 .clan-closed { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 0.9rem; cursor: pointer; }
 .clan-closed input { accent-color: #e6b04b; }

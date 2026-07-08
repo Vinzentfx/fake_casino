@@ -116,7 +116,7 @@ function setAccount(acc, token) {
 }
 
 // ---- Update-/Changelog-Modal (einmal pro Version) ----
-const UPDATE_VERSION = "2026-07-08-veltheim-jobs-social";
+const UPDATE_VERSION = "2026-07-08-social-clan-depth";
 function maybeShowUpdate() {
   let seen = null;
   try { seen = localStorage.getItem("casino_seen_update"); } catch {}
@@ -301,6 +301,43 @@ function levelHtml(l) {
     `<div class="level-bar"><div class="level-fill" style="width:${pct}%;background:${l.color}"></div></div>`;
 }
 
+const SOCIAL_GAME_LABELS = {
+  pinco: "Pinco Ball",
+  blackjack: "Blackjack",
+  roulette: "Roulette",
+  crash: "Crash",
+  mines: "Mines",
+  slots: "Slots",
+  chess: "Schach",
+  sudoku: "Sudoku",
+  solitaire: "Solitär",
+  memory: "Memory",
+  sports: "Sportwetten",
+  lobby: "Lobby",
+};
+
+function socialGameForInvite() {
+  if (SOCIAL_GAME_LABELS[currentScreen] && currentScreen !== "profile") return currentScreen;
+  return "lobby";
+}
+
+function sendSocialChallenge(name) {
+  const game = socialGameForInvite();
+  socket.emit("social:challenge", { to: name, game }, (res) => {
+    if (!res || !res.ok) { toast(res?.error || "Einladung konnte nicht gesendet werden."); return; }
+    toast(res.delivered
+      ? `${name} wurde zu ${res.label} eingeladen.`
+      : `${name} ist gerade nicht online, Einladung nicht zugestellt.`);
+  });
+}
+
+socket.on("social:challenge", ({ from, game, label } = {}) => {
+  if (!from) return;
+  const text = `${from} fordert dich zu ${label || "Fake Casino"} heraus. Öffnen?`;
+  if (game && screens[game] && confirm(text)) showScreen(game);
+  else toast(`${from} fordert dich heraus.`);
+});
+
 async function openPlayerProfile(name) {
   const modal = $("#player-profile-modal");
   const body = $("#player-profile-body");
@@ -317,6 +354,7 @@ async function openPlayerProfile(name) {
       ? ach.unlocked.slice(0, 10).map((b) => `<span class="mini-badge" title="${escapeHtml(b.label)}">${escapeHtml(b.emoji)}</span>`).join("")
       : '<span class="muted small">Noch keine Badges</span>';
     const clan = data.clan ? `[${escapeHtml(data.clan)}]` : "";
+    const isMe = state.account && String(state.account.name || "").toLowerCase() === String(acc.name || name).toLowerCase();
     body.innerHTML = `
       <div class="player-profile-head">
         <div class="player-profile-avatar">${escapeHtml(acc.avatar || "🙂")}</div>
@@ -338,11 +376,15 @@ async function openPlayerProfile(name) {
         <div class="muted small">${(ach.unlocked || []).length}/${ach.total || 0} Achievements</div>
         <div>${badgeLine}</div>
       </div>
-      <button class="btn-secondary" id="player-profile-stats-btn" style="width:100%;margin-top:10px">Statistik ansehen</button>`;
+      <div class="player-profile-actions">
+        <button class="btn-secondary" id="player-profile-stats-btn">Statistik ansehen</button>
+        ${isMe ? "" : `<button class="btn-primary" id="player-profile-challenge-btn">Herausfordern</button>`}
+      </div>`;
     $("#player-profile-stats-btn")?.addEventListener("click", () => {
       closePlayerProfile();
       if (window.Casino.openStats) window.Casino.openStats(acc.name || name);
     });
+    $("#player-profile-challenge-btn")?.addEventListener("click", () => sendSocialChallenge(acc.name || name));
   } catch {
     body.innerHTML = '<div class="muted small">Profil konnte nicht geladen werden.</div>';
   }
