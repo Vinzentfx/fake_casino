@@ -23,6 +23,14 @@
   let endsAt = 0;
 
   const DIFF_LABELS = { easy: "Leicht", medium: "Mittel", hard: "Schwer" };
+  const progressCount = () => Array.isArray(grid) && Array.isArray(puzzle)
+    ? grid.filter((v, i) => puzzle[i] !== 0 || (v >= 1 && v <= 9)).length
+    : 0;
+  const setProgress = (prefix, progress) => {
+    const n = Math.max(0, Math.min(81, Math.floor(Number(progress)) || 0));
+    $(`#sdk-${prefix}-val`).textContent = String(n);
+    $(`#sdk-${prefix}-bar`).style.width = Math.round((n / 81) * 100) + "%";
+  };
 
   const views = ["sdk-setup", "sdk-wait", "sdk-game", "sdk-result"];
   function show(view) { for (const v of views) { const el = $("#" + v); if (el) el.style.display = v === view ? "" : "none"; } }
@@ -92,16 +100,15 @@
     sendTimer = setTimeout(() => {
       sendTimer = null;
       if (!grid) return;
-      const showCorrect = (r) => {
-        if (r && r.ok && !r.solved && typeof r.correct === "number") {
-          $("#sdk-you-val").textContent = r.correct;
-          $("#sdk-you-bar").style.width = Math.round((r.correct / 81) * 100) + "%";
+      const showProgress = (r) => {
+        if (r && r.ok && !r.solved && typeof r.progress === "number") {
+          setProgress("you", r.progress);
         }
       };
       if (soloMode) {
-        socket.emit("sudoku:soloUpdate", { grid }, (r) => { if (r && r.ok && r.solved) onSoloSolved(); else showCorrect(r); });
+        socket.emit("sudoku:soloUpdate", { grid }, (r) => { if (r && r.ok && r.solved) onSoloSolved(); else showProgress(r); });
       } else if (myCode) {
-        socket.emit("sudoku:update", { grid }, showCorrect);
+        socket.emit("sudoku:update", { grid }, showProgress);
       }
     }, 350);
   }
@@ -141,14 +148,11 @@
 
   // ── State ─────────────────────────────────────────────────
   function renderProgress(s) {
-    const you = s.you || { name: "Du", correct: 0 }, opp = s.opponent || { name: "Gegner", correct: 0 };
+    const you = s.you || { name: "Du", progress: 0 }, opp = s.opponent || { name: "Gegner", progress: 0 };
     $("#sdk-you-name").textContent = you.name;
     $("#sdk-opp-name").textContent = opp.name;
-    $("#sdk-opp-val").textContent = opp.correct || 0;
-    $("#sdk-opp-bar").style.width = Math.round(((opp.correct || 0) / 81) * 100) + "%";
-    // "you" bar is updated live from update acks; sync from state too
-    $("#sdk-you-val").textContent = you.correct || 0;
-    $("#sdk-you-bar").style.width = Math.round(((you.correct || 0) / 81) * 100) + "%";
+    setProgress("opp", opp.progress || 0);
+    setProgress("you", you.progress || progressCount());
   }
 
   function renderResult(s) {
@@ -240,22 +244,27 @@
       buildGrid(); renderGrid();
       $("#sdk-topbar").style.display = "none";   // no timer
       $("#sdk-opp-row").style.display = "none";  // no opponent
-      $("#sdk-you-name").textContent = "Richtig"; $("#sdk-you-val").textContent = "0"; $("#sdk-you-bar").style.width = "0%";
+      $("#sdk-you-name").textContent = "Ausgefüllt"; setProgress("you", progressCount());
       show("sdk-game");
     });
   });
   $("#sdk-start").addEventListener("click", () => socket.emit("sudoku:start", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); }));
 
-  function leave() { if (myCode) socket.emit("sudoku:leave"); myCode = null; st = null; grid = null; puzzle = null; soloMode = false; soloPlaying = false; stopTimer(); }
+  function leave() {
+    if (myCode) socket.emit("sudoku:leave");
+    if (soloMode || soloPlaying) socket.emit("sudoku:soloLeave");
+    myCode = null; st = null; grid = null; puzzle = null; soloMode = false; soloPlaying = false; stopTimer();
+  }
   $("#sdk-cancel").addEventListener("click", () => { leave(); show("sdk-setup"); });
   $("#sdk-again").addEventListener("click", () => { leave(); show("sdk-setup"); });
+  $("#sdk-giveup").addEventListener("click", () => { leave(); show("sdk-setup"); });
   $("#sdk-rematch").addEventListener("click", () => {
     socket.emit("sudoku:rematch", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); else $("#sdk-rematch-status").textContent = "Warte auf Revanche des Gegners…"; });
   });
 
   // Leaving the game screen (‹ Lobby) mid-race forfeits → opponent wins the pot.
   const sdkBack = document.querySelector('[data-screen="sudoku"] .back-btn');
-  if (sdkBack) sdkBack.addEventListener("click", () => { if (myCode) leave(); });
+  if (sdkBack) sdkBack.addEventListener("click", () => { if (myCode || soloPlaying) leave(); });
 
   window.Casino._sudokuJoinCode = (code) => { window.Casino.showScreen("sudoku"); doJoin(code); };
   window.Casino._loadSudoku = () => {
