@@ -582,6 +582,7 @@ socket.on("admin:kicked", ({ reason }) => {
 });
 
 function loadAdminAccounts() {
+  loadAdminDashboard();
   const list = $("#admin-account-list");
   list.innerHTML = '<li class="muted">Lädt…</li>';
   socket.emit("admin:listAccounts", (res) => {
@@ -629,6 +630,80 @@ function loadAdminAccounts() {
     });
   });
   loadAdminLots();
+}
+
+function adminMoney(n) {
+  return `${Math.floor(Number(n) || 0).toLocaleString("de-DE")} 🪙`;
+}
+
+function adminTimeLeft(ts) {
+  const ms = Math.max(0, (Number(ts) || 0) - Date.now());
+  const mins = Math.floor(ms / 60000);
+  const secs = Math.floor((ms % 60000) / 1000);
+  return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+}
+
+function loadAdminDashboard() {
+  const box = $("#admin-dashboard");
+  if (!box) return;
+  box.innerHTML = '<div class="muted small">Dashboard lädt…</div>';
+  socket.emit("admin:dashboard", (res) => {
+    if (!res || !res.ok) { box.innerHTML = '<div class="muted small">Dashboard nicht verfügbar.</div>'; return; }
+    const d = res.dashboard || {};
+    const live = (d.events && d.events.liveops) || {};
+    const tourney = live.tourney;
+    const online = (d.online && d.online.players) || [];
+    const winners = d.topWinners || [];
+    const losers = d.topLosers || [];
+    const alerts = d.alerts || [];
+    const eventLines = [
+      live.happyActive ? `Happy Hour: aktiv (${adminTimeLeft(live.happyUntil)})` : "Happy Hour: aus",
+      tourney ? `Turnier: ${adminMoney(tourney.prize)} (${adminTimeLeft(tourney.endsAt)})` : "Turnier: aus",
+      d.events && d.events.heistActive ? "Heist: aktiv" : "Heist: aus",
+    ];
+    const miniList = (items, valFn, empty) => items.length
+      ? items.map((p) => `<li><span>${escapeHtml(p.name)}</span><b>${valFn(p)}</b></li>`).join("")
+      : `<li class="muted">${empty}</li>`;
+    box.innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:.75rem;align-items:center;flex-wrap:wrap">
+        <h3 style="margin:0">Live-Ops Dashboard</h3>
+        <button class="chip-btn" id="admin-dash-refresh">Aktualisieren</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.75rem">
+        <div style="border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.75rem;background:rgba(0,0,0,.16)">
+          <div class="muted small">Online</div>
+          <b>${d.online?.accounts || 0} Accounts</b><div class="small muted">${d.online?.sockets || 0} Tabs verbunden</div>
+          <div class="small" style="margin-top:.35rem">${online.length ? online.map((p) => escapeHtml(p.name)).join(", ") : "Niemand online"}</div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.75rem;background:rgba(0,0,0,.16)">
+          <div class="muted small">Events</div>
+          <div class="small">${eventLines.map(escapeHtml).join("<br>")}</div>
+          <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.5rem">
+            <button class="chip-btn" data-admin-dash="happy">Happy</button>
+            <button class="chip-btn" data-admin-dash="tourney">Turnier</button>
+            <button class="chip-btn" data-admin-dash="heist">Heist</button>
+            <button class="chip-btn" data-admin-dash="city">City</button>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.75rem;background:rgba(0,0,0,.16)">
+          <div class="muted small">Casino gesamt</div>
+          <b>${adminMoney(d.totals?.chips || 0)}</b><div class="small muted">Bank: ${adminMoney(d.totals?.bank || 0)} · Accounts: ${d.totals?.accounts || 0}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem">
+        <div><div class="muted small" style="margin-bottom:.25rem">Wochengewinner</div><ol class="leaderboard" style="margin:0">${miniList(winners, (p) => `+${adminMoney(p.weeklyNet)}`, "Keine Gewinne diese Woche.")}</ol></div>
+        <div><div class="muted small" style="margin-bottom:.25rem">Wochenverluste</div><ol class="leaderboard" style="margin:0">${miniList(losers, (p) => `-${adminMoney(Math.abs(p.weeklyNet || 0))}`, "Keine Verluste diese Woche.")}</ol></div>
+        <div><div class="muted small" style="margin-bottom:.25rem">Große Ausschläge</div><ol class="leaderboard" style="margin:0">${miniList(alerts, (p) => `W ${adminMoney(p.biggestWin)} / L ${adminMoney(p.biggestLoss)}`, "Keine großen Ausschläge.")}</ol></div>
+      </div>`;
+    $("#admin-dash-refresh")?.addEventListener("click", loadAdminDashboard);
+    box.querySelectorAll("[data-admin-dash]").forEach((btn) => btn.addEventListener("click", () => {
+      const kind = btn.dataset.adminDash;
+      if (kind === "happy") socket.emit("admin:happyHour", { on: true, minutes: 60 }, (r) => { toast(r?.ok ? "Happy Hour gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
+      if (kind === "tourney") socket.emit("admin:tourney", { on: true, minutes: 10, prize: 100000 }, (r) => { toast(r?.ok ? "Turnier gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
+      if (kind === "heist") socket.emit("admin:heist", { on: true, seconds: 60, loot: 500000 }, (r) => { toast(r?.ok ? "Heist gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
+      if (kind === "city") socket.emit("admin:cityEvent", {}, (r) => { toast(r?.ok ? `Ausgelöst: ${r.event.txt}` : (r?.error || "Fehler.")); loadAdminDashboard(); });
+    }));
+  });
 }
 
 function loadAdminLots() {

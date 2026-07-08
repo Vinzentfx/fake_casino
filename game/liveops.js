@@ -192,5 +192,5 @@ module.exports = {
   setup, tick, questMult, happyActive,
   recordTourneyWin, tourneyActive,
   startHappy, stopHappy, startTourney, stopTourney,
-  setHeist,
+  publicState, setHeist,
 };
