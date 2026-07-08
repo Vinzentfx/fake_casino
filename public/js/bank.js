@@ -24,9 +24,9 @@
     if (!p || !state) return;
     if (document.activeElement && document.activeElement.id === "sav-amount") return; // don't wipe typing
     const bal = state.savings || 0;
-    const ratePct = ((state.savingsRatePerHour || 0) * 100).toFixed(2);
+    const ratePct = ((state.savingsRatePerDay || 0) * 100).toFixed(2);
     p.innerHTML = `
-      <div class="stat-row"><span>Guthaben (${ratePct} %/Std.)</span><b class="pos">${fmt(bal)} 🪙</b></div>
+      <div class="stat-row"><span>Guthaben (${ratePct} %/Tag)</span><b class="pos">${fmt(bal)} 🪙</b></div>
       <div class="stat-row" style="border:none"><span>Limit</span><b>${fmt(state.savingsCap || 0)} 🪙</b></div>
       <label class="bank-input-row"><span>Betrag</span><input id="sav-amount" type="number" min="1" value="1000" /></label>
       <div style="display:flex;gap:8px;margin-top:10px">

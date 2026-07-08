@@ -604,9 +604,19 @@ function transfer(fromName, toName, amount) {
 function deleteAccount(name) {
   const key = normalizeName(name);
   if (!accounts[key]) return { ok: false, error: "Account nicht gefunden." };
+  let cityRemoved = 0;
+  let clanChanged = false;
+  try {
+    const res = city.adminRemoveOwner(key);
+    cityRemoved = res && res.removed ? res.removed : 0;
+  } catch {}
+  try {
+    const res = require("./clans").adminRemoveMember(key);
+    clanChanged = !!(res && res.changed);
+  } catch {}
   delete accounts[key];
   save();
-  return { ok: true };
+  return { ok: true, cityRemoved, clanChanged };
 }
 
 function listAll() {
