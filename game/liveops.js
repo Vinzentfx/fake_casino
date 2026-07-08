@@ -17,6 +17,7 @@
 const path = require("path");
 const fs = require("fs");
 const chat = require("./chat");
+const city = require("./city");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "liveops.json");
@@ -27,6 +28,8 @@ let state = load();
 const AUTO_CHECK_MS = 10 * 60 * 1000;
 const AUTO_TOURNEY_CHANCE = 0.04;
 const AUTO_HEIST_CHANCE = 0.015;
+const AUTO_HAPPY_CHANCE = 0.02;
+const AUTO_CITY_CHANCE = 0.025;
 const TOURNEY_PRIZE_MIN = 25000;
 const TOURNEY_PRIZE_MAX = 60000;
 const HEIST_LOOT_MIN = 150000;
@@ -171,6 +174,24 @@ function maybeAutoSpawn() {
     const seconds = randInt(45, 90);
     const res = _heist.start(loot, seconds, { auto: true });
     if (res && res.ok) a.heistCooldownUntil = Date.now() + randInt(180, 360) * 60000;
+  }
+
+  if (online > 0 && !happyActive() && now >= (a.happyCooldownUntil || 0) && Math.random() < AUTO_HAPPY_CHANCE) {
+    const mins = randInt(15, 30);
+    startHappy(mins);
+    a.happyCooldownUntil = Date.now() + randInt(360, 720) * 60000;
+    try { require("./feed").add("event", `Seltene Mini-Happy-Hour startet für ${mins} Minuten.`); } catch {}
+  }
+
+  if (online > 0 && now >= (a.cityCooldownUntil || 0) && Math.random() < AUTO_CITY_CHANCE) {
+    const event = city.fireEvent(null);
+    if (event) {
+      _io.emit("city:update");
+      _io.emit("city:news", event);
+      chat.announce(_io, `📰 Seltenes Stadt-Ereignis: ${event.txt}`);
+      try { require("./feed").add("event", `Stadt-Ereignis: ${event.txt}`); } catch {}
+      a.cityCooldownUntil = Date.now() + randInt(180, 360) * 60000;
+    }
   }
 
   save();
