@@ -13,6 +13,56 @@ function setupAdmin(io, accounts) {
       return socket.data.account === OWNER;
     }
 
+    socket.on("admin:dashboard", (ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const all = accounts.listAll();
+      const onlineMap = new Map();
+      for (const s of io.of("/").sockets.values()) {
+        if (!s.data || !s.data.account) continue;
+        const key = String(s.data.account).toLowerCase();
+        const cur = onlineMap.get(key) || { name: key, sockets: 0 };
+        cur.sockets += 1;
+        onlineMap.set(key, cur);
+      }
+      const onlineAccounts = Array.from(onlineMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+      const topWinners = all
+        .filter((a) => (a.weeklyNet || 0) > 0)
+        .sort((a, b) => (b.weeklyNet || 0) - (a.weeklyNet || 0))
+        .slice(0, 5);
+      const topLosers = all
+        .filter((a) => (a.weeklyNet || 0) < 0)
+        .sort((a, b) => (a.weeklyNet || 0) - (b.weeklyNet || 0))
+        .slice(0, 5);
+      const alerts = all
+        .filter((a) => (a.biggestWin || 0) >= 1_000_000 || (a.biggestLoss || 0) >= 1_000_000)
+        .sort((a, b) => Math.max(b.biggestWin || 0, b.biggestLoss || 0) - Math.max(a.biggestWin || 0, a.biggestLoss || 0))
+        .slice(0, 6);
+      ack({
+        ok: true,
+        dashboard: {
+          generatedAt: Date.now(),
+          online: {
+            sockets: Array.from(io.of("/").sockets.values()).filter((s) => s.data && s.data.account).length,
+            accounts: onlineAccounts.length,
+            players: onlineAccounts,
+          },
+          totals: {
+            accounts: all.length,
+            chips: all.reduce((sum, a) => sum + (a.chips || 0), 0),
+            bank: all.reduce((sum, a) => sum + (a.savings || 0), 0),
+          },
+          events: {
+            liveops: typeof liveops.publicState === "function" ? liveops.publicState() : null,
+            heistActive: !!(_heist && typeof _heist.active === "function" && _heist.active()),
+          },
+          topWinners,
+          topLosers,
+          alerts,
+        },
+      });
+    });
+
     socket.on("admin:listAccounts", (ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });

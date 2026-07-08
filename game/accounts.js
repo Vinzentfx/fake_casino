@@ -624,6 +624,11 @@ function listAll() {
     name: a.name,
     chips: a.chips,
     savings: Math.floor((a.savings && a.savings.amount) || 0),
+    netWorth: _netWorth(a),
+    weeklyNet: Math.floor(a.weeklyNet || 0),
+    gamesPlayed: Math.floor((a.stats && a.stats.gamesPlayed) || 0),
+    biggestWin: Math.floor((a.stats && a.stats.biggestWin) || 0),
+    biggestLoss: Math.floor((a.stats && a.stats.biggestLoss) || 0),
     banned: !!a.banned,
     shadowban: !!a.shadowban,
   }));
