@@ -135,6 +135,7 @@ function setupSeason(io, accounts) {
       accounts.save();
       const state = publicState(acc);
       const account = accounts.publicAccount(acc);
+      try { require("./feed").add("season", `${acc.name} holt Season-Stufe ${lvl}: ${chips.toLocaleString("de-DE")} Chips.`, { user: acc.name, level: lvl, chips }); } catch {}
       socket.emit("account:update", { account });
       ack({ ok: true, chips, account, ...state });
     });

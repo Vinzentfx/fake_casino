@@ -53,6 +53,7 @@ function showScreen(name) {
   if (name === "stocks" && window.Casino._loadStocks) window.Casino._loadStocks();
   if (name === "blackjack" && window.Casino._loadBlackjack) window.Casino._loadBlackjack();
   if (name === "lobby" && window.Casino._loadLobbies) window.Casino._loadLobbies();
+  if (name === "lobby" && window.Casino._loadFeed) window.Casino._loadFeed();
   if (name === "stats" && window.Casino._loadStats) window.Casino._loadStats();
   if (name === "quests" && window.Casino._loadQuests) window.Casino._loadQuests();
   if (name === "season" && window.Casino._loadSeason) window.Casino._loadSeason();
