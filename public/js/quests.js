@@ -54,8 +54,8 @@
       if (dBox) dBox.innerHTML = res.dailies.map(questRow).join("");
       if (wBox) wBox.innerHTML = res.weeklies.map(questRow).join("");
       const dt = $("#quest-day-timer"), wt = $("#quest-week-timer");
-      if (dt) dt.textContent = `· neue in ${hhmm(res.msDay)}`;
-      if (wt) wt.textContent = `· neue in ${hhmm(res.msWeek)}`;
+      if (dt) dt.textContent = `· ${res.rotation?.dayName || "Tagesmix"} · neue in ${hhmm(res.msDay)}`;
+      if (wt) wt.textContent = `· ${res.rotation?.weekName || "Wochenmix"} · neue in ${hhmm(res.msWeek)}`;
     });
   }
 

@@ -15,20 +15,30 @@
  */
 
 const DAILY_POOL = [
-  { id: "slots10",    ev: "play_slots",       target: 10, reward: 3000,  label: "🎰 Spiele 10 Slot-Runden" },
-  { id: "win3",       ev: "win",              target: 3,  reward: 4000,  label: "🍀 Gewinne 3 Runden (egal was)" },
-  { id: "bj5",        ev: "play_blackjack",   target: 5,  reward: 3000,  label: "♠️ Spiele 5 Blackjack-Hände" },
-  { id: "roulette5",  ev: "play_roulette",    target: 5,  reward: 3000,  label: "🎡 Spiele 5 Roulette-Runden" },
+  { id: "slots12",    ev: "play_slots",       target: 12, reward: 3200,  label: "🎰 Spiele 12 Slot-Runden" },
+  { id: "win4",       ev: "win",              target: 4,  reward: 4200,  label: "🍀 Gewinne 4 Runden (egal was)" },
+  { id: "bj6",        ev: "play_blackjack",   target: 6,  reward: 3200,  label: "♠️ Spiele 6 Blackjack-Hände" },
+  { id: "roulette6",  ev: "play_roulette",    target: 6,  reward: 3200,  label: "🎡 Spiele 6 Roulette-Runden" },
   { id: "sport1",     ev: "bet_sport",        target: 1,  reward: 2500,  label: "⚽ Platziere 1 Sportwette" },
-  { id: "any20",      ev: "play",             target: 20, reward: 5000,  label: "🎲 Spiele 20 Runden (egal was)" },
+  { id: "any24",      ev: "play",             target: 24, reward: 5200,  label: "🎲 Spiele 24 Runden (egal was)" },
   { id: "house1",     ev: "buy_house",        target: 1,  reward: 3000,  label: "🏠 Kauf 1 Gebäude in der Stadt" },
-  { id: "bonus3",     ev: "claim_bonus",      target: 3,  reward: 2500,  label: "⏰ Hol 3× den Stunden-Bonus" },
+  { id: "bonus2",     ev: "claim_bonus",      target: 2,  reward: 2000,  label: "⏰ Hol 2× den Stunden-Bonus" },
+  { id: "mines6",     ev: "play_mines",       target: 6,  reward: 3400,  label: "💣 Spiele 6 Mines-Runden" },
+  { id: "crash6",     ev: "play_crash",       target: 6,  reward: 3400,  label: "🚀 Spiele 6 Crash-Runden" },
+  { id: "pinco3",     ev: "play_pinco",       target: 3,  reward: 3000,  label: "🟡 Spiele 3 Pinco-Runden (30 Bälle)" },
+  { id: "poker4",     ev: "play_poker",       target: 4,  reward: 3500,  label: "🃏 Spiele 4 Poker-Hände" },
 ];
 
 const WEEKLY_POOL = [
-  { id: "win50",      ev: "win",       target: 50,  reward: 30000, label: "🏆 Gewinne 50 Runden diese Woche" },
-  { id: "play100",    ev: "play",      target: 100, reward: 25000, label: "🔥 Spiele 100 Runden diese Woche" },
-  { id: "houses3",    ev: "buy_house", target: 3,   reward: 20000, label: "🏘️ Kauf 3 Gebäude diese Woche" },
+  { id: "win60",      ev: "win",            target: 60,  reward: 32000, label: "🏆 Gewinne 60 Runden diese Woche" },
+  { id: "play140",    ev: "play",           target: 140, reward: 28000, label: "🔥 Spiele 140 Runden diese Woche" },
+  { id: "houses4",    ev: "buy_house",      target: 4,   reward: 22000, label: "🏘️ Kauf 4 Gebäude diese Woche" },
+  { id: "slots120",   ev: "play_slots",     target: 120, reward: 28000, label: "🎰 Spiele 120 Slot-Runden diese Woche" },
+  { id: "mines45",    ev: "play_mines",     target: 45,  reward: 26000, label: "💣 Spiele 45 Mines-Runden diese Woche" },
+  { id: "crash45",    ev: "play_crash",     target: 45,  reward: 26000, label: "🚀 Spiele 45 Crash-Runden diese Woche" },
+  { id: "pinco24",    ev: "play_pinco",     target: 24,  reward: 26000, label: "🟡 Spiele 24 Pinco-Runden diese Woche" },
+  { id: "sports5",    ev: "bet_sport",      target: 5,   reward: 18000, label: "⚽ Platziere 5 Sportwetten diese Woche" },
+  { id: "casino60",   ev: "play_blackjack", target: 60,  reward: 25000, label: "♠️ Spiele 60 Blackjack-Hände diese Woche" },
 ];
 
 // Repeatable quests: always available, no rotation. Completing one pays and
@@ -47,22 +57,47 @@ const WEEKLIES_PER_WEEK = 2;
 const dayNow = () => Math.floor(Date.now() / 86400000);
 const weekNow = () => Math.floor((Date.now() / 86400000 + 3) / 7);
 
-/** Deterministic global rotation (same quests for everyone). */
-function activeDailies(day = dayNow()) {
-  const out = [];
-  for (let i = 0; out.length < DAILIES_PER_DAY && i < DAILY_POOL.length; i++) {
-    const q = DAILY_POOL[(day * 5 + i * 3) % DAILY_POOL.length];
-    if (!out.includes(q)) out.push(q);
+const DAY_THEMES = ["Klassiker-Mix", "Risikoabend", "Sport & Stadt", "Rundenjagd", "Highroll light"];
+const WEEK_THEMES = ["Casino-Woche", "Stadtwoche", "Risikowoche", "Ausdauerwoche", "Turniertraining"];
+
+function hashSeed(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function shuffled(pool, seed) {
+  const out = pool.slice();
+  let s = seed >>> 0;
+  for (let i = out.length - 1; i > 0; i--) {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    const j = s % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
   }
   return out;
 }
+
+function rotation(pool, count, period, salt) {
+  return shuffled(pool, hashSeed(`${salt}:${period}`)).slice(0, count);
+}
+
+/** Deterministic global rotation (same quests for everyone). */
+function activeDailies(day = dayNow()) {
+  return rotation(DAILY_POOL, DAILIES_PER_DAY, day, "daily");
+}
 function activeWeeklies(week = weekNow()) {
-  const out = [];
-  for (let i = 0; out.length < WEEKLIES_PER_WEEK && i < WEEKLY_POOL.length; i++) {
-    const q = WEEKLY_POOL[(week * 2 + i) % WEEKLY_POOL.length];
-    if (!out.includes(q)) out.push(q);
-  }
-  return out;
+  return rotation(WEEKLY_POOL, WEEKLIES_PER_WEEK, week, "weekly");
+}
+function rotationInfo() {
+  const d = dayNow();
+  const w = weekNow();
+  return {
+    dayName: DAY_THEMES[hashSeed(`day-theme:${d}`) % DAY_THEMES.length],
+    weekName: WEEK_THEMES[hashSeed(`week-theme:${w}`) % WEEK_THEMES.length],
+  };
 }
 
 let _io = null, _accounts = null;
@@ -71,6 +106,8 @@ function ensureQuests(acc) {
   const d = dayNow(), w = weekNow();
   if (!acc.quests) acc.quests = { day: d, week: w, prog: {}, claimed: {} };
   const q = acc.quests;
+  q.prog = q.prog || {};
+  q.claimed = q.claimed || {};
   if (q.day !== d) {
     for (const def of DAILY_POOL) { delete q.prog[def.id]; delete q.claimed[def.id]; }
     q.bought = []; // buy-quest anti-farm list resets daily
@@ -163,6 +200,7 @@ function listFor(name) {
     dailies: activeDailies().map(view),
     weeklies: activeWeeklies().map(view),
     repeatable: REPEATABLE_POOL.map(repView),
+    rotation: rotationInfo(),
     msDay,
     msWeek: Math.max(0, msWeek),
   };
