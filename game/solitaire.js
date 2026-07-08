@@ -20,9 +20,9 @@ const lobby = require("./lobby");
 // Solo (vs house)
 const SOLO_MIN_BET = 20;
 const SOLO_MAX_BET = 500;   // deliberately LOW — skill game, keep exposure small
-const WIN_MULT = 3;         // clear the board → stake × 3 (hard deal → house edge holds)
-const SOLO_DRAW = 3;
-const SOLO_RECYCLES = 2;    // only 2 waste recycles → hard
+const WIN_MULT = 2;         // clear the board → stake × 2 (draw-1 is winnable → lower payout keeps RTP < 100%)
+const SOLO_DRAW = 1;        // draw-1 → intuitive (one card at a time) AND winnable
+const SOLO_RECYCLES = 2;    // limited waste recycles → still a challenge, keeps the house edge
 
 // PvP race
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
