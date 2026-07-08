@@ -150,6 +150,7 @@ function track(name, ev, n = 1, meta = null) {
       q.claimed[def.id] = true;
       const reward = Math.round(def.reward * mult);
       _accounts.adjustChips(key, reward);
+      try { require("./season").addXp(key, def.reward >= 10000 ? 55 : 24, "quest"); } catch {}
       if (_io) _io.emit("quest:done", { user: acc.name, label: def.label, reward, happy: mult > 1 });
     }
   }
@@ -167,6 +168,7 @@ function track(name, ev, n = 1, meta = null) {
       r.done += 1;
       const reward = Math.round(def.reward * mult);
       _accounts.adjustChips(key, reward);
+      try { require("./season").addXp(key, 8, "quest"); } catch {}
       if (_io) _io.emit("quest:done", { user: acc.name, label: def.label, reward, repeat: true, happy: mult > 1 });
     }
     if (r.done >= def.cap) r.prog = def.target; // show as maxed for the day
