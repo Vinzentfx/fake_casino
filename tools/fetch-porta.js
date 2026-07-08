@@ -13,7 +13,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const OUT = path.join(__dirname, "..", "game", "data", "porta.json");
+const OUT = process.env.OUT || path.join(__dirname, "..", "game", "data", "porta.json");
 // Several Overpass mirrors — the main endpoint rate-limits (429/504) under load,
 // so we rotate through mirrors and back off between tries.
 const APIS = [
@@ -32,7 +32,11 @@ const DISTRICTS = [
   { id: "lerbeck",       name: "Lerbeck",       rel: 1335568 },
   { id: "nammen",        name: "Nammen",        rel: 1335655 },
   { id: "neesen",        name: "Neesen",        rel: 1335647 },
+  { id: "veltheim",      name: "Veltheim",      rel: 1335577 },
 ];
+const SELECTED_DISTRICTS = process.env.ONLY_DISTRICT
+  ? DISTRICTS.filter((d) => d.id === process.env.ONLY_DISTRICT)
+  : DISTRICTS;
 
 // Buildings that are not really "a house you could own": filtered out.
 const SKIP_BUILDING = /^(garage|garages|shed|carport|roof|hut|power|greenhouse|ruins|construction|service|container|transformer_tower)$/;
@@ -160,7 +164,7 @@ function classify(tags, pois) {
 // ─── Main ───────────────────────────────────────────────────────────────────
 (async () => {
   console.log("→ Hole Stadtteil-Grenzen …");
-  const relIds = DISTRICTS.map((d) => d.rel).join(",");
+  const relIds = SELECTED_DISTRICTS.map((d) => d.rel).join(",");
   const bounds = await overpass(`[out:json][timeout:120];rel(id:${relIds});out geom;`);
   const ringByRel = {};
   for (const el of bounds.elements) {
@@ -171,7 +175,7 @@ function classify(tags, pois) {
 
   const out = { city: "Porta Westfalica", center: CENTER, districts: [] };
 
-  for (const d of DISTRICTS) {
+  for (const d of SELECTED_DISTRICTS) {
     console.log(`→ ${d.name}: Gebäude + Landmarks …`);
     const area = 3600000000 + d.rel;
     const q = `[out:json][timeout:180];
