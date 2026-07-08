@@ -238,10 +238,15 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
   font-size: 0.78rem;
+  cursor: pointer;
 }
+.online-player:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(244, 215, 130, 0.35); }
 .online-player b { color: var(--text); }
 .online-player small { font-weight: 800; opacity: 0.9; }
+.online-player em { color: rgba(232,236,242,0.62); font-size: 0.7rem; font-style: normal; }
+.online-clan { color: #f4d782; }
 .game-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -2087,6 +2092,45 @@ button { font-family: inherit; cursor: pointer; }
 .badge.on:hover { border-color: rgba(244,215,130,0.9); }
 .badge.selected { border-color: #f4d782; box-shadow: 0 0 0 2px rgba(244,215,130,0.35), 0 0 14px rgba(244,215,130,0.25); }
 .badge.selected small { color: #f4d782; font-weight: 800; }
+
+.player-profile-modal {
+  position: fixed; inset: 0; z-index: 210;
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px; background: rgba(0,0,0,0.62); backdrop-filter: blur(3px);
+}
+.player-profile-modal.hidden { display: none; }
+.player-profile-card {
+  position: relative; width: min(480px, 100%);
+  border-radius: 14px; padding: 16px;
+  background: linear-gradient(180deg, rgba(34,40,52,0.98), rgba(17,22,31,0.98));
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+}
+.player-profile-close {
+  position: absolute; top: 8px; right: 10px;
+  width: 34px; height: 34px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06);
+  color: #fff; font-size: 1.3rem; cursor: pointer;
+}
+.player-profile-head { display: flex; align-items: center; gap: 12px; padding-right: 32px; }
+.player-profile-avatar { font-size: 3rem; line-height: 1; }
+.player-profile-head h2 { margin: 0 0 3px; }
+.player-profile-level { margin: 12px 0; }
+.player-profile-stats {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+}
+.player-profile-stats > div {
+  padding: 10px; border-radius: 10px;
+  background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.09);
+}
+.player-profile-stats span { display: block; color: rgba(232,236,242,0.62); font-size: 0.72rem; margin-bottom: 3px; }
+.player-profile-stats b { color: #f4d782; font-size: 0.88rem; }
+.player-profile-badges { margin-top: 12px; }
+.mini-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; margin: 6px 5px 0 0; border-radius: 999px;
+  background: rgba(244,215,130,0.12); border: 1px solid rgba(244,215,130,0.28);
+}
 
 /* Quest board (Aufträge). */
 .quest { padding: 10px 12px; border-radius: 12px; margin-bottom: 8px;

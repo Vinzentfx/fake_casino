@@ -38,6 +38,7 @@ function showScreen(name) {
   Object.values(screens).forEach((el) => el.classList.remove("active"));
   screens[name].classList.add("active");
   currentScreen = name;
+  socket.emit("presence:screen", { screen: name });
 
   // Top bar nur außerhalb des Logins zeigen
   $("#topbar").classList.toggle("hidden", name === "login");
@@ -150,6 +151,7 @@ $("#onboarding-quests")?.addEventListener("click", () => {
 // a fresh socket with no identity, so we must replay the token.
 socket.on("connect", () => {
   if (state.token) socket.emit("auth", { token: state.token });
+  socket.emit("presence:screen", { screen: currentScreen });
 });
 
 // Server can push an updated bank balance (e.g. after a poker buy-in/cash-out).
@@ -172,9 +174,18 @@ function renderOnlinePlayers(players = []) {
   listEl.innerHTML = players.map((p) => {
     const level = p.level ? `<small style="color:${p.level.color || ""}">${escapeHtml(p.level.emoji || "🌱")} ${p.level.level}</small>` : "";
     const color = p.nameColor ? ` style="color:${p.nameColor}"` : "";
-    return `<span class="online-player"><span>${escapeHtml(p.avatar || "🙂")}</span><b${color}>${escapeHtml(p.name || "?")}</b>${level}</span>`;
+    const clan = p.clan ? `<small class="online-clan">[${escapeHtml(p.clan)}]</small>` : "";
+    const status = p.status && p.status.label ? escapeHtml(p.status.label) : "online";
+    return `<button class="online-player" type="button" data-player-profile="${escapeHtml(p.name || "")}" title="${escapeHtml(p.name || "?")} ansehen">` +
+      `<span>${escapeHtml(p.avatar || "🙂")}</span><b${color}>${escapeHtml(p.name || "?")}</b>${clan}${level}<em>${status}</em></button>`;
   }).join("");
 }
+
+$("#online-list")?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-player-profile]");
+  if (!btn) return;
+  openPlayerProfile(btn.dataset.playerProfile);
+});
 
 function requestPresence() {
   socket.emit("presence:list", (res) => {
@@ -278,6 +289,73 @@ function renderProfile() {
       }).join("");
   });
 }
+
+function statText(n) {
+  return Math.floor(Number(n) || 0).toLocaleString("de-DE");
+}
+
+function levelHtml(l) {
+  if (!l) return '<span class="muted small">Kein Level</span>';
+  const pct = l.xpForNext ? Math.min(100, Math.round((100 * l.xpInLevel) / l.xpForNext)) : 100;
+  return `<div class="level-head"><b style="color:${l.color}">${escapeHtml(l.emoji)} Level ${l.level}</b><span class="muted small">${escapeHtml(l.title)} · ${statText(l.xpInLevel)}/${statText(l.xpForNext)} XP</span></div>` +
+    `<div class="level-bar"><div class="level-fill" style="width:${pct}%;background:${l.color}"></div></div>`;
+}
+
+async function openPlayerProfile(name) {
+  const modal = $("#player-profile-modal");
+  const body = $("#player-profile-body");
+  if (!modal || !body || !name) return;
+  modal.classList.remove("hidden");
+  body.innerHTML = '<div class="muted small">Profil lädt…</div>';
+  try {
+    const data = await api("/api/account/" + encodeURIComponent(name));
+    const acc = data.account || {};
+    const stats = acc.stats || {};
+    const ach = data.ach || {};
+    const city = data.city || {};
+    const badgeLine = ach.unlocked && ach.unlocked.length
+      ? ach.unlocked.slice(0, 10).map((b) => `<span class="mini-badge" title="${escapeHtml(b.label)}">${escapeHtml(b.emoji)}</span>`).join("")
+      : '<span class="muted small">Noch keine Badges</span>';
+    const clan = data.clan ? `[${escapeHtml(data.clan)}]` : "";
+    body.innerHTML = `
+      <div class="player-profile-head">
+        <div class="player-profile-avatar">${escapeHtml(acc.avatar || "🙂")}</div>
+        <div>
+          <h2 style="color:${acc.nameColor || ""}">${escapeHtml(acc.name || name)} ${clan}</h2>
+          <div class="muted small">Dabei seit ${acc.createdAt ? new Date(acc.createdAt).toLocaleDateString("de-DE") : "–"}</div>
+        </div>
+      </div>
+      <div class="player-profile-level">${levelHtml(acc.level)}</div>
+      <div class="player-profile-stats">
+        <div><span>Chips</span><b>${statText(acc.chips)} 🪙</b></div>
+        <div><span>Networth</span><b>${statText(acc.netWorth)} 🪙</b></div>
+        <div><span>Spiele</span><b>${statText(stats.gamesPlayed)}</b></div>
+        <div><span>Größter Gewinn</span><b>${statText(stats.biggestWin)} 🪙</b></div>
+        <div><span>Stadtwert</span><b>${statText(city.value)} 🪙</b></div>
+        <div><span>Häuser</span><b>${statText(city.houses)}</b></div>
+      </div>
+      <div class="player-profile-badges">
+        <div class="muted small">${(ach.unlocked || []).length}/${ach.total || 0} Achievements</div>
+        <div>${badgeLine}</div>
+      </div>
+      <button class="btn-secondary" id="player-profile-stats-btn" style="width:100%;margin-top:10px">Statistik ansehen</button>`;
+    $("#player-profile-stats-btn")?.addEventListener("click", () => {
+      closePlayerProfile();
+      if (window.Casino.openStats) window.Casino.openStats(acc.name || name);
+    });
+  } catch {
+    body.innerHTML = '<div class="muted small">Profil konnte nicht geladen werden.</div>';
+  }
+}
+
+function closePlayerProfile() {
+  $("#player-profile-modal")?.classList.add("hidden");
+}
+
+$("#player-profile-close")?.addEventListener("click", closePlayerProfile);
+$("#player-profile-modal")?.addEventListener("click", (e) => {
+  if (e.target.id === "player-profile-modal") closePlayerProfile();
+});
 
 // Pick/unpick the leaderboard title emoji.
 $("#profile-badges").addEventListener("click", (e) => {
@@ -873,6 +951,7 @@ window.Casino = {
   toast,
   getAccount: () => state.account,
   escapeHtml,
+  openPlayerProfile,
   setChips(n) {
     if (!state.account) return;
     state.account.chips = n;
