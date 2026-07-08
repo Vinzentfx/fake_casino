@@ -1387,6 +1387,25 @@
     </div>
   </div>
 
+  <!-- Kurzes Onboarding für neue Accounts -->
+  <div id="onboarding-modal" class="update-modal hidden">
+    <div class="update-card">
+      <div class="update-emoji">🎰</div>
+      <h2>Dein erster Casino-Abend</h2>
+      <p class="muted small" style="text-align:center;margin-top:-4px">So kommst du sauber rein, ohne Chips zu verheizen:</p>
+      <div class="update-list">
+        <div class="update-item"><span>🎁</span><div><b>Stunden-Bonus holen</b><small>Der Bonus ist Starthilfe. Das große Geld kommt später aus Spielen, Aufträgen und guten Entscheidungen.</small></div></div>
+        <div class="update-item"><span>🎯</span><div><b>Aufträge + Season checken</b><small>Die besten frühen Ziele sind sichtbar: tägliche Aufträge, Wochenaufträge und Season-Stufen.</small></div></div>
+        <div class="update-item"><span>🎲</span><div><b>Klein anfangen</b><small>Slots, Blackjack, Roulette, Mines, Crash und Pinco haben Hausvorteil. Erst kleine Einsätze, dann hocharbeiten.</small></div></div>
+        <div class="update-item"><span>🏙️</span><div><b>Später Stadt & Profil ausbauen</b><small>Immobilien, Achievements, Clan, Kosmetik und Profil sind dein langfristiger Flex.</small></div></div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn-primary" id="onboarding-quests" style="flex:1;min-width:150px">Aufträge ansehen</button>
+        <button class="chip-btn" id="onboarding-close" style="flex:1;min-width:150px">Später</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/chat.js"></script>
