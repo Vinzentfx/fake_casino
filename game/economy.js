@@ -18,13 +18,14 @@ const quests = require("./quests");
 const weekly = require("./weekly");
 
 // ─── Work clicker (capped) ──────────────────────────────────────────────────
-const CLICK_BASE = 1;          // chips per click at level 0
 const MAX_CLICK_LEVEL = 5;     // a few upgrades, then it's maxed out
+const CLICK_POWER_BY_LEVEL = [2, 4, 7, 11, 16, 22];
 const clickUpgradeCost = (lvl) => 200 * (lvl + 1); // lvl 0→200, 1→400, … 4→1000
 const HUSTLE_TARGET = 25;      // valid work clicks per bonus
 const HUSTLE_MIN_GAP = 180;    // clicks faster than this don't build hustle
-const HUSTLE_HOUR_CAP = 5000;
-const HUSTLE_DAY_CAP = 20000;
+const HUSTLE_HOUR_CAP = 10000;
+const HUSTLE_DAY_CAP = 60000;
+const WORK_FACTOR_WINDOW = 15 * 60 * 1000;
 const dayNow = () => Math.floor(Date.now() / 86400000);
 
 function ensureEconomy(acc) {
@@ -36,9 +37,36 @@ function ensureEconomy(acc) {
   return e;
 }
 
-const clickPower = (e) => CLICK_BASE + e.clickLevel;
+const clickPower = (e) => CLICK_POWER_BY_LEVEL[Math.max(0, Math.min(MAX_CLICK_LEVEL, e.clickLevel || 0))] || CLICK_POWER_BY_LEVEL[0];
+
+function workFactorFor(nw) {
+  if (nw < 50000) return 4;
+  if (nw < 250000) return 2.5;
+  if (nw < 1000000) return 1.5;
+  if (nw < 10000000) return 0.6;
+  return 0.2;
+}
+
+function workFactorState(acc, e, now) {
+  const nw = Math.max(0, Math.floor((accountsPublicNetWorth(acc)) || 0));
+  if (!e.workNwAt || now - e.workNwAt >= WORK_FACTOR_WINDOW) {
+    e.workNwAt = now;
+    e.workNwPeak = nw;
+  } else {
+    e.workNwPeak = Math.max(e.workNwPeak || 0, nw);
+  }
+  const smoothed = Math.max(nw, e.workNwPeak || 0);
+  return { netWorth: nw, smoothedNetWorth: smoothed, factor: workFactorFor(smoothed) };
+}
+
+function accountsPublicNetWorth(acc) {
+  try { return Number(_accountsRef.publicAccount(acc).netWorth) || 0; } catch { return acc.chips || 0; }
+}
+
+let _accountsRef = null;
 
 function setupEconomy(io, accounts) {
+  _accountsRef = accounts;
   const acct = (s) => (s.data.account ? accounts.get(s.data.account) : null);
 
   /** Tell everyone the shared city changed; clients re-pull city:state. */
@@ -66,7 +94,7 @@ function setupEconomy(io, accounts) {
       const e = ensureEconomy(acc);
       // Hourly earnings cap: with an autoclicker the 20/s rate limit alone
       // would still allow ~1M+/h — the clicker is a bootstrap, not a job.
-      const HOUR = 3600000, CLICK_EARN_CAP = 12000;
+      const HOUR = 3600000, CLICK_EARN_CAP = 35000;
       if (!e.clickHourAt || now - e.clickHourAt >= HOUR) { e.clickHourAt = now; e.clickEarned = 0; }
       if ((e.clickEarned || 0) >= CLICK_EARN_CAP)
         return ack({ ok: false, error: "Feierabend! Der Klick-Job ist für diese Stunde ausgeschöpft." });
@@ -74,7 +102,8 @@ function setupEconomy(io, accounts) {
       if (!e.hustleHourAt || now - e.hustleHourAt >= HOUR) { e.hustleHourAt = now; e.hustleHourEarned = 0; }
       // Schulleiter trophy: education pays — clicks ×3.
       const schule = city.hasTrophy(key, "schule") ? 3 : 1;
-      let earned = Math.round(clickPower(e) * schule);
+      const factor = workFactorState(acc, e, now);
+      let earned = Math.max(1, Math.round(clickPower(e) * schule * factor.factor));
       e.clickEarned = (e.clickEarned || 0) + earned;
       let hustleBonus = 0;
       const gap = now - (e.hustleLastClickAt || 0);
@@ -84,9 +113,9 @@ function setupEconomy(io, accounts) {
         e.hustleClicks = (e.hustleClicks || 0) + 1;
         if (e.hustleClicks >= HUSTLE_TARGET) {
           e.hustleClicks -= HUSTLE_TARGET;
-          const rawBonus = 120 + e.clickLevel * 40;
+          const rawBonus = 180 + e.clickLevel * 70;
           const room = Math.min(HUSTLE_DAY_CAP - (e.hustleDayEarned || 0), HUSTLE_HOUR_CAP - (e.hustleHourEarned || 0));
-          hustleBonus = Math.max(0, Math.min(room, Math.round(rawBonus * accounts.faucetFactor(key))));
+          hustleBonus = Math.max(0, Math.min(room, Math.round(rawBonus * factor.factor)));
           e.hustleDayEarned = (e.hustleDayEarned || 0) + hustleBonus;
           e.hustleHourEarned = (e.hustleHourEarned || 0) + hustleBonus;
           earned += hustleBonus;
@@ -103,6 +132,9 @@ function setupEconomy(io, accounts) {
           dayEarned: Math.floor(e.hustleDayEarned || 0),
           dayCap: HUSTLE_DAY_CAP,
           eligible: hustleEligible,
+          factor: factor.factor,
+          netWorth: factor.netWorth,
+          smoothedNetWorth: factor.smoothedNetWorth,
         },
       });
     });
@@ -127,6 +159,7 @@ function setupEconomy(io, accounts) {
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
       const e = ensureEconomy(acc);
       const maxed = e.clickLevel >= MAX_CLICK_LEVEL;
+      const factor = workFactorState(acc, e, Date.now());
       ack({
         ok: true,
         clickPower: clickPower(e),
@@ -141,6 +174,9 @@ function setupEconomy(io, accounts) {
           hourCap: HUSTLE_HOUR_CAP,
           dayEarned: Math.floor(e.hustleDayEarned || 0),
           dayCap: HUSTLE_DAY_CAP,
+          factor: factor.factor,
+          netWorth: factor.netWorth,
+          smoothedNetWorth: factor.smoothedNetWorth,
         },
         schulleiter: city.hasTrophy(socket.data.account, "schule"), // Klicks ×3
       });
