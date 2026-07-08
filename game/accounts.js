@@ -613,6 +613,7 @@ function listAll() {
   return Object.values(accounts).map((a) => ({
     name: a.name,
     chips: a.chips,
+    savings: Math.floor((a.savings && a.savings.amount) || 0),
     banned: !!a.banned,
     shadowban: !!a.shadowban,
   }));

@@ -81,6 +81,18 @@ function setupAdmin(io, accounts) {
       ack(accounts.deleteAccount(key));
     });
 
+    socket.on("admin:clearBank", ({ target } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = String(target || "").toLowerCase();
+      const acc = accounts.get(key);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      const cleared = Math.floor((acc.savings && acc.savings.amount) || 0);
+      acc.savings = { amount: 0, since: Date.now() };
+      accounts.save();
+      ack({ ok: true, cleared });
+    });
+
     // Remove a player from a specific leaderboard by zeroing the stat behind it.
     socket.on("admin:resetStat", ({ target, stat } = {}, ack) => {
       if (!ack) return;

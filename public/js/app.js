@@ -589,14 +589,35 @@ function loadAdminAccounts() {
     if (!res.accounts.length) { list.innerHTML = '<li class="muted">Keine Accounts.</li>'; return; }
     list.innerHTML = "";
     res.accounts.sort((a, b) => b.chips - a.chips).forEach((p) => {
+      const savings = Number(p.savings) || 0;
       const li = document.createElement("li");
       li.className = "admin-acc";
       li.innerHTML =
         `<div class="admin-acc-top"><span>${escapeHtml(p.name)}${p.banned ? " 🚫" : ""}${p.shadowban ? " 🌑" : ""}</span><b>${p.chips.toLocaleString("de-DE")} 🪙</b></div>` +
+        `<div class="admin-acc-lb">Bank: <b>${savings.toLocaleString("de-DE")} 🪙</b>` +
+        ` <button class="chip-btn" data-admin-clear-bank="${escapeHtml(p.name)}">Bank leeren</button>` +
+        ` <button class="btn-danger" data-admin-delete="${escapeHtml(p.name)}">Löschen</button></div>` +
         `<div class="admin-acc-lb">Leaderboard löschen:` +
         ` <button class="chip-btn" data-stat="bigwin" title="Größter Gewinn">🎰✖</button>` +
         ` <button class="chip-btn" data-stat="bigloss" title="Größter Verlust">💸✖</button>` +
         ` <button class="chip-btn" data-stat="games" title="Aktivste">🎲✖</button></div>`;
+      li.querySelector("[data-admin-clear-bank]")?.addEventListener("click", () => {
+        if (!confirm(`${p.name}: Bank wirklich leeren?`)) return;
+        socket.emit("admin:clearBank", { target: p.name }, (r) => {
+          if (r && r.ok) {
+            toast(`${p.name}: Bank geleert (${(r.cleared || 0).toLocaleString("de-DE")} 🪙).`);
+            loadAdminAccounts();
+          } else toast((r && r.error) || "Fehler.");
+        });
+      });
+      li.querySelector("[data-admin-delete]")?.addEventListener("click", () => {
+        if (!confirm(`Account "${p.name}" wirklich löschen?`)) return;
+        socket.emit("admin:deleteAccount", { target: p.name }, (res) => {
+          if (!res || !res.ok) { toast(res?.error || "Fehler."); return; }
+          toast(`${p.name} gelöscht.`);
+          loadAdminAccounts();
+        });
+      });
       li.querySelectorAll("[data-stat]").forEach((b) =>
         b.addEventListener("click", () => {
           socket.emit("admin:resetStat", { target: p.name, stat: b.dataset.stat }, (r) => {
@@ -672,18 +693,16 @@ $("#admin-set-chips-btn").addEventListener("click", () => {
   });
 });
 
-["admin-ban-btn","admin-unban-btn","admin-delete-btn"].forEach((id) => {
+["admin-ban-btn","admin-unban-btn"].forEach((id) => {
   $("#" + id).addEventListener("click", () => {
     const errEl = $("#admin-ban-error");
     errEl.textContent = "";
     const target = $("#admin-target-ban").value.trim();
     if (!target) { errEl.textContent = "Spielername eingeben."; return; }
-    if (id === "admin-delete-btn" && !confirm(`Account "${target}" wirklich löschen?`)) return;
-    const event = id === "admin-ban-btn" ? "admin:ban" : id === "admin-unban-btn" ? "admin:unban" : "admin:deleteAccount";
+    const event = id === "admin-ban-btn" ? "admin:ban" : "admin:unban";
     socket.emit(event, { target }, (res) => {
       if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
-      const msg = id === "admin-ban-btn" ? `${target} gesperrt.` : id === "admin-unban-btn" ? `${target} entsperrt.` : `${target} gelöscht.`;
-      toast(msg);
+      toast(id === "admin-ban-btn" ? `${target} gesperrt.` : `${target} entsperrt.`);
       $("#admin-target-ban").value = "";
       loadAdminAccounts();
     });
