@@ -86,6 +86,15 @@ function correctCount(grid, solution) {
   for (let i = 0; i < 81; i++) if (grid[i] && grid[i] === solution[i]) n++;
   return n;
 }
+function filledCount(grid, puzzle) {
+  if (!Array.isArray(grid) || !Array.isArray(puzzle)) return 0;
+  let n = 0;
+  for (let i = 0; i < 81; i++) {
+    const v = Math.floor(Number(grid[i])) || 0;
+    if (puzzle[i] !== 0 || (v >= 1 && v <= 9)) n++;
+  }
+  return n;
+}
 
 function setupSudoku(io, accounts) {
   const matches = new Map();
@@ -103,7 +112,7 @@ function setupSudoku(io, accounts) {
     const players = [...match.players.values()];
     const me = match.players.get(viewerKey);
     const opp = players.find((p) => p.id !== viewerKey);
-    const pub = (p) => p && { name: p.name, correct: p.correct, finished: p.finished };
+    const pub = (p) => p && { name: p.name, progress: p.filled || 0, finished: p.finished };
     return {
       code: match.code, state: match.state, public: !!match.public,
       difficulty: match.difficulty, buyIn: match.buyIn, pot: match.pot,
@@ -206,7 +215,7 @@ function setupSudoku(io, accounts) {
     for (const p of match.players.values()) {
       accounts.adjustChips(p.id, -match.buyIn);
       match.pot += match.buyIn;
-      p.correct = 0; p.finished = false;
+      p.correct = 0; p.filled = filledCount(puzzle, puzzle); p.finished = false;
       if (p.socket) { const a = accounts.get(p.id); p.socket.emit("account:update", { account: accounts.publicAccount(a) }); }
     }
     match.state = "playing";
@@ -240,8 +249,10 @@ function setupSudoku(io, accounts) {
         accounts.recordHand(socket.data.account, 0, true, "sudoku"); // → onHand → achievements/stats
         return ack({ ok: true, solved: true });
       }
-      ack({ ok: true, correct: correctCount(arr, g.solution) });
+      ack({ ok: true, progress: filledCount(arr, g.puzzle) });
     });
+
+    socket.on("sudoku:soloLeave", () => { delete socket.data.sudokuSolo; });
 
     socket.on("sudoku:create", ({ buyIn, isPublic = true, difficulty = DEFAULT_DIFF } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
@@ -259,7 +270,7 @@ function setupSudoku(io, accounts) {
         host: socket.data.account, players: new Map(),
         puzzle: null, solution: null, endsAt: 0, timer: null, result: null,
       };
-      match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, correct: 0, finished: false });
+      match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, correct: 0, filled: 0, finished: false });
       matches.set(code, match);
       socket.join(code);
       socket.data.sudokuCode = code;
@@ -280,7 +291,7 @@ function setupSudoku(io, accounts) {
       if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
       leaveCurrent(socket);
-      match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, correct: 0, finished: false });
+      match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, correct: 0, filled: 0, finished: false });
       socket.join(code);
       socket.data.sudokuCode = code;
       ack && ack({ ok: true, code });
@@ -302,7 +313,7 @@ function setupSudoku(io, accounts) {
       startGame(match);
     });
 
-    // Live grid update: validate for a win, else refresh the correct-cell count.
+    // Live grid update: validate for a win, else refresh hidden tie-break score.
     socket.on("sudoku:update", ({ grid } = {}, ack) => {
       const match = currentMatch(socket);
       if (!match || match.state !== "playing") return ack && ack({ ok: false, error: "Kein laufendes Match." });
@@ -310,13 +321,14 @@ function setupSudoku(io, accounts) {
       if (!me) return ack && ack({ ok: false, error: "Nicht im Match." });
       const g = Array.isArray(grid) ? grid.map((v) => Math.floor(Number(v)) || 0) : [];
       me.correct = correctCount(g, match.solution);
+      me.filled = filledCount(g, match.puzzle);
       if (isSolved(g, match.puzzle)) {
         me.finished = true;
         ack && ack({ ok: true, solved: true });
         settle(match, { winner: me }); // first valid full solution wins the race (rake applies)
         return;
       }
-      ack && ack({ ok: true, correct: me.correct });
+      ack && ack({ ok: true, progress: me.filled });
       broadcast(match.code);
     });
 
