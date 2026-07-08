@@ -192,7 +192,7 @@ setupChat(io, accounts);
 setupLobby(io);
 achievements.setupAchievements(io, accounts);
 quests.setupQuests(io, accounts);
-liveops.setup(io, accounts);
+liveops.setup(io, accounts, heist);
 
 // Level-ups: recordHand flags acc._justLeveled → notify the player's socket.
 accounts.onHand((name) => {

@@ -21,18 +21,43 @@ const chat = require("./chat");
 const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "liveops.json");
 
-let _io = null, _accounts = null;
+let _io = null, _accounts = null, _heist = null;
 let state = load();
+
+const AUTO_CHECK_MS = 10 * 60 * 1000;
+const AUTO_TOURNEY_CHANCE = 0.04;
+const AUTO_HEIST_CHANCE = 0.015;
+const TOURNEY_PRIZE_MIN = 25000;
+const TOURNEY_PRIZE_MAX = 60000;
+const HEIST_LOOT_MIN = 150000;
+const HEIST_LOOT_MAX = 500000;
 
 function load() {
   try {
     const s = JSON.parse(fs.readFileSync(FILE, "utf8"));
-    if (s && typeof s === "object") return { happyUntil: s.happyUntil || 0, tourney: s.tourney || null };
+    if (s && typeof s === "object") return {
+      happyUntil: s.happyUntil || 0,
+      tourney: s.tourney || null,
+      auto: s.auto || {},
+    };
   } catch {}
-  return { happyUntil: 0, tourney: null };
+  return { happyUntil: 0, tourney: null, auto: {} };
 }
 function save() {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(FILE, JSON.stringify(state)); } catch {}
+}
+function autoState() {
+  state.auto = state.auto || {};
+  return state.auto;
+}
+function randInt(min, max) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+function onlineCount() {
+  if (!_io) return 0;
+  let n = 0;
+  for (const s of _io.of("/").sockets.values()) if (s.data && s.data.account) n++;
+  return n;
 }
 
 // ─── Happy Hour ─────────────────────────────────────────────────────────────
@@ -55,13 +80,15 @@ function stopHappy() {
 // ─── Mini-Turnier ───────────────────────────────────────────────────────────
 const tourneyActive = () => !!(state.tourney && state.tourney.endsAt > Date.now());
 
-function startTourney(minutes, prize) {
+function startTourney(minutes, prize, opts = {}) {
   if (tourneyActive()) return { ok: false, error: "Läuft schon ein Turnier." };
   const mins = Math.max(1, Math.min(120, Math.floor(minutes) || 10));
   const pr = Math.max(0, Math.floor(prize) || 100000);
   state.tourney = { endsAt: Date.now() + mins * 60000, prize: pr, best: {} }; // best: key → {name, win}
+  autoState().tourneyCooldownUntil = state.tourney.endsAt + randInt(90, 180) * 60000;
   save();
-  if (_io) { chat.announce(_io, `🏁 SLOT-TURNIER gestartet! ${mins} Min — der größte Einzelgewinn holt ${pr.toLocaleString("de-DE")} 🪙. Los!`); broadcast(); }
+  const prefix = opts.auto ? "🎲 Zufälliges " : "";
+  if (_io) { chat.announce(_io, `🏁 ${prefix}SLOT-TURNIER gestartet! ${mins} Min — der größte Einzelgewinn holt ${pr.toLocaleString("de-DE")} 🪙. Los!`); broadcast(); }
   return { ok: true };
 }
 
@@ -121,19 +148,49 @@ function broadcast() { if (_io) _io.emit("liveops:state", publicState()); }
 function tick() {
   if (state.tourney && state.tourney.endsAt <= Date.now()) settleTourney();
   if (state.happyUntil && state.happyUntil <= Date.now()) { state.happyUntil = 0; save(); broadcast(); }
+  maybeAutoSpawn();
 }
 
-function setup(io, accounts) {
+function maybeAutoSpawn() {
+  if (!_io) return;
+  const now = Date.now();
+  const a = autoState();
+  if (!a.nextCheckAt) a.nextCheckAt = now + AUTO_CHECK_MS;
+  if (now < a.nextCheckAt) return;
+  a.nextCheckAt = now + AUTO_CHECK_MS;
+
+  const online = onlineCount();
+  if (online > 0 && !tourneyActive() && now >= (a.tourneyCooldownUntil || 0) && Math.random() < AUTO_TOURNEY_CHANCE) {
+    const prize = Math.round(randInt(TOURNEY_PRIZE_MIN, TOURNEY_PRIZE_MAX) / 1000) * 1000;
+    startTourney(randInt(8, 15), prize, { auto: true });
+  }
+
+  if (_heist && (!_heist.active || !_heist.active()) && online > 0 &&
+      now >= (a.heistCooldownUntil || 0) && Math.random() < AUTO_HEIST_CHANCE) {
+    const loot = Math.round(randInt(HEIST_LOOT_MIN, HEIST_LOOT_MAX) / 1000) * 1000;
+    const seconds = randInt(45, 90);
+    const res = _heist.start(loot, seconds, { auto: true });
+    if (res && res.ok) a.heistCooldownUntil = Date.now() + randInt(180, 360) * 60000;
+  }
+
+  save();
+}
+
+function setup(io, accounts, heist = null) {
   _io = io;
   _accounts = accounts;
+  _heist = heist || _heist;
   setInterval(tick, 10000).unref();
   io.on("connection", (socket) => {
     socket.on("liveops:state", (ack) => { if (typeof ack === "function") ack({ ok: true, ...publicState() }); });
   });
 }
 
+function setHeist(heist) { _heist = heist; }
+
 module.exports = {
   setup, tick, questMult, happyActive,
   recordTourneyWin, tourneyActive,
   startHappy, stopHappy, startTourney, stopTourney,
+  setHeist,
 };
