@@ -133,6 +133,7 @@ app.get("/api/account/:name", (req, res) => {
   const achList = achievements.listFor(key);
   res.json({
     account: accounts.publicAccount(acc),
+    clan: (() => { try { return require("./game/clans").tagOf(key); } catch { return null; } })(),
     city: cityMe ? {
       houses: cityMe.houses, value: cityMe.value, streets: cityMe.streets,
       trophies: cityMe.trophies, bossOf: cityMe.bossOf, color: cityMe.color,

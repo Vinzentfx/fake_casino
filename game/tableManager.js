@@ -101,21 +101,66 @@ function setupPoker(io, accounts) {
   const registerLobby = (code) =>
     lobby.add(code, () => (tables.has(code) ? describePoker(tables.get(code)) : null));
 
+  const SCREEN_LABELS = {
+    lobby: "in der Lobby",
+    poker: "spielt Poker",
+    slots: "an den Slots",
+    blackjack: "spielt Blackjack",
+    roulette: "spielt Roulette",
+    sports: "bei Sportwetten",
+    crash: "spielt Crash",
+    mines: "spielt Mines",
+    pinco: "spielt Pinco Ball",
+    memory: "spielt Memory",
+    sudoku: "spielt Sudoku",
+    solitaire: "spielt Solitär",
+    chess: "spielt Schach",
+    work: "arbeitet",
+    businesses: "auf der Stadtkarte",
+    bank: "in der Bank",
+    stocks: "an der Börse",
+    clans: "bei den Clans",
+    quests: "bei Aufträgen",
+    leaderboard: "in der Bestenliste",
+    profile: "im Profil",
+    stats: "bei Statistiken",
+    cosmetics: "im Kosmetik-Shop",
+    calendar: "im Kalender",
+    wheel: "am Glücksrad",
+    transfer: "sendet Chips",
+    settings: "in Einstellungen",
+    suggest: "bei Vorschlägen",
+  };
+  const GAME_SCREENS = new Set(["poker", "slots", "blackjack", "roulette", "sports", "crash", "mines", "pinco", "memory", "sudoku", "solitaire", "chess"]);
+  function pickStatus(sockets) {
+    const screens = sockets.map((s) => s.data && s.data.screen).filter(Boolean);
+    const game = screens.find((name) => GAME_SCREENS.has(name));
+    const screen = game || screens.find((name) => name !== "lobby") || screens[0] || "lobby";
+    return { screen, label: SCREEN_LABELS[screen] || "online" };
+  }
+
   function onlinePlayers() {
-    const seen = new Set();
-    const list = [];
+    const byAccount = new Map();
     for (const s of io.of("/").sockets.values()) {
       const key = s.data && s.data.account;
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
+      if (!key) continue;
+      const list = byAccount.get(key) || [];
+      list.push(s);
+      byAccount.set(key, list);
+    }
+    const list = [];
+    for (const [key, sockets] of byAccount.entries()) {
       const acc = accounts.get(key);
       if (!acc) continue;
       const pub = accounts.publicAccount(acc);
+      const status = pickStatus(sockets);
       list.push({
         name: pub.name,
         avatar: pub.avatar,
         nameColor: pub.nameColor,
         level: pub.level ? { level: pub.level.level, emoji: pub.level.emoji, color: pub.level.color } : null,
+        clan: (() => { try { return require("./clans").tagOf(key); } catch { return null; } })(),
+        status,
       });
     }
     list.sort((a, b) => a.name.localeCompare(b.name, "de", { sensitivity: "base" }));
@@ -220,6 +265,12 @@ function setupPoker(io, accounts) {
       const acc = key ? accounts.get(key) : null;
       socket.data.account = acc ? acc.name.toLowerCase() : null;
       socket.data.displayName = acc ? acc.name : null;
+      broadcastPresence();
+    });
+
+    socket.on("presence:screen", ({ screen } = {}) => {
+      const name = String(screen || "").trim().slice(0, 32);
+      socket.data.screen = SCREEN_LABELS[name] ? name : "lobby";
       broadcastPresence();
     });
 
