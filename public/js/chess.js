@@ -186,9 +186,11 @@
       startClock();
     } else if (s.state === "done") {
       stopClock();
-      // show final position briefly is nice, but go to result
       show("chs-result");
       renderResult();
+      const rm = s.rematch || {};
+      $("#chs-rematch").style.display = rm.canRematch ? "" : "none";
+      $("#chs-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "🔁 Gegner will Revanche!" : "");
     }
   }
 
@@ -223,6 +225,9 @@
   function reset() { leave(); show("chs-setup"); $("#chs-error").textContent = ""; }
   $("#chs-cancel").addEventListener("click", reset);
   $("#chs-again").addEventListener("click", reset);
+  $("#chs-rematch").addEventListener("click", () => {
+    socket.emit("chess:rematch", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); else $("#chs-rematch-status").textContent = "Warte auf Revanche des Gegners…"; });
+  });
   const chsBack = document.querySelector('[data-screen="chess"] .back-btn');
   if (chsBack) chsBack.addEventListener("click", () => { if (myCode) leave(); });
 

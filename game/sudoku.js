@@ -113,6 +113,16 @@ function setupSudoku(io, accounts) {
       isHost: match.host === viewerKey,
       you: pub(me), opponent: pub(opp),
       result: match.result,
+      rematch: rematchInfo(match, viewerKey),
+    };
+  }
+  function rematchInfo(match, viewerKey) {
+    const connected = [...match.players.values()].filter((p) => p.socket);
+    const want = match.rematchWant || [];
+    return {
+      canRematch: match.state === "done" && connected.length === 2,
+      youWant: want.includes(viewerKey),
+      oppWants: connected.some((p) => p.id !== viewerKey && want.includes(p.id)),
     };
   }
   function broadcast(code) {
@@ -191,6 +201,7 @@ function setupSudoku(io, accounts) {
   function startGame(match) {
     const { puzzle, solution } = makePuzzle(match.difficulty);
     match.puzzle = puzzle; match.solution = solution;
+    match.rematchWant = [];
     match.pot = 0;
     for (const p of match.players.values()) {
       accounts.adjustChips(p.id, -match.buyIn);
@@ -207,6 +218,31 @@ function setupSudoku(io, accounts) {
   }
 
   io.on("connection", (socket) => {
+    // ── Solo (no timer, no stake — counts for stats/achievements) ──
+    socket.on("sudoku:soloStart", ({ difficulty = DEFAULT_DIFF } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+      if (!DIFFICULTIES[difficulty]) difficulty = DEFAULT_DIFF;
+      const { puzzle, solution } = makePuzzle(difficulty);
+      socket.data.sudokuSolo = { puzzle, solution, difficulty, done: false };
+      ack({ ok: true, puzzle, difficulty });
+    });
+
+    socket.on("sudoku:soloUpdate", ({ grid } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const g = socket.data.sudokuSolo;
+      if (!g || g.done) return ack({ ok: false, error: "Kein aktives Solo-Spiel." });
+      const arr = Array.isArray(grid) ? grid.map((v) => Math.floor(Number(v)) || 0) : [];
+      if (isSolved(arr, g.puzzle)) {
+        g.done = true;
+        const a = accounts.get(socket.data.account);
+        if (a) a.sudokuSolved = (a.sudokuSolved || 0) + 1;
+        accounts.recordHand(socket.data.account, 0, true, "sudoku"); // → onHand → achievements/stats
+        return ack({ ok: true, solved: true });
+      }
+      ack({ ok: true, correct: correctCount(arr, g.solution) });
+    });
+
     socket.on("sudoku:create", ({ buyIn, isPublic = true, difficulty = DEFAULT_DIFF } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
@@ -282,6 +318,19 @@ function setupSudoku(io, accounts) {
       }
       ack && ack({ ok: true, correct: me.correct });
       broadcast(match.code);
+    });
+
+    socket.on("sudoku:rematch", (ack) => {
+      const match = currentMatch(socket);
+      if (!match || match.state !== "done") return ack && ack({ ok: false, error: "Kein beendetes Spiel." });
+      const connected = [...match.players.values()].filter((p) => p.socket);
+      if (connected.length !== 2) return ack && ack({ ok: false, error: "Gegner ist nicht mehr da." });
+      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      match.rematchWant = match.rematchWant || [];
+      if (!match.rematchWant.includes(socket.data.account)) match.rematchWant.push(socket.data.account);
+      ack && ack({ ok: true });
+      if (connected.every((p) => match.rematchWant.includes(p.id))) { match.rematchWant = []; startGame(match); }
+      else broadcast(match.code);
     });
 
     socket.on("sudoku:leave", () => leaveCurrent(socket));

@@ -2369,6 +2369,10 @@ button { font-family: inherit; cursor: pointer; }
 .sol-slot { aspect-ratio: 0.72; border-radius: 6px; display: flex; align-items: center; justify-content: center;
   border: 1px dashed rgba(255,255,255,0.18); color: rgba(255,255,255,0.35); font-size: 1.2rem; }
 .sol-spacer { border: none; }
+.sol-waste { grid-column: span 2; border: none; display: flex; justify-content: flex-start; align-items: center; overflow: visible; }
+.sol-waste-card { width: 48% !important; position: relative; box-shadow: -2px 0 5px rgba(0,0,0,0.45); }
+.rematch-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.rematch-row .btn-primary, .rematch-row .btn-secondary { flex: 0 1 auto; padding: 11px 18px; }
 .sol-stock, .sol-waste, .sol-foundation, .sol-empty-col { cursor: pointer; }
 .sol-empty-col { width: 100%; }
 .sol-found-suit.red, .sol-card.red { color: #e0705e; }

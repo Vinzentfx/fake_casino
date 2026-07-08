@@ -91,6 +91,16 @@ function setupMemory(io, accounts) {
       you: pub(me),
       opponent: pub(opp),
       result: match.result,
+      rematch: rematchInfo(match, viewerKey),
+    };
+  }
+  function rematchInfo(match, viewerKey) {
+    const connected = [...match.players.values()].filter((p) => p.socket);
+    const want = match.rematchWant || [];
+    return {
+      canRematch: match.state === "done" && connected.length === 2,
+      youWant: want.includes(viewerKey),
+      oppWants: connected.some((p) => p.id !== viewerKey && want.includes(p.id)),
     };
   }
 
@@ -188,6 +198,7 @@ function setupMemory(io, accounts) {
     match.board = shuffledBoard(match.pairs);
     match.flipped = [];
     match.locked = false;
+    match.rematchWant = [];
     match.pot = 0;
     const players = [...match.players.values()];
     for (const p of players) {
@@ -311,6 +322,19 @@ function setupMemory(io, accounts) {
           broadcast(match.code);
         }, FLIP_BACK_MS);
       }
+    });
+
+    socket.on("memory:rematch", (ack) => {
+      const match = currentMatch(socket);
+      if (!match || match.state !== "done") return ack && ack({ ok: false, error: "Kein beendetes Spiel." });
+      const connected = [...match.players.values()].filter((p) => p.socket);
+      if (connected.length !== 2) return ack && ack({ ok: false, error: "Gegner ist nicht mehr da." });
+      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      match.rematchWant = match.rematchWant || [];
+      if (!match.rematchWant.includes(socket.data.account)) match.rematchWant.push(socket.data.account);
+      ack && ack({ ok: true });
+      if (connected.every((p) => match.rematchWant.includes(p.id))) { match.rematchWant = []; startGame(match); }
+      else broadcast(match.code);
     });
 
     socket.on("memory:leave", () => leaveCurrent(socket));
