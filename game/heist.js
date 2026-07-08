@@ -47,13 +47,14 @@ function setupHeist(io, accounts) {
     cleanup();
   }
 
-  function start(loot, seconds) {
+  function start(loot, seconds, opts = {}) {
     if (state) return { ok: false, error: "Es läuft schon ein Heist." };
     loot = Math.max(1000, Math.floor(loot) || 500000);
     seconds = Math.max(15, Math.min(300, Math.floor(seconds) || 60));
     const hp = Math.max(MIN_HP, HP_PER_PLAYER * online());
     state = { endsAt: Date.now() + seconds * 1000, vaultMax: hp, vaultHp: hp, hits: {}, loot };
-    chat.announce(io, `🚨 CASINO-HEIST! Knackt gemeinsam den Tresor — ${loot.toLocaleString("de-DE")} 🪙 Beute wartet. Alle ran an den Button!`);
+    const prefix = opts.auto ? "ZUFÄLLIGER " : "";
+    chat.announce(io, `🚨 ${prefix}CASINO-HEIST! Knackt gemeinsam den Tresor — ${loot.toLocaleString("de-DE")} 🪙 Beute wartet. Alle ran an den Button!`);
     io.emit("heist:start", snapshot());
     ticker = setInterval(() => {
       if (!state) return;
@@ -63,6 +64,7 @@ function setupHeist(io, accounts) {
     return { ok: true };
   }
   function stop() { if (state) fail(); }
+  function active() { return !!state; }
 
   io.on("connection", (socket) => {
     socket.on("heist:state", (ack) => { if (typeof ack === "function") ack({ ok: true, ...snapshot() }); });
@@ -80,7 +82,7 @@ function setupHeist(io, accounts) {
     });
   });
 
-  return { start, stop };
+  return { start, stop, active };
 }
 
 module.exports = { setupHeist };
