@@ -14,6 +14,7 @@
   let st = null;
   let myCode = null;
   let chosenDiff = "medium";
+  let soloMode = false, soloPlaying = false;
   let puzzle = null;      // given cells (0 = blank)
   let grid = null;        // my working grid (81)
   let selected = -1;      // selected cell index
@@ -31,6 +32,15 @@
     b.addEventListener("click", () => {
       chosenDiff = b.dataset.diff;
       document.querySelectorAll("#sdk-diffs .mem-size-btn").forEach((x) => x.classList.toggle("active", x === b));
+    }));
+
+  // Mode tabs (Solo / PvP-Race)
+  document.querySelectorAll("#sdk-setup .sol-mode-tab").forEach((t) =>
+    t.addEventListener("click", () => {
+      document.querySelectorAll("#sdk-setup .sol-mode-tab").forEach((x) => x.classList.toggle("active", x === t));
+      const m = t.dataset.smode;
+      $("#sdk-solo-panel").style.display = m === "solo" ? "" : "none";
+      $("#sdk-pvp-panel").style.display = m === "race" ? "" : "none";
     }));
 
   // ── Grid ──────────────────────────────────────────────────
@@ -81,14 +91,28 @@
     if (sendTimer) return;
     sendTimer = setTimeout(() => {
       sendTimer = null;
-      if (!myCode || !grid) return;
-      socket.emit("sudoku:update", { grid }, (r) => {
+      if (!grid) return;
+      const showCorrect = (r) => {
         if (r && r.ok && !r.solved && typeof r.correct === "number") {
           $("#sdk-you-val").textContent = r.correct;
           $("#sdk-you-bar").style.width = Math.round((r.correct / 81) * 100) + "%";
         }
-      });
+      };
+      if (soloMode) {
+        socket.emit("sudoku:soloUpdate", { grid }, (r) => { if (r && r.ok && r.solved) onSoloSolved(); else showCorrect(r); });
+      } else if (myCode) {
+        socket.emit("sudoku:update", { grid }, showCorrect);
+      }
     }, 350);
+  }
+
+  function onSoloSolved() {
+    soloPlaying = false;
+    show("sdk-result");
+    $("#sdk-result-emoji").textContent = "🏆";
+    $("#sdk-result-title").textContent = "Gelöst! 🎉";
+    $("#sdk-result-sub").innerHTML = "Sauber gelöst — zählt für deine Achievements & Statistik.";
+    $("#sdk-rematch").style.display = "none"; $("#sdk-rematch-status").textContent = "";
   }
 
   // Number pad
@@ -96,7 +120,8 @@
     b.addEventListener("click", () => setNumber(parseInt(b.dataset.n, 10))));
   // Keyboard support while on the sudoku screen
   document.addEventListener("keydown", (e) => {
-    if (!st || st.state !== "playing") return;
+    const active = soloMode ? soloPlaying : (st && st.state === "playing");
+    if (!active) return;
     if (document.querySelector('[data-screen="sudoku"]') && !document.querySelector('[data-screen="sudoku"]').classList.contains("active")) return;
     if (e.key >= "1" && e.key <= "9") setNumber(parseInt(e.key, 10));
     else if (e.key === "Backspace" || e.key === "Delete" || e.key === "0") setNumber(0);
@@ -149,6 +174,8 @@
       $("#sdk-wait-info").textContent = `${s.playerCount}/2 Spieler · ${DIFF_LABELS[s.difficulty] || s.difficulty} · ${s.public ? "🌐 öffentlich" : "🔒 privat (nur per Code)"}`;
       $("#sdk-start").style.display = (s.isHost && s.playerCount === 2) ? "" : "none";
     } else if (s.state === "playing") {
+      soloMode = false; soloPlaying = false;
+      $("#sdk-topbar").style.display = ""; $("#sdk-opp-row").style.display = ""; // race layout
       show("sdk-game");
       // First transition into playing → set up my grid from the puzzle.
       if (prevState !== "playing" || !grid) {
@@ -165,6 +192,9 @@
       stopTimer();
       show("sdk-result");
       renderResult(s);
+      const rm = s.rematch || {};
+      $("#sdk-rematch").style.display = rm.canRematch ? "" : "none";
+      $("#sdk-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "🔁 Gegner will Revanche!" : "");
       // Walkover: opponent left mid-race → notify the winner (money already credited).
       const r = s.result, me = getAccount(), myName = me && me.name;
       if (r && r.walkover && r.winner && myName && r.winner.toLowerCase() === myName.toLowerCase()) {
@@ -199,11 +229,29 @@
     if (code.length !== 4) { $("#sdk-error").textContent = "Code hat 4 Zeichen."; return; }
     doJoin(code);
   });
+
+  // Solo (no timer, no stake)
+  $("#sdk-solo-start").addEventListener("click", () => {
+    $("#sdk-error").textContent = "";
+    socket.emit("sudoku:soloStart", { difficulty: chosenDiff }, (r) => {
+      if (!r || !r.ok) { $("#sdk-error").textContent = (r && r.error) || "Fehler."; return; }
+      soloMode = true; soloPlaying = true; myCode = null; st = null;
+      puzzle = r.puzzle.slice(); grid = r.puzzle.slice(); selected = -1;
+      buildGrid(); renderGrid();
+      $("#sdk-topbar").style.display = "none";   // no timer
+      $("#sdk-opp-row").style.display = "none";  // no opponent
+      $("#sdk-you-name").textContent = "Richtig"; $("#sdk-you-val").textContent = "0"; $("#sdk-you-bar").style.width = "0%";
+      show("sdk-game");
+    });
+  });
   $("#sdk-start").addEventListener("click", () => socket.emit("sudoku:start", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); }));
 
-  function leave() { if (myCode) socket.emit("sudoku:leave"); myCode = null; st = null; grid = null; puzzle = null; stopTimer(); }
+  function leave() { if (myCode) socket.emit("sudoku:leave"); myCode = null; st = null; grid = null; puzzle = null; soloMode = false; soloPlaying = false; stopTimer(); }
   $("#sdk-cancel").addEventListener("click", () => { leave(); show("sdk-setup"); });
   $("#sdk-again").addEventListener("click", () => { leave(); show("sdk-setup"); });
+  $("#sdk-rematch").addEventListener("click", () => {
+    socket.emit("sudoku:rematch", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); else $("#sdk-rematch-status").textContent = "Warte auf Revanche des Gegners…"; });
+  });
 
   // Leaving the game screen (‹ Lobby) mid-race forfeits → opponent wins the pot.
   const sdkBack = document.querySelector('[data-screen="sudoku"] .back-btn');
@@ -211,6 +259,7 @@
 
   window.Casino._sudokuJoinCode = (code) => { window.Casino.showScreen("sudoku"); doJoin(code); };
   window.Casino._loadSudoku = () => {
+    if (soloMode && soloPlaying) { show("sdk-game"); return; }
     if (!st || st.state === "done") { show("sdk-setup"); $("#sdk-error").textContent = ""; }
     else apply(st);
   };

@@ -705,7 +705,9 @@
           <div class="mem-result-emoji" id="mem-result-emoji">🏆</div>
           <h3 id="mem-result-title">—</h3>
           <p class="muted small" id="mem-result-sub"></p>
-          <button class="btn-primary" id="mem-again" style="margin-top:10px">Nochmal</button>
+          <div class="rematch-row"><button class="btn-primary" id="mem-rematch" style="margin-top:10px">🔁 Revanche</button>
+          <button class="btn-secondary" id="mem-again" style="margin-top:10px">Zurück</button></div>
+          <div class="muted small" id="mem-rematch-status"></div>
         </div>
       </div>
     </section>
@@ -769,7 +771,9 @@
           <div class="mem-result-emoji" id="chs-result-emoji">🏆</div>
           <h3 id="chs-result-title">—</h3>
           <p class="muted small" id="chs-result-sub"></p>
-          <button class="btn-primary" id="chs-again" style="margin-top:10px">Nochmal</button>
+          <div class="rematch-row"><button class="btn-primary" id="chs-rematch" style="margin-top:10px">🔁 Revanche</button>
+          <button class="btn-secondary" id="chs-again" style="margin-top:10px">Zurück</button></div>
+          <div class="muted small" id="chs-rematch-status"></div>
         </div>
 
         <!-- League -->
@@ -794,11 +798,17 @@
         <!-- Setup: choose a mode -->
         <div id="sol-setup">
           <div class="sol-mode-tabs">
-            <button class="sol-mode-tab active" data-mode="solo">🏠 Gegen das Haus</button>
-            <button class="sol-mode-tab" data-mode="race">⚔️ PvP-Race</button>
+            <button class="sol-mode-tab active" data-mode="free">🎯 Solo (frei)</button>
+            <button class="sol-mode-tab" data-mode="solo">🏠 Gegen das Haus</button>
+            <button class="sol-mode-tab" data-mode="race">⚔️ PvP</button>
           </div>
 
-          <div id="sol-solo-panel" class="mem-panel">
+          <div id="sol-free-panel" class="mem-panel">
+            <p class="muted small">Ganz entspannt spielen — <b>kein Einsatz</b>, <b>unbegrenzte Neuauflagen</b> (Draw-1). Zählt trotzdem für Achievements & Statistik.</p>
+            <button class="btn-primary" id="sol-free-start" style="width:100%">🎯 Solo starten</button>
+          </div>
+
+          <div id="sol-solo-panel" class="mem-panel" style="display:none">
             <p class="muted small">Schwer (Draw-3, nur 2 Neuauflagen). Räum das ganze Brett ab → <b>Einsatz × 3</b>. Gibst du auf, ist der Einsatz weg. Max-Einsatz bewusst niedrig.</p>
             <label class="mem-label">Einsatz (20–500 🪙)
               <input id="sol-bet" type="number" inputmode="numeric" min="20" max="500" step="10" value="50" />
@@ -853,7 +863,9 @@
           <div class="mem-result-emoji" id="sol-result-emoji">🏆</div>
           <h3 id="sol-result-title">—</h3>
           <p class="muted small" id="sol-result-sub"></p>
-          <button class="btn-primary" id="sol-again" style="margin-top:10px">Nochmal</button>
+          <div class="rematch-row"><button class="btn-primary" id="sol-rematch" style="margin-top:10px;display:none">🔁 Revanche</button>
+          <button class="btn-primary" id="sol-again" style="margin-top:10px">Nochmal</button></div>
+          <div class="muted small" id="sol-rematch-status"></div>
         </div>
       </div>
     </section>
@@ -866,28 +878,40 @@
 
         <!-- Setup -->
         <div id="sdk-setup">
-          <p class="muted small" style="text-align:center">Beide bekommen dasselbe Rätsel gleichzeitig. Wer zuerst korrekt fertig ist, gewinnt den Pot (beide Einsätze, minus 10% Rake). Läuft die Zeit ab, gewinnt, wer mehr richtige Felder hat.</p>
-          <div class="mem-panel">
-            <label class="mem-label">Einsatz (Buy-in)
-              <input id="sdk-buyin" type="number" inputmode="numeric" min="50" step="50" value="200" />
-            </label>
-            <div class="mem-label" style="margin-top:10px">Schwierigkeit</div>
-            <div class="mem-sizes" id="sdk-diffs">
-              <button type="button" class="mem-size-btn" data-diff="easy">Leicht<span>45 Zahlen</span></button>
-              <button type="button" class="mem-size-btn active" data-diff="medium">Mittel<span>34 Zahlen</span></button>
-              <button type="button" class="mem-size-btn" data-diff="hard">Schwer<span>28 Zahlen</span></button>
-            </div>
-            <div class="mem-visibility">
-              <label class="mem-radio"><input type="radio" name="sdk-vis" value="public" checked /> 🌐 Öffentlich <span class="muted small">(in Lobby sichtbar)</span></label>
-              <label class="mem-radio"><input type="radio" name="sdk-vis" value="private" /> 🔒 Privat <span class="muted small">(nur per Code)</span></label>
-            </div>
-            <button class="btn-primary" id="sdk-create" style="width:100%;margin-top:8px">🔢 Race erstellen</button>
+          <div class="mem-label" style="text-align:center">Schwierigkeit</div>
+          <div class="mem-sizes" id="sdk-diffs" style="max-width:420px;margin:6px auto 0">
+            <button type="button" class="mem-size-btn" data-diff="easy">Leicht<span>45 Zahlen</span></button>
+            <button type="button" class="mem-size-btn active" data-diff="medium">Mittel<span>34 Zahlen</span></button>
+            <button type="button" class="mem-size-btn" data-diff="hard">Schwer<span>28 Zahlen</span></button>
           </div>
-          <div class="mem-panel">
-            <label class="mem-label">Code eines Freundes
-              <input id="sdk-code" type="text" maxlength="4" placeholder="z.B. AB12" style="text-transform:uppercase" />
-            </label>
-            <button class="btn-secondary" id="sdk-join" style="width:100%;margin-top:8px">Beitreten</button>
+          <div class="sol-mode-tabs" style="margin-top:12px">
+            <button class="sol-mode-tab active" data-smode="solo">🎯 Solo (ohne Zeit)</button>
+            <button class="sol-mode-tab" data-smode="race">⚔️ PvP-Race</button>
+          </div>
+
+          <div id="sdk-solo-panel" class="mem-panel">
+            <p class="muted small">Ganz in Ruhe lösen — <b>kein Zeitlimit</b>, <b>kein Einsatz</b>. Zählt trotzdem für Achievements & Statistik.</p>
+            <button class="btn-primary" id="sdk-solo-start" style="width:100%">🎯 Solo starten</button>
+          </div>
+
+          <div id="sdk-pvp-panel" style="display:none">
+            <div class="mem-panel">
+              <p class="muted small">Beide bekommen dasselbe Rätsel gleichzeitig. Wer zuerst korrekt fertig ist, gewinnt den Pot (minus 10% Rake). Zeit ab → mehr richtige Felder gewinnt.</p>
+              <label class="mem-label">Einsatz (Buy-in)
+                <input id="sdk-buyin" type="number" inputmode="numeric" min="50" step="50" value="200" />
+              </label>
+              <div class="mem-visibility">
+                <label class="mem-radio"><input type="radio" name="sdk-vis" value="public" checked /> 🌐 Öffentlich <span class="muted small">(in Lobby sichtbar)</span></label>
+                <label class="mem-radio"><input type="radio" name="sdk-vis" value="private" /> 🔒 Privat <span class="muted small">(nur per Code)</span></label>
+              </div>
+              <button class="btn-primary" id="sdk-create" style="width:100%;margin-top:8px">🔢 Race erstellen</button>
+            </div>
+            <div class="mem-panel">
+              <label class="mem-label">Code eines Freundes
+                <input id="sdk-code" type="text" maxlength="4" placeholder="z.B. AB12" style="text-transform:uppercase" />
+              </label>
+              <button class="btn-secondary" id="sdk-join" style="width:100%;margin-top:8px">Beitreten</button>
+            </div>
           </div>
           <div class="form-error" id="sdk-error"></div>
         </div>
@@ -903,14 +927,14 @@
 
         <!-- Game -->
         <div id="sdk-game" style="display:none">
-          <div class="sdk-topbar">
+          <div class="sdk-topbar" id="sdk-topbar">
             <div class="sdk-timer" id="sdk-timer">15:00</div>
           </div>
           <div class="sdk-progress">
             <div class="sdk-prog-row"><span class="sdk-prog-name" id="sdk-you-name">Du</span>
               <div class="sdk-bar"><div class="sdk-bar-fill me" id="sdk-you-bar"></div></div>
               <span class="sdk-prog-val" id="sdk-you-val">0</span></div>
-            <div class="sdk-prog-row"><span class="sdk-prog-name" id="sdk-opp-name">Gegner</span>
+            <div class="sdk-prog-row" id="sdk-opp-row"><span class="sdk-prog-name" id="sdk-opp-name">Gegner</span>
               <div class="sdk-bar"><div class="sdk-bar-fill" id="sdk-opp-bar"></div></div>
               <span class="sdk-prog-val" id="sdk-opp-val">0</span></div>
           </div>
@@ -928,7 +952,9 @@
           <div class="mem-result-emoji" id="sdk-result-emoji">🏆</div>
           <h3 id="sdk-result-title">—</h3>
           <p class="muted small" id="sdk-result-sub"></p>
-          <button class="btn-primary" id="sdk-again" style="margin-top:10px">Nochmal</button>
+          <div class="rematch-row"><button class="btn-primary" id="sdk-rematch" style="margin-top:10px">🔁 Revanche</button>
+          <button class="btn-secondary" id="sdk-again" style="margin-top:10px">Zurück</button></div>
+          <div class="muted small" id="sdk-rematch-status"></div>
         </div>
       </div>
     </section>

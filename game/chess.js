@@ -93,6 +93,15 @@ function setupChess(io, accounts) {
       historySan: match.game ? match.game.history() : [],
       playerCount: match.players.size, isHost: match.host === viewerKey,
       you: pub(me), opponent: pub(opp), result: match.result,
+      rematch: (() => {
+        const connected = [...match.players.values()].filter((p) => p.socket);
+        const want = match.rematchWant || [];
+        return {
+          canRematch: match.state === "done" && connected.length === 2,
+          youWant: want.includes(viewerKey),
+          oppWants: connected.some((p) => p.id !== viewerKey && want.includes(p.id)),
+        };
+      })(),
     };
   }
   function broadcast(code) {
@@ -181,6 +190,7 @@ function setupChess(io, accounts) {
 
   function startGame(match) {
     match.game = new Chess();
+    match.rematchWant = [];
     match.pot = 0;
     const players = [...match.players.values()];
     // Random colors.
@@ -324,6 +334,19 @@ function setupChess(io, accounts) {
       const opp = [...match.players.values()].find((p) => p.id !== socket.data.account);
       if (me && opp) finish(match, { winner: opp, reason: "resign" });
       ack && ack({ ok: true });
+    });
+
+    socket.on("chess:rematch", (ack) => {
+      const match = currentMatch(socket);
+      if (!match || match.state !== "done") return ack && ack({ ok: false, error: "Kein beendetes Spiel." });
+      const connected = [...match.players.values()].filter((p) => p.socket);
+      if (connected.length !== 2) return ack && ack({ ok: false, error: "Gegner ist nicht mehr da." });
+      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      match.rematchWant = match.rematchWant || [];
+      if (!match.rematchWant.includes(socket.data.account)) match.rematchWant.push(socket.data.account);
+      ack && ack({ ok: true });
+      if (connected.every((p) => match.rematchWant.includes(p.id))) { match.rematchWant = []; startGame(match); }
+      else broadcast(match.code);
     });
 
     socket.on("chess:leave", () => leaveCurrent(socket));

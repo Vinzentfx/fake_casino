@@ -49,9 +49,9 @@ function applyMove(state, m = {}) {
 function setupSolitaire(io, accounts) {
   const acc = (s) => (s.data.account ? accounts.get(s.data.account) : null);
 
-  // ───────────────────────── Solo vs house ─────────────────────────
+  // ───────────────────────── Solo (vs house + free) ─────────────────
   function soloView(g, extra = {}) {
-    return { ok: true, mode: "solo", bet: g.bet, over: g.over, winMult: WIN_MULT, ...E.publicView(g.state), ...extra };
+    return { ok: true, mode: "solo", free: !!g.free, bet: g.bet, over: g.over, winMult: g.free ? 0 : WIN_MULT, ...E.publicView(g.state), ...extra };
   }
 
   // ───────────────────────── PvP race ──────────────────────────────
@@ -76,6 +76,15 @@ function setupSolitaire(io, accounts) {
       timeLeft: match.state === "playing" ? Math.max(0, match.endsAt - Date.now()) : (match.state === "done" ? 0 : RACE_TIME_MS),
       playerCount: match.players.size, isHost: match.host === viewerKey,
       you: pub(me), opponent: pub(opp), result: match.result,
+      rematch: (() => {
+        const connected = [...match.players.values()].filter((p) => p.socket);
+        const want = match.rematchWant || [];
+        return {
+          canRematch: match.state === "done" && connected.length === 2,
+          youWant: want.includes(viewerKey),
+          oppWants: connected.some((p) => p.id !== viewerKey && want.includes(p.id)),
+        };
+      })(),
     };
   }
   function raceBroadcast(code) {
@@ -136,6 +145,7 @@ function setupSolitaire(io, accounts) {
 
   function raceStart(match) {
     const deck = E.makeDeck();
+    match.rematchWant = [];
     match.pot = 0;
     for (const p of match.players.values()) {
       accounts.adjustChips(p.id, -match.buyIn);
@@ -153,17 +163,22 @@ function setupSolitaire(io, accounts) {
 
   io.on("connection", (socket) => {
     // ── Solo vs house ──
-    socket.on("sol:start", ({ bet } = {}, ack) => {
+    socket.on("sol:start", ({ bet, free } = {}, ack) => {
       if (typeof ack !== "function") return;
       const a = acc(socket);
       if (!a) return ack({ ok: false, error: "Nicht eingeloggt." });
+      if (free) {
+        // Free solo: no stake, easy deal (draw-1), UNLIMITED recycles → winnable.
+        socket.data.solitaire = { state: E.deal({ draw: 1, recycles: Infinity }), bet: 0, free: true, over: false };
+        return ack({ ...soloView(socket.data.solitaire) });
+      }
       bet = Math.floor(Number(bet));
       if (!Number.isFinite(bet) || bet < SOLO_MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${SOLO_MIN_BET} 🪙.` });
       if (bet > SOLO_MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${SOLO_MAX_BET} 🪙 (schwer!).` });
       if (a.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
       const r = accounts.adjustChips(socket.data.account, -bet);
       if (!r.ok) return ack({ ok: false, error: r.error });
-      socket.data.solitaire = { state: E.deal({ draw: SOLO_DRAW, recycles: SOLO_RECYCLES }), bet, over: false };
+      socket.data.solitaire = { state: E.deal({ draw: SOLO_DRAW, recycles: SOLO_RECYCLES }), bet, free: false, over: false };
       ack({ ...soloView(socket.data.solitaire), account: r.account });
     });
 
@@ -175,9 +190,13 @@ function setupSolitaire(io, accounts) {
       if (!res.ok) return ack({ ...soloView(g), moveError: res.error });
       if (E.isWon(g.state)) {
         g.over = true;
+        const wacc = accounts.get(socket.data.account); if (wacc) wacc.solitaireClears = (wacc.solitaireClears || 0) + 1;
+        if (g.free) {
+          accounts.recordHand(socket.data.account, 0, true, "solitaire"); // stats/achievements, no payout
+          return ack({ ...soloView(g, { won: true, payout: 0 }) });
+        }
         const payout = g.bet * WIN_MULT;
         const r = accounts.adjustChips(socket.data.account, payout);
-        const wacc = accounts.get(socket.data.account); if (wacc) wacc.solitaireClears = (wacc.solitaireClears || 0) + 1;
         accounts.recordHand(socket.data.account, payout - g.bet, true, "solitaire"); // → onHand → achievements.check
         return ack({ ...soloView(g, { won: true, payout }), account: r.account });
       }
@@ -189,7 +208,7 @@ function setupSolitaire(io, accounts) {
       const g = socket.data.solitaire;
       if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
       g.over = true;
-      accounts.recordHand(socket.data.account, -g.bet, true, "solitaire"); // forfeit → loss
+      if (!g.free) accounts.recordHand(socket.data.account, -g.bet, true, "solitaire"); // forfeit → loss (paid only)
       ack({ ...soloView(g, { gaveUp: true }) });
     });
 
@@ -252,6 +271,19 @@ function setupSolitaire(io, accounts) {
       ack && ack({ ok: true, board: E.publicView(me.state) });
       raceBroadcast(match.code);
       if (E.isWon(me.state)) raceSettle(match, { winner: me });
+    });
+
+    socket.on("solrace:rematch", (ack) => {
+      const match = currentMatch(socket);
+      if (!match || match.state !== "done") return ack && ack({ ok: false, error: "Kein beendetes Spiel." });
+      const connected = [...match.players.values()].filter((p) => p.socket);
+      if (connected.length !== 2) return ack && ack({ ok: false, error: "Gegner ist nicht mehr da." });
+      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      match.rematchWant = match.rematchWant || [];
+      if (!match.rematchWant.includes(socket.data.account)) match.rematchWant.push(socket.data.account);
+      ack && ack({ ok: true });
+      if (connected.every((p) => match.rematchWant.includes(p.id))) { match.rematchWant = []; raceStart(match); }
+      else raceBroadcast(match.code);
     });
 
     socket.on("solrace:leave", () => raceLeave(socket));

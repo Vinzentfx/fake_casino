@@ -31,6 +31,7 @@
     t.addEventListener("click", () => {
       document.querySelectorAll(".sol-mode-tab").forEach((x) => x.classList.toggle("active", x === t));
       const m = t.dataset.mode;
+      $("#sol-free-panel").style.display = m === "free" ? "" : "none";
       $("#sol-solo-panel").style.display = m === "solo" ? "" : "none";
       $("#sol-race-panel").style.display = m === "race" ? "" : "none";
     }));
@@ -66,15 +67,27 @@
     stock.addEventListener("click", () => doDraw());
     top.appendChild(stock);
 
+    // Waste: fan the visible cards (up to 3) so you can see what's underneath the
+    // top one; only the TOP card is playable. Spans 2 columns for room.
     const waste = document.createElement("div");
     waste.className = "sol-slot sol-waste";
-    const wtop = b.waste && b.waste.length ? b.waste[b.waste.length - 1] : null;
-    if (wtop) { const w = cardEl(wtop, { sel: sel && sel.kind === "w" }); waste.appendChild(w); }
-    waste.addEventListener("click", () => clickWaste());
-    waste.addEventListener("dblclick", () => { if (wtop) autoFoundation("w"); });
+    const wcards = b.waste || [];
+    if (wcards.length) {
+      wcards.forEach((wc, wi) => {
+        const isTop = wi === wcards.length - 1;
+        const el = cardEl(wc, { sel: isTop && sel && sel.kind === "w" });
+        el.classList.add("sol-waste-card");
+        if (wi > 0) el.style.marginLeft = "-24%";
+        el.style.zIndex = String(wi + 1);
+        if (isTop) {
+          el.classList.add("sol-waste-top");
+          el.addEventListener("click", (e) => { e.stopPropagation(); clickWaste(); });
+          el.addEventListener("dblclick", (e) => { e.stopPropagation(); autoFoundation("w"); });
+        }
+        waste.appendChild(el);
+      });
+    }
     top.appendChild(waste);
-
-    const spacer = document.createElement("div"); spacer.className = "sol-slot sol-spacer"; top.appendChild(spacer);
 
     b.foundations.forEach((f, fi) => {
       const slot = document.createElement("div");
@@ -202,19 +215,29 @@
 
   // ── Solo HUD / lifecycle ──────────────────────────────────
   function renderSoloHud() {
-    $("#sol-hud").innerHTML = `<div class="sol-hud-item"><span>Einsatz</span><b>${fmt(board.bet || 0)} 🪙</b></div>
-      <div class="sol-hud-item"><span>Bei Sieg</span><b>${fmt((board.bet || 0) * (board.winMult || 3))} 🪙</b></div>
-      <div class="sol-hud-item"><span>Basis</span><b>${board.foundationTotal || 0}/52</b></div>`;
+    if (board.free) {
+      $("#sol-hud").innerHTML = `<div class="sol-hud-item"><span>Modus</span><b>🎯 Frei</b></div>
+        <div class="sol-hud-item"><span>Neuauflagen</span><b>∞</b></div>
+        <div class="sol-hud-item"><span>Basis</span><b>${board.foundationTotal || 0}/52</b></div>`;
+    } else {
+      $("#sol-hud").innerHTML = `<div class="sol-hud-item"><span>Einsatz</span><b>${fmt(board.bet || 0)} 🪙</b></div>
+        <div class="sol-hud-item"><span>Bei Sieg</span><b>${fmt((board.bet || 0) * (board.winMult || 3))} 🪙</b></div>
+        <div class="sol-hud-item"><span>Basis</span><b>${board.foundationTotal || 0}/52</b></div>`;
+    }
     $("#sol-auto").style.display = "";
     $("#sol-giveup").style.display = "";
+    $("#sol-giveup").textContent = board.free ? "Beenden" : "Aufgeben";
   }
 
   function endSolo(won, payout) {
     stopTimer();
     show("sol-result");
+    $("#sol-rematch").style.display = "none"; $("#sol-rematch-status").textContent = ""; // solo has no rematch
+    const free = board && board.free;
     $("#sol-result-emoji").textContent = won ? "🏆" : "🙈";
-    $("#sol-result-title").textContent = won ? "Abgeräumt!" : "Aufgegeben";
-    $("#sol-result-sub").innerHTML = won ? `+${fmt(payout)} 🪙 (Einsatz ×${board.winMult || 3})!` : `Einsatz weg. Nächstes Mal!`;
+    $("#sol-result-title").textContent = won ? "Abgeräumt!" : (free ? "Beendet" : "Aufgegeben");
+    if (won) $("#sol-result-sub").innerHTML = free ? "🎉 Geschafft! Zählt für deine Achievements." : `+${fmt(payout)} 🪙 (Einsatz ×${board.winMult || 3})!`;
+    else $("#sol-result-sub").innerHTML = free ? "Kein Verlust — jederzeit neu starten." : "Einsatz weg. Nächstes Mal!";
   }
 
   // ── Race lifecycle ────────────────────────────────────────
@@ -268,6 +291,9 @@
       if (s.board) renderBoard(s.board);
     } else if (s.state === "done") {
       stopTimer(); show("sol-result"); renderRaceResult(s);
+      const rm = s.rematch || {};
+      $("#sol-rematch").style.display = rm.canRematch ? "" : "none";
+      $("#sol-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "🔁 Gegner will Revanche!" : "");
     }
   }
 
@@ -275,6 +301,14 @@
   socket.on("account:update", (d) => { if (d && d.account) applyAccount(d.account); });
 
   // ── Buttons ───────────────────────────────────────────────
+  $("#sol-free-start").addEventListener("click", () => {
+    mode = "solo"; over = false; clearSel();
+    socket.emit("sol:start", { free: true }, (res) => {
+      if (!res || !res.ok) { $("#sol-error").textContent = (res && res.error) || "Fehler."; return; }
+      show("sol-game"); renderBoard(res); renderSoloHud();
+    });
+  });
+
   $("#sol-solo-start").addEventListener("click", () => {
     const err = $("#sol-error"); err.textContent = "";
     const bet = parseInt($("#sol-bet").value, 10);
@@ -317,6 +351,9 @@
   function resetToSetup() { leaveRace(); board = null; over = false; clearSel(); show("sol-setup"); $("#sol-error").textContent = ""; }
   $("#sol-cancel").addEventListener("click", resetToSetup);
   $("#sol-again").addEventListener("click", resetToSetup);
+  $("#sol-rematch").addEventListener("click", () => {
+    socket.emit("solrace:rematch", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); else $("#sol-rematch-status").textContent = "Warte auf Revanche des Gegners…"; });
+  });
   const solBack = document.querySelector('[data-screen="solitaire"] .back-btn');
   if (solBack) solBack.addEventListener("click", () => { if (myCode) leaveRace(); });
 

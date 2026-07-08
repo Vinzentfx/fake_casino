@@ -103,6 +103,9 @@
     } else if (s.state === "done") {
       show("mem-result");
       renderResult(s);
+      const rm = s.rematch || {};
+      $("#mem-rematch").style.display = rm.canRematch ? "" : "none";
+      $("#mem-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "🔁 Gegner will Revanche!" : "");
       // Walkover: the opponent left mid-game → notify the winner even if they're
       // no longer on this screen (money is already credited via account:update).
       const r = s.result, me = getAccount(), myName = me && me.name;
@@ -157,6 +160,9 @@
   }
   $("#mem-cancel").addEventListener("click", () => { leave(); show("mem-setup"); });
   $("#mem-again").addEventListener("click", () => { leave(); show("mem-setup"); });
+  $("#mem-rematch").addEventListener("click", () => {
+    socket.emit("memory:rematch", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); else { $("#mem-rematch-status").textContent = "Warte auf Revanche des Gegners…"; } });
+  });
 
   // Leaving the game screen (‹ Lobby) mid-match forfeits → opponent wins the pot.
   const memBack = document.querySelector('[data-screen="memory"] .back-btn');
