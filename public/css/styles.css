@@ -1638,6 +1638,9 @@ button { font-family: inherit; cursor: pointer; }
 .work-switches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
 .work-switch { padding: 10px 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.13); background: rgba(255,255,255,0.06); color: #9aa4b2; font-weight: 800; }
 .work-switch.on { background: rgba(102,192,122,0.18); color: #bff5d0; border-color: rgba(102,192,122,0.45); }
+.work-meter { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
+.work-meter-slot { min-height: 44px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.13); background: rgba(255,255,255,0.055); color: #9aa4b2; font-weight: 900; }
+.work-meter-slot.target { background: rgba(244,215,130,0.2); border-color: rgba(244,215,130,0.62); color: #f4d782; box-shadow: 0 0 0 2px rgba(244,215,130,0.12) inset; }
 @media (max-width: 560px) {
   .work-job { grid-template-columns: auto 1fr; }
   .work-job .chip-btn { grid-column: 1 / -1; width: 100%; }

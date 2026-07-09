@@ -29,10 +29,10 @@ const WORK_FACTOR_WINDOW = 15 * 60 * 1000;
 const JOB_HOUR_CAP = 32000;
 const JOB_DAY_CAP = 150000;
 const JOBS = {
-  delivery: { label: "Lieferdienst", cooldown: 28_000, base: 170, xp: 2, task: "route" },
-  promo: { label: "Casino-Promo", cooldown: 50_000, base: 95, xp: 9, task: "code" },
-  side: { label: "Riskanter Nebenjob", cooldown: 95_000, base: 230, xp: 4, risky: true, task: "crate" },
-  shift: { label: "Schichtarbeit", duration: 75_000, cooldown: 125_000, base: 980, xp: 12, task: "switches" },
+  delivery: { label: "Lieferdienst", cooldown: 28_000, base: 170, xp: 2, tasks: ["route", "sort", "memory"] },
+  promo: { label: "Casino-Promo", cooldown: 50_000, base: 95, xp: 9, tasks: ["code", "math", "memory"] },
+  side: { label: "Riskanter Nebenjob", cooldown: 95_000, base: 230, xp: 4, risky: true, tasks: ["crate", "meter", "sort"] },
+  shift: { label: "Schichtarbeit", duration: 75_000, cooldown: 125_000, base: 980, xp: 12, tasks: ["switches", "math", "meter"] },
 };
 const dayNow = () => Math.floor(Date.now() / 86400000);
 const TASK_TTL = 35_000;
@@ -49,7 +49,8 @@ function shuffle(xs) {
 }
 
 function makeWorkTask(id, job, now = Date.now()) {
-  const type = job.task || "code";
+  const taskPool = Array.isArray(job.tasks) && job.tasks.length ? job.tasks : [job.task || "code"];
+  const type = taskPool[Math.floor(Math.random() * taskPool.length)];
   if (type === "route") {
     const route = shuffle(WORK_SYMBOLS).slice(0, 4);
     return {
@@ -69,6 +70,41 @@ function makeWorkTask(id, job, now = Date.now()) {
     return {
       id, type, expiresAt: now + TASK_TTL + 10_000, answer: pattern,
       public: { id, type, title: "Schaltpult einstellen", prompt: "Stelle die Schalter exakt wie das Muster ein.", pattern },
+    };
+  }
+  if (type === "memory") {
+    const seq = shuffle(WORK_SYMBOLS).slice(0, 4);
+    return {
+      id, type, expiresAt: now + TASK_TTL, answer: seq.join(""),
+      public: { id, type, title: "Signal merken", prompt: "Merke dir die Reihenfolge und tippe sie nach.", sequence: seq, options: shuffle(seq) },
+    };
+  }
+  if (type === "sort") {
+    const nums = shuffle([1, 2, 3, 4, 5, 6]).slice(0, 4);
+    const answer = [...nums].sort((a, b) => a - b).join("");
+    return {
+      id, type, expiresAt: now + TASK_TTL, answer,
+      public: { id, type, title: "Pakete sortieren", prompt: "Tippe die Pakete von klein nach groß an.", options: shuffle(nums.map(String)) },
+    };
+  }
+  if (type === "math") {
+    const a = Math.floor(4 + Math.random() * 9);
+    const b = Math.floor(3 + Math.random() * 8);
+    const op = Math.random() < 0.5 ? "+" : "-";
+    const left = op === "-" && b > a ? b : a;
+    const right = op === "-" && b > a ? a : b;
+    const answer = op === "+" ? left + right : left - right;
+    const options = shuffle([answer, answer + 1, Math.max(0, answer - 1), answer + 2].map(String));
+    return {
+      id, type, expiresAt: now + TASK_TTL, answer: String(answer),
+      public: { id, type, title: "Kasse prüfen", prompt: `Was ist ${left} ${op} ${right}?`, options },
+    };
+  }
+  if (type === "meter") {
+    const target = 2 + Math.floor(Math.random() * 3);
+    return {
+      id, type, expiresAt: now + TASK_TTL, answer: String(target),
+      public: { id, type, title: "Timing treffen", prompt: "Stoppe den Balken im goldenen Feld.", target, slots: 5 },
     };
   }
   const code = String(Math.floor(1000 + Math.random() * 9000));
