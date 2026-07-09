@@ -61,7 +61,7 @@ const MACHINES = [
     scatter: null,
     unlockCost: 0,
     bets: [50, 100, 500, 1000, 5000, 25000],
-    payScale: 3.07, // ~96-97% RTP incl. jackpot expectation
+    payScale: 3.12, // ~98% RTP incl. jackpot expectation (small buff)
     // "Pays anywhere": 3+ of the same symbol ANYWHERE on the grid wins. Tons of
     // small, frequent wins → constant flashing (the casino-parody dopamine drip).
     symbols: {
@@ -98,7 +98,7 @@ const MACHINES = [
     scatter: "S",
     unlockCost: 10000,
     bets: [100, 500, 1000, 5000, 25000, 100000],
-    payScale: 1.34, // ~96-97% RTP incl. scaling free spins + jackpot expectation
+    payScale: 1.36, // ~98% RTP incl. scaling free spins + jackpot expectation (small buff)
     freeSpins: { trigger: 3, count: 10, multiplier: 2 },
     buyBonus: 18, // cost to buy free spins = 18× bet
     symbols: {
@@ -135,7 +135,7 @@ const MACHINES = [
     scatter: "S",
     unlockCost: 50000,
     bets: [500, 1000, 5000, 25000, 100000, 250000],
-    payScale: 1.01, // ~96-97% RTP incl. scaling free spins + jackpot expectation
+    payScale: 1.03, // ~98% RTP incl. scaling free spins + jackpot expectation (small buff)
     // High volatility: small line hits pay little, but 5-of-a-kind tops are huge.
     freeSpins: { trigger: 3, count: 8, multiplier: 3 },
     buyBonus: 14,
@@ -172,7 +172,7 @@ const MACHINES = [
     scatter: "S",
     unlockCost: 200000,
     bets: [1000, 5000, 25000, 100000, 250000, 1000000],
-    payScale: 3.2, // ~96% RTP incl. scaling free spins + jackpot expectation
+    payScale: 3.25, // ~98% RTP incl. scaling free spins + jackpot expectation (small buff)
     freeSpins: { trigger: 4, count: 10, persistentMultiplier: true },
     buyBonus: 25,
     symbols: {
