@@ -99,6 +99,56 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
 }
 
+function renderAnnouncement(announcement) {
+  const strip = $("#announcement-strip");
+  const textEl = $("#announcement-text");
+  const metaEl = $("#announcement-meta");
+  if (!strip || !textEl || !metaEl) return;
+  if (!announcement || !announcement.text) {
+    strip.classList.add("hidden");
+    textEl.textContent = "";
+    metaEl.textContent = "";
+    return;
+  }
+  textEl.textContent = announcement.text;
+  const at = Number(announcement.at) || 0;
+  metaEl.textContent = at
+    ? `Ankündigung · ${new Date(at).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`
+    : "Ankündigung";
+  strip.classList.remove("hidden");
+}
+
+// Shared API for the per-game modules (poker.js, slots.js etc.).
+// Expose this early because navigation and modals can trigger screen changes
+// before the whole file reaches the final startup call.
+window.Casino = {
+  socket,
+  showScreen,
+  toast,
+  getAccount: () => state.account,
+  escapeHtml,
+  openPlayerProfile,
+  setChips(n) {
+    if (!state.account) return;
+    state.account.chips = n;
+    renderTopbar();
+    if (currentScreen === "profile") renderProfile();
+  },
+  adjustChips(delta) {
+    if (!state.account) return;
+    state.account.chips = Math.max(0, state.account.chips + delta);
+    renderTopbar();
+  },
+  applyAccount(account) {
+    if (!account) return;
+    state.account = { ...state.account, ...account };
+    renderTopbar();
+    if (currentScreen === "profile") renderProfile();
+  },
+  // Master volume (0-1) - every game's WebAudio gain multiplies by this.
+  vol: Math.min(1, Math.max(0, (parseInt(localStorage.getItem("casino_vol"), 10) || 80) / 100)),
+};
+
 // ============================================================
 // Account / Anzeige
 // ============================================================
@@ -154,6 +204,14 @@ $("#onboarding-quests")?.addEventListener("click", () => {
 socket.on("connect", () => {
   if (state.token) socket.emit("auth", { token: state.token });
   socket.emit("presence:screen", { screen: currentScreen });
+  socket.emit("announcement:get", (res) => {
+    if (res && res.ok) renderAnnouncement(res.announcement);
+  });
+});
+
+socket.on("announcement:state", ({ announcement, toast: shouldToast } = {}) => {
+  renderAnnouncement(announcement);
+  if (shouldToast && announcement && announcement.text) toast(`📣 ${announcement.text}`);
 });
 
 // Server can push an updated bank balance (e.g. after a poker buy-in/cash-out).
@@ -768,6 +826,11 @@ socket.on("admin:kicked", ({ reason }) => {
 
 function loadAdminAccounts() {
   loadAdminDashboard();
+  socket.emit("announcement:get", (res) => {
+    if (res && res.ok && res.announcement && $("#admin-announcement-text")) {
+      $("#admin-announcement-text").value = res.announcement.text || "";
+    }
+  });
   const list = $("#admin-account-list");
   list.innerHTML = '<li class="muted">Lädt…</li>';
   socket.emit("admin:listAccounts", (res) => {
@@ -938,6 +1001,40 @@ $("#admin-set-chips-btn").addEventListener("click", () => {
   });
 });
 
+$("#admin-announcement-send")?.addEventListener("click", () => {
+  const errEl = $("#admin-announcement-error");
+  const input = $("#admin-announcement-text");
+  if (errEl) errEl.textContent = "";
+  const text = (input?.value || "").trim();
+  if (!text) {
+    if (errEl) errEl.textContent = "Text eingeben.";
+    return;
+  }
+  socket.emit("admin:announcement", { text }, (res) => {
+    if (!res || !res.ok) {
+      if (errEl) errEl.textContent = res?.error || "Fehler.";
+      return;
+    }
+    renderAnnouncement(res.announcement);
+    toast("Ankündigung gesendet.");
+  });
+});
+
+$("#admin-announcement-clear")?.addEventListener("click", () => {
+  const errEl = $("#admin-announcement-error");
+  if (errEl) errEl.textContent = "";
+  socket.emit("admin:announcementClear", (res) => {
+    if (!res || !res.ok) {
+      if (errEl) errEl.textContent = res?.error || "Fehler.";
+      return;
+    }
+    const input = $("#admin-announcement-text");
+    if (input) input.value = "";
+    renderAnnouncement(null);
+    toast("Ankündigung ausgeblendet.");
+  });
+});
+
 ["admin-shadow-on-btn", "admin-shadow-off-btn"].forEach((id) => {
   $("#" + id)?.addEventListener("click", () => {
     const errEl = $("#admin-ban-error");
@@ -1029,35 +1126,6 @@ $("#admin-heist-off-btn")?.addEventListener("click", () => {
     });
   });
 });
-
-// Shared API for the per-game modules (poker.js, slots.js etc.).
-window.Casino = {
-  socket,
-  showScreen,
-  toast,
-  getAccount: () => state.account,
-  escapeHtml,
-  openPlayerProfile,
-  setChips(n) {
-    if (!state.account) return;
-    state.account.chips = n;
-    renderTopbar();
-    if (currentScreen === "profile") renderProfile();
-  },
-  adjustChips(delta) {
-    if (!state.account) return;
-    state.account.chips = Math.max(0, state.account.chips + delta);
-    renderTopbar();
-  },
-  applyAccount(account) {
-    if (!account) return;
-    state.account = { ...state.account, ...account };
-    renderTopbar();
-    if (currentScreen === "profile") renderProfile();
-  },
-  // Master volume (0–1) — every game's WebAudio gain multiplies by this.
-  vol: Math.min(1, Math.max(0, (parseInt(localStorage.getItem("casino_vol"), 10) || 80) / 100)),
-};
 
 // Master volume slider (settings).
 (function () {
