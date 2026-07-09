@@ -160,6 +160,56 @@ const MACHINES = [
     },
   },
   {
+    id: "algae",
+    name: "Algen Abyss",
+    tagline: "5×4 · Mystery-Algen · Reveal-Bonus",
+    theme: "algae",
+    cols: 5,
+    rows: 4,
+    mode: "ways",
+    minMatch: 3,
+    wild: "W",
+    scatter: "S",
+    mystery: "M",
+    golden: "G",
+    unlockCost: 120000,
+    bets: [500, 1000, 5000, 25000, 100000, 250000],
+    payScale: 0.145,
+    freeSpins: { trigger: 3, count: 5, persistentMultiplier: true },
+    buyBonus: 18,
+    symbols: {
+      anchor: { emoji: "⚓", asset: "/assets/slots/algae/symbols/anchor.webp", weight: 24 },
+      puffer: { emoji: "🐡", asset: "/assets/slots/algae/symbols/puffer.webp", weight: 22 },
+      crystal: { emoji: "💎", asset: "/assets/slots/algae/symbols/crystal.webp", weight: 20 },
+      pearl: { emoji: "🦪", asset: "/assets/slots/algae/symbols/pearl.webp", weight: 16 },
+      helmet: { emoji: "🤿", asset: "/assets/slots/algae/symbols/helmet.webp", weight: 13 },
+      chest: { emoji: "🧰", asset: "/assets/slots/algae/symbols/chest.webp", weight: 9 },
+      shark: { emoji: "🦈", asset: "/assets/slots/algae/symbols/shark.webp", weight: 6 },
+      W: { emoji: "🔱", asset: "/assets/slots/algae/symbols/wild.webp", weight: 4 },
+      S: { emoji: "🐚", asset: "/assets/slots/algae/symbols/bonus.webp", weight: 4 },
+      M: { emoji: "🌿", asset: "/assets/slots/algae/symbols/algae.webp", weight: 1 },
+      G: { emoji: "🦈", asset: "/assets/slots/algae/symbols/shark.webp", weight: 0 },
+    },
+    mysteryReveals: [
+      ["anchor", 26], ["puffer", 24], ["crystal", 20], ["pearl", 13],
+      ["helmet", 8], ["chest", 5], ["shark", 2], ["W", 1], ["S", 1], ["G", 2],
+    ],
+    razorPrizes: [
+      ["coin", 1, 46], ["coin", 2, 25], ["coin", 5, 13], ["coin", 10, 6],
+      ["coin", 25, 2], ["coin", 50, 1], ["S", 0, 5], ["W", 0, 2],
+    ],
+    pays: {
+      anchor: { 3: 2, 4: 7, 5: 24 },
+      puffer: { 3: 2.5, 4: 9, 5: 30 },
+      crystal: { 3: 3, 4: 12, 5: 40 },
+      pearl: { 3: 5, 4: 18, 5: 65 },
+      helmet: { 3: 7, 4: 26, 5: 95 },
+      chest: { 3: 12, 4: 48, 5: 180 },
+      shark: { 3: 25, 4: 120, 5: 520 },
+      W: { 3: 35, 4: 180, 5: 800 },
+    },
+  },
+  {
     id: "cosmic",
     name: "Cosmic Cluster",
     tagline: "6×5 · Cluster · Kaskaden",
@@ -216,6 +266,8 @@ function publicMachines() {
     unlockCost: m.unlockCost || 0,
     bets: m.bets,
     emojis: Object.fromEntries(Object.entries(m.symbols).map(([k, v]) => [k, v.emoji])),
+    assets: Object.fromEntries(Object.entries(m.symbols).filter(([, v]) => v.asset).map(([k, v]) => [k, v.asset])),
+    mystery: m.mystery || null,
     payKeys: Object.keys(m.pays || m.clusterPays || {}),
     // Payouts expressed as a multiple of the total bet (for the in-game paytable).
     pays: m.pays || null,
@@ -237,6 +289,94 @@ function weightedPick(machine) {
     r -= v.weight;
   }
   return entries[0][0];
+}
+
+function weightedPickEntries(entries) {
+  const total = entries.reduce((s, [, w]) => s + w, 0);
+  let r = crypto.randomInt(total);
+  for (const [key, weight] of entries) {
+    if (r < weight) return key;
+    r -= weight;
+  }
+  return entries[0][0];
+}
+
+function cloneGrid(grid) {
+  return grid.map((col) => col.slice());
+}
+
+function isAlgae(machine) {
+  return machine && machine.id === "algae";
+}
+
+function initialAlgaeMultiplier(scatterCount) {
+  if (scatterCount >= 5) return 25;
+  if (scatterCount >= 4) return 5;
+  return 1;
+}
+
+function prepareMysteryGrid(machine, grid, session, inFree) {
+  if (!isAlgae(machine)) return grid;
+  const out = cloneGrid(grid);
+  if (inFree) {
+    const nudgeRows = Math.max(0, Math.min(machine.rows, session && session.nudgeRows != null ? session.nudgeRows : machine.rows));
+    const startRow = machine.rows - nudgeRows;
+    for (const c of [1, 3]) for (let r = startRow; r < machine.rows; r++) out[c][r] = machine.mystery;
+    return out;
+  }
+  const stackCols = [];
+  for (let c = 0; c < machine.cols; c++) {
+    if (out[c].includes(machine.mystery)) stackCols.push(c);
+  }
+  for (const c of stackCols.slice(0, 2)) for (let r = 0; r < machine.rows; r++) out[c][r] = machine.mystery;
+  for (const c of stackCols.slice(2)) for (let r = 0; r < machine.rows; r++) if (out[c][r] === machine.mystery) out[c][r] = weightedPickNonMystery(machine);
+  return out;
+}
+
+function weightedPickNonMystery(machine) {
+  for (let i = 0; i < 20; i++) {
+    const s = weightedPick(machine);
+    if (s !== machine.mystery && s !== machine.golden) return s;
+  }
+  return Object.keys(machine.symbols).find((s) => s !== machine.mystery && s !== machine.golden) || Object.keys(machine.symbols)[0];
+}
+
+function applyMystery(machine, grid, bet) {
+  if (!machine.mystery || !machine.mysteryReveals) return { grid, displayGrid: null, mysteryReveals: [], razorReveals: [], instantWin: 0 };
+  const displayGrid = cloneGrid(grid);
+  const finalGrid = cloneGrid(grid);
+  const mysteryReveals = [];
+  const razorReveals = [];
+  let instantWin = 0;
+  for (let c = 0; c < machine.cols; c++) {
+    for (let r = 0; r < machine.rows; r++) {
+      if (finalGrid[c][r] !== machine.mystery) continue;
+      const symbol = weightedPickEntries(machine.mysteryReveals);
+      let finalSymbol = symbol;
+      const reveal = { c, r, symbol };
+      if (symbol === machine.golden && machine.razorPrizes) {
+        const [kind, mult] = weightedPickEntries(machine.razorPrizes.map(([k, m, w]) => [`${k}:${m}`, w])).split(":");
+        if (kind === "coin") {
+          const value = Number(mult) || 1;
+          instantWin += Math.round(bet * value);
+          reveal.razor = { kind: "coin", value };
+          razorReveals.push({ c, r, kind: "coin", value });
+        } else if (kind === "S") {
+          finalSymbol = machine.scatter;
+          reveal.razor = { kind: "scatter" };
+          razorReveals.push({ c, r, kind: "scatter" });
+        } else if (kind === "W") {
+          finalSymbol = machine.wild;
+          reveal.razor = { kind: "wild" };
+          razorReveals.push({ c, r, kind: "wild" });
+        }
+      }
+      finalGrid[c][r] = finalSymbol;
+      reveal.finalSymbol = finalSymbol;
+      mysteryReveals.push(reveal);
+    }
+  }
+  return { grid: finalGrid, displayGrid: mysteryReveals.length ? displayGrid : null, mysteryReveals, razorReveals, instantWin };
 }
 
 /** grid[col][row] */
@@ -297,7 +437,7 @@ function losingGrid(machine, bet) {
   for (let i = 0; i < 300; i++) {
     const g = spinGrid(machine);
     const probe = evaluateSpin(machine, bet, null, g); // session null → no side effects
-    if (probe.totalWin === 0 && probe.result.freeSpinsAwarded === 0) return g;
+    if (probe.totalWin === 0 && probe.result.freeSpinsAwarded === 0) return cloneGrid(probe.result.grid);
   }
   return null;
 }
@@ -327,7 +467,7 @@ function teaseGrid(machine, bet) {
     if (probe.totalWin !== 0 || probe.result.freeSpinsAwarded !== 0) continue; // must not pay
     let score = 0;
     for (const col of g) for (const s of col) if (s === bestSym) score++;
-    if (score > bestScore) { best = g; bestScore = score; }
+    if (score > bestScore) { best = cloneGrid(probe.result.grid); bestScore = score; }
   }
   return best || losingGrid(machine, bet);
 }
@@ -553,7 +693,9 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   const unit = spinBet / 20;
   if (inFree) session.remaining -= 1;
 
-  const grid = forceGrid || spinGrid(machine);
+  const rawGrid = prepareMysteryGrid(machine, forceGrid || spinGrid(machine), session, inFree);
+  const mystery = applyMystery(machine, rawGrid, spinBet);
+  const grid = mystery.grid;
   const scatters = countScatters(machine, grid);
 
   let wins = [];
@@ -580,7 +722,8 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   }
 
   const fsMult = inFree && machine.freeSpins && machine.freeSpins.multiplier ? machine.freeSpins.multiplier : 1;
-  const totalWin = Math.round(baseWin * fsMult);
+  const algaeMult = isAlgae(machine) && inFree && session && session.multiplier ? session.multiplier : 1;
+  const totalWin = Math.round(baseWin * fsMult * algaeMult + mystery.instantWin);
 
   // Trigger / retrigger free spins.
   let freeSpinsAwarded = 0;
@@ -597,9 +740,16 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
         machineId: machine.id,
         remaining: freeSpinsAwarded,
         bet: spinBet,
-        multiplier: machine.freeSpins.persistentMultiplier ? 1 : machine.freeSpins.multiplier,
+        multiplier: isAlgae(machine) ? initialAlgaeMultiplier(scatters.count) : machine.freeSpins.persistentMultiplier ? 1 : machine.freeSpins.multiplier,
+        nudgeRows: isAlgae(machine) ? machine.rows : undefined,
       };
     }
+  }
+  if (isAlgae(machine) && inFree && newSession && newSession.remaining > 0) {
+    const usedRows = Math.max(0, Math.min(machine.rows, session && session.nudgeRows != null ? session.nudgeRows : machine.rows));
+    newSession.multiplier = Math.min(25, (newSession.multiplier || 1) + (usedRows > 0 ? 1 : 0) + mystery.razorReveals.length);
+    newSession.nudgeRows = freeSpinsAwarded > 0 ? machine.rows : Math.max(0, usedRows - 1);
+    if (newSession.nudgeRows <= 0 && !freeSpinsAwarded) newSession.remaining = 0;
   }
   if (newSession && newSession.remaining <= 0) newSession = null;
 
@@ -610,13 +760,17 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   const result = {
     ok: true,
     grid,
+    displayGrid: mystery.displayGrid,
+    mysteryReveals: mystery.mysteryReveals,
+    razorReveals: mystery.razorReveals,
+    instantWin: mystery.instantWin,
     wins,
     cascades,
     scatterCount: scatters.count,
     scatterPositions: scatters.positions,
     bet: spinBet,
     totalWin,
-    multiplier: fsMult !== 1 ? fsMult : endMultiplier || 1,
+    multiplier: algaeMult !== 1 ? algaeMult : fsMult !== 1 ? fsMult : endMultiplier || 1,
     wasFreeSpin: inFree,
     freeSpinsAwarded,
     freeSpins: freeState,

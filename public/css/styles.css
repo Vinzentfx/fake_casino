@@ -67,6 +67,7 @@ body.bg-classic { --bg1:#48121d; --bg2:#280b12; --bg3:#170509; --bgGlow:rgba(214
 body.bg-gems    { --bg1:#0e2c47; --bg2:#081a2e; --bg3:#040f1d; --bgGlow:rgba(74,160,255,0.42); --bgGlow2:rgba(120,220,255,0.10); }
 body.bg-dragon  { --bg1:#43200a; --bg2:#271306; --bg3:#150a03; --bgGlow:rgba(255,140,40,0.40); --bgGlow2:rgba(255,90,30,0.12); }
 body.bg-cosmic  { --bg1:#281259; --bg2:#150b32; --bg3:#090520; --bgGlow:rgba(154,91,255,0.45); --bgGlow2:rgba(90,200,255,0.10); }
+body.bg-algae   { --bg1:#06263c; --bg2:#031522; --bg3:#010912; --bgGlow:rgba(20,180,220,0.46); --bgGlow2:rgba(244,215,130,0.10); }
 
 /* Cosmic starfield */
 body.bg-cosmic::before {
@@ -82,6 +83,15 @@ body.bg-cosmic::before {
   animation: bgdrift 26s ease-in-out infinite alternate, twinkle 4s ease-in-out infinite alternate;
 }
 @keyframes twinkle { from { opacity: 0.55; } to { opacity: 1; } }
+body.bg-algae::before {
+  background:
+    linear-gradient(rgba(2,10,18,0.34), rgba(2,10,18,0.58)),
+    url("/assets/slots/algae/light-rays.webp") center top / cover no-repeat,
+    url("/assets/slots/algae/bubbles.webp") center / cover no-repeat,
+    url("/assets/slots/algae/background.webp") center / cover no-repeat;
+  animation: bgdrift 28s ease-in-out infinite alternate, algaeGlow 5s ease-in-out infinite alternate;
+}
+@keyframes algaeGlow { from { opacity: 0.72; } to { opacity: 1; } }
 
 button { font-family: inherit; cursor: pointer; }
 
@@ -692,6 +702,23 @@ button { font-family: inherit; cursor: pointer; }
 .theme-gems { background: linear-gradient(160deg, #1b4d6b, #0c2236); }
 .theme-dragon { background: linear-gradient(160deg, #6b3a12, #2e1606); }
 .theme-cosmic { background: linear-gradient(160deg, #3a2068, #140a2e); }
+.theme-algae { background: linear-gradient(160deg, #0b526b, #061824); }
+.machine-card.theme-algae {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.10), rgba(0,0,0,0.38)),
+    url("/assets/slots/algae/light-rays.webp") center / cover,
+    linear-gradient(160deg, #0b526b, #061824);
+}
+.machine-card.theme-algae::before {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.16), transparent 32%),
+    url("/assets/slots/algae/bubbles.webp") center / cover;
+  opacity: 0.66;
+}
+.mc-symbol-img {
+  width: 38px; height: 38px; object-fit: contain; vertical-align: middle;
+  margin-right: -2px; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.46));
+}
 
 /* Machine view */
 .slots-mtopbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -705,6 +732,41 @@ button { font-family: inherit; cursor: pointer; }
 #slots-machine.theme-gems { --accent: #5ad1ff; --glow: #5ad1ff; --metal1:#126081; --metal2:#041725; }
 #slots-machine.theme-dragon { --accent: #ffa53a; --glow: #ff7a18; --metal1:#925115; --metal2:#251004; }
 #slots-machine.theme-cosmic { --accent: #b98cff; --glow: #9a5bff; --metal1:#5930a2; --metal2:#110725; }
+#slots-machine.theme-algae { --accent: #21d7ff; --glow: #19bdf0; --metal1:#0b637c; --metal2:#031521; }
+#slots-machine.theme-algae .slot-stage {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.18), transparent 18%),
+    linear-gradient(180deg, rgba(12,105,130,0.96), rgba(2,18,28,0.96) 72%),
+    url("/assets/slots/algae/background.webp") center / cover;
+}
+#slots-machine.theme-algae .slot-stage::before {
+  inset: -12px;
+  z-index: 0;
+  border: 0;
+  border-radius: 20px;
+  background: url("/assets/slots/algae/frame-cut.webp") center / 100% 100% no-repeat;
+  opacity: 0.68;
+}
+#slots-machine.theme-algae .slot-stage > * { position: relative; z-index: 1; }
+#slots-machine.theme-algae .slot-stage::after { content: "ALGEN ABYSS"; z-index: 2; }
+#slots-machine.theme-algae .slot-controls { position: relative; }
+#slots-machine.theme-algae .slot-controls::before {
+  content: "";
+  position: absolute; inset: -15px -18px; z-index: -1; pointer-events: none;
+  background: url("/assets/slots/algae/symbols/stats-bar.webp") center / 100% 100% no-repeat;
+  opacity: 0.5;
+}
+#slots-machine.theme-algae #buy-bonus,
+#slots-machine.theme-algae #auto-roll {
+  background-image: linear-gradient(rgba(0,0,0,0.05), rgba(0,0,0,0.24)), url("/assets/slots/algae/symbols/multiplier-bar.webp");
+  background-size: cover;
+  border-color: rgba(33,215,255,0.55);
+}
+#slots-machine.theme-algae .lever-knob {
+  background: url("/assets/slots/algae/symbols/spin-orb.webp") center / cover no-repeat;
+  border-color: rgba(33,215,255,0.55);
+  box-shadow: 0 0 18px rgba(33,215,255,0.55), 0 4px 10px rgba(0,0,0,0.5);
+}
 
 .slot-stage {
   position: relative;
@@ -858,6 +920,46 @@ button { font-family: inherit; cursor: pointer; }
   display: block; position: relative; z-index: 3;
   transition: transform 0.15s ease;
   filter: drop-shadow(0 4px 4px rgba(0,0,0,0.38));
+}
+.slot-symbol-img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  vertical-align: middle;
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,0.44));
+}
+.theme-algae .cell {
+  background:
+    radial-gradient(circle at 50% 34%, rgba(33,215,255,0.18), transparent 38%),
+    linear-gradient(160deg, rgba(7,63,78,0.88), rgba(0,0,0,0.42));
+  border-color: rgba(33,215,255,0.22);
+}
+.cell.mystery-pop {
+  animation: mysteryReveal 0.58s cubic-bezier(0.2,1.7,0.4,1);
+  box-shadow: 0 0 18px rgba(33,215,255,0.85), inset 0 0 18px rgba(255,255,255,0.22);
+}
+.razor-prize {
+  position: absolute; left: 50%; top: 50%; z-index: 7;
+  transform: translate(-50%, -50%);
+  padding: 3px 8px; border-radius: 999px;
+  background: linear-gradient(135deg, #fff4a6, #f4b63b);
+  color: #241000; border: 1px solid rgba(255,255,255,0.72);
+  font-style: normal; font-size: clamp(0.78rem, 2.8vw, 1.18rem); font-weight: 950;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+  box-shadow: 0 0 18px rgba(244,215,130,0.9), 0 6px 18px rgba(0,0,0,0.42);
+  pointer-events: none;
+  animation: razorPrize 1.1s cubic-bezier(0.2,1.7,0.4,1) forwards;
+}
+@keyframes razorPrize {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.35) rotate(-8deg); }
+  22% { opacity: 1; transform: translate(-50%, -50%) scale(1.22) rotate(4deg); }
+  76% { opacity: 1; transform: translate(-50%, -118%) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translate(-50%, -155%) scale(0.85) rotate(0deg); }
+}
+@keyframes mysteryReveal {
+  0% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  45% { transform: scale(1.24) rotate(-2deg); filter: brightness(1.8) saturate(1.4); }
+  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
 }
 .cell.win {
   background: radial-gradient(circle, var(--accent, var(--gold)), rgba(0,0,0,0.3));
@@ -1241,9 +1343,10 @@ button { font-family: inherit; cursor: pointer; }
   content: "";
   position: absolute; inset: 0; z-index: -1;
   background:
+    url("/assets/slots/algae/coins-overlay-cut.webp") center / cover no-repeat,
     radial-gradient(circle at 50% 50%, rgba(244,215,130,0.22), transparent 30%),
     repeating-conic-gradient(from 0deg, rgba(255,255,255,0.11) 0deg 5deg, transparent 5deg 16deg);
-  opacity: 0.28;
+  opacity: 0.32;
   animation: dopamineRays 5s linear infinite;
   -webkit-mask: radial-gradient(circle, #000 0 48%, transparent 70%);
   mask: radial-gradient(circle, #000 0 48%, transparent 70%);
@@ -1523,6 +1626,7 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 1.9rem; min-width: 44px; text-align: center;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
+.pt-symbol-img { width: 42px; height: 42px; object-fit: contain; vertical-align: middle; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.45)); }
 .pt-vals { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
 .pt-vals .pt-cnt {
   color: #1c1c1c; background: var(--gold); font-weight: 800; font-size: 0.7rem;

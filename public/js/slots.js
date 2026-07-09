@@ -159,8 +159,8 @@
       const unlocked = isMachineUnlocked(m);
       const card = document.createElement("button");
       card.className = "machine-card theme-" + m.theme + (unlocked ? "" : " locked");
-      const sampleSyms = Object.values(m.emojis).slice(0, 5).join(" ");
-      const feature = m.freeSpins ? "🎁 Freispiele" : "⚡ Klassisch";
+      const sampleSyms = Object.keys(m.emojis).slice(0, 5).map((sym) => symbolHtml(symbolAsset(m, sym) || m.emojis[sym], "mc-symbol-img")).join("");
+      const feature = m.mystery ? "🌿 Mystery-Reveal" : m.freeSpins ? "🎁 Freispiele" : "⚡ Klassisch";
       card.innerHTML = `
         <div class="mc-topline"><span class="mc-led"></span><span>Automat</span></div>
         <div class="mc-syms"><span>${sampleSyms}</span></div>
@@ -243,7 +243,7 @@
     machine = null;
   }
 
-  const BG_THEMES = ["bg-classic", "bg-gems", "bg-dragon", "bg-cosmic"];
+  const BG_THEMES = ["bg-classic", "bg-gems", "bg-dragon", "bg-cosmic", "bg-algae"];
   function setBodyTheme(theme) {
     document.body.classList.remove(...BG_THEMES);
     if (theme) document.body.classList.add("bg-" + theme);
@@ -265,8 +265,22 @@
   // ===============================================================
   // Reels (vertical scrolling strips)
   // ===============================================================
-  const pool = () => Object.values(machine.emojis);
+  const pool = () => Object.keys(machine.emojis).map((sym) => symbolAsset(machine, sym) || machine.emojis[sym]);
   const randSym = () => pool()[Math.floor(Math.random() * pool().length)];
+
+  function symbolAsset(m, sym) {
+    return m && m.assets && m.assets[sym] ? m.assets[sym] : null;
+  }
+
+  function escapeAttr(s) {
+    return String(s || "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+  }
+
+  function symbolHtml(value, cls = "slot-symbol-img") {
+    const v = String(value || "");
+    if (v.startsWith("/assets/")) return `<img class="${cls}" src="${escapeAttr(v)}" alt="" draggable="false" />`;
+    return escapeAttr(v);
+  }
 
   // Build idle reels showing `rows` symbols per column.
   function buildReels(randomFill) {
@@ -288,14 +302,14 @@
     cell.className = "cell";
     cell.dataset.c = c;
     cell.dataset.r = r;
-    cell.innerHTML = `<span>${emoji}</span>`;
+    cell.innerHTML = `<span>${symbolHtml(emoji)}</span>`;
     return cell;
   }
   // A plain (non-indexed) cell for the rolling part of a strip.
   function rollCell(emoji) {
     const cell = document.createElement("div");
     cell.className = "cell";
-    cell.innerHTML = `<span>${emoji}</span>`;
+    cell.innerHTML = `<span>${symbolHtml(emoji)}</span>`;
     return cell;
   }
   function measureCells() {
@@ -327,7 +341,7 @@
   }
   function setCell(c, r, emoji) {
     const cell = document.querySelector(`.cell[data-c="${c}"][data-r="${r}"]`);
-    if (cell) cell.querySelector("span").textContent = emoji;
+    if (cell) cell.querySelector("span").innerHTML = symbolHtml(emoji);
   }
   const cellEl = (c, r) => document.querySelector(`.cell[data-c="${c}"][data-r="${r}"]`);
   function clearHighlights() {
@@ -420,8 +434,9 @@
       return;
     }
 
-    await landRoll(res.grid);
+    await landRoll(res.displayGrid || res.grid);
     stopRatchet();
+    await revealMystery(res);
     await resolveResult(res);
 
     if (pvpMode) {
@@ -549,7 +564,7 @@
 
       // Strip content: [final rows] + [spin random]. Resting at translateY 0 shows finals.
       strip.innerHTML = "";
-      for (let r = 0; r < machine.rows; r++) strip.appendChild(makeCell(c, r, machine.emojis[grid[c][r]]));
+      for (let r = 0; r < machine.rows; r++) strip.appendChild(makeCell(c, r, symbolAsset(machine, grid[c][r]) || machine.emojis[grid[c][r]]));
       for (let i = 0; i < spin; i++) strip.appendChild(rollCell(randSym()));
 
       // Start shifted up so the random tail is in view, then animate down to finals.
@@ -566,7 +581,7 @@
           setTimeout(() => {
             // Trim to just the final rows (seamless) and let rays escape the reel.
             strip.innerHTML = "";
-            for (let r = 0; r < machine.rows; r++) strip.appendChild(makeCell(c, r, machine.emojis[grid[c][r]]));
+            for (let r = 0; r < machine.rows; r++) strip.appendChild(makeCell(c, r, symbolAsset(machine, grid[c][r]) || machine.emojis[grid[c][r]]));
             strip.style.transition = "none";
             strip.style.transform = "translateY(0)";
             reel.classList.remove("rolling");
@@ -600,6 +615,10 @@
 
     if (res.totalWin > 0) {
       openCelebration(res.totalWin, res.bet);
+      if (res.instantWin > 0) {
+        const positions = (res.razorReveals || []).filter((r) => r.kind === "coin").map((r) => [r.c, r.r]);
+        await addWin(positions.length ? positions : [[Math.floor(machine.cols / 2), Math.floor(machine.rows / 2)]], res.instantWin);
+      }
 
       if (machine.mode === "cluster" && res.cascades && res.cascades.length) {
         // Each cascade step escalates: faster trace, more confetti, strobe deeper in.
@@ -618,7 +637,7 @@
           await sleep(220);
           clearHighlights();
           for (let c = 0; c < machine.cols; c++)
-            for (let r = 0; r < machine.rows; r++) setCell(c, r, machine.emojis[step.gridAfter[c][r]]);
+            for (let r = 0; r < machine.rows; r++) setCell(c, r, symbolAsset(machine, step.gridAfter[c][r]) || machine.emojis[step.gridAfter[c][r]]);
           $("#reels").classList.add("tumble");
           await sleep(260);
           $("#reels").classList.remove("tumble");
@@ -654,6 +673,49 @@
       bigBanner(`🎁 ${res.freeSpinsAwarded} FREISPIELE!`, "t-big");
       await sleep(1400);
     }
+  }
+
+  async function revealMystery(res) {
+    if (!res || !res.mysteryReveals || !res.mysteryReveals.length) return;
+    bigBanner("🌿 ALGEN-REVEAL!", "t-big");
+    sideLights(1300);
+    casinoStrobe();
+    sndZap();
+    await sleep(420);
+    let n = 0;
+    for (const rev of res.mysteryReveals) {
+      const cell = cellEl(rev.c, rev.r);
+      if (!cell) continue;
+      cell.classList.add("mystery-pop");
+      cellShockwave(centerOfCell(cell));
+      coinFountain(centerOfCell(cell), 6 + Math.min(10, n * 2));
+      await sleep(120);
+      const finalSym = rev.finalSymbol || rev.symbol;
+      setCell(rev.c, rev.r, symbolAsset(machine, finalSym) || machine.emojis[finalSym]);
+      if (rev.razor) razorRevealPop(cell, rev.razor);
+      cell.classList.add("win", "trace-pop");
+      sndBlip(7 + n);
+      setTimeout(() => cell.classList.remove("mystery-pop", "trace-pop", "win"), 520);
+      n++;
+      await sleep(95);
+    }
+    clearHighlights();
+    await sleep(180);
+  }
+
+  function centerOfCell(el) {
+    const b = el.getBoundingClientRect();
+    return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+  }
+
+  function razorRevealPop(cell, razor) {
+    const tag = document.createElement("em");
+    tag.className = "razor-prize";
+    tag.textContent = razor.kind === "coin" ? `×${razor.value}` : razor.kind === "scatter" ? "+BONUS" : "WILD!";
+    cell.appendChild(tag);
+    jackpotSirens(razor.kind === "coin" && razor.value >= 10 ? 1400 : 900);
+    moneyTicker(tag.textContent);
+    setTimeout(() => tag.remove(), 1200);
   }
 
   function dimAllCells() {
@@ -926,7 +988,8 @@
 
   function updateFreeBadge(fs) {
     const b = $("#free-badge");
-    b.textContent = `🎁 Freispiele: ${fs.remaining}`;
+    const mult = fs && fs.multiplier && fs.multiplier > 1 ? ` · ×${fs.multiplier}` : "";
+    b.textContent = `🎁 Freispiele: ${fs.remaining}${mult}`;
     b.classList.add("show");
   }
 
@@ -1579,12 +1642,12 @@
         const table = machine.clusterPays[sym];
         const parts = Object.keys(table).map(Number).sort((a, b) => a - b)
           .map((sz) => `<span class="pt-cnt">${sz}+</span> ${coins(table[sz]).toLocaleString("de-DE")}`).join("");
-        rows.push(`<div class="pt-row"><span class="pt-sym">${machine.emojis[sym]}</span><div class="pt-vals">${parts}</div></div>`);
+        rows.push(`<div class="pt-row"><span class="pt-sym">${symbolHtml(symbolAsset(machine, sym) || machine.emojis[sym], "pt-symbol-img")}</span><div class="pt-vals">${parts}</div></div>`);
       }
     } else {
       const anywhere = machine.mode === "anywhere";
       const label = machine.mode === "ways" ? "pro Way" : anywhere ? "irgendwo auf dem Feld" : "pro Linie";
-      rows.push(`<p class="pt-note">Auszahlung in 🪙 bei Einsatz <b>${bet}</b> (${label}). Wild ${machine.emojis[machine.wild]} ersetzt alle außer Scatter.</p>`);
+      rows.push(`<p class="pt-note">Auszahlung in 🪙 bei Einsatz <b>${bet}</b> (${label}). Wild ${symbolHtml(symbolAsset(machine, machine.wild) || machine.emojis[machine.wild], "pt-symbol-img")} ersetzt alle außer Scatter.</p>`);
       const syms = Object.keys(machine.pays).sort(
         (a, b) => coins(topVal(machine.pays[b])) - coins(topVal(machine.pays[a]))
       );
@@ -1596,11 +1659,14 @@
           const suffix = anywhere ? "+" : "×";
           return `<span class="pt-cnt">${n}${suffix}</span> ${coins(table[n]).toLocaleString("de-DE")}`;
         }).join("");
-        rows.push(`<div class="pt-row"><span class="pt-sym">${machine.emojis[sym]}</span><div class="pt-vals">${parts}</div></div>`);
+        rows.push(`<div class="pt-row"><span class="pt-sym">${symbolHtml(symbolAsset(machine, sym) || machine.emojis[sym], "pt-symbol-img")}</span><div class="pt-vals">${parts}</div></div>`);
       }
     }
+    if (machine.mystery) {
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.mystery) || machine.emojis[machine.mystery], "pt-symbol-img")}</span><div class="pt-vals">Mystery-Alge — wird nach dem Spin zu Symbol, Wild oder Bonus aufgedeckt</div></div>`);
+    }
     if (machine.scatter) {
-      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${machine.emojis[machine.scatter]}</span><div class="pt-vals">Scatter — ${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus</div></div>`);
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.scatter) || machine.emojis[machine.scatter], "pt-symbol-img")}</span><div class="pt-vals">Scatter — ${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus</div></div>`);
     }
     body.innerHTML = rows.join("");
     $("#paytable-modal").classList.remove("hidden");
