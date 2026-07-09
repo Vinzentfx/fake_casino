@@ -118,7 +118,7 @@ function setAccount(acc, token) {
 }
 
 // ---- Update-/Changelog-Modal (einmal pro Version) ----
-const UPDATE_VERSION = "2026-07-08-social-clan-depth";
+const UPDATE_VERSION = "2026-07-09-work-tasks-level-board";
 function maybeShowUpdate() {
   let seen = null;
   try { seen = localStorage.getItem("casino_seen_update"); } catch {}
@@ -609,9 +609,9 @@ async function claimRescue() {
 $("#rescue-btn").addEventListener("click", claimRescue);
 
 // ---- Leaderboard (multi-category, tabbed) ----
-const LB_ORDER = ["rich", "estate", "streets", "bigwin", "bigloss", "games"];
+const LB_ORDER = ["rich", "level", "estate", "streets", "bigwin", "bigloss", "games"];
 // How a category's value is displayed (default: chips).
-const LB_UNIT = { streets: (v) => `${v} 👑`, games: (v) => `${v.toLocaleString("de-DE")} Spiele` };
+const LB_UNIT = { level: (v) => `Level ${v}`, streets: (v) => `${v} 👑`, games: (v) => `${v.toLocaleString("de-DE")} Spiele` };
 let lbData = null;
 let lbActiveCat = "rich";
 

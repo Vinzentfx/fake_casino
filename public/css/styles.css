@@ -1623,9 +1623,25 @@ button { font-family: inherit; cursor: pointer; }
 .work-job-head span { color: #bff5d0; font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
 .work-job p { margin: 2px 0 0; }
 .work-job .chip-btn { white-space: nowrap; }
+.work-task-panel { border-color: rgba(94,168,224,0.28); background: rgba(94,168,224,0.07); }
+.work-task-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.work-task-head b { color: #bcd8f0; }
+.work-task-head p { margin: 3px 0 0; }
+.work-task-head > span { white-space: nowrap; color: #f4d782; font-size: 0.82rem; font-weight: 800; }
+.work-task-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.work-route-target, .work-code-display {
+  margin-top: 10px; padding: 10px 12px; border-radius: 8px; text-align: center;
+  background: rgba(0,0,0,0.22); color: #f4d782; font-weight: 900; letter-spacing: 0.06em;
+}
+.work-code-input { width: 100%; box-sizing: border-box; margin-top: 10px; padding: 10px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12); background: #232833; color: #fff; text-align: center; font-weight: 800; }
+.work-switches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
+.work-switch { padding: 10px 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.13); background: rgba(255,255,255,0.06); color: #9aa4b2; font-weight: 800; }
+.work-switch.on { background: rgba(102,192,122,0.18); color: #bff5d0; border-color: rgba(102,192,122,0.45); }
 @media (max-width: 560px) {
   .work-job { grid-template-columns: auto 1fr; }
   .work-job .chip-btn { grid-column: 1 / -1; width: 100%; }
+  .work-task-buttons { grid-template-columns: 1fr; }
 }
 
 .clicker-area {

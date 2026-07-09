@@ -26,15 +26,62 @@ const HUSTLE_MIN_GAP = 180;    // clicks faster than this don't build hustle
 const HUSTLE_HOUR_CAP = 10000;
 const HUSTLE_DAY_CAP = 60000;
 const WORK_FACTOR_WINDOW = 15 * 60 * 1000;
-const JOB_HOUR_CAP = 25000;
-const JOB_DAY_CAP = 120000;
+const JOB_HOUR_CAP = 32000;
+const JOB_DAY_CAP = 150000;
 const JOBS = {
-  delivery: { label: "Lieferdienst", cooldown: 25_000, base: 90, xp: 1 },
-  promo: { label: "Casino-Promo", cooldown: 45_000, base: 45, xp: 7 },
-  side: { label: "Riskanter Nebenjob", cooldown: 90_000, base: 130, xp: 3, risky: true },
-  shift: { label: "Schichtarbeit", duration: 75_000, cooldown: 120_000, base: 650, xp: 10 },
+  delivery: { label: "Lieferdienst", cooldown: 28_000, base: 170, xp: 2, task: "route" },
+  promo: { label: "Casino-Promo", cooldown: 50_000, base: 95, xp: 9, task: "code" },
+  side: { label: "Riskanter Nebenjob", cooldown: 95_000, base: 230, xp: 4, risky: true, task: "crate" },
+  shift: { label: "Schichtarbeit", duration: 75_000, cooldown: 125_000, base: 980, xp: 12, task: "switches" },
 };
 const dayNow = () => Math.floor(Date.now() / 86400000);
+const TASK_TTL = 35_000;
+const WORK_SYMBOLS = ["A", "B", "C", "D", "E", "F"];
+const WORK_CRATES = ["Rot", "Blau", "Gelb"];
+
+function shuffle(xs) {
+  const arr = [...xs];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function makeWorkTask(id, job, now = Date.now()) {
+  const type = job.task || "code";
+  if (type === "route") {
+    const route = shuffle(WORK_SYMBOLS).slice(0, 4);
+    return {
+      id, type, expiresAt: now + TASK_TTL, answer: route.join(""),
+      public: { id, type, title: "Route planen", prompt: "Tippe die Stopps in der angezeigten Reihenfolge an.", route, options: shuffle(route) },
+    };
+  }
+  if (type === "crate") {
+    const safe = WORK_CRATES[Math.floor(Math.random() * WORK_CRATES.length)];
+    return {
+      id, type, expiresAt: now + TASK_TTL, answer: safe.toLowerCase(),
+      public: { id, type, title: "Lieferkiste prüfen", prompt: `Wähle die ${safe}-markierte Kiste.`, options: shuffle(WORK_CRATES) },
+    };
+  }
+  if (type === "switches") {
+    const pattern = Array.from({ length: 5 }, () => (Math.random() < 0.5 ? "1" : "0")).join("");
+    return {
+      id, type, expiresAt: now + TASK_TTL + 10_000, answer: pattern,
+      public: { id, type, title: "Schaltpult einstellen", prompt: "Stelle die Schalter exakt wie das Muster ein.", pattern },
+    };
+  }
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  return {
+    id, type: "code", expiresAt: now + TASK_TTL, answer: code,
+    public: { id, type: "code", title: "Promo-Code synchronisieren", prompt: "Tippe den Code ab, bevor der Auftrag verfällt.", code },
+  };
+}
+
+function normalizeTaskAnswer(answer) {
+  if (Array.isArray(answer)) return answer.join("");
+  return String(answer || "").trim().toLowerCase().replace(/\s+/g, "");
+}
 
 function ensureEconomy(acc) {
   if (!acc.economy) acc.economy = {};
@@ -82,6 +129,7 @@ function jobRoom(jobs) {
 
 function publicJobs(acc, e, now = Date.now()) {
   const jobs = ensureJobState(e, now);
+  activeTask(jobs, now);
   const factor = workFactorState(acc, e, now);
   return {
     factor,
@@ -94,6 +142,7 @@ function publicJobs(acc, e, now = Date.now()) {
       startedAt: jobs.activeShift.startedAt,
       label: JOBS.shift.label,
     } : null,
+    activeTask: jobs.activeTask && jobs.activeTask.expiresAt > now ? jobs.activeTask.public : null,
     jobs: Object.entries(JOBS).map(([id, job]) => ({
       id,
       label: job.label,
@@ -123,6 +172,11 @@ function awardJob(acc, key, e, job, now, mult = 1) {
   if (job.xp) publicAccount = _accountsRef.addXp(key, job.xp) || publicAccount;
   try { quests.track(key, "work_job"); } catch {}
   return { earned, xp: job.xp || 0, account: publicAccount, capped: earned < raw, jobs: publicJobs(acc, e, now) };
+}
+
+function activeTask(jobs, now = Date.now()) {
+  if (jobs.activeTask && jobs.activeTask.expiresAt <= now) delete jobs.activeTask;
+  return jobs.activeTask || null;
 }
 
 function accountsPublicAccount(acc) {
@@ -233,6 +287,7 @@ function setupEconomy(io, accounts) {
       const jobs = ensureJobState(e, now);
       const job = JOBS[id];
       if (!job) return ack({ ok: false, error: "Job nicht gefunden." });
+      if (activeTask(jobs, now)) return ack({ ok: false, error: "Erledige erst deine laufende Aufgabe.", jobs: publicJobs(acc, e, now) });
       if ((jobs.cooldowns[id] || 0) > now) return ack({ ok: false, error: "Dieser Job hat noch Cooldown.", jobs: publicJobs(acc, e, now) });
       if (jobRoom(jobs) <= 0) return ack({ ok: false, error: "Feierabend! Dein Job-Cap ist aktuell ausgeschöpft.", jobs: publicJobs(acc, e, now) });
 
@@ -252,8 +307,15 @@ function setupEconomy(io, accounts) {
         else outcome = "normal";
       }
       jobs.cooldowns[id] = now + job.cooldown;
-      const result = awardJob(acc, socket.data.account, e, job, now, mult);
-      return ack({ ok: true, ...result, outcome });
+      jobs.activeTask = {
+        ...makeWorkTask(id, job, now),
+        jobId: id,
+        mult,
+        outcome,
+        shiftDone: false,
+      };
+      accounts.save();
+      return ack({ ok: true, task: jobs.activeTask.public, jobs: publicJobs(acc, e, now) });
     });
 
     socket.on("work:shiftClaim", (ack) => {
@@ -263,12 +325,41 @@ function setupEconomy(io, accounts) {
       const e = ensureEconomy(acc);
       const now = Date.now();
       const jobs = ensureJobState(e, now);
+      if (activeTask(jobs, now)) return ack({ ok: false, error: "Erledige erst deine laufende Aufgabe.", jobs: publicJobs(acc, e, now) });
       const shift = jobs.activeShift;
       if (!shift) return ack({ ok: false, error: "Keine aktive Schicht.", jobs: publicJobs(acc, e, now) });
       if (shift.readyAt > now) return ack({ ok: false, error: "Die Schicht läuft noch.", jobs: publicJobs(acc, e, now) });
-      delete jobs.activeShift;
-      const result = awardJob(acc, socket.data.account, e, JOBS.shift, now);
-      return ack({ ok: true, ...result, shiftDone: true });
+      jobs.activeTask = {
+        ...makeWorkTask("shift", JOBS.shift, now),
+        jobId: "shift",
+        mult: 1,
+        outcome: "normal",
+        shiftDone: true,
+      };
+      accounts.save();
+      return ack({ ok: true, task: jobs.activeTask.public, jobs: publicJobs(acc, e, now) });
+    });
+
+    socket.on("work:taskComplete", ({ answer } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const e = ensureEconomy(acc);
+      const now = Date.now();
+      const jobs = ensureJobState(e, now);
+      const task = activeTask(jobs, now);
+      if (!task) return ack({ ok: false, error: "Keine aktive Aufgabe.", jobs: publicJobs(acc, e, now) });
+      if (normalizeTaskAnswer(answer) !== normalizeTaskAnswer(task.answer)) {
+        delete jobs.activeTask;
+        accounts.save();
+        return ack({ ok: false, error: "Aufgabe falsch gelöst. Auftrag fehlgeschlagen.", failed: true, jobs: publicJobs(acc, e, now) });
+      }
+      const job = JOBS[task.jobId];
+      if (!job) { delete jobs.activeTask; accounts.save(); return ack({ ok: false, error: "Job nicht gefunden.", jobs: publicJobs(acc, e, now) }); }
+      if (task.shiftDone) delete jobs.activeShift;
+      delete jobs.activeTask;
+      const result = awardJob(acc, socket.data.account, e, job, now, task.mult || 1);
+      return ack({ ok: true, ...result, outcome: task.outcome, shiftDone: !!task.shiftDone });
     });
 
     socket.on("economy:state", (ack) => {
