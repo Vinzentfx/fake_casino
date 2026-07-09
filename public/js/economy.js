@@ -17,6 +17,9 @@
   const idxStr = (i) => String(i).replace(".", ",");
   let workState = null;
   let workTick = null;
+  let routeAnswer = [];
+  let switchBits = [];
+  let currentTaskKey = "";
 
   // ── Work (capped clicker) ────────────────────────────────────────────────
   function applyWorkState(s) {
@@ -42,10 +45,10 @@
 
   function jobMeta(id) {
     return ({
-      delivery: { icon: "🚲", text: "Sicherer kurzer Job. Gut, um schnell wieder Einsatz-Chips zu bekommen." },
-      shift: { icon: "🏭", text: "Läuft kurz im Hintergrund und wird danach aktiv abgeholt." },
-      promo: { icon: "📣", text: "Wenig Chips, dafür mehr XP. Gut für Level-Fortschritt." },
-      side: { icon: "🎲", text: "Kein Verlust möglich, aber der Bonus kann stark oder schwach ausfallen." },
+      delivery: { icon: "🚲", text: "Plane kurz die Route und kassiere dann. Sicherer Job mit gutem Starter-Lohn." },
+      shift: { icon: "🏭", text: "Läuft kurz im Hintergrund. Beim Abholen musst du das Schaltpult einstellen." },
+      promo: { icon: "📣", text: "Code synchronisieren: weniger Chips, dafür mehr XP fürs Leveln." },
+      side: { icon: "🎲", text: "Kiste prüfen: kein Verlust möglich, aber der Auftrag kann stark oder schwach ausfallen." },
     })[id] || { icon: "💼", text: "Aktiver Job." };
   }
 
@@ -64,12 +67,13 @@
     $("#work-job-day").textContent = `${fmt(jobs.dayEarned || 0)}/${fmt(jobs.dayCap || 0)} 🪙`;
     const f = jobs.factor || {};
     $("#work-job-factor").textContent = `Job-Faktor: ${(f.factor || 1).toLocaleString("de-DE")}× bei ${fmt(f.smoothedNetWorth || f.netWorth || 0)} 🪙 Wert.`;
+    renderTask(jobs.activeTask);
     box.innerHTML = (jobs.jobs || []).map((j) => {
       const m = jobMeta(j.id);
       const cool = timeLeft(j.readyAt);
       const shift = j.id === "shift" && jobs.activeShift;
       const shiftLeft = shift ? timeLeft(jobs.activeShift.readyAt) : "";
-      const disabled = cool || (j.id === "shift" && shift);
+      const disabled = jobs.activeTask || cool || (j.id === "shift" && shift);
       const label = shift ? (shiftLeft ? `Läuft ${shiftLeft}` : "Abholen") : (cool ? `Cooldown ${cool}` : (j.id === "shift" ? "Schicht starten" : "Job machen"));
       return `<div class="work-job" data-job="${j.id}">
         <div class="work-job-icon">${m.icon}</div>
@@ -85,6 +89,62 @@
       if (btn) { btn.disabled = false; btn.textContent = "Abholen"; }
     }
     if (!workTick) workTick = setInterval(() => { if (workState) renderJobs(workState); }, 1000);
+  }
+
+  function renderTask(task, force = false) {
+    const panel = $("#work-task-panel");
+    const box = $("#work-task-box");
+    if (!panel || !box) return;
+    if (!task) {
+      panel.classList.add("hidden");
+      box.innerHTML = "";
+      routeAnswer = [];
+      switchBits = [];
+      currentTaskKey = "";
+      return;
+    }
+    const taskKey = `${task.id}:${task.type}:${task.expiresAt}`;
+    if (!force && currentTaskKey === taskKey) return;
+    if (currentTaskKey !== taskKey) {
+      routeAnswer = [];
+      switchBits = [];
+      currentTaskKey = taskKey;
+    }
+    panel.classList.remove("hidden");
+    const left = timeLeft(task.expiresAt);
+    let inner = `<div class="work-task-head"><div><b>${escapeHtml(task.title || "Aufgabe")}</b><p class="muted small">${escapeHtml(task.prompt || "")}</p></div><span>${left || "jetzt"}</span></div>`;
+    if (task.type === "route") {
+      inner += `<div class="work-route-target">${(task.route || []).map(escapeHtml).join(" → ")}</div>`;
+      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-route-btn" data-route="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
+      inner += `<div class="muted small" id="work-route-current">Eingabe: ${routeAnswer.join(" → ") || "–"}</div>`;
+      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Route abgeben</button>`;
+    } else if (task.type === "crate") {
+      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-crate-btn" data-answer="${escapeHtml(o)}">📦 ${escapeHtml(o)}</button>`).join("")}</div>`;
+    } else if (task.type === "switches") {
+      if (!switchBits.length) switchBits = Array.from({ length: String(task.pattern || "").length }, () => "0");
+      inner += `<div class="work-route-target">${String(task.pattern || "").split("").map((b) => b === "1" ? "AN" : "AUS").join(" · ")}</div>`;
+      inner += `<div class="work-switches">${switchBits.map((b, i) => `<button class="work-switch ${b === "1" ? "on" : ""}" data-switch="${i}">${b === "1" ? "AN" : "AUS"}</button>`).join("")}</div>`;
+      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Schaltpult prüfen</button>`;
+    } else {
+      inner += `<div class="work-code-display">${escapeHtml(task.code || "")}</div>`;
+      inner += `<input id="work-code-input" class="work-code-input" inputmode="numeric" autocomplete="off" placeholder="Code eingeben" />`;
+      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Code senden</button>`;
+    }
+    box.innerHTML = inner;
+  }
+
+  function submitTask(answer) {
+    socket.emit("work:taskComplete", { answer }, (res) => {
+      if (!res || !res.ok) {
+        if (res && res.jobs) renderJobs(res.jobs);
+        toast((res && res.error) || "Aufgabe fehlgeschlagen.");
+        return;
+      }
+      if (res.account) applyAccount(res.account);
+      if (res.jobs) renderJobs(res.jobs);
+      const extra = res.outcome === "bonus" ? " · Bonus!" : (res.outcome === "schwach" ? " · schwacher Auftrag" : "");
+      toast(`+${fmt(res.earned || 0)} 🪙${res.xp ? ` · +${fmt(res.xp)} XP` : ""}${extra}${res.capped ? " · Cap erreicht" : ""}`);
+    });
   }
 
   function renderHustle(h) {
@@ -127,11 +187,37 @@
       if (res.account) applyAccount(res.account);
       if (res.jobs) renderJobs(res.jobs);
       if (res.started) { toast("Schicht gestartet. Gleich wieder abholen."); return; }
-      const extra = res.outcome === "bonus" ? " · Bonus!" : (res.outcome === "schwach" ? " · schwacher Auftrag" : "");
-      toast(`+${fmt(res.earned || 0)} 🪙${res.xp ? ` · +${fmt(res.xp)} XP` : ""}${extra}${res.capped ? " · Cap erreicht" : ""}`);
+      if (res.task) { toast("Aufgabe gestartet. Löse sie zum Kassieren."); return; }
     };
     if (event === "work:shiftClaim") socket.emit(event, done);
     else socket.emit(event, { id }, done);
+  });
+
+  $("#work-task-panel")?.addEventListener("click", (e) => {
+    const routeBtn = e.target.closest(".work-route-btn");
+    if (routeBtn) {
+      routeAnswer.push(routeBtn.dataset.route || "");
+      const cur = $("#work-route-current");
+      if (cur) cur.textContent = `Eingabe: ${routeAnswer.join(" → ") || "–"}`;
+      return;
+    }
+    const crate = e.target.closest(".work-crate-btn");
+    if (crate) { submitTask(crate.dataset.answer || ""); return; }
+    const sw = e.target.closest(".work-switch");
+    if (sw) {
+      const i = parseInt(sw.dataset.switch, 10);
+      switchBits[i] = switchBits[i] === "1" ? "0" : "1";
+      const task = workState && workState.activeTask;
+      renderTask(task, true);
+      return;
+    }
+    if (e.target.closest("#work-task-submit")) {
+      const task = workState && workState.activeTask;
+      if (!task) return;
+      if (task.type === "route") submitTask(routeAnswer);
+      else if (task.type === "switches") submitTask(switchBits.join(""));
+      else submitTask($("#work-code-input")?.value || "");
+    }
   });
 
   $("#work-upgrade-btn").addEventListener("click", () => {

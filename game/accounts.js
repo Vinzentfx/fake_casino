@@ -505,6 +505,7 @@ function recordHand(name, winnings, house = true, game = null, meta = null) {
 
 const LEADERBOARD_CATS = {
   rich:    { sort: (a) => a.chips,                    label: "💰 Reichste" },
+  level:   { sort: (a) => levelFromXp(a.xp || 0),      label: "⭐ Höchstes Level" },
   week:    { sort: (a) => a.weeklyNet || 0,           label: "🔥 Spieler der Woche" },
   estate:  { sort: (a) => city.ownerValue(normalizeName(a.name)), label: "🏘️ Immobilien-Mogul" },
   streets: { sort: (a) => city.streetCount(normalizeName(a.name)), label: "👑 Straßenkönig" },
