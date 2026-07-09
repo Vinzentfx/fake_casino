@@ -25,6 +25,7 @@ const { setupSuggestions } = require("./game/suggestions");
 const { setupSudoku } = require("./game/sudoku");
 const { setupSolitaire } = require("./game/solitaire");
 const { setupChess } = require("./game/chess");
+const { setupSocial } = require("./game/social");
 const { setupHeist } = require("./game/heist");
 const { setupClans } = require("./game/clans");
 const { setupCosmetics } = require("./game/cosmetics");
@@ -176,6 +177,7 @@ setupSuggestions(io, accounts);
 setupSudoku(io, accounts);
 setupSolitaire(io, accounts);
 setupChess(io, accounts);
+setupSocial(io, accounts);
 const heist = setupHeist(io, accounts);
 require("./game/admin").setHeist(heist);
 setupClans(io, accounts);
@@ -213,22 +215,6 @@ accounts.onHand((name) => {
 });
 
 // Chip-Transfer zwischen Spielern (socket-auth required)
-const SOCIAL_CHALLENGE_COOLDOWN_MS = 30 * 1000;
-const socialChallengeCooldown = new Map();
-const SOCIAL_GAME_LABELS = {
-  pinco: "Pinco Ball",
-  blackjack: "Blackjack",
-  roulette: "Roulette",
-  crash: "Crash",
-  mines: "Mines",
-  slots: "Slots",
-  chess: "Schach",
-  sudoku: "Sudoku",
-  solitaire: "Solitär",
-  memory: "Memory",
-  sports: "Sportwetten",
-};
-
 io.on("connection", (socket) => {
   socket.on("account:transfer", ({ to, amount } = {}, ack) => {
     if (!ack) return;
@@ -245,34 +231,6 @@ io.on("connection", (socket) => {
       }
     });
     ack({ ok: true, account: res.fromAccount });
-  });
-
-  socket.on("social:challenge", ({ to, game } = {}, ack) => {
-    if (typeof ack !== "function") return;
-    const fromKey = socket.data.account;
-    if (!fromKey) return ack({ ok: false, error: "Nicht eingeloggt." });
-    const toKey = String(to || "").trim().toLowerCase();
-    if (!toKey || toKey === fromKey) return ack({ ok: false, error: "Ungültiger Spieler." });
-    const from = accounts.get(fromKey);
-    const target = accounts.get(toKey);
-    if (!from || !target) return ack({ ok: false, error: "Spieler nicht gefunden." });
-    game = String(game || "lobby").trim().toLowerCase();
-    const label = SOCIAL_GAME_LABELS[game] || "Fake Casino";
-    const cdKey = `${fromKey}:${toKey}`;
-    const now = Date.now();
-    const last = socialChallengeCooldown.get(cdKey) || 0;
-    if (now - last < SOCIAL_CHALLENGE_COOLDOWN_MS) {
-      return ack({ ok: false, error: "Warte kurz, bevor du diese Person nochmal einlädst." });
-    }
-    socialChallengeCooldown.set(cdKey, now);
-    let delivered = false;
-    io.of("/").sockets.forEach((s) => {
-      if (s.data.account === toKey) {
-        delivered = true;
-        s.emit("social:challenge", { from: from.name, game, label });
-      }
-    });
-    ack({ ok: true, delivered, label });
   });
 });
 

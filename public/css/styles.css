@@ -2159,6 +2159,10 @@ button { font-family: inherit; cursor: pointer; }
 .player-profile-badges { margin-top: 12px; }
 .player-profile-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .player-profile-actions button:only-child { grid-column: 1 / -1; }
+.challenge-picker h2 { margin: 0 0 4px; }
+.challenge-games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.challenge-game { padding: 14px 8px; font-weight: 700; }
+.challenge-game:hover { border-color: #e6b04b; background: rgba(230,176,75,0.12); }
 .mini-badge {
   display: inline-flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; margin: 6px 5px 0 0; border-radius: 999px;
@@ -2424,6 +2428,9 @@ button { font-family: inherit; cursor: pointer; }
 .chs-piece { font-size: min(8vw, 40px); line-height: 1; z-index: 3; user-select: none; }
 .chs-piece.wp { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
 .chs-piece.bp { color: #1a1a1a; text-shadow: 0 1px 1px rgba(255,255,255,0.3); }
+.chs-spec-banner { text-align: center; font-weight: 700; font-size: 0.9rem; margin: 0 0 8px; padding: 8px 12px;
+  border-radius: 10px; background: rgba(94,168,224,0.15); border: 1px solid rgba(94,168,224,0.4); color: #bcd8f0; }
+.lobby-watch { white-space: nowrap; }
 .chs-status { text-align: center; min-height: 20px; font-weight: 600; margin: 6px 0; color: #cdd6e4; }
 .chs-status.warn { color: #e0a05e; }
 .chs-moves { max-height: 68px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 4px 10px;

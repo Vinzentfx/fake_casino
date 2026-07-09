@@ -104,17 +104,47 @@ function setupChess(io, accounts) {
       })(),
     };
   }
+  // Neutral spectator view: white at the bottom, both players shown, no controls.
+  function specState(match) {
+    const players = [...match.players.values()];
+    const pub = (p) => p && { name: p.name, color: p.color, rating: p.rating };
+    const white = players.find((p) => p.color === "w"), black = players.find((p) => p.color === "b");
+    const playing = match.state === "playing";
+    return {
+      spectating: true,
+      code: match.code, state: match.state, public: !!match.public, tc: match.tc, buyIn: match.buyIn, pot: match.pot,
+      board: (playing || match.state === "done") && match.game ? boardArray(match.game) : null,
+      turn: playing ? match.game.turn() : null,
+      yourColor: "w", // view from white's side
+      clocks: playing ? liveClocks(match) : (match.state === "done" ? match.clocks : null),
+      check: playing ? match.game.inCheck() : false,
+      lastMove: match.lastMove || null,
+      historySan: match.game ? match.game.history() : [],
+      you: pub(white), opponent: pub(black),
+      spectatorCount: match.spectators ? match.spectators.size : 0,
+      result: match.result,
+      rematch: { canRematch: false, youWant: false, oppWants: false },
+    };
+  }
   function broadcast(code) {
     const match = matches.get(code);
     if (!match) return;
     for (const p of match.players.values()) if (p.socket) p.socket.emit("chess:state", stateFor(match, p.id));
+    if (match.spectators && match.spectators.size) {
+      const sv = specState(match);
+      for (const s of match.spectators) s.emit("chess:state", sv);
+    }
   }
   function describe(match) {
     const host = match.players.get(match.host);
+    const names = [...match.players.values()].map((p) => p.name);
     return {
       code: match.code, game: "chess", label: `♟️ Schach-Duell (${match.tc})`,
       host: host ? host.name : "?", players: [...match.players.values()].filter((p) => p.socket).length,
-      max: 2, buyIn: match.buyIn, joinable: match.state === "waiting" && match.players.size < 2,
+      max: 2, buyIn: match.buyIn,
+      joinable: match.state === "waiting" && match.players.size < 2,
+      watchable: match.state === "playing", // running public games can be spectated
+      names,
     };
   }
   const registerLobby = (code) => lobby.add(code, () => (matches.has(code) ? describe(matches.get(code)) : null));
@@ -129,10 +159,20 @@ function setupChess(io, accounts) {
     const humansLeft = [...match.players.values()].some((p) => p.socket);
     if (!humansLeft) {
       if (match.clockTimer) { clearInterval(match.clockTimer); match.clockTimer = null; }
+      if (match.spectators) { for (const s of match.spectators) { s.emit("chess:specEnd"); s.data.chessSpectate = null; s.leave(match.code); } match.spectators.clear(); }
       matches.delete(match.code); lobby.remove(match.code); return;
     }
     if (wasPlaying && match.players.size === 1) finish(match, { winner: [...match.players.values()][0], reason: "walkover" });
     else { broadcast(match.code); lobby.changed(); }
+  }
+
+  function chessUnspectate(socket) {
+    const code = socket.data.chessSpectate;
+    if (!code) return;
+    const match = matches.get(code);
+    if (match && match.spectators) match.spectators.delete(socket);
+    if (match) socket.leave(code);
+    socket.data.chessSpectate = null;
   }
 
   // Apply the ranked Elo/stat update for a decisive or drawn game.
@@ -239,7 +279,7 @@ function setupChess(io, accounts) {
       ensureChessStats(a);
       const match = {
         code, buyIn, pot: 0, state: "waiting", public: !!isPublic, tc,
-        host: socket.data.account, players: new Map(),
+        host: socket.data.account, players: new Map(), spectators: new Set(),
         game: null, clocks: null, turnStart: 0, inc: 0, lastMove: null, clockTimer: null, result: null,
       };
       match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, color: null, rating: a.chessRating });
@@ -349,8 +389,24 @@ function setupChess(io, accounts) {
       else broadcast(match.code);
     });
 
+    // ── Spectate ──
+    socket.on("chess:spectate", ({ code } = {}, ack) => {
+      code = String(code || "").trim().toUpperCase();
+      const match = matches.get(code);
+      if (!match) return ack && ack({ ok: false, error: "Match nicht gefunden." });
+      if (match.players.has(socket.data.account)) return ack && ack({ ok: false, error: "Du spielst dieses Match." });
+      chessUnspectate(socket);        // stop watching any previous game
+      leaveCurrent(socket);           // can't play and spectate at once
+      match.spectators.add(socket);
+      socket.data.chessSpectate = code;
+      socket.join(code);
+      ack && ack({ ok: true, code });
+      socket.emit("chess:state", specState(match));
+    });
+    socket.on("chess:unspectate", () => chessUnspectate(socket));
+
     socket.on("chess:leave", () => leaveCurrent(socket));
-    socket.on("disconnect", () => leaveCurrent(socket));
+    socket.on("disconnect", () => { leaveCurrent(socket); chessUnspectate(socket); });
   });
 
   // ── Leaderboards / Clan-Liga ─────────────────────────────

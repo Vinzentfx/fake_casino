@@ -35,6 +35,8 @@ function showScreen(name) {
     return;
   }
   if (!screens[name]) return;
+  // Leaving the slots screen → stop any running auto-spin (don't keep spinning in the background).
+  if (name !== "slots" && window.Casino && window.Casino._slotsStopAuto) window.Casino._slotsStopAuto();
   Object.values(screens).forEach((el) => el.classList.remove("active"));
   screens[name].classList.add("active");
   currentScreen = name;
@@ -316,26 +318,68 @@ const SOCIAL_GAME_LABELS = {
   lobby: "Lobby",
 };
 
-function socialGameForInvite() {
-  if (SOCIAL_GAME_LABELS[currentScreen] && currentScreen !== "profile") return currentScreen;
-  return "lobby";
+// ── Duell-Herausforderung: Spieler wählt ein Spiel + Einsatz, erstellt ein
+// privates Match und lädt den Gegner ein; dieser tritt beim Annehmen bei. ──
+const DUEL_GAMES = [
+  { key: "memory",  label: "🧠 Memory-Duell", screen: "memory",    ev: "memory:create",  extra: { size: "medium" } },
+  { key: "sudoku",  label: "🔢 Sudoku-Race",  screen: "sudoku",    ev: "sudoku:create",  extra: { difficulty: "medium" } },
+  { key: "solrace", label: "🃏 Solitär-Race", screen: "solitaire", ev: "solrace:create", extra: {} },
+  { key: "chess",   label: "♟️ Schach-Duell", screen: "chess",     ev: "chess:create",   extra: { tc: "5+0" } },
+];
+const DUEL_JOIN_HOOK = { memory: "_memoryJoinCode", sudoku: "_sudokuJoinCode", solrace: "_solraceJoinCode", chess: "_chessJoinCode" };
+const DUEL_LABEL = { memory: "Memory-Duell", sudoku: "Sudoku-Race", solrace: "Solitär-Race", chess: "Schach-Duell" };
+
+function openChallengePicker(name) {
+  const body = $("#player-profile-body");
+  if (!body || !name) return;
+  body.innerHTML = `
+    <div class="challenge-picker">
+      <h2>⚔️ ${escapeHtml(name)} herausfordern</h2>
+      <p class="muted small">Wähle ein Spiel und den Einsatz. ${escapeHtml(name)} bekommt eine Einladung und muss sie annehmen.</p>
+      <div class="challenge-games">
+        ${DUEL_GAMES.map((g) => `<button class="btn-secondary challenge-game" data-game="${g.key}">${g.label}</button>`).join("")}
+      </div>
+      <label class="mem-label" style="margin-top:12px">Einsatz (Buy-in)
+        <input id="challenge-stake" type="number" inputmode="numeric" min="50" step="50" value="200" />
+      </label>
+      <div class="form-error" id="challenge-error"></div>
+      <button class="btn-secondary" id="challenge-cancel" style="margin-top:10px;width:100%">‹ Zurück</button>
+    </div>`;
+  body.querySelectorAll(".challenge-game").forEach((b) =>
+    b.addEventListener("click", () => startChallenge(b.dataset.game, name)));
+  $("#challenge-cancel")?.addEventListener("click", () => openPlayerProfile(name));
 }
 
-function sendSocialChallenge(name) {
-  const game = socialGameForInvite();
-  socket.emit("social:challenge", { to: name, game }, (res) => {
-    if (!res || !res.ok) { toast(res?.error || "Einladung konnte nicht gesendet werden."); return; }
-    toast(res.delivered
-      ? `${name} wurde zu ${res.label} eingeladen.`
-      : `${name} ist gerade nicht online, Einladung nicht zugestellt.`);
+function startChallenge(game, name) {
+  const g = DUEL_GAMES.find((x) => x.key === game);
+  const errEl = $("#challenge-error");
+  if (!g) return;
+  const stake = parseInt($("#challenge-stake")?.value, 10);
+  if (!Number.isFinite(stake) || stake < 50) { if (errEl) errEl.textContent = "Mindest-Einsatz 50 🪙."; return; }
+  if (state.account && state.account.chips < stake) { if (errEl) errEl.textContent = "Nicht genug Chips für den Einsatz."; return; }
+  closePlayerProfile();
+  // Create a PRIVATE match for the chosen game → get the code → send the invite.
+  showScreen(g.screen);
+  socket.emit(g.ev, { buyIn: stake, isPublic: false, ...g.extra }, (res) => {
+    if (!res || !res.ok) { toast(res?.error || "Konnte kein Match erstellen."); return; }
+    socket.emit("social:challenge", { to: name, game, code: res.code, stake }, (r) => {
+      if (!r || !r.ok) { toast(r?.error || "Einladung fehlgeschlagen."); return; }
+      toast(r.delivered
+        ? `⚔️ ${name} zu ${DUEL_LABEL[game]} eingeladen — warte im Spielraum…`
+        : `${name} ist offline — Einladung nicht zugestellt. Du kannst das Match verlassen.`);
+    });
   });
 }
 
-socket.on("social:challenge", ({ from, game, label } = {}) => {
-  if (!from) return;
-  const text = `${from} fordert dich zu ${label || "Fake Casino"} heraus. Öffnen?`;
-  if (game && screens[game] && confirm(text)) showScreen(game);
-  else toast(`${from} fordert dich heraus.`);
+socket.on("social:challengeIncoming", ({ from, game, code, stake, label } = {}) => {
+  if (!from || !game || !code) return;
+  const hook = DUEL_JOIN_HOOK[game];
+  const txt = `⚔️ ${from} fordert dich zu ${label || DUEL_LABEL[game] || "einem Duell"} heraus\nEinsatz: ${Number(stake || 0).toLocaleString("de-DE")} 🪙\n\nAnnehmen?`;
+  if (hook && window.Casino[hook] && confirm(txt)) window.Casino[hook](code);
+  else { socket.emit("social:challengeDecline", { to: from, game }); toast(`Herausforderung von ${from} abgelehnt.`); }
+});
+socket.on("social:challengeDeclined", ({ by, label } = {}) => {
+  toast(`${by || "Der Gegner"} hat deine ${label || "Duell"}-Herausforderung abgelehnt.`);
 });
 
 async function openPlayerProfile(name) {
@@ -384,7 +428,7 @@ async function openPlayerProfile(name) {
       closePlayerProfile();
       if (window.Casino.openStats) window.Casino.openStats(acc.name || name);
     });
-    $("#player-profile-challenge-btn")?.addEventListener("click", () => sendSocialChallenge(acc.name || name));
+    $("#player-profile-challenge-btn")?.addEventListener("click", () => openChallengePicker(acc.name || name));
   } catch {
     body.innerHTML = '<div class="muted small">Profil konnte nicht geladen werden.</div>';
   }
