@@ -162,7 +162,8 @@
       const sampleSyms = Object.values(m.emojis).slice(0, 5).join(" ");
       const feature = m.freeSpins ? "🎁 Freispiele" : "⚡ Klassisch";
       card.innerHTML = `
-        <div class="mc-syms">${sampleSyms}</div>
+        <div class="mc-topline"><span class="mc-led"></span><span>Automat</span></div>
+        <div class="mc-syms"><span>${sampleSyms}</span></div>
         <div class="mc-name">${m.name}</div>
         <div class="mc-tag">${m.tagline}</div>
         <div class="mc-bets">Einsatz ${m.bets[0].toLocaleString("de-DE")}–${m.bets[m.bets.length - 1].toLocaleString("de-DE")} 🪙</div>
@@ -718,9 +719,9 @@
   function comboEscalate(n, show) {
     if (show && n >= 1) showCombo(n);
     if (n >= 1) confettiBurst(14 + n * 8);   // even the first win pops
-    if (n >= 2) { confettiBurst(28 + n * 26); zoomPunch(); }
-    if (n >= 3) casinoStrobe();
-    if (n >= 4) hypeWords(Math.min(8, n));
+    if (n >= 2) { confettiBurst(28 + n * 26); zoomPunch(); sideLights(900); }
+    if (n >= 3) { casinoStrobe(); moneyTicker(`COMBO ×${n}`); }
+    if (n >= 4) { hypeWords(Math.min(8, n)); jackpotSirens(1300); }
   }
 
   // Screen-space centre of a set of cells (for the flying "+amount").
@@ -811,7 +812,7 @@
     pulseEl.classList.remove("go"); void pulseEl.offsetWidth; pulseEl.classList.add("go");
   }
   // Expanding shockwave ring at a win's centre.
-  function shockwave(center) {
+  function cellShockwave(center) {
     const r = document.createElement("div");
     r.className = "slot-shockwave";
     r.style.left = center.x + "px"; r.style.top = center.y + "px";
@@ -832,9 +833,11 @@
     wcRunning = 0;
     wcBet = bet || 1;
     wcFired = WIN_TIERS.map(() => false);
-    $("#win-celebration").classList.add("show");
+    $("#win-celebration").classList.add("show", "dopamine-on");
     WC.amt.textContent = "0";
     WC.amt.className = "wc-amount";
+    moneyTicker("GEWINN ERKANNT");
+    sideLights(1200);
     // Below the first tier (4× bet) it's just a "WIN", no fanfare.
     if (total < wcBet * WIN_TIERS[0].mult) {
       WC.tier.textContent = "WIN";
@@ -854,11 +857,12 @@
     const center = cellsCentroid(positions);
     lightningChain(positions);
     sndZap();
-    shockwave(center);
+    cellShockwave(center);
     // Burst the winning symbol out of the hit cells — bigger win, bigger burst.
     const firstCell = positions[0] && cellEl(positions[0][0], positions[0][1]);
     const emoji = firstCell ? firstCell.textContent.trim() : "🪙";
     if (emoji) emojiExplosion(emoji, center, Math.min(36, 10 + Math.floor(delta / Math.max(wcBet, 1)) * 3));
+    dopamineKick(center, delta);
     await flyPlus(center, delta);
     const from = wcRunning;
     const to = wcRunning + delta;
@@ -897,19 +901,19 @@
     WC.amt.textContent = total.toLocaleString("de-DE");
     WC.bottom.textContent = total.toLocaleString("de-DE");
     await sleep(total >= wcBet * 10 ? 1700 : total >= wcBet * 4 ? 1100 : 650);
-    $("#win-celebration").classList.remove("show");
+    $("#win-celebration").classList.remove("show", "dopamine-on");
   }
 
   // Escalating win tiers, RELATIVE to the bet (a win only counts as "big" if it
   // actually beats the stake by a meaningful multiple).
   const WIN_TIERS = [
-    { mult: 3,   name: "BIG WIN",            cls: "t-big",   fx: () => { quake("big"); confettiBurst(180); zoomPunch(); shockwave(); sndBig(); hypeWords(4); } },
-    { mult: 7,   name: "MEGA WIN",           cls: "t-mega",  fx: () => { quake("mega"); confettiBurst(260); zoomPunch(); shockwave(); casinoStrobe(); sndBig(); hypeWords(7); } },
-    { mult: 15,  name: "SUPER MEGA WIN",     cls: "t-super", fx: () => { quake("mega"); confettiBurst(320); shockwave(); casinoStrobe(); zoomPunch(); screenRainbow(1500); sndUltra(); hypeWords(10); } },
-    { mult: 30,  name: "ULTRA WIN",          cls: "t-ultra", fx: () => { quake("mega"); coinRain(3500); shockwave(); casinoStrobe(); screenRainbow(2000); sndUltra(); hypeWords(14); } },
-    { mult: 60,  name: "WAHNSINNS-WIN!!!",   cls: "t-ultra", fx: () => { quake("mega"); coinRain(4500); confettiBurst(400); shockwave(); casinoStrobe(); screenRainbow(2500); zoomPunch(); sndUltra(); hypeWords(20); } },
-    { mult: 150, name: "GOTTGLEICHER WIN",   cls: "t-ultra", fx: () => { coinRain(6000); confettiBurst(500); shockwave(); casinoStrobe(); screenRainbow(3000); zoomPunch(); sndUltra(); hypeWords(28); } },
-    { mult: 400, name: "💥 CASINO GESPRENGT 💥", cls: "t-ultra", fx: () => { coinRain(9000); confettiBurst(700); shockwave(); casinoStrobe(); screenRainbow(4000); zoomPunch(); sndUltra(); hypeWords(40); } },
+    { mult: 3,   name: "BIG WIN",            cls: "t-big",   fx: () => { quake("big"); confettiBurst(180); zoomPunch(); shockwave(); sideLights(1800); moneyTicker("BIG WIN"); sndBig(); hypeWords(4); } },
+    { mult: 7,   name: "MEGA WIN",           cls: "t-mega",  fx: () => { quake("mega"); confettiBurst(260); zoomPunch(); shockwave(); casinoStrobe(); jackpotSirens(1800); sideLights(2200); moneyTicker("MEGA WIN"); sndBig(); hypeWords(7); } },
+    { mult: 15,  name: "SUPER MEGA WIN",     cls: "t-super", fx: () => { quake("mega"); confettiBurst(320); shockwave(); casinoStrobe(); zoomPunch(); screenRainbow(1500); jackpotSirens(2400); sideLights(2800); moneyTicker("SUPER MEGA"); sndUltra(); hypeWords(10); } },
+    { mult: 30,  name: "ULTRA WIN",          cls: "t-ultra", fx: () => { quake("mega"); coinRain(3500); shockwave(); casinoStrobe(); screenRainbow(2000); jackpotSirens(3200); sideLights(3600); moneyTicker("ULTRA WIN"); sndUltra(); hypeWords(14); } },
+    { mult: 60,  name: "WAHNSINNS-WIN!!!",   cls: "t-ultra", fx: () => { quake("mega"); coinRain(4500); confettiBurst(400); shockwave(); casinoStrobe(); screenRainbow(2500); zoomPunch(); jackpotSirens(4200); sideLights(4600); moneyTicker("WAHNSINN"); sndUltra(); hypeWords(20); } },
+    { mult: 150, name: "GOTTGLEICHER WIN",   cls: "t-ultra", fx: () => { coinRain(6000); confettiBurst(500); shockwave(); casinoStrobe(); screenRainbow(3000); zoomPunch(); jackpotSirens(5600); sideLights(6200); moneyTicker("GOTTGLEICH"); sndUltra(); hypeWords(28); } },
+    { mult: 400, name: "💥 CASINO GESPRENGT 💥", cls: "t-ultra", fx: () => { coinRain(9000); confettiBurst(700); shockwave(); casinoStrobe(); screenRainbow(4000); zoomPunch(); jackpotSirens(9000); sideLights(9000); moneyTicker("CASINO GESPRENGT"); sndUltra(); hypeWords(40); } },
   ];
 
   function quake(level) {
@@ -1027,6 +1031,88 @@
   // ===============================================================
   // Übertriebene Dopamin-Effekte (liebevolle Parodie auf echte Casinos)
   // ===============================================================
+  function dopamineKick(center, delta) {
+    sideLights(700);
+    moneyTicker("+" + delta.toLocaleString("de-DE"));
+    coinFountain(center, Math.min(34, 8 + Math.floor(delta / Math.max(wcBet, 1)) * 2));
+    const rw = $("#reels-window");
+    if (rw) {
+      rw.classList.remove("payblast");
+      void rw.offsetWidth;
+      rw.classList.add("payblast");
+      setTimeout(() => rw.classList.remove("payblast"), 520);
+    }
+    const stage = $("#slot-stage");
+    if (stage) {
+      stage.classList.remove("neon-suck");
+      void stage.offsetWidth;
+      stage.classList.add("neon-suck");
+      setTimeout(() => stage.classList.remove("neon-suck"), 620);
+    }
+  }
+
+  function sideLights(ms = 1000) {
+    let el = document.getElementById("slot-side-lights");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "slot-side-lights";
+      el.innerHTML = "<i></i><i></i>";
+      document.body.appendChild(el);
+    }
+    el.classList.remove("go");
+    void el.offsetWidth;
+    el.classList.add("go");
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove("go"), ms);
+  }
+
+  function jackpotSirens(ms = 1500) {
+    let el = document.getElementById("slot-sirens");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "slot-sirens";
+      el.innerHTML = "<i></i><i></i>";
+      document.body.appendChild(el);
+    }
+    el.classList.remove("go");
+    void el.offsetWidth;
+    el.classList.add("go");
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove("go"), ms);
+  }
+
+  function moneyTicker(text) {
+    let el = document.getElementById("slot-money-ticker");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "slot-money-ticker";
+      document.body.appendChild(el);
+    }
+    const msg = String(text || "WIN");
+    el.innerHTML = Array.from({ length: 8 }, () => `<span>${msg} · 💸 · JACKPOT-FEELING · </span>`).join("");
+    el.classList.remove("go");
+    void el.offsetWidth;
+    el.classList.add("go");
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove("go"), 1500);
+  }
+
+  function coinFountain(from, count) {
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement("div");
+      el.className = "coin-pop";
+      el.textContent = Math.random() < 0.78 ? "🪙" : "💎";
+      el.style.left = from.x + "px";
+      el.style.top = from.y + "px";
+      el.style.setProperty("--dx", ((Math.random() - 0.5) * 360).toFixed(0) + "px");
+      el.style.setProperty("--dy", (-130 - Math.random() * 220).toFixed(0) + "px");
+      el.style.setProperty("--rot", ((Math.random() - 0.5) * 720).toFixed(0) + "deg");
+      el.style.animationDelay = (Math.random() * 0.16).toFixed(2) + "s";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1300);
+    }
+  }
+
   function casinoStrobe() {
     let el = document.getElementById("casino-strobe");
     if (!el) {
