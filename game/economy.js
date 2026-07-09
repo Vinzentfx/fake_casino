@@ -29,15 +29,18 @@ const WORK_FACTOR_WINDOW = 15 * 60 * 1000;
 const JOB_HOUR_CAP = 32000;
 const JOB_DAY_CAP = 150000;
 const JOBS = {
-  delivery: { label: "Lieferdienst", cooldown: 28_000, base: 170, xp: 2, tasks: ["route", "sort", "memory"] },
-  promo: { label: "Casino-Promo", cooldown: 50_000, base: 95, xp: 9, tasks: ["code", "math", "memory"] },
-  side: { label: "Riskanter Nebenjob", cooldown: 95_000, base: 230, xp: 4, risky: true, tasks: ["crate", "meter", "sort"] },
-  shift: { label: "Schichtarbeit", duration: 75_000, cooldown: 125_000, base: 980, xp: 12, tasks: ["switches", "math", "meter"] },
+  delivery: { label: "Lieferdienst", cooldown: 28_000, base: 170, xp: 2, tasks: ["route", "stack", "scanner"] },
+  promo: { label: "Casino-Promo", cooldown: 50_000, base: 95, xp: 9, tasks: ["keypad", "math", "signal"] },
+  side: { label: "Riskanter Nebenjob", cooldown: 95_000, base: 230, xp: 4, risky: true, tasks: ["crate", "meter", "wires"] },
+  shift: { label: "Schichtarbeit", duration: 75_000, cooldown: 125_000, base: 980, xp: 12, tasks: ["switches", "wires", "meter"] },
 };
 const dayNow = () => Math.floor(Date.now() / 86400000);
 const TASK_TTL = 35_000;
-const WORK_SYMBOLS = ["A", "B", "C", "D", "E", "F"];
+const WORK_STOPS = ["Depot", "Bank", "Markt", "Park", "Kiosk", "Hotel"];
+const WORK_SYMBOLS = ["◆", "●", "▲", "■", "★", "✚"];
 const WORK_CRATES = ["Rot", "Blau", "Gelb"];
+const WORK_WIRES = ["Rot", "Blau", "Gelb", "Grün"];
+const WORK_SCAN = ["💎", "🎟️", "🍀", "⭐", "🔑", "🪙"];
 
 function shuffle(xs) {
   const arr = [...xs];
@@ -52,10 +55,10 @@ function makeWorkTask(id, job, now = Date.now()) {
   const taskPool = Array.isArray(job.tasks) && job.tasks.length ? job.tasks : [job.task || "code"];
   const type = taskPool[Math.floor(Math.random() * taskPool.length)];
   if (type === "route") {
-    const route = shuffle(WORK_SYMBOLS).slice(0, 4);
+    const route = shuffle(WORK_STOPS).slice(0, 4);
     return {
       id, type, expiresAt: now + TASK_TTL, answer: route.join(""),
-      public: { id, type, title: "Route planen", prompt: "Tippe die Stopps in der angezeigten Reihenfolge an.", route, options: shuffle(route) },
+      public: { id, type, title: "Route planen", prompt: "Baue die Route in der richtigen Reihenfolge nach.", target: route, options: shuffle(route) },
     };
   }
   if (type === "crate") {
@@ -65,6 +68,22 @@ function makeWorkTask(id, job, now = Date.now()) {
       public: { id, type, title: "Lieferkiste prüfen", prompt: `Wähle die ${safe}-markierte Kiste.`, options: shuffle(WORK_CRATES) },
     };
   }
+  if (type === "scanner") {
+    const target = WORK_SCAN[Math.floor(Math.random() * WORK_SCAN.length)];
+    return {
+      id, type, expiresAt: now + TASK_TTL, answer: target,
+      public: { id, type, title: "Scanner kalibrieren", prompt: "Finde das gesuchte Symbol im Scanner-Raster.", target, options: shuffle(WORK_SCAN) },
+    };
+  }
+  if (type === "stack") {
+    const weights = shuffle([2, 3, 5, 7, 9, 11]).slice(0, 4);
+    const packs = weights.map((w, i) => ({ id: `P${i + 1}`, label: `P${i + 1}`, weight: w }));
+    const answer = [...packs].sort((a, b) => a.weight - b.weight).map((p) => p.id).join("");
+    return {
+      id, type, expiresAt: now + TASK_TTL, answer,
+      public: { id, type, title: "Pakete stapeln", prompt: "Tippe die Pakete von leicht nach schwer an.", options: shuffle(packs) },
+    };
+  }
   if (type === "switches") {
     const pattern = Array.from({ length: 5 }, () => (Math.random() < 0.5 ? "1" : "0")).join("");
     return {
@@ -72,19 +91,11 @@ function makeWorkTask(id, job, now = Date.now()) {
       public: { id, type, title: "Schaltpult einstellen", prompt: "Stelle die Schalter exakt wie das Muster ein.", pattern },
     };
   }
-  if (type === "memory") {
+  if (type === "signal") {
     const seq = shuffle(WORK_SYMBOLS).slice(0, 4);
     return {
       id, type, expiresAt: now + TASK_TTL, answer: seq.join(""),
-      public: { id, type, title: "Signal merken", prompt: "Merke dir die Reihenfolge und tippe sie nach.", sequence: seq, options: shuffle(seq) },
-    };
-  }
-  if (type === "sort") {
-    const nums = shuffle([1, 2, 3, 4, 5, 6]).slice(0, 4);
-    const answer = [...nums].sort((a, b) => a - b).join("");
-    return {
-      id, type, expiresAt: now + TASK_TTL, answer,
-      public: { id, type, title: "Pakete sortieren", prompt: "Tippe die Pakete von klein nach groß an.", options: shuffle(nums.map(String)) },
+      public: { id, type, title: "Signal merken", prompt: "Tippe die Symbolfolge nach.", target: seq, options: shuffle(seq) },
     };
   }
   if (type === "math") {
@@ -94,17 +105,31 @@ function makeWorkTask(id, job, now = Date.now()) {
     const left = op === "-" && b > a ? b : a;
     const right = op === "-" && b > a ? a : b;
     const answer = op === "+" ? left + right : left - right;
-    const options = shuffle([answer, answer + 1, Math.max(0, answer - 1), answer + 2].map(String));
+    const options = shuffle([...new Set([answer, answer + 1, Math.max(0, answer - 1), answer + 2, answer + 3])].slice(0, 4).map(String));
     return {
       id, type, expiresAt: now + TASK_TTL, answer: String(answer),
       public: { id, type, title: "Kasse prüfen", prompt: `Was ist ${left} ${op} ${right}?`, options },
+    };
+  }
+  if (type === "wires") {
+    const pattern = shuffle(WORK_WIRES).slice(0, 4);
+    return {
+      id, type, expiresAt: now + TASK_TTL + 10_000, answer: pattern.join(""),
+      public: { id, type, title: "Kabel verbinden", prompt: "Verbinde die Farben in der Ziel-Reihenfolge.", target: pattern, options: shuffle(pattern) },
     };
   }
   if (type === "meter") {
     const target = 2 + Math.floor(Math.random() * 3);
     return {
       id, type, expiresAt: now + TASK_TTL, answer: String(target),
-      public: { id, type, title: "Timing treffen", prompt: "Stoppe den Balken im goldenen Feld.", target, slots: 5 },
+      public: { id, type, title: "Druck justieren", prompt: "Wähle das goldene Druckfeld.", target, slots: 5 },
+    };
+  }
+  if (type === "keypad") {
+    const code = String(Math.floor(1000 + Math.random() * 9000));
+    return {
+      id, type, expiresAt: now + TASK_TTL, answer: code,
+      public: { id, type, title: "Keypad hacken", prompt: "Gib den Code über das Tastenfeld ein.", code },
     };
   }
   const code = String(Math.floor(1000 + Math.random() * 9000));
