@@ -104,7 +104,11 @@
       return;
     }
     const taskKey = `${task.id}:${task.type}:${task.expiresAt}`;
-    if (!force && currentTaskKey === taskKey) return;
+    if (!force && currentTaskKey === taskKey) {
+      const timer = box.querySelector(".work-task-head > span");
+      if (timer) timer.textContent = timeLeft(task.expiresAt) || "jetzt";
+      return;
+    }
     if (currentTaskKey !== taskKey) {
       routeAnswer = [];
       switchBits = [];
@@ -118,8 +122,26 @@
       inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-route-btn" data-route="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
       inner += `<div class="muted small" id="work-route-current">Eingabe: ${routeAnswer.join(" → ") || "–"}</div>`;
       inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Route abgeben</button>`;
+    } else if (task.type === "memory") {
+      inner += `<div class="work-route-target">${(task.sequence || []).map(escapeHtml).join(" · ")}</div>`;
+      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-route-btn" data-route="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
+      inner += `<div class="muted small" id="work-route-current">Eingabe: ${routeAnswer.join(" · ") || "–"}</div>`;
+      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Signal abgeben</button>`;
+    } else if (task.type === "sort") {
+      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-route-btn" data-route="${escapeHtml(o)}">📦 ${escapeHtml(o)}</button>`).join("")}</div>`;
+      inner += `<div class="muted small" id="work-route-current">Sortiert: ${routeAnswer.join(" → ") || "–"}</div>`;
+      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Sortierung abgeben</button>`;
     } else if (task.type === "crate") {
       inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-crate-btn" data-answer="${escapeHtml(o)}">📦 ${escapeHtml(o)}</button>`).join("")}</div>`;
+    } else if (task.type === "math") {
+      inner += `<div class="work-route-target">${escapeHtml(task.prompt || "")}</div>`;
+      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-crate-btn" data-answer="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
+    } else if (task.type === "meter") {
+      const slots = Math.max(3, Math.floor(Number(task.slots) || 5));
+      inner += `<div class="work-meter">${Array.from({ length: slots }, (_, i) => {
+        const n = i + 1;
+        return `<button class="work-meter-slot ${n === task.target ? "target" : ""}" data-answer="${n}">${n === task.target ? "★" : ""}</button>`;
+      }).join("")}</div>`;
     } else if (task.type === "switches") {
       if (!switchBits.length) switchBits = Array.from({ length: String(task.pattern || "").length }, () => "0");
       inner += `<div class="work-route-target">${String(task.pattern || "").split("").map((b) => b === "1" ? "AN" : "AUS").join(" · ")}</div>`;
@@ -203,6 +225,8 @@
     }
     const crate = e.target.closest(".work-crate-btn");
     if (crate) { submitTask(crate.dataset.answer || ""); return; }
+    const meter = e.target.closest(".work-meter-slot");
+    if (meter) { submitTask(meter.dataset.answer || ""); return; }
     const sw = e.target.closest(".work-switch");
     if (sw) {
       const i = parseInt(sw.dataset.switch, 10);
@@ -214,7 +238,7 @@
     if (e.target.closest("#work-task-submit")) {
       const task = workState && workState.activeTask;
       if (!task) return;
-      if (task.type === "route") submitTask(routeAnswer);
+      if (task.type === "route" || task.type === "memory" || task.type === "sort") submitTask(routeAnswer);
       else if (task.type === "switches") submitTask(switchBits.join(""));
       else submitTask($("#work-code-input")?.value || "");
     }

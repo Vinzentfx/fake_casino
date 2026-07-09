@@ -118,7 +118,7 @@ function setAccount(acc, token) {
 }
 
 // ---- Update-/Changelog-Modal (einmal pro Version) ----
-const UPDATE_VERSION = "2026-07-09-work-tasks-level-board";
+const UPDATE_VERSION = "2026-07-09-work-task-rotation";
 function maybeShowUpdate() {
   let seen = null;
   try { seen = localStorage.getItem("casino_seen_update"); } catch {}
