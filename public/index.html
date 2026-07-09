@@ -28,6 +28,13 @@
       </div>
     </div>
   </header>
+  <div id="announcement-strip" class="announcement-strip hidden" aria-live="polite">
+    <span class="announcement-icon">📣</span>
+    <div>
+      <b id="announcement-text"></b>
+      <small id="announcement-meta"></small>
+    </div>
+  </div>
 
   <main id="app">
 
@@ -1311,6 +1318,18 @@
         <div id="admin-dashboard" style="display:grid;gap:.75rem;margin:.75rem 0 1rem">
           <div class="muted small">Dashboard lädt…</div>
         </div>
+
+        <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
+        <h3>📣 Global Announcement</h3>
+        <div style="display:grid;gap:.5rem;margin-bottom:.25rem">
+          <textarea id="admin-announcement-text" maxlength="220" rows="3" placeholder="Nachricht an alle Spieler…" style="width:100%;resize:vertical"></textarea>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn-primary" id="admin-announcement-send">An alle senden</button>
+            <button class="btn-secondary" id="admin-announcement-clear">Ausblenden</button>
+          </div>
+        </div>
+        <p class="muted small" style="margin:.25rem 0 0">Wird live unten als Meldung gezeigt und bleibt danach dezent gespeichert sichtbar.</p>
+        <div class="form-error" id="admin-announcement-error"></div>
 
         <h3>Alle Accounts</h3>
         <ol class="leaderboard" id="admin-account-list">
