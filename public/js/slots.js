@@ -486,6 +486,9 @@
     if (autoRoll && !spinning && !freeActive && !pvpMode) doSpin();
   }
   $("#auto-roll").addEventListener("click", () => setAuto(!autoRoll));
+  // Stop auto-spin when the player leaves the slots screen (e.g. taps the logo →
+  // lobby), so the reels don't keep spinning in the background.
+  window.Casino._slotsStopAuto = () => { if (autoRoll) setAuto(false); };
 
   // Bonus-Buy: pay to start free spins immediately.
   $("#force-win-btn").addEventListener("click", () => {

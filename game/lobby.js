@@ -20,7 +20,7 @@ function publicList() {
   for (const describe of providers.values()) {
     let d;
     try { d = describe(); } catch { d = null; }
-    if (d && d.joinable) out.push(d);
+    if (d && (d.joinable || d.watchable)) out.push(d); // joinable OR spectatable (running games)
   }
   // Group by game, newest-ish first within (insertion order is roughly age).
   return out.sort((a, b) => String(a.game).localeCompare(String(b.game)));

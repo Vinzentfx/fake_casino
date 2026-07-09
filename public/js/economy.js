@@ -354,11 +354,17 @@
     }
 
     // Buildings: territory painting — owned houses fill in the owner's colour.
+    // When a house is selected, every house on the SAME street is highlighted so
+    // you can spot the whole street at a glance.
+    const selB = selectedId != null ? district.buildings.find((x) => x.id === selectedId) : null;
+    const selSt = selB ? selB.st : null;
     for (const b of district.buildings) {
       const sel = b.id === selectedId;
+      const sameSt = !sel && selSt && b.st === selSt;
       let fill = CLS_FILL[b.cls] || "#3e5748";
       let stroke = "rgba(0,0,0,0.35)", sw = 0.4;
       if (b.owner) { fill = b.color; stroke = b.mine ? "#f4d782" : "rgba(0,0,0,0.5)"; sw = b.mine ? 1.6 : 0.7; }
+      if (sameSt) { stroke = "#ffcf5e"; sw = 2.0; }   // same-street highlight
       if (sel) { stroke = "#7ec8ff"; sw = 2.4; }
       const special = b.cls === "casino" || b.cls === "bank" || b.trophy;
       parts.push(`<path class="bld" data-b="${b.id}" d="${pathOf(b.pts)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${special ? 'filter="url(#glow)"' : ""} style="cursor:pointer"/>`);

@@ -22,16 +22,32 @@
       listEl.innerHTML = '<p class="muted small">Keine offenen Lobbys gerade. Erstelle eine in 🃏 Poker oder 🎰 Slots-Duell — sie taucht hier für alle auf.</p>';
       return;
     }
-    listEl.innerHTML = lobbies.map((l) => `
+    listEl.innerHTML = lobbies.map((l) => {
+      const watchOnly = !l.joinable && l.watchable;
+      const sub = watchOnly && l.names && l.names.length
+        ? `Läuft: ${l.names.map(escapeHtml).join(" vs ")}`
+        : `Anführer: ${escapeHtml(l.host)} · ${l.players}/${l.max} Spieler`;
+      const btn = watchOnly
+        ? `<button class="btn-secondary lobby-watch" data-game="${escapeHtml(l.game)}" data-code="${escapeHtml(l.code)}">👁️ Zuschauen</button>`
+        : `<button class="btn-primary lobby-join" data-game="${escapeHtml(l.game)}" data-code="${escapeHtml(l.code)}">Beitreten</button>`;
+      return `
       <div class="lobby-card">
         <div class="lobby-card-info">
           <div class="lobby-card-title">${escapeHtml(l.label)} <span class="muted small">· ${escapeHtml(String(l.buyIn))}</span></div>
-          <div class="muted small">Anführer: ${escapeHtml(l.host)} · ${l.players}/${l.max} Spieler</div>
+          <div class="muted small">${sub}</div>
         </div>
-        <button class="btn-primary lobby-join" data-game="${escapeHtml(l.game)}" data-code="${escapeHtml(l.code)}">Beitreten</button>
-      </div>`).join("");
+        ${btn}
+      </div>`;
+    }).join("");
     listEl.querySelectorAll(".lobby-join").forEach((b) =>
       b.addEventListener("click", () => join(b.dataset.game, b.dataset.code)));
+    listEl.querySelectorAll(".lobby-watch").forEach((b) =>
+      b.addEventListener("click", () => watch(b.dataset.game, b.dataset.code)));
+  }
+
+  function watch(game, code) {
+    if (game === "chess" && window.Casino._chessSpectate) window.Casino._chessSpectate(code);
+    else toast("Diesem Spiel kann man gerade nicht zuschauen.");
   }
 
   function join(game, code) {

@@ -66,7 +66,7 @@
   }
 
   function clickSquare(sq) {
-    if (!st || st.state !== "playing") return;
+    if (!st || st.state !== "playing" || st.spectating) return; // spectators can't move
     const myTurn = st.turn === myColor();
     if (!myTurn) return;
     if (selected && legalTargets.includes(sq)) {
@@ -128,6 +128,11 @@
   function renderStatus() {
     const el = $("#chs-status"); if (!el || !st) return;
     if (st.state !== "playing") return;
+    if (st.spectating) {
+      const turnName = st.turn === "w" ? (st.you && st.you.name) : (st.opponent && st.opponent.name);
+      el.textContent = `${turnName || (st.turn === "w" ? "Weiß" : "Schwarz")} ist am Zug${st.check ? " · Schach!" : ""}`;
+      return;
+    }
     const myTurn = st.turn === myColor();
     let s = myTurn ? "▶ Du bist am Zug" : "Gegner ist am Zug…";
     if (st.check) s += " · Schach!";
@@ -184,12 +189,16 @@
       clockBase = { ...s.clocks }; clockTurn = s.turn; clockAt = Date.now();
       renderBoard(); renderClocks(); renderPlayerBars(); renderStatus(); renderMoves();
       startClock();
+      $("#chs-resign").style.display = s.spectating ? "none" : "";
+      $("#chs-spec-banner").style.display = s.spectating ? "" : "none";
+      if (s.spectating) $("#chs-spec-banner").textContent = `👁️ Zuschauer${s.spectatorCount > 1 ? " (" + s.spectatorCount + ")" : ""} · ‹ Lobby zum Verlassen`;
     } else if (s.state === "done") {
       stopClock();
+      $("#chs-spec-banner").style.display = "none";
       show("chs-result");
       renderResult();
       const rm = s.rematch || {};
-      $("#chs-rematch").style.display = rm.canRematch ? "" : "none";
+      $("#chs-rematch").style.display = (rm.canRematch && !s.spectating) ? "" : "none";
       $("#chs-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "🔁 Gegner will Revanche!" : "");
     }
   }
@@ -221,7 +230,11 @@
     socket.emit("chess:resign", () => {});
   });
 
-  function leave() { if (myCode) socket.emit("chess:leave"); myCode = null; st = null; stopClock(); }
+  function leave() {
+    if (st && st.spectating) socket.emit("chess:unspectate");
+    else if (myCode) socket.emit("chess:leave");
+    myCode = null; st = null; stopClock();
+  }
   function reset() { leave(); show("chs-setup"); $("#chs-error").textContent = ""; }
   $("#chs-cancel").addEventListener("click", reset);
   $("#chs-again").addEventListener("click", reset);
@@ -259,7 +272,20 @@
   $("#chs-league-btn").addEventListener("click", openLeague);
   $("#chs-league-back").addEventListener("click", () => show("chs-setup"));
 
+  // ── Spectate ──────────────────────────────────────────────
+  socket.on("chess:specEnd", () => {
+    stopClock(); st = null; myCode = null;
+    $("#chs-spec-banner").style.display = "none";
+    toast("👁️ Das Match ist vorbei.");
+    const active = document.querySelector('[data-screen="chess"]');
+    if (active && active.classList.contains("active")) show("chs-setup");
+  });
+
   window.Casino._chessJoinCode = (code) => { window.Casino.showScreen("chess"); doJoin(code); };
+  window.Casino._chessSpectate = (code) => {
+    window.Casino.showScreen("chess");
+    socket.emit("chess:spectate", { code }, (r) => { if (!r || !r.ok) { toast((r && r.error) || "Konnte nicht zuschauen."); show("chs-setup"); } });
+  };
   window.Casino._loadChess = () => {
     if (st && st.state && st.state !== "done") { apply(st); return; }
     show("chs-setup"); $("#chs-error").textContent = "";
