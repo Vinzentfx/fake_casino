@@ -19,7 +19,12 @@
   let workTick = null;
   let routeAnswer = [];
   let switchBits = [];
+  let keypadInput = "";
   let currentTaskKey = "";
+
+  function taskSep(task) {
+    return task && task.type === "route" ? " → " : " · ";
+  }
 
   // ── Work (capped clicker) ────────────────────────────────────────────────
   function applyWorkState(s) {
@@ -45,10 +50,10 @@
 
   function jobMeta(id) {
     return ({
-      delivery: { icon: "🚲", text: "Plane kurz die Route und kassiere dann. Sicherer Job mit gutem Starter-Lohn." },
-      shift: { icon: "🏭", text: "Läuft kurz im Hintergrund. Beim Abholen musst du das Schaltpult einstellen." },
-      promo: { icon: "📣", text: "Code synchronisieren: weniger Chips, dafür mehr XP fürs Leveln." },
-      side: { icon: "🎲", text: "Kiste prüfen: kein Verlust möglich, aber der Auftrag kann stark oder schwach ausfallen." },
+      delivery: { icon: "🚲", text: "Kurze aktive Aufgaben: Route, Scanner oder Pakete. Sicherer Starter-Lohn." },
+      shift: { icon: "🏭", text: "Läuft kurz im Hintergrund. Danach Schaltpult, Kabel oder Druckfeld lösen." },
+      promo: { icon: "📣", text: "Promo-Aufgaben wie Keypad, Kasse oder Signal. Mehr XP fürs Leveln." },
+      side: { icon: "🎲", text: "Riskantere Aufgaben mit Bonuschance. Kein Verlust, aber schwankender Lohn." },
     })[id] || { icon: "💼", text: "Aktiver Job." };
   }
 
@@ -100,6 +105,7 @@
       box.innerHTML = "";
       routeAnswer = [];
       switchBits = [];
+      keypadInput = "";
       currentTaskKey = "";
       return;
     }
@@ -112,30 +118,34 @@
     if (currentTaskKey !== taskKey) {
       routeAnswer = [];
       switchBits = [];
+      keypadInput = "";
       currentTaskKey = taskKey;
     }
     panel.classList.remove("hidden");
     const left = timeLeft(task.expiresAt);
     let inner = `<div class="work-task-head"><div><b>${escapeHtml(task.title || "Aufgabe")}</b><p class="muted small">${escapeHtml(task.prompt || "")}</p></div><span>${left || "jetzt"}</span></div>`;
-    if (task.type === "route") {
-      inner += `<div class="work-route-target">${(task.route || []).map(escapeHtml).join(" → ")}</div>`;
-      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-route-btn" data-route="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
-      inner += `<div class="muted small" id="work-route-current">Eingabe: ${routeAnswer.join(" → ") || "–"}</div>`;
-      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Route abgeben</button>`;
-    } else if (task.type === "memory") {
-      inner += `<div class="work-route-target">${(task.sequence || []).map(escapeHtml).join(" · ")}</div>`;
-      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-route-btn" data-route="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
-      inner += `<div class="muted small" id="work-route-current">Eingabe: ${routeAnswer.join(" · ") || "–"}</div>`;
-      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Signal abgeben</button>`;
-    } else if (task.type === "sort") {
-      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-route-btn" data-route="${escapeHtml(o)}">📦 ${escapeHtml(o)}</button>`).join("")}</div>`;
-      inner += `<div class="muted small" id="work-route-current">Sortiert: ${routeAnswer.join(" → ") || "–"}</div>`;
-      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Sortierung abgeben</button>`;
+    if (task.type === "route" || task.type === "signal" || task.type === "wires") {
+      const sep = taskSep(task);
+      inner += `<div class="work-route-target">${(task.target || []).map(escapeHtml).join(sep)}</div>`;
+      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-pick-btn" data-pick="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
+      inner += `<div class="work-input-line">Eingabe: <b id="work-route-current">${routeAnswer.join(sep) || "–"}</b></div>`;
+      inner += `<div class="work-task-actions"><button class="btn-secondary" id="work-task-reset">Reset</button><button class="btn-primary" id="work-task-submit">Abgeben</button></div>`;
+    } else if (task.type === "stack") {
+      inner += `<div class="work-task-buttons">${(task.options || []).map((p) => `<button class="btn-secondary work-pick-btn" data-pick="${escapeHtml(p.id)}">📦 ${escapeHtml(p.label)} <small>${fmt(p.weight)}kg</small></button>`).join("")}</div>`;
+      inner += `<div class="work-input-line">Stapel: <b id="work-route-current">${routeAnswer.join(" → ") || "–"}</b></div>`;
+      inner += `<div class="work-task-actions"><button class="btn-secondary" id="work-task-reset">Reset</button><button class="btn-primary" id="work-task-submit">Stapel prüfen</button></div>`;
     } else if (task.type === "crate") {
       inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-crate-btn" data-answer="${escapeHtml(o)}">📦 ${escapeHtml(o)}</button>`).join("")}</div>`;
+    } else if (task.type === "scanner") {
+      inner += `<div class="work-route-target">Gesucht: ${escapeHtml(task.target || "")}</div>`;
+      inner += `<div class="work-scan-grid">${(task.options || []).map((o) => `<button class="work-scan-card" data-answer="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
     } else if (task.type === "math") {
       inner += `<div class="work-route-target">${escapeHtml(task.prompt || "")}</div>`;
       inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-crate-btn" data-answer="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
+    } else if (task.type === "keypad") {
+      inner += `<div class="work-code-display">${escapeHtml(task.code || "")}</div>`;
+      inner += `<div class="work-keypad-screen">${keypadInput || "----"}</div>`;
+      inner += `<div class="work-keypad">${["1","2","3","4","5","6","7","8","9","⌫","0","OK"].map((n) => `<button class="work-key" data-key="${n}">${n}</button>`).join("")}</div>`;
     } else if (task.type === "meter") {
       const slots = Math.max(3, Math.floor(Number(task.slots) || 5));
       inner += `<div class="work-meter">${Array.from({ length: slots }, (_, i) => {
@@ -216,15 +226,28 @@
   });
 
   $("#work-task-panel")?.addEventListener("click", (e) => {
-    const routeBtn = e.target.closest(".work-route-btn");
-    if (routeBtn) {
-      routeAnswer.push(routeBtn.dataset.route || "");
+    const pickBtn = e.target.closest(".work-pick-btn");
+    if (pickBtn) {
+      routeAnswer.push(pickBtn.dataset.pick || "");
       const cur = $("#work-route-current");
-      if (cur) cur.textContent = `Eingabe: ${routeAnswer.join(" → ") || "–"}`;
+      const task = workState && workState.activeTask;
+      if (cur) cur.textContent = routeAnswer.join(taskSep(task)) || "–";
       return;
     }
     const crate = e.target.closest(".work-crate-btn");
     if (crate) { submitTask(crate.dataset.answer || ""); return; }
+    const scan = e.target.closest(".work-scan-card");
+    if (scan) { submitTask(scan.dataset.answer || ""); return; }
+    const key = e.target.closest(".work-key");
+    if (key) {
+      const k = key.dataset.key;
+      if (k === "OK") submitTask(keypadInput);
+      else if (k === "⌫") keypadInput = keypadInput.slice(0, -1);
+      else if (keypadInput.length < 6) keypadInput += k;
+      const task = workState && workState.activeTask;
+      renderTask(task, true);
+      return;
+    }
     const meter = e.target.closest(".work-meter-slot");
     if (meter) { submitTask(meter.dataset.answer || ""); return; }
     const sw = e.target.closest(".work-switch");
@@ -235,10 +258,18 @@
       renderTask(task, true);
       return;
     }
+    if (e.target.closest("#work-task-reset")) {
+      routeAnswer = [];
+      switchBits = [];
+      keypadInput = "";
+      const task = workState && workState.activeTask;
+      renderTask(task, true);
+      return;
+    }
     if (e.target.closest("#work-task-submit")) {
       const task = workState && workState.activeTask;
       if (!task) return;
-      if (task.type === "route" || task.type === "memory" || task.type === "sort") submitTask(routeAnswer);
+      if (task.type === "route" || task.type === "signal" || task.type === "wires" || task.type === "stack") submitTask(routeAnswer);
       else if (task.type === "switches") submitTask(switchBits.join(""));
       else submitTask($("#work-code-input")?.value || "");
     }

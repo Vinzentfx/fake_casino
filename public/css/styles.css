@@ -1629,6 +1629,10 @@ button { font-family: inherit; cursor: pointer; }
 .work-task-head p { margin: 3px 0 0; }
 .work-task-head > span { white-space: nowrap; color: #f4d782; font-size: 0.82rem; font-weight: 800; }
 .work-task-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.work-task-buttons button small { display: block; opacity: .72; font-size: .68rem; margin-top: 2px; }
+.work-task-actions { display: grid; grid-template-columns: .7fr 1fr; gap: 8px; margin-top: 8px; }
+.work-input-line { margin-top: 8px; color: rgba(232,236,242,0.68); font-size: .82rem; }
+.work-input-line b { color: #f4d782; }
 .work-route-target, .work-code-display {
   margin-top: 10px; padding: 10px 12px; border-radius: 8px; text-align: center;
   background: rgba(0,0,0,0.22); color: #f4d782; font-weight: 900; letter-spacing: 0.06em;
@@ -1641,6 +1645,10 @@ button { font-family: inherit; cursor: pointer; }
 .work-meter { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
 .work-meter-slot { min-height: 44px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.13); background: rgba(255,255,255,0.055); color: #9aa4b2; font-weight: 900; }
 .work-meter-slot.target { background: rgba(244,215,130,0.2); border-color: rgba(244,215,130,0.62); color: #f4d782; box-shadow: 0 0 0 2px rgba(244,215,130,0.12) inset; }
+.work-scan-grid, .work-keypad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.work-scan-card { min-height: 48px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.13); background: rgba(255,255,255,0.055); font-size: 1.35rem; }
+.work-keypad-screen { margin-top: 10px; padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.26); color: #bff5d0; text-align: center; font-weight: 900; letter-spacing: .18em; }
+.work-key { padding: 12px 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.13); background: rgba(255,255,255,0.06); color: #fff; font-weight: 900; }
 @media (max-width: 560px) {
   .work-job { grid-template-columns: auto 1fr; }
   .work-job .chip-btn { grid-column: 1 / -1; width: 100%; }
