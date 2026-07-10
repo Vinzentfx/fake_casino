@@ -151,7 +151,7 @@ const MACHINES = [
     golden: "G",
     unlockCost: 120000,
     bets: [500, 1000, 5000, 25000, 100000, 250000],
-    payScale: 0.064,
+    payScale: 0.058,
     freeSpins: { trigger: 3, count: 4, extra: 1, persistentMultiplier: true },
     // Kein Bonus-Kauf: Freispiele nur echt erspielbar (Bonus-EV ≈ 48× wäre
     // als Kauf entweder Exploit oder unattraktiv teuer).
@@ -183,12 +183,13 @@ const MACHINES = [
     ],
     minWin: 0.25, // jeder Treffer zahlt mindestens 0,25× Einsatz (Anti-Krümel)
     coinScatterChance: 6, // % je Golden-Position (nur 1. Welle): Scatter statt Münze
-    // Buff-Runde: Die drei Low-Symbole zahlen erst ab 4 Walzen — weniger,
-    // aber spürbare Treffer statt 0,01×-Krümel (payScale entsprechend höher).
+    // Low-Symbole zahlen bei 3 Walzen nur symbolisch (der minWin-Floor hebt
+    // das auf 0,25× an) — so fühlt sich ein Reveal mit 3er-Treffer nie "leer"
+    // an, ohne dass Krümel-Beträge angezeigt werden.
     pays: {
-      anchor: { 4: 10, 5: 30 },
-      puffer: { 4: 12, 5: 38 },
-      crystal: { 4: 15, 5: 48 },
+      anchor: { 3: 3, 4: 10, 5: 30 },
+      puffer: { 3: 3.5, 4: 12, 5: 38 },
+      crystal: { 3: 4, 4: 15, 5: 48 },
       pearl: { 3: 8, 4: 22, 5: 70 },
       helmet: { 3: 11, 4: 32, 5: 100 },
       chest: { 3: 16, 4: 52, 5: 180 },
@@ -771,9 +772,14 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   const algaeMult = isAlgae(machine) && inFree ? startMult + mystery.nudges : 1;
   let totalWin = Math.round(baseWin * fsMult * algaeMult) + mystery.instantWin;
   // Mindestgewinn: Ways-Krümel (z. B. 0,01× Einsatz) werden auf minWin×Einsatz
-  // angehoben — nie wieder "+10" bei 1.000 Einsatz.
+  // angehoben — nie wieder "+10" bei 1.000 Einsatz. Die Einzelgewinne werden
+  // mitskaliert, damit der Client-Zähler sauber auf den Endbetrag hochläuft
+  // statt am Ende auf den Floor zu springen.
   if (machine.minWin && totalWin > 0 && totalWin < spinBet * machine.minWin) {
-    totalWin = Math.round(spinBet * machine.minWin);
+    const floored = Math.round(spinBet * machine.minWin);
+    const factor = floored / totalWin;
+    for (const w of wins) w.win = Math.round(w.win * factor);
+    totalWin = floored;
   }
 
   // Trigger / retrigger free spins.
