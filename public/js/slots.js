@@ -28,6 +28,13 @@
   let autoRemaining = Infinity; // remaining auto-spins (Infinity = ∞)
   let freeWinTotal = 0;
   let cellH = 70; // measured at runtime
+  const FX_LIMITS = {
+    confetti: 360,
+    rainCoins: 220,
+    fountainNodes: 30,
+    emojiNodes: 28,
+    hypeWords: 18,
+  };
 
   // PvP duel state
   let pvpMode = false;
@@ -1101,6 +1108,7 @@
     return { canvas, ctx: canvas.getContext("2d") };
   }
   function confettiBurst(count) {
+    count = Math.min(count, FX_LIMITS.confetti);
     const { canvas, ctx } = canvasCtx();
     const rect = $("#slot-stage").getBoundingClientRect();
     const colors = ["#f4d782", "#e7c66b", "#6fe39c", "#5aa0ff", "#ff6b8b", "#fff"];
@@ -1141,7 +1149,9 @@
     const end = performance.now() + duration;
     if (canvasRaf) cancelAnimationFrame(canvasRaf);
     function spawn() {
-      for (let i = 0; i < 11; i++)
+      if (coins.length >= FX_LIMITS.rainCoins) return;
+      const add = Math.min(7, FX_LIMITS.rainCoins - coins.length);
+      for (let i = 0; i < add; i++)
         coins.push({
           x: Math.random() * canvas.width, y: -20,
           vy: 6 + Math.random() * 8, vx: (Math.random() - 0.5) * 3,
@@ -1240,6 +1250,8 @@
   }
 
   function coinFountain(from, count) {
+    const active = document.querySelectorAll(".coin-pop").length;
+    count = Math.max(0, Math.min(count, FX_LIMITS.fountainNodes - active));
     for (let i = 0; i < count; i++) {
       const el = document.createElement("div");
       el.className = "coin-pop";
@@ -1304,6 +1316,7 @@
   const HYPE = ["BOOM!", "WOW!", "UNGLAUBLICH!", "KRASS!", "LETS GOOO!", "🤑", "BIG MONEY!",
     "ZU EINFACH!", "GÖNN DIR!", "💸💸💸", "NICE!", "MASCHINE!", "DU LEGENDE!"];
   function hypeWords(n) {
+    n = Math.min(n, FX_LIMITS.hypeWords);
     const stage = $("#slot-stage").getBoundingClientRect();
     for (let i = 0; i < n; i++) {
       setTimeout(() => {
@@ -1322,6 +1335,8 @@
 
   // Burst the winning symbol outward from a point.
   function emojiExplosion(emoji, from, count) {
+    const active = document.querySelectorAll(".emoji-bit").length;
+    count = Math.max(0, Math.min(count, FX_LIMITS.emojiNodes - active));
     for (let i = 0; i < count; i++) {
       const el = document.createElement("div");
       el.className = "emoji-bit";
