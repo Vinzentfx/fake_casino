@@ -98,6 +98,7 @@ body.bg-algae::before {
     url("/assets/slots/algae/background.webp") center / cover no-repeat,
     linear-gradient(165deg, #06263c, #031522 58%, #010912);
   animation: bgdrift 28s ease-in-out infinite alternate, algaeGlow 5s ease-in-out infinite alternate;
+  will-change: transform, opacity; /* eine GPU-Ebene statt Repaint pro Frame */
 }
 @keyframes algaeGlow { from { opacity: 0.86; } to { opacity: 1; } }
 
@@ -116,6 +117,7 @@ body.bg-pharaoh::before {
     url("/assets/slots/pharaoh/background.webp") center / cover no-repeat,
     linear-gradient(165deg, #2a1a06, #170e04 58%, #0a0602);
   animation: bgdrift 30s ease-in-out infinite alternate, algaeGlow 6s ease-in-out infinite alternate;
+  will-change: transform, opacity; /* eine GPU-Ebene statt Repaint pro Frame */
 }
 
 button { font-family: inherit; cursor: pointer; }
@@ -773,7 +775,9 @@ button { font-family: inherit; cursor: pointer; }
 }
 #slots-machine.theme-algae .reels-window,
 #slots-machine.theme-pharaoh .reels-window {
-  filter: drop-shadow(0 18px 30px rgba(0,0,0,0.55));
+  /* box-shadow statt filter:drop-shadow — Filter zwingen iOS, das ganze
+     animierende Walzenfenster jeden Frame offscreen zu rendern (Lag). */
+  box-shadow: 0 18px 30px rgba(0,0,0,0.55);
 }
 /* Der Deko-Streifen der Standard-Stage stört unter dem echten Rahmen. */
 #slots-machine.theme-algae .slot-stage::before {
@@ -959,10 +963,12 @@ button { font-family: inherit; cursor: pointer; }
   position: absolute; inset: 8px; z-index: 5;
   pointer-events: none;
   border-radius: 12px;
+  /* Ohne mix-blend-mode: Blend-Modes über den rollenden Walzen erzwingen
+     teures Neu-Compositing pro Frame auf iOS — der Alpha-Verlauf wirkt fast
+     identisch und ist gratis. */
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.22), transparent 18%, transparent 72%, rgba(0,0,0,0.30)),
-    linear-gradient(90deg, rgba(255,255,255,0.08), transparent 12%, transparent 88%, rgba(255,255,255,0.06));
-  mix-blend-mode: screen;
+    linear-gradient(180deg, rgba(255,255,255,0.16), transparent 18%, transparent 72%, rgba(0,0,0,0.22)),
+    linear-gradient(90deg, rgba(255,255,255,0.06), transparent 12%, transparent 88%, rgba(255,255,255,0.05));
 }
 .reels-window::after {
   content: "";
