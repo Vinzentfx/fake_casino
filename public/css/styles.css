@@ -2972,11 +2972,26 @@ button { font-family: inherit; cursor: pointer; }
 .crash-hchip.mid { background: rgba(244,215,130,0.18); color: #f4d782; }
 .crash-hchip.hi { background: rgba(74,222,128,0.18); color: #7fd79a; }
 .crash-stage { position: relative; width: 100%; aspect-ratio: 16/10; border-radius: 16px; overflow: hidden;
-  background: radial-gradient(120% 100% at 20% 90%, #1c2740, #0c1018); border: 1px solid rgba(255,255,255,0.1); }
+  background: radial-gradient(120% 100% at 20% 90%, #1c2740, #0c1018);
+  border: 1px solid rgba(126,200,255,0.22);
+  box-shadow: 0 0 26px -8px rgba(126,200,255,0.5), 0 14px 34px rgba(0,0,0,0.45), inset 0 0 60px rgba(0,0,0,0.5); }
+.crash-stage::after { /* Vignette über dem Canvas */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, transparent 58%, rgba(0,0,0,0.42) 100%); }
+.crash-stage.shake { animation: crashShake 0.5s; }
 #crash-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .crash-mult { position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: center;
-  padding-top: 8%; font-size: 3rem; font-weight: 900; color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,0.85); pointer-events: none; }
-.crash-mult.flying { color: #bfe0ff; }
+  padding-top: 8%; font-size: 3rem; font-weight: 900; color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,0.85); pointer-events: none;
+  z-index: 1; transition: color 0.3s; font-variant-numeric: tabular-nums; }
+.crash-mult.flying { color: #bfe0ff; text-shadow: 0 0 22px rgba(126,200,255,0.55), 0 2px 18px rgba(0,0,0,0.85); }
+.crash-mult.flying.t2 { color: #ffd76a; text-shadow: 0 0 24px rgba(255,205,90,0.6), 0 2px 18px rgba(0,0,0,0.85); }
+.crash-mult.flying.t5 { color: #7dffab; text-shadow: 0 0 28px rgba(90,255,150,0.65), 0 2px 18px rgba(0,0,0,0.85); }
+.crash-mult.flying.t10 { color: #ff7ad9; text-shadow: 0 0 32px rgba(255,110,220,0.75), 0 2px 18px rgba(0,0,0,0.85);
+  animation: crashT10 1.1s ease-in-out infinite alternate; }
+@keyframes crashT10 { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(50deg); } }
+.crash-mult.pulse { animation: crashPulse 0.28s ease-out; }
+.crash-mult.flying.t10.pulse { animation: crashPulse 0.28s ease-out, crashT10 1.1s ease-in-out infinite alternate; }
+@keyframes crashPulse { from { transform: scale(1.14); } to { transform: scale(1); } }
 .crash-mult.crashed { color: #f0a0a0; animation: crashShake 0.4s; }
 @keyframes crashShake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-6px,3px)} 75%{transform:translate(6px,-3px)} }
 .crash-status { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-weight: 700; font-size: 0.85rem; opacity: 0.85; pointer-events: none; }
