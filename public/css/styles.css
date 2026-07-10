@@ -83,15 +83,23 @@ body.bg-cosmic::before {
   animation: bgdrift 26s ease-in-out infinite alternate, twinkle 4s ease-in-out infinite alternate;
 }
 @keyframes twinkle { from { opacity: 0.55; } to { opacity: 1; } }
-body.bg-algae::before {
+/* Der opake Body-Verlauf würde das ::before (z-index -2, malt UNTER
+   Block-Hintergründen) komplett verdecken — fürs Algen-Theme wird der Body
+   deshalb durchsichtig und die Unterwasser-Szene übernimmt den Hintergrund. */
+body.bg-algae {
   background:
-    linear-gradient(rgba(2,10,18,0.34), rgba(2,10,18,0.58)),
-    url("/assets/slots/algae/light-rays.webp") center top / cover no-repeat,
-    url("/assets/slots/algae/bubbles.webp") center / cover no-repeat,
-    url("/assets/slots/algae/background.webp") center / cover no-repeat;
+    radial-gradient(1100px 820px at 50% -12%, rgba(20,180,220,0.16), transparent 62%);
+}
+body.bg-algae::before {
+  /* Nur die (schachbrettfreie) Szene — light-rays/bubbles haben eingebackene
+     Fake-Transparenz und kommen hier nicht mehr rein. */
+  background:
+    linear-gradient(rgba(2,10,18,0.10), rgba(2,10,18,0.32)),
+    url("/assets/slots/algae/background.webp") center / cover no-repeat,
+    linear-gradient(165deg, #06263c, #031522 58%, #010912);
   animation: bgdrift 28s ease-in-out infinite alternate, algaeGlow 5s ease-in-out infinite alternate;
 }
-@keyframes algaeGlow { from { opacity: 0.72; } to { opacity: 1; } }
+@keyframes algaeGlow { from { opacity: 0.86; } to { opacity: 1; } }
 
 button { font-family: inherit; cursor: pointer; }
 
@@ -732,7 +740,11 @@ button { font-family: inherit; cursor: pointer; }
 #slots-machine.theme-gems { --accent: #5ad1ff; --glow: #5ad1ff; --metal1:#126081; --metal2:#041725; }
 #slots-machine.theme-dragon { --accent: #ffa53a; --glow: #ff7a18; --metal1:#925115; --metal2:#251004; }
 #slots-machine.theme-cosmic { --accent: #b98cff; --glow: #9a5bff; --metal1:#5930a2; --metal2:#110725; }
-#slots-machine.theme-algae { --accent: #21d7ff; --glow: #19bdf0; --metal1:#0b637c; --metal2:#031521; }
+#slots-machine.theme-algae { --accent: #21d7ff; --glow: #19bdf0; --metal1:#0b637c; --metal2:#031521;
+  /* Kein Panel-Verlauf über der Unterwasser-Szene — die generische
+     .theme-algae-Regel (für Karten) soll hier nicht durchschlagen. */
+  background: none;
+}
 #slots-machine.theme-algae .slot-stage {
   background:
     linear-gradient(145deg, rgba(255,255,255,0.18), transparent 18%),
