@@ -29,11 +29,30 @@
   let parts = [];         // exhaust + explosion particles
   let ring = 0;           // shockwave radius (0 = off)
   let prevWholeMult = 1;  // for the multiplier pulse
+  let drawRaf = null;
+  const MAX_PARTS = 180;
+
+  function onCrashScreen() {
+    const screen = document.querySelector('[data-screen="crash"]');
+    return !!(screen && screen.classList.contains("active") && !document.hidden);
+  }
+
+  function startDraw() {
+    if (drawRaf || !onCrashScreen()) return;
+    drawRaf = requestAnimationFrame(draw);
+  }
+
+  function stopDraw() {
+    if (drawRaf) cancelAnimationFrame(drawRaf);
+    drawRaf = null;
+  }
 
   function resize() {
     if (!canvas) return;
     const r = canvas.parentElement.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    // iPads render at high DPR; capping the backing canvas keeps the same CSS
+    // size/look but avoids drawing millions of extra pixels every frame.
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     canvas.width = r.width * dpr; canvas.height = r.height * dpr;
     canvas.style.width = r.width + "px"; canvas.style.height = r.height + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -60,6 +79,7 @@
   }
 
   function spawnExhaust(x, y, ang, boostP) {
+    if (parts.length > MAX_PARTS) return;
     const n = 3 + Math.floor(boostP * 3);
     for (let i = 0; i < n; i++) {
       const spread = (Math.random() - 0.5) * 0.5;
@@ -76,7 +96,7 @@
   }
 
   function spawnExplosion(x, y) {
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 76; i++) {
       const ang = Math.random() * Math.PI * 2;
       const speed = 1 + Math.random() * 6.5;
       parts.push({
@@ -129,6 +149,8 @@
   }
 
   function draw() {
+    drawRaf = null;
+    if (!onCrashScreen()) return;
     if (!ctx) return;
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (!stars) seedStars(w, h);
@@ -237,6 +259,7 @@
 
     // Rakete (nach dem Crash übernehmen die Trümmer-Partikel).
     if (phase !== "crashed") drawRocket(x, y, ang, flying);
+    if (parts.length > MAX_PARTS) parts.splice(0, parts.length - MAX_PARTS);
 
     // Multiplikator-Puls bei jeder vollen Stufe.
     const whole = Math.floor(dispMult);
@@ -247,7 +270,7 @@
     }
     if (!flying) prevWholeMult = 1;
 
-    requestAnimationFrame(draw);
+    drawRaf = requestAnimationFrame(draw);
   }
 
   // ── Render helpers ───────────────────────────────────────────────────────
@@ -327,13 +350,13 @@
     const mine = me && bets.find((b) => b.name.toLowerCase() === me.name.toLowerCase());
     myBet = mine ? { amount: mine.amount, cashedAt: mine.cashedAt } : (phase === "betting" ? null : myBet);
     if (phase === "betting") { crashPoint = null; if (!mine) myBet = null; multiplier = 1; }
-    renderAll();
+    if (onCrashScreen()) renderAll();
   }
 
   socket.on("crash:round", apply);
-  socket.on("crash:flying", (s) => { apply(s); crashPoint = null; });
-  socket.on("crash:tick", (s) => { multiplier = s.multiplier; renderMult(); });
-  socket.on("crash:end", (s) => { apply(s); needBoom = true; renderAll(); });
+  socket.on("crash:flying", (s) => { apply(s); crashPoint = null; startDraw(); });
+  socket.on("crash:tick", (s) => { multiplier = s.multiplier; if (onCrashScreen()) renderMult(); });
+  socket.on("crash:end", (s) => { apply(s); needBoom = true; renderAll(); startDraw(); });
   socket.on("crash:cashed", (d) => { if (d && d.auto) toast(`🚀 Auto-Cashout bei ${d.mult.toFixed(2)}× — +${fmt(d.payout)} 🪙!`); });
 
   // ── Actions ──────────────────────────────────────────────────────────────
@@ -366,6 +389,10 @@
   window.Casino._loadCrash = () => {
     resize();
     socket.emit("crash:state", (s) => { if (s && s.ok) apply(s); });
-    if (!draw._started) { draw._started = true; requestAnimationFrame(draw); }
+    startDraw();
   };
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopDraw();
+    else if (onCrashScreen()) startDraw();
+  });
 })();
