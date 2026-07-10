@@ -15,6 +15,8 @@ const state = {
   token: null,   // signed session token from /api/login, proves identity to the socket
   bonusCooldownMs: 20 * 60 * 60 * 1000, // fallback; the server sends the real value on login
 };
+let appVersion = null;
+let reloadRequired = false;
 
 // ---- DOM-Helfer ----
 const $ = (sel) => document.querySelector(sel);
@@ -97,6 +99,54 @@ function toast(msg) {
   t.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+function requireAppReload(newVersion) {
+  if (reloadRequired) return;
+  reloadRequired = true;
+  if (window.Casino && window.Casino._slotsStopAuto) window.Casino._slotsStopAuto();
+  let modal = $("#force-reload-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "force-reload-modal";
+    modal.className = "update-modal force-reload-modal";
+    modal.innerHTML = `
+      <div class="update-card force-reload-card">
+        <div class="update-emoji">🔄</div>
+        <h2>Update verfügbar</h2>
+        <p class="muted small" style="text-align:center">Deine Seite läuft noch auf einer alten Version. Bitte lade neu, damit Spiele, Bank und Stadt wieder synchron sind.</p>
+        <button class="btn-primary" id="force-reload-btn" style="width:100%;margin-top:14px">Jetzt neu laden</button>
+      </div>`;
+    document.body.appendChild(modal);
+    $("#force-reload-btn")?.addEventListener("click", () => reloadToLatest());
+  }
+  modal.classList.remove("hidden");
+  modal.dataset.version = newVersion || "";
+  setTimeout(() => reloadToLatest(), 15000);
+}
+
+function reloadToLatest() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("v", Date.now().toString(36));
+  window.location.replace(url.toString());
+}
+
+function handleAppVersion(version) {
+  if (!version) return;
+  if (!appVersion) {
+    appVersion = version;
+    return;
+  }
+  if (version !== appVersion) requireAppReload(version);
+}
+
+async function checkAppVersion() {
+  try {
+    const res = await fetch("/api/version", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    handleAppVersion(data.version);
+  } catch {}
 }
 
 function renderAnnouncement(announcement) {
@@ -204,10 +254,17 @@ $("#onboarding-quests")?.addEventListener("click", () => {
 socket.on("connect", () => {
   if (state.token) socket.emit("auth", { token: state.token });
   socket.emit("presence:screen", { screen: currentScreen });
+  socket.emit("app:version", (res) => {
+    if (res && res.ok) handleAppVersion(res.version);
+  });
   socket.emit("announcement:get", (res) => {
     if (res && res.ok) renderAnnouncement(res.announcement);
   });
 });
+
+socket.on("app:version", ({ version } = {}) => handleAppVersion(version));
+checkAppVersion();
+setInterval(checkAppVersion, 30000);
 
 socket.on("announcement:state", ({ announcement, toast: shouldToast } = {}) => {
   renderAnnouncement(announcement);

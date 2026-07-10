@@ -51,6 +51,7 @@ const feed = require("./game/feed");
 const liveops = require("./game/liveops");
 
 const PORT = process.env.PORT || 3000;
+const APP_VERSION = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.APP_VERSION || require("./package.json").version;
 
 // ---------------------------------------------------------------------------
 // HTTP / account API
@@ -59,7 +60,18 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.set("trust proxy", true); // Railway runs behind a proxy → real client IP in x-forwarded-for
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public"), {
+  setHeaders(res, filePath) {
+    if (/\.(html|js|css)$/i.test(filePath)) {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    }
+  },
+}));
+
+app.get("/api/version", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.json({ version: APP_VERSION });
+});
 
 // Anti-multi-account faucet: cap how many NEW accounts one IP can create per day
 // (each new account is free start chips). Generous enough for friends sharing a
@@ -166,7 +178,13 @@ app.post("/api/change-pin", (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server);
 io.sockets.setMaxListeners(50); // many game modules each add a connection listener
-io.on("connection", (socket) => socket.setMaxListeners(80));
+io.on("connection", (socket) => {
+  socket.setMaxListeners(80);
+  socket.emit("app:version", { version: APP_VERSION });
+  socket.on("app:version", (ack) => {
+    if (typeof ack === "function") ack({ ok: true, version: APP_VERSION });
+  });
+});
 
 setupPoker(io, accounts);
 setupSlots(io, accounts);
