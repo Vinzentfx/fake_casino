@@ -202,7 +202,7 @@
     cols.className = "rt-col-bets";
     for (let v = 1; v <= 3; v++) {
       const c = makeCell("column", String(v), "rt-col");
-      c.textContent = "2:1";
+      c.textContent = "1,85:1";
       cols.appendChild(c);
     }
     table.appendChild(cols);

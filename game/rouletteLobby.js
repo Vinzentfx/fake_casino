@@ -227,8 +227,7 @@ function setupRouletteLobby(io, accounts) {
       for (const p of room.players.values()) {
         let ret = 0;
         for (const b of p.bets) ret += Math.floor(b.amount * payoutFactor(b.type, b.value, number));
-        const boost = accounts.buffMult(p.key, "winBoost");
-        if (boost > 1 && ret > 0) ret = Math.round(ret * boost);
+        // Kein winBoost auf Roulette (siehe roulette.js — wäre bei Rot/Schwarz farmbar).
         const staked = p.staked;
         if (ret > 0) {
           const r = accounts.adjustChips(p.key, ret);

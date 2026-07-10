@@ -10,18 +10,22 @@ function numColor(n) {
   return RED_NUMS.has(n) ? "red" : "black";
 }
 
-// Returns total payout factor: 0 = lose stake, >0 = receive factor × bet back
+// Returns total payout factor: 0 = lose stake, >0 = receive factor × bet back.
+// Nerf 2026-07-10: klassische Quoten (36 / 2 / 3 ≙ 97,3 % RTP) waren das mit
+// Abstand großzügigste Haus-Spiel und wurden als Grind-Maschine genutzt.
+// Jetzt: Zahl 34× (91,9 %), einfache Chancen 1,95× (94,9 %), Dutzend/Kolonne
+// 2,85× (92,4 %) — Misch-RTP ~94 %, vergleichbar mit den Slots.
 function payoutFactor(type, value, number) {
-  if (type === "number") return number === value ? 36 : 0;
+  if (type === "number") return number === value ? 34 : 0;
   if (number === 0) return 0; // green pocket — all outside bets lose
-  if (type === "red")    return RED_NUMS.has(number) ? 2 : 0;
-  if (type === "black")  return !RED_NUMS.has(number) ? 2 : 0;
-  if (type === "odd")    return number % 2 === 1 ? 2 : 0;
-  if (type === "even")   return number % 2 === 0 ? 2 : 0;
-  if (type === "low")    return number <= 18 ? 2 : 0;
-  if (type === "high")   return number >= 19 ? 2 : 0;
-  if (type === "dozen")  return Math.ceil(number / 12) === value ? 3 : 0;
-  if (type === "column") return ((number - 1) % 3 + 1) === value ? 3 : 0;
+  if (type === "red")    return RED_NUMS.has(number) ? 1.95 : 0;
+  if (type === "black")  return !RED_NUMS.has(number) ? 1.95 : 0;
+  if (type === "odd")    return number % 2 === 1 ? 1.95 : 0;
+  if (type === "even")   return number % 2 === 0 ? 1.95 : 0;
+  if (type === "low")    return number <= 18 ? 1.95 : 0;
+  if (type === "high")   return number >= 19 ? 1.95 : 0;
+  if (type === "dozen")  return Math.ceil(number / 12) === value ? 2.85 : 0;
+  if (type === "column") return ((number - 1) % 3 + 1) === value ? 2.85 : 0;
   return 0;
 }
 
@@ -84,9 +88,8 @@ function setupRoulette(io, accounts) {
         return { ...b, factor, ret };
       });
 
-      // Glücksklee / Goldbarren: boost winnings on a win.
-      const boost = accounts.buffMult(socket.data.account, "winBoost");
-      if (boost > 1 && totalReturn > 0) totalReturn = Math.round(totalReturn * boost);
+      // Kein winBoost auf Roulette: Bei Fast-Münzwurf-Wetten (Rot/Schwarz)
+      // würde jeder Boost >1,05 die Wette +EV machen → farmbar.
 
       if (totalReturn > 0) {
         accounts.adjustChips(socket.data.account, totalReturn);
