@@ -250,7 +250,7 @@
     machine = null;
   }
 
-  const BG_THEMES = ["bg-classic", "bg-gems", "bg-dragon", "bg-cosmic", "bg-algae"];
+  const BG_THEMES = ["bg-classic", "bg-gems", "bg-dragon", "bg-cosmic", "bg-algae", "bg-pharaoh"];
   function setBodyTheme(theme) {
     document.body.classList.remove(...BG_THEMES);
     if (theme) document.body.classList.add("bg-" + theme);
@@ -341,7 +341,9 @@
     const wb = win.getBoundingClientRect();
     const fb = first.getBoundingClientRect();
     const ch = fb.height;
-    const cellsTop = fb.top - wb.top;
+    // getBoundingClientRect umfasst den Rahmen (border-image!), position:absolute
+    // rechnet aber ab der Innenkante — clientTop gleicht das aus.
+    const cellsTop = fb.top - wb.top - win.clientTop;
     const center = cellsTop + (machine.rows * ch) / 2;
     pl.style.top = center - ch / 2 + "px";
     pl.style.height = ch + "px";
@@ -411,6 +413,7 @@
     spinning = true;
     setControlsEnabled(false);
     clearHighlights();
+    hideGamble(); // neuer Spin = alter Risiko-Anspruch verfällt
     $("#win-pop").classList.remove("show");
     $("#mult-badge").classList.remove("show");
     $("#win-amount").textContent = "0";
@@ -456,6 +459,8 @@
       if (!wasFree) recordSession(res.totalWin, bet); // track streak on base spins
       if (res.jackpot) window.Casino.toast(`💰💥 JACKPOT GEKNACKT: +${res.jackpot.toLocaleString("de-DE")} 🪙!`);
       updateJackpotLine(res.jackpotPot);
+      // Risiko anbieten (nur Basisspiel-Gewinne, nicht im Auto-Roll).
+      if (res.canGamble && res.totalWin > 0 && !autoRoll) showGamble(res.totalWin);
     }
     spinning = false;
 
@@ -546,6 +551,53 @@
     $("#slots-back").style.opacity = on ? "1" : "0.4";
     $("#lever").classList.toggle("disabled", !on);
   }
+
+  // ===============================================================
+  // Risiko / Gamble (Book of Rah): Gewinn auf Rot/Schwarz verdoppeln
+  // ===============================================================
+  let gambleBusy = false;
+  function showGamble(amount) {
+    const bar = $("#gamble-bar");
+    if (!bar) return;
+    $("#gamble-amount").textContent = amount.toLocaleString("de-DE");
+    $("#gamble-result").textContent = "";
+    bar.classList.remove("hidden", "gamble-lost");
+    gambleBusy = false;
+  }
+  function hideGamble() {
+    const bar = $("#gamble-bar");
+    if (bar) bar.classList.add("hidden");
+  }
+  function gambleGuess(guess) {
+    if (gambleBusy) return;
+    gambleBusy = true;
+    socket.emit("slots:gamble", { guess }, (r) => {
+      gambleBusy = false;
+      if (!r || !r.ok) { toast((r && r.error) || "Risiko nicht möglich."); hideGamble(); return; }
+      window.Casino.setChips(r.balance);
+      const resEl = $("#gamble-result");
+      resEl.textContent = r.card === "red" ? "🔴" : "⚫";
+      if (r.won) {
+        sndWin();
+        confettiBurst(70);
+        $("#gamble-amount").textContent = r.amount.toLocaleString("de-DE");
+        if (r.canContinue) {
+          toast(`🃏 Richtig! ${r.amount.toLocaleString("de-DE")} 🪙 — nochmal?`);
+        } else {
+          toast(`🃏 Maximum erreicht — ${r.amount.toLocaleString("de-DE")} 🪙 sind sicher!`);
+          setTimeout(hideGamble, 1400);
+        }
+      } else {
+        sndReelStop(2);
+        $("#gamble-bar").classList.add("gamble-lost");
+        toast("🃏 Falsche Farbe — der Gewinn ist weg.");
+        setTimeout(hideGamble, 1100);
+      }
+    });
+  }
+  $("#gamble-red").addEventListener("click", () => gambleGuess("red"));
+  $("#gamble-black").addEventListener("click", () => gambleGuess("black"));
+  $("#gamble-collect").addEventListener("click", () => { hideGamble(); toast("💰 Gewinn abgeholt."); });
 
   // Begin rolling: give each reel a tall strip of random symbols scrolling down.
   function startRoll() {
@@ -660,6 +712,23 @@
           clearHighlights();
           dimAllCells();
           combo++;
+          // Book of Rah: Bonussymbol expandiert über seine Walzen, DANN zahlt es.
+          if (w.type === "expand") {
+            bigBanner("📜 EXPANSION!", "t-big");
+            sndBig();
+            sideLights(1400);
+            const sym = symbolAsset(machine, w.symbol) || machine.emojis[w.symbol];
+            for (const [c, r] of w.positions) {
+              setCell(c, r, sym);
+              const el = cellEl(c, r);
+              if (el) {
+                el.classList.remove("dim");
+                el.classList.add("expand-pop");
+                setTimeout(() => el.classList.remove("expand-pop"), 750);
+              }
+            }
+            await sleep(620);
+          }
           await traceHighlight(w.positions, Math.max(45, 100 - combo * 10), combo);
           comboEscalate(combo, multiWin);
           await addWin(w.positions, Math.round(w.win * fsMult));
@@ -684,6 +753,11 @@
         ? `🐚 +${res.freeSpinsAwarded} Spin${res.freeSpinsAwarded > 1 ? "s" : ""}!`
         : `🎁 ${res.freeSpinsAwarded} FREISPIELE!`, "t-big");
       await sleep(res.wasFreeSpin ? 900 : 1400);
+      // Book of Rah: das ausgeloste Bonussymbol groß ankündigen.
+      if (!res.wasFreeSpin && res.freeSpins && res.freeSpins.special) {
+        bigBanner(`📜 Bonussymbol: ${machine.emojis[res.freeSpins.special] || res.freeSpins.special}`, "t-big");
+        await sleep(1300);
+      }
     }
   }
 
@@ -1075,7 +1149,8 @@
   function updateFreeBadge(fs) {
     const b = $("#free-badge");
     const mult = fs && fs.multiplier && fs.multiplier > 1 ? ` · ×${fs.multiplier}` : "";
-    b.textContent = `🎁 Freispiele: ${fs.remaining}${mult}`;
+    const special = fs && fs.special && machine ? ` · 📜${machine.emojis[fs.special] || ""}` : "";
+    b.textContent = `🎁 Freispiele: ${fs.remaining}${mult}${special}`;
     b.classList.add("show");
   }
 
@@ -1741,7 +1816,10 @@
     } else {
       const anywhere = machine.mode === "anywhere";
       const label = machine.mode === "ways" ? "pro Way" : anywhere ? "irgendwo auf dem Feld" : "pro Linie";
-      rows.push(`<p class="pt-note">Auszahlung in 🪙 bei Einsatz <b>${bet}</b> (${label}). Wild ${symbolHtml(symbolAsset(machine, machine.wild) || machine.emojis[machine.wild], "pt-symbol-img")} ersetzt alle außer Scatter.</p>`);
+      const wildNote = machine.bookPays
+        ? `Das Buch ${symbolHtml(symbolAsset(machine, machine.wild) || machine.emojis[machine.wild], "pt-symbol-img")} ist Wild UND Scatter zugleich.`
+        : `Wild ${symbolHtml(symbolAsset(machine, machine.wild) || machine.emojis[machine.wild], "pt-symbol-img")} ersetzt alle außer Scatter.`;
+      rows.push(`<p class="pt-note">Auszahlung in 🪙 bei Einsatz <b>${bet}</b> (${label}). ${wildNote}</p>`);
       const syms = Object.keys(machine.pays).sort(
         (a, b) => coins(topVal(machine.pays[b])) - coins(topVal(machine.pays[a]))
       );
@@ -1760,7 +1838,13 @@
       rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.mystery) || machine.emojis[machine.mystery], "pt-symbol-img")}</span><div class="pt-vals">Mystery-Algen — decken alle zusammen DASSELBE Symbol auf … oder werden zu Golden Sharks</div></div>`);
       rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.golden) || machine.emojis[machine.golden], "pt-symbol-img")}</span><div class="pt-vals">Golden Shark — jeder trägt eine Münze (×1 bis ×2500 vom Einsatz). Nudge & Reveal: Der Stack rutscht Reihe für Reihe ab, jede Reihe zahlt, jeder Nudge erhöht den Multiplikator um +1</div></div>`);
     }
-    if (machine.scatter) {
+    if (machine.bookPays) {
+      const bookParts = Object.keys(machine.bookPays).map(Number).sort((a, b) => a - b)
+        .map((n) => `<span class="pt-cnt">${n}×</span> ${Math.round(bet * machine.bookPays[n]).toLocaleString("de-DE")}`).join("");
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.scatter) || machine.emojis[machine.scatter], "pt-symbol-img")}</span><div class="pt-vals">${bookParts}</div></div>`);
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">📜</span><div class="pt-vals">${machine.freeSpins.trigger}+ Bücher starten ${machine.freeSpins.count} Freispiele mit einem zufälligen BONUSSYMBOL: Landet es auf genug Walzen, expandiert es über die ganze Walze und zahlt auf allen ${machine.lineCount || 10} Linien — Position egal. Retrigger möglich, Symbol bleibt.</div></div>`);
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">🃏</span><div class="pt-vals">Risiko: Jeden Basisspiel-Gewinn auf Rot/Schwarz verdoppeln — bis zu 5× hintereinander. Falsche Farbe = alles weg.</div></div>`);
+    } else if (machine.scatter) {
       const fsText = machine.mystery
         ? `${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus (+1 je Extra-Scatter). In den Freispielen: Mystery-Stacks auf Walze 2+4, Multiplikator steigt jeden Spin — ohne Limit; jeder Scatter = +1 Spin`
         : `${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus`;

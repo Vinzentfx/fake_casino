@@ -409,6 +409,15 @@
           <div class="win-display"><span class="lbl">Gewinn</span><b id="win-amount">0</b></div>
         </div>
 
+        <!-- Risiko / Gamble (Book of Rah): Gewinn auf Kartenfarbe verdoppeln -->
+        <div class="gamble-bar hidden" id="gamble-bar">
+          <span class="gamble-info">🃏 Risiko: <b id="gamble-amount">0</b> 🪙</span>
+          <button id="gamble-red" class="gamble-btn gamble-red">🔴 Rot</button>
+          <button id="gamble-black" class="gamble-btn gamble-black">⚫ Schwarz</button>
+          <button id="gamble-collect" class="gamble-btn gamble-collect">✓ Abholen</button>
+          <span class="gamble-result" id="gamble-result"></span>
+        </div>
+
         <!-- Paytable-Modal -->
         <div class="paytable-modal hidden" id="paytable-modal">
           <div class="paytable-card">
@@ -1448,13 +1457,12 @@
       <h2>Neues Casino-Update!</h2>
       <p class="muted small" style="text-align:center;margin-top:-4px">Frisch dabei im Fake Casino:</p>
       <div class="update-list">
-        <div class="update-item"><span>🦈</span><div><b>Algen Abyss: Golden Sharks!</b><small>Mystery-Algen decken jetzt alle zusammen DASSELBE Symbol auf — oder werden zu Golden Sharks mit Bronze-, Silber- und Gold-Münzen bis ×2500. Jeder Nudge erhöht den Multiplikator, in den Freispielen ohne Limit.</small></div></div>
-        <div class="update-item"><span>🖼️</span><div><b>Algen Abyss: neuer Look</b><small>Neue Symbol-Kacheln, echte Münz- und Golden-Shark-Grafiken und der Gold-Rahmen sitzt jetzt exakt ums Walzenfenster.</small></div></div>
-        <div class="update-item"><span>✨</span><div><b>Slots aufpoliert</b><small>Mehrere Automaten haben verschönerte Symbole und Optik bekommen.</small></div></div>
-        <div class="update-item"><span>🎁</span><div><b>Kein Bonus-Kauf mehr bei Algen Abyss</b><small>Die Freispiele sind jetzt so wertvoll, dass sie nur noch echt erspielt werden können — 3+ Muscheln lösen sie aus.</small></div></div>
-        <div class="update-item"><span>🐉</span><div><b>Dragon's Hoard pausiert</b><small>Der Automat ist vorerst aus dem Sortiment genommen und kommt später überarbeitet zurück.</small></div></div>
-        <div class="update-item"><span>🏘️</span><div><b>Straßen-Markierung in der Stadt</b><small>Ein Klick auf ein Haus markiert alle Häuser derselben Straße — perfekt zum Planen von Straßen-Monopolen.</small></div></div>
-        <div class="update-item"><span>💼</span><div><b>Jobs verbessert</b><small>Feinschliff an den Arbeiten-Minijobs mit rotierenden Aufgaben.</small></div></div>
+        <div class="update-item"><span>📖</span><div><b>NEUER SLOT: Book of Rah!</b><small>Das goldene Buch ist Wild UND Scatter: 3+ Bücher starten 10 Freispiele mit einem zufälligen BONUSSYMBOL, das über ganze Walzen expandiert und auf allen 10 Linien zahlt. Retrigger möglich. Freischalten für 120.000 🪙.</small></div></div>
+        <div class="update-item"><span>🃏</span><div><b>Risiko-Feature</b><small>Bei Book of Rah kannst du jeden Gewinn auf Rot/Schwarz verdoppeln — bis zu 5× hintereinander. Falsche Farbe = alles weg. Mut wird belohnt. Oder bestraft.</small></div></div>
+        <div class="update-item"><span>🌌</span><div><b>Cosmic Cluster pausiert</b><small>Macht Platz für den Pharao und kommt später überarbeitet zurück.</small></div></div>
+        <div class="update-item"><span>🚀</span><div><b>Crash: komplett neue Optik</b><small>Parallax-Weltraum, echte Rakete mit Partikel-Triebwerk, Explosion mit Schockwelle — und Fallschirm-Marker zeigen, wo die anderen ausgestiegen sind.</small></div></div>
+        <div class="update-item"><span>🦈</span><div><b>Algen Abyss verbessert</b><small>Jeder Treffer zahlt jetzt mindestens 0,25× Einsatz — keine Mini-Gewinne mehr — und die Auszahlungsquote wurde spürbar angehoben.</small></div></div>
+        <div class="update-item"><span>🎡</span><div><b>Roulette-Quoten angepasst</b><small>Zahl zahlt 34×, einfache Chancen 1,95×, Dutzend/Kolonne 2,85× — Roulette war deutlich großzügiger als alle anderen Spiele.</small></div></div>
       </div>
       <button class="btn-primary" id="update-close" style="width:100%;margin-top:14px">Los geht's! 🎰</button>
     </div>

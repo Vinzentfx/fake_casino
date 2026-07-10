@@ -101,6 +101,23 @@ body.bg-algae::before {
 }
 @keyframes algaeGlow { from { opacity: 0.86; } to { opacity: 1; } }
 
+/* Book of Rah: gleicher Stacking-Fix — Body durchsichtig, Tempel-Szene im
+   ::before, darüber Gold-Strahlen und Staub (echte Alpha-Overlays). */
+body.bg-pharaoh {
+  background:
+    radial-gradient(1100px 820px at 50% -12%, rgba(255,190,80,0.14), transparent 62%);
+}
+body.bg-pharaoh::before {
+  /* Nur die (schachbrettfreie) Szene — god-rays/dust haben eingebackene
+     Fake-Transparenz, der Gold-Schimmer kommt stattdessen per Gradient. */
+  background:
+    linear-gradient(rgba(12,6,2,0.10), rgba(12,6,2,0.34)),
+    radial-gradient(90% 50% at 50% 0%, rgba(255,200,90,0.16), transparent 70%),
+    url("/assets/slots/pharaoh/background.webp") center / cover no-repeat,
+    linear-gradient(165deg, #2a1a06, #170e04 58%, #0a0602);
+  animation: bgdrift 30s ease-in-out infinite alternate, algaeGlow 6s ease-in-out infinite alternate;
+}
+
 button { font-family: inherit; cursor: pointer; }
 
 .hidden { display: none !important; }
@@ -790,6 +807,79 @@ button { font-family: inherit; cursor: pointer; }
   border-color: rgba(33,215,255,0.55);
   box-shadow: 0 0 18px rgba(33,215,255,0.55), 0 4px 10px rgba(0,0,0,0.5);
 }
+
+/* ── Book of Rah ──────────────────────────────────────────────────────── */
+.theme-pharaoh { background: linear-gradient(160deg, #6b4a12, #241404); }
+.machine-card.theme-pharaoh {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.42)),
+    url("/assets/slots/pharaoh/background.webp") center / cover,
+    linear-gradient(160deg, #6b4a12, #241404);
+}
+.machine-card.theme-pharaoh::before {
+  background:
+    linear-gradient(180deg, rgba(255,220,140,0.20), transparent 34%),
+    radial-gradient(80% 60% at 50% 0%, rgba(255,200,90,0.22), transparent 70%);
+  opacity: 0.7;
+}
+#slots-machine.theme-pharaoh { --accent: #ffd76a; --glow: #f4b942; --metal1:#8a6420; --metal2:#1d1204;
+  background: none; /* Szene übernimmt (gleicher Fix wie beim Algen-Theme) */
+}
+#slots-machine.theme-pharaoh .slot-stage {
+  background:
+    linear-gradient(145deg, rgba(255,235,180,0.14), transparent 18%),
+    linear-gradient(180deg, rgba(58,38,10,0.92), rgba(16,9,2,0.94) 72%),
+    url("/assets/slots/pharaoh/background.webp") center / cover;
+}
+#slots-machine.theme-pharaoh .slot-stage::before { background: none; border: 0; }
+#slots-machine.theme-pharaoh .slot-stage > * { position: relative; z-index: 1; }
+#slots-machine.theme-pharaoh .slot-stage::after { content: "BOOK OF RAH"; z-index: 3; }
+/* Tempel-Rahmen als 9-Slice ums Walzenfenster (Asset 1536×1024, Fenster-
+   Kanten: oben 268, rechts 337, unten 247, links 345). */
+#slots-machine.theme-pharaoh .reels-window {
+  border: solid transparent;
+  border-width: 52px 58px 48px 60px;
+  border-image: url("/assets/slots/pharaoh/frame.webp") 268 337 247 345 stretch;
+  border-radius: 0;
+  background-clip: padding-box;
+  box-shadow: none;
+}
+@media (max-width: 640px) {
+  #slots-machine.theme-pharaoh .reels-window { border-width: 40px 44px 36px 46px; }
+}
+#slots-machine.theme-pharaoh .lever-knob {
+  background: url("/assets/slots/pharaoh/symbols/spin-orb.webp") center / cover no-repeat;
+  border-color: rgba(255,215,106,0.6);
+  box-shadow: 0 0 18px rgba(255,190,80,0.6), 0 4px 10px rgba(0,0,0,0.5);
+}
+
+/* Expansion des Bonussymbols: Zelle blitzt golden auf und wächst rein. */
+.cell.expand-pop { animation: expandPop 0.7s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.cell.expand-pop span { display: inline-block; animation: expandGrow 0.7s cubic-bezier(0.2, 1.4, 0.4, 1); }
+@keyframes expandPop {
+  0% { box-shadow: 0 0 0 rgba(255,215,106,0); }
+  40% { box-shadow: 0 0 26px rgba(255,215,106,0.95), inset 0 0 18px rgba(255,215,106,0.5); }
+  100% { box-shadow: 0 0 10px rgba(255,215,106,0.35); }
+}
+@keyframes expandGrow { from { transform: scale(0.25); opacity: 0.3; } 60% { transform: scale(1.18); opacity: 1; } to { transform: scale(1); } }
+
+/* Risiko-/Gamble-Bar */
+.gamble-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 10px 0; padding: 10px 14px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(58,38,10,0.85), rgba(20,12,3,0.9));
+  border: 1px solid rgba(255,215,106,0.45);
+  box-shadow: 0 0 18px -4px rgba(255,190,80,0.5);
+  animation: gambleIn 0.25s ease-out;
+}
+@keyframes gambleIn { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.gamble-info { font-weight: 800; color: var(--gold-strong); }
+.gamble-btn { padding: 9px 14px; border-radius: 10px; font-weight: 800; border: 1px solid rgba(255,255,255,0.18); }
+.gamble-btn.gamble-red { background: linear-gradient(135deg, #d64545, #8f1f1f); color: #fff; }
+.gamble-btn.gamble-black { background: linear-gradient(135deg, #3a3a46, #16161d); color: #fff; }
+.gamble-btn.gamble-collect { background: linear-gradient(135deg, #4ade80, #16a34a); color: #06210f; margin-left: auto; }
+.gamble-result { font-size: 1.3rem; min-width: 28px; text-align: center; }
+.gamble-bar.gamble-lost { animation: crashShake 0.4s; border-color: rgba(214,90,90,0.7); }
 
 .slot-stage {
   position: relative;
