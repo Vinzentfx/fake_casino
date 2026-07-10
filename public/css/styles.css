@@ -2726,6 +2726,8 @@ button { font-family: inherit; cursor: pointer; }
 .update-item > span { font-size: 1.5rem; line-height: 1; }
 .update-item b { display: block; font-size: 0.92rem; }
 .update-item small { color: rgba(255,255,255,0.6); font-size: 0.76rem; line-height: 1.3; }
+.force-reload-modal { z-index: 10000; }
+.force-reload-card { border-color: rgba(90,220,255,0.55); box-shadow: 0 24px 80px rgba(0,0,0,0.75), 0 0 34px rgba(90,220,255,0.18); }
 
 /* Mines. */
 .mines-wrap { max-width: 560px; margin: 0 auto; }
