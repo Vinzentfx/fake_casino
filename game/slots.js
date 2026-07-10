@@ -151,7 +151,7 @@ const MACHINES = [
     golden: "G",
     unlockCost: 120000,
     bets: [500, 1000, 5000, 25000, 100000, 250000],
-    payScale: 0.065,
+    payScale: 0.064,
     freeSpins: { trigger: 3, count: 4, extra: 1, persistentMultiplier: true },
     // Kein Bonus-Kauf: Freispiele nur echt erspielbar (Bonus-EV ≈ 48× wäre
     // als Kauf entweder Exploit oder unattraktiv teuer).
@@ -174,23 +174,26 @@ const MACHINES = [
       ["anchor", 24], ["puffer", 22], ["crystal", 18], ["pearl", 12],
       ["helmet", 8], ["chest", 5], ["shark", 3], ["W", 2],
     ],
-    goldenChance: 8,
+    goldenChance: 7,
     // Golden-Shark-Münzen: [Wert in ×Einsatz, Gewicht]. Bronze <10, Silber
     // 10–50, Gold 100+ (Tier = reine Optik, der Wert zählt).
     coinValues: [
-      [1, 20000], [2, 6000], [3, 2500], [5, 1200], [10, 450], [25, 150],
-      [50, 60], [100, 15], [250, 6], [500, 3], [1000, 1], [2500, 1],
+      [1, 20000], [2, 6000], [3, 2500], [5, 1200], [10, 380], [25, 120],
+      [50, 45], [100, 12], [250, 5], [500, 2], [1000, 1], [2500, 1],
     ],
+    minWin: 0.25, // jeder Treffer zahlt mindestens 0,25× Einsatz (Anti-Krümel)
     coinScatterChance: 6, // % je Golden-Position (nur 1. Welle): Scatter statt Münze
+    // Buff-Runde: Die drei Low-Symbole zahlen erst ab 4 Walzen — weniger,
+    // aber spürbare Treffer statt 0,01×-Krümel (payScale entsprechend höher).
     pays: {
-      anchor: { 3: 2, 4: 7, 5: 24 },
-      puffer: { 3: 2.5, 4: 9, 5: 30 },
-      crystal: { 3: 3, 4: 12, 5: 40 },
-      pearl: { 3: 5, 4: 18, 5: 65 },
-      helmet: { 3: 7, 4: 26, 5: 95 },
-      chest: { 3: 12, 4: 48, 5: 180 },
-      shark: { 3: 25, 4: 120, 5: 520 },
-      W: { 3: 35, 4: 180, 5: 800 },
+      anchor: { 4: 10, 5: 30 },
+      puffer: { 4: 12, 5: 38 },
+      crystal: { 4: 15, 5: 48 },
+      pearl: { 3: 8, 4: 22, 5: 70 },
+      helmet: { 3: 11, 4: 32, 5: 100 },
+      chest: { 3: 16, 4: 52, 5: 180 },
+      shark: { 3: 30, 4: 120, 5: 500 },
+      W: { 3: 42, 4: 170, 5: 750 },
     },
   },
   {
@@ -766,7 +769,12 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   // pumpen dort nur die Münzen). Münzen sind in instantWin bereits Welle für
   // Welle multipliziert.
   const algaeMult = isAlgae(machine) && inFree ? startMult + mystery.nudges : 1;
-  const totalWin = Math.round(baseWin * fsMult * algaeMult) + mystery.instantWin;
+  let totalWin = Math.round(baseWin * fsMult * algaeMult) + mystery.instantWin;
+  // Mindestgewinn: Ways-Krümel (z. B. 0,01× Einsatz) werden auf minWin×Einsatz
+  // angehoben — nie wieder "+10" bei 1.000 Einsatz.
+  if (machine.minWin && totalWin > 0 && totalWin < spinBet * machine.minWin) {
+    totalWin = Math.round(spinBet * machine.minWin);
+  }
 
   // Trigger / retrigger free spins.
   let freeSpinsAwarded = 0;
