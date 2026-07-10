@@ -616,7 +616,9 @@
     if (res.totalWin > 0) {
       openCelebration(res.totalWin, res.bet);
       if (res.instantWin > 0) {
-        const positions = (res.razorReveals || []).filter((r) => r.kind === "coin").map((r) => [r.c, r.r]);
+        const positions = [];
+        if (res.reveal && res.reveal.kind === "golden")
+          for (const w of res.reveal.waves) for (const c of w.coins) positions.push([c.c, c.r]);
         await addWin(positions.length ? positions : [[Math.floor(machine.cols / 2), Math.floor(machine.rows / 2)]], res.instantWin);
       }
 
@@ -670,52 +672,129 @@
     if (res.freeSpinsAwarded) {
       sndBig();
       confettiBurst(150);
-      bigBanner(`🎁 ${res.freeSpinsAwarded} FREISPIELE!`, "t-big");
-      await sleep(1400);
+      // Retrigger in laufenden Freispielen: "+N Spins" statt großem Trigger-Banner.
+      bigBanner(res.wasFreeSpin
+        ? `🐚 +${res.freeSpinsAwarded} Spin${res.freeSpinsAwarded > 1 ? "s" : ""}!`
+        : `🎁 ${res.freeSpinsAwarded} FREISPIELE!`, "t-big");
+      await sleep(res.wasFreeSpin ? 900 : 1400);
     }
   }
 
+  // Unisono-Reveal & Nudge-Sequenz (Algen Abyss).
+  // rev.kind "symbol": alle Mystery-Zellen flippen GLEICHZEITIG zum selben
+  // Symbol. rev.kind "golden": Stack wird zu Golden Sharks; danach zahlt pro
+  // Nudge die unterste Reihe eine Münze (Tier-Optik + ×Wert), der
+  // Multiplikator tickt sichtbar hoch.
   async function revealMystery(res) {
-    if (!res || !res.mysteryReveals || !res.mysteryReveals.length) return;
-    bigBanner("🌿 ALGEN-REVEAL!", "t-big");
-    sideLights(1300);
-    casinoStrobe();
-    sndZap();
-    await sleep(420);
-    let n = 0;
-    for (const rev of res.mysteryReveals) {
-      const cell = cellEl(rev.c, rev.r);
-      if (!cell) continue;
-      cell.classList.add("mystery-pop");
-      cellShockwave(centerOfCell(cell));
-      coinFountain(centerOfCell(cell), 6 + Math.min(10, n * 2));
-      await sleep(120);
-      const finalSym = rev.finalSymbol || rev.symbol;
-      setCell(rev.c, rev.r, symbolAsset(machine, finalSym) || machine.emojis[finalSym]);
-      if (rev.razor) razorRevealPop(cell, rev.razor);
-      cell.classList.add("win", "trace-pop");
-      sndBlip(7 + n);
-      setTimeout(() => cell.classList.remove("mystery-pop", "trace-pop", "win"), 520);
-      n++;
-      await sleep(95);
+    const rev = res && res.reveal;
+    if (!rev || !machine) return;
+
+    // Alle betroffenen Zellen einsammeln.
+    const allCells = [];
+    if (rev.kind === "symbol") {
+      for (const [c, r] of rev.cells) allCells.push([c, r]);
+    } else {
+      for (const w of rev.waves) {
+        for (const co of w.coins) allCells.push([co.c, co.r]);
+        for (const s of w.scatters) allCells.push(s);
+      }
     }
+    if (!allCells.length) return;
+
+    // Aufbau: die Algen pulsieren gemeinsam.
+    bigBanner("🌿 MYSTERY-REVEAL!", "t-big");
+    sideLights(1300);
+    sndZap();
+    allCells.forEach(([c, r]) => { const el = cellEl(c, r); if (el) el.classList.add("mystery-pop"); });
+    await sleep(500);
+    allCells.forEach(([c, r]) => { const el = cellEl(c, r); if (el) el.classList.remove("mystery-pop"); });
+
+    if (rev.kind === "symbol") {
+      // Unisono: EIN Symbol für alle — der Vollbild-Moment.
+      casinoStrobe();
+      bluePulse();
+      sndBig();
+      for (const [c, r] of rev.cells) {
+        setCell(c, r, symbolAsset(machine, rev.symbol) || machine.emojis[rev.symbol]);
+        const el = cellEl(c, r);
+        if (el) el.classList.add("win", "trace-pop");
+      }
+      cellShockwave(cellsCentroid(rev.cells));
+      await sleep(620);
+      clearHighlights();
+      await sleep(140);
+      return;
+    }
+
+    // GOLDEN SHARKS — Stack flippt komplett, dann Nudge-Wellen.
+    const goldAsset = (machine.assets && machine.assets.G) || machine.emojis.G || "🦈";
+    bigBanner("🦈 GOLDEN SHARKS!", "t-mega");
+    jackpotSirens(2200);
+    casinoStrobe();
+    sndUltra();
+    allCells.forEach(([c, r]) => {
+      setCell(c, r, goldAsset);
+      const el = cellEl(c, r);
+      if (el) el.classList.add("golden-flip");
+    });
+    await sleep(720);
+
+    const mb = $("#mult-badge");
+    let waveIdx = 0;
+    for (const wave of rev.waves) {
+      // Multiplikator sichtbar hochticken (auch im Basisspiel).
+      mb.textContent = "×" + wave.mult;
+      mb.classList.add("show");
+      if (waveIdx > 0) sndBlip(10 + waveIdx * 3);
+
+      // Scatter-Enthüllungen (nur 1. Welle möglich).
+      for (const [c, r] of wave.scatters) {
+        setCell(c, r, symbolAsset(machine, "S") || machine.emojis.S);
+        const el = cellEl(c, r);
+        if (el) { el.classList.add("scatter-hit"); cellShockwave(centerOfCell(el)); }
+        sndBig();
+        await sleep(300);
+      }
+
+      // Münzen dieser Welle (unterste Reihe des Stacks).
+      for (const coin of wave.coins) {
+        const el = cellEl(coin.c, coin.r);
+        if (!el) continue;
+        coinPop(el, coin);
+        coinFountain(centerOfCell(el), coin.tier === "gold" ? 26 : coin.tier === "silver" ? 14 : 8);
+        if (coin.tier === "gold") { jackpotSirens(1800); moneyTicker(`×${coin.value} GOLD!`); zoomPunch(); }
+        else if (coin.tier === "silver") sideLights(900);
+        sndCoin();
+        sndBlip(6 + waveIdx * 2);
+        await sleep(340);
+      }
+      waveIdx++;
+      await sleep(220);
+    }
+    await sleep(650);
+    document.querySelectorAll(".razor-coin").forEach((el) => el.remove());
+    // Endraster einsetzen (Stack ist aus dem Bild gerutscht).
+    for (let c = 0; c < machine.cols; c++)
+      for (let r = 0; r < machine.rows; r++)
+        setCell(c, r, symbolAsset(machine, res.grid[c][r]) || machine.emojis[res.grid[c][r]]);
     clearHighlights();
+    document.querySelectorAll(".cell.golden-flip").forEach((el) => el.classList.remove("golden-flip"));
+    // Badge nur stehen lassen, wenn ein persistenter Multiplikator läuft.
+    if (!(res.multiplier && res.multiplier > 1)) mb.classList.remove("show");
     await sleep(180);
+  }
+
+  // Münz-Overlay in einer Zelle: Tier-Bild + ×Wert, bleibt bis Sequenz-Ende.
+  function coinPop(cell, coin) {
+    const div = document.createElement("div");
+    div.className = "razor-coin " + coin.tier;
+    div.innerHTML = `<img src="/assets/slots/algae/symbols/coin-${coin.tier}.webp" alt="" draggable="false" /><em>×${coin.value.toLocaleString("de-DE")}</em>`;
+    cell.appendChild(div);
   }
 
   function centerOfCell(el) {
     const b = el.getBoundingClientRect();
     return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
-  }
-
-  function razorRevealPop(cell, razor) {
-    const tag = document.createElement("em");
-    tag.className = "razor-prize";
-    tag.textContent = razor.kind === "coin" ? `×${razor.value}` : razor.kind === "scatter" ? "+BONUS" : "WILD!";
-    cell.appendChild(tag);
-    jackpotSirens(razor.kind === "coin" && razor.value >= 10 ? 1400 : 900);
-    moneyTicker(tag.textContent);
-    setTimeout(() => tag.remove(), 1200);
   }
 
   function dimAllCells() {
@@ -1663,10 +1742,14 @@
       }
     }
     if (machine.mystery) {
-      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.mystery) || machine.emojis[machine.mystery], "pt-symbol-img")}</span><div class="pt-vals">Mystery-Alge — wird nach dem Spin zu Symbol, Wild oder Bonus aufgedeckt</div></div>`);
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.mystery) || machine.emojis[machine.mystery], "pt-symbol-img")}</span><div class="pt-vals">Mystery-Algen — decken alle zusammen DASSELBE Symbol auf … oder werden zu Golden Sharks</div></div>`);
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.golden) || machine.emojis[machine.golden], "pt-symbol-img")}</span><div class="pt-vals">Golden Shark — jeder trägt eine Münze (×1 bis ×2500 vom Einsatz). Nudge & Reveal: Der Stack rutscht Reihe für Reihe ab, jede Reihe zahlt, jeder Nudge erhöht den Multiplikator um +1</div></div>`);
     }
     if (machine.scatter) {
-      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.scatter) || machine.emojis[machine.scatter], "pt-symbol-img")}</span><div class="pt-vals">Scatter — ${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus</div></div>`);
+      const fsText = machine.mystery
+        ? `${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus (+1 je Extra-Scatter). In den Freispielen: Mystery-Stacks auf Walze 2+4, Multiplikator steigt jeden Spin — ohne Limit; jeder Scatter = +1 Spin`
+        : `${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus`;
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.scatter) || machine.emojis[machine.scatter], "pt-symbol-img")}</span><div class="pt-vals">Scatter — ${fsText}</div></div>`);
     }
     body.innerHTML = rows.join("");
     $("#paytable-modal").classList.remove("hidden");
