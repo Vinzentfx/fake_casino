@@ -197,40 +197,67 @@ const MACHINES = [
       W: { 3: 42, 4: 170, 5: 750 },
     },
   },
+  // Cosmic Cluster ist vorübergehend aus dem Sortiment genommen (2026-07-10,
+  // ersetzt durch Book of Rah). Definition bleibt zum Reaktivieren erhalten:
+  // { id: "cosmic", name: "Cosmic Cluster", tagline: "6×5 · Cluster · Kaskaden",
+  //   theme: "cosmic", cols: 6, rows: 5, mode: "cluster", minCluster: 5,
+  //   wild: "W", scatter: "S", unlockCost: 200000,
+  //   bets: [1000, 5000, 25000, 100000, 250000, 1000000], payScale: 3.25,
+  //   freeSpins: { trigger: 4, count: 10, persistentMultiplier: true }, buyBonus: 25,
+  //   symbols: { planet: { emoji: "🪐", weight: 24 }, moon: { emoji: "🌙", weight: 22 },
+  //     comet: { emoji: "☄️", weight: 20 }, earth: { emoji: "🌍", weight: 16 },
+  //     alien: { emoji: "👽", weight: 12 }, ufo: { emoji: "🛸", weight: 8 },
+  //     W: { emoji: "🌟", weight: 5 }, S: { emoji: "🌌", weight: 4 } },
+  //   clusterPays: { planet: { 5: 1.5, 7: 3, 9: 6, 12: 18 }, moon: { 5: 2, 7: 4, 9: 8, 12: 24 },
+  //     comet: { 5: 2.5, 7: 5, 9: 12, 12: 35 }, earth: { 5: 3, 7: 6, 9: 14, 12: 45 },
+  //     alien: { 5: 4, 7: 8, 9: 18, 12: 60 }, ufo: { 5: 6, 7: 14, 9: 35, 12: 120 } } },
   {
-    id: "cosmic",
-    name: "Cosmic Cluster",
-    tagline: "6×5 · Cluster · Kaskaden",
-    theme: "cosmic",
-    cols: 6,
-    rows: 5,
-    mode: "cluster",
-    minCluster: 5,
-    wild: "W",
-    scatter: "S",
-    unlockCost: 200000,
-    bets: [1000, 5000, 25000, 100000, 250000, 1000000],
-    payScale: 3.25, // ~98% RTP incl. scaling free spins + jackpot expectation (small buff)
-    freeSpins: { trigger: 4, count: 10, persistentMultiplier: true },
-    buyBonus: 25,
+    id: "pharaoh",
+    name: "Book of Rah",
+    tagline: "5×3 · 10 Linien · Expandierendes Bonussymbol",
+    theme: "pharaoh",
+    cols: 5,
+    rows: 3,
+    mode: "lines",
+    lines: LINES_5x3.slice(0, 10),
+    minMatch: 3,
+    // Das 📖 BUCH ist Wild UND Scatter zugleich: Es ersetzt jedes Symbol,
+    // zahlt ab 2 Stück irgendwo (bookPays × Gesamteinsatz) und 3+ starten
+    // die Freispiele mit expandierendem Bonussymbol.
+    wild: "B",
+    scatter: "B",
+    unlockCost: 120000,
+    bets: [500, 1000, 5000, 25000, 100000, 250000],
+    payScale: 4.85, // ~98,5% RTP (2M-Spin-Sim) — User-Wunsch: großzügigster Slot-Tier
+    freeSpins: { trigger: 3, count: 10, extra: 0 },
+    expandingSpecial: true, // Freispiele mit zufälligem expandierendem Symbol
+    gamble: { maxSteps: 5 }, // Risiko: Gewinn auf Kartenfarbe verdoppeln
     symbols: {
-      planet: { emoji: "🪐", weight: 24 },
-      moon: { emoji: "🌙", weight: 22 },
-      comet: { emoji: "☄️", weight: 20 },
-      earth: { emoji: "🌍", weight: 16 },
-      alien: { emoji: "👽", weight: 12 },
-      ufo: { emoji: "🛸", weight: 8 },
-      W: { emoji: "🌟", weight: 5 },
-      S: { emoji: "🌌", weight: 4 },
+      "10": { emoji: "🔟", asset: "/assets/slots/pharaoh/symbols/10.webp", weight: 24 },
+      j: { emoji: "🇯", asset: "/assets/slots/pharaoh/symbols/j.webp", weight: 24 },
+      q: { emoji: "🇶", asset: "/assets/slots/pharaoh/symbols/q.webp", weight: 22 },
+      k: { emoji: "🇰", asset: "/assets/slots/pharaoh/symbols/k.webp", weight: 20 },
+      a: { emoji: "🇦", asset: "/assets/slots/pharaoh/symbols/a.webp", weight: 18 },
+      scarab: { emoji: "🪲", asset: "/assets/slots/pharaoh/symbols/scarab.webp", weight: 12 },
+      anubis: { emoji: "🐕", asset: "/assets/slots/pharaoh/symbols/anubis.webp", weight: 12 },
+      queen: { emoji: "👸", asset: "/assets/slots/pharaoh/symbols/queen.webp", weight: 10 },
+      pharaoh: { emoji: "🤴", asset: "/assets/slots/pharaoh/symbols/pharaoh.webp", weight: 8 },
+      explorer: { emoji: "🤠", asset: "/assets/slots/pharaoh/symbols/explorer.webp", weight: 6 },
+      B: { emoji: "📖", asset: "/assets/slots/pharaoh/symbols/book.webp", weight: 5 },
     },
-    // cluster pays keyed by size threshold (size >= key)
-    clusterPays: {
-      planet: { 5: 1.5, 7: 3, 9: 6, 12: 18 },
-      moon: { 5: 2, 7: 4, 9: 8, 12: 24 },
-      comet: { 5: 2.5, 7: 5, 9: 12, 12: 35 },
-      earth: { 5: 3, 7: 6, 9: 14, 12: 45 },
-      alien: { 5: 4, 7: 8, 9: 18, 12: 60 },
-      ufo: { 5: 6, 7: 14, 9: 35, 12: 120 },
+    // Buch-Scatter-Auszahlung in × Gesamteinsatz (unabhängig von payScale).
+    bookPays: { 2: 0.5, 3: 1.5, 4: 15, 5: 150 },
+    pays: {
+      "10": { 3: 3, 4: 12, 5: 60 },
+      j: { 3: 3, 4: 12, 5: 60 },
+      q: { 3: 3, 4: 15, 5: 75 },
+      k: { 3: 3, 4: 15, 5: 75 },
+      a: { 3: 4, 4: 18, 5: 90 },
+      scarab: { 3: 6, 4: 20, 5: 130 },
+      anubis: { 3: 6, 4: 20, 5: 130 },
+      queen: { 3: 8, 4: 40, 5: 200 },
+      pharaoh: { 3: 12, 4: 70, 5: 350 },
+      explorer: { 3: 20, 4: 150, 5: 900 },
     },
   },
 ];
@@ -256,6 +283,9 @@ function publicMachines() {
     emojis: Object.fromEntries(Object.entries(m.symbols).map(([k, v]) => [k, v.emoji])),
     assets: Object.fromEntries(Object.entries(m.symbols).filter(([, v]) => v.asset).map(([k, v]) => [k, v.asset])),
     mystery: m.mystery || null,
+    bookPays: m.bookPays || null,
+    gamble: m.gamble ? { maxSteps: m.gamble.maxSteps || 5 } : null,
+    lineCount: m.lines ? m.lines.length : 0,
     payKeys: Object.keys(m.pays || m.clusterPays || {}),
     // Payouts expressed as a multiple of the total bet (for the in-game paytable).
     pays: m.pays || null,
@@ -327,6 +357,15 @@ function weightedPickNonMystery(machine) {
 
 function coinTier(value) {
   return value >= 100 ? "gold" : value >= 10 ? "silver" : "bronze";
+}
+
+/** Expandierendes Bonussymbol ziehen: gewichtet nach Symbol-Häufigkeit
+ *  (häufige Lows öfter, das Top-Symbol selten — so bleibt der Traum-Bonus
+ *  selten und wertvoll). */
+function pickSpecial(machine) {
+  const entries = Object.keys(machine.pays)
+    .map((s) => [s, machine.symbols[s] ? machine.symbols[s].weight : 1]);
+  return weightedPickEntries(entries);
 }
 
 /**
@@ -764,6 +803,30 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
     if (inFree && machine.freeSpins.persistentMultiplier) session.multiplier = res.endMultiplier;
   }
 
+  // Book of Rah: Buch-Scatter zahlt ab 2 Stück irgendwo (× Gesamteinsatz) …
+  if (machine.bookPays && scatters.count >= 2) {
+    const bookWin = Math.round(spinBet * thresholdPay(machine.bookPays, scatters.count));
+    if (bookWin > 0) {
+      wins.push({ type: "book", symbol: machine.scatter, count: scatters.count, win: bookWin, positions: scatters.positions });
+      baseWin += bookWin;
+    }
+  }
+  // … und in den Freispielen expandiert das Bonussymbol: Landet es auf genug
+  // Walzen, füllt es sie komplett und zahlt scatter-artig auf ALLEN Linien.
+  if (machine.expandingSpecial && inFree && session.special) {
+    const special = session.special;
+    const reels = [];
+    for (let c = 0; c < machine.cols; c++) if (grid[c].includes(special)) reels.push(c);
+    const pay = machine.pays[special] ? thresholdPay(machine.pays[special], reels.length) : 0;
+    if (reels.length >= machine.minMatch && pay > 0) {
+      const positions = [];
+      for (const c of reels) for (let r = 0; r < machine.rows; r++) positions.push([c, r]);
+      const win = Math.round(unit * pay * machine.lines.length * (machine.payScale || 1));
+      wins.push({ type: "expand", symbol: special, count: reels.length, win, positions });
+      baseWin += win;
+    }
+  }
+
   const fsMult = inFree && machine.freeSpins && machine.freeSpins.multiplier ? machine.freeSpins.multiplier : 1;
   // Algen: In den Freispielen zahlen Liniengewinne mit dem Multiplikator NACH
   // der Nudge-Sequenz; im Basisspiel bleiben sie unmultipliziert (die Nudges
@@ -802,6 +865,9 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
         remaining: freeSpinsAwarded,
         bet: spinBet,
         multiplier: machine.freeSpins.persistentMultiplier ? 1 : machine.freeSpins.multiplier,
+        // Book of Rah: EIN zufälliges Bonussymbol für die ganze Freispiel-
+        // Serie (gewichtet nach Häufigkeit — Lows öfter, Explorer selten).
+        special: machine.expandingSpecial ? pickSpecial(machine) : undefined,
       };
     }
   }
@@ -813,7 +879,7 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   if (newSession && newSession.remaining <= 0) newSession = null;
 
   const freeState = newSession && newSession.remaining > 0
-    ? { active: true, remaining: newSession.remaining, multiplier: newSession.multiplier }
+    ? { active: true, remaining: newSession.remaining, multiplier: newSession.multiplier, special: newSession.special || null }
     : { active: false, remaining: 0, multiplier: 1 };
 
   const result = {
@@ -932,7 +998,52 @@ function setupSlots(io, accounts) {
         accounts.recordHand(socket.data.account, -(inFree ? 0 : spinBet), true, "slots", { free: inFree });
       }
 
-      ack({ ...result, balance, jackpotPot: jackpotPot(), winBoost: boost > 1 ? boost : 1 });
+      // Risiko-Feature: Nach einem Basisspiel-Gewinn (ohne laufende Freispiele)
+      // darf der Gewinn auf Kartenfarbe verdoppelt werden. Jeder Spin setzt
+      // den Anspruch neu — nur der letzte Gewinn ist riskierbar.
+      socket.data.gamble = machine.gamble && !inFree && !showcase && totalWin > 0 && !result.freeSpins.active
+        ? { machineId, amount: totalWin, steps: 0 }
+        : null;
+
+      ack({ ...result, balance, jackpotPot: jackpotPot(), winBoost: boost > 1 ? boost : 1, canGamble: !!socket.data.gamble });
+    });
+
+    // Risiko / Gamble: 50/50 auf Rot oder Schwarz, Gewinn verdoppelt sich,
+    // Fehlgriff löscht ihn. Max. Stufen pro Gewinn begrenzt; EV-neutral.
+    socket.on("slots:gamble", ({ guess } = {}, ack) => {
+      if (!ack) return;
+      if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
+      const g = socket.data.gamble;
+      if (!g || !(g.amount > 0)) return ack({ ok: false, error: "Kein Gewinn zum Riskieren." });
+      const machine = MACHINE_BY_ID[g.machineId];
+      if (!machine || !machine.gamble) return ack({ ok: false, error: "Kein Risiko-Spiel hier." });
+      if (guess !== "red" && guess !== "black") return ack({ ok: false, error: "Rot oder Schwarz?" });
+      const acc = accounts.get(socket.data.account);
+      if (!acc || acc.chips < g.amount) return ack({ ok: false, error: "Nicht genug Chips für den Einsatz." });
+      const deduct = accounts.adjustChips(socket.data.account, -g.amount);
+      if (!deduct.ok) return ack({ ok: false, error: deduct.error });
+      const card = crypto.randomInt(2) === 0 ? "red" : "black";
+      const won = card === guess;
+      let balance = deduct.account.chips;
+      if (won) {
+        const stake = g.amount;
+        g.amount = stake * 2;
+        g.steps += 1;
+        const credit = accounts.adjustChips(socket.data.account, g.amount);
+        if (credit.ok) balance = credit.account.chips;
+        accounts.recordHand(socket.data.account, stake, true, "slots");
+        if (g.steps >= (machine.gamble.maxSteps || 5)) socket.data.gamble = null;
+      } else {
+        accounts.recordHand(socket.data.account, -g.amount, true, "slots");
+        socket.data.gamble = null;
+      }
+      ack({
+        ok: true, card, won,
+        amount: won ? g.amount : 0,
+        steps: won ? g.steps : 0,
+        canContinue: won && !!socket.data.gamble,
+        balance,
+      });
     });
 
     // Bonus-Buy: pay a multiple of the bet to start free spins immediately.
@@ -953,11 +1064,13 @@ function setupSlots(io, accounts) {
       // The buy-in is a real loss: feeds stats, casino rake, cashback & weekly
       // net (the free spins then record their wins as pure gains).
       accounts.recordHand(socket.data.account, -cost, true, "slots");
+      socket.data.gamble = null; // alter Risiko-Anspruch verfällt
       socket.data.slots = {
         machineId, bet, remaining: machine.freeSpins.count,
         multiplier: machine.freeSpins.persistentMultiplier ? 1 : machine.freeSpins.multiplier,
+        special: machine.expandingSpecial ? pickSpecial(machine) : undefined,
       };
-      ack({ ok: true, cost, balance: deduct.account.chips, freeSpins: { active: true, remaining: machine.freeSpins.count, multiplier: socket.data.slots.multiplier } });
+      ack({ ok: true, cost, balance: deduct.account.chips, freeSpins: { active: true, remaining: machine.freeSpins.count, multiplier: socket.data.slots.multiplier, special: socket.data.slots.special || null } });
     });
   });
 }
