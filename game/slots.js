@@ -162,7 +162,7 @@ const MACHINES = [
   {
     id: "algae",
     name: "Algen Abyss",
-    tagline: "5×4 · Mystery-Algen · Reveal-Bonus",
+    tagline: "5×4 · Mystery-Algen · Nudge & Reveal",
     theme: "algae",
     cols: 5,
     rows: 4,
@@ -174,30 +174,36 @@ const MACHINES = [
     golden: "G",
     unlockCost: 120000,
     bets: [500, 1000, 5000, 25000, 100000, 250000],
-    payScale: 0.145,
-    freeSpins: { trigger: 3, count: 5, persistentMultiplier: true },
-    buyBonus: 18,
+    payScale: 0.065,
+    freeSpins: { trigger: 3, count: 4, extra: 1, persistentMultiplier: true },
+    buyBonus: 55, // Bonus-EV ≈ 48× (Sim) → Kauf bleibt leicht -EV, nicht farmbar
     symbols: {
-      anchor: { emoji: "⚓", asset: "/assets/slots/algae/symbols/anchor.webp", weight: 24 },
-      puffer: { emoji: "🐡", asset: "/assets/slots/algae/symbols/puffer.webp", weight: 22 },
-      crystal: { emoji: "💎", asset: "/assets/slots/algae/symbols/crystal.webp", weight: 20 },
-      pearl: { emoji: "🦪", asset: "/assets/slots/algae/symbols/pearl.webp", weight: 16 },
-      helmet: { emoji: "🤿", asset: "/assets/slots/algae/symbols/helmet.webp", weight: 13 },
-      chest: { emoji: "🧰", asset: "/assets/slots/algae/symbols/chest.webp", weight: 9 },
-      shark: { emoji: "🦈", asset: "/assets/slots/algae/symbols/shark.webp", weight: 6 },
-      W: { emoji: "🔱", asset: "/assets/slots/algae/symbols/wild.webp", weight: 4 },
-      S: { emoji: "🐚", asset: "/assets/slots/algae/symbols/bonus.webp", weight: 4 },
-      M: { emoji: "🌿", asset: "/assets/slots/algae/symbols/algae.webp", weight: 1 },
-      G: { emoji: "🦈", asset: "/assets/slots/algae/symbols/shark.webp", weight: 0 },
+      anchor: { emoji: "⚓", asset: "/assets/slots/algae/symbols/anchor.webp", weight: 48 },
+      puffer: { emoji: "🐡", asset: "/assets/slots/algae/symbols/puffer.webp", weight: 44 },
+      crystal: { emoji: "💎", asset: "/assets/slots/algae/symbols/crystal.webp", weight: 40 },
+      pearl: { emoji: "🦪", asset: "/assets/slots/algae/symbols/pearl.webp", weight: 32 },
+      helmet: { emoji: "🤿", asset: "/assets/slots/algae/symbols/helmet.webp", weight: 26 },
+      chest: { emoji: "🧰", asset: "/assets/slots/algae/symbols/chest.webp", weight: 18 },
+      shark: { emoji: "🦈", asset: "/assets/slots/algae/symbols/shark.webp", weight: 12 },
+      W: { emoji: "🔱", asset: "/assets/slots/algae/symbols/wild.webp", weight: 8 },
+      S: { emoji: "🐚", asset: "/assets/slots/algae/symbols/bonus.webp", weight: 5 },
+      M: { emoji: "🌿", asset: "/assets/slots/algae/symbols/algae.webp", weight: 2 },
+      G: { emoji: "🦈", asset: "/assets/slots/algae/symbols/golden-shark.webp", weight: 0 },
     },
-    mysteryReveals: [
-      ["anchor", 26], ["puffer", 24], ["crystal", 20], ["pearl", 13],
-      ["helmet", 8], ["chest", 5], ["shark", 2], ["W", 1], ["S", 1], ["G", 2],
+    // Unisono-Reveal: ALLE Mystery-Zellen eines Spins decken DASSELBE Symbol
+    // auf — oder der ganze Stack wird zu Golden Sharks (goldenChance in %).
+    unisonReveals: [
+      ["anchor", 24], ["puffer", 22], ["crystal", 18], ["pearl", 12],
+      ["helmet", 8], ["chest", 5], ["shark", 3], ["W", 2],
     ],
-    razorPrizes: [
-      ["coin", 1, 46], ["coin", 2, 25], ["coin", 5, 13], ["coin", 10, 6],
-      ["coin", 25, 2], ["coin", 50, 1], ["S", 0, 5], ["W", 0, 2],
+    goldenChance: 8,
+    // Golden-Shark-Münzen: [Wert in ×Einsatz, Gewicht]. Bronze <10, Silber
+    // 10–50, Gold 100+ (Tier = reine Optik, der Wert zählt).
+    coinValues: [
+      [1, 20000], [2, 6000], [3, 2500], [5, 1200], [10, 450], [25, 150],
+      [50, 60], [100, 15], [250, 6], [500, 3], [1000, 1], [2500, 1],
     ],
+    coinScatterChance: 6, // % je Golden-Position (nur 1. Welle): Scatter statt Münze
     pays: {
       anchor: { 3: 2, 4: 7, 5: 24 },
       puffer: { 3: 2.5, 4: 9, 5: 30 },
@@ -309,19 +315,15 @@ function isAlgae(machine) {
   return machine && machine.id === "algae";
 }
 
-function initialAlgaeMultiplier(scatterCount) {
-  if (scatterCount >= 5) return 25;
-  if (scatterCount >= 4) return 5;
-  return 1;
-}
-
 function prepareMysteryGrid(machine, grid, session, inFree) {
   if (!isAlgae(machine)) return grid;
   const out = cloneGrid(grid);
   if (inFree) {
-    const nudgeRows = Math.max(0, Math.min(machine.rows, session && session.nudgeRows != null ? session.nudgeRows : machine.rows));
-    const startRow = machine.rows - nudgeRows;
-    for (const c of [1, 3]) for (let r = startRow; r < machine.rows; r++) out[c][r] = machine.mystery;
+    // Freispiele: Stacks auf Walze 2+4 rutschen pro Spin eine Zeile nach
+    // unten aus dem Bild. Resthöhe = verbleibende Spins (unten ausgerichtet);
+    // Retrigger (+Spins) schieben den Stack wieder hoch.
+    const height = Math.min(machine.rows, ((session && session.remaining) || 0) + 1);
+    for (const c of [1, 3]) for (let r = machine.rows - height; r < machine.rows; r++) out[c][r] = machine.mystery;
     return out;
   }
   const stackCols = [];
@@ -341,42 +343,98 @@ function weightedPickNonMystery(machine) {
   return Object.keys(machine.symbols).find((s) => s !== machine.mystery && s !== machine.golden) || Object.keys(machine.symbols)[0];
 }
 
-function applyMystery(machine, grid, bet) {
-  if (!machine.mystery || !machine.mysteryReveals) return { grid, displayGrid: null, mysteryReveals: [], razorReveals: [], instantWin: 0 };
+function coinTier(value) {
+  return value >= 100 ? "gold" : value >= 10 ? "silver" : "bronze";
+}
+
+/**
+ * Unisono-Reveal + Nudge & Reveal.
+ * ALLE Mystery-Zellen eines Spins decken gemeinsam EIN Symbol auf — oder
+ * (goldenChance) der ganze Stack wird zu Golden Sharks. Golden Sharks laufen
+ * dann als Nudge-Sequenz: pro Welle deckt jede sichtbare Golden-Position eine
+ * Münze (Wert × Einsatz × aktueller Multiplikator) oder — nur in Welle 1 —
+ * einen Scatter auf; danach rutscht der Stack eine Zeile nach unten und der
+ * Multiplikator steigt um +1, bis der Stack aus dem Bild ist.
+ * Rückgabe: { grid, displayGrid, reveal, instantWin, nudges }.
+ */
+function applyReveal(machine, grid, bet, startMult) {
+  const none = { grid, displayGrid: null, reveal: null, instantWin: 0, nudges: 0 };
+  if (!machine.mystery || !machine.unisonReveals) return none;
+  const cells = [];
+  for (let c = 0; c < machine.cols; c++)
+    for (let r = 0; r < machine.rows; r++)
+      if (grid[c][r] === machine.mystery) cells.push([c, r]);
+  if (!cells.length) return none;
+
   const displayGrid = cloneGrid(grid);
   const finalGrid = cloneGrid(grid);
-  const mysteryReveals = [];
-  const razorReveals = [];
+
+  if (crypto.randomInt(100) >= (machine.goldenChance || 0)) {
+    const symbol = weightedPickEntries(machine.unisonReveals);
+    for (const [c, r] of cells) finalGrid[c][r] = symbol;
+    return { grid: finalGrid, displayGrid, reveal: { kind: "symbol", symbol, cells }, instantWin: 0, nudges: 0 };
+  }
+
+  // Golden Sharks: Stack-Positionen je Spalte (oben → unten sortiert).
+  const live = new Map();
+  for (const [c, r] of cells) {
+    if (!live.has(c)) live.set(c, []);
+    live.get(c).push(r);
+  }
+  for (const rs of live.values()) rs.sort((a, b) => a - b);
+
+  let mult = Math.max(1, startMult || 1);
   let instantWin = 0;
-  for (let c = 0; c < machine.cols; c++) {
-    for (let r = 0; r < machine.rows; r++) {
-      if (finalGrid[c][r] !== machine.mystery) continue;
-      const symbol = weightedPickEntries(machine.mysteryReveals);
-      let finalSymbol = symbol;
-      const reveal = { c, r, symbol };
-      if (symbol === machine.golden && machine.razorPrizes) {
-        const [kind, mult] = weightedPickEntries(machine.razorPrizes.map(([k, m, w]) => [`${k}:${m}`, w])).split(":");
-        if (kind === "coin") {
-          const value = Number(mult) || 1;
-          instantWin += Math.round(bet * value);
-          reveal.razor = { kind: "coin", value };
-          razorReveals.push({ c, r, kind: "coin", value });
-        } else if (kind === "S") {
-          finalSymbol = machine.scatter;
-          reveal.razor = { kind: "scatter" };
-          razorReveals.push({ c, r, kind: "scatter" });
-        } else if (kind === "W") {
-          finalSymbol = machine.wild;
-          reveal.razor = { kind: "wild" };
-          razorReveals.push({ c, r, kind: "wild" });
-        }
+  let nudges = 0;
+  const waves = [];
+
+  // Beim Aufdecken des Stacks können einzelne Positionen Scatter zeigen —
+  // sie verlassen den Golden-Stack und bleiben als Scatter liegen.
+  const scatters0 = [];
+  for (const [c, rs] of live) {
+    for (let i = 0; i < rs.length; i++) {
+      if (machine.coinScatterChance && crypto.randomInt(100) < machine.coinScatterChance) {
+        finalGrid[c][rs[i]] = machine.scatter;
+        scatters0.push([c, rs[i]]);
+        rs.splice(i, 1);
+        i--;
       }
-      finalGrid[c][r] = finalSymbol;
-      reveal.finalSymbol = finalSymbol;
-      mysteryReveals.push(reveal);
     }
   }
-  return { grid: finalGrid, displayGrid: mysteryReveals.length ? displayGrid : null, mysteryReveals, razorReveals, instantWin };
+
+  // Nudge-Wellen: Jeder Golden Shark trägt EINE Münze. Pro Nudge zahlt die
+  // unterste Reihe (Wert × Einsatz × aktueller Multiplikator), dann rutscht
+  // der Stack ab und der Multiplikator steigt um +1 — die oberen Münzen sind
+  // also mehr wert.
+  while ([...live.values()].some((rs) => rs.length)) {
+    const coins = [];
+    for (const [c, rs] of live) {
+      if (!rs.length) continue;
+      const r = rs.pop(); // unterste Position dieser Spalte
+      const value = Number(weightedPickEntries(machine.coinValues.map(([v, w]) => [String(v), w])));
+      const win = Math.round(bet * value * mult);
+      instantWin += win;
+      coins.push({ c, r, value, tier: coinTier(value), win });
+    }
+    waves.push({ mult, coins, scatters: nudges === 0 ? scatters0 : [] });
+    mult += 1;
+    nudges += 1;
+    if (nudges > machine.rows + 1) break; // Sicherheitsnetz
+  }
+  if (!waves.length && scatters0.length) waves.push({ mult, coins: [], scatters: scatters0 });
+
+  // Golden-Spalten im Endraster mit frischen Symbolen auffüllen.
+  for (let c = 0; c < machine.cols; c++)
+    for (let r = 0; r < machine.rows; r++)
+      if (finalGrid[c][r] === machine.mystery) finalGrid[c][r] = weightedPickNonMystery(machine);
+
+  return {
+    grid: finalGrid,
+    displayGrid,
+    reveal: { kind: "golden", columns: [...live.keys()], waves },
+    instantWin,
+    nudges,
+  };
 }
 
 /** grid[col][row] */
@@ -694,7 +752,10 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   if (inFree) session.remaining -= 1;
 
   const rawGrid = prepareMysteryGrid(machine, forceGrid || spinGrid(machine), session, inFree);
-  const mystery = applyMystery(machine, rawGrid, spinBet);
+  // Multiplikator VOR dem Reveal (Freispiele: persistenter Session-Wert) —
+  // Golden-Nudges erhöhen ihn innerhalb der Sequenz weiter.
+  const startMult = isAlgae(machine) && inFree && session.multiplier ? session.multiplier : 1;
+  const mystery = applyReveal(machine, rawGrid, spinBet, startMult);
   const grid = mystery.grid;
   const scatters = countScatters(machine, grid);
 
@@ -722,13 +783,21 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   }
 
   const fsMult = inFree && machine.freeSpins && machine.freeSpins.multiplier ? machine.freeSpins.multiplier : 1;
-  const algaeMult = isAlgae(machine) && inFree && session && session.multiplier ? session.multiplier : 1;
-  const totalWin = Math.round(baseWin * fsMult * algaeMult + mystery.instantWin);
+  // Algen: In den Freispielen zahlen Liniengewinne mit dem Multiplikator NACH
+  // der Nudge-Sequenz; im Basisspiel bleiben sie unmultipliziert (die Nudges
+  // pumpen dort nur die Münzen). Münzen sind in instantWin bereits Welle für
+  // Welle multipliziert.
+  const algaeMult = isAlgae(machine) && inFree ? startMult + mystery.nudges : 1;
+  const totalWin = Math.round(baseWin * fsMult * algaeMult) + mystery.instantWin;
 
   // Trigger / retrigger free spins.
   let freeSpinsAwarded = 0;
   let newSession = session;
-  if (machine.freeSpins && scatters.count >= machine.freeSpins.trigger) {
+  if (isAlgae(machine) && inFree) {
+    // In den Freispielen zählt JEDER Scatter: +1 Spin (Stack rutscht wieder hoch).
+    freeSpinsAwarded = scatters.count;
+    session.remaining += freeSpinsAwarded;
+  } else if (machine.freeSpins && scatters.count >= machine.freeSpins.trigger) {
     // More scatters than required → more free spins (e.g. 3→10, 4→15, 5→20…).
     const fs = machine.freeSpins;
     const extra = fs.extra != null ? fs.extra : Math.round(fs.count / 2);
@@ -740,16 +809,14 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
         machineId: machine.id,
         remaining: freeSpinsAwarded,
         bet: spinBet,
-        multiplier: isAlgae(machine) ? initialAlgaeMultiplier(scatters.count) : machine.freeSpins.persistentMultiplier ? 1 : machine.freeSpins.multiplier,
-        nudgeRows: isAlgae(machine) ? machine.rows : undefined,
+        multiplier: machine.freeSpins.persistentMultiplier ? 1 : machine.freeSpins.multiplier,
       };
     }
   }
-  if (isAlgae(machine) && inFree && newSession && newSession.remaining > 0) {
-    const usedRows = Math.max(0, Math.min(machine.rows, session && session.nudgeRows != null ? session.nudgeRows : machine.rows));
-    newSession.multiplier = Math.min(25, (newSession.multiplier || 1) + (usedRows > 0 ? 1 : 0) + mystery.razorReveals.length);
-    newSession.nudgeRows = freeSpinsAwarded > 0 ? machine.rows : Math.max(0, usedRows - 1);
-    if (newSession.nudgeRows <= 0 && !freeSpinsAwarded) newSession.remaining = 0;
+  if (isAlgae(machine) && inFree && newSession) {
+    // Persistenter Bonus-Multiplikator: +1 pro Spin (die Stacks nudgen) plus
+    // die Golden-Nudges der Sequenz. Kein Cap — das ist der Razor-Kick.
+    newSession.multiplier = startMult + mystery.nudges + 1;
   }
   if (newSession && newSession.remaining <= 0) newSession = null;
 
@@ -761,8 +828,7 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
     ok: true,
     grid,
     displayGrid: mystery.displayGrid,
-    mysteryReveals: mystery.mysteryReveals,
-    razorReveals: mystery.razorReveals,
+    reveal: mystery.reveal,
     instantWin: mystery.instantWin,
     wins,
     cascades,
