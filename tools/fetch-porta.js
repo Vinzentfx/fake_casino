@@ -28,6 +28,7 @@ const APIS = [
 const DISTRICTS = [
   { id: "eisbergen",     name: "Eisbergen",     rel: 1335614 },
   { id: "hausberge",     name: "Hausberge",     rel: 1335589 },
+  { id: "holzhausen",    name: "Holzhausen",    rel: 1335620 },
   { id: "kleinenbremen", name: "Kleinenbremen", rel: 1335571 },
   { id: "lerbeck",       name: "Lerbeck",       rel: 1335568 },
   { id: "nammen",        name: "Nammen",        rel: 1335655 },

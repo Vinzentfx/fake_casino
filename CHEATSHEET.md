@@ -122,7 +122,7 @@ z. B. 3 → 10, 4 → 15, 5 → 20 Freispiele. Während Freispielen kann erneut 
 | Spiele | Varianz: RTP 93–99 %, die großen Sprünge kommen von Big Wins & Poker |
 
 ### 🏙️ Stadt — echte Karte von Porta Westfalica
-5 echte Ortsteile (Eisbergen, Hausberge, Kleinenbremen, Lerbeck, Nammen) mit **7.222 echten Häusern** aus OpenStreetMap, inkl. Straßen & Adressen. Übersicht → Ortsteil antippen → Haus kaufen. **Kein Einkommen, kein Einsammeln** — Besitz gibt Status & Perks:
+8 echte Ortsteile (Eisbergen, Hausberge, Holzhausen, Kleinenbremen, Lerbeck, Nammen, Neesen, Veltheim) mit **11.131 echten Häusern** aus OpenStreetMap, inkl. Straßen & Adressen. Übersicht → Ortsteil antippen → Haus kaufen. **Kein Einkommen, kein Einsammeln** — Besitz gibt Status & Perks:
 
 - **👑 Straßen-Monopol:** Alle Häuser einer Straße (ab 3) besitzen → die Straße färbt sich für alle in deiner Farbe („👑 vincents Bergstraße") + täglicher Tribut.
 - **🥇 Stadtteil-Boss:** höchster Immobilienwert im Ortsteil → Name auf der Karte + **10 % Rabatt** auf Käufe dort.
