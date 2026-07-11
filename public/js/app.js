@@ -67,6 +67,7 @@ function showScreen(name) {
   if (name === "clans" && window.Casino._loadClans) window.Casino._loadClans();
   if (name === "cosmetics" && window.Casino._loadCosmetics) window.Casino._loadCosmetics();
   if (name === "crash" && window.Casino._loadCrash) window.Casino._loadCrash();
+  if (name === "horses" && window.Casino._loadHorses) window.Casino._loadHorses();
   if (name === "mines" && window.Casino._loadMines) window.Casino._loadMines();
   if (name === "pinco" && window.Casino._loadPinco) window.Casino._loadPinco();
   if (name === "memory" && window.Casino._loadMemory) window.Casino._loadMemory();

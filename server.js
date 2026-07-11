@@ -18,6 +18,7 @@ const accounts = require("./game/accounts");
 const { setupPoker } = require("./game/tableManager");
 const { setupSlots } = require("./game/slots");
 const { setupCrash } = require("./game/crash");
+const { setupHorses } = require("./game/horses");
 const { setupMines } = require("./game/mines");
 const { setupPinco } = require("./game/pinco");
 const { setupMemory } = require("./game/memory");
@@ -189,6 +190,7 @@ io.on("connection", (socket) => {
 setupPoker(io, accounts);
 setupSlots(io, accounts);
 setupCrash(io, accounts);
+setupHorses(io, accounts);
 setupMines(io, accounts);
 setupPinco(io, accounts);
 setupMemory(io, accounts);
