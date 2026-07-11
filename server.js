@@ -50,6 +50,7 @@ const quests = require("./game/quests");
 const { setupSeason } = require("./game/season");
 const feed = require("./game/feed");
 const liveops = require("./game/liveops");
+const ipbans = require("./game/ipbans");
 
 const PORT = process.env.PORT || 3000;
 const APP_VERSION = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.APP_VERSION || require("./package.json").version;
@@ -181,9 +182,20 @@ const io = new Server(server);
 io.sockets.setMaxListeners(50); // many game modules each add a connection listener
 io.on("connection", (socket) => {
   socket.setMaxListeners(80);
+  // IP-Bann-Gate: gesperrte IPs werden sofort getrennt.
+  socket.data.ip = ipbans.ipOf(socket);
+  if (ipbans.isBanned(socket.data.ip)) {
+    socket.emit("ipbanned");
+    return socket.disconnect(true);
+  }
   socket.emit("app:version", { version: APP_VERSION });
   socket.on("app:version", (ack) => {
     if (typeof ack === "function") ack({ ok: true, version: APP_VERSION });
+  });
+  // Beim Auth die letzte IP am Account merken (damit der Owner per Name IP-bannen kann).
+  socket.on("auth", ({ token } = {}) => {
+    const key = accounts.verifyToken(token);
+    if (key) { const acc = accounts.get(key); if (acc) { acc.lastIp = socket.data.ip; } }
   });
 });
 

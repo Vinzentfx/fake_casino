@@ -12,12 +12,16 @@ const SAVINGS_RATE_PER_HOUR = SAVINGS_RATE_PER_DAY / 24;
 const SAVINGS_RATE_PER_MS = SAVINGS_RATE_PER_HOUR / 3_600_000;
 const SAVINGS_CAP = 25_000_000;                     // max chips on deposit
 
+let _accounts = null; // gesetzt in setupBank — für Faucet-Tapering
+
 /** Credit accrued interest into the savings balance (compounds on interaction). */
 function accrueSavings(acc, now = Date.now()) {
   const s = acc.savings;
   if (!s || !s.amount || !s.since) return;
   s.amount = Math.min(SAVINGS_CAP, Math.max(0, Math.floor(s.amount)));
-  const interest = Math.floor(s.amount * SAVINGS_RATE_PER_MS * Math.max(0, now - s.since));
+  // Reiche werden getapert (wie alle anderen Faucets) — Zins ist neu erzeugtes Geld.
+  const f = _accounts && _accounts.faucetFactor ? _accounts.faucetFactor(acc.name) : 1;
+  const interest = Math.floor(s.amount * SAVINGS_RATE_PER_MS * Math.max(0, now - s.since) * f);
   if (interest > 0) s.amount = Math.min(SAVINGS_CAP, s.amount + interest);
   s.since = now;
 }
@@ -38,6 +42,7 @@ function stateFor(acc) {
 }
 
 function setupBank(io, accounts) {
+  _accounts = accounts;
   io.on("connection", (socket) => {
     const acct = () => (socket.data.account ? accounts.get(socket.data.account) : null);
 
