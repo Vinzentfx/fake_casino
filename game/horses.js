@@ -33,7 +33,8 @@ const TICK_MS = 250;            // Simulationstakt (Broadcast jeden 2. Tick)
 const RACE_TICKS = { 1000: 120, 1600: 168, 2400: 220 }; // Renndauer in Ticks
 
 const MIN_BET = 50;
-const MAX_BET = 100_000;
+const MAX_PER_HORSE = 50_000;   // max. Gesamteinsatz auf EIN Pferd (pro Rennen)
+const MAX_PER_RACE = 100_000;   // max. Gesamteinsatz über alle Wetten (pro Rennen)
 const WIN_MARGIN = 0.15;        // Hausvorteil Siegwette (Favoriten-Bucket blieb sonst zu heiß)
 const PLACE_MARGIN = 0.15;      // Hausvorteil Platzwette (Top 3)
 const MC_RUNS = 1500;           // Monte-Carlo-Läufe für die Quoten
@@ -647,7 +648,7 @@ function setupHorses(_io, _accounts) {
       s.stable = key() ? Object.values(store.horses).filter((h) => h.owner === key()).map((h) => publicHorse(h, { own: true })) : [];
       refreshMarket(false);
       s.market = store.market.map((id) => store.horses[id]).filter(Boolean).map((h) => publicHorse(h, { withPrice: true }));
-      s.config = { entryFee: ENTRY_FEE, maxOwned: MAX_OWNED, minBet: MIN_BET, maxBet: MAX_BET, enterMinCondition: ENTER_MIN_CONDITION, sellFactor: SELL_FACTOR };
+      s.config = { entryFee: ENTRY_FEE, maxOwned: MAX_OWNED, minBet: MIN_BET, maxBet: MAX_PER_HORSE, maxPerRace: MAX_PER_RACE, enterMinCondition: ENTER_MIN_CONDITION, sellFactor: SELL_FACTOR };
       ack(s);
     });
 
@@ -659,9 +660,12 @@ function setupHorses(_io, _accounts) {
       amount = Math.floor(Number(amount));
       if (!race.field[lane]) return ack({ ok: false, error: "Unbekanntes Pferd." });
       if (type !== "win" && type !== "place") return ack({ ok: false, error: "Wettart?" });
-      if (!Number.isFinite(amount) || amount < MIN_BET || amount > MAX_BET) return ack({ ok: false, error: `Einsatz ${MIN_BET}–${MAX_BET.toLocaleString("de-DE")}.` });
-      const staked = race.bets.filter((b) => b.key === key()).reduce((s, b) => s + b.amount, 0);
-      if (staked + amount > MAX_BET * 2) return ack({ ok: false, error: "Wett-Limit für dieses Rennen erreicht." });
+      if (!Number.isFinite(amount) || amount < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
+      const mine = race.bets.filter((b) => b.key === key());
+      const onHorse = mine.filter((b) => b.lane === lane).reduce((s, b) => s + b.amount, 0);
+      if (onHorse + amount > MAX_PER_HORSE) return ack({ ok: false, error: `Max. ${MAX_PER_HORSE.toLocaleString("de-DE")} 🪙 auf ein Pferd.` });
+      const staked = mine.reduce((s, b) => s + b.amount, 0);
+      if (staked + amount > MAX_PER_RACE) return ack({ ok: false, error: `Max. ${MAX_PER_RACE.toLocaleString("de-DE")} 🪙 Gesamteinsatz pro Rennen.` });
       const deduct = accounts.adjustChips(key(), -amount);
       if (!deduct.ok) return ack({ ok: false, error: "Nicht genug Chips." });
       const odds = type === "win" ? race.odds[lane].win : race.odds[lane].place;
