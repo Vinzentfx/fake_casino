@@ -38,6 +38,7 @@ const WIN_MARGIN = 0.15;        // Hausvorteil Siegwette (Favoriten-Bucket blieb
 const PLACE_MARGIN = 0.15;      // Hausvorteil Platzwette (Top 3)
 const MC_RUNS = 1500;           // Monte-Carlo-Läufe für die Quoten
 
+const DAILY_PRIZES = [500_000, 250_000, 100_000]; // 🐎 Renn-Champion des Tages, Platz 1-3
 const ENTRY_FEE = 2_000;        // Startgeld pro Anmeldung
 const PURSE_BASE = 3_500;       // Haus-Zuschuss zum Preisgeld-Topf
 const PURSE_SPLIT = [0.42, 0.24, 0.14]; // Anteile Platz 1-3 (Rest = Sink; Voll-Feld bleibt <100% EV)
@@ -359,7 +360,33 @@ function say(text) {
   io.emit("horses:say", { text });
 }
 
+// Renn-Champion des Tages: bei Tageswechsel kassieren die 3 Besitzer mit den
+// meisten Renn-Siegen des Tages Preisgeld, dann Reset. Beim allerersten Lauf
+// nur den Tag setzen (keine Ausschüttung für 0-Sieger).
+function checkDailyChamp() {
+  const day = new Date().toDateString();
+  if (!store.champDay) { store.champDay = day; save(); return; }
+  if (store.champDay === day) return;
+  store.champDay = day;
+  const racers = accounts.rawAll()
+    .filter((a) => (a.dailyHorseWins || 0) > 0)
+    .sort((a, b) => b.dailyHorseWins - a.dailyHorseWins)
+    .slice(0, 3);
+  if (racers.length) {
+    const medals = ["🥇", "🥈", "🥉"];
+    const parts = racers.map((a, i) => {
+      accounts.adjustChips(String(a.name).trim().toLowerCase(), DAILY_PRIZES[i]);
+      return `${medals[i]} ${a.name} (${a.dailyHorseWins} Siege · +${DAILY_PRIZES[i].toLocaleString("de-DE")} 🪙)`;
+    });
+    try { require("./chat").announce(io, `🐎🏆 RENN-CHAMPION DES TAGES: ${parts.join(" · ")}`); } catch {}
+  }
+  for (const a of accounts.rawAll()) a.dailyHorseWins = 0;
+  accounts.save();
+  save();
+}
+
 function startBetting() {
+  checkDailyChamp(); // Tages-Ausschüttung bei Datumswechsel
   sweepEvents(); // abgelaufene Events auflösen (inkl. Fohlen-Geburten)
   // Ruhende Stall-Pferde können auch abseits der Rennen etwas erleben.
   for (const h of Object.values(store.horses)) {
@@ -709,4 +736,4 @@ function setupHorses(_io, _accounts) {
 
 module.exports = { setupHorses };
 // Für Offline-Balancing-Simulationen:
-module.exports._internals = { newHorse, effective, quickRace, computeOdds, horsePrice, store, ENTRY_FEE, PURSE_BASE, PURSE_SPLIT, WIN_MARGIN, PLACE_MARGIN, rollEvent, sweepEvents, activeEvent, HORSE_EVENTS };
+module.exports._internals = { newHorse, effective, quickRace, computeOdds, horsePrice, store, ENTRY_FEE, PURSE_BASE, PURSE_SPLIT, WIN_MARGIN, PLACE_MARGIN, rollEvent, sweepEvents, activeEvent, HORSE_EVENTS, checkDailyChamp, DAILY_PRIZES };

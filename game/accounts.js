@@ -523,7 +523,7 @@ function recordHorseResult(name, pos) {
   if (!acc) return;
   if (pos === 1) {
     acc.horseWins = (acc.horseWins || 0) + 1;
-    acc.weeklyHorseWins = (acc.weeklyHorseWins || 0) + 1;
+    acc.dailyHorseWins = (acc.dailyHorseWins || 0) + 1; // Renn-Champion des Tages
   }
   if (pos <= 3) acc.horsePodiums = (acc.horsePodiums || 0) + 1;
   save();
