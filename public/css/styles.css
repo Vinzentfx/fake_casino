@@ -3359,3 +3359,91 @@ button { font-family: inherit; cursor: pointer; }
   margin: 3px 0 6px; padding: 5px 9px; border-radius: 9px; font-size: 0.78rem; font-weight: 700;
   background: rgba(244,215,130,0.12); border: 1px solid rgba(244,215,130,0.35); color: var(--gold-strong);
 }
+
+/* ── Rennbahn: Champion-Banner, Wettschein & schönere Karten ── */
+.champ-banner {
+  display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px;
+}
+.champ-banner .cb-item {
+  font-size: 0.76rem; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
+}
+.cb-live {
+  background: linear-gradient(90deg, rgba(244,215,130,0.22), rgba(244,215,130,0.08));
+  border-color: rgba(244,215,130,0.5); color: var(--gold-strong);
+}
+.cb-crown { filter: drop-shadow(0 0 4px rgba(244,215,130,0.7)); }
+.cb-prev { opacity: 0.8; }
+.cb-prize { color: #7fd79a; border-color: rgba(74,222,128,0.3); }
+
+/* Feld-Wettbuttons hübscher */
+.hf-bet {
+  min-width: 60px; border-radius: 10px; padding: 6px 8px;
+  background: linear-gradient(180deg, rgba(244,215,130,0.16), rgba(244,215,130,0.05));
+  border: 1px solid rgba(244,215,130,0.4); transition: transform 0.08s, background 0.15s;
+}
+.hf-bet:not(:disabled):active { transform: scale(0.94); }
+.hf-bet:not(:disabled):hover { background: rgba(244,215,130,0.24); }
+
+/* Wettschein-Bottom-Sheet */
+.bet-slip {
+  position: fixed; inset: 0; z-index: 200; display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.bet-slip.show { opacity: 1; pointer-events: auto; }
+.bet-slip-card {
+  position: relative; width: 100%; max-width: 460px; margin: 0 8px;
+  background: linear-gradient(180deg, #14251c, #0b1712);
+  border: 1px solid var(--gold); border-bottom: 0;
+  border-radius: 20px 20px 0 0; padding: 18px 16px calc(20px + var(--safe-bottom, 0px));
+  box-shadow: 0 -12px 40px rgba(0,0,0,0.5);
+  transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.2,0.9,0.3,1);
+}
+.bet-slip.show .bet-slip-card { transform: translateY(0); }
+.bet-slip-x {
+  position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: var(--text); font-weight: 800;
+}
+.bet-slip-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.bet-slip-head .hf-silk { width: 20px; height: 20px; border-radius: 6px; }
+.bet-slip-types { display: flex; gap: 8px; margin-bottom: 12px; }
+.bs-type {
+  flex: 1; padding: 10px; border-radius: 11px; font-weight: 800; font-size: 0.85rem;
+  border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--text);
+}
+.bs-type.active { border-color: var(--gold); background: rgba(244,215,130,0.16); color: var(--gold-strong); }
+.bet-slip-chips { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.bs-chip {
+  flex: 1; min-width: 48px; padding: 9px 4px; border-radius: 10px; font-weight: 800; font-size: 0.82rem;
+  border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: var(--text);
+}
+.bs-chip.bs-clear { flex: 0 0 40px; color: #f0a0a0; border-color: rgba(214,90,90,0.4); }
+.bet-slip-amount { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.bet-slip-amount input {
+  flex: 1; padding: 11px 12px; border-radius: 11px; font-size: 1.1rem; font-weight: 800; text-align: right;
+  background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.16); color: #fff;
+}
+.bet-slip-payout { text-align: center; font-size: 0.95rem; margin-bottom: 12px; opacity: 0.9; }
+.bet-slip-payout b { color: #7fd79a; font-size: 1.15rem; }
+.bet-slip-go { width: 100%; font-size: 1.05rem; padding: 13px; }
+
+/* Stall/Markt-Karten aufgewertet */
+.hc-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+.hc-head .hc-name { margin-bottom: 0; }
+.hc-form { font-size: 0.9rem; }
+.hc-tier { font-size: 0.68rem; font-weight: 800; padding: 3px 9px; border-radius: 999px; letter-spacing: 0.03em; }
+.hc-tier.t-elite  { background: linear-gradient(90deg,#f4d782,#e7a94b); color: #2a1c04; }
+.hc-tier.t-strong { background: rgba(126,215,154,0.2); color: #7fd79a; border: 1px solid rgba(126,215,154,0.4); }
+.hc-tier.t-mid    { background: rgba(126,200,255,0.16); color: #9cd0ff; border: 1px solid rgba(126,200,255,0.35); }
+.hc-tier.t-low    { background: rgba(255,255,255,0.08); color: var(--text-dim); border: 1px solid rgba(255,255,255,0.15); }
+.hc-stat { display: flex; align-items: center; gap: 8px; }
+.hc-stat > span:first-child { flex: 0 0 84px; opacity: 0.8; }
+.hc-stat > .sb { flex: 1; }
+.hc-stat > b { flex: 0 0 26px; text-align: right; }
+.hc-stats .sb { width: auto; }
+.sb.sb-warn i { background: linear-gradient(90deg,#f4d782,#e7a94b); }
+.sb.sb-low i { background: linear-gradient(90deg,#e88,#d65a5a); }
+.hc-record { font-size: 0.75rem; opacity: 0.7; margin-top: 4px; }
+.horse-card.busy { opacity: 0.85; }
+.horse-card { transition: border-color 0.15s; }
+.horse-card:hover { border-color: rgba(244,215,130,0.28); }
