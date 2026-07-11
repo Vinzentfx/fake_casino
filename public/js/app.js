@@ -884,6 +884,7 @@ socket.on("admin:kicked", ({ reason }) => {
 
 function loadAdminAccounts() {
   loadAdminDashboard();
+  loadIpBans();
   socket.emit("announcement:get", (res) => {
     if (res && res.ok && res.announcement && $("#admin-announcement-text")) {
       $("#admin-announcement-text").value = res.announcement.text || "";
@@ -1123,6 +1124,53 @@ $("#admin-announcement-clear")?.addEventListener("click", () => {
     });
   });
 });
+
+// ---- Admin: IP-Bann ----
+$("#admin-ipban-btn")?.addEventListener("click", () => {
+  const errEl = $("#admin-ipban-error");
+  errEl.textContent = "";
+  const raw = $("#admin-ipban-input").value.trim();
+  if (!raw) { errEl.textContent = "Spielername oder IP eingeben."; return; }
+  // Enthält Punkte/Doppelpunkte → als IP behandeln, sonst als Spielername.
+  const isIp = /[.:]/.test(raw) && !/\s/.test(raw);
+  socket.emit("admin:ipban", isIp ? { ip: raw } : { target: raw }, (res) => {
+    if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
+    toast(`🚫 IP ${res.ip} gesperrt (${res.kicked} Verbindung${res.kicked === 1 ? "" : "en"} getrennt).`);
+    $("#admin-ipban-input").value = "";
+    loadIpBans();
+  });
+});
+
+function loadIpBans() {
+  const list = $("#admin-ipban-list");
+  if (!list) return;
+  socket.emit("admin:ipbanList", (res) => {
+    if (!res || !res.ok) { list.innerHTML = '<li class="muted">—</li>'; return; }
+    if (!res.bans.length) { list.innerHTML = '<li class="muted">Keine IP gesperrt.</li>'; return; }
+    list.innerHTML = "";
+    res.bans.forEach((b) => {
+      const li = document.createElement("li");
+      const who = b.accounts && b.accounts.length ? ` <span class="muted small">(${b.accounts.map(escapeHtml).join(", ")})</span>` : "";
+      li.innerHTML = `<span><code>${escapeHtml(b.ip)}</code>${who}</span>`;
+      const btn = document.createElement("button");
+      btn.className = "btn-primary";
+      btn.style.cssText = "font-size:.75rem;padding:4px 10px";
+      btn.textContent = "Entsperren";
+      btn.addEventListener("click", () => {
+        socket.emit("admin:ipunban", { ip: b.ip }, (r) => {
+          if (!r || !r.ok) { toast("Konnte IP nicht entsperren."); return; }
+          toast(`✅ IP ${b.ip} entsperrt.`);
+          loadIpBans();
+        });
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  });
+}
+
+// Beim Öffnen des Admin-Screens die IP-Bann-Liste mitladen.
+socket.on("ipbanned", () => { alert("Deine IP-Adresse wurde gesperrt."); });
 
 // ---- Admin: Test-Tools ----
 $("#admin-force-win-btn")?.addEventListener("click", () => {

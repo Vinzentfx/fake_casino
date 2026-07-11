@@ -4,6 +4,7 @@ const OWNER = "vincent";
 const city = require("./city");
 const slots = require("./slots");
 const liveops = require("./liveops");
+const ipbans = require("./ipbans");
 let _heist = null;
 function setHeist(h) { _heist = h; }
 
@@ -107,6 +108,48 @@ function setupAdmin(io, accounts) {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       ack(accounts.unban(String(target).toLowerCase()));
+    });
+
+    // IP-Bann: sperrt die IP eines Spielers (per Name → letzte bekannte IP)
+    // ODER eine direkt angegebene IP; trennt alle Sockets dieser IP sofort.
+    socket.on("admin:ipban", ({ target, ip } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      let addr = ip ? ipbans.normIp(ip) : "";
+      if (!addr && target) {
+        const acc = accounts.get(String(target).toLowerCase());
+        addr = acc && acc.lastIp ? ipbans.normIp(acc.lastIp) : "";
+        if (!addr) return ack({ ok: false, error: "Keine IP für diesen Spieler bekannt (muss erst online gewesen sein)." });
+      }
+      if (!addr) return ack({ ok: false, error: "Spielername oder IP angeben." });
+      ipbans.ban(addr);
+      let kicked = 0;
+      io.of("/").sockets.forEach((s) => {
+        if (s.data && ipbans.normIp(s.data.ip) === addr) {
+          s.emit("ipbanned");
+          s.disconnect(true);
+          kicked++;
+        }
+      });
+      ack({ ok: true, ip: addr, kicked });
+    });
+
+    socket.on("admin:ipunban", ({ ip } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const ok = ipbans.unban(String(ip || ""));
+      ack({ ok, ip: ipbans.normIp(ip) });
+    });
+
+    socket.on("admin:ipbanList", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const all = accounts.rawAll();
+      const bans = ipbans.list().map((ip) => ({
+        ip,
+        accounts: all.filter((a) => a.lastIp && ipbans.normIp(a.lastIp) === ipbans.normIp(ip)).map((a) => a.name),
+      }));
+      ack({ ok: true, bans });
     });
 
     // Shadowban ("Pechvogel"): the player silently loses every slots spin and

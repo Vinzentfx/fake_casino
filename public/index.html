@@ -1426,6 +1426,16 @@
         <div class="form-error" id="admin-ban-error"></div>
 
         <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
+        <h3>🚫 IP-Bann</h3>
+        <p class="muted small" style="margin:0 0 .5rem">Sperrt die IP-Adresse (unabhängig vom Account). Per Spielername (letzte bekannte IP) oder direkt eine IP.</p>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <input id="admin-ipban-input" type="text" maxlength="45" placeholder="Spielername oder IP" style="flex:1;min-width:140px" />
+          <button class="btn-danger" id="admin-ipban-btn">IP sperren</button>
+        </div>
+        <div class="form-error" id="admin-ipban-error"></div>
+        <ol class="leaderboard" id="admin-ipban-list" style="margin-top:.5rem"><li class="muted">—</li></ol>
+
+        <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
         <h3>🧪 Test-Tools</h3>
         <div style="display:flex;flex-direction:column;gap:.5rem">
           <button class="btn-primary" id="admin-force-win-btn">🎰 Nächster Slot-Spin = MAXIMALGEWINN (für dich)</button>

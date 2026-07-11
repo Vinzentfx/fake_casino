@@ -175,7 +175,7 @@
       const h = f.horse;
       const me = window.Casino.getAccount && window.Casino.getAccount();
       const mine = me && h.owner && h.owner === me.name.toLowerCase();
-      const ownerTag = h.npc ? '<span class="hf-npc">Stall Porta</span>' : `<span class="hf-owner">${mine ? "⭐ dein Pferd" : "Stall " + escapeHtml(h.owner)}</span>`;
+      const ownerTag = h.npc ? '<span class="hf-npc">Stall Porta</span>' : `<span class="hf-owner">${mine ? "⭐ dein Pferd" : "👤 " + escapeHtml(h.ownerName || h.owner)}</span>`;
       const form = (h.formHint === "up" ? "📈" : h.formHint === "down" ? "📉" : "➖") + (h.handicap ? " 🏋️" : "");
       const myTags = (myByLane[f.lane] || []).map((b) => `<span class="hf-mybet">${b.type === "win" ? "Sieg" : "Platz"} ${fmt(b.amount)}</span>`).join("");
       const pos = st.phase === "done" && st.result ? `<b class="hf-pos">${st.result.find((r) => r.lane === f.lane).pos}.</b>` : "";
@@ -357,8 +357,9 @@
         rows += `<div class="cb-row cb-outside"><span class="cb-medal">–</span><span class="cb-name">Du: noch kein Sieg heute</span><span class="cb-wins"></span><span class="cb-cash"></span></div>`;
       }
     }
+    const potLine = st.betPot > 0 ? `<div class="cb-foot">💰 Heutiger Wett-Topf: <b>${fmt(st.betPot)} 🪙</b> — 50/30/20 % on top für Platz 1–3</div>` : "";
     const foot = yest ? `<div class="cb-foot">Gestern: 🏆 <b>${escapeHtml(yest.name)}</b> (${yest.wins} ${yest.wins === 1 ? "Sieg" : "Siege"})</div>` : "";
-    el.innerHTML = head + `<div class="cb-list">${rows}</div>` + foot;
+    el.innerHTML = head + `<div class="cb-list">${rows}</div>` + potLine + foot;
   }
 
   // ── Wettschein (Bottom-Sheet) ─────────────────────────────────────────────

@@ -38,7 +38,9 @@ const WIN_MARGIN = 0.15;        // Hausvorteil Siegwette (Favoriten-Bucket blieb
 const PLACE_MARGIN = 0.15;      // Hausvorteil Platzwette (Top 3)
 const MC_RUNS = 1500;           // Monte-Carlo-Läufe für die Quoten
 
-const DAILY_PRIZES = [500_000, 250_000, 100_000]; // 🐎 Renn-Champion des Tages, Platz 1-3
+const DAILY_PRIZES = [300_000, 200_000, 100_000]; // 🐎 Renn-Champion des Tages, feste Grundpreise Platz 1-3
+const BET_POT_CUT = 0.05;             // 5% jedes Wetteinsatzes wandern in den Tages-Wett-Topf
+const POT_SPLIT = [0.5, 0.3, 0.2];    // Aufteilung des Wett-Topfs auf Platz 1-3
 const ENTRY_FEE = 2_000;        // Startgeld pro Anmeldung
 const PURSE_BASE = 3_500;       // Haus-Zuschuss zum Preisgeld-Topf
 const PURSE_SPLIT = [0.42, 0.24, 0.14]; // Anteile Platz 1-3 (Rest = Sink; Voll-Feld bleibt <100% EV)
@@ -170,8 +172,11 @@ function npcPool() {
 function publicHorse(h, opts = {}) {
   regenCondition(h);
   driftForm(h);
+  // Echter Anzeigename des Besitzers (h.owner ist der lowercase-Key).
+  const ownerAcc = h.owner && accounts ? accounts.get(h.owner) : null;
   return {
     id: h.id, name: h.name, owner: h.owner || null, npc: !h.owner,
+    ownerName: ownerAcc ? ownerAcc.name : (h.owner || null),
     speed: h.speed, stamina: h.stamina, temperament: h.temperament,
     // Form nur als grobe Tendenz — der genaue Wert bleibt geheim (Wett-Spannung).
     formHint: h.form >= 3 ? "up" : h.form <= -3 ? "down" : "mid",
@@ -336,20 +341,20 @@ function fieldForClient() {
   }));
 }
 
-// Tages-Rangliste nach Renn-Siegen seit Tagesbeginn. Liefert Top 3 + den
-// eigenen Rang (auch wenn außerhalb der Top 3), damit man sich vergleichen kann.
-function dailyStandings(key) {
-  if (!accounts) return { top: [], me: null };
+// Tages-Rangliste (Top 3 + Rang je Spieler). Wird gecacht und nur neu berechnet,
+// wenn sich die Siege ändern (nach jedem Rennen) — nicht bei jedem Broadcast.
+let dailyCache = { top: [], byKey: {} };
+function rebuildDailyCache() {
+  if (!accounts) { dailyCache = { top: [], byKey: {} }; return; }
   const ranked = accounts.rawAll()
     .filter((a) => (a.dailyHorseWins || 0) > 0)
-    .sort((a, b) => b.dailyHorseWins - a.dailyHorseWins)
-    .map((a, i) => ({ name: a.name, wins: a.dailyHorseWins, rank: i + 1, key: String(a.name).trim().toLowerCase() }));
-  const me = key ? ranked.find((r) => r.key === key) || null : null;
-  return { top: ranked.slice(0, 3).map(({ name, wins, rank }) => ({ name, wins, rank })), me: me ? { name: me.name, wins: me.wins, rank: me.rank } : null };
+    .sort((a, b) => b.dailyHorseWins - a.dailyHorseWins);
+  const byKey = {};
+  ranked.forEach((a, i) => { byKey[String(a.name).trim().toLowerCase()] = { name: a.name, wins: a.dailyHorseWins, rank: i + 1 }; });
+  dailyCache = { top: ranked.slice(0, 3).map((a, i) => ({ name: a.name, wins: a.dailyHorseWins, rank: i + 1 })), byKey };
 }
 
 function stateFor(key) {
-  const standings = dailyStandings(key);
   return {
     ok: true,
     phase: race.phase, no: race.no, distance: race.distance, going: race.going,
@@ -360,10 +365,11 @@ function stateFor(key) {
     result: race.result,
     commentary: race.commentary.slice(-6),
     entriesNext: race.entries.length,
-    dailyTop: standings.top,
-    myDaily: standings.me,
+    dailyTop: dailyCache.top,
+    myDaily: (key && dailyCache.byKey[key]) || null,
     champYesterday: store.lastChamp || null,
     dailyPrizes: DAILY_PRIZES,
+    betPot: Math.floor(store.dailyBetPot || 0),
   };
 }
 
@@ -389,21 +395,25 @@ function checkDailyChamp() {
     .filter((a) => (a.dailyHorseWins || 0) > 0)
     .sort((a, b) => b.dailyHorseWins - a.dailyHorseWins)
     .slice(0, 3);
+  const pot = Math.floor(store.dailyBetPot || 0); // aufgelaufener Wett-Topf
   if (racers.length) {
     const medals = ["🥇", "🥈", "🥉"];
     const parts = racers.map((a, i) => {
-      accounts.adjustChips(String(a.name).trim().toLowerCase(), DAILY_PRIZES[i]);
-      return `${medals[i]} ${a.name} (${a.dailyHorseWins} Siege · +${DAILY_PRIZES[i].toLocaleString("de-DE")} 🪙)`;
+      const prize = DAILY_PRIZES[i] + Math.floor(pot * POT_SPLIT[i]);
+      accounts.adjustChips(String(a.name).trim().toLowerCase(), prize);
+      return `${medals[i]} ${a.name} (${a.dailyHorseWins} Siege · +${prize.toLocaleString("de-DE")} 🪙)`;
     });
-    // Gestrigen Sieger merken (für die Champion-Anzeige im Client).
-    store.lastChamp = { name: racers[0].name, wins: racers[0].dailyHorseWins, prize: DAILY_PRIZES[0] };
-    try { require("./chat").announce(io, `🐎🏆 RENN-CHAMPION DES TAGES: ${parts.join(" · ")}`); } catch {}
+    store.lastChamp = { name: racers[0].name, wins: racers[0].dailyHorseWins, prize: DAILY_PRIZES[0] + Math.floor(pot * POT_SPLIT[0]) };
+    const potNote = pot > 0 ? ` (inkl. Wett-Topf ${pot.toLocaleString("de-DE")} 🪙)` : "";
+    try { require("./chat").announce(io, `🐎🏆 RENN-CHAMPION DES TAGES: ${parts.join(" · ")}${potNote}`); } catch {}
   } else {
     store.lastChamp = null;
   }
+  store.dailyBetPot = 0;
   for (const a of accounts.rawAll()) a.dailyHorseWins = 0;
   accounts.save();
   save();
+  rebuildDailyCache();
 }
 
 function startBetting() {
@@ -426,12 +436,23 @@ function startBetting() {
   race.going = crypto.randomInt(100) < 26 ? "matschig" : "trocken";
   race.raceTicks = RACE_TICKS[race.distance];
 
-  // Feld: angemeldete Spieler-Pferde zuerst, NPCs füllen auf.
+  // Feld: angemeldete Spieler-Pferde zuerst, NPCs füllen auf. Pferde, die
+  // zwischen Anmeldung und Start ausfallen (Verletzung/Event/erschöpft), können
+  // nicht starten → Startgeld zurück.
   const field = [];
   const seen = new Set();
   for (const e of race.entries.splice(0, FIELD_SIZE)) {
     const h = store.horses[e.horseId];
-    if (!h || h.retired || seen.has(h.id)) continue;
+    if (!h || seen.has(h.id)) continue;
+    regenCondition(h);
+    const ev = activeEvent(h);
+    if (h.retired || (ev && ev.block) || h.condition < ENTER_MIN_CONDITION) {
+      if (h.owner) {
+        accounts.adjustChips(h.owner, ENTRY_FEE);
+        try { require("./feed").add("horses", `↩️ ${h.name} fällt aus (${ev ? ev.label : "nicht fit"}) und startet nicht — Startgeld zurück.`); } catch {}
+      }
+      continue;
+    }
     seen.add(h.id);
     field.push({ h, tactic: e.tactic });
   }
@@ -588,6 +609,7 @@ function finishRace() {
     }
   }
   save();
+  rebuildDailyCache(); // Siege haben sich geändert → Rangliste neu berechnen
 
   const w = order[0];
   const wOdds = race.odds[w.lane] ? race.odds[w.lane].win : 0;
@@ -611,6 +633,7 @@ function setupHorses(_io, _accounts) {
   io = _io;
   accounts = _accounts;
   refreshMarket(false);
+  rebuildDailyCache();
   setTimeout(startBetting, 2500);
   setInterval(() => refreshMarket(false), 5 * 60_000);
 
@@ -644,6 +667,10 @@ function setupHorses(_io, _accounts) {
       const odds = type === "win" ? race.odds[lane].win : race.odds[lane].place;
       const bet = { key: key(), name: me().name, lane, type, amount, odds: +odds.toFixed(2) };
       race.bets.push(bet);
+      // Ein kleiner Teil jedes Einsatzes fließt in den Tages-Wett-Topf (wird beim
+      // Tageswechsel auf die Top-3-Champions verteilt) — finanziert aus dem
+      // Haus-Rand, kein zusätzlicher Abzug für den Wettenden.
+      store.dailyBetPot = (store.dailyBetPot || 0) + Math.floor(amount * BET_POT_CUT);
       io.emit("horses:bets", { bets: race.bets.map((b) => ({ name: b.name, lane: b.lane, type: b.type, amount: b.amount, odds: b.odds })) });
       ack({ ok: true, account: deduct.account, bet: { lane, type, amount, odds: bet.odds } });
     });
@@ -772,4 +799,4 @@ function setupHorses(_io, _accounts) {
 
 module.exports = { setupHorses };
 // Für Offline-Balancing-Simulationen:
-module.exports._internals = { newHorse, effective, quickRace, computeOdds, horsePrice, store, ENTRY_FEE, PURSE_BASE, PURSE_SPLIT, WIN_MARGIN, PLACE_MARGIN, rollEvent, sweepEvents, activeEvent, HORSE_EVENTS, checkDailyChamp, DAILY_PRIZES, dailyStandings };
+module.exports._internals = { newHorse, effective, quickRace, computeOdds, horsePrice, store, ENTRY_FEE, PURSE_BASE, PURSE_SPLIT, WIN_MARGIN, PLACE_MARGIN, rollEvent, sweepEvents, activeEvent, HORSE_EVENTS, checkDailyChamp, DAILY_PRIZES, rebuildDailyCache, dailyCache: () => dailyCache };
