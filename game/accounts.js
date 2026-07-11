@@ -291,6 +291,8 @@ function publicAccount(acc) {
     lastBonusAt: acc.lastBonusAt,
     bonusStreak: acc.bonusStreak || 0,
     stats: acc.stats,
+    horseWins: acc.horseWins || 0,
+    horsePodiums: acc.horsePodiums || 0,
     unlocked: acc.unlocked || ["lucky7"],
     netWorth: _netWorth(acc),
     buffs: acc.buffs ? activeBuffs(acc) : {},
@@ -512,7 +514,20 @@ const LEADERBOARD_CATS = {
   bigwin:  { sort: (a) => (a.stats && a.stats.biggestWin) || 0,  label: "🎰 Größter Einzelgewinn" },
   bigloss: { sort: (a) => (a.stats && a.stats.biggestLoss) || 0, label: "💸 Größter Einzelverlust" },
   games:   { sort: (a) => (a.stats && a.stats.gamesPlayed) || 0, label: "🎲 Aktivste" },
+  horses:  { sort: (a) => a.horseWins || 0,           label: "🐎 Renn-Champion" },
 };
+
+/** Renn-Ergebnis eines eigenen Pferds verbuchen (Gesamt- + Wochen-Zähler). */
+function recordHorseResult(name, pos) {
+  const acc = get(name);
+  if (!acc) return;
+  if (pos === 1) {
+    acc.horseWins = (acc.horseWins || 0) + 1;
+    acc.weeklyHorseWins = (acc.weeklyHorseWins || 0) + 1;
+  }
+  if (pos <= 3) acc.horsePodiums = (acc.horsePodiums || 0) + 1;
+  save();
+}
 
 /** One ranked list for a single category. */
 function leaderboardBy(cat, limit = 10) {
@@ -824,6 +839,7 @@ module.exports = {
   rescue,
   adjustChips,
   recordHand,
+  recordHorseResult,
   addXp,
   leaderboard,
   isUnlocked,

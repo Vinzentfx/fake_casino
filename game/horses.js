@@ -47,6 +47,8 @@ const MARKET_SIZE = 6;          // Angebote im Markt
 const MARKET_REFRESH_MS = 30 * 60_000;
 const SELL_FACTOR = 0.4;        // Rückverkauf ans Haus
 const TRAIN_PER_DAY = 3;        // Trainingseinheiten pro Pferd pro Tag
+const TRAIN_DURATION_MS = 20 * 60_000; // Training dauert 20 Min — Pferd solange gesperrt
+const TRAIN_BASE_COST = 5_000; // teurer als vorher (echter Chip-Sink)
 const RACE_CONDITION_COST = 30; // Kondition pro Rennen
 const CONDITION_REGEN_PER_H = 5;
 const ENTER_MIN_CONDITION = 50;
@@ -175,6 +177,9 @@ function publicHorse(h, opts = {}) {
     condition: Math.round(h.condition),
     races: h.races, wins: h.wins, podiums: h.podiums, earnings: h.earnings,
     career: Math.min(1, h.races / h.careerLimit), retired: !!h.retired,
+    event: activeEvent(h) ? { label: h.event.label, hoursLeft: Math.ceil((h.event.until - Date.now()) / 3_600_000), block: !!h.event.block } : null,
+    training: h.trainingUntil && h.trainingUntil > Date.now() ? { minsLeft: Math.ceil((h.trainingUntil - Date.now()) / 60_000) } : null,
+    handicap: (h.recentWins || 0) >= 0.9, // 🏋️ trägt gerade Sieger-Zusatzgewicht
     price: opts.withPrice ? horsePrice(h) : undefined,
     trainsLeft: opts.own ? trainsLeft(h) : undefined,
     potentialHint: opts.own ? (h.speed + 6 < h.potential || h.stamina + 6 < h.potential ? "viel Luft" : "nah am Limit") : undefined,
@@ -186,13 +191,89 @@ function trainsLeft(h) {
   return h.trainedDay === day ? Math.max(0, TRAIN_PER_DAY - h.trainedCount) : TRAIN_PER_DAY;
 }
 
+// ── Zufalls-Events (nur Spieler-Pferde) ──────────────────────────────────────
+// block = kann nicht antreten, formDelta = Leistung während des Events,
+// condPlus = Sofort-Effekt. Alles zeitlich begrenzt, nichts permanent.
+const HORSE_EVENTS = [
+  { id: "preg", label: "🤰 Schwanger!", hours: 20, weight: 5, block: true,
+    msg: (n) => `${n} ist schwanger und pausiert — mal sehen, was daraus wird … 👀` },
+  { id: "leg", label: "🦴 Beinbruch", hours: 30, weight: 7, block: true,
+    msg: (n) => `${n} hat sich das Bein gebrochen und fällt aus! Gute Besserung. 🏥` },
+  { id: "colic", label: "🤢 Möhren-Kolik", hours: 8, weight: 10, block: true,
+    msg: (n) => `${n} hat zu viele Möhren gefressen und liegt flach. 🥕🥕🥕` },
+  { id: "diva", label: "💅 Diva-Phase", hours: 10, weight: 9, block: true,
+    msg: (n) => `${n} verweigert den Stall-Ausgang. Diven eben.` },
+  { id: "bee", label: "🐝 Wespenstich", hours: 12, weight: 10, formDelta: -3,
+    msg: (n) => `${n} wurde von einer Wespe gestochen und ist etwas neben der Spur.` },
+  { id: "lovesick", label: "💘 Verliebt", hours: 16, weight: 8, formDelta: -4,
+    msg: (n) => `${n} hat sich in ein Kutschpferd verliebt und träumt statt zu galoppieren.` },
+  { id: "zoomies", label: "⚡ Zoomies", hours: 12, weight: 9, formDelta: 4,
+    msg: (n) => `${n} hat die Zoomies — rennt wie von der Tarantel gestochen!` },
+  { id: "fans", label: "🥕 Fan-Möhren", hours: 0, weight: 10, condPlus: 30,
+    msg: (n) => `Fans haben ${n} mit Möhren verwöhnt — Kondition getankt!` },
+];
+
+function activeEvent(h) {
+  return h.event && h.event.until > Date.now() ? h.event : null;
+}
+
+function rollEvent(h, chancePct) {
+  if (!h.owner || h.retired || activeEvent(h)) return;
+  if (crypto.randomInt(1000) >= chancePct * 10) return;
+  const ev = HORSE_EVENTS[weightedPickIdx(HORSE_EVENTS.map((e) => e.weight))];
+  h.event = { id: ev.id, label: ev.label, until: Date.now() + ev.hours * 3_600_000, formDelta: ev.formDelta || 0, block: !!ev.block };
+  if (ev.condPlus) { regenCondition(h); h.condition = Math.min(100, h.condition + ev.condPlus); }
+  const acc = accounts && accounts.get(h.owner);
+  try { require("./feed").add("horses", `${ev.label} ${ev.msg(h.name)}${acc ? ` (Stall ${acc.name})` : ""}`); } catch {}
+  save();
+}
+
+function weightedPickIdx(weights) {
+  const total = weights.reduce((s, w) => s + w, 0);
+  let r = crypto.randomInt(total);
+  for (let i = 0; i < weights.length; i++) { if (r < weights[i]) return i; r -= weights[i]; }
+  return 0;
+}
+
+// Abgelaufene Events aufräumen; Schwangerschaft kann ein FOHLEN bringen:
+// schwache Start-Werte, aber hohes Potential — der Zucht-Mini-Loop.
+function sweepEvents() {
+  const now = Date.now();
+  for (const h of Object.values(store.horses)) {
+    if (!h.event || h.event.until > now) continue;
+    const ev = h.event;
+    h.event = null;
+    if (ev.id === "preg" && h.owner) {
+      const owned = Object.values(store.horses).filter((x) => x.owner === h.owner && !x.retired).length;
+      const acc = accounts && accounts.get(h.owner);
+      if (owned < MAX_OWNED) {
+        const foal = newHorse(0.12);
+        foal.owner = h.owner;
+        foal.name = (h.name.length > 10 ? h.name.slice(0, 10) : h.name) + " Junior";
+        foal.potential = 88 + crypto.randomInt(8); // Fohlen: schwach, aber Rohdiamant
+        try { require("./chat").announce(io, `🐣🐎 Nachwuchs! ${h.name} (Stall ${acc ? acc.name : "?"}) hat ein Fohlen: ${foal.name}!`); } catch {}
+      } else {
+        try { require("./feed").add("horses", `🐣 ${h.name} hat ein Fohlen bekommen — aber der Stall${acc ? ` von ${acc.name}` : ""} ist voll. Es hüpft davon. 🌈`); } catch {}
+      }
+    }
+  }
+  save();
+}
+
 // ── Renn-Modell ──────────────────────────────────────────────────────────────
-// Effektive Stärke eines Pferds für DIESES Rennen (Distanz + Bahn + Form + Alter).
+// Effektive Stärke eines Pferds für DIESES Rennen (Distanz + Bahn + Form +
+// Alter + Erfolgs-Handicap + Event). Wird von Quoten-MC UND Live-Rennen
+// benutzt — Änderungen hier bleiben dadurch automatisch fair eingepreist.
 function effective(h, distance, going) {
   const distT = distance === 1000 ? 0.72 : distance === 1600 ? 0.5 : 0.3; // Speed-Gewicht
   let base = h.speed * distT + h.stamina * (1 - distT);
   base *= ageFactor(h);
   base += (h.form || 0) * 1.1;
+  // Erfolgs-Handicap: Sieger tragen Zusatzgewicht (klingt ab) — verhindert,
+  // dass ein austrainiertes Pferd die Freunde dauerhaft dominiert.
+  base -= Math.min(7, (h.recentWins || 0) * 2.4);
+  // Aktives Event kann die Leistung drücken/heben (z. B. verliebt/Zoomies).
+  if (h.event && h.event.until > Date.now() && h.event.formDelta) base += h.event.formDelta;
   if (going === "matschig") base = base * 0.82 + 12; // Matsch drückt die Unterschiede zusammen
   return base;
 }
@@ -279,6 +360,14 @@ function say(text) {
 }
 
 function startBetting() {
+  sweepEvents(); // abgelaufene Events auflösen (inkl. Fohlen-Geburten)
+  // Ruhende Stall-Pferde können auch abseits der Rennen etwas erleben.
+  for (const h of Object.values(store.horses)) {
+    if (h.owner && !h.retired && h.eventRollDay !== new Date().toDateString()) {
+      h.eventRollDay = new Date().toDateString();
+      rollEvent(h, 6);
+    }
+  }
   race.phase = "betting";
   race.no += 1;
   race.tick = 0;
@@ -428,15 +517,20 @@ function finishRace() {
     accounts.recordHand(b.key, payout - b.amount, true, "horses");
   }
 
-  // Verschleiß + Statistik + Rente.
+  // Verschleiß + Statistik + Erfolgs-Handicap + Events + Rente.
   for (const f of race.field) {
     const h = f.h;
     regenCondition(h);
     h.condition = Math.max(0, h.condition - RACE_CONDITION_COST);
     h.races += 1;
     const pos = race.result.find((r) => r.lane === f.lane).pos;
+    // Handicap-Zähler: Siege laden Zusatzgewicht auf, das über Rennen abklingt.
+    h.recentWins = (h.recentWins || 0) * 0.7 + (pos === 1 ? 1 : 0);
     if (pos === 1) h.wins += 1;
     if (pos <= 3) h.podiums += 1;
+    // Besitzer-Stats fürs Leaderboard + Wochen-Ausschüttung.
+    if (h.owner) accounts.recordHorseResult(h.owner, pos);
+    rollEvent(h, 5); // 5% Chance auf ein Zufalls-Event nach jedem Renneinsatz
     if (h.races >= h.careerLimit && !h.retired) {
       h.retired = true;
       if (h.owner) {
@@ -512,6 +606,15 @@ function setupHorses(_io, _accounts) {
       const h = store.horses[horseId];
       if (!h || h.owner !== key()) return ack({ ok: false, error: "Nicht dein Pferd." });
       if (h.retired) return ack({ ok: false, error: `${h.name} ist in Rente.` });
+      const ev = activeEvent(h);
+      if (ev && ev.block) {
+        const hrs = Math.ceil((ev.until - Date.now()) / 3_600_000);
+        return ack({ ok: false, error: `${h.name} kann nicht antreten: ${ev.label} (noch ~${hrs}h).` });
+      }
+      if (h.trainingUntil && h.trainingUntil > Date.now()) {
+        const mins = Math.ceil((h.trainingUntil - Date.now()) / 60_000);
+        return ack({ ok: false, error: `${h.name} ist noch ~${mins} Min im Training.` });
+      }
       regenCondition(h);
       if (h.condition < ENTER_MIN_CONDITION) return ack({ ok: false, error: `${h.name} braucht Ruhe (Kondition ${Math.round(h.condition)}/${ENTER_MIN_CONDITION}).` });
       if (race.entries.some((e) => e.horseId === horseId) || race.field.some((f) => f.h.id === horseId && race.phase !== "done"))
@@ -583,23 +686,27 @@ function setupHorses(_io, _accounts) {
       if (!h || h.owner !== key()) return ack({ ok: false, error: "Nicht dein Pferd." });
       if (h.retired) return ack({ ok: false, error: "In Rente trainiert man nicht mehr." });
       if (stat !== "speed" && stat !== "stamina") return ack({ ok: false, error: "Speed oder Ausdauer?" });
+      if (h.trainingUntil && h.trainingUntil > Date.now())
+        return ack({ ok: false, error: `${h.name} trainiert schon (noch ~${Math.ceil((h.trainingUntil - Date.now()) / 60_000)} Min).` });
       const day = new Date().toDateString();
       if (h.trainedDay !== day) { h.trainedDay = day; h.trainedCount = 0; }
       if (h.trainedCount >= TRAIN_PER_DAY) return ack({ ok: false, error: "Für heute austrainiert (3/Tag)." });
       if (h[stat] >= h.potential) return ack({ ok: false, error: `${h.name} ist bei ${stat === "speed" ? "Tempo" : "Ausdauer"} am Limit.` });
       // Kosten steigen mit dem Stat-Level (Sink), Zuwachs wird knapper am Limit.
-      const cost = Math.round(1500 * Math.pow(h[stat] / 50, 2) / 100) * 100;
+      const cost = Math.round(TRAIN_BASE_COST * Math.pow(h[stat] / 45, 2) / 100) * 100;
       const deduct = accounts.adjustChips(key(), -cost);
       if (!deduct.ok) return ack({ ok: false, error: `${cost.toLocaleString("de-DE")} 🪙 fehlen.` });
       const gain = h[stat] >= h.potential - 4 ? 1 : 1 + crypto.randomInt(2);
       h[stat] = Math.min(h.potential, h[stat] + gain);
       h.trainedCount += 1;
+      // Training bindet das Pferd: 20 Min gesperrt für Rennen (und weiteres Training).
+      h.trainingUntil = Date.now() + TRAIN_DURATION_MS;
       save();
-      ack({ ok: true, account: deduct.account, stat, gain, value: h[stat], cost, trainsLeft: trainsLeft(h), horse: publicHorse(h, { own: true }) });
+      ack({ ok: true, account: deduct.account, stat, gain, value: h[stat], cost, trainsLeft: trainsLeft(h), trainingMins: Math.round(TRAIN_DURATION_MS / 60_000), horse: publicHorse(h, { own: true }) });
     });
   });
 }
 
 module.exports = { setupHorses };
 // Für Offline-Balancing-Simulationen:
-module.exports._internals = { newHorse, effective, quickRace, computeOdds, horsePrice, store, ENTRY_FEE, PURSE_BASE, PURSE_SPLIT, WIN_MARGIN, PLACE_MARGIN };
+module.exports._internals = { newHorse, effective, quickRace, computeOdds, horsePrice, store, ENTRY_FEE, PURSE_BASE, PURSE_SPLIT, WIN_MARGIN, PLACE_MARGIN, rollEvent, sweepEvents, activeEvent, HORSE_EVENTS };

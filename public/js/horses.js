@@ -176,7 +176,7 @@
       const me = window.Casino.getAccount && window.Casino.getAccount();
       const mine = me && h.owner && h.owner === me.name.toLowerCase();
       const ownerTag = h.npc ? '<span class="hf-npc">Stall Porta</span>' : `<span class="hf-owner">${mine ? "⭐ dein Pferd" : "Stall " + escapeHtml(h.owner)}</span>`;
-      const form = h.formHint === "up" ? "📈" : h.formHint === "down" ? "📉" : "➖";
+      const form = (h.formHint === "up" ? "📈" : h.formHint === "down" ? "📉" : "➖") + (h.handicap ? " 🏋️" : "");
       const myTags = (myByLane[f.lane] || []).map((b) => `<span class="hf-mybet">${b.type === "win" ? "Sieg" : "Platz"} ${fmt(b.amount)}</span>`).join("");
       const pos = st.phase === "done" && st.result ? `<b class="hf-pos">${st.result.find((r) => r.lane === f.lane).pos}.</b>` : "";
       return `<div class="hf-row">
@@ -227,17 +227,23 @@
   function renderStable() {
     const el = $("#stable-list");
     if (!el) return;
-    $("#stable-hint").textContent = stable.length ? `Startgeld ${fmt(config.entryFee || 2000)} 🪙 · Kondition unter ${config.enterMinCondition || 50} = Zwangspause · 3 Trainings/Tag` : "Noch keine Pferde — schau im Markt vorbei!";
+    $("#stable-hint").textContent = stable.length ? `Startgeld ${fmt(config.entryFee || 2000)} 🪙 · Training dauert ~20 Min (Pferd solange gesperrt) · Kondition unter ${config.enterMinCondition || 50} = Zwangspause` : "Noch keine Pferde — schau im Markt vorbei!";
     el.innerHTML = stable.map((h) => {
       const career = Math.round(h.career * 100);
       const form = h.formHint === "up" ? "📈 gute Form" : h.formHint === "down" ? "📉 außer Form" : "➖ normale Form";
       if (h.retired) return `<div class="horse-card retired"><div class="hc-name">🏅 ${escapeHtml(h.name)} <span class="muted small">in Rente</span></div>
         <div class="hc-sub">${h.races} Rennen · ${h.wins} Siege · ${fmt(h.earnings)} 🪙 verdient</div></div>`;
+      const evBadge = h.event ? `<div class="hc-event">${escapeHtml(h.event.label)} — noch ~${h.event.hoursLeft}h${h.event.block ? " · kann nicht antreten" : ""}</div>` : "";
+      const busy = !!h.training;
+      const trainBadge = busy ? `<div class="hc-event">🏋️ Im Training — noch ~${h.training.minsLeft} Min · nicht startbereit</div>` : "";
+      const hcap = h.handicap ? " 🏋️" : "";
+      const dis = busy ? "disabled" : "";
       return `<div class="horse-card">
-        <div class="hc-name">🐴 ${escapeHtml(h.name)} <span class="muted small">${form} · ${h.potentialHint || ""}</span></div>
+        <div class="hc-name">🐴 ${escapeHtml(h.name)}${hcap} <span class="muted small">${form} · ${h.potentialHint || ""}</span></div>
+        ${trainBadge}${evBadge}
         <div class="hc-stats">
-          <div>Tempo ${h.speed} ${statBar(h.speed)} <button class="hc-train" data-id="${h.id}" data-stat="speed">Training</button></div>
-          <div>Ausdauer ${h.stamina} ${statBar(h.stamina)} <button class="hc-train" data-id="${h.id}" data-stat="stamina">Training</button></div>
+          <div>Tempo ${h.speed} ${statBar(h.speed)} <button class="hc-train" data-id="${h.id}" data-stat="speed" ${dis}>Training</button></div>
+          <div>Ausdauer ${h.stamina} ${statBar(h.stamina)} <button class="hc-train" data-id="${h.id}" data-stat="stamina" ${dis}>Training</button></div>
           <div>Kondition ${h.condition} ${statBar(h.condition, 100)}</div>
           <div class="muted small">Karriere ${career}% · ${h.races} Rennen · ${h.wins} Siege · ${h.podiums} Podien · ${fmt(h.earnings)} 🪙</div>
         </div>
@@ -245,7 +251,7 @@
           <select class="hc-tactic" data-id="${h.id}">
             <option value="stayer">⚖️ Gleichmäßig</option><option value="front">🏃 Frontrunner</option><option value="closer">🎯 Schlussspurt</option>
           </select>
-          <button class="hc-enter btn-primary" data-id="${h.id}">🏁 Anmelden (${fmt(config.entryFee || 2000)})</button>
+          <button class="hc-enter btn-primary" data-id="${h.id}" ${dis}>🏁 Anmelden (${fmt(config.entryFee || 2000)})</button>
           <button class="hc-sell" data-id="${h.id}">Verkaufen</button>
         </div>
       </div>`;
@@ -254,7 +260,7 @@
       socket.emit("horses:train", { horseId: b.dataset.id, stat: b.dataset.stat }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Training fehlgeschlagen.");
         applyAccount(r.account);
-        toast(`💪 +${r.gain} ${r.stat === "speed" ? "Tempo" : "Ausdauer"} (${r.value}) · −${fmt(r.cost)} 🪙 · noch ${r.trainsLeft} heute`);
+        toast(`💪 +${r.gain} ${r.stat === "speed" ? "Tempo" : "Ausdauer"} (${r.value}) · −${fmt(r.cost)} 🪙 · 🏋️ ~${r.trainingMins} Min gesperrt`);
         load();
       });
     }));

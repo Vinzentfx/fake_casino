@@ -725,9 +725,9 @@ async function claimRescue() {
 $("#rescue-btn").addEventListener("click", claimRescue);
 
 // ---- Leaderboard (multi-category, tabbed) ----
-const LB_ORDER = ["rich", "level", "estate", "streets", "bigwin", "bigloss", "games"];
+const LB_ORDER = ["rich", "level", "horses", "estate", "streets", "bigwin", "bigloss", "games"];
 // How a category's value is displayed (default: chips).
-const LB_UNIT = { level: (v) => `Level ${v}`, streets: (v) => `${v} 👑`, games: (v) => `${v.toLocaleString("de-DE")} Spiele` };
+const LB_UNIT = { level: (v) => `Level ${v}`, streets: (v) => `${v} 👑`, games: (v) => `${v.toLocaleString("de-DE")} Spiele`, horses: (v) => `${v} 🏆` };
 let lbData = null;
 let lbActiveCat = "rich";
 
