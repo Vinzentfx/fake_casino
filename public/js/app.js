@@ -219,7 +219,7 @@ function setAccount(acc, token) {
 }
 
 // ---- Update-/Changelog-Modal (einmal pro Version) ----
-const UPDATE_VERSION = "2026-07-10-book-of-rah";
+const UPDATE_VERSION = "2026-07-11-porta-rennbahn";
 function maybeShowUpdate() {
   let seen = null;
   try { seen = localStorage.getItem("casino_seen_update"); } catch {}
