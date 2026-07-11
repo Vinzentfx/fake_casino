@@ -3362,19 +3362,30 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ── Rennbahn: Champion-Banner, Wettschein & schönere Karten ── */
 .champ-banner {
-  display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px;
+  margin: 6px 0 12px; padding: 10px 12px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(244,215,130,0.12), rgba(244,215,130,0.03));
+  border: 1px solid rgba(244,215,130,0.32);
 }
-.champ-banner .cb-item {
-  font-size: 0.76rem; font-weight: 700; padding: 5px 10px; border-radius: 999px;
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
+.cb-title { font-weight: 800; color: var(--gold-strong); font-size: 0.9rem; margin-bottom: 7px; }
+.cb-crown { filter: drop-shadow(0 0 5px rgba(244,215,130,0.8)); }
+.cb-list { display: flex; flex-direction: column; gap: 3px; }
+.cb-row {
+  display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px;
+  font-size: 0.82rem; background: rgba(255,255,255,0.03);
 }
-.cb-live {
-  background: linear-gradient(90deg, rgba(244,215,130,0.22), rgba(244,215,130,0.08));
-  border-color: rgba(244,215,130,0.5); color: var(--gold-strong);
+.cb-row.cb-me { background: rgba(126,215,154,0.14); border: 1px solid rgba(126,215,154,0.35); }
+.cb-row.cb-outside { opacity: 0.85; margin-top: 2px; }
+.cb-row.cb-empty { opacity: 0.8; font-size: 0.8rem; }
+.cb-medal { flex: 0 0 24px; text-align: center; font-weight: 800; }
+.cb-name { flex: 1; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cb-wins { flex: 0 0 auto; opacity: 0.85; }
+.cb-cash { flex: 0 0 auto; color: #7fd79a; font-weight: 800; min-width: 62px; text-align: right; }
+.cb-foot { margin-top: 8px; font-size: 0.76rem; opacity: 0.75; }
+.hc-rename {
+  border: 0; background: none; cursor: pointer; font-size: 0.85rem; padding: 0 2px; opacity: 0.6;
+  vertical-align: middle;
 }
-.cb-crown { filter: drop-shadow(0 0 4px rgba(244,215,130,0.7)); }
-.cb-prev { opacity: 0.8; }
-.cb-prize { color: #7fd79a; border-color: rgba(74,222,128,0.3); }
+.hc-rename:hover { opacity: 1; }
 
 /* Feld-Wettbuttons hübscher */
 .hf-bet {

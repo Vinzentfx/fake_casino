@@ -336,17 +336,20 @@ function fieldForClient() {
   }));
 }
 
-// Aktueller Tages-Spitzenreiter (nach Renn-Siegen seit Tagesbeginn).
-function dailyChampNow() {
-  if (!accounts) return null;
-  let best = null;
-  for (const a of accounts.rawAll()) {
-    if ((a.dailyHorseWins || 0) > 0 && (!best || a.dailyHorseWins > best.dailyHorseWins)) best = a;
-  }
-  return best ? { name: best.name, wins: best.dailyHorseWins } : null;
+// Tages-Rangliste nach Renn-Siegen seit Tagesbeginn. Liefert Top 3 + den
+// eigenen Rang (auch wenn außerhalb der Top 3), damit man sich vergleichen kann.
+function dailyStandings(key) {
+  if (!accounts) return { top: [], me: null };
+  const ranked = accounts.rawAll()
+    .filter((a) => (a.dailyHorseWins || 0) > 0)
+    .sort((a, b) => b.dailyHorseWins - a.dailyHorseWins)
+    .map((a, i) => ({ name: a.name, wins: a.dailyHorseWins, rank: i + 1, key: String(a.name).trim().toLowerCase() }));
+  const me = key ? ranked.find((r) => r.key === key) || null : null;
+  return { top: ranked.slice(0, 3).map(({ name, wins, rank }) => ({ name, wins, rank })), me: me ? { name: me.name, wins: me.wins, rank: me.rank } : null };
 }
 
 function stateFor(key) {
+  const standings = dailyStandings(key);
   return {
     ok: true,
     phase: race.phase, no: race.no, distance: race.distance, going: race.going,
@@ -357,7 +360,8 @@ function stateFor(key) {
     result: race.result,
     commentary: race.commentary.slice(-6),
     entriesNext: race.entries.length,
-    champToday: dailyChampNow(),
+    dailyTop: standings.top,
+    myDaily: standings.me,
     champYesterday: store.lastChamp || null,
     dailyPrizes: DAILY_PRIZES,
   };
@@ -706,6 +710,21 @@ function setupHorses(_io, _accounts) {
       ack({ ok: true, account: deduct.account, horse: publicHorse(h, { own: true }) });
     });
 
+    socket.on("horses:rename", ({ horseId, name } = {}, ack) => {
+      if (!ack) return;
+      if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
+      const h = store.horses[horseId];
+      if (!h || h.owner !== key()) return ack({ ok: false, error: "Nicht dein Pferd." });
+      // Bereinigen: Steuerzeichen raus, Whitespace zusammenfassen, Länge 2–18.
+      const clean = String(name || "").replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 18);
+      if (clean.length < 2) return ack({ ok: false, error: "Name braucht mindestens 2 Zeichen." });
+      if (Object.values(store.horses).some((x) => x.id !== h.id && x.name.toLowerCase() === clean.toLowerCase()))
+        return ack({ ok: false, error: "Der Name ist schon vergeben." });
+      h.name = clean;
+      save();
+      ack({ ok: true, horse: publicHorse(h, { own: true }) });
+    });
+
     socket.on("horses:sell", ({ horseId } = {}, ack) => {
       if (!ack) return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
@@ -753,4 +772,4 @@ function setupHorses(_io, _accounts) {
 
 module.exports = { setupHorses };
 // Für Offline-Balancing-Simulationen:
-module.exports._internals = { newHorse, effective, quickRace, computeOdds, horsePrice, store, ENTRY_FEE, PURSE_BASE, PURSE_SPLIT, WIN_MARGIN, PLACE_MARGIN, rollEvent, sweepEvents, activeEvent, HORSE_EVENTS, checkDailyChamp, DAILY_PRIZES };
+module.exports._internals = { newHorse, effective, quickRace, computeOdds, horsePrice, store, ENTRY_FEE, PURSE_BASE, PURSE_SPLIT, WIN_MARGIN, PLACE_MARGIN, rollEvent, sweepEvents, activeEvent, HORSE_EVENTS, checkDailyChamp, DAILY_PRIZES, dailyStandings };

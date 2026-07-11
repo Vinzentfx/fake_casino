@@ -241,7 +241,7 @@
       const condClass = h.condition >= 70 ? "" : h.condition >= 50 ? "sb-warn" : "sb-low";
       return `<div class="horse-card${busy ? " busy" : ""}">
         <div class="hc-head">
-          <div class="hc-name">🐴 ${escapeHtml(h.name)}${hcap}</div>
+          <div class="hc-name">🐴 ${escapeHtml(h.name)}${hcap} <button class="hc-rename" data-id="${h.id}" data-name="${escapeHtml(h.name)}" title="Umbenennen">✏️</button></div>
           <span class="hc-form">${form}</span>
         </div>
         ${trainBadge}${evBadge}
@@ -286,6 +286,16 @@
         load();
       });
     }));
+    el.querySelectorAll(".hc-rename").forEach((b) => b.addEventListener("click", () => {
+      const cur = b.dataset.name;
+      const name = prompt(`Neuer Name für ${cur} (2–18 Zeichen):`, cur);
+      if (name == null || name.trim() === cur) return;
+      socket.emit("horses:rename", { horseId: b.dataset.id, name }, (r) => {
+        if (!r || !r.ok) return toast((r && r.error) || "Umbenennen fehlgeschlagen.");
+        toast(`✏️ Umbenannt in ${r.horse.name}!`);
+        load();
+      });
+    }));
   }
 
   function renderMarket() {
@@ -324,15 +334,31 @@
   function renderChamp() {
     const el = $("#champ-banner");
     if (!el || !st) return;
-    const today = st.champToday;
+    const top = st.dailyTop || [];
+    const me = st.myDaily || null;
     const yest = st.champYesterday;
-    const prize = (st.dailyPrizes && st.dailyPrizes[0]) || 500000;
-    let html = "";
-    if (today) html += `<span class="cb-item cb-live"><span class="cb-crown">👑</span> Tages-Champion: <b>${escapeHtml(today.name)}</b> · ${today.wins} ${today.wins === 1 ? "Sieg" : "Siege"}</span>`;
-    else html += `<span class="cb-item cb-live"><span class="cb-crown">👑</span> Noch kein Tages-Champion — der Thron ist frei!</span>`;
-    if (yest) html += `<span class="cb-item cb-prev">Gestern: 🏆 ${escapeHtml(yest.name)} (${yest.wins})</span>`;
-    html += `<span class="cb-item cb-prize">🏇 Tagespreis 1.–3.: <b>${fmt(prize)}</b> / ${fmt((st.dailyPrizes||[])[1]||250000)} / ${fmt((st.dailyPrizes||[])[2]||100000)} 🪙</span>`;
-    el.innerHTML = html;
+    const prizes = st.dailyPrizes || [500000, 250000, 100000];
+    const meName = (window.Casino.getAccount && window.Casino.getAccount() || {}).name;
+    const medals = ["🥇", "🥈", "🥉"];
+
+    let head = `<div class="cb-title"><span class="cb-crown">👑</span> Renn-Champion des Tages</div>`;
+    let rows = "";
+    if (!top.length) {
+      rows = `<div class="cb-row cb-empty">Noch kein Sieg heute — der Thron ist frei! Melde ein Pferd an und hol dir ${fmt(prizes[0])} 🪙.</div>`;
+    } else {
+      rows = top.map((r, i) => {
+        const isMe = meName && r.name.toLowerCase() === meName.toLowerCase();
+        return `<div class="cb-row${isMe ? " cb-me" : ""}"><span class="cb-medal">${medals[i]}</span><span class="cb-name">${escapeHtml(r.name)}${isMe ? " (du)" : ""}</span><span class="cb-wins">${r.wins} ${r.wins === 1 ? "Sieg" : "Siege"}</span><span class="cb-cash">+${fmt(prizes[i] || 0)}</span></div>`;
+      }).join("");
+      // Eigener Rang, falls außerhalb der Top 3.
+      if (me && me.rank > 3) {
+        rows += `<div class="cb-row cb-me cb-outside"><span class="cb-medal">${me.rank}.</span><span class="cb-name">${escapeHtml(me.name)} (du)</span><span class="cb-wins">${me.wins} ${me.wins === 1 ? "Sieg" : "Siege"}</span><span class="cb-cash">–</span></div>`;
+      } else if (!me) {
+        rows += `<div class="cb-row cb-outside"><span class="cb-medal">–</span><span class="cb-name">Du: noch kein Sieg heute</span><span class="cb-wins"></span><span class="cb-cash"></span></div>`;
+      }
+    }
+    const foot = yest ? `<div class="cb-foot">Gestern: 🏆 <b>${escapeHtml(yest.name)}</b> (${yest.wins} ${yest.wins === 1 ? "Sieg" : "Siege"})</div>` : "";
+    el.innerHTML = head + `<div class="cb-list">${rows}</div>` + foot;
   }
 
   // ── Wettschein (Bottom-Sheet) ─────────────────────────────────────────────
@@ -409,8 +435,16 @@
     if (!s) return;
     s._at = Date.now();
     const wasBets = st && st.myBets;
+    const prevMyDaily = st && st.myDaily;
     st = s;
     if (!st.myBets && wasBets && st.phase !== "betting") st.myBets = wasBets;
+    // myDaily kommt nur mit dem eigenen horses:state (Broadcasts haben key=null).
+    // Aus dem stets frischen Top-3 aktualisieren, sonst letzten Wert halten.
+    if (!st.myDaily) {
+      const meName = (window.Casino.getAccount && window.Casino.getAccount() || {}).name;
+      const idx = meName ? (st.dailyTop || []).findIndex((r) => r.name.toLowerCase() === meName.toLowerCase()) : -1;
+      st.myDaily = idx >= 0 ? { name: st.dailyTop[idx].name, wins: st.dailyTop[idx].wins, rank: idx + 1 } : (prevMyDaily || null);
+    }
     if (s.phase === "betting") { ticks = null; smooth = {}; }
     renderAll();
     renderTicker(st.commentary);
