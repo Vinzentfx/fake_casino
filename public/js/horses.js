@@ -190,7 +190,7 @@
         <button class="hf-bet" data-lane="${f.lane}" data-type="place" ${betting ? "" : "disabled"}>Platz<br><b>${f.odds.place.toFixed(2)}</b></button>` : ""}
       </div>`;
     }).join("");
-    el.querySelectorAll(".hf-bet").forEach((btn) => btn.addEventListener("click", () => placeBet(+btn.dataset.lane, btn.dataset.type)));
+    el.querySelectorAll(".hf-bet").forEach((btn) => btn.addEventListener("click", () => openBetSlip(+btn.dataset.lane, btn.dataset.type)));
   }
 
   function renderBets() {
@@ -238,14 +238,18 @@
       const trainBadge = busy ? `<div class="hc-event">🏋️ Im Training — noch ~${h.training.minsLeft} Min · nicht startbereit</div>` : "";
       const hcap = h.handicap ? " 🏋️" : "";
       const dis = busy ? "disabled" : "";
-      return `<div class="horse-card">
-        <div class="hc-name">🐴 ${escapeHtml(h.name)}${hcap} <span class="muted small">${form} · ${h.potentialHint || ""}</span></div>
+      const condClass = h.condition >= 70 ? "" : h.condition >= 50 ? "sb-warn" : "sb-low";
+      return `<div class="horse-card${busy ? " busy" : ""}">
+        <div class="hc-head">
+          <div class="hc-name">🐴 ${escapeHtml(h.name)}${hcap}</div>
+          <span class="hc-form">${form}</span>
+        </div>
         ${trainBadge}${evBadge}
         <div class="hc-stats">
-          <div>Tempo ${h.speed} ${statBar(h.speed)} <button class="hc-train" data-id="${h.id}" data-stat="speed" ${dis}>Training</button></div>
-          <div>Ausdauer ${h.stamina} ${statBar(h.stamina)} <button class="hc-train" data-id="${h.id}" data-stat="stamina" ${dis}>Training</button></div>
-          <div>Kondition ${h.condition} ${statBar(h.condition, 100)}</div>
-          <div class="muted small">Karriere ${career}% · ${h.races} Rennen · ${h.wins} Siege · ${h.podiums} Podien · ${fmt(h.earnings)} 🪙</div>
+          <div class="hc-stat"><span>⚡ Tempo</span> ${statBar(h.speed)} <b>${h.speed}</b> <button class="hc-train" data-id="${h.id}" data-stat="speed" ${dis}>+ Training</button></div>
+          <div class="hc-stat"><span>🫀 Ausdauer</span> ${statBar(h.stamina)} <b>${h.stamina}</b> <button class="hc-train" data-id="${h.id}" data-stat="stamina" ${dis}>+ Training</button></div>
+          <div class="hc-stat"><span>💪 Kondition</span> <span class="sb ${condClass}"><i style="width:${h.condition}%"></i></span> <b>${h.condition}</b></div>
+          <div class="hc-record">🏁 ${h.races} · 🏆 ${h.wins} · 🥉 ${h.podiums} · 💰 ${fmt(h.earnings)} · Karriere ${career}%</div>
         </div>
         <div class="hc-actions">
           <select class="hc-tactic" data-id="${h.id}">
@@ -287,15 +291,23 @@
   function renderMarket() {
     const el = $("#market-list");
     if (!el) return;
-    el.innerHTML = market.map((h) => `<div class="horse-card">
-      <div class="hc-name">🐴 ${escapeHtml(h.name)}</div>
-      <div class="hc-stats">
-        <div>Tempo ${h.speed} ${statBar(h.speed)}</div>
-        <div>Ausdauer ${h.stamina} ${statBar(h.stamina)}</div>
-        <div class="muted small">Temperament ${h.temperament}/10 — je höher, desto unberechenbarer</div>
-      </div>
-      <div class="hc-actions"><button class="hc-buy btn-primary" data-id="${h.id}">Kaufen · ${fmt(h.price)} 🪙</button></div>
-    </div>`).join("");
+    el.innerHTML = market.map((h) => {
+      const power = h.speed + h.stamina;
+      const tier = power >= 165 ? { t: "Elite", c: "t-elite" } : power >= 140 ? { t: "Stark", c: "t-strong" } : power >= 120 ? { t: "Solide", c: "t-mid" } : { t: "Anfänger", c: "t-low" };
+      const temp = "🌶️".repeat(Math.max(1, Math.round(h.temperament / 2)));
+      return `<div class="horse-card">
+        <div class="hc-head">
+          <div class="hc-name">🐴 ${escapeHtml(h.name)}</div>
+          <span class="hc-tier ${tier.c}">${tier.t}</span>
+        </div>
+        <div class="hc-stats">
+          <div class="hc-stat"><span>⚡ Tempo</span> ${statBar(h.speed)} <b>${h.speed}</b></div>
+          <div class="hc-stat"><span>🫀 Ausdauer</span> ${statBar(h.stamina)} <b>${h.stamina}</b></div>
+          <div class="muted small">Temperament ${temp} (${h.temperament}/10) — je mehr, desto unberechenbarer</div>
+        </div>
+        <div class="hc-actions"><button class="hc-buy btn-primary" data-id="${h.id}">🛒 Kaufen · ${fmt(h.price)} 🪙</button></div>
+      </div>`;
+    }).join("");
     el.querySelectorAll(".hc-buy").forEach((b) => b.addEventListener("click", () => {
       socket.emit("horses:buy", { horseId: b.dataset.id }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Kauf fehlgeschlagen.");
@@ -306,24 +318,83 @@
     }));
   }
 
-  function renderAll() { renderHead(); renderField(); renderBets(); renderSprint(); }
+  function renderAll() { renderChamp(); renderHead(); renderField(); renderBets(); renderSprint(); }
 
-  // ── Aktionen ──────────────────────────────────────────────────────────────
-  function placeBet(lane, type) {
+  // ── Tages-Champion-Banner ─────────────────────────────────────────────────
+  function renderChamp() {
+    const el = $("#champ-banner");
+    if (!el || !st) return;
+    const today = st.champToday;
+    const yest = st.champYesterday;
+    const prize = (st.dailyPrizes && st.dailyPrizes[0]) || 500000;
+    let html = "";
+    if (today) html += `<span class="cb-item cb-live"><span class="cb-crown">👑</span> Tages-Champion: <b>${escapeHtml(today.name)}</b> · ${today.wins} ${today.wins === 1 ? "Sieg" : "Siege"}</span>`;
+    else html += `<span class="cb-item cb-live"><span class="cb-crown">👑</span> Noch kein Tages-Champion — der Thron ist frei!</span>`;
+    if (yest) html += `<span class="cb-item cb-prev">Gestern: 🏆 ${escapeHtml(yest.name)} (${yest.wins})</span>`;
+    html += `<span class="cb-item cb-prize">🏇 Tagespreis 1.–3.: <b>${fmt(prize)}</b> / ${fmt((st.dailyPrizes||[])[1]||250000)} / ${fmt((st.dailyPrizes||[])[2]||100000)} 🪙</span>`;
+    el.innerHTML = html;
+  }
+
+  // ── Wettschein (Bottom-Sheet) ─────────────────────────────────────────────
+  let slip = null; // { lane, type, amount }
+  const CHIPS = [100, 500, 1000, 5000, 25000];
+
+  function openBetSlip(lane, type) {
+    if (!st || st.phase !== "betting" || !st.field[lane] || !st.field[lane].odds) return;
+    slip = { lane, type, amount: 500 };
+    renderSlip();
+    const el = $("#bet-slip");
+    el.classList.add("show");
+    el.setAttribute("aria-hidden", "false");
+  }
+  function closeBetSlip() {
+    slip = null;
+    const el = $("#bet-slip");
+    el.classList.remove("show");
+    el.setAttribute("aria-hidden", "true");
+  }
+  function renderSlip() {
+    if (!slip || !st) return;
+    const f = st.field[slip.lane];
+    const h = f.horse;
+    const odds = slip.type === "win" ? f.odds.win : f.odds.place;
+    $("#bet-slip-head").innerHTML =
+      `<span class="hf-silk" style="background:${SILKS[f.silk % SILKS.length]}"></span>` +
+      `<span><b>${escapeHtml(h.name)}</b><br><span class="muted small">${slip.type === "win" ? "Siegwette" : "Platzwette (Top 3)"} @ ${odds.toFixed(2)}</span></span>`;
+    $("#bet-slip-types").innerHTML = ["win", "place"].map((t) => {
+      const o = t === "win" ? f.odds.win : f.odds.place;
+      return `<button class="bs-type ${slip.type === t ? "active" : ""}" data-type="${t}">${t === "win" ? "Sieg" : "Platz"} · ${o.toFixed(2)}</button>`;
+    }).join("");
+    $("#bet-slip-chips").innerHTML = CHIPS.map((c) => `<button class="bs-chip" data-add="${c}">+${c >= 1000 ? c / 1000 + "k" : c}</button>`).join("") + `<button class="bs-chip bs-clear" data-clear="1">C</button>`;
+    const inp = $("#bet-slip-input");
+    inp.value = slip.amount;
+    const payout = Math.round(slip.amount * odds);
+    $("#bet-slip-payout").innerHTML = `Möglicher Gewinn <b>${fmt(payout)} 🪙</b>`;
+    // Listener (frisch, da innerHTML neu)
+    $("#bet-slip-types").querySelectorAll(".bs-type").forEach((b) => b.addEventListener("click", () => { slip.type = b.dataset.type; renderSlip(); }));
+    $("#bet-slip-chips").querySelectorAll(".bs-chip").forEach((b) => b.addEventListener("click", () => {
+      if (b.dataset.clear) slip.amount = 0;
+      else slip.amount = Math.min(config.maxBet || 100000, (slip.amount || 0) + Number(b.dataset.add));
+      renderSlip();
+    }));
+  }
+  $("#bet-slip-input").addEventListener("input", (e) => { if (slip) slip.amount = parseInt(e.target.value, 10) || 0; const f = st.field[slip.lane]; const odds = slip.type === "win" ? f.odds.win : f.odds.place; $("#bet-slip-payout").innerHTML = `Möglicher Gewinn <b>${fmt(Math.round((slip.amount || 0) * odds))} 🪙</b>`; });
+  $("#bet-slip-x").addEventListener("click", closeBetSlip);
+  $("#bet-slip").addEventListener("click", (e) => { if (e.target.id === "bet-slip") closeBetSlip(); });
+  $("#bet-slip-go").addEventListener("click", () => {
+    if (!slip) return;
+    const { lane, type, amount } = slip;
     const horse = st.field[lane] ? st.field[lane].horse.name : "?";
-    const odds = type === "win" ? st.field[lane].odds.win : st.field[lane].odds.place;
-    const raw = prompt(`${type === "win" ? "SIEG" : "PLATZ (Top 3)"}: ${horse} @ ${odds.toFixed(2)}\nEinsatz (${config.minBet || 50}–${fmt(config.maxBet || 100000)}):`, "500");
-    if (raw == null) return;
-    const amount = parseInt(raw, 10);
-    if (!Number.isFinite(amount)) return;
+    if (!Number.isFinite(amount) || amount < (config.minBet || 50)) return toast(`Mindestens ${config.minBet || 50} 🪙.`);
     socket.emit("horses:bet", { lane, type, amount }, (r) => {
       if (!r || !r.ok) return toast((r && r.error) || "Wette fehlgeschlagen.");
       applyAccount(r.account);
       toast(`✅ ${type === "win" ? "Sieg" : "Platz"} auf ${horse}: ${fmt(amount)} @ ${r.bet.odds}`);
       st.myBets.push(r.bet);
+      closeBetSlip();
       renderField();
     });
-  }
+  });
 
   $("#sprint-btn").addEventListener("click", () => {
     socket.emit("horses:sprint", (r) => {

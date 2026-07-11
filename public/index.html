@@ -1040,6 +1040,7 @@
         </div>
 
         <div class="horses-view" id="hv-race">
+          <div class="champ-banner" id="champ-banner"></div>
           <div class="race-head" id="race-head"></div>
           <div class="race-stage" id="race-stage">
             <canvas id="race-canvas"></canvas>
@@ -1060,6 +1061,22 @@
         <div class="horses-view hidden" id="hv-market">
           <p class="muted small">Neue Pferde im Angebot — das Sortiment wechselt regelmäßig. Max. 4 aktive Pferde pro Stall.</p>
           <div class="market-list" id="market-list"></div>
+        </div>
+
+        <!-- Wettschein (Bottom-Sheet, per JS eingeblendet) -->
+        <div class="bet-slip" id="bet-slip" aria-hidden="true">
+          <div class="bet-slip-card">
+            <button class="bet-slip-x" id="bet-slip-x">✕</button>
+            <div class="bet-slip-head" id="bet-slip-head"></div>
+            <div class="bet-slip-types" id="bet-slip-types"></div>
+            <div class="bet-slip-chips" id="bet-slip-chips"></div>
+            <div class="bet-slip-amount">
+              <span class="muted small">Einsatz</span>
+              <input id="bet-slip-input" type="number" inputmode="numeric" />
+            </div>
+            <div class="bet-slip-payout" id="bet-slip-payout"></div>
+            <button class="btn-primary bet-slip-go" id="bet-slip-go">🏇 Wetten</button>
+          </div>
         </div>
       </div>
     </section>

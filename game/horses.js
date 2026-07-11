@@ -336,6 +336,16 @@ function fieldForClient() {
   }));
 }
 
+// Aktueller Tages-Spitzenreiter (nach Renn-Siegen seit Tagesbeginn).
+function dailyChampNow() {
+  if (!accounts) return null;
+  let best = null;
+  for (const a of accounts.rawAll()) {
+    if ((a.dailyHorseWins || 0) > 0 && (!best || a.dailyHorseWins > best.dailyHorseWins)) best = a;
+  }
+  return best ? { name: best.name, wins: best.dailyHorseWins } : null;
+}
+
 function stateFor(key) {
   return {
     ok: true,
@@ -347,6 +357,9 @@ function stateFor(key) {
     result: race.result,
     commentary: race.commentary.slice(-6),
     entriesNext: race.entries.length,
+    champToday: dailyChampNow(),
+    champYesterday: store.lastChamp || null,
+    dailyPrizes: DAILY_PRIZES,
   };
 }
 
@@ -378,7 +391,11 @@ function checkDailyChamp() {
       accounts.adjustChips(String(a.name).trim().toLowerCase(), DAILY_PRIZES[i]);
       return `${medals[i]} ${a.name} (${a.dailyHorseWins} Siege · +${DAILY_PRIZES[i].toLocaleString("de-DE")} 🪙)`;
     });
+    // Gestrigen Sieger merken (für die Champion-Anzeige im Client).
+    store.lastChamp = { name: racers[0].name, wins: racers[0].dailyHorseWins, prize: DAILY_PRIZES[0] };
     try { require("./chat").announce(io, `🐎🏆 RENN-CHAMPION DES TAGES: ${parts.join(" · ")}`); } catch {}
+  } else {
+    store.lastChamp = null;
   }
   for (const a of accounts.rawAll()) a.dailyHorseWins = 0;
   accounts.save();
