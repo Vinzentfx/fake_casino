@@ -23,7 +23,6 @@ const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "weekly.json");
 
 const PRIZE = 100000; // Wochen-Pokal prize
-const HORSE_PRIZES = [120000, 60000, 25000]; // 🐎 Renn-Champions der Woche, Platz 1-3
 
 // Epoch week number (rolls over Monday 00:00 UTC — good enough for friends).
 const weekNow = () => Math.floor((Date.now() / 86400000 + 3) / 7);
@@ -69,22 +68,6 @@ function rollover(io, accounts) {
     state.lastWinner = null;
   }
   for (const a of accounts.rawAll()) a.weeklyNet = 0;
-
-  // 🐎 Renn-Champions der Woche: Top 3 Besitzer nach Renn-Siegen holen Preisgeld.
-  const racers = accounts.rawAll()
-    .filter((a) => (a.weeklyHorseWins || 0) > 0)
-    .sort((a, b) => b.weeklyHorseWins - a.weeklyHorseWins)
-    .slice(0, 3);
-  if (racers.length) {
-    const medals = ["🥇", "🥈", "🥉"];
-    const parts = racers.map((a, i) => {
-      const prize = HORSE_PRIZES[i];
-      accounts.adjustChips(String(a.name).trim().toLowerCase(), prize);
-      return `${medals[i]} ${a.name} (${a.weeklyHorseWins} Siege · +${prize.toLocaleString("de-DE")} 🪙)`;
-    });
-    chat.announce(io, `🐎🏆 RENN-CHAMPIONS DER WOCHE: ${parts.join(" · ")}`);
-  }
-  for (const a of accounts.rawAll()) a.weeklyHorseWins = 0;
   accounts.save();
 
   const g = city.rollGoldenStreet();
