@@ -3355,3 +3355,7 @@ button { font-family: inherit; cursor: pointer; }
 .hc-actions .btn-primary { font-size: 0.8rem; padding: 8px 12px; width: auto; }
 .hc-tactic { padding: 7px; border-radius: 9px; font-size: 0.78rem; }
 .hc-sell { font-size: 0.72rem; padding: 6px 10px; border-radius: 9px; border: 1px solid rgba(214,90,90,0.5); background: rgba(214,90,90,0.12); color: #f0a0a0; }
+.hc-event {
+  margin: 3px 0 6px; padding: 5px 9px; border-radius: 9px; font-size: 0.78rem; font-weight: 700;
+  background: rgba(244,215,130,0.12); border: 1px solid rgba(244,215,130,0.35); color: var(--gold-strong);
+}
