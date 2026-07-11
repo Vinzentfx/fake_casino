@@ -122,6 +122,11 @@
             <span class="tile-name">Crash</span>
             <span class="tile-sub">Rakete · vor dem Crash raus!</span>
           </button>
+          <button class="game-tile" data-nav="horses">
+            <span class="tile-icon">🐎</span>
+            <span class="tile-name">Rennbahn</span>
+            <span class="tile-sub">Live-Rennen · eigene Pferde · wetten</span>
+          </button>
           <button class="game-tile" data-nav="mines">
             <span class="tile-icon">💣</span>
             <span class="tile-name">Mines</span>
@@ -1024,6 +1029,41 @@
       </div>
     </section>
 
+    <!-- ===================== 🐎 RENNBAHN ===================== -->
+    <section class="screen" data-screen="horses">
+      <div class="horses-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div class="horses-tabs">
+          <button class="horses-tab active" data-htab="race">🏁 Rennen</button>
+          <button class="horses-tab" data-htab="stable">🐴 Stall</button>
+          <button class="horses-tab" data-htab="market">🛒 Markt</button>
+        </div>
+
+        <div class="horses-view" id="hv-race">
+          <div class="race-head" id="race-head"></div>
+          <div class="race-stage" id="race-stage">
+            <canvas id="race-canvas"></canvas>
+            <div class="race-status" id="race-status">Verbinde…</div>
+            <button id="sprint-btn" class="sprint-btn hidden">⚡ SPRINT!</button>
+          </div>
+          <div class="race-ticker" id="race-ticker"></div>
+          <div class="race-field" id="race-field"></div>
+          <div class="race-bets-head" id="race-bets-head">Wetten</div>
+          <div class="race-bets" id="race-bets"></div>
+        </div>
+
+        <div class="horses-view hidden" id="hv-stable">
+          <p class="muted small" id="stable-hint"></p>
+          <div class="stable-list" id="stable-list"></div>
+        </div>
+
+        <div class="horses-view hidden" id="hv-market">
+          <p class="muted small">Neue Pferde im Angebot — das Sortiment wechselt regelmäßig. Max. 4 aktive Pferde pro Stall.</p>
+          <div class="market-list" id="market-list"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===================== KOSMETIK ===================== -->
     <section class="screen" data-screen="cosmetics">
       <div class="panel">
@@ -1496,6 +1536,7 @@
   <script src="/js/quests.js"></script>
   <script src="/js/season.js"></script>
   <script src="/js/crash.js"></script>
+  <script src="/js/horses.js"></script>
   <script src="/js/mines.js"></script>
   <script src="/js/pinco.js"></script>
   <script src="/js/memory.js"></script>
