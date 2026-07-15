@@ -52,8 +52,8 @@
     const bottom = h * 0.82;
     const rowGap = (bottom - top) / b.rows;
     const xGap = w / (b.rows + 3);
-    const pegR = Math.max(2.5, w * 0.006);
-    const ballR = Math.max(6, xGap * 0.28);
+    const pegR = Math.max(2.5, w * 0.0062);
+    const ballR = Math.max(4, xGap * 0.19);
     return { w, h, top, bottom, rowGap, xGap, pegR, ballR };
   }
   function pegXY(r, i, gm) {
@@ -62,29 +62,45 @@
     return { x: start + i * gm.xGap, y: gm.top + r * gm.rowGap };
   }
 
-  // Build a real-physics ball from a server drop (path = left/right per row).
-  function makeBall(drop) {
+  const pegsInRow = (r, gm) => {
+    const count = r + 2, start = gm.w / 2 - ((count - 1) * gm.xGap) / 2;
+    return Array.from({ length: count }, (_, i) => start + i * gm.xGap);
+  };
+  const snapPeg = (r, x, gm) => {
+    const pegs = pegsInRow(r, gm);
+    let best = pegs[0], bd = 1e9;
+    for (const p of pegs) { const d = Math.abs(p - x); if (d < bd) { bd = d; best = p; } }
+    return best;
+  };
+
+  // Build a real-physics ball. The ball bounces from PEG to PEG (never through
+  // the gaps): pegC[r] is the actual peg it lands on at row r, derived from the
+  // server's decided left/right path. onLand fires when it settles in the slot.
+  function makeBall(drop, onLand) {
     const b = boards[drop.size] || board();
     const gm = geom(b);
-    // Contact x per row (peg the ball hits), from the decided path.
-    const contact = [gm.w / 2];
-    for (let r = 0; r < b.rows; r++) contact.push(contact[r] + (drop.path[r] ? 0.5 : -0.5) * gm.xGap);
+    const pegC = [];
+    let off = 0; // running horizontal offset in half-gap units
+    for (let r = 0; r < b.rows; r++) {
+      pegC.push(snapPeg(r, gm.w / 2 + off * gm.xGap / 2, gm));
+      off += drop.path[r] ? 1 : -1;
+    }
     const slotGap = gm.w / b.multipliers.length;
     const bucketX = slotGap * (drop.slot + 0.5);
-    const floorY = gm.bottom + gm.rowGap * 1.15;
-    // Gravity tuned so one row-fall ≈ 0.16s → resolution independent.
-    const g = (2 * gm.rowGap) / (0.16 * 0.16);
-    const bounceUp = Math.sqrt(2 * g * gm.rowGap * 0.34);
+    const floorY = gm.bottom + gm.rowGap * 1.0;
+    // Gravity tuned so one row-fall ≈ 0.15s → resolution independent.
+    const g = (2 * gm.rowGap) / (0.15 * 0.15);
+    const bounceUp = Math.sqrt(2 * g * gm.rowGap * 0.42);
     return {
-      drop, b, gm, contact, bucketX, floorY, g, bounceUp,
+      drop, b, gm, pegC, bucketX, floorY, g, bounceUp, onLand,
       color: drop.color || DEFAULT_BALL,
       seq: ballSeq++,
-      x: gm.w / 2 + (Math.random() - 0.5) * gm.xGap * 0.35,
-      y: gm.top - gm.rowGap * 1.1,
+      x: pegC[0] + (Math.random() - 0.5) * gm.xGap * 0.12,
+      y: gm.top - gm.rowGap * 0.9,
       vx: 0, vy: 0,
-      row: 0,               // next peg row to resolve
+      row: 0,
       trail: [],
-      settled: false, settleBounces: 0,
+      landed: false, settled: false, settleBounces: 0,
       done: false,
     };
   }
@@ -101,46 +117,42 @@
     ball.x += ball.vx * dt;
     ball.y += ball.vy * dt;
 
-    // Trail
     ball.trail.push({ x: ball.x, y: ball.y });
-    if (ball.trail.length > 9) ball.trail.shift();
+    if (ball.trail.length > 8) ball.trail.shift();
 
     if (ball.row < ball.b.rows) {
-      const rowY = gm.top + ball.row * gm.rowGap;
-      if (ball.y >= rowY && ball.vy > 0) {
-        // Hit the peg on this row → pop up + steer toward next contact point.
-        ball.y = rowY;
-        const targetX = ball.contact[ball.row + 1];
-        ball.vy = -ball.bounceUp * (0.9 + Math.random() * 0.2);
+      const pegX = ball.pegC[ball.row];
+      const pegY = gm.top + ball.row * gm.rowGap;
+      // Bounce the instant the ball's underside reaches the peg it lands on.
+      if (ball.y + gm.ballR >= pegY - gm.pegR && ball.vy > 0) {
+        ball.y = pegY - gm.pegR - gm.ballR;          // rest on top of the peg
+        const nextX = ball.row + 1 < ball.b.rows ? ball.pegC[ball.row + 1] : ball.bucketX;
+        ball.vy = -ball.bounceUp * (0.92 + Math.random() * 0.14);
         const tFall = timeToReach(ball.vy, ball.g, gm.rowGap);
-        ball.vx = (targetX - ball.x) / tFall;
-        // Flash the nearest peg in this row.
-        const count = ball.row + 2;
-        const start = gm.w / 2 - ((count - 1) * gm.xGap) / 2;
-        let best = 0, bd = 1e9;
-        for (let i = 0; i < count; i++) { const px = start + i * gm.xGap; const d = Math.abs(px - ball.x); if (d < bd) { bd = d; best = i; } }
-        pegHits.set(ball.row + "," + best, performance.now());
+        ball.vx = (nextX - pegX) / tFall;            // arc to the next peg
+        ball.x = pegX + Math.sign(ball.vx || 1) * gm.pegR * 0.4;
+        pegHits.set(ball.row + ":" + pegX.toFixed(1), performance.now());
         ball.squash = performance.now();
         ball.row++;
       }
     } else if (!ball.settled) {
-      // Past the last peg: steer to the bucket centre and settle on the floor.
-      const targetX = ball.bucketX;
-      ball.vx += (targetX - ball.x) * 6 * dt; // gentle horizontal pull
-      ball.vx *= 0.9;
-      if (ball.y >= ball.floorY) {
-        ball.y = ball.floorY;
+      // Below the last peg row: ease into the slot centre, settle on the floor.
+      ball.vx += (ball.bucketX - ball.x) * 8 * dt;
+      ball.vx *= 0.86;
+      if (ball.y + gm.ballR >= ball.floorY) {
+        ball.y = ball.floorY - gm.ballR;
         ball.settleBounces++;
-        if (ball.settleBounces === 1) {
-          // Landed: flash bucket + particle burst + status.
+        if (ball.settleBounces === 1 && !ball.landed) {
+          ball.landed = true;
           bucketFlash[ball.drop.slot] = performance.now();
-          burst(ball.bucketX, ball.floorY, ball.color, 18);
+          burst(ball.bucketX, ball.floorY, ball.color, 20);
           $("#pinco-status").innerHTML = dropStatus(ball.drop);
+          if (ball.onLand) ball.onLand();
         }
-        if (ball.bounceUp * Math.pow(0.45, ball.settleBounces) < gm.rowGap * 0.08 || ball.settleBounces > 4) {
+        if (ball.bounceUp * Math.pow(0.42, ball.settleBounces) < gm.rowGap * 0.06 || ball.settleBounces > 4) {
           ball.settled = true; ball.done = true; ball.vy = 0;
         } else {
-          ball.vy = -ball.bounceUp * Math.pow(0.45, ball.settleBounces);
+          ball.vy = -ball.bounceUp * Math.pow(0.42, ball.settleBounces);
           ball.vx *= 0.5;
         }
       }
@@ -183,7 +195,7 @@
       const count = r + 2;
       for (let i = 0; i < count; i++) {
         const p = pegXY(r, i, gm);
-        const hit = pegHits.get(r + "," + i);
+        const hit = pegHits.get(r + ":" + p.x.toFixed(1));
         const flash = hit ? Math.max(0, 1 - (now - hit) / 260) : 0;
         const rad = gm.pegR * (1 + flash * 1.1);
         if (flash > 0) {
@@ -277,11 +289,21 @@
   }
   function startLoop() { if (!looping) { looping = true; lastT = 0; requestAnimationFrame(loop); } }
 
-  function animateDrop(drop) {
+  function animateDrop(drop, onLand) {
     if (!drop || !Array.isArray(drop.path)) return;
     setSize(drop.size);
-    balls.push(makeBall(drop));
+    balls.push(makeBall(drop, onLand));
     startLoop();
+  }
+
+  // Win/loss stays hidden until the ball actually lands.
+  const pendingWin = new Map(); // drop.id → final server account
+  function revealDrop(drop) {
+    const acc = pendingWin.get(drop.id);
+    if (acc) { applyAccount(acc); pendingWin.delete(drop.id); }
+    if (!drops.some((d) => d.id === drop.id)) drops.unshift(drop);
+    drops = drops.slice(0, 24);
+    renderFeed();
   }
 
   // ── UI ───────────────────────────────────────────────────────────────────
@@ -333,11 +355,11 @@
     const bet = parseInt($("#pinco-bet").value, 10);
     socket.emit("pinco:drop", { size: selectedSize, bet }, (res) => {
       if (!res || !res.ok) { setError((res && res.error) || "Fehler."); return; }
-      if (res.account) applyAccount(res.account);
-      if (!roomCode && res.drop) {
-        drops.unshift(res.drop); drops = drops.slice(0, 24); renderFeed();
-        animateDrop(res.drop);
-      }
+      // Deduct the stake right away for feedback; reveal the WIN only on landing.
+      if (Number.isFinite(bet) && bet > 0) window.Casino.adjustChips(-bet);
+      if (res.account && res.drop) pendingWin.set(res.drop.id, res.account);
+      // Solo: animate here. In a lobby the broadcast animates for everyone (incl. me).
+      if (!roomCode && res.drop) animateDrop(res.drop, () => revealDrop(res.drop));
     });
   }
   function createLobby() {
@@ -365,8 +387,8 @@
   socket.on("pinco:room", (state) => { if (!state || !state.code) return; roomCode = state.code; renderRoom(state); });
   socket.on("pinco:drop", (drop) => {
     if (!drop || !drop.id) return;
-    if (!drops.some((d) => d.id === drop.id)) drops.unshift(drop);
-    drops = drops.slice(0, 24); renderFeed(); animateDrop(drop);
+    // Reveal the result (feed row + my balance) only when the ball lands.
+    animateDrop(drop, () => revealDrop(drop));
   });
 
   function wire() {
