@@ -23,7 +23,7 @@ const crypto = require("crypto");
 
 const ROWS = 9;
 const HOUSE_EDGE = 0.02; // 98% RTP
-const MIN_BET = 50, MAX_BET = 100_000;
+const MIN_BET = 50, MAX_BET = 50_000;
 
 const DIFFICULTIES = {
   easy:   { label: "Einfach", width: 4, safe: 3 },

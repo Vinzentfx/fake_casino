@@ -137,7 +137,7 @@
     const err = $("#tw-error"); err.textContent = "";
     const bet = parseInt($("#tw-amount").value, 10);
     if (!Number.isFinite(bet) || bet < 50) { err.textContent = "Mindestens 50 🪙."; return; }
-    if (bet > 100000) { err.textContent = "Maximaleinsatz 100.000 🪙."; return; }
+    if (bet > 50000) { err.textContent = "Maximaleinsatz 50.000 🪙."; return; }
     socket.emit("towers:start", { bet, difficulty: diffKey }, (v) => {
       if (!v || !v.ok) { err.textContent = (v && v.error) || "Fehler."; return; }
       if (v.account) applyAccount(v.account);
