@@ -124,14 +124,12 @@ button { font-family: inherit; cursor: pointer; }
 
 /* iOS Safari ignoriert seit iOS 10 user-scalable=no → schnelles Doppel-Tippen
    (z. B. Ball droppen, Heist-Hämmern) löste einen Zoom aus. touch-action:
-   manipulation unterbindet NUR den Doppel-Tipp-Zoom; Pinch-Zoom bleibt.
-   Die Drag-Elemente (Hebel, Stadtkarte) behalten ihr eigenes touch-action:none
-   dank höherer Spezifität. */
-button, a, input, select, textarea, label, [data-nav], [role="button"],
-.game-tile, .chip-btn, .heist-overlay, .heist-card, .tw-tile, .hf-bet,
-.bs-chip, .bs-type, .mine-tile, .cell {
-  touch-action: manipulation;
-}
+   manipulation unterbindet NUR den Doppel-Tipp-Zoom; Scrollen und Pinch-Zoom
+   bleiben erhalten. Global auf ALLES, damit auch tippbare Nicht-Buttons
+   (Wett-Zellen, Karten, leere Flächen) betroffen sind. Die Drag-/Pan-Flächen
+   (Hebel, Stadtkarte) behalten ihr eigenes touch-action:none dank höherer
+   Spezifität und bleiben voll bedienbar. */
+* { touch-action: manipulation; }
 
 .hidden { display: none !important; }
 .muted { color: var(--text-dim); }
