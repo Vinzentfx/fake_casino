@@ -69,6 +69,7 @@ function showScreen(name) {
   if (name === "crash" && window.Casino._loadCrash) window.Casino._loadCrash();
   if (name === "horses" && window.Casino._loadHorses) window.Casino._loadHorses();
   if (name === "mines" && window.Casino._loadMines) window.Casino._loadMines();
+  if (name === "towers" && window.Casino._loadTowers) window.Casino._loadTowers();
   if (name === "pinco" && window.Casino._loadPinco) window.Casino._loadPinco();
   if (name === "memory" && window.Casino._loadMemory) window.Casino._loadMemory();
   if (name === "suggest" && window.Casino._loadSuggest) window.Casino._loadSuggest();
@@ -219,7 +220,7 @@ function setAccount(acc, token) {
 }
 
 // ---- Update-/Changelog-Modal (einmal pro Version) ----
-const UPDATE_VERSION = "2026-07-11-porta-rennbahn";
+const UPDATE_VERSION = "2026-07-12-towers";
 function maybeShowUpdate() {
   let seen = null;
   try { seen = localStorage.getItem("casino_seen_update"); } catch {}

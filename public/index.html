@@ -132,6 +132,11 @@
             <span class="tile-name">Mines</span>
             <span class="tile-sub">Edelsteine sammeln, Bomben meiden</span>
           </button>
+          <button class="game-tile" data-nav="towers">
+            <span class="tile-icon">🗼</span>
+            <span class="tile-name">Towers</span>
+            <span class="tile-sub">Turm erklimmen · Fallen meiden · bis 256.901×</span>
+          </button>
           <button class="game-tile" data-nav="pinco">
             <span class="tile-icon">🟢</span>
             <span class="tile-name">Pinco Ball</span>
@@ -619,6 +624,29 @@
         </div>
         <button class="btn-primary crash-cashbtn" id="mines-cashout" style="width:100%;display:none">💸 Auszahlen</button>
         <div class="form-error" id="mines-error"></div>
+      </div>
+    </section>
+
+    <!-- ===================== TOWERS ===================== -->
+    <section class="screen" data-screen="towers">
+      <div class="towers-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon">🗼</div><h2>Towers</h2></div>
+        <div class="mines-topbar">
+          <div class="mines-stat"><span>Multiplikator</span><b id="tw-mult">1.00×</b></div>
+          <div class="mines-stat"><span>Auszahlung</span><b id="tw-cashval">—</b></div>
+          <div class="mines-stat"><span>Nächste Ebene</span><b id="tw-next">—</b></div>
+        </div>
+        <div class="towers-board" id="tw-board"></div>
+        <div class="towers-setup" id="tw-setup">
+          <div class="tw-diffs" id="tw-diffs"></div>
+          <div class="crash-betrow">
+            <label>Einsatz<input id="tw-amount" type="number" inputmode="numeric" min="50" max="100000" step="50" value="100" /></label>
+          </div>
+          <button class="btn-primary" id="tw-start" style="width:100%;margin-top:10px">🗼 Turm starten</button>
+        </div>
+        <button class="btn-primary crash-cashbtn" id="tw-cashout" style="width:100%;display:none">💸 Auszahlen</button>
+        <div class="form-error" id="tw-error"></div>
       </div>
     </section>
 
@@ -1524,12 +1552,10 @@
       <h2>Neues Casino-Update!</h2>
       <p class="muted small" style="text-align:center;margin-top:-4px">Frisch dabei im Fake Casino:</p>
       <div class="update-list">
-        <div class="update-item"><span>🐎</span><div><b>NEU: Porta-Rennbahn!</b><small>Alle paar Minuten startet ein gemeinsames Live-Rennen. Wette auf Sieg oder Platz mit echten Quoten — und sieh live, worauf die anderen setzen.</small></div></div>
-        <div class="update-item"><span>🐴</span><div><b>Eigene Pferde</b><small>Kaufe Pferde im Markt, trainiere Tempo & Ausdauer (dauert Zeit!), melde sie zum Rennen an und kassiere Preisgeld. Pferde haben Form, Kondition, Temperament — und gehen irgendwann in Rente.</small></div></div>
-        <div class="update-item"><span>⚡</span><div><b>Sprint-Knopf & Taktik</b><small>Wähl vor dem Start die Renntaktik und drück im Rennen EINMAL den Sprint — im richtigen Moment! Zu früh gezündet, und deinem Pferd geht auf der Zielgeraden die Puste aus.</small></div></div>
-        <div class="update-item"><span>👑</span><div><b>Renn-Champion des Tages</b><small>Wer täglich die meisten Rennen gewinnt, holt sich 500k / 250k / 100k 🪙. Die Tagesrangliste zeigt Platz 1–3 und deinen eigenen Rang.</small></div></div>
-        <div class="update-item"><span>🎲</span><div><b>Zufalls-Events</b><small>Dein Pferd wird schwanger (Fohlen!), bricht sich das Bein, verliebt sich oder kriegt die Zoomies — mal Segen, mal Ausfall.</small></div></div>
-        <div class="update-item"><span>📖</span><div><b>Book of Rah & mehr</b><small>Der Pharao-Slot mit expandierendem Bonussymbol und Risiko-Feature ist da, Crash hat eine neue Optik, Algen Abyss zahlt fairer und die Roulette-Quoten wurden angepasst.</small></div></div>
+        <div class="update-item"><span>🗼</span><div><b>NEU: Towers!</b><small>Erklimm einen 9-Ebenen-Turm. Pro Ebene wählst du eine Kachel — sicher (🥚) = eine Ebene höher und der Multiplikator steigt, Falle (💀) = Einsatz weg. Jederzeit auszahlen oder weiter riskieren.</small></div></div>
+        <div class="update-item"><span>🎚️</span><div><b>5 Schwierigkeiten</b><small>Von Einfach (75 % sicher, sanfte Multiplikatoren) bis Meister (25 % sicher) — dort geht's rauf bis 256.901× Einsatz, wenn du alle 9 Ebenen schaffst!</small></div></div>
+        <div class="update-item"><span>🐎</span><div><b>Porta-Rennbahn</b><small>Live-Pferderennen alle paar Minuten: wetten, eigene Pferde kaufen & trainieren, Sprint-Knopf, Tages-Champion mit Preisgeld. Falls du es noch nicht gesehen hast!</small></div></div>
+        <div class="update-item"><span>📖</span><div><b>Book of Rah & mehr</b><small>Der Pharao-Slot mit expandierendem Bonussymbol und Risiko-Feature, Crash mit neuer Optik, fairere Auszahlungen bei Algen Abyss und angepasste Roulette-Quoten.</small></div></div>
       </div>
       <button class="btn-primary" id="update-close" style="width:100%;margin-top:14px">Los geht's! 🎰</button>
     </div>
@@ -1565,6 +1591,7 @@
   <script src="/js/crash.js"></script>
   <script src="/js/horses.js"></script>
   <script src="/js/mines.js"></script>
+  <script src="/js/towers.js"></script>
   <script src="/js/pinco.js"></script>
   <script src="/js/memory.js"></script>
   <script src="/js/suggestions.js"></script>
