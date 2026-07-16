@@ -220,7 +220,7 @@ function setAccount(acc, token) {
 }
 
 // ---- Update-/Changelog-Modal (einmal pro Version) ----
-const UPDATE_VERSION = "2026-07-12-towers";
+const UPDATE_VERSION = "2026-07-16-admin-events";
 function maybeShowUpdate() {
   let seen = null;
   try { seen = localStorage.getItem("casino_seen_update"); } catch {}
@@ -968,6 +968,9 @@ function loadAdminDashboard() {
       live.happyActive ? `Happy Hour: aktiv (${adminTimeLeft(live.happyUntil)})` : "Happy Hour: aus",
       tourney ? `Turnier: ${adminMoney(tourney.prize)} (${adminTimeLeft(tourney.endsAt)})` : "Turnier: aus",
       d.events && d.events.heistActive ? "Heist: aktiv" : "Heist: aus",
+      d.events && d.events.rainActive ? "Chip-Regen: aktiv" : "Chip-Regen: aus",
+      d.events && d.events.quizActive ? "Quiz: aktiv" : "Quiz: aus",
+      d.events && d.events.vaultActive ? "Tresorkampf: aktiv" : "Tresorkampf: aus",
     ];
     const miniList = (items, valFn, empty) => items.length
       ? items.map((p) => `<li><span>${escapeHtml(p.name)}</span><b>${valFn(p)}</b></li>`).join("")
@@ -990,6 +993,9 @@ function loadAdminDashboard() {
             <button class="chip-btn" data-admin-dash="happy">Happy</button>
             <button class="chip-btn" data-admin-dash="tourney">Turnier</button>
             <button class="chip-btn" data-admin-dash="heist">Heist</button>
+            <button class="chip-btn" data-admin-dash="rain">Regen</button>
+            <button class="chip-btn" data-admin-dash="quiz">Quiz</button>
+            <button class="chip-btn" data-admin-dash="vault">Tresorkampf</button>
             <button class="chip-btn" data-admin-dash="city">City</button>
           </div>
         </div>
@@ -1009,6 +1015,9 @@ function loadAdminDashboard() {
       if (kind === "happy") socket.emit("admin:happyHour", { on: true, minutes: 60 }, (r) => { toast(r?.ok ? "Happy Hour gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
       if (kind === "tourney") socket.emit("admin:tourney", { on: true, minutes: 10, prize: 100000 }, (r) => { toast(r?.ok ? "Turnier gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
       if (kind === "heist") socket.emit("admin:heist", { on: true, seconds: 60, loot: 500000 }, (r) => { toast(r?.ok ? "Heist gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
+      if (kind === "rain") socket.emit("admin:rain", { on: true, seconds: 30, pot: 250000 }, (r) => { toast(r?.ok ? "Chip-Regen gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
+      if (kind === "quiz") socket.emit("admin:quiz", { on: true, rounds: 5, prize: 20000 }, (r) => { toast(r?.ok ? "Quiz gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
+      if (kind === "vault") socket.emit("admin:teamvault", { on: true, seconds: 90, pot: 500000 }, (r) => { toast(r?.ok ? "Tresorkampf gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
       if (kind === "city") socket.emit("admin:cityEvent", {}, (r) => { toast(r?.ok ? `Ausgelöst: ${r.event.txt}` : (r?.error || "Fehler.")); loadAdminDashboard(); });
     }));
   });
@@ -1218,6 +1227,30 @@ $("#admin-heist-on-btn")?.addEventListener("click", () => {
 });
 $("#admin-heist-off-btn")?.addEventListener("click", () => {
   socket.emit("admin:heist", { on: false }, (r) => toast(r?.ok ? "Heist abgebrochen." : (r?.error || "Fehler.")));
+});
+$("#admin-rain-on-btn")?.addEventListener("click", () => {
+  const seconds = parseInt($("#admin-rain-secs").value, 10) || 30;
+  const pot = parseInt($("#admin-rain-pot").value, 10) || 250000;
+  socket.emit("admin:rain", { on: true, seconds, pot }, (r) => toast(r?.ok ? "💸 Chip-Regen gestartet!" : (r?.error || "Fehler.")));
+});
+$("#admin-rain-off-btn")?.addEventListener("click", () => {
+  socket.emit("admin:rain", { on: false }, (r) => toast(r?.ok ? "Chip-Regen gestoppt." : (r?.error || "Fehler.")));
+});
+$("#admin-quiz-on-btn")?.addEventListener("click", () => {
+  const rounds = parseInt($("#admin-quiz-rounds").value, 10) || 5;
+  const prize = parseInt($("#admin-quiz-prize").value, 10) || 20000;
+  socket.emit("admin:quiz", { on: true, rounds, prize }, (r) => toast(r?.ok ? "❓ Blitz-Quiz gestartet!" : (r?.error || "Fehler.")));
+});
+$("#admin-quiz-off-btn")?.addEventListener("click", () => {
+  socket.emit("admin:quiz", { on: false }, (r) => toast(r?.ok ? "Quiz abgebrochen." : (r?.error || "Fehler.")));
+});
+$("#admin-vault-on-btn")?.addEventListener("click", () => {
+  const seconds = parseInt($("#admin-vault-secs").value, 10) || 90;
+  const pot = parseInt($("#admin-vault-pot").value, 10) || 500000;
+  socket.emit("admin:teamvault", { on: true, seconds, pot }, (r) => toast(r?.ok ? "⚔️ Tresorkampf gestartet!" : (r?.error || "Fehler.")));
+});
+$("#admin-vault-off-btn")?.addEventListener("click", () => {
+  socket.emit("admin:teamvault", { on: false }, (r) => toast(r?.ok ? "Tresorkampf abgebrochen." : (r?.error || "Fehler.")));
 });
 
 ["admin-reset-bonus-btn", "admin-reset-ach-btn"].forEach((id) => {

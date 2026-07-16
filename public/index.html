@@ -1486,6 +1486,24 @@
             <button class="btn-primary" id="admin-heist-on-btn">🚨 Heist starten</button>
             <button class="btn-danger" id="admin-heist-off-btn">Abbrechen</button>
           </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="admin-rain-secs" type="number" min="10" max="180" value="30" style="width:60px" title="Sekunden" />
+            <input id="admin-rain-pot" type="number" min="1000" step="50000" value="250000" style="width:110px" title="Pot" />
+            <button class="btn-primary" id="admin-rain-on-btn">💸 Chip-Regen starten</button>
+            <button class="btn-danger" id="admin-rain-off-btn">Stopp</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="admin-quiz-rounds" type="number" min="1" max="15" value="5" style="width:60px" title="Fragen" />
+            <input id="admin-quiz-prize" type="number" min="500" step="5000" value="20000" style="width:110px" title="Preis pro Frage" />
+            <button class="btn-primary" id="admin-quiz-on-btn">❓ Blitz-Quiz starten</button>
+            <button class="btn-danger" id="admin-quiz-off-btn">Abbrechen</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="admin-vault-secs" type="number" min="20" max="300" value="90" style="width:60px" title="Sekunden" />
+            <input id="admin-vault-pot" type="number" min="1000" step="50000" value="500000" style="width:110px" title="Pot" />
+            <button class="btn-primary" id="admin-vault-on-btn">⚔️ Tresorkampf starten</button>
+            <button class="btn-danger" id="admin-vault-off-btn">Abbrechen</button>
+          </div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
             <input id="admin-target-test" type="text" maxlength="16" placeholder="Spielername" style="flex:1;min-width:120px" />
             <button class="btn-primary" id="admin-reset-bonus-btn">🎁 Bonus-Cooldown resetten</button>
@@ -1545,6 +1563,43 @@
     </div>
   </div>
 
+  <!-- Chip-Regen: klick-durchlässige Schicht, nur die Chips fangen Taps -->
+  <div id="rain-layer"></div>
+  <div id="rain-hud" class="hidden"></div>
+
+  <!-- Blitz-Quiz-Overlay -->
+  <div id="quiz-overlay" class="heist-overlay hidden">
+    <div class="heist-card quiz-card">
+      <div class="heist-emoji">❓</div>
+      <h2 id="quiz-head">BLITZ-QUIZ</h2>
+      <div class="quiz-bar"><div class="quiz-bar-fill" id="quiz-bar-fill"></div></div>
+      <div class="quiz-question" id="quiz-question"></div>
+      <div class="quiz-options" id="quiz-options"></div>
+      <div class="quiz-info" id="quiz-info"></div>
+    </div>
+  </div>
+
+  <!-- Team-Tresorkampf-Overlay -->
+  <div id="vault-overlay" class="heist-overlay hidden">
+    <div class="heist-card vault-card">
+      <div class="heist-emoji">⚔️</div>
+      <h2>TEAM-TRESORKAMPF!</h2>
+      <div class="heist-loot" id="vault-pot"></div>
+      <div class="vault-side red">
+        <div class="heist-vault vault-bar red"><div class="heist-vault-fill vault-fill-red" id="vault-red-fill"></div><span id="vault-red-txt"></span></div>
+        <div class="vault-roster" id="vault-red-roster"></div>
+      </div>
+      <div class="vault-side blue">
+        <div class="heist-vault vault-bar blue"><div class="heist-vault-fill vault-fill-blue" id="vault-blue-fill"></div><span id="vault-blue-txt"></span></div>
+        <div class="vault-roster" id="vault-blue-roster"></div>
+      </div>
+      <div class="vault-my-team" id="vault-my-team"></div>
+      <div class="heist-timer" id="vault-timer"></div>
+      <button class="vault-hit" id="vault-hit">💥 DRAUF!</button>
+      <div class="heist-result" id="vault-result"></div>
+    </div>
+  </div>
+
   <!-- Update-/Changelog-Modal (erscheint einmalig nach einem Update) -->
   <div id="update-modal" class="update-modal hidden">
     <div class="update-card">
@@ -1552,10 +1607,10 @@
       <h2>Neues Casino-Update!</h2>
       <p class="muted small" style="text-align:center;margin-top:-4px">Frisch dabei im Fake Casino:</p>
       <div class="update-list">
-        <div class="update-item"><span>🗼</span><div><b>NEU: Towers!</b><small>Erklimm einen 9-Ebenen-Turm. Pro Ebene wählst du eine Kachel — sicher (🥚) = eine Ebene höher und der Multiplikator steigt, Falle (💀) = Einsatz weg. Jederzeit auszahlen oder weiter riskieren.</small></div></div>
-        <div class="update-item"><span>🎚️</span><div><b>5 Schwierigkeiten</b><small>Von Einfach (75 % sicher, sanfte Multiplikatoren) bis Meister (25 % sicher) — dort geht's rauf bis 256.901× Einsatz, wenn du alle 9 Ebenen schaffst!</small></div></div>
-        <div class="update-item"><span>🐎</span><div><b>Porta-Rennbahn</b><small>Live-Pferderennen alle paar Minuten: wetten, eigene Pferde kaufen & trainieren, Sprint-Knopf, Tages-Champion mit Preisgeld. Falls du es noch nicht gesehen hast!</small></div></div>
-        <div class="update-item"><span>📖</span><div><b>Book of Rah & mehr</b><small>Der Pharao-Slot mit expandierendem Bonussymbol und Risiko-Feature, Crash mit neuer Optik, fairere Auszahlungen bei Algen Abyss und angepasste Roulette-Quoten.</small></div></div>
+        <div class="update-item"><span>💸</span><div><b>NEU: Chip-Regen!</b><small>Wenn der Boss ihn auslöst, regnen Chips über deinen Bildschirm — egal wo du gerade spielst. Schnell antippen und einsammeln, goldene Säcke 💰 sind extra fett!</small></div></div>
+        <div class="update-item"><span>❓</span><div><b>NEU: Blitz-Quiz!</b><small>Mehrere schnelle Quizfragen für alle gleichzeitig — wer zuerst richtig antwortet, kassiert den Rundenpreis. Am Ende wird der Quiz-Champion gekürt.</small></div></div>
+        <div class="update-item"><span>⚔️</span><div><b>NEU: Team-Tresorkampf!</b><small>Alle Online-Spieler werden in Team Rot und Team Blau gelost. Beide hämmern auf ihren Tresor — das schnellere Team teilt sich den Pot nach Treffern!</small></div></div>
+        <div class="update-item"><span>🚨</span><div><b>Events kommen überraschend</b><small>Wie der Casino-Heist starten alle Events spontan — bleib online, halt die Augen offen und schnapp dir deinen Anteil.</small></div></div>
       </div>
       <button class="btn-primary" id="update-close" style="width:100%;margin-top:14px">Los geht's! 🎰</button>
     </div>
@@ -1600,6 +1655,9 @@
   <script src="/js/chess.js"></script>
   <script src="/js/wheel.js"></script>
   <script src="/js/heist.js"></script>
+  <script src="/js/rain.js"></script>
+  <script src="/js/quiz.js"></script>
+  <script src="/js/teamvault.js"></script>
   <script src="/js/clans.js"></script>
   <script src="/js/cosmetics.js"></script>
   <script src="/js/blackjackLobby.js"></script>

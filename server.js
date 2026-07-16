@@ -215,6 +215,11 @@ setupChess(io, accounts);
 setupSocial(io, accounts);
 const heist = setupHeist(io, accounts);
 require("./game/admin").setHeist(heist);
+require("./game/admin").setEvents({
+  rain: require("./game/chipRain").setupChipRain(io, accounts),
+  quiz: require("./game/quiz").setupQuiz(io, accounts),
+  vault: require("./game/teamVault").setupTeamVault(io, accounts),
+});
 setupClans(io, accounts);
 setupCosmetics(io, accounts);
 setupPvp(io, accounts);

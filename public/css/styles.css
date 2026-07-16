@@ -2808,6 +2808,60 @@ button { font-family: inherit; cursor: pointer; }
 .heist-fail { font-size: 1.2rem; font-weight: 900; color: #f0a0a0; }
 .heist-crooks { margin-top: 8px; font-size: 0.75rem; opacity: 0.7; }
 
+/* Chip-Regen: click-through layer, only the chips catch taps. */
+#rain-layer { position: fixed; inset: 0; z-index: 205; pointer-events: none; overflow: hidden; }
+#rain-hud { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 206;
+  background: rgba(10, 24, 18, 0.85); border: 1px solid rgba(255, 214, 110, 0.5); border-radius: 999px;
+  padding: 6px 16px; font-size: 0.9rem; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+#rain-hud.hidden { display: none; }
+.rain-chip { position: absolute; top: -70px; pointer-events: auto; background: none; border: none; cursor: pointer;
+  font-size: 2.2rem; line-height: 1; padding: 8px; /* fette Tap-Fläche fürs iPad */
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.5));
+  animation: rainFall linear forwards; touch-action: manipulation; }
+.rain-chip.gold { font-size: 2.8rem; filter: drop-shadow(0 0 10px rgba(255, 214, 110, 0.9)); }
+@keyframes rainFall {
+  0%   { transform: translateY(0) rotate(-12deg); }
+  25%  { transform: translateY(28vh) rotate(10deg) translateX(10px); }
+  50%  { transform: translateY(55vh) rotate(-8deg) translateX(-10px); }
+  75%  { transform: translateY(82vh) rotate(12deg) translateX(8px); }
+  100% { transform: translateY(112vh) rotate(-6deg); }
+}
+.rain-pop { position: fixed; z-index: 207; transform: translateX(-50%); font-weight: 900; color: #ffd66e;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none; animation: rainPop 1s ease-out forwards; }
+.rain-pop.gold { font-size: 1.3rem; color: #ffe9a8; }
+@keyframes rainPop { 0% { opacity: 1; margin-top: 0; } 100% { opacity: 0; margin-top: -60px; } }
+
+/* Blitz-Quiz. */
+.quiz-card { max-width: 460px; }
+.quiz-card h2 { font-size: 1.05rem; }
+.quiz-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,0.5); overflow: hidden; margin: 10px 0; }
+.quiz-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #4ade80, #f4d34a); transition: width 0.15s linear; }
+.quiz-question { font-size: 1.15rem; font-weight: 800; margin: 8px 0 12px; min-height: 2.2em; }
+.quiz-options { display: grid; gap: 8px; }
+.quiz-opt { padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06); color: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; text-align: left; }
+.quiz-opt:not(:disabled):hover { background: rgba(255,255,255,0.14); }
+.quiz-opt.picked { border-color: #f4d34a; background: rgba(244, 211, 74, 0.18); }
+.quiz-opt.correct { border-color: #4ade80; background: rgba(74, 222, 128, 0.22); }
+.quiz-opt.wrong { border-color: #d65a5a; background: rgba(214, 90, 90, 0.22); }
+.quiz-info { margin-top: 12px; min-height: 1.4em; }
+.quiz-me { color: #4ade80; }
+.quiz-board { font-size: 0.9rem; line-height: 1.6; }
+
+/* Team-Tresorkampf. */
+.vault-card { max-width: 460px; }
+.vault-side { margin: 8px 0; }
+.vault-fill-red { background: linear-gradient(90deg, #b23a3a, #ff7b6b); }
+.vault-fill-blue { background: linear-gradient(90deg, #2f5fb2, #6bb2ff); }
+.vault-roster { font-size: 0.72rem; opacity: 0.7; margin-top: 3px; min-height: 1em; }
+.vault-my-team { margin: 10px 0 2px; font-size: 0.95rem; }
+.vault-hit { width: 100%; padding: 20px; font-size: 1.4rem; font-weight: 900; border-radius: 14px; cursor: pointer;
+  border: none; color: #fff; background: linear-gradient(180deg, #8a8f9c, #5c6270); box-shadow: 0 6px 0 #3c414d;
+  transition: transform 0.05s; user-select: none; touch-action: manipulation; }
+.vault-hit.red { background: linear-gradient(180deg, #e56666, #b23a3a); box-shadow: 0 6px 0 #7a2626; }
+.vault-hit.blue { background: linear-gradient(180deg, #5f8fdd, #2f5fb2); box-shadow: 0 6px 0 #1f3f7a; }
+.vault-hit:active { transform: translateY(4px); box-shadow: 0 2px 0 #3c414d; }
+
 /* Glücksrad. */
 .wheel-stage { position: relative; width: min(320px, 80vw); margin: 16px auto 8px; }
 .wheel-stage svg { width: 100%; height: auto; filter: drop-shadow(0 6px 20px rgba(0,0,0,0.5)); }
