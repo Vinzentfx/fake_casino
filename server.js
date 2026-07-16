@@ -215,11 +215,13 @@ setupChess(io, accounts);
 setupSocial(io, accounts);
 const heist = setupHeist(io, accounts);
 require("./game/admin").setHeist(heist);
-require("./game/admin").setEvents({
+const adminEvents = {
   rain: require("./game/chipRain").setupChipRain(io, accounts),
   quiz: require("./game/quiz").setupQuiz(io, accounts),
   vault: require("./game/teamVault").setupTeamVault(io, accounts),
-});
+};
+require("./game/admin").setEvents(adminEvents);
+liveops.setEvents(adminEvents); // Events spawnen auch zufällig (maybeAutoSpawn)
 setupClans(io, accounts);
 setupCosmetics(io, accounts);
 setupPvp(io, accounts);

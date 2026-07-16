@@ -74,7 +74,7 @@ function setupTeamVault(io, accounts) {
     cleanup();
   }
 
-  function start(pot, seconds) {
+  function start(pot, seconds, opts = {}) {
     if (state) return { ok: false, error: "Es läuft schon ein Tresorkampf." };
     pot = Math.max(1000, Math.floor(pot) || 500000);
     seconds = Math.max(20, Math.min(300, Math.floor(seconds) || 90));
@@ -93,7 +93,8 @@ function setupTeamVault(io, accounts) {
     }
 
     state = { endsAt: Date.now() + seconds * 1000, pot, teams, assign };
-    chat.announce(io, `⚔️ TEAM-TRESORKAMPF! Rot gegen Blau — wer seinen Tresor zuerst knackt, teilt sich ${pot.toLocaleString("de-DE")} 🪙. ${seconds} Sekunden, los!`);
+    const prefix = opts.auto ? "ZUFÄLLIGER " : "";
+    chat.announce(io, `⚔️ ${prefix}TEAM-TRESORKAMPF! Rot gegen Blau — wer seinen Tresor zuerst knackt, teilt sich ${pot.toLocaleString("de-DE")} 🪙. ${seconds} Sekunden, los!`);
     io.emit("vault:start", snapshot());
     ticker = setInterval(() => {
       if (!state) return;

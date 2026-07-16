@@ -44,7 +44,7 @@ function setupChipRain(io, accounts) {
     cleanup();
   }
 
-  function start(pot, seconds) {
+  function start(pot, seconds, opts = {}) {
     if (state) return { ok: false, error: "Es regnet schon." };
     pot = Math.max(1000, Math.floor(pot) || 250000);
     seconds = Math.max(10, Math.min(180, Math.floor(seconds) || 30));
@@ -57,7 +57,8 @@ function setupChipRain(io, accounts) {
     const plan = weights.map((w) => ({ value: Math.max(1, Math.floor((pot * w) / wSum)), gold: w > 1 }));
 
     state = { endsAt: Date.now() + seconds * 1000, pot, chips: new Map(), collected: {} };
-    chat.announce(io, `💸 CHIP-REGEN! ${seconds} Sekunden lang fallen ${pot.toLocaleString("de-DE")} 🪙 vom Himmel — schnell auftippen!`);
+    const prefix = opts.auto ? "ZUFÄLLIGER " : "";
+    chat.announce(io, `💸 ${prefix}CHIP-REGEN! ${seconds} Sekunden lang fallen ${pot.toLocaleString("de-DE")} 🪙 vom Himmel — schnell auftippen!`);
     io.emit("rain:start", snapshot());
 
     let spawned = 0;
