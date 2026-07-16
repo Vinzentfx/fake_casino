@@ -7,6 +7,8 @@ const liveops = require("./liveops");
 const ipbans = require("./ipbans");
 let _heist = null;
 function setHeist(h) { _heist = h; }
+let _events = {}; // { rain, quiz, vault } — admin events wired in server.js
+function setEvents(e) { _events = e || {}; }
 
 function setupAdmin(io, accounts) {
   io.on("connection", (socket) => {
@@ -56,6 +58,9 @@ function setupAdmin(io, accounts) {
           events: {
             liveops: typeof liveops.publicState === "function" ? liveops.publicState() : null,
             heistActive: !!(_heist && typeof _heist.active === "function" && _heist.active()),
+            rainActive: !!(_events.rain && _events.rain.active()),
+            quizActive: !!(_events.quiz && _events.quiz.active()),
+            vaultActive: !!(_events.vault && _events.vault.active()),
           },
           topWinners,
           topLosers,
@@ -262,6 +267,33 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
+    socket.on("admin:rain", ({ on, pot, seconds } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!_events.rain) return ack({ ok: false, error: "Chip-Regen nicht bereit." });
+      if (on) return ack(_events.rain.start(pot || 250000, seconds || 30));
+      _events.rain.stop();
+      ack({ ok: true });
+    });
+
+    socket.on("admin:quiz", ({ on, rounds, prize } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!_events.quiz) return ack({ ok: false, error: "Quiz nicht bereit." });
+      if (on) return ack(_events.quiz.start(rounds || 5, prize || 20000));
+      _events.quiz.stop();
+      ack({ ok: true });
+    });
+
+    socket.on("admin:teamvault", ({ on, pot, seconds } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!_events.vault) return ack({ ok: false, error: "Tresorkampf nicht bereit." });
+      if (on) return ack(_events.vault.start(pot || 500000, seconds || 90));
+      _events.vault.stop();
+      ack({ ok: true });
+    });
+
     // Fire a city news event now (random district if none given).
     socket.on("admin:cityEvent", ({ districtId } = {}, ack) => {
       if (!ack) return;
@@ -306,4 +338,4 @@ function setupAdmin(io, accounts) {
   });
 }
 
-module.exports = { setupAdmin, setHeist };
+module.exports = { setupAdmin, setHeist, setEvents };
