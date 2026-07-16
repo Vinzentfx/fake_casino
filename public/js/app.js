@@ -1250,6 +1250,50 @@ $("#admin-vault-off-btn")?.addEventListener("click", () => {
   socket.emit("admin:teamvault", { on: false }, (r) => toast(r?.ok ? "Tresorkampf abgebrochen." : (r?.error || "Fehler.")));
 });
 
+// ---- 💾 Daten-Backup (Owner): kompletten data/-Ordner laden / zurückspielen ----
+$("#admin-backup-btn")?.addEventListener("click", async () => {
+  const errEl = $("#admin-backup-error");
+  errEl.textContent = "";
+  try {
+    const res = await fetch("/api/admin/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: state.token }) });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Backup fehlgeschlagen.");
+    const blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `fakecasino-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast(`💾 Backup mit ${Object.keys(data.files).length} Dateien heruntergeladen — gut aufheben!`);
+  } catch (err) {
+    errEl.textContent = err.message;
+  }
+});
+
+$("#admin-restore-input")?.addEventListener("change", async (e) => {
+  const errEl = $("#admin-backup-error");
+  errEl.textContent = "";
+  const file = e.target.files && e.target.files[0];
+  e.target.value = ""; // dieselbe Datei später nochmal wählbar
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data || data.kind !== "fakecasino-backup" || !data.files) throw new Error("Das ist kein Fake-Casino-Backup.");
+    const n = Object.keys(data.files).length;
+    const when = data.createdAt ? new Date(data.createdAt).toLocaleString("de-DE") : "unbekannt";
+    if (!confirm(`Backup vom ${when} (${n} Dateien) einspielen?\n\n⚠️ ÜBERSCHREIBT alle aktuellen Spieldaten. Der Server startet danach neu — alle Spieler fliegen kurz raus.`)) return;
+    const res = await fetch("/api/admin/restore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: state.token, files: data.files }) });
+    const out = await res.json();
+    if (!out.ok) throw new Error(out.error || "Wiederherstellen fehlgeschlagen.");
+    toast(`📂 ${out.written} Dateien eingespielt — Server startet neu, Seite lädt gleich nach …`);
+    setTimeout(() => location.reload(), 5000);
+  } catch (err) {
+    errEl.textContent = err.message;
+  }
+});
+
 ["admin-reset-bonus-btn", "admin-reset-ach-btn"].forEach((id) => {
   $("#" + id)?.addEventListener("click", () => {
     const errEl = $("#admin-test-error");
