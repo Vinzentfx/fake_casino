@@ -21,8 +21,25 @@
   const barEl = $("#quiz-bar-fill");
   const infoEl = $("#quiz-info");
 
-  function show() { overlay.classList.remove("hidden"); }
-  function hide() { overlay.classList.add("hidden"); }
+  // Minimieren: Overlay weg, Pill unten rechts — Antworten verpasst man dann
+  // halt, aber niemand wird mitten im Spiel blockiert (Events spawnen random!).
+  let minimized = false;
+  const pill = $("#quiz-pill");
+  function show() {
+    if (minimized) { pill.classList.remove("hidden"); return; }
+    overlay.classList.remove("hidden");
+  }
+  function hide() { overlay.classList.add("hidden"); pill.classList.add("hidden"); minimized = false; }
+  $("#quiz-min").addEventListener("click", () => {
+    minimized = true;
+    overlay.classList.add("hidden");
+    if (active) pill.classList.remove("hidden");
+  });
+  pill.addEventListener("click", () => {
+    minimized = false;
+    pill.classList.add("hidden");
+    if (active) overlay.classList.remove("hidden");
+  });
 
   function begin(d) {
     active = true; show();

@@ -220,7 +220,7 @@ function setAccount(acc, token) {
 }
 
 // ---- Update-/Changelog-Modal (einmal pro Version) ----
-const UPDATE_VERSION = "2026-07-16-admin-events";
+const UPDATE_VERSION = "2026-07-16-sicherheit-fixes";
 function maybeShowUpdate() {
   let seen = null;
   try { seen = localStorage.getItem("casino_seen_update"); } catch {}
@@ -602,6 +602,10 @@ $("#login-form").addEventListener("submit", async (e) => {
     if (data.created) maybeShowOnboarding();
     if (data.created) toast(`Willkommen, ${data.account.name}! 1000 🪙 geschenkt.`);
     else toast(`Willkommen zurück, ${data.account.name}!`);
+    // Einbruchs-Warnung: fehlgeschlagene Login-Versuche seit dem letzten Besuch.
+    if (!data.created && data.warnFails >= 3) {
+      setTimeout(() => toast(`⚠️ ${data.warnFails} fehlgeschlagene Login-Versuche seit deinem letzten Besuch — ggf. Passwort in den Einstellungen ändern!`), 1500);
+    }
   } catch (err) {
     errEl.textContent = err.message;
   }
@@ -815,10 +819,7 @@ function escapeHtml(s) {
   );
 }
 
-// PIN-Feld: nur Ziffern
-$("#login-pin").addEventListener("input", (e) => {
-  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
-});
+// (Passwörter dürfen jetzt 4–24 beliebige Zeichen sein — kein Ziffern-Filter mehr.)
 
 // Bequemlichkeit: gespeicherten Namen vorausfüllen
 try {
@@ -846,11 +847,7 @@ $("#change-pin-form").addEventListener("submit", async (e) => {
     errEl.textContent = err.message;
   }
 });
-["cp-old","cp-new","cp-confirm"].forEach((id) => {
-  $("#" + id).addEventListener("input", (e) => {
-    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
-  });
-});
+// (Passwort-Felder: kein Ziffern-Filter mehr — 6–24 beliebige Zeichen.)
 
 // ---- Chips senden ----
 $("#transfer-form").addEventListener("submit", (e) => {

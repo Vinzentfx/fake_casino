@@ -271,6 +271,12 @@ function sweepEvents() {
 // Effektive Stärke eines Pferds für DIESES Rennen (Distanz + Bahn + Form +
 // Alter + Erfolgs-Handicap + Event). Wird von Quoten-MC UND Live-Rennen
 // benutzt — Änderungen hier bleiben dadurch automatisch fair eingepreist.
+// Konditions-Malus (identisch in Live-Rennen UND Quoten-MC — sonst sind die
+// Quoten blind für müde Pferde und Wetten auf fitte Pferde werden +EV).
+function condFactor(h) {
+  return h.condition < 70 ? 0.985 - (70 - h.condition) * 0.0012 : 1;
+}
+
 function effective(h, distance, going) {
   const distT = distance === 1000 ? 0.72 : distance === 1600 ? 0.5 : 0.3; // Speed-Gewicht
   let base = h.speed * distT + h.stamina * (1 - distT);
@@ -285,14 +291,48 @@ function effective(h, distance, going) {
   return base;
 }
 
-// Ein abstrakter Schnelldurchlauf fürs Quoten-Monte-Carlo (kein Tick-Detail).
+// Analytische Zielzeit mit DEMSELBEN Streckenmodell wie der Live-Tick
+// (Taktik-Segmente, Konditions-Malus, Besitzer-Sprint als gut getimt).
+// Wichtig: Ein reiner Score-Vergleich reicht NICHT — bei "wer zuerst im Ziel
+// ist" nützt eine frontlastige Tempokurve schnellen Pferden systematisch
+// (sie sind durch, bevor die langsame Schlussphase greift); das hatte
+// Selbstwetten auf front+Sprint-Pferde auf ~115% RTP gehoben.
+function finishTime(f, distance, going, noise) {
+  const ticks = RACE_TICKS[distance] || 168;
+  const base = ((effective(f.h, distance, going) + noise) / 68) * condFactor(f.h);
+  if (base <= 0) return 99;
+  const tactic = f.tactic || "stayer";
+  // Sprint der Besitzer-Pferde: als gut getimt annehmen (t≈0.68). Wer nicht
+  // (oder zu früh) sprintet, bleibt hinter seiner Quote zurück — haus-günstig.
+  const sprS = f.h.owner ? 0.68 : Infinity;
+  const sprE = sprS + SPRINT_TICKS / ticks;
+  // Segmentgrenzen: Taktikwechsel (0.35/0.5/0.75/0.8) + Sprintfenster.
+  const cuts = [0, 0.35, 0.5, 0.75, 0.8, 4];
+  if (Number.isFinite(sprS)) cuts.push(sprS, sprE);
+  cuts.sort((a, b) => a - b);
+  let dist = 0;
+  for (let i = 0; i < cuts.length - 1; i++) {
+    const a = cuts[i], b = cuts[i + 1];
+    if (b <= a) continue;
+    const mid = (a + b) / 2;
+    let p = base * tacticPace(tactic, mid);
+    if (mid >= sprS && mid < sprE) p *= 1 + SPRINT_BOOST;
+    const seg = p * (b - a);
+    if (dist + seg >= 1) return a + (1 - dist) / p;
+    dist += seg;
+  }
+  return 4 + (1 - dist);
+}
+
+// Ein Schnelldurchlauf fürs Quoten-Monte-Carlo: gleiche Physik wie live
+// (nur ohne das ±0,8%-Pro-Tick-Zittern, das sich über ~170 Ticks wegmittelt).
 function quickRace(field, distance, going) {
-  const scores = field.map((f) => {
+  const times = field.map((f) => {
     const noise = (crypto.randomInt(2000) / 1000 - 1) * (6 + f.h.temperament * 1.35);
-    return { f, score: effective(f.h, distance, going) + noise };
+    return { f, T: finishTime(f, distance, going, noise) };
   });
-  scores.sort((a, b) => b.score - a.score);
-  return scores.map((s) => s.f.lane);
+  times.sort((a, b) => a.T - b.T);
+  return times.map((s) => s.f.lane);
 }
 
 function computeOdds(field, distance, going) {
@@ -486,11 +526,20 @@ function startBetting() {
   setTimeout(startRunning, BET_WINDOW_MS);
 }
 
+// Integrale der Taktik-Kurven — zum Normieren auf EXAKT gleiche Gesamtleistung.
+// Vorher: front ∫=1.00725, closer ∫=0.996 → "front" war strikt +1,1% besser
+// (gratis Edge, den das Quoten-MC nicht kannte).
+const TACTIC_NORM = {
+  front: 0.35 * 1.06 + 0.40 * 1.0 + 0.25 * 0.945,  // = 1.00725
+  closer: 0.5 * 0.95 + 0.3 * 1.02 + 0.2 * 1.075,    // = 0.996
+  stayer: 1,
+};
 function tacticPace(tactic, t) {
-  // Tempo-Kurve über den Rennverlauf t∈[0,1] je Taktik (Summe ≈ gleich).
-  if (tactic === "front") return t < 0.35 ? 1.06 : t < 0.75 ? 1.0 : 0.945;
-  if (tactic === "closer") return t < 0.5 ? 0.95 : t < 0.8 ? 1.02 : 1.075;
-  return 1.0; // stayer
+  // Tempo-Kurve über den Rennverlauf t∈[0,1] je Taktik (normiert: Summe = 1).
+  const raw = tactic === "front" ? (t < 0.35 ? 1.06 : t < 0.75 ? 1.0 : 0.945)
+    : tactic === "closer" ? (t < 0.5 ? 0.95 : t < 0.8 ? 1.02 : 1.075)
+    : 1.0; // stayer
+  return raw / (TACTIC_NORM[tactic] || 1);
 }
 
 function startRunning() {
@@ -509,8 +558,9 @@ function startRunning() {
       if (f.finished) continue;
       const eff = effective(f.h, race.distance, race.going) + f.raceNoise;
       let pace = (eff / 68) * tacticPace(f.tactic, t);
-      // Kondition unter 70 kostet spürbar Tempo (müde Pferde).
-      if (f.h.condition < 70) pace *= 0.985 - (70 - f.h.condition) * 0.0012;
+      // Kondition unter 70 kostet spürbar Tempo (müde Pferde) — selbe Formel
+      // wie im Quoten-MC (condFactor), damit die Quoten das einpreisen.
+      pace *= condFactor(f.h);
       // Sprint-Boost + Erschöpfungs-Malus bei zu frühem Zünden.
       if (f.sprintAt != null) {
         const since = race.tick - f.sprintAt;
@@ -590,8 +640,16 @@ function finishRace() {
   // Verschleiß + Statistik + Erfolgs-Handicap + Events + Rente.
   for (const f of race.field) {
     const h = f.h;
-    regenCondition(h);
-    h.condition = Math.max(0, h.condition - RACE_CONDITION_COST);
+    // Kondition ist eine SPIELER-Mechanik (Ruhe-Management). NPC-Pferde laufen
+    // rund um die Uhr (~24 Rennen/h auf 14 Pool-Pferde) — mit Verschleiß wären
+    // sie dauerhaft bei Kondition ~2 und jedes frische Pferd schlüge das Feld
+    // weit über seine Quote (live gemessen; Platz-Wetten bis 260% RTP).
+    if (h.owner) {
+      regenCondition(h);
+      h.condition = Math.max(0, h.condition - RACE_CONDITION_COST);
+    } else {
+      h.condition = 100; // Stall Porta pflegt seine Pferde
+    }
     h.races += 1;
     const pos = race.result.find((r) => r.lane === f.lane).pos;
     // Handicap-Zähler: Siege laden Zusatzgewicht auf, das über Rennen abklingt.
@@ -633,6 +691,8 @@ function pushAccount(key, account) {
 function setupHorses(_io, _accounts) {
   io = _io;
   accounts = _accounts;
+  // Altbestand heilen: NPC-Pferde aus der Verschleiß-Ära stehen bei Kondition ~2.
+  for (const h of Object.values(store.horses)) if (!h.owner && !h.retired) h.condition = 100;
   refreshMarket(false);
   rebuildDailyCache();
   setTimeout(startBetting, 2500);
@@ -712,9 +772,13 @@ function setupHorses(_io, _accounts) {
       if (!ack) return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       if (race.phase !== "running") return ack({ ok: false, error: "Kein Rennen im Gange." });
-      const f = race.field.find((x) => x.h.owner === key() && !x.finished);
-      if (!f) return ack({ ok: false, error: "Kein eigenes Pferd im Rennen." });
-      if (f.sprintUsed) return ack({ ok: false, error: "Sprint schon gezündet!" });
+      // Erstes eigenes Pferd, das noch sprinten KANN — mit 2+ eigenen Pferden
+      // im Rennen blockierte sonst das bereits gesprintete Pferd alle weiteren.
+      const f = race.field.find((x) => x.h.owner === key() && !x.finished && !x.sprintUsed);
+      if (!f) {
+        const any = race.field.some((x) => x.h.owner === key() && !x.finished);
+        return ack({ ok: false, error: any ? "Sprint schon gezündet!" : "Kein eigenes Pferd im Rennen." });
+      }
       f.sprintUsed = true;
       f.sprintAt = race.tick;
       f.sprintEarly = f.progress < SPRINT_SAFE_PROGRESS;
@@ -803,4 +867,4 @@ function setupHorses(_io, _accounts) {
 
 module.exports = { setupHorses };
 // Für Offline-Balancing-Simulationen:
-module.exports._internals = { newHorse, effective, quickRace, computeOdds, horsePrice, store, ENTRY_FEE, PURSE_BASE, PURSE_SPLIT, WIN_MARGIN, PLACE_MARGIN, rollEvent, sweepEvents, activeEvent, HORSE_EVENTS, checkDailyChamp, DAILY_PRIZES, rebuildDailyCache, dailyCache: () => dailyCache };
+module.exports._internals = { newHorse, effective, quickRace, computeOdds, horsePrice, store, ENTRY_FEE, PURSE_BASE, PURSE_SPLIT, WIN_MARGIN, PLACE_MARGIN, rollEvent, sweepEvents, activeEvent, HORSE_EVENTS, checkDailyChamp, DAILY_PRIZES, rebuildDailyCache, dailyCache: () => dailyCache, condFactor, tacticPace, RACE_TICKS, SPRINT_BOOST, SPRINT_TICKS };

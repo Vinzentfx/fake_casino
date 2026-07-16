@@ -374,14 +374,36 @@ function buildResultMessage(hands, dealerBust, dealerVal) {
 // ---------------------------------------------------------------------------
 
 function setupBlackjack(io, accounts) {
-  io.on("connection", (socket) => {
-    socket.data.bj = socket.data.bj || null;
+  // Sessions hängen am ACCOUNT, nicht am Socket: Reload/Verbindungsabriss
+  // mitten in der Hand kostet den Einsatz nicht mehr — bj:init nach dem
+  // Reconnect liefert die laufende Hand einfach wieder aus.
+  const sessions = new Map(); // accountKey → session
+  const IDLE_STAND_MS = 30 * 60_000;
+  const freshSession = () => ({ shoe: null, phase: "betting", playerHands: [], dealerCards: [],
+                                activeHand: 0, split: false, message: "", name: null, lastAt: Date.now() });
 
+  // Mitten in der Hand verlassen (30 Min idle): alle Hände stehen lassen,
+  // Dealer spielt aus, Gewinn/Verlust wird normal verbucht.
+  setInterval(() => {
+    const now = Date.now();
+    for (const [, s] of sessions) {
+      if (s.phase !== "player" || now - (s.lastAt || 0) < IDLE_STAND_MS) continue;
+      for (let i = 0; i < 8 && s.phase === "player"; i++) playerAction(s, "stand", accounts);
+      s.reported = true; // keine verspätete Lobby-Meldung ohne Socket
+    }
+  }, 60_000).unref();
+
+  io.on("connection", (socket) => {
     function getSession() {
-      if (!socket.data.bj) {
-        socket.data.bj = { shoe: null, phase: "betting", playerHands: [], dealerCards: [],
-                           activeHand: 0, split: false, message: "", name: null };
+      const key = socket.data.account;
+      if (key) {
+        let s = sessions.get(key);
+        if (!s) { s = freshSession(); sessions.set(key, s); }
+        s.lastAt = Date.now();
+        return s;
       }
+      // Nicht eingeloggt (kann eh nicht setzen) → wegwerfbare Socket-Session.
+      if (!socket.data.bj) socket.data.bj = freshSession();
       return socket.data.bj;
     }
 

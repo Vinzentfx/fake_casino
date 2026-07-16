@@ -16,6 +16,20 @@
   const overlay = $("#vault-overlay");
   const btn = $("#vault-hit");
 
+  // Minimieren: Kampf läuft weiter, Pill unten rechts holt das Overlay zurück.
+  let minimized = false;
+  const pill = $("#vault-pill");
+  $("#vault-min").addEventListener("click", () => {
+    minimized = true;
+    overlay.classList.add("hidden");
+    if (active) pill.classList.remove("hidden");
+  });
+  pill.addEventListener("click", () => {
+    minimized = false;
+    pill.classList.add("hidden");
+    if (active) overlay.classList.remove("hidden");
+  });
+
   function bar(team, s) {
     const pct = Math.max(0, Math.round((100 * s[team].hp) / s[team].max));
     $(`#vault-${team}-fill`).style.width = pct + "%";
@@ -34,7 +48,8 @@
   function show(s) {
     active = true; endsAt = s.endsAt; myHits = 0;
     myTeam = s.myTeam || null;
-    overlay.classList.remove("hidden");
+    if (minimized) pill.classList.remove("hidden");
+    else overlay.classList.remove("hidden");
     $("#vault-result").innerHTML = "";
     btn.style.display = "";
     $("#vault-pot").innerHTML = `Pot: <b>${fmt(s.pot)} 🪙</b>`;
@@ -73,6 +88,8 @@
       box.innerHTML = '<div class="heist-fail">Tresorkampf beendet.</div>';
     }
     $("#vault-timer").textContent = "";
+    pill.classList.add("hidden");
+    minimized = false;
     setTimeout(() => overlay.classList.add("hidden"), 7000);
   }
 
