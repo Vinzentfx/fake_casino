@@ -59,7 +59,35 @@ function rollTraps(diff) {
   return traps;
 }
 
+const IDLE_SETTLE_MS = 30 * 60_000; // verlassene Spiele nach 30 Min auto-abrechnen
+
 function setupTowers(io, accounts) {
+  // Spiele hängen am ACCOUNT, nicht am Socket: Tab-Reload/Verbindungsabriss
+  // mitten im Lauf kostet nicht mehr Einsatz + aufgelaufenen Multiplikator —
+  // der Client holt das laufende Spiel per towers:state zurück.
+  const games = new Map(); // accountKey → game
+
+  // Verlassene Spiele (30 Min ohne Aktion): Ebene ≥1 → Auto-Cashout zum
+  // aktuellen Multiplikator, Ebene 0 → Einsatz zurück. Kein Vorteil erzielbar
+  // (Cashout-EV ist immer 1−Hausvorteil).
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, g] of games) {
+      if (g.over) { games.delete(key); continue; }
+      if (now - g.lastAt < IDLE_SETTLE_MS) continue;
+      g.over = true;
+      games.delete(key);
+      const diff = DIFFICULTIES[g.diffKey];
+      if (g.level > 0) {
+        const payout = Math.floor(g.bet * multiplier(diff, g.level));
+        accounts.adjustChips(key, payout);
+        accounts.recordHand(key, payout - g.bet, true, "towers");
+      } else {
+        accounts.adjustChips(key, g.bet); // nichts aufgedeckt → einfach zurück
+      }
+    }
+  }, 60_000).unref();
+
   io.on("connection", (socket) => {
     const acct = () => (socket.data.account ? accounts.get(socket.data.account) : null);
 
@@ -83,11 +111,21 @@ function setupTowers(io, accounts) {
       };
     }
 
+    // Laufendes Spiel nach Reload/Reconnect wieder aufnehmen.
+    socket.on("towers:state", (ack) => {
+      if (typeof ack !== "function") return;
+      const g = socket.data.account ? games.get(socket.data.account) : null;
+      if (!g || g.over) return ack({ ok: true, none: true });
+      g.lastAt = Date.now();
+      ack(view(g));
+    });
+
     socket.on("towers:start", ({ bet, difficulty } = {}, ack) => {
       if (typeof ack !== "function") return;
       const a = acct();
       if (!a) return ack({ ok: false, error: "Nicht eingeloggt." });
-      if (socket.data.towers && !socket.data.towers.over) return ack({ ok: false, error: "Beende erst dein laufendes Spiel." });
+      const running = games.get(socket.data.account);
+      if (running && !running.over) return ack({ ok: false, error: "Beende erst dein laufendes Spiel." });
       const diffKey = String(difficulty || "easy").toLowerCase();
       const diff = DIFFICULTIES[diffKey];
       if (!diff) return ack({ ok: false, error: "Unbekannte Schwierigkeit." });
@@ -97,14 +135,16 @@ function setupTowers(io, accounts) {
       if (a.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
       const res = accounts.adjustChips(socket.data.account, -bet);
       if (!res.ok) return ack({ ok: false, error: res.error });
-      socket.data.towers = { bet, diffKey, traps: rollTraps(diff), level: 0, picks: [], over: false };
-      ack({ ...view(socket.data.towers), account: res.account });
+      const g = { bet, diffKey, traps: rollTraps(diff), level: 0, picks: [], over: false, lastAt: Date.now() };
+      games.set(socket.data.account, g);
+      ack({ ...view(g), account: res.account });
     });
 
     socket.on("towers:pick", ({ tile } = {}, ack) => {
       if (typeof ack !== "function") return;
-      const g = socket.data.towers;
+      const g = socket.data.account ? games.get(socket.data.account) : null;
       if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
+      g.lastAt = Date.now();
       const diff = DIFFICULTIES[g.diffKey];
       tile = Math.floor(Number(tile));
       if (!Number.isFinite(tile) || tile < 0 || tile >= diff.width) return ack({ ok: false, error: "Ungültige Kachel." });
@@ -140,7 +180,7 @@ function setupTowers(io, accounts) {
 
     socket.on("towers:cashout", (ack) => {
       if (typeof ack !== "function") return;
-      const g = socket.data.towers;
+      const g = socket.data.account ? games.get(socket.data.account) : null;
       if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
       if (g.level <= 0) return ack({ ok: false, error: "Erst mind. eine Ebene erklimmen." });
       const diff = DIFFICULTIES[g.diffKey];

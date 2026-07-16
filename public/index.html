@@ -50,11 +50,13 @@
             <input id="login-name" type="text" inputmode="text" maxlength="16"
                    placeholder="z. B. Vincent" required />
           </label>
-          <label>4-stellige PIN
-            <input id="login-pin" type="password" inputmode="numeric" pattern="\d{4}"
-                   maxlength="4" placeholder="••••" required />
+          <label>Passwort
+            <input id="login-pin" type="password" minlength="4"
+                   maxlength="24" placeholder="••••••" required />
           </label>
-          <p class="hint">Neuer Name? → Account wird automatisch erstellt (Start: 1000 🪙).</p>
+          <p class="hint">Neuer Name? → Account wird automatisch erstellt (Start: 1000 🪙).<br>
+            Neue Accounts: Passwort mit mind. 6 Zeichen. Alte 4-stellige PINs funktionieren weiter —
+            in den Einstellungen kannst du auf ein sicheres Passwort wechseln.</p>
           <div class="form-error" id="login-error"></div>
           <button type="submit" class="btn-primary">Eintreten</button>
         </form>
@@ -1233,19 +1235,20 @@
           <input type="range" id="set-volume" min="0" max="100" value="80" style="flex:1;max-width:200px" />
         </label>
         <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
-        <h3>🔑 PIN ändern</h3>
+        <h3>🔑 Passwort ändern</h3>
+        <p class="hint" style="margin-top:-4px">Tipp: Dein Name steht öffentlich in der Bestenliste — eine 4-stellige PIN ist leicht zu erraten. Nimm ein richtiges Passwort (6–24 Zeichen).</p>
         <form id="change-pin-form" autocomplete="off">
-          <label>Alte PIN
-            <input id="cp-old" type="password" inputmode="numeric" maxlength="4" placeholder="••••" required />
+          <label>Altes Passwort / alte PIN
+            <input id="cp-old" type="password" maxlength="24" placeholder="••••" required />
           </label>
-          <label>Neue PIN
-            <input id="cp-new" type="password" inputmode="numeric" maxlength="4" placeholder="••••" required />
+          <label>Neues Passwort (6–24 Zeichen)
+            <input id="cp-new" type="password" minlength="6" maxlength="24" placeholder="••••••" required />
           </label>
-          <label>Neue PIN bestätigen
-            <input id="cp-confirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••" required />
+          <label>Neues Passwort bestätigen
+            <input id="cp-confirm" type="password" minlength="6" maxlength="24" placeholder="••••••" required />
           </label>
           <div class="form-error" id="cp-error"></div>
-          <button type="submit" class="btn-primary">PIN ändern</button>
+          <button type="submit" class="btn-primary">Passwort ändern</button>
         </form>
       </div>
     </section>
@@ -1553,6 +1556,7 @@
   <!-- Casino-Heist-Overlay (erscheint bei einem Heist-Event) -->
   <div id="heist-overlay" class="heist-overlay hidden">
     <div class="heist-card">
+      <button class="ev-min" id="heist-min" title="Minimieren — Event läuft weiter">✕</button>
       <div class="heist-emoji">🚨</div>
       <h2 id="heist-title">CASINO-HEIST!</h2>
       <p class="muted small" id="heist-sub">Knackt gemeinsam den Tresor!</p>
@@ -1568,9 +1572,17 @@
   <div id="rain-layer"></div>
   <div id="rain-hud" class="hidden"></div>
 
+  <!-- Minimierte Event-Overlays: Pills unten rechts, Antippen öffnet wieder -->
+  <div id="ev-pills">
+    <button id="heist-pill" class="ev-pill hidden">🚨 Heist läuft!</button>
+    <button id="quiz-pill" class="ev-pill hidden">❓ Quiz läuft!</button>
+    <button id="vault-pill" class="ev-pill hidden">⚔️ Tresorkampf läuft!</button>
+  </div>
+
   <!-- Blitz-Quiz-Overlay -->
   <div id="quiz-overlay" class="heist-overlay hidden">
     <div class="heist-card quiz-card">
+      <button class="ev-min" id="quiz-min" title="Minimieren — Quiz läuft weiter">✕</button>
       <div class="heist-emoji">❓</div>
       <h2 id="quiz-head">BLITZ-QUIZ</h2>
       <div class="quiz-bar"><div class="quiz-bar-fill" id="quiz-bar-fill"></div></div>
@@ -1583,6 +1595,7 @@
   <!-- Team-Tresorkampf-Overlay -->
   <div id="vault-overlay" class="heist-overlay hidden">
     <div class="heist-card vault-card">
+      <button class="ev-min" id="vault-min" title="Minimieren — Kampf läuft weiter">✕</button>
       <div class="heist-emoji">⚔️</div>
       <h2>TEAM-TRESORKAMPF!</h2>
       <div class="heist-loot" id="vault-pot"></div>
@@ -1608,10 +1621,10 @@
       <h2>Neues Casino-Update!</h2>
       <p class="muted small" style="text-align:center;margin-top:-4px">Frisch dabei im Fake Casino:</p>
       <div class="update-list">
-        <div class="update-item"><span>💸</span><div><b>NEU: Chip-Regen!</b><small>Wenn der Boss ihn auslöst, regnen Chips über deinen Bildschirm — egal wo du gerade spielst. Schnell antippen und einsammeln, goldene Säcke 💰 sind extra fett!</small></div></div>
-        <div class="update-item"><span>❓</span><div><b>NEU: Blitz-Quiz!</b><small>Mehrere schnelle Quizfragen für alle gleichzeitig — wer zuerst richtig antwortet, kassiert den Rundenpreis. Am Ende wird der Quiz-Champion gekürt.</small></div></div>
-        <div class="update-item"><span>⚔️</span><div><b>NEU: Team-Tresorkampf!</b><small>Alle Online-Spieler werden in Team Rot und Team Blau gelost. Beide hämmern auf ihren Tresor — das schnellere Team teilt sich den Pot nach Treffern!</small></div></div>
-        <div class="update-item"><span>🚨</span><div><b>Events kommen überraschend</b><small>Wie der Casino-Heist starten alle Events spontan — bleib online, halt die Augen offen und schnapp dir deinen Anteil.</small></div></div>
+        <div class="update-item"><span>💸</span><div><b>NEU: 3 Events!</b><small>Chip-Regen (fallende Chips antippen!), Blitz-Quiz (schnellste richtige Antwort gewinnt) und Team-Tresorkampf (Rot gegen Blau). Sie starten zufällig — bleib online! Mit ✕ minimierbar, falls du gerade mitten im Spiel bist.</small></div></div>
+        <div class="update-item"><span>🔑</span><div><b>Sichere Passwörter</b><small>Statt 4-stelliger PIN kannst du jetzt ein richtiges Passwort nutzen (6–24 Zeichen) — wechsle in den Einstellungen! Zu viele Falscheingaben sperren den Account automatisch, und du wirst gewarnt, wenn jemand an deinem Login rumprobiert hat.</small></div></div>
+        <div class="update-item"><span>🛟</span><div><b>Reload-Schutz</b><small>Towers, Mines und Blackjack überleben jetzt Tab-Reload und Verbindungsabbruch — dein laufendes Spiel wartet auf dich, statt den Einsatz zu fressen.</small></div></div>
+        <div class="update-item"><span>🐎</span><div><b>Fairere Renn-Quoten</b><small>Die Wettquoten kennen jetzt Kondition, Taktik und Sprint der Pferde — und die Stall-Porta-Pferde werden endlich anständig gepflegt.</small></div></div>
       </div>
       <button class="btn-primary" id="update-close" style="width:100%;margin-top:14px">Los geht's! 🎰</button>
     </div>

@@ -2808,6 +2808,28 @@ button { font-family: inherit; cursor: pointer; }
 .heist-fail { font-size: 1.2rem; font-weight: 900; color: #f0a0a0; }
 .heist-crooks { margin-top: 8px; font-size: 0.75rem; opacity: 0.7; }
 
+/* Event-Overlays minimieren: ✕ auf der Karte, Pill unten rechts zum Zurückholen. */
+.heist-card { position: relative; }
+.ev-min {
+  position: absolute; top: 8px; right: 10px; z-index: 2;
+  width: 32px; height: 32px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.35); color: #fff; font-size: 0.95rem; font-weight: 800; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; touch-action: manipulation;
+}
+.ev-min:hover { background: rgba(255,255,255,0.15); }
+#ev-pills {
+  position: fixed; bottom: 14px; right: 14px; z-index: 209;
+  display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+}
+.ev-pill {
+  padding: 10px 16px; border-radius: 999px; border: 1px solid rgba(255,214,110,0.6);
+  background: rgba(20, 14, 10, 0.92); color: #ffd66e; font-weight: 800; font-size: 0.85rem;
+  cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  animation: evPillPulse 1.4s ease-in-out infinite; touch-action: manipulation;
+}
+@keyframes evPillPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.ev-pill.hidden { display: none; }
+
 /* Chip-Regen: click-through layer, only the chips catch taps. */
 #rain-layer { position: fixed; inset: 0; z-index: 205; pointer-events: none; overflow: hidden; }
 #rain-hud { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 206;

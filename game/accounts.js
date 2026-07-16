@@ -63,10 +63,48 @@ const RESCUE_THRESHOLD = 50;       // only available when chips are below this
 const RESCUE_TO = 150;             // tops the balance up to this amount
 const RESCUE_COOLDOWN_MS = 10 * 60 * 1000; // 10 min, bounds any farming
 
-// Brute-force protection on PIN login.
+// Brute-force protection on password login — PERSISTED on the account (the old
+// RAM map reset with every deploy, which happens often) and ESCALATING:
+// 5 wrong tries → 15 min lock, each further lock doubles (cap 24h). The same
+// counter also guards the change-pin endpoint (previously an unthrottled
+// side door for guessing). failSince is shown to the owner after login.
 const LOGIN_MAX_FAILS = 5;
-const LOGIN_LOCK_MS = 5 * 60 * 1000; // 5 min lockout after too many wrong PINs
-const loginFails = new Map(); // key -> { count, until }
+const LOGIN_LOCK_BASE_MS = 15 * 60 * 1000;
+const LOGIN_LOCK_MAX_MS = 24 * 60 * 60 * 1000;
+const PASS_MIN_NEW = 6, PASS_MAX = 24; // neue Passwörter; alte 4-stellige PINs bleiben gültig
+
+function secOf(acc) {
+  acc.sec = acc.sec || { fails: 0, lockUntil: 0, lockCount: 0, failSince: 0 };
+  return acc.sec;
+}
+function lockedMinutes(acc) {
+  const s = secOf(acc);
+  return s.lockUntil > Date.now() ? Math.ceil((s.lockUntil - Date.now()) / 60000) : 0;
+}
+/** Wrong password attempt → returns lock minutes if this attempt locked the account. */
+function recordAuthFail(acc) {
+  const s = secOf(acc);
+  s.fails += 1;
+  s.failSince += 1;
+  if (s.fails >= LOGIN_MAX_FAILS) {
+    s.fails = 0;
+    s.lockCount = (s.lockCount || 0) + 1;
+    const ms = Math.min(LOGIN_LOCK_MAX_MS, LOGIN_LOCK_BASE_MS * Math.pow(2, s.lockCount - 1));
+    s.lockUntil = Date.now() + ms;
+    save();
+    return Math.ceil(ms / 60000);
+  }
+  save();
+  return 0;
+}
+/** Successful auth → reset counters, return how many fails happened since last success. */
+function recordAuthSuccess(acc) {
+  const s = secOf(acc);
+  const warn = s.failSince || 0;
+  s.fails = 0; s.failSince = 0; s.lockCount = 0; s.lockUntil = 0;
+  save();
+  return warn;
+}
 
 let accounts = load();
 startChipCapSweep(); // permanent anti-cheat chip ceiling
@@ -316,19 +354,17 @@ function login(name, pin) {
   if (!key || name.length < 2 || name.length > 16) {
     return { ok: false, error: "Name muss 2–16 Zeichen lang sein." };
   }
-  if (!/^\d{4}$/.test(pin)) {
-    return { ok: false, error: "PIN muss genau 4 Ziffern haben." };
-  }
-
-  // Brute-force lockout (per account name).
-  const lock = loginFails.get(key);
-  if (lock && lock.until > Date.now()) {
-    const minLeft = Math.ceil((lock.until - Date.now()) / 60000);
-    return { ok: false, error: `Zu viele Fehlversuche. Versuche es in ${minLeft} Min erneut.` };
+  if (pin.length < 4 || pin.length > PASS_MAX) {
+    return { ok: false, error: `Passwort muss 4–${PASS_MAX} Zeichen haben.` };
   }
 
   let acc = accounts[key];
   if (!acc) {
+    // Neue Accounts brauchen ein richtiges Passwort — Namen sind öffentlich
+    // (Bestenliste), eine 4-stellige PIN wäre in Tagen durchprobiert.
+    if (pin.length < PASS_MIN_NEW) {
+      return { ok: false, error: `Neues Konto: Passwort braucht mindestens ${PASS_MIN_NEW} Zeichen (gern Wörter statt Zahlen).` };
+    }
     const salt = crypto.randomBytes(16).toString("hex");
     acc = {
       name,
@@ -346,17 +382,15 @@ function login(name, pin) {
   }
 
   if (acc.banned) return { ok: false, error: "Dein Account wurde gesperrt." };
+  const lockMin = lockedMinutes(acc);
+  if (lockMin) return { ok: false, error: `Zu viele Fehlversuche. Account für ${lockMin} Min gesperrt.` };
   if (acc.pinHash !== hashPin(pin, acc.salt)) {
-    const fails = (lock && lock.until > Date.now() ? lock.count : (lock ? lock.count : 0)) + 1;
-    if (fails >= LOGIN_MAX_FAILS) {
-      loginFails.set(key, { count: 0, until: Date.now() + LOGIN_LOCK_MS });
-      return { ok: false, error: "Zu viele Fehlversuche. Account für 5 Min gesperrt." };
-    }
-    loginFails.set(key, { count: fails, until: 0 });
-    return { ok: false, error: "Falsche PIN für diesen Namen." };
+    const lockedFor = recordAuthFail(acc);
+    if (lockedFor) return { ok: false, error: `Zu viele Fehlversuche. Account für ${lockedFor} Min gesperrt.` };
+    return { ok: false, error: "Falsches Passwort für diesen Namen." };
   }
-  loginFails.delete(key); // successful login clears the counter
-  return { ok: true, created: false, account: publicAccount(acc), token: issueToken(acc.name) };
+  const warnFails = recordAuthSuccess(acc);
+  return { ok: true, created: false, account: publicAccount(acc), token: issueToken(acc.name), warnFails };
 }
 
 /** Claim daily bonus. Returns { ok, amount, streak, account } or { ok:false, error, msLeft }. */
@@ -568,11 +602,20 @@ function leaderboard(limit = 10) {
 function changePin(name, oldPin, newPin) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
-  if (acc.pinHash !== hashPin(String(oldPin), acc.salt))
-    return { ok: false, error: "Alte PIN falsch." };
-  if (!/^\d{4}$/.test(String(newPin)))
-    return { ok: false, error: "Neue PIN muss genau 4 Ziffern haben." };
-  acc.pinHash = hashPin(String(newPin), acc.salt);
+  // Gleiche Fehlversuchs-Sperre wie beim Login — dieser Endpoint war sonst
+  // eine ungebremste Hintertür zum Passwort-Raten.
+  const lockMin = lockedMinutes(acc);
+  if (lockMin) return { ok: false, error: `Zu viele Fehlversuche. Account für ${lockMin} Min gesperrt.` };
+  if (acc.pinHash !== hashPin(String(oldPin), acc.salt)) {
+    const lockedFor = recordAuthFail(acc);
+    if (lockedFor) return { ok: false, error: `Zu viele Fehlversuche. Account für ${lockedFor} Min gesperrt.` };
+    return { ok: false, error: "Altes Passwort falsch." };
+  }
+  recordAuthSuccess(acc);
+  const next = String(newPin || "").trim();
+  if (next.length < PASS_MIN_NEW || next.length > PASS_MAX)
+    return { ok: false, error: `Neues Passwort: ${PASS_MIN_NEW}–${PASS_MAX} Zeichen.` };
+  acc.pinHash = hashPin(next, acc.salt);
   save();
   return { ok: true };
 }
@@ -609,6 +652,8 @@ function unban(name) {
 }
 
 const TRANSFER_MIN_AGE_MS = 24 * 60 * 60 * 1000; // account must be 24h old to send
+const TRANSFER_MIN_GAMES = 25;    // Absender muss echt gespielt haben — blockt Faucet-Mules
+const TRANSFER_DAILY_CAP = 100_000; // max. gesendete Chips pro Absender & Tag
 
 function transfer(fromName, toName, amount) {
   const fromKey = normalizeName(fromName);
@@ -621,11 +666,22 @@ function transfer(fromName, toName, amount) {
   if (!to) return { ok: false, error: `Spieler "${toName}" nicht gefunden.` };
   if (Date.now() - (from.createdAt || 0) < TRANSFER_MIN_AGE_MS)
     return { ok: false, error: "Dein Account muss mindestens 24 Stunden alt sein um Chips zu senden." };
+  // Anti-Mule: frisch angelegte Accounts könnten sonst nur Boni/Faucets
+  // abgreifen und alles an den Hauptaccount weiterleiten.
+  const played = (from.stats && from.stats.gamesPlayed) || 0;
+  if (played < TRANSFER_MIN_GAMES)
+    return { ok: false, error: `Erst ab ${TRANSFER_MIN_GAMES} gespielten Runden kannst du Chips senden (du hast ${played}).` };
   amount = Math.floor(Number(amount));
   if (!Number.isFinite(amount) || amount <= 0) return { ok: false, error: "Ungültiger Betrag." };
+  const day = new Date().toDateString();
+  if (from.transferDay !== day) { from.transferDay = day; from.transferSent = 0; }
+  const left = TRANSFER_DAILY_CAP - (from.transferSent || 0);
+  if (amount > left)
+    return { ok: false, error: `Tageslimit ${TRANSFER_DAILY_CAP.toLocaleString("de-DE")} 🪙 — heute kannst du noch ${Math.max(0, left).toLocaleString("de-DE")} senden.` };
   if (from.chips < amount) return { ok: false, error: "Nicht genug Chips." };
   from.chips -= amount;
-  to.chips += amount;
+  to.chips = Math.min(MAX_CHIPS, to.chips + amount);
+  from.transferSent = (from.transferSent || 0) + amount;
   save();
   return { ok: true, fromAccount: publicAccount(from), toAccount: publicAccount(to) };
 }

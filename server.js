@@ -104,6 +104,7 @@ app.post("/api/login", (req, res) => {
     created: result.created,
     account: result.account,
     token: result.token,
+    warnFails: result.warnFails || 0,
     config: { bonusCooldownMs: accounts.DAILY_BONUS_COOLDOWN_MS },
   });
 });

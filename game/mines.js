@@ -48,7 +48,31 @@ function fakeMineSet(g, tile) {
   return [...set];
 }
 
+const IDLE_SETTLE_MS = 30 * 60_000; // verlassene Spiele nach 30 Min auto-abrechnen
+
 function setupMines(io, accounts) {
+  // Spiele am ACCOUNT statt am Socket — Reload/Abriss kostet keinen Einsatz
+  // mehr; der Client nimmt das laufende Spiel per mines:state wieder auf.
+  const games = new Map(); // accountKey → game
+
+  // Verlassene Spiele: ≥1 Feld aufgedeckt → Auto-Cashout, sonst Einsatz zurück.
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, g] of games) {
+      if (g.over) { games.delete(key); continue; }
+      if (now - g.lastAt < IDLE_SETTLE_MS) continue;
+      g.over = true;
+      games.delete(key);
+      if (g.revealed.length > 0) {
+        const payout = Math.floor(g.bet * multiplier(g.mines, g.revealed.length));
+        accounts.adjustChips(key, payout);
+        accounts.recordHand(key, payout - g.bet, true, "mines");
+      } else {
+        accounts.adjustChips(key, g.bet);
+      }
+    }
+  }, 60_000).unref();
+
   io.on("connection", (socket) => {
     const acct = () => (socket.data.account ? accounts.get(socket.data.account) : null);
 
@@ -64,11 +88,21 @@ function setupMines(io, accounts) {
       };
     }
 
+    // Laufendes Spiel nach Reload/Reconnect wieder aufnehmen.
+    socket.on("mines:state", (ack) => {
+      if (typeof ack !== "function") return;
+      const g = socket.data.account ? games.get(socket.data.account) : null;
+      if (!g || g.over) return ack({ ok: true, none: true });
+      g.lastAt = Date.now();
+      ack(view(g));
+    });
+
     socket.on("mines:start", ({ bet, mines } = {}, ack) => {
       if (typeof ack !== "function") return;
       const a = acct();
       if (!a) return ack({ ok: false, error: "Nicht eingeloggt." });
-      if (socket.data.mines && !socket.data.mines.over) return ack({ ok: false, error: "Beende erst dein laufendes Spiel." });
+      const running = games.get(socket.data.account);
+      if (running && !running.over) return ack({ ok: false, error: "Beende erst dein laufendes Spiel." });
       bet = Math.floor(Number(bet));
       mines = Math.floor(Number(mines));
       if (!Number.isFinite(bet) || bet < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
@@ -77,14 +111,16 @@ function setupMines(io, accounts) {
       if (a.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
       const res = accounts.adjustChips(socket.data.account, -bet);
       if (!res.ok) return ack({ ok: false, error: res.error });
-      socket.data.mines = { bet, mines, mineSet: pickMines(mines), revealed: [], over: false };
-      ack({ ...view(socket.data.mines), account: res.account });
+      const g = { bet, mines, mineSet: pickMines(mines), revealed: [], over: false, lastAt: Date.now() };
+      games.set(socket.data.account, g);
+      ack({ ...view(g), account: res.account });
     });
 
     socket.on("mines:reveal", ({ tile } = {}, ack) => {
       if (typeof ack !== "function") return;
-      const g = socket.data.mines;
+      const g = socket.data.account ? games.get(socket.data.account) : null;
       if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
+      g.lastAt = Date.now();
       tile = Math.floor(Number(tile));
       if (!Number.isFinite(tile) || tile < 0 || tile >= TILES) return ack({ ok: false, error: "Ungültiges Feld." });
       if (g.revealed.includes(tile)) return ack({ ok: false, error: "Schon aufgedeckt." });
@@ -115,7 +151,7 @@ function setupMines(io, accounts) {
 
     socket.on("mines:cashout", (ack) => {
       if (typeof ack !== "function") return;
-      const g = socket.data.mines;
+      const g = socket.data.account ? games.get(socket.data.account) : null;
       if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
       if (!g.revealed.length) return ack({ ok: false, error: "Erst mind. ein Feld aufdecken." });
       const mult = multiplier(g.mines, g.revealed.length);

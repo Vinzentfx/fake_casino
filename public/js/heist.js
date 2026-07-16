@@ -13,9 +13,23 @@
 
   let active = false, endsAt = 0, myHits = 0;
 
+  // Minimieren: Heist läuft weiter, Pill unten rechts holt das Overlay zurück.
+  let minimized = false;
+  $("#heist-min").addEventListener("click", () => {
+    minimized = true;
+    $("#heist-overlay").classList.add("hidden");
+    if (active) $("#heist-pill").classList.remove("hidden");
+  });
+  $("#heist-pill").addEventListener("click", () => {
+    minimized = false;
+    $("#heist-pill").classList.add("hidden");
+    if (active) $("#heist-overlay").classList.remove("hidden");
+  });
+
   function show(s) {
     active = true; endsAt = s.endsAt; myHits = 0;
-    $("#heist-overlay").classList.remove("hidden");
+    if (minimized) $("#heist-pill").classList.remove("hidden");
+    else $("#heist-overlay").classList.remove("hidden");
     $("#heist-result").innerHTML = "";
     $("#heist-crack").style.display = "";
     $("#heist-crack").disabled = false;
@@ -53,6 +67,8 @@
       box.innerHTML = `<div class="heist-fail">🔒 Tresor gehalten — Heist gescheitert!</div>`;
     }
     $("#heist-timer").textContent = "";
+    $("#heist-pill").classList.add("hidden");
+    minimized = false;
     setTimeout(() => $("#heist-overlay").classList.add("hidden"), 6000);
   }
 

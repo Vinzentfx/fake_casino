@@ -105,14 +105,16 @@
 
   window.Casino._loadMines = () => {
     buildGrid();
-    // Reset to setup view (a fresh game each visit; any prior game already
-    // resolved server-side on cashout/bust).
-    if (!game || game.over) {
-      $("#mines-error").textContent = "";
-      setActive(false);
-      const tiles = $("#mines-grid").children;
-      for (let i = 0; i < TILES; i++) { tiles[i].className = "mine-tile"; tiles[i].textContent = ""; tiles[i].disabled = false; }
-      renderTop({ multiplier: 1, cashout: 0, nextMultiplier: null });
-    }
+    // Läuft server-seitig noch ein Spiel (z.B. nach Tab-Reload)? → fortsetzen.
+    socket.emit("mines:state", (v) => {
+      if (v && v.ok && !v.none) { apply(v); return; }
+      if (!game || game.over) {
+        $("#mines-error").textContent = "";
+        setActive(false);
+        const tiles = $("#mines-grid").children;
+        for (let i = 0; i < TILES; i++) { tiles[i].className = "mine-tile"; tiles[i].textContent = ""; tiles[i].disabled = false; }
+        renderTop({ multiplier: 1, cashout: 0, nextMultiplier: null });
+      }
+    });
   };
 })();

@@ -177,12 +177,16 @@
 
   window.Casino._loadTowers = () => {
     renderDiffs();
-    if (!game || game.over) {
-      game = null;
-      $("#tw-error").textContent = "";
-      setActive(false);
-      renderTop({ multiplier: 1, cashout: 0, nextMultiplier: null });
-      renderBoard(previewView());
-    }
+    // Läuft server-seitig noch ein Spiel (z.B. nach Tab-Reload)? → fortsetzen.
+    socket.emit("towers:state", (v) => {
+      if (v && v.ok && !v.none) { diffKey = v.difficulty || diffKey; renderDiffs(); apply(v); return; }
+      if (!game || game.over) {
+        game = null;
+        $("#tw-error").textContent = "";
+        setActive(false);
+        renderTop({ multiplier: 1, cashout: 0, nextMultiplier: null });
+        renderBoard(previewView());
+      }
+    });
   };
 })();
