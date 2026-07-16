@@ -23,6 +23,7 @@ const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "liveops.json");
 
 let _io = null, _accounts = null, _heist = null;
+let _events = {}; // { rain, quiz, vault } — Admin-Events, die auch zufällig spawnen (setEvents)
 let state = load();
 
 const AUTO_CHECK_MS = 10 * 60 * 1000;
@@ -30,10 +31,19 @@ const AUTO_TOURNEY_CHANCE = 0.04;
 const AUTO_HEIST_CHANCE = 0.015;
 const AUTO_HAPPY_CHANCE = 0.02;
 const AUTO_CITY_CHANCE = 0.025;
+// Chip-Regen / Blitz-Quiz / Tresorkampf: gleiche faire Chance wie der Heist,
+// mit eigenen langen Cooldowns → im Schnitt grob EIN zufälliges Geld-Event
+// alle paar Stunden Online-Zeit, nie zwei gleichzeitig vom selben Typ.
+const AUTO_RAIN_CHANCE = 0.015;
+const AUTO_QUIZ_CHANCE = 0.015;
+const AUTO_VAULT_CHANCE = 0.015;
 const TOURNEY_PRIZE_MIN = 25000;
 const TOURNEY_PRIZE_MAX = 60000;
 const HEIST_LOOT_MIN = 150000;
 const HEIST_LOOT_MAX = 500000;
+const RAIN_POT_MIN = 60000, RAIN_POT_MAX = 150000;
+const QUIZ_PRIZE_MIN = 8000, QUIZ_PRIZE_MAX = 15000;
+const VAULT_POT_MIN = 100000, VAULT_POT_MAX = 250000;
 
 function load() {
   try {
@@ -183,6 +193,29 @@ function maybeAutoSpawn() {
     try { require("./feed").add("event", `Seltene Mini-Happy-Hour startet für ${mins} Minuten.`); } catch {}
   }
 
+  if (_events.rain && !_events.rain.active() && online > 0 &&
+      now >= (a.rainCooldownUntil || 0) && Math.random() < AUTO_RAIN_CHANCE) {
+    const pot = Math.round(randInt(RAIN_POT_MIN, RAIN_POT_MAX) / 1000) * 1000;
+    const res = _events.rain.start(pot, randInt(25, 45), { auto: true });
+    if (res && res.ok) a.rainCooldownUntil = Date.now() + randInt(180, 360) * 60000;
+  }
+
+  if (_events.quiz && !_events.quiz.active() && online > 0 &&
+      now >= (a.quizCooldownUntil || 0) && Math.random() < AUTO_QUIZ_CHANCE) {
+    const prize = Math.round(randInt(QUIZ_PRIZE_MIN, QUIZ_PRIZE_MAX) / 500) * 500;
+    const res = _events.quiz.start(randInt(3, 5), prize, { auto: true });
+    if (res && res.ok) a.quizCooldownUntil = Date.now() + randInt(180, 360) * 60000;
+  }
+
+  // Tresorkampf braucht ≥2 Spieler online (start() prüft das selbst und lehnt
+  // sonst ab — dann bleibt der Cooldown ungesetzt und es klappt später wieder).
+  if (_events.vault && !_events.vault.active() && online >= 2 &&
+      now >= (a.vaultCooldownUntil || 0) && Math.random() < AUTO_VAULT_CHANCE) {
+    const pot = Math.round(randInt(VAULT_POT_MIN, VAULT_POT_MAX) / 1000) * 1000;
+    const res = _events.vault.start(pot, randInt(60, 90), { auto: true });
+    if (res && res.ok) a.vaultCooldownUntil = Date.now() + randInt(240, 420) * 60000;
+  }
+
   if (online > 0 && now >= (a.cityCooldownUntil || 0) && Math.random() < AUTO_CITY_CHANCE) {
     const event = city.fireEvent(null);
     if (event) {
@@ -208,10 +241,11 @@ function setup(io, accounts, heist = null) {
 }
 
 function setHeist(heist) { _heist = heist; }
+function setEvents(events) { _events = events || {}; }
 
 module.exports = {
   setup, tick, questMult, happyActive,
   recordTourneyWin, tourneyActive,
   startHappy, stopHappy, startTourney, stopTourney,
-  publicState, setHeist,
+  publicState, setHeist, setEvents,
 };

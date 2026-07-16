@@ -118,12 +118,13 @@ function setupQuiz(io, accounts) {
     cleanup();
   }
 
-  function start(rounds, prize) {
+  function start(rounds, prize, opts = {}) {
     if (state) return { ok: false, error: "Es läuft schon ein Quiz." };
     rounds = Math.max(1, Math.min(15, Math.floor(rounds) || 5));
     prize = Math.max(500, Math.floor(prize) || 20000);
     state = { round: 0, rounds, prize, used: new Set(), q: null, answers: new Map(), endsAt: 0, wins: {} };
-    chat.announce(io, `❓ BLITZ-QUIZ! ${rounds} Fragen, ${prize.toLocaleString("de-DE")} 🪙 pro Runde für die schnellste richtige Antwort. Erste Frage kommt gleich!`);
+    const prefix = opts.auto ? "🎲 ZUFÄLLIGES " : "";
+    chat.announce(io, `❓ ${prefix}BLITZ-QUIZ! ${rounds} Fragen, ${prize.toLocaleString("de-DE")} 🪙 pro Runde für die schnellste richtige Antwort. Erste Frage kommt gleich!`);
     io.emit("quiz:begin", { rounds, prize, firstAt: Date.now() + 4000 });
     timer = setTimeout(nextRound, 4000);
     return { ok: true };
