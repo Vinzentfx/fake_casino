@@ -67,7 +67,8 @@
   }
 
   // Zeichnet den Turm aus einer Server-View. Reihen oben (Ebene 9) → unten (Ebene 1).
-  function renderBoard(v) {
+  // fx: { pop:{row,tile} } markiert die frisch aufgedeckte Kachel für die Animation.
+  function renderBoard(v, fx = {}) {
     const board = $("#tw-board");
     const width = v.width;
     board.innerHTML = "";
@@ -76,7 +77,7 @@
       rowEl.className = "tw-row";
       const climbed = disp < v.level;
       const active = disp === v.level && !v.over && !v.preview;
-      const future = disp > v.level && !v.over;
+      const future = disp > v.level && !v.over && !v.preview;
       if (active) rowEl.classList.add("active");
       if (future) rowEl.classList.add("future");
       if (climbed) rowEl.classList.add("climbed");
@@ -104,24 +105,46 @@
           if (v.over && v.trapLayout) { b.classList.add(isTrap ? "trap" : "safe-dim"); b.textContent = isTrap ? "💀" : "🥚"; }
         }
         if (v.over && v.bust && disp === v.row && t === v.tile) b.classList.add("boom");
+        if (fx.pop && disp === fx.pop.row && t === fx.pop.tile) b.classList.add("pop");
         tilesEl.appendChild(b);
       }
       rowEl.appendChild(tilesEl);
+      if (active) {
+        const dragon = document.createElement("span");
+        dragon.className = "tw-dragon";
+        dragon.textContent = "🐉";
+        rowEl.appendChild(dragon);
+      }
       board.appendChild(rowEl);
     }
   }
 
   function apply(v) {
+    const prev = game;
     game = v;
     renderTop(v.bust ? { ...v, cashout: 0, nextMultiplier: null } : v);
     if (v.bust) { $("#tw-cashval").textContent = "verloren"; $("#tw-next").textContent = "—"; }
-    renderBoard(v);
+    // Frisch aufgedeckte Kachel für die Pop-Animation ermitteln.
+    const fx = {};
+    if (prev && !prev.over && v.level > prev.level) fx.pop = { row: v.level - 1, tile: v.picks[v.level - 1] };
+    renderBoard(v, fx);
+    const board = $("#tw-board");
     if (v.over) {
       setActive(false);
       if (v.account) applyAccount(v.account);
-      if (v.bust) toast("💀 Falle erwischt! Einsatz weg.");
-      else if (v.cashedOut) toast(`💸 +${fmt(v.payout)} 🪙 (${v.mult.toFixed(2)}×)!`);
-      else if (v.cleared) toast(`🏆 Turm bezwungen! +${fmt(v.payout)} 🪙`);
+      if (v.bust) {
+        board.classList.add("tw-bust");
+        setTimeout(() => board.classList.remove("tw-bust"), 900);
+        toast("💀 Falle erwischt! Einsatz weg.");
+      } else if (v.cashedOut || v.cleared) {
+        board.classList.add("tw-win");
+        const float = document.createElement("div");
+        float.className = "tw-float";
+        float.textContent = `+${fmt(v.payout)} 🪙`;
+        board.appendChild(float);
+        setTimeout(() => { board.classList.remove("tw-win"); float.remove(); }, 1600);
+        toast(v.cleared ? `🏆 Turm bezwungen! +${fmt(v.payout)} 🪙` : `💸 +${fmt(v.payout)} 🪙 (${v.mult.toFixed(2)}×)!`);
+      }
     } else setActive(true);
   }
 

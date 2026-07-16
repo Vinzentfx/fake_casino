@@ -3365,6 +3365,25 @@ button { font-family: inherit; cursor: pointer; }
   position: absolute; top: 6px; left: 0; right: 0; text-align: center; font-weight: 800;
   font-size: 0.9rem; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.8); pointer-events: none;
 }
+.race-podium {
+  position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 20, 12, 0.35); backdrop-filter: blur(1.5px); pointer-events: none;
+}
+.race-podium.hidden { display: none; }
+.rp-card {
+  min-width: 200px; max-width: 80%; padding: 12px 18px; border-radius: 14px; text-align: center;
+  background: linear-gradient(180deg, rgba(20, 30, 20, 0.92), rgba(10, 18, 10, 0.92));
+  border: 1px solid rgba(255, 214, 110, 0.45); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  animation: rpIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes rpIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.rp-title { font-weight: 900; color: var(--gold-strong); margin-bottom: 8px; }
+.rp-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-weight: 700; }
+.rp-row.rp-0 { font-size: 1.05rem; }
+.rp-row.rp-1, .rp-row.rp-2 { opacity: 0.85; font-size: 0.9rem; }
+.rp-medal { flex: 0 0 auto; }
+.rp-name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .sprint-btn {
   position: absolute; bottom: 10px; right: 10px; z-index: 3;
   padding: 12px 18px; border-radius: 999px; border: 0; font-weight: 900; font-size: 1rem;
@@ -3528,34 +3547,92 @@ button { font-family: inherit; cursor: pointer; }
 /* ===================== 🗼 Towers ===================== */
 .towers-wrap { max-width: 520px; margin: 0 auto; }
 .towers-board {
-  display: flex; flex-direction: column; gap: 5px; margin: 12px 0;
-  padding: 12px; border-radius: 16px;
-  background: linear-gradient(180deg, rgba(40,30,60,0.45), rgba(15,12,26,0.55));
-  border: 1px solid rgba(255,255,255,0.08);
+  position: relative;
+  display: flex; flex-direction: column; gap: 5px; margin: 18px 0 12px;
+  padding: 14px 12px 12px; border-radius: 4px 4px 16px 16px;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(90, 60, 40, 0.18), transparent 60%),
+    linear-gradient(180deg, #2c2440, #191330 55%, #120d22);
+  border: 1px solid #4a3f68; border-top: none;
+  box-shadow: inset 0 0 46px rgba(0, 0, 0, 0.55), 0 8px 26px rgba(0, 0, 0, 0.4);
 }
-.tw-row { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 10px; transition: background 0.15s; }
-.tw-row.active { background: rgba(244,215,130,0.12); box-shadow: 0 0 0 1px rgba(244,215,130,0.3) inset; }
-.tw-row.future { opacity: 0.5; }
-.tw-row.climbed { opacity: 0.92; }
+/* Zinnen oben — der Turm ist eine Burg. */
+.towers-board::before {
+  content: ""; position: absolute; top: -11px; left: -1px; right: -1px; height: 12px;
+  background: repeating-linear-gradient(90deg, #4a3f68 0 20px, transparent 20px 34px);
+  border-radius: 3px 3px 0 0; pointer-events: none;
+}
+.tw-row { position: relative; display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 10px; transition: background 0.15s, opacity 0.25s; }
+.tw-row.active {
+  background: linear-gradient(90deg, rgba(244,215,130,0.16), rgba(244,215,130,0.04));
+  animation: twRowPulse 1.5s ease-in-out infinite;
+}
+@keyframes twRowPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(244,215,130,0.35) inset; }
+  50% { box-shadow: 0 0 0 2px rgba(244,215,130,0.7) inset, 0 0 16px rgba(244,215,130,0.25); }
+}
+.tw-row.future { opacity: 0.42; filter: saturate(0.6); }
+.tw-row.climbed { opacity: 1; }
+.tw-row.climbed .tw-mult-lab { color: #7fd6a0; }
 .tw-mult-lab {
   flex: 0 0 64px; text-align: right; font-size: 0.8rem; font-weight: 800;
   color: #b7a7d8; font-variant-numeric: tabular-nums;
 }
 .tw-row.active .tw-mult-lab { color: #f4d782; }
+.tw-dragon {
+  position: absolute; right: -4px; top: 50%; transform: translateY(-50%) scaleX(-1);
+  font-size: 1.35rem; pointer-events: none; z-index: 2;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
+  animation: twDragonBob 1.2s ease-in-out infinite alternate;
+}
+@keyframes twDragonBob { from { transform: translateY(-58%) scaleX(-1); } to { transform: translateY(-42%) scaleX(-1); } }
 .tw-tiles { display: flex; gap: 6px; flex: 1; }
 .tw-tile {
   flex: 1; aspect-ratio: 2.6 / 1; min-height: 34px; border-radius: 10px; font-size: 1.25rem; cursor: default;
   border: 1px solid rgba(255,255,255,0.1);
-  background: linear-gradient(180deg, #3a3350, #241f36);
+  background: linear-gradient(180deg, #3d3556, #262038);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 0 rgba(0,0,0,0.35);
   display: flex; align-items: center; justify-content: center; transition: transform 0.08s, background 0.15s;
 }
-.tw-row.active .tw-tile { cursor: pointer; border-color: rgba(244,215,130,0.4); background: linear-gradient(180deg, #4a3f68, #2c2542); }
+.tw-row.active .tw-tile {
+  cursor: pointer; border-color: rgba(244,215,130,0.5);
+  background: linear-gradient(180deg, #4e4270, #2e2647);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -3px 0 rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.35);
+}
 .tw-row.active .tw-tile:hover { transform: translateY(-2px); background: linear-gradient(180deg, #5a4d80, #352c52); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-.tw-tile.egg { background: linear-gradient(180deg, #2f8f5a, #1b6b3f); border-color: #3fbf78; }
+.tw-row.active .tw-tile:active { transform: translateY(1px) scale(0.98); }
+.tw-tile.egg { background: linear-gradient(180deg, #2f8f5a, #1b6b3f); border-color: #3fbf78; text-shadow: 0 0 10px rgba(120,255,180,0.8); }
 .tw-tile.safe-dim { background: linear-gradient(180deg, #24503a, #163826); opacity: 0.6; }
 .tw-tile.trap { background: linear-gradient(180deg, #7a2b2b, #4a1616); border-color: #d65a5a; }
 .tw-tile.covered { opacity: 0.5; }
-.tw-tile.boom { animation: crashShake 0.4s; box-shadow: 0 0 18px rgba(214,90,90,0.8); }
+.tw-tile.pop { animation: twPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes twPop {
+  0% { transform: scale(0.6); box-shadow: 0 0 0 rgba(120,255,180,0); }
+  45% { transform: scale(1.16); box-shadow: 0 0 22px rgba(120,255,180,0.8); }
+  100% { transform: scale(1); }
+}
+.tw-tile.boom { animation: twBoom 0.6s; box-shadow: 0 0 24px rgba(255,90,60,0.9); }
+@keyframes twBoom {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.28) rotate(-4deg); background: #a33; }
+  35% { transform: scale(0.92) rotate(3deg); }
+  55% { transform: scale(1.1) rotate(-2deg); }
+  100% { transform: scale(1); }
+}
+.towers-board.tw-bust { animation: crashShake 0.45s; }
+.towers-board.tw-bust .tw-tile.safe-dim { opacity: 0.28; }
+.towers-board.tw-win { animation: twWinGlow 1.5s ease-out; }
+@keyframes twWinGlow {
+  0% { box-shadow: inset 0 0 46px rgba(0,0,0,0.55); }
+  30% { box-shadow: inset 0 0 60px rgba(244,215,130,0.35), 0 0 44px rgba(244,215,130,0.6); }
+  100% { box-shadow: inset 0 0 46px rgba(0,0,0,0.55), 0 8px 26px rgba(0,0,0,0.4); }
+}
+.tw-float {
+  position: absolute; left: 50%; top: 42%; transform: translateX(-50%); z-index: 5;
+  font-size: 1.7rem; font-weight: 900; color: #ffd66e;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9); pointer-events: none;
+  animation: rainPop 1.5s ease-out forwards;
+}
 .tw-diffs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
 .tw-diff {
   flex: 1; min-width: 84px; padding: 8px 4px; border-radius: 11px; font-weight: 800; font-size: 0.82rem;

@@ -18,6 +18,8 @@
   let st = null;          // letzter Server-State
   let ticks = null;       // letzte Tick-Positionen [{lane,p,fin,spr}]
   let smooth = {};        // lane -> geglätteter Fortschritt
+  let betTotal = 0;       // volle Wettfenster-Länge der aktuellen Runde (für den Countdown-Balken)
+  let betNo = null;       // Runden-Nr., zu der betTotal gehört
   let config = {};
   let stable = [];
   let market = [];
@@ -48,7 +50,8 @@
   window.addEventListener("resize", resize);
 
   // Stilisierte Galopp-Silhouette: Rumpf, Hals, Kopf, Schweif, 4 Beine im Takt.
-  function drawHorse(x, y, s, color, phase, sprinting) {
+  // num: Startnummer auf der Satteldecke in Trikotfarbe (Zuordnung Liste ↔ Bahn).
+  function drawHorse(x, y, s, color, phase, sprinting, num) {
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(s, s);
@@ -75,6 +78,18 @@
     ctx.quadraticCurveTo(-19, -2 + Math.sin(phase) * 2, -18, 3);
     ctx.quadraticCurveTo(-16, 1, -12, 1); ctx.closePath(); ctx.fill();
     leg(Math.PI * 0.45, true); leg(Math.PI * 1.4, true);
+    // Satteldecke in Trikotfarbe mit Startnummer
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(-7.5, -3.5, 11, 8.5, 2) : ctx.rect(-7.5, -3.5, 11, 8.5);
+    ctx.fill();
+    if (num != null) {
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 7px sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(String(num), -2, 0.8);
+      ctx.textBaseline = "alphabetic";
+    }
     // Jockey im Trikot
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.ellipse(-1, -9, 3.6, 4.4, 0.25, 0, Math.PI * 2); ctx.fill();
@@ -87,61 +102,162 @@
     const screen = document.querySelector('[data-screen="horses"]');
     if (!screen || !screen.classList.contains("active")) { raf = false; return; }
     const w = canvas.clientWidth, h = canvas.clientHeight;
+    const now = performance.now() / 1000;
     ctx.clearRect(0, 0, w, h);
 
-    // Kulisse: Himmel + Tribünen-Streifen + Rasen (Asset kann später drüber).
-    const sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, "#87b7e0"); sky.addColorStop(0.4, "#b9d7ea"); sky.addColorStop(0.41, "#7a6a54"); sky.addColorStop(0.52, "#5d4f3d"); sky.addColorStop(0.53, "#3f7d3a"); sky.addColorStop(1, "#2c6329");
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, w, h);
-    // Menge (Punkt-Rauschen, statisch pro Frame ok)
-    ctx.globalAlpha = 0.35;
-    for (let i = 0; i < 60; i++) {
-      ctx.fillStyle = ["#e8d9c0", "#c65", "#69c", "#dd7", "#c9c"][(i * 7) % 5];
-      ctx.fillRect(((i * 61) % w), h * 0.42 + ((i * 13) % (h * 0.09)), 2.5, 2.5);
+    // ── Kulisse ── Himmel mit Sonne + driftenden Wolken
+    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.42);
+    sky.addColorStop(0, "#7db1de"); sky.addColorStop(1, "#cfe4f2");
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h * 0.42);
+    ctx.fillStyle = "#fff3c2";
+    ctx.beginPath(); ctx.arc(w * 0.87, h * 0.10, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    for (let i = 0; i < 3; i++) {
+      const cx = ((now * (5 + i * 2) + i * 271) % (w + 140)) - 70;
+      const cy = h * (0.07 + i * 0.055);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 26, 8, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + 17, cy - 4, 17, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx - 16, cy - 2, 14, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
-    ctx.globalAlpha = 1;
+
+    // Tribüne: Dach, Stützen, Publikumsreihen (deterministisch bunt, dezent wippend)
+    const triTop = h * 0.40, triH = h * 0.13;
+    ctx.fillStyle = "#4d4234"; ctx.fillRect(0, triTop, w, triH);                 // Korpus
+    ctx.fillStyle = "#2e2820"; ctx.fillRect(0, triTop - 4, w, 5);                // Dachkante
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    for (let x = 14; x < w; x += 46) ctx.fillRect(x, triTop, 3, triH);           // Stützen
+    for (let row = 0; row < 3; row++) {
+      const ry = triTop + triH * (0.22 + row * 0.26);
+      for (let i = 0; i < w / 9; i++) {
+        const seed = i * 31 + row * 17;
+        ctx.fillStyle = ["#e8d9c0", "#c66655", "#6699cc", "#ddcc77", "#cc99cc", "#77bb99"][seed % 6];
+        const bob = Math.sin(now * 2 + seed) * 0.8;
+        ctx.fillRect(4 + i * 9 + (seed % 3), ry + bob, 3, 3.5);
+      }
+    }
+    // Wimpel überm Dach
+    for (let x = 30; x < w; x += 90) {
+      ctx.strokeStyle = "#3a332a"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x, triTop - 4); ctx.lineTo(x, triTop - 16); ctx.stroke();
+      ctx.fillStyle = SILKS[(x / 90) % SILKS.length | 0];
+      const flap = Math.sin(now * 3 + x) * 2;
+      ctx.beginPath(); ctx.moveTo(x, triTop - 16); ctx.lineTo(x + 10, triTop - 13 + flap); ctx.lineTo(x, triTop - 10); ctx.closePath(); ctx.fill();
+    }
+
+    // Rasen
+    const grass = ctx.createLinearGradient(0, triTop + triH, 0, h);
+    grass.addColorStop(0, "#3f7d3a"); grass.addColorStop(1, "#2a5f27");
+    ctx.fillStyle = grass; ctx.fillRect(0, triTop + triH, w, h - triTop - triH);
 
     const lanes = st ? st.field.length : 8;
     const trackTop = h * 0.56, trackH = h * 0.40;
     const laneH = trackH / lanes;
     const padL = 26, padR = 60;
 
-    // Bahnen + Ziellinie
-    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    // Bahnen: alternierende Streifen + Begrenzungen mit Pfosten
+    for (let i = 0; i < lanes; i++) {
+      if (i % 2 === 0) { ctx.fillStyle = "rgba(255,255,255,0.045)"; ctx.fillRect(0, trackTop + i * laneH, w, laneH); }
+    }
+    ctx.strokeStyle = "rgba(255,255,255,0.28)";
     ctx.lineWidth = 1;
-    for (let i = 0; i <= lanes; i++) {
+    for (let i = 1; i < lanes; i++) {
       ctx.beginPath(); ctx.moveTo(0, trackTop + i * laneH); ctx.lineTo(w, trackTop + i * laneH); ctx.stroke();
     }
-    ctx.setLineDash([6, 5]);
-    ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(w - padR, trackTop - 4); ctx.lineTo(w - padR, trackTop + trackH + 2); ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.strokeStyle = "#e8e2d2"; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(0, trackTop); ctx.lineTo(w, trackTop); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, trackTop + trackH); ctx.lineTo(w, trackTop + trackH); ctx.stroke();
+    ctx.fillStyle = "#e8e2d2";
+    for (let x = 10; x < w; x += 42) { ctx.fillRect(x, trackTop - 5, 2, 5); ctx.fillRect(x, trackTop + trackH, 2, 5); }
+    // Distanzmarken bei 25/50/75 %
+    ctx.strokeStyle = "rgba(255,255,255,0.16)"; ctx.lineWidth = 1;
+    for (const fr of [0.25, 0.5, 0.75]) {
+      const mx = padL + fr * (w - padL - padR);
+      ctx.beginPath(); ctx.moveTo(mx, trackTop); ctx.lineTo(mx, trackTop + trackH); ctx.stroke();
+    }
+
+    // Ziellinie: Schachbrett-Band + Fähnchen
+    const fx = w - padR;
+    for (let ry = 0; ry < trackH; ry += 7) {
+      ctx.fillStyle = (ry / 7) % 2 ? "#fff" : "#222";
+      ctx.fillRect(fx - 3, trackTop + ry, 4, Math.min(7, trackH - ry));
+      ctx.fillStyle = (ry / 7) % 2 ? "#222" : "#fff";
+      ctx.fillRect(fx + 1, trackTop + ry, 4, Math.min(7, trackH - ry));
+    }
     ctx.font = "bold 11px sans-serif"; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
-    ctx.fillText("ZIEL", w - padR, trackTop - 10);
+    ctx.fillText("🏁 ZIEL", fx, trackTop - 8);
 
     if (st && st.field.length) {
       const running = st.phase === "running";
-      const now = performance.now() / 1000;
+      const betting = st.phase === "betting";
+
+      // Startboxen in der Wettphase
+      if (betting) {
+        ctx.fillStyle = "rgba(40,32,24,0.55)";
+        ctx.fillRect(padL - 16, trackTop, 13, trackH);
+        ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 1;
+        for (let i = 1; i < lanes; i++) { const gy = trackTop + i * laneH; ctx.beginPath(); ctx.moveTo(padL - 16, gy); ctx.lineTo(padL - 3, gy); ctx.stroke(); }
+      }
+
+      // Fortschritt glätten + Live-Rangfolge bestimmen
+      const order = [];
       for (const f of st.field) {
         const target = ticks ? (ticks.find((x) => x.lane === f.lane) || { p: f.progress }).p : f.progress;
         smooth[f.lane] = (smooth[f.lane] ?? 0) + ((target || 0) - (smooth[f.lane] ?? 0)) * 0.18;
+        order.push({ lane: f.lane, p: smooth[f.lane] || 0 });
+      }
+      order.sort((a, b) => b.p - a.p);
+      const rankOf = {}; order.forEach((o, i) => (rankOf[o.lane] = i + 1));
+
+      for (const f of st.field) {
         const p = Math.min(1.012, smooth[f.lane]);
         const x = padL + p * (w - padL - padR);
         const y = trackTop + f.lane * laneH + laneH * 0.62;
         const tick = ticks && ticks.find((x2) => x2.lane === f.lane);
         const sprinting = !!(tick && tick.spr);
         const phase = running ? now * 11 + f.lane * 1.7 : f.lane; // Galopp-Takt
+        const silk = SILKS[f.silk % SILKS.length];
         if (sprinting) { // Staubwölkchen
           ctx.globalAlpha = 0.5;
           ctx.fillStyle = "#e8dcc0";
           for (let d = 0; d < 3; d++) ctx.beginPath(), ctx.arc(x - 18 - d * 7, y + 6, 3 - d * 0.7, 0, Math.PI * 2), ctx.fill();
           ctx.globalAlpha = 1;
         }
-        drawHorse(x, y, Math.min(1.15, laneH / 26), SILKS[f.silk % SILKS.length], phase, sprinting);
+        // Führenden-Glow
+        if (running && rankOf[f.lane] === 1 && p > 0.03) {
+          ctx.globalAlpha = 0.35;
+          ctx.fillStyle = "#ffd76a";
+          ctx.beginPath(); ctx.ellipse(x, y + 2, 22, 12, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+        drawHorse(x, y, Math.min(1.15, laneH / 26), silk, phase, sprinting, f.lane + 1);
+        // Live-Rang überm Pferd (nur im Rennen)
+        if (running && p > 0.03) {
+          const r = rankOf[f.lane];
+          ctx.fillStyle = r === 1 ? "#ffd76a" : "rgba(255,255,255,0.85)";
+          ctx.font = `bold ${r === 1 ? 11 : 9}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.fillText(r === 1 ? "👑" : r + ".", x, y - laneH * 0.55);
+        }
+        // Bahn-Label: Nummer im Trikotkästchen + Name
+        const ly = trackTop + f.lane * laneH;
+        ctx.fillStyle = silk;
+        ctx.fillRect(4, ly + 2.5, 9, 9);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 7px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText(String(f.lane + 1), 8.5, ly + 9.5);
         ctx.font = "bold 9px sans-serif"; ctx.textAlign = "left";
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.fillText(f.horse.name, 4, trackTop + f.lane * laneH + 10);
+        ctx.fillStyle = "rgba(255,255,255,0.88)";
+        ctx.fillText(f.horse.name, 16, ly + 10);
+      }
+
+      // Countdown-Balken in der Wettphase
+      if (betting) {
+        const remaining = Math.max(0, st.msLeft - (Date.now() - st._at));
+        const frac = Math.min(1, remaining / (betTotal || 90000));
+        ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fillRect(0, h - 7, w, 7);
+        ctx.fillStyle = frac > 0.25 ? "#ffd76a" : "#e8735a";
+        ctx.fillRect(0, h - 7, w * frac, 7);
       }
     }
     requestAnimationFrame(draw);
@@ -157,12 +273,27 @@
     const phase = st.phase === "betting" ? `Wetten offen · Start in ${s}s` : st.phase === "running" ? "🏇 Rennen läuft!" : "Zieleinlauf";
     el.innerHTML = `<b>Rennen #${st.no}</b> · ${st.distance}m · Boden: ${st.going} <span class="rh-phase">${phase}</span>`;
     const status = $("#race-status");
-    if (status) {
-      if (st.phase === "done" && st.result) {
-        const top3 = st.result.slice(0, 3).map((r) => `${r.pos}. ${escapeHtml(r.name)}${r.photo ? " 📸" : ""}`).join(" · ");
-        status.innerHTML = `🏆 ${top3}`;
-      } else status.textContent = st.phase === "betting" ? `Start in ${s}s` : "";
-    }
+    if (status) status.textContent = st.phase === "betting" ? `Start in ${s}s` : "";
+    renderPodium();
+  }
+
+  // Zieleinlauf-Podium als Overlay über der Bahn (nur in der "done"-Phase).
+  function renderPodium() {
+    const el = $("#race-podium");
+    if (!el || !st) return;
+    if (st.phase !== "done" || !st.result) { el.classList.add("hidden"); return; }
+    const medals = ["🥇", "🥈", "🥉"];
+    const rows = st.result.slice(0, 3).map((r, i) => {
+      const f = st.field.find((x) => x.lane === r.lane);
+      const silk = f ? SILKS[f.silk % SILKS.length] : "#888";
+      return `<div class="rp-row rp-${i}">
+        <span class="rp-medal">${medals[i]}</span>
+        <span class="hf-silk" style="background:${silk}"></span>
+        <span class="rp-name">${escapeHtml(r.name)}${r.photo ? " 📸" : ""}</span>
+      </div>`;
+    }).join("");
+    el.innerHTML = `<div class="rp-card"><div class="rp-title">🏆 Zieleinlauf</div>${rows}</div>`;
+    el.classList.remove("hidden");
   }
 
   function renderField() {
@@ -446,7 +577,12 @@
       const idx = meName ? (st.dailyTop || []).findIndex((r) => r.name.toLowerCase() === meName.toLowerCase()) : -1;
       st.myDaily = idx >= 0 ? { name: st.dailyTop[idx].name, wins: st.dailyTop[idx].wins, rank: idx + 1 } : (prevMyDaily || null);
     }
-    if (s.phase === "betting") { ticks = null; smooth = {}; }
+    if (s.phase === "betting") {
+      ticks = null; smooth = {};
+      // Volle Fensterlänge nur beim ersten State der Runde merken (spätere Fetches haben weniger msLeft).
+      betTotal = Math.max(betNo === s.no ? betTotal : 0, s.msLeft || 0);
+      betNo = s.no;
+    }
     renderAll();
     renderTicker(st.commentary);
   }
