@@ -1514,6 +1514,12 @@
             <button class="btn-danger" id="admin-reset-ach-btn">🏆 Achievements resetten</button>
           </div>
           <div class="form-error" id="admin-test-error"></div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.1);padding-top:10px;margin-top:6px">
+            <span style="flex-basis:100%" class="muted small">💾 <b>Daten-Backup</b> — lädt ALLE Spieldaten (Accounts, Pferde, Stadt, Clans …) als eine Datei. Vor Trial-Ende/Hosting-Wechsel machen! Wiederherstellen überschreibt alles und startet den Server neu.</span>
+            <button class="btn-primary" id="admin-backup-btn">💾 Backup herunterladen</button>
+            <label class="btn-danger" style="cursor:pointer;display:inline-flex;align-items:center">📂 Backup wiederherstellen<input id="admin-restore-input" type="file" accept=".json,application/json" style="display:none" /></label>
+          </div>
+          <div class="form-error" id="admin-backup-error"></div>
         </div>
 
         <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />

@@ -10,6 +10,7 @@
  */
 
 const path = require("path");
+const fs = require("fs");
 const http = require("http");
 const express = require("express");
 const { Server } = require("socket.io");
@@ -62,7 +63,7 @@ const APP_VERSION = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.APP_VERSIO
 
 const app = express();
 app.set("trust proxy", true); // Railway runs behind a proxy → real client IP in x-forwarded-for
-app.use(express.json());
+app.use(express.json({ limit: "25mb" })); // Restore-Upload = kompletter data/-Ordner als JSON
 app.use(express.static(path.join(__dirname, "public"), {
   setHeaders(res, filePath) {
     if (/\.(html|js|css)$/i.test(filePath)) {
@@ -173,6 +174,66 @@ app.post("/api/change-pin", (req, res) => {
   const result = accounts.changePin(req.body.name, req.body.oldPin, req.body.newPin);
   if (!result.ok) return res.status(400).json({ error: result.error });
   res.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------
+// Owner-Backup: der komplette data/-Ordner (Accounts, Pferde, Stadt, …) als
+// EIN JSON-Bundle zum Herunterladen — und als Upload zum Wiederherstellen,
+// z.B. beim Umzug auf einen neuen Host, wenn das Railway-Volume wegfällt.
+// ---------------------------------------------------------------------------
+
+const OWNER_KEY = "vincent"; // muss zu OWNER in game/admin.js passen
+const DATA_DIR = path.join(__dirname, "data");
+
+function requireOwner(req, res) {
+  const key = accounts.verifyToken(req.body && req.body.token);
+  if (key !== OWNER_KEY) {
+    res.status(403).json({ error: "Nur der Casino-Boss darf das." });
+    return false;
+  }
+  return true;
+}
+
+app.post("/api/admin/backup", (req, res) => {
+  if (!requireOwner(req, res)) return;
+  const files = {};
+  try {
+    for (const name of fs.readdirSync(DATA_DIR)) {
+      const p = path.join(DATA_DIR, name);
+      if (!fs.statSync(p).isFile()) continue;
+      files[name] = fs.readFileSync(p, "utf8"); // JSON-Dateien + .secret (Token-Schlüssel)
+    }
+  } catch (e) {
+    return res.status(500).json({ error: "Backup fehlgeschlagen: " + e.message });
+  }
+  res.json({ ok: true, kind: "fakecasino-backup", createdAt: new Date().toISOString(), version: APP_VERSION, files });
+});
+
+app.post("/api/admin/restore", (req, res) => {
+  if (!requireOwner(req, res)) return;
+  const files = req.body.files;
+  if (!files || typeof files !== "object" || !files["accounts.json"]) {
+    return res.status(400).json({ error: "Das ist kein Fake-Casino-Backup (accounts.json fehlt)." });
+  }
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    let written = 0;
+    for (const [name, content] of Object.entries(files)) {
+      // Nur flache Dateinamen — keine Pfad-Tricks ins Dateisystem.
+      if (!/^[\w.\-]+$/.test(name) || name.includes("..")) continue;
+      if (typeof content !== "string") continue;
+      fs.writeFileSync(path.join(DATA_DIR, name), content);
+      written += 1;
+    }
+    res.json({ ok: true, written, restarting: true });
+  } catch (e) {
+    return res.status(500).json({ error: "Wiederherstellen fehlgeschlagen: " + e.message });
+  }
+  // Alle Module halten ihren Zustand im RAM und würden die frisch geschriebenen
+  // Dateien beim nächsten save() wieder überschreiben → sauber neu starten.
+  // Railway (und lokal ein Prozess-Manager) starten den Server automatisch neu.
+  console.log("💾 Backup eingespielt — Server startet neu, um die Daten zu laden.");
+  setTimeout(() => process.exit(0), 800);
 });
 
 // ---------------------------------------------------------------------------
