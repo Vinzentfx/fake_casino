@@ -51,6 +51,7 @@ function showScreen(name) {
   if (name === "leaderboard") loadLeaderboard();
   if (name === "profile") renderProfile();
   if (name === "admin") loadAdminAccounts();
+  if (name === "settings") renderThemePicker();
   if (name === "work" && window.Casino._loadWork) window.Casino._loadWork();
   if (name === "businesses" && window.Casino._loadBusinesses) window.Casino._loadBusinesses();
   if (name === "bank" && window.Casino._loadBank) window.Casino._loadBank();
@@ -173,7 +174,7 @@ function renderAnnouncement(announcement) {
 // Shared API for the per-game modules (poker.js, slots.js etc.).
 // Expose this early because navigation and modals can trigger screen changes
 // before the whole file reaches the final startup call.
-window.Casino = {
+window.Casino = Object.assign(window.Casino || {}, {
   socket,
   showScreen,
   toast,
@@ -199,7 +200,57 @@ window.Casino = {
   },
   // Master volume (0-1) - every game's WebAudio gain multiplies by this.
   vol: Math.min(1, Math.max(0, (parseInt(localStorage.getItem("casino_vol"), 10) || 80) / 100)),
-};
+
+  /**
+   * Einstellung am Account speichern (Theme, Ton, Favoriten …).
+   * Gesammelt und verzögert geschickt: am Theme-Umschalter hängt eine
+   * Vorschau, und jeder Tipp darauf soll nicht sofort ein Socket-Event
+   * auslösen.
+   */
+  savePrefs(patch) {
+    if (!patch || !state.account) return;
+    pendingPrefs = { ...pendingPrefs, ...patch };
+    clearTimeout(prefsTimer);
+    prefsTimer = setTimeout(() => {
+      const send = pendingPrefs;
+      pendingPrefs = {};
+      socket.emit("prefs:set", send, (res) => {
+        if (res && res.ok && state.account) state.account.prefs = res.prefs;
+      });
+    }, 400);
+  },
+});
+
+let pendingPrefs = {};
+let prefsTimer = null;
+
+/**
+ * Einstellungen vom Account übernehmen. Der Account gewinnt gegen den
+ * localStorage, weil er geräteübergreifend gilt: wer auf dem Handy
+ * Mitternacht wählt, soll es auf dem iPad auch sehen.
+ */
+function applyPrefs(prefs) {
+  if (!prefs) return;
+  if (prefs.theme && window.Casino.theme) window.Casino.theme.adoptFromAccount(prefs.theme);
+
+  if (typeof prefs.volume === "number") {
+    window.Casino.vol = prefs.volume;
+    try { localStorage.setItem("casino_vol", String(Math.round(prefs.volume * 100))); } catch {}
+    const slider = $("#set-volume");
+    if (slider) slider.value = String(Math.round(prefs.volume * 100));
+  }
+  if (typeof prefs.sound === "boolean") {
+    try { localStorage.setItem("casino_sound", prefs.sound ? "on" : "off"); } catch {}
+    const box = $("#set-sound");
+    if (box) box.checked = prefs.sound;
+  }
+  if (typeof prefs.reduceMotion === "boolean") {
+    document.documentElement.classList.toggle("reduce-motion", prefs.reduceMotion);
+    const box = $("#set-motion");
+    if (box) box.checked = prefs.reduceMotion;
+  }
+  renderThemePicker();
+}
 
 // ============================================================
 // Account / Anzeige
@@ -217,6 +268,7 @@ function setAccount(acc, token) {
     if (state.token) localStorage.setItem(TOKEN_KEY, state.token);
   } catch {}
   if (state.token) socket.emit("auth", { token: state.token });
+  applyPrefs(acc.prefs);
   renderTopbar();
   requestPresence();
   // Admin-Tile nur für Vincent sichtbar
@@ -1316,6 +1368,40 @@ $("#admin-restore-input")?.addEventListener("change", async (e) => {
   });
 });
 
+// ============================================================
+// Einstellungen: Design, Ton, Bewegung
+// ============================================================
+
+/**
+ * Theme-Auswahl zeichnen. Jede Karte zeigt zwei echte Farbtupfer aus der
+ * Palette, damit man vor dem Umschalten sieht, worauf man sich einlässt.
+ */
+function renderThemePicker() {
+  const host = $("#theme-picker");
+  if (!host || !window.Casino.theme) return;
+  const active = window.Casino.theme.get();
+  host.innerHTML = window.Casino.theme.list().map((t) => `
+    <button type="button" class="theme-card${t.id === active ? " active" : ""}"
+            role="radio" aria-checked="${t.id === active}" data-theme-id="${t.id}">
+      <span class="theme-swatch" aria-hidden="true">
+        <i style="background:${t.swatch[0]}"></i><i style="background:${t.swatch[1]}"></i>
+      </span>
+      <b>${escapeHtml(t.label)}</b>
+      <small>${escapeHtml(t.hint)}</small>
+    </button>`).join("");
+}
+
+$("#theme-picker")?.addEventListener("click", (e) => {
+  const card = e.target.closest("[data-theme-id]");
+  if (!card) return;
+  window.Casino.theme.set(card.dataset.themeId);
+});
+
+// Auf das Ereignis hören statt nach jedem Klick von Hand neu zu zeichnen.
+// So stimmt die Markierung auch, wenn das Theme von woanders kommt, etwa
+// beim Login vom Account eines anderen Geräts.
+document.addEventListener("casino:themechange", renderThemePicker);
+
 // Master volume slider (settings).
 (function () {
   const slider = document.getElementById("set-volume");
@@ -1325,6 +1411,36 @@ $("#admin-restore-input")?.addEventListener("change", async (e) => {
     window.Casino.vol = Math.min(1, Math.max(0, slider.value / 100));
     localStorage.setItem("casino_vol", String(slider.value));
   });
+  // Erst beim Loslassen an den Server, nicht bei jedem Pixel des Schiebers.
+  slider.addEventListener("change", () => {
+    window.Casino.savePrefs({ volume: window.Casino.vol });
+  });
+})();
+
+$("#set-sound")?.addEventListener("change", (e) => {
+  const on = e.target.checked;
+  try { localStorage.setItem("casino_sound", on ? "on" : "off"); } catch {}
+  window.Casino.savePrefs({ sound: on });
+});
+
+$("#set-motion")?.addEventListener("change", (e) => {
+  const on = e.target.checked;
+  document.documentElement.classList.toggle("reduce-motion", on);
+  window.Casino.savePrefs({ reduceMotion: on });
+});
+
+// Eckdaten vom Server holen, damit im Login keine veralteten Zahlen stehen.
+(async function loadPublicConfig() {
+  try {
+    const res = await fetch("/api/config");
+    if (!res.ok) return;
+    const cfg = await res.json();
+    if (cfg.bonusCooldownMs) state.bonusCooldownMs = cfg.bonusCooldownMs;
+    const el = $("#login-start-chips");
+    if (el && cfg.startingChips) el.textContent = cfg.startingChips.toLocaleString("de-DE");
+  } catch {
+    // Ohne Verbindung bleibt der Wert aus dem HTML stehen. Kein Drama.
+  }
 })();
 
 // ---- Start ----

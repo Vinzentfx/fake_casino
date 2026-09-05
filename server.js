@@ -46,6 +46,7 @@ const { setupMarket } = require("./game/market");
 const { setupChat } = require("./game/chat");
 const { setupLobby } = require("./game/lobby");
 const { setupAnnouncements } = require("./game/announcements");
+const { setupPrefs } = require("./game/prefs");
 const achievements = require("./game/achievements");
 const city = require("./game/city");
 const quests = require("./game/quests");
@@ -71,6 +72,18 @@ app.use(express.static(path.join(__dirname, "public"), {
     }
   },
 }));
+
+/**
+ * Öffentliche Eckdaten fürs Frontend. Steht bewusst vor dem Login zur
+ * Verfügung, weil die Login-Seite das Startguthaben nennt. Vorher stand
+ * die Zahl im HTML und war irgendwann falsch (1.000 statt 5.000).
+ */
+app.get("/api/config", (_req, res) => {
+  res.json({
+    startingChips: accounts.STARTING_CHIPS,
+    bonusCooldownMs: accounts.DAILY_BONUS_COOLDOWN_MS,
+  });
+});
 
 app.get("/api/version", (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
@@ -315,6 +328,7 @@ setupMarket(io, accounts);
 setupChat(io, accounts);
 setupLobby(io);
 setupAnnouncements(io);
+setupPrefs(io, accounts);
 feed.setupFeed(io, accounts);
 achievements.setupAchievements(io, accounts);
 setupSeason(io, accounts);

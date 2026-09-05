@@ -8,7 +8,21 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b2a1d" />
   <title>🎰 Fake Casino</title>
+  <link rel="stylesheet" href="/css/tokens.css" />
   <link rel="stylesheet" href="/css/styles.css" />
+  <script>
+    /* Theme so früh wie möglich setzen, noch vor dem ersten Zeichnen.
+       Sonst blitzt beim Laden kurz das Standard-Grün auf, bevor das
+       gewählte Theme greift. */
+    (function () {
+      try {
+        var t = localStorage.getItem("casino_theme");
+        if (t === "klassik" || t === "mitternacht" || t === "neon") {
+          document.documentElement.setAttribute("data-theme", t);
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <!-- ===================== TOP BAR (in der Lobby sichtbar) ===================== -->
@@ -54,9 +68,10 @@
             <input id="login-pin" type="password" minlength="4"
                    maxlength="24" placeholder="••••••" required />
           </label>
-          <p class="hint">Neuer Name? → Account wird automatisch erstellt (Start: 1000 🪙).<br>
-            Neue Accounts: Passwort mit mind. 6 Zeichen. Alte 4-stellige PINs funktionieren weiter —
-            in den Einstellungen kannst du auf ein sicheres Passwort wechseln.</p>
+          <p class="hint">Neuer Name? Der Account wird automatisch angelegt, mit
+            <b id="login-start-chips">5.000</b> 🪙 Startguthaben.<br>
+            Passwort: mindestens 6 Zeichen. Alte 4-stellige PINs funktionieren weiter,
+            umstellen kannst du jederzeit in den Einstellungen.</p>
           <div class="form-error" id="login-error"></div>
           <button type="submit" class="btn-primary">Eintreten</button>
         </form>
@@ -1226,15 +1241,26 @@
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <h2>⚙️ Einstellungen</h2>
+
+        <h3 class="settings-head">🎨 Design</h3>
+        <p class="hint">Gilt auf allen deinen Geräten.</p>
+        <div class="theme-picker" id="theme-picker" role="radiogroup" aria-label="Design"></div>
+
+        <h3 class="settings-head">🔊 Ton &amp; Bewegung</h3>
         <label class="toggle-row">
           <span>Soundeffekte</span>
           <input type="checkbox" id="set-sound" checked />
         </label>
         <label class="toggle-row">
-          <span>🔊 Lautstärke</span>
-          <input type="range" id="set-volume" min="0" max="100" value="80" style="flex:1;max-width:200px" />
+          <span>Lautstärke</span>
+          <input type="range" id="set-volume" min="0" max="100" value="80" class="settings-range" />
         </label>
-        <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
+        <label class="toggle-row">
+          <span>Bewegung reduzieren<small class="toggle-note">Weniger Deko-Animationen. Spielabläufe bleiben.</small></span>
+          <input type="checkbox" id="set-motion" />
+        </label>
+
+        <hr class="settings-rule" />
         <h3>🔑 Passwort ändern</h3>
         <p class="hint" style="margin-top:-4px">Tipp: Dein Name steht öffentlich in der Bestenliste — eine 4-stellige PIN ist leicht zu erraten. Nimm ein richtiges Passwort (6–24 Zeichen).</p>
         <form id="change-pin-form" autocomplete="off">
@@ -1656,6 +1682,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/core/theme.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/chat.js"></script>
   <script src="/js/feed.js"></script>

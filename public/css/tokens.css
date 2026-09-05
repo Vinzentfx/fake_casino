@@ -1,0 +1,287 @@
+/* ============================================================
+   Fake Casino – Design-Tokens
+   ------------------------------------------------------------
+   Zwei Schichten:
+
+   1) SKALEN (Radien, Abstände, Schrift, Schatten, Bewegung).
+      Gelten in jedem Theme gleich.
+   2) PALETTE (Farben). Wird je Theme über html[data-theme="…"]
+      neu gesetzt. Nur Farben, sonst nichts.
+
+   Regel: neuer Code benutzt ausschließlich die semantischen
+   Namen (--surface, --line, --accent …). Die alten Namen aus
+   der ersten Fassung (--gold, --felt, --text-dim …) bleiben als
+   Aliase bestehen, damit die noch nicht migrierten Screens
+   weiterlaufen. Sie zeigen auf dieselben Werte und verschwinden,
+   sobald der letzte Screen umgestellt ist.
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---------- Radien ---------- */
+  --r-xs: 8px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+
+  /* ---------- Abstände ---------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 22px;
+  --sp-6: 30px;
+  --sp-7: 40px;
+  --sp-8: 56px;
+
+  /* ---------- Schrift ---------- */
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-num: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, sans-serif;
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.82rem;
+  --fs-md: 0.94rem;
+  --fs-lg: 1.08rem;
+  --fs-xl: 1.3rem;
+  --fs-2xl: 1.7rem;
+  --fs-3xl: 2.2rem;
+  --lh-tight: 1.2;
+  --lh: 1.5;
+
+  /* ---------- Bewegung ---------- */
+  --dur-1: 0.12s;
+  --dur-2: 0.22s;
+  --dur-3: 0.4s;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---------- Sonstiges ---------- */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-max: 960px;
+}
+
+/* Wer im System "Bewegung reduzieren" gesetzt hat, bekommt keine
+   Deko-Animationen. Spiel-Animationen (Walzen, Karten) bleiben,
+   die tragen Information. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-1: 0.01s; --dur-2: 0.01s; --dur-3: 0.01s; }
+}
+
+/* ============================================================
+   Palette 1 – KLASSIK (Standard)
+   Filzgrün und Gold, aber tiefer abgestimmt: dunklerer Grund,
+   klarere Kanten, ruhigere Flächen.
+   ============================================================ */
+:root,
+html[data-theme="klassik"] {
+  --bg-1: #0f4029;
+  --bg-2: #082a1b;
+  --bg-3: #04150e;
+  --bg-glow: rgba(54, 150, 100, 0.5);
+  --bg-glow-2: rgba(231, 198, 107, 0.1);
+
+  --surface: rgba(9, 38, 26, 0.72);
+  --surface-2: rgba(18, 58, 40, 0.78);
+  --surface-sunken: rgba(0, 0, 0, 0.3);
+  --surface-solid: #0c2e20;
+  --bar: rgba(6, 24, 16, 0.86);
+  --overlay: rgba(5, 16, 11, 0.9);
+
+  --line: rgba(231, 198, 107, 0.18);
+  --line-strong: rgba(231, 198, 107, 0.42);
+  --line-neutral: rgba(255, 255, 255, 0.1);
+
+  --text: #eef4ef;
+  --text-dim: #a7c0b1;
+  --text-mute: #7b9686;
+
+  --accent: #e7c66b;
+  --accent-strong: #f7dc8c;
+  --accent-soft: rgba(231, 198, 107, 0.16);
+  --accent-ink: #372703;
+
+  --good: #4ade80;
+  --good-deep: #16a34a;
+  --good-soft: rgba(74, 222, 128, 0.16);
+  --good-text: #bff5d0;
+  --good-ink: #06210f;
+  --bad: #ff7a6e;
+  --bad-deep: #a02a1f;
+  --bad-soft: rgba(255, 122, 110, 0.16);
+  --bad-text: #ffb4ab;
+  --bad-ink: #2a0704;
+  --warn: #ffc44d;
+
+  --info: #7ec8ff;
+  --info-text: #bfe0ff;
+  --info-soft: rgba(126, 200, 255, 0.16);
+
+  --accent-rgb: 231, 198, 107;
+  --good-rgb: 74, 222, 128;
+  --bad-rgb: 255, 122, 110;
+  --info-rgb: 126, 200, 255;
+
+  --felt-dark: #0b2a1d;
+  --felt: #0f3d29;
+  --felt-light: #155138;
+
+  --shadow-color: 0deg 0% 0%;
+}
+
+/* ============================================================
+   Palette 2 – MITTERNACHT
+   Tiefes Marineblau mit warmem Gold. Ruhiger und eleganter,
+   weniger Spieltisch, mehr Salon.
+   ============================================================ */
+html[data-theme="mitternacht"] {
+  --bg-1: #1c2842;
+  --bg-2: #111a2c;
+  --bg-3: #070c16;
+  --bg-glow: rgba(74, 116, 196, 0.42);
+  --bg-glow-2: rgba(233, 196, 120, 0.1);
+
+  --surface: rgba(15, 23, 40, 0.74);
+  --surface-2: rgba(26, 38, 60, 0.8);
+  --surface-sunken: rgba(0, 0, 0, 0.32);
+  --surface-solid: #131d31;
+  --bar: rgba(9, 15, 26, 0.86);
+  --overlay: rgba(6, 11, 20, 0.9);
+
+  --line: rgba(150, 180, 230, 0.14);
+  --line-strong: rgba(233, 196, 120, 0.38);
+  --line-neutral: rgba(255, 255, 255, 0.1);
+
+  --text: #e9eef7;
+  --text-dim: #9fb0c8;
+  --text-mute: #71829b;
+
+  --accent: #e9c478;
+  --accent-strong: #f8dc9c;
+  --accent-soft: rgba(233, 196, 120, 0.16);
+  --accent-ink: #2e2205;
+
+  --good: #42d392;
+  --good-deep: #148a5c;
+  --good-soft: rgba(66, 211, 146, 0.16);
+  --good-text: #b3f2d5;
+  --good-ink: #042115;
+  --bad: #ff7b84;
+  --bad-deep: #a32734;
+  --bad-soft: rgba(255, 123, 132, 0.16);
+  --bad-text: #ffb9be;
+  --bad-ink: #2a060b;
+  --warn: #ffc861;
+
+  --info: #86c9ff;
+  --info-text: #c6e3ff;
+  --info-soft: rgba(134, 201, 255, 0.16);
+
+  --accent-rgb: 233, 196, 120;
+  --good-rgb: 66, 211, 146;
+  --bad-rgb: 255, 123, 132;
+  --info-rgb: 134, 201, 255;
+
+  --felt-dark: #132033;
+  --felt: #1a2c46;
+  --felt-light: #22385a;
+
+  --shadow-color: 220deg 40% 3%;
+}
+
+/* ============================================================
+   Palette 3 – NEON
+   Fast schwarz mit Türkis. Der moderne Wett-App-Look.
+   ============================================================ */
+html[data-theme="neon"] {
+  --bg-1: #141d2f;
+  --bg-2: #0a0e18;
+  --bg-3: #04060c;
+  --bg-glow: rgba(0, 200, 230, 0.28);
+  --bg-glow-2: rgba(180, 90, 255, 0.14);
+
+  --surface: rgba(13, 18, 29, 0.78);
+  --surface-2: rgba(22, 29, 45, 0.84);
+  --surface-sunken: rgba(0, 0, 0, 0.38);
+  --surface-solid: #101623;
+  --bar: rgba(7, 10, 17, 0.88);
+  --overlay: rgba(4, 7, 13, 0.92);
+
+  --line: rgba(120, 230, 255, 0.14);
+  --line-strong: rgba(46, 230, 200, 0.42);
+  --line-neutral: rgba(255, 255, 255, 0.1);
+
+  --text: #eaf2ff;
+  --text-dim: #93a4bd;
+  --text-mute: #66768f;
+
+  --accent: #2ee6c8;
+  --accent-strong: #6ffbe4;
+  --accent-soft: rgba(46, 230, 200, 0.16);
+  --accent-ink: #04231e;
+
+  --good: #3ce88f;
+  --good-deep: #12a765;
+  --good-soft: rgba(60, 232, 143, 0.16);
+  --good-text: #a9f7cd;
+  --good-ink: #032216;
+  --bad: #ff5f7a;
+  --bad-deep: #a3172f;
+  --bad-soft: rgba(255, 95, 122, 0.16);
+  --bad-text: #ffa8b8;
+  --bad-ink: #2a0410;
+  --warn: #ffb020;
+
+  --info: #6fb8ff;
+  --info-text: #b8dbff;
+  --info-soft: rgba(111, 184, 255, 0.16);
+
+  --accent-rgb: 46, 230, 200;
+  --good-rgb: 60, 232, 143;
+  --bad-rgb: 255, 95, 122;
+  --info-rgb: 111, 184, 255;
+
+  --felt-dark: #0d1522;
+  --felt: #122034;
+  --felt-light: #1a2c46;
+
+  --shadow-color: 210deg 50% 2%;
+}
+
+/* ============================================================
+   Themenunabhängig: Spielkarten
+   Herz und Karo sind rot, Pik und Kreuz schwarz. Das ist Spielregel,
+   keine Designentscheidung, und bleibt in jedem Theme gleich.
+   ============================================================ */
+:root {
+  --card-face: #f7f4ec;
+  --card-red: #c0392b;
+  --card-black: #1c1c1c;
+}
+
+/* ============================================================
+   Schatten – abgeleitet, damit sie zur Palette passen
+   ============================================================ */
+:root {
+  --e-1: 0 1px 2px hsl(var(--shadow-color) / 0.3);
+  --e-2: 0 4px 12px hsl(var(--shadow-color) / 0.35);
+  --e-3: 0 10px 28px hsl(var(--shadow-color) / 0.45);
+  --e-4: 0 20px 50px hsl(var(--shadow-color) / 0.55);
+  --glow-accent: 0 0 18px hsl(var(--shadow-color) / 0), 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
+   Aliase auf die alten Namen
+   Damit laufen alle Screens weiter, die noch nicht migriert sind.
+   Werden entfernt, sobald styles.css durch ist.
+   ============================================================ */
+:root {
+  --gold: var(--accent);
+  --gold-strong: var(--accent-strong);
+  --cream: #f5f1e6;
+  --danger: var(--bad);
+  --shadow: var(--e-3);
+  --radius: var(--r-md);
+}

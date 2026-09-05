@@ -361,6 +361,7 @@ function publicAccount(acc) {
     level: levelInfo(acc),
     avatar: acc.avatar || "🙂",
     nameColor: acc.nameColor || null,
+    prefs: require("./prefs").get(acc),
   };
 }
 
