@@ -126,6 +126,12 @@ function loadSecret() {
   return s;
 }
 
+// How long a session token stays valid. Long enough that a school iPad killing
+// the Safari tab never costs you a login, short enough that a token left behind
+// on a shared device eventually dies. Every resume issues a fresh token, so
+// active players roll the window forward and never hit the wall.
+const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
 /** Issue a signed, stateless session token for an account name. */
 function issueToken(name) {
   const payload = `${normalizeName(name)}|${Date.now()}`;
@@ -150,9 +156,26 @@ function verifyToken(token) {
   const sigBuf = Buffer.from(sig || "", "hex");
   const expBuf = Buffer.from(expected, "hex");
   if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
-  const key = payload.split("|")[0];
+  const [key, issuedAt] = payload.split("|");
   if (!key || !accounts[key] || accounts[key].banned) return null;
+  // Signature alone isn't enough — the token also has to be recent. Without this
+  // the embedded timestamp was decoration and tokens lived forever.
+  const age = Date.now() - Number(issuedAt);
+  if (!Number.isFinite(age) || age < 0 || age > TOKEN_TTL_MS) return null;
   return key;
+}
+
+/**
+ * Resume a session from a stored token: same identity proof as a password
+ * login, minus the password. Returns a FRESH token so a player who keeps
+ * playing never runs into the TTL.
+ */
+function resumeSession(token) {
+  const key = verifyToken(token);
+  if (!key) return { ok: false, error: "Sitzung abgelaufen." };
+  const acc = accounts[key];
+  if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  return { ok: true, account: publicAccount(acc), token: issueToken(acc.name) };
 }
 
 function load() {
@@ -891,6 +914,8 @@ module.exports = {
   publicAccount,
   login,
   verifyToken,
+  resumeSession,
+  TOKEN_TTL_MS,
   claimDailyBonus,
   rescue,
   adjustChips,

@@ -204,11 +204,17 @@ window.Casino = {
 // ============================================================
 // Account / Anzeige
 // ============================================================
+// Session token lives in localStorage, not just memory: iPadOS discards
+// background Safari tabs aggressively, and an in-memory-only token meant every
+// tab kill sent you back to the login screen.
+const TOKEN_KEY = "casino_token";
+
 function setAccount(acc, token) {
   state.account = acc;
   if (token) state.token = token;
   try {
     localStorage.setItem("casino_name", acc.name);
+    if (state.token) localStorage.setItem(TOKEN_KEY, state.token);
   } catch {}
   if (state.token) socket.emit("auth", { token: state.token });
   renderTopbar();
@@ -805,6 +811,7 @@ $("#logout-btn").addEventListener("click", () => {
   state.token = null;
   try {
     localStorage.removeItem("casino_name");
+    localStorage.removeItem(TOKEN_KEY);
   } catch {}
   $("#login-pin").value = "";
   showScreen("login");
@@ -877,6 +884,7 @@ socket.on("admin:kicked", ({ reason }) => {
   state.account = null;
   state.token = null;
   try { localStorage.removeItem("casino_name"); } catch {}
+  try { localStorage.removeItem(TOKEN_KEY); } catch {}
   showScreen("login");
 });
 
@@ -1319,5 +1327,23 @@ $("#admin-restore-input")?.addEventListener("change", async (e) => {
   });
 })();
 
-// Start
-showScreen("login");
+// ---- Start ----
+// Try to resume a stored session before falling back to the login screen, so a
+// discarded tab returns straight to the lobby. The login screen is the markup
+// default, so a failed resume needs no extra work.
+(async function boot() {
+  let token = null;
+  try { token = localStorage.getItem(TOKEN_KEY); } catch {}
+  if (!token) return showScreen("login");
+
+  try {
+    const data = await api("/api/session", { token });
+    if (data.config?.bonusCooldownMs) state.bonusCooldownMs = data.config.bonusCooldownMs;
+    setAccount(data.account, data.token);
+    showScreen("lobby");
+  } catch {
+    // Expired, revoked or account gone → clean up and ask for the password.
+    try { localStorage.removeItem(TOKEN_KEY); } catch {}
+    showScreen("login");
+  }
+})();

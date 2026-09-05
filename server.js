@@ -110,6 +110,21 @@ app.post("/api/login", (req, res) => {
   });
 });
 
+/**
+ * Resume a stored session. The client keeps its token in localStorage so that
+ * an iPad discarding the Safari tab doesn't force a re-login (and, with the
+ * escalating lockout, risk locking someone out over a mistyped password).
+ */
+app.post("/api/session", (req, res) => {
+  const result = accounts.resumeSession(req.body && req.body.token);
+  if (!result.ok) return res.status(401).json({ error: result.error });
+  res.json({
+    account: result.account,
+    token: result.token,
+    config: { bonusCooldownMs: accounts.DAILY_BONUS_COOLDOWN_MS },
+  });
+});
+
 /** Bonus/Soforthilfe act on an account → the caller must prove it's theirs. */
 function requireOwnAccount(req, res) {
   const key = accounts.verifyToken(req.body.token);
