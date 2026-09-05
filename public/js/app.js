@@ -25,63 +25,58 @@ const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 // ============================================================
 // Screen-Manager
 // ============================================================
-const screens = {};
-$$(".screen").forEach((el) => (screens[el.dataset.screen] = el));
+// Die Mechanik (Umschalten, Verlauf, Hooks) steckt in core/screens.js.
+// Hier bleibt nur, was den ganzen Bildschirm betrifft: Sperren, Topbar,
+// Praesenz und Chat.
 
 let currentScreen = "login";
 const lockedScreens = new Set(["season"]);
 
-function showScreen(name) {
+// Screens, die es nur mit Account gibt. Wer einen geteilten Link oeffnet,
+// ohne eingeloggt zu sein, landet auf dem Login statt in einem leeren Spiel.
+const publicScreens = new Set(["login"]);
+
+window.Casino.screens.setGuard((name) => {
   if (lockedScreens.has(name)) {
     toast("Dieses Spiel ist gerade gesperrt und kommt bald zurück.");
-    return;
+    return false;
   }
-  if (!screens[name]) return;
-  // Leaving the slots screen → stop any running auto-spin (don't keep spinning in the background).
-  if (name !== "slots" && window.Casino && window.Casino._slotsStopAuto) window.Casino._slotsStopAuto();
-  Object.values(screens).forEach((el) => el.classList.remove("active"));
-  screens[name].classList.add("active");
+  if (!state.account && !publicScreens.has(name)) return false;
+  return true;
+});
+
+// Screens, deren Ladefunktion hier in app.js steht oder von der Namens-
+// konvention abweicht. Alle uebrigen findet core/screens.js selbst ueber
+// Casino._load<Name>.
+window.Casino.screens.register("leaderboard", { onEnter: () => loadLeaderboard() });
+window.Casino.screens.register("profile", { onEnter: () => renderProfile() });
+window.Casino.screens.register("admin", { onEnter: () => loadAdminAccounts() });
+window.Casino.screens.register("settings", { onEnter: () => renderThemePicker() });
+window.Casino.screens.register("calendar", { onEnter: () => loadCalendar() });
+window.Casino.screens.register("lobby", {
+  onEnter: () => {
+    if (window.Casino._loadLobbies) window.Casino._loadLobbies();
+    if (window.Casino._loadFeed) window.Casino._loadFeed();
+  },
+});
+// Der Automat soll nicht im Hintergrund weiterdrehen, wenn man weggeht.
+window.Casino.screens.register("slots", {
+  onLeave: () => { if (window.Casino._slotsStopAuto) window.Casino._slotsStopAuto(); },
+});
+
+function showScreen(name, opts) {
+  return window.Casino.screens.show(name, opts);
+}
+
+// Alles, was bei jedem Wechsel passiert, unabhaengig vom Screen.
+document.addEventListener("casino:screen", (e) => {
+  const name = e.detail.screen;
   currentScreen = name;
   socket.emit("presence:screen", { screen: name });
-
-  // Top bar nur außerhalb des Logins zeigen
   $("#topbar").classList.toggle("hidden", name === "login");
-
-  // Daten je Screen nachladen
-  if (name === "leaderboard") loadLeaderboard();
-  if (name === "profile") renderProfile();
-  if (name === "admin") loadAdminAccounts();
-  if (name === "settings") renderThemePicker();
-  if (name === "work" && window.Casino._loadWork) window.Casino._loadWork();
-  if (name === "businesses" && window.Casino._loadBusinesses) window.Casino._loadBusinesses();
-  if (name === "bank" && window.Casino._loadBank) window.Casino._loadBank();
-  if (name === "market" && window.Casino._loadMarket) window.Casino._loadMarket();
-  if (name === "stocks" && window.Casino._loadStocks) window.Casino._loadStocks();
-  if (name === "blackjack" && window.Casino._loadBlackjack) window.Casino._loadBlackjack();
-  if (name === "lobby" && window.Casino._loadLobbies) window.Casino._loadLobbies();
-  if (name === "lobby" && window.Casino._loadFeed) window.Casino._loadFeed();
-  if (name === "stats" && window.Casino._loadStats) window.Casino._loadStats();
-  if (name === "quests" && window.Casino._loadQuests) window.Casino._loadQuests();
-  if (name === "season" && window.Casino._loadSeason) window.Casino._loadSeason();
-  if (name === "calendar") loadCalendar();
-  if (name === "wheel" && window.Casino._loadWheel) window.Casino._loadWheel();
-  if (name === "clans" && window.Casino._loadClans) window.Casino._loadClans();
-  if (name === "cosmetics" && window.Casino._loadCosmetics) window.Casino._loadCosmetics();
-  if (name === "crash" && window.Casino._loadCrash) window.Casino._loadCrash();
-  if (name === "horses" && window.Casino._loadHorses) window.Casino._loadHorses();
-  if (name === "mines" && window.Casino._loadMines) window.Casino._loadMines();
-  if (name === "towers" && window.Casino._loadTowers) window.Casino._loadTowers();
-  if (name === "pinco" && window.Casino._loadPinco) window.Casino._loadPinco();
-  if (name === "memory" && window.Casino._loadMemory) window.Casino._loadMemory();
-  if (name === "suggest" && window.Casino._loadSuggest) window.Casino._loadSuggest();
-  if (name === "sudoku" && window.Casino._loadSudoku) window.Casino._loadSudoku();
-  if (name === "solitaire" && window.Casino._loadSolitaire) window.Casino._loadSolitaire();
-  if (name === "chess" && window.Casino._loadChess) window.Casino._loadChess();
-  if (name === "sports" && window.Casino._loadSports) window.Casino._loadSports();
   if (window.Casino.chat) window.Casino.chat.update(name);
-
   window.scrollTo(0, 0);
-}
+});
 
 // Alle Elemente mit data-nav="screen" navigieren dorthin
 document.addEventListener("click", (e) => {
@@ -658,7 +653,7 @@ $("#login-form").addEventListener("submit", async (e) => {
     setAccount(data.account, data.token);
     showScreen("lobby");
     if (data.created) maybeShowOnboarding();
-    if (data.created) toast(`Willkommen, ${data.account.name}! 1000 🪙 geschenkt.`);
+    if (data.created) toast(`Willkommen, ${data.account.name}! ${(data.account.chips || 0).toLocaleString("de-DE")} 🪙 geschenkt.`);
     else toast(`Willkommen zurück, ${data.account.name}!`);
     // Einbruchs-Warnung: fehlgeschlagene Login-Versuche seit dem letzten Besuch.
     if (!data.created && data.warnFails >= 3) {
@@ -866,7 +861,9 @@ $("#logout-btn").addEventListener("click", () => {
     localStorage.removeItem(TOKEN_KEY);
   } catch {}
   $("#login-pin").value = "";
-  showScreen("login");
+  // Ersetzen statt anhaengen: nach dem Abmelden soll die Zurueck-Geste nicht
+  // in ein Spiel zurueckfuehren, das ohne Account gar nicht mehr geht.
+  showScreen("login", { history: "replace" });
 });
 
 // ============================================================
@@ -937,7 +934,7 @@ socket.on("admin:kicked", ({ reason }) => {
   state.token = null;
   try { localStorage.removeItem("casino_name"); } catch {}
   try { localStorage.removeItem(TOKEN_KEY); } catch {}
-  showScreen("login");
+  showScreen("login", { history: "replace" });
 });
 
 function loadAdminAccounts() {
@@ -1450,16 +1447,21 @@ $("#set-motion")?.addEventListener("change", (e) => {
 (async function boot() {
   let token = null;
   try { token = localStorage.getItem(TOKEN_KEY); } catch {}
-  if (!token) return showScreen("login");
+  if (!token) return showScreen("login", { history: "replace" });
 
   try {
     const data = await api("/api/session", { token });
     if (data.config?.bonusCooldownMs) state.bonusCooldownMs = data.config.bonusCooldownMs;
     setAccount(data.account, data.token);
-    showScreen("lobby");
+    // Geteilter Link? Dann dorthin, sonst in die Lobby. In beiden Faellen
+    // ersetzen statt anhaengen, damit die Zurueck-Geste nicht auf einem
+    // leeren Eintrag vor dem Start landet.
+    const deep = window.Casino.screens.fromHash();
+    const target = deep && deep !== "login" && window.Casino.screens.exists(deep) ? deep : "lobby";
+    if (!showScreen(target, { history: "replace" })) showScreen("lobby", { history: "replace" });
   } catch {
     // Expired, revoked or account gone → clean up and ask for the password.
     try { localStorage.removeItem(TOKEN_KEY); } catch {}
-    showScreen("login");
+    showScreen("login", { history: "replace" });
   }
 })();

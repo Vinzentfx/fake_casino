@@ -57,7 +57,11 @@ const ipbans = require("./game/ipbans");
 
 const PORT = process.env.PORT || 3000;
 const build = require("./game/buildinfo");
+// Fest fuer alles, was einmal gilt (Socket-Handshake, Backup-Metadaten).
 const APP_VERSION = build.VERSION;
+// Aktuell fuer Auslieferung und Cache. Im Betrieb identisch mit APP_VERSION,
+// beim Entwickeln bei jeder Anfrage neu, damit man keinen alten Code
+// ausgeliefert bekommt.
 
 // ---------------------------------------------------------------------------
 // HTTP / account API
@@ -78,15 +82,15 @@ app.use(express.json({ limit: "25mb" })); // Restore-Upload = kompletter data/-O
  */
 const INDEX_FILE = path.join(__dirname, "public", "index.html");
 let indexHtml = null;
-function renderIndex() {
+function renderIndex(version) {
   const raw = fs.readFileSync(INDEX_FILE, "utf8");
-  return raw.replace(/(src|href)="(\/(?:js|css)\/[^"?]+)"/g, `$1="$2?v=${APP_VERSION}"`);
+  return raw.replace(/(src|href)="(\/(?:js|css)\/[^"?]+)"/g, `$1="$2?v=${version}"`);
 }
 function getIndex() {
   // Im Betrieb einmal berechnet. Beim lokalen Entwickeln jedes Mal neu, sonst
   // muesste man den Server nach jeder HTML-Aenderung von Hand neu starten.
-  if (process.env.NODE_ENV === "production" && indexHtml) return indexHtml;
-  indexHtml = renderIndex();
+  if (!build.DEV && indexHtml) return indexHtml;
+  indexHtml = renderIndex(build.current());
   return indexHtml;
 }
 app.get(["/", "/index.html"], (_req, res) => {
@@ -98,6 +102,12 @@ app.get(["/", "/index.html"], (_req, res) => {
 app.use(express.static(path.join(__dirname, "public"), {
   index: false, // die Einstiegsseite laeuft ueber den Handler oben
   setHeaders(res, filePath, _stat) {
+    if (build.DEV) {
+      // Beim Entwickeln nie cachen. Ein Reload soll immer den aktuellen
+      // Stand zeigen, ohne dass man den Cache von Hand leert.
+      res.setHeader("Cache-Control", "no-store");
+      return;
+    }
     if (/\.html$/i.test(filePath)) {
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
       return;
@@ -135,7 +145,7 @@ app.get("/api/config", (_req, res) => {
 
 app.get("/api/version", (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  res.json({ version: APP_VERSION });
+  res.json({ version: build.current() });
 });
 
 // Anti-multi-account faucet: cap how many NEW accounts one IP can create per day

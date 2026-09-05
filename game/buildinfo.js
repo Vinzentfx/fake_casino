@@ -64,9 +64,25 @@ function gitShort() {
   }
 }
 
-// Einmal beim Start berechnet. Ein Deploy startet den Dienst neu, damit ist
-// der Wert immer aktuell, ohne dass im Betrieb das Dateisystem abgelaufen wird.
+// Im Betrieb einmal beim Start berechnet: ein Deploy startet den Dienst neu,
+// damit ist der Wert immer aktuell, ohne dass staendig das Dateisystem
+// abgelaufen wird.
 const VERSION = process.env.APP_VERSION || fingerprint();
 const GIT = gitShort();
 
-module.exports = { VERSION, GIT };
+const DEV = process.env.NODE_ENV !== "production";
+
+/**
+ * Kennung fuer den naechsten Seitenaufruf.
+ *
+ * Beim Entwickeln jedes Mal neu berechnet. Sonst haette man genau den Fehler,
+ * gegen den das Caching gebaut ist, nur umgekehrt: die Kennung bliebe waehrend
+ * der Sitzung stehen, waehrend sich die Dateien aendern, und der Browser
+ * liefert eine als "immutable" markierte alte Fassung aus.
+ */
+function current() {
+  if (process.env.APP_VERSION) return process.env.APP_VERSION;
+  return DEV ? fingerprint() : VERSION;
+}
+
+module.exports = { VERSION, GIT, DEV, current, fingerprint };
