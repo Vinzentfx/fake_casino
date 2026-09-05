@@ -56,7 +56,8 @@ const liveops = require("./game/liveops");
 const ipbans = require("./game/ipbans");
 
 const PORT = process.env.PORT || 3000;
-const APP_VERSION = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.APP_VERSION || require("./package.json").version;
+const build = require("./game/buildinfo");
+const APP_VERSION = build.VERSION;
 
 // ---------------------------------------------------------------------------
 // HTTP / account API
@@ -65,11 +66,58 @@ const APP_VERSION = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.APP_VERSIO
 const app = express();
 app.set("trust proxy", true); // Railway runs behind a proxy → real client IP in x-forwarded-for
 app.use(express.json({ limit: "25mb" })); // Restore-Upload = kompletter data/-Ordner als JSON
+
+/**
+ * index.html wird nicht statisch ausgeliefert, sondern einmal eingelesen und
+ * mit der Bau-Kennung versehen: aus /js/app.js wird /js/app.js?v=<Kennung>.
+ *
+ * Damit duerfen Skripte, Styles und Bilder ein Jahr im Cache liegen, ohne dass
+ * jemand nach einem Deploy auf altem Stand haengen bleibt. Vorher stand auf
+ * allem no-store, also lud jeder Seitenaufruf rund 430 KB komplett neu.
+ * Auf dem iPad ueber Mobilfunk ist das jedes Mal eine spuerbare Wartezeit.
+ */
+const INDEX_FILE = path.join(__dirname, "public", "index.html");
+let indexHtml = null;
+function renderIndex() {
+  const raw = fs.readFileSync(INDEX_FILE, "utf8");
+  return raw.replace(/(src|href)="(\/(?:js|css)\/[^"?]+)"/g, `$1="$2?v=${APP_VERSION}"`);
+}
+function getIndex() {
+  // Im Betrieb einmal berechnet. Beim lokalen Entwickeln jedes Mal neu, sonst
+  // muesste man den Server nach jeder HTML-Aenderung von Hand neu starten.
+  if (process.env.NODE_ENV === "production" && indexHtml) return indexHtml;
+  indexHtml = renderIndex();
+  return indexHtml;
+}
+app.get(["/", "/index.html"], (_req, res) => {
+  // Die Einstiegsseite selbst bleibt ungecacht, sie traegt ja die Kennung.
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.type("html").send(getIndex());
+});
+
 app.use(express.static(path.join(__dirname, "public"), {
-  setHeaders(res, filePath) {
-    if (/\.(html|js|css)$/i.test(filePath)) {
+  index: false, // die Einstiegsseite laeuft ueber den Handler oben
+  setHeaders(res, filePath, _stat) {
+    if (/\.html$/i.test(filePath)) {
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      return;
     }
+    // Mit Kennung in der URL ist der Inhalt eindeutig, also darf er ein Jahr
+    // liegen bleiben.
+    if (res.req && res.req.query && res.req.query.v === APP_VERSION) {
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      return;
+    }
+    // Bilder, Schriften und Ton tragen keine Kennung, weil sie auch aus dem
+    // CSS heraus geladen werden. Ein Tag Frist: waehrend einer Sitzung faellt
+    // keine einzige Anfrage mehr an, und eine ausgetauschte Grafik ist
+    // spaetestens am naechsten Tag von selbst wieder aktuell.
+    if (/\.(png|jpe?g|webp|gif|svg|ico|woff2?|mp3|ogg|wav)$/i.test(filePath)) {
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return;
+    }
+    // Alles ohne Kennung sicherheitshalber jedes Mal nachfragen.
+    res.setHeader("Cache-Control", "no-cache");
   },
 }));
 
