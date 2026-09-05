@@ -180,7 +180,7 @@
     const real = data.matches.filter((m) => m.real);
     const sim = data.matches.filter((m) => !m.real);
     let html = "";
-    if (real.length) html += `<div class="sb-section-head">🌍 Echte WM-Spiele <span class="muted small">· hier zählt das echte Endergebnis</span></div>` + real.map(cardHtml).join("");
+    if (real.length) html += `<div class="sb-section-head">🌍 Echte Spiele <span class="muted small">· hier zählt das echte Endergebnis</span></div>` + real.map(cardHtml).join("");
     if (sim.length) html += `<div class="sb-section-head">🎮 Simulierte Spiele <span class="muted small">· sofortige Action zwischendurch</span></div>` + sim.map(cardHtml).join("");
     el.innerHTML = html;
 

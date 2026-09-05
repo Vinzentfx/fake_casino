@@ -32,17 +32,21 @@ const FEED_MAX = 18;
 
 const LEAGUES = {
   bl: { name: "Bundesliga", emoji: "🇩🇪", teams: [
-    ["Bayern", 92], ["Leverkusen", 86], ["Dortmund", 83], ["Leipzig", 82], ["Stuttgart", 78],
-    ["Frankfurt", 75], ["Freiburg", 72], ["Bremen", 69], ["Augsburg", 66], ["Bochum", 61] ] },
+    ["Bayern", 95], ["Dortmund", 86], ["RB Leipzig", 81], ["Stuttgart", 79], ["Hoffenheim", 78],
+    ["Leverkusen", 78], ["Freiburg", 70], ["Frankfurt", 69], ["Augsburg", 68], ["Mainz", 67] ] },
   pl: { name: "Premier League", emoji: "🏴", teams: [
-    ["Man City", 93], ["Arsenal", 88], ["Liverpool", 87], ["Tottenham", 80], ["Chelsea", 79],
-    ["Newcastle", 77], ["Brighton", 73], ["Fulham", 69], ["Everton", 66], ["Luton", 60] ] },
+    ["Arsenal", 87], ["Man City", 84], ["Man United", 80], ["Aston Villa", 77], ["Liverpool", 75],
+    ["Bournemouth", 73], ["Brentford", 71], ["Brighton Hove", 71], ["Chelsea", 71], ["Sunderland", 71] ] },
   es: { name: "La Liga", emoji: "🇪🇸", teams: [
-    ["Real Madrid", 92], ["Barcelona", 89], ["Girona", 82], ["Atlético", 84], ["Bilbao", 78],
-    ["Sociedad", 76], ["Betis", 72], ["Valencia", 70], ["Sevilla", 71], ["Cádiz", 60] ] },
+    ["Barça", 92], ["Real Madrid", 88], ["Villarreal", 81], ["Atleti", 79], ["Real Betis", 75],
+    ["Celta", 72], ["Getafe", 70], ["Rayo Vallecano", 70], ["Valencia", 69], ["Real Sociedad", 68] ] },
 };
 
-// Master strength ratings (0–100). Sim teams come from LEAGUES; the extras below
+// Master strength ratings (0–100). The Bundesliga/PL/La-Liga values are DERIVED
+// FROM REAL DATA: points and goal difference per game from the completed 2025/26
+// season (football-data.org standings), mapped onto this scale. Newly promoted
+// clubs have no top-flight record, so they get two points below the weakest
+// returning side. Sim teams come from LEAGUES; the extras below
 // cover clubs/nations that real fixtures (football-data.org) may bring in, so we
 // can price odds for them too. Unknown teams fall back to STRENGTH_DEFAULT.
 const STRENGTH_DEFAULT = 70;
@@ -53,9 +57,12 @@ Object.assign(TEAM_STRENGTHS, {
   "Inter": 86, "Milan": 81, "Juventus": 82, "Napoli": 82, "Roma": 78, "Atalanta": 80,
   "PSG": 89, "Monaco": 76, "Marseille": 74, "Porto": 78, "Benfica": 79, "Sporting": 79,
   "Ajax": 75, "PSV": 77, "Feyenoord": 76, "Celtic": 72, "Galatasaray": 74,
-  "Union Berlin": 70, "Mönchengladbach": 71, "Wolfsburg": 72, "Hoffenheim": 70, "Mainz": 67, "Köln": 66, "Heidenheim": 64, "Darmstadt": 60,
-  "Aston Villa": 80, "West Ham": 74, "Man United": 81, "Brentford": 71, "Crystal Palace": 70, "Wolves": 69, "Nottingham": 66, "Bournemouth": 68, "Burnley": 61, "Sheffield United": 59,
-  "Villarreal": 74, "Osasuna": 70, "Mallorca": 68, "Getafe": 68, "Celta": 66, "Granada": 61, "Almería": 60, "Las Palmas": 67, "Rayo": 67, "Alavés": 65,
+  // Bundesliga (Rest der laufenden Saison)
+  "HSV": 66, "M'gladbach": 66, "Union Berlin": 66, "1. FC Köln": 63, "Bremen": 62, "Elversberg": 60, "SC Paderborn": 60, "Schalke": 60,
+  // Premier League (Rest der laufenden Saison)
+  "Fulham": 70, "Everton": 69, "Newcastle": 69, "Leeds United": 68, "Crystal Palace": 67, "Nottingham": 67, "Tottenham": 65, "Coventry City": 63, "Hull City": 63, "Ipswich Town": 63,
+  // La Liga (Rest der laufenden Saison)
+  "Athletic": 67, "Espanyol": 67, "Alavés": 66, "Elche": 66, "Osasuna": 66, "Sevilla FC": 66, "Levante": 65, "Deportivo": 63, "Málaga": 63, "Santander": 63,
   // National teams (for World Cup / Euro)
   "Deutschland": 86, "Frankreich": 91, "Spanien": 89, "England": 88, "Brasilien": 90,
   "Argentinien": 91, "Portugal": 87, "Niederlande": 85, "Italien": 84, "Belgien": 83,
@@ -73,15 +80,24 @@ Object.assign(TEAM_STRENGTHS, {
 });
 // Aliases map the long names some APIs use onto our canonical keys.
 const TEAM_ALIASES = {
+  // Long API names → our canonical shortName keys (used when shortName is absent).
   "FC Bayern München": "Bayern", "Bayer 04 Leverkusen": "Leverkusen", "Borussia Dortmund": "Dortmund",
-  "RB Leipzig": "Leipzig", "VfB Stuttgart": "Stuttgart", "Eintracht Frankfurt": "Frankfurt",
-  "SC Freiburg": "Freiburg", "SV Werder Bremen": "Bremen", "FC Augsburg": "Augsburg", "VfL Bochum 1848": "Bochum",
+  "RB Leipzig": "RB Leipzig", "VfB Stuttgart": "Stuttgart", "Eintracht Frankfurt": "Frankfurt",
+  "SC Freiburg": "Freiburg", "SV Werder Bremen": "Bremen", "FC Augsburg": "Augsburg",
+  "TSG 1899 Hoffenheim": "Hoffenheim", "1. FC Union Berlin": "Union Berlin",
+  "Borussia Mönchengladbach": "M'gladbach", "Mönchengladbach": "M'gladbach",
+  "Hamburger SV": "HSV", "FC Schalke 04": "Schalke", "1. FSV Mainz 05": "Mainz",
   "Manchester City FC": "Man City", "Arsenal FC": "Arsenal", "Liverpool FC": "Liverpool",
   "Tottenham Hotspur FC": "Tottenham", "Chelsea FC": "Chelsea", "Newcastle United FC": "Newcastle",
   "Manchester United FC": "Man United", "Aston Villa FC": "Aston Villa", "West Ham United FC": "West Ham",
-  "Real Madrid CF": "Real Madrid", "FC Barcelona": "Barcelona", "Girona FC": "Girona",
-  "Club Atlético de Madrid": "Atlético", "Athletic Club": "Bilbao", "Real Sociedad de Fútbol": "Sociedad",
-  "Real Betis Balompié": "Betis", "Valencia CF": "Valencia", "Sevilla FC": "Sevilla",
+  "Brighton & Hove Albion FC": "Brighton Hove", "Brighton": "Brighton Hove",
+  "Real Madrid CF": "Real Madrid", "FC Barcelona": "Barça", "Barcelona": "Barça",
+  "Club Atlético de Madrid": "Atleti", "Atlético": "Atleti", "Atletico Madrid": "Atleti",
+  "Athletic Club": "Athletic", "Bilbao": "Athletic",
+  "Real Sociedad de Fútbol": "Real Sociedad", "Sociedad": "Real Sociedad",
+  "Real Betis Balompié": "Real Betis", "Betis": "Real Betis",
+  "Valencia CF": "Valencia", "Sevilla FC": "Sevilla FC", "Sevilla": "Sevilla FC",
+  "RC Celta de Vigo": "Celta", "Rayo Vallecano de Madrid": "Rayo Vallecano", "Rayo": "Rayo Vallecano",
 };
 function normName(s) { return String(s || "").replace(/\s+(FC|CF|SC|SV|AFC|AC)\b/gi, "").trim(); }
 function strengthOf(name) {
