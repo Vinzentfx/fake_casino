@@ -90,19 +90,27 @@ z. B. 3 → 10, 4 → 15, 5 → 20 Freispiele. Während Freispielen kann erneut 
 ---
 
 ## ⚽ Sportwetten — RTP 92,6 % (8 % Marge)
-- **🌍 Echte WM** (echtes Ergebnis zählt!) **+ simulierte Ligen** für Dauer-Action. Du siehst, worauf andere tippen.
+- **🌍 Echte Spiele aus Bundesliga, Premier League und La Liga** (echtes Ergebnis zählt!) **+ simulierte Ligen** für Dauer-Action. Du siehst, worauf andere tippen.
 - **Märkte je Spiel:** Sieger (1X2), Über/Unter 2,5 Tore, Beide treffen.
 - **Quoten** aus Team-Stärke (siehe Tabelle unten) + Marge. **Einsatz:** 50 – 5.000.000 🪙. Mehrere Wetten pro Spiel möglich.
 - **🎟️ Kombi (Parlay):** mehrere Tipps in den Wettschein → **alle müssen stimmen**, dafür **multiplizieren** sich die Quoten = viel mehr Geld. Tipps aus demselben Spiel bekommen einen kleinen Korrelations-Abschlag (×0,90 je Extra-Tipp). **Tipp:** Kombis sind riesig auszahlbar, aber jeder Fehltipp killt alles — der Hausvorteil wächst mit jedem Leg.
 
 ### 🌍 Team-Stärken (Beispiel-Siegchance daheim gegen Ø-Gegner)
+Die Stärken kommen aus den **echten Abschlusstabellen der letzten Saison**
+(Punkte und Tordifferenz pro Spiel), nicht aus dem Bauch. Aufsteiger starten
+knapp unter dem schwächsten verbliebenen Team.
+
 | Stärke-Tier | Beispiele | grobe Heim-Siegchance |
 |---|---|---|
-| Weltklasse (88–93) | Man City, Real, Frankreich, Argentinien, Brasilien | ~55–57 % |
-| Top (80–87) | Liverpool, Dortmund, Belgien, Kroatien | ~49–53 % |
-| Stark (72–79) | Newcastle, Freiburg, Marokko, Japan | ~43–48 % |
-| Mittel (65–71) | Everton, Bremen, Katar | ~39–42 % |
-| Schwach (≤64) | Luton, Bochum, Curaçao | ~34–35 % |
+| Weltklasse (88–95) | Bayern, Barça, Real Madrid | ~55–57 % |
+| Top (80–87) | Arsenal, Dortmund, Man City, Leipzig, Villarreal | ~49–53 % |
+| Stark (72–79) | Man United, Stuttgart, Atleti, Leverkusen, Liverpool | ~43–48 % |
+| Mittel (65–71) | Chelsea, Freiburg, Frankfurt, Tottenham | ~39–42 % |
+| Schwach (≤64) | Bremen, Hull City, Schalke, Elversberg | ~34–35 % |
+
+Überraschung beim Lesen? Die Tabelle bildet ab, wie die Teams **letzte Saison
+wirklich abgeschnitten haben**, nicht ihren Ruf. Deshalb steht Liverpool unter
+Man United und Tottenham im Mittelfeld.
 
 ---
 
