@@ -76,17 +76,25 @@
       `<button type="button" class="mines-mine${m === minen ? " active" : ""}" data-minen="${m}">${m}</button>`).join("");
   }
 
+  /*
+   * Die Auszahlungstabelle stand als eine einzige gequetschte Zeile da, in der
+   * Ueberschrift, fuenf Stufen und der Deckel um denselben Platz kaempften.
+   * Jetzt drei Ebenen: Ueberschrift, ein Raster mit Luft dazwischen, und der
+   * Deckel als eigene Zeile darunter — der gehoert nicht in die Leiter, er
+   * begrenzt sie.
+   */
   function renderPay(tabelle) {
     const box = $("#mines-pay");
     if (!box || !tabelle) return;
-    // Der Deckel gehoert sichtbar dazu. Eine Leiter, die 3 Millionen mal
-    // verspricht und dann bei 50 Mio abschneidet, waere eine Luege.
-    const deckel = grenzen.maxWin
-      ? `<span class="mines-pay-step"><b>Deckel</b><small>max. ${fmt(grenzen.maxWin)} 🪙</small></span>` : "";
-    box.innerHTML = `<span class="mines-pay-label">Bei ${minen} ${minen === 1 ? "Mine" : "Minen"} zahlt</span>` +
-      tabelle.map((z) =>
-        `<span class="mines-pay-step"><b>${z.mult.toFixed(2)}×</b><small>${z.safe} ${z.safe === 1 ? "Feld" : "Felder"}</small></span>`).join("") +
-      deckel;
+    box.innerHTML =
+      `<div class="mines-pay-head">Bei ${minen} ${minen === 1 ? "Mine" : "Minen"} zahlt dein Einsatz</div>` +
+      `<div class="mines-pay-row">` +
+        tabelle.map((z) =>
+          `<span class="mines-pay-step"><b>${z.mult.toFixed(2)}×</b>` +
+          `<small>${z.safe} ${z.safe === 1 ? "Feld" : "Felder"}</small></span>`).join("") +
+      `</div>` +
+      (grenzen.maxWin
+        ? `<div class="mines-pay-cap">Höchstgewinn ${fmt(grenzen.maxWin)} 🪙 pro Runde</div>` : "");
   }
 
   function ladeConfig() {

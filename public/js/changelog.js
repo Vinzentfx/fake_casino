@@ -19,6 +19,16 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-08-c",
+      datum: "8. September 2026",
+      titel: "Rahmen sitzt, Mines und Towers aufgeräumt",
+      items: [
+        { icon: "⭕", titel: "Der Rahmen lag neben dem Bild", text: "Im Profil steckt das Bild schon in einem runden Kasten. Der gekaufte Rahmen zeichnete darin einen zweiten, größeren Kreis, der über den Rand hinausstand. Jetzt liegt er genau auf dem vorhandenen Kreis, und es ist nur noch einer zu sehen. Auch oben in der Leiste, wo das Bild vorher gar nicht quadratisch war und der Ring deshalb eine Ellipse wurde." },
+        { icon: "💰", titel: "Das Einsatzfeld war zusammengequetscht", text: "Min, ½, 2× und Max standen als vier schmale Streifen NEBEN dem Eingabefeld statt darunter. Das Feld nimmt jetzt die ganze Breite, ist höher und die Schnellwahl hat eine eigene Zeile. Gilt in Mines, Towers, Crash und Pinco." },
+        { icon: "📊", titel: "Die Auszahlungstabelle hatte keinen Platz", text: "In Mines drängten sich Überschrift, fünf Stufen und der Höchstgewinn in einer einzigen Zeile. Jetzt drei Ebenen: Überschrift, ein Raster mit Luft dazwischen, und der Höchstgewinn als eigene Zeile darunter." },
+      ],
+    },
+    {
       id: "2026-09-08-b",
       datum: "8. September 2026",
       titel: "Kosmetik auch in der Statistik, weiße Figuren sichtbar",

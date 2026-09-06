@@ -679,11 +679,17 @@ function setzeNamensStil(el, acc) {
 
 function setzeRahmen(el, acc) {
   if (!el) return;
-  el.classList.remove(...RAHMEN_KLASSEN, "pl-ava");
+  /*
+   * Bewusst NICHT die Klasse pl-ava: die bringt eine eigene Groesse mit
+   * (1,9 em), und dieser Kasten hat schon eine. Vorher wurde das Bild im
+   * eigenen Profil dadurch von 68 auf rund 79 Pixel aufgeblasen, waehrend es
+   * ueberall sonst 68 blieb. `hat-rahmen` steuert nur den Rand bei.
+   */
+  el.classList.remove(...RAHMEN_KLASSEN, "hat-rahmen", "pl-ava");
   if (!acc.frame) return;
   const kl = "fr-" + acc.frame;
   if (!RAHMEN_KLASSEN.includes(kl)) return;
-  el.classList.add("pl-ava", kl);
+  el.classList.add("hat-rahmen", kl);
 }
 
 function renderTopbar() {

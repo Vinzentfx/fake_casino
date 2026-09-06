@@ -182,7 +182,16 @@ button { font-family: inherit; cursor: pointer; }
   cursor: pointer;
   max-width: 40vw;
 }
-.profile-chip .avatar { font-size: 1.2rem; }
+/* Quadratisch, damit ein gekaufter Rahmen darauf ein Kreis wird und keine
+   Ellipse: als reiner Text-Span war das Feld 23 breit und 29 hoch. */
+.profile-chip .avatar {
+  font-size: 1.2rem;
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+}
 .profile-chip span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Auf schmalen Geraeten passt die volle Topbar nicht: Name und Menue liefen
@@ -4319,9 +4328,38 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 @keyframes crashShake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-6px,3px)} 75%{transform:translate(6px,-3px)} }
 .crash-status { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-weight: 700; font-size: 0.85rem; opacity: 0.85; pointer-events: none; }
 .crash-controls { margin: 12px 0; }
-.crash-betrow { display: flex; gap: 10px; flex-wrap: wrap; }
-.crash-betrow label { flex: 1; min-width: 130px; font-size: 0.75rem; font-weight: 700; opacity: 0.75; display: flex; flex-direction: column; gap: 4px; }
-.crash-betrow input { padding: 10px; border-radius: 10px; }
+.crash-betrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+/* Die Schnellwahl gehört unter das Feld, nicht daneben. Als normales
+   Flex-Element wurde sie in der Zeile auf vier senkrecht gestapelte
+   Buchstaben zusammengequetscht. */
+.crash-betrow > .bet-quick { flex: 1 0 100%; margin-top: 0; }
+.crash-betrow label {
+  flex: 1;
+  min-width: 130px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+/* Das Feld war ein flacher Kasten in Kleinschrift. Es ist die wichtigste
+   Eingabe im Spiel und darf entsprechend aussehen; 16px verhindern außerdem,
+   dass Safari auf dem iPad beim Antippen hineinzoomt. */
+.crash-betrow input {
+  padding: var(--sp-3);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-family: var(--font-num);
+  font-size: 16px;
+  font-weight: 800;
+  min-height: 46px;
+}
+.crash-betrow input:focus { outline: none; border-color: var(--line-strong); }
 .crash-cashbtn { background: linear-gradient(135deg, var(--good), var(--good-deep)) !important; color: var(--good-ink) !important; }
 .crash-action, #crash-action { width: 100%; margin-top: 10px; font-size: 1.05rem; }
 .crash-players-head { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; opacity: 0.55; text-transform: uppercase; margin-top: 12px; }
@@ -5066,12 +5104,20 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .nm-glitch { background-image: linear-gradient(100deg, #ff2e88, #00e5ff, #ff2e88); filter: drop-shadow(1px 0 0 rgba(255, 46, 136, 0.7)) drop-shadow(-1px 0 0 rgba(0, 229, 255, 0.7)); }
 
 /* --- Rahmen ums Bild --- */
+/* Ein Rahmen braucht zwei Sachen: einen runden Rand und einen Kasten, auf dem
+   er liegt. `hat-rahmen` liefert nur den Rand und wird auf Elemente gelegt,
+   die ihre Größe schon selbst kennen (Topbar, eigenes Profil). `.pl-ava`
+   bringt zusätzlich die Größe mit, für die selbst gebauten Plaketten. */
+.hat-rahmen,
 .pl-ava[class*="fr-"] {
-  width: 1.9em;
-  height: 1.9em;
   border-radius: 50%;
   border: 2px solid transparent;
   box-sizing: border-box;
+  position: relative;
+}
+.pl-ava[class*="fr-"] {
+  width: 1.9em;
+  height: 1.9em;
 }
 .fr-silber { border-color: #cfd6dd; }
 .fr-gold   { border-color: var(--accent); }
@@ -5167,12 +5213,19 @@ html:not(.reduce-motion) .fr-sterne::before { animation: pl-spin 6s linear infin
 .bet-quick button:active { background: var(--surface-2); color: var(--text); }
 
 /* Minen als Knopfreihe statt Zahlenfeld. */
-.mines-choice { margin-top: var(--sp-3); }
-.mines-choice-label { display: block; font-size: var(--fs-sm); color: var(--text-dim); margin-bottom: var(--sp-1); }
-.mines-mine-row { display: flex; gap: var(--sp-1); flex-wrap: wrap; }
+.mines-choice { margin-top: var(--sp-4); }
+.mines-choice-label {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-bottom: var(--sp-2);
+}
+.mines-mine-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--sp-2); }
 .mines-mine {
-  flex: 1 0 44px;
-  min-height: 40px;
+  min-height: 46px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   background: var(--surface);
@@ -5184,27 +5237,65 @@ html:not(.reduce-motion) .fr-sterne::before { animation: pl-spin 6s linear infin
 }
 .mines-mine.active { border-color: var(--line-strong); background: var(--accent-soft); color: var(--accent-strong); }
 
-/* Auszahlungstabelle: waagerecht scrollbar, damit sie auf jedem Gerät passt. */
+/* Auszahlungstabelle: Überschrift, Raster, Deckel. Vorher kämpften alle drei
+   in einer einzigen waagerecht scrollenden Zeile um denselben Platz. */
 .mines-pay {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--sp-2);
   margin-top: var(--sp-3);
-  padding: var(--sp-2);
+  padding: var(--sp-3);
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   background: var(--surface-sunken);
-  overflow-x: auto;
-  scrollbar-width: none;
 }
-.mines-pay::-webkit-scrollbar { display: none; }
-.mines-pay-label { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--text-mute); align-self: center; }
-.mines-pay-step { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
-.mines-pay-step b { font-family: var(--font-num); color: var(--accent); font-size: var(--fs-sm); }
+.mines-pay-head {
+  font-size: var(--fs-xs);
+  color: var(--text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--sp-2);
+}
+/* auto-fit statt Scrollen: die Stufen füllen die Breite, die da ist. */
+.mines-pay-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+  gap: var(--sp-2);
+}
+.mines-pay-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-1);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--line-neutral);
+}
+.mines-pay-step b { font-family: var(--font-num); color: var(--accent); font-size: var(--fs-md); }
 .mines-pay-step small { font-size: var(--fs-xs); color: var(--text-mute); white-space: nowrap; }
+.mines-pay-cap {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--text-mute);
+}
 
-.mines-target { display: block; margin-top: var(--sp-3); font-size: var(--fs-sm); color: var(--text-dim); }
-.mines-target input { width: 80px; margin: 0 var(--sp-1); }
+.mines-target {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+.mines-target input {
+  width: 90px;
+  padding: var(--sp-2);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-family: var(--font-num);
+  font-size: 16px;
+  font-weight: 800;
+}
 
 .mines-live { display: flex; gap: var(--sp-2); margin: var(--sp-2) 0; }
 .mines-live .chip-btn { flex: 1; min-height: 40px; }
@@ -5551,3 +5642,21 @@ html:not(.reduce-motion) .sch-prisma { animation: pl-sweep 4.5s linear infinite;
 .pp-badges .badge-label { font-size: var(--fs-xs); }
 .player-profile-actions { display: flex; gap: var(--sp-2); margin-top: var(--sp-4); }
 .player-profile-actions button { flex: 1; min-height: 44px; }
+
+/* ============================================================
+   Rahmen in einem fertigen Bild-Behälter
+   Im Profil, im Profil-Fenster und in der Statistik steckt das
+   Spielerbild schon in einem runden Kasten. Der Rahmen zeichnete
+   darin einen ZWEITEN, größeren Kreis (1,9 em bei 2,6 rem Schrift
+   sind rund 79 px in einem 68-px-Kasten), der über den Rand
+   hinausstand und daneben zu liegen schien. Er legt sich jetzt
+   genau auf den vorhandenen Kreis.
+   ============================================================ */
+.pf-avatar .pl-ava[class*="fr-"] {
+  width: 100%;
+  height: 100%;
+  font-size: inherit;
+}
+/* Sonst stehen zwei Ringe ineinander: der eigene Rand des Kastens
+   und der gekaufte Rahmen. */
+.pf-avatar:has(.pl-ava[class*="fr-"]) { border-color: transparent; }
