@@ -638,12 +638,15 @@ function refreshBonusButton() {
   updateBonusUI();
 }
 
+let achAlleZeigen = false;
+
 function renderProfile() {
   const acc = state.account;
   if (!acc) return;
   $("#profile-name").textContent = acc.name;
   if (acc.avatar) $("#profile-big").textContent = acc.avatar;
   $("#profile-name").style.color = acc.nameColor || "";
+
   const renderLevel = (l) => {
     const lb = $("#profile-level");
     if (!lb || !l) return;
@@ -653,32 +656,104 @@ function renderProfile() {
       `<div class="level-bar"><div class="level-fill" style="width:${pct}%;background:${l.color}"></div></div>`;
   };
   renderLevel(acc.level);
-  // Refresh level/XP from the server (slots don't push a full account).
-  fetch("/api/account/" + encodeURIComponent(acc.name)).then((r) => r.json())
-    .then((d) => { if (d.account && d.account.level) { state.account.level = d.account.level; renderLevel(d.account.level); } }).catch(() => {});
-  $("#profile-chips").textContent = acc.chips.toLocaleString("de-DE") + " 🪙";
-  $("#profile-games").textContent = acc.stats?.gamesPlayed ?? 0;
-  $("#profile-biggest").textContent =
-    (acc.stats?.biggestWin ?? 0).toLocaleString("de-DE") + " 🪙";
-  $("#profile-since").textContent = acc.createdAt
-    ? new Date(acc.createdAt).toLocaleDateString("de-DE")
-    : "–";
-  // Achievements/badges (server-authoritative list). Tap an unlocked badge to
-  // wear its emoji behind your name in the leaderboard (tap again to remove).
+
+  /** Eine Kachel im Zahlenraster. */
+  const kachel = (label, wert, extra = "") =>
+    `<div class="pf-stat${extra ? " " + extra : ""}"><span>${label}</span><b>${wert}</b></div>`;
+
+  const chips = acc.chips || 0;
+  const stats = acc.stats || {};
+  const gespielt = stats.gamesPlayed || 0;
+  const groesster = stats.biggestWin || 0;
+  $("#profile-stats").innerHTML =
+    kachel("Guthaben", chips.toLocaleString("de-DE") + " 🪙") +
+    kachel("Netto-Vermögen", (acc.netWorth ?? chips).toLocaleString("de-DE") + " 🪙") +
+    kachel("Gespielte Runden", gespielt.toLocaleString("de-DE")) +
+    kachel("Größter Gewinn", groesster.toLocaleString("de-DE") + " 🪙") +
+    kachel("Mitglied seit", acc.createdAt ? new Date(acc.createdAt).toLocaleDateString("de-DE") : "–");
+
+  /* Der Rest (Stadt-Imperium, Clan, Achievements) kommt vom Server. Vorher
+     wurde derselbe Aufruf nur benutzt, um das Level nachzuladen — die Daten
+     zum Imperium lagen ungenutzt in der Antwort. */
+  fetch("/api/account/" + encodeURIComponent(acc.name))
+    .then((r) => r.json())
+    .then((d) => {
+      if (d.account && d.account.level) { state.account.level = d.account.level; renderLevel(d.account.level); }
+
+      const tags = [];
+      if (d.clan) tags.push(`<span class="pf-tag">🛡️ ${escapeHtml(d.clan)}</span>`);
+      if (d.ach && d.ach.badge) tags.push(`<span class="pf-tag">${d.ach.badge}</span>`);
+      if (d.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">🎯 Kopfgeld ${Number(d.bounty).toLocaleString("de-DE")} 🪙</span>`);
+      $("#profile-tags").innerHTML = tags.join("");
+
+      const c = d.city;
+      const cityEl = $("#profile-city");
+      if (cityEl) {
+        if (c && c.houses) {
+          const trophaeen = (c.trophies || []).length;
+          cityEl.innerHTML =
+            `<h3 class="section-title">🏙️ Dein Imperium</h3><div class="pf-stats">` +
+            kachel("Häuser", Number(c.houses).toLocaleString("de-DE")) +
+            kachel("Wert", Number(c.value || 0).toLocaleString("de-DE") + " 🪙") +
+            kachel("Straßen-Monopole", Number(c.streets || 0)) +
+            (trophaeen ? kachel("Trophäen", trophaeen) : "") +
+            ((c.bossOf || []).length ? kachel("Stadtteil-Boss", (c.bossOf || []).join(", ")) : "") +
+            `</div>`;
+        } else {
+          cityEl.innerHTML =
+            `<h3 class="section-title">🏙️ Dein Imperium</h3>` +
+            `<p class="muted small">Noch kein Besitz. In der <b>Stadt</b> kaufst du dein erstes Haus.</p>`;
+        }
+      }
+    })
+    .catch(() => {});
+
+  renderAchievements();
+}
+
+/**
+ * Achievements. Freigeschaltete zuerst; die gesperrten bleiben eingeklappt.
+ * Vorher standen alle neunundzwanzig als graue Kaesten untereinander, was den
+ * Screen zu einer Wand aus Schloessern machte.
+ */
+function renderAchievements() {
   socket.emit("ach:list", (res) => {
     const box = $("#profile-badges");
+    const zaehler = $("#profile-ach-count");
+    const knopf = $("#profile-ach-toggle");
     if (!box) return;
     if (!res || !res.ok) { box.innerHTML = '<p class="muted small">–</p>'; return; }
-    const unlocked = res.list.filter((a) => a.unlocked).length;
-    box.innerHTML = `<p class="muted small" style="margin:0 0 8px">${unlocked}/${res.list.length} freigeschaltet · Tippe ein Achievement an, um sein Emoji im Leaderboard zu tragen.</p>`
-      + res.list.map((a) => {
-        const sel = res.badge === a.id;
-        return `<div class="badge ${a.unlocked ? "on" : ""}${sel ? " selected" : ""}" data-ach="${a.id}" data-unlocked="${a.unlocked ? 1 : 0}" title="${escapeHtml(a.desc)} · +${a.reward.toLocaleString("de-DE")} 🪙">` +
-          `<span class="badge-emoji">${a.unlocked ? a.emoji : "🔒"}</span><span class="badge-label">${escapeHtml(a.label)}</span>` +
-          `<small>${sel ? "★ im Leaderboard" : a.unlocked ? "✓" : escapeHtml(a.desc)}</small></div>`;
-      }).join("");
+
+    const offen = res.list.filter((a) => a.unlocked);
+    const zu = res.list.filter((a) => !a.unlocked);
+    if (zaehler) zaehler.textContent = `${offen.length} von ${res.list.length}`;
+
+    const karte = (a) => {
+      const sel = res.badge === a.id;
+      return `<div class="badge ${a.unlocked ? "on" : ""}${sel ? " selected" : ""}" data-ach="${a.id}" data-unlocked="${a.unlocked ? 1 : 0}" title="${escapeHtml(a.desc)} · +${a.reward.toLocaleString("de-DE")} 🪙">` +
+        `<span class="badge-emoji">${a.unlocked ? a.emoji : "🔒"}</span><span class="badge-label">${escapeHtml(a.label)}</span>` +
+        `<small>${sel ? "★ in der Bestenliste" : a.unlocked ? "✓" : escapeHtml(a.desc)}</small></div>`;
+    };
+
+    const zeigen = achAlleZeigen ? [...offen, ...zu] : offen;
+    box.innerHTML = zeigen.length
+      ? zeigen.map(karte).join("")
+      : '<p class="muted small">Noch keins freigeschaltet. Spiel ein paar Runden, das erste kommt schnell.</p>';
+
+    if (knopf) {
+      knopf.classList.toggle("hidden", !zu.length);
+      knopf.textContent = achAlleZeigen
+        ? "Gesperrte wieder ausblenden"
+        : `Die ${zu.length} gesperrten anzeigen`;
+    }
   });
 }
+
+$("#profile-ach-toggle")?.addEventListener("click", () => {
+  achAlleZeigen = !achAlleZeigen;
+  window.Casino.sound.play("tick");
+  renderAchievements();
+});
 
 function statText(n) {
   return Math.floor(Number(n) || 0).toLocaleString("de-DE");

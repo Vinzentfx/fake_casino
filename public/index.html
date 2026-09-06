@@ -1186,20 +1186,32 @@
 
     <!-- ===================== PROFIL ===================== -->
     <section class="screen" data-screen="profile">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2>👤 Profil</h2>
-        <div class="profile-big" id="profile-big">🙂</div>
-        <h3 id="profile-name">Spieler</h3>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+
+      <!-- Visitenkarte: Bild, Name, Rang und Zugehoerigkeit auf einen Blick.
+           Vorher schwebte hier ein grosses Emoji ueber vier Textzeilen. -->
+      <div class="pf-card">
+        <div class="pf-avatar" id="profile-big">🙂</div>
+        <div class="pf-ident">
+          <h2 id="profile-name">Spieler</h2>
+          <div class="pf-tags" id="profile-tags"></div>
+        </div>
         <div class="level-box" id="profile-level"></div>
-        <div class="stat-row"><span>Guthaben</span><b id="profile-chips">0 🪙</b></div>
-        <div class="stat-row"><span>Gespielte Spiele</span><b id="profile-games">0</b></div>
-        <div class="stat-row"><span>Größter Gewinn</span><b id="profile-biggest">0 🪙</b></div>
-        <div class="stat-row"><span>Mitglied seit</span><b id="profile-since">–</b></div>
-        <div class="cd-sub" style="margin:16px 0 6px">🏆 Achievements</div>
-        <div id="profile-badges" class="badge-grid"><p class="muted small">Lade…</p></div>
-        <button class="btn-danger" id="logout-btn">Abmelden</button>
       </div>
+
+      <div class="pf-stats" id="profile-stats"></div>
+
+      <div id="profile-city"></div>
+
+      <div class="pf-ach-head">
+        <h3 class="section-title" style="margin:0">🏆 Achievements</h3>
+        <span class="muted small" id="profile-ach-count"></span>
+      </div>
+      <p class="hint" style="margin:0 0 8px">Tippe ein freigeschaltetes Achievement an, um sein Emoji in der Bestenliste zu tragen.</p>
+      <div id="profile-badges" class="badge-grid"></div>
+      <button id="profile-ach-toggle" class="sb-load-more hidden"></button>
+
+      <button class="btn-danger" id="logout-btn">Abmelden</button>
     </section>
 
     <!-- ===================== UPDATES ===================== -->
