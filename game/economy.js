@@ -631,6 +631,16 @@ function setupEconomy(io, accounts) {
       ack({ ok: true, overview: city.publicOverview(key) });
     });
 
+    // Die Haeuser eines einzelnen Besitzers, mit dem Uebernahmepreis fuer den
+    // Fragenden. Eigener Aufruf, damit die Uebersicht klein bleibt.
+    socket.on("city:owner", ({ owner } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const key = socket.data.account || null;
+      const ziel = String(owner || "").trim().toLowerCase();
+      if (!ziel) return ack({ ok: false, error: "Kein Besitzer angegeben." });
+      ack({ ok: true, owner: ziel, properties: city.ownerProperties(ziel, key) });
+    });
+
     socket.on("city:district", ({ id } = {}, ack) => {
       if (typeof ack !== "function") return;
       const key = socket.data.account || null;

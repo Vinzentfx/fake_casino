@@ -19,6 +19,16 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-06-stadt",
+      datum: "6. September 2026",
+      titel: "Die Stadt gehört nicht einem allein",
+      items: [
+        { icon: "🏙️", titel: "Wem gehört Porta", text: "Unter der Karte steht jetzt, wem wie viel gehört: Häuser, Wert, komplette Straßen, Trophäen. Tippst du jemanden an, siehst du seine Gebäude mit dem Preis, den DU für eine Übernahme zahlen würdest, günstigste zuerst. Übernehmen ging schon immer, aber man kam nur dran, indem man zufällig das richtige Haus antippte." },
+        { icon: "📈", titel: "Besitzer-Staffel", text: "Jedes Haus, das du schon hast, macht das nächste um 4 % teurer, gedeckelt beim Dreifachen. Bis zehn Häuser merkst du fast nichts, eine komplette Straße bleibt gut machbar. Wer dreißig hortet, zahlt mehr als das Doppelte. Verkaufserlös und die Entschädigung bei einer Übernahme bleiben beim Marktwert, es wird also nur das Weiterkaufen teurer, nichts weggenommen." },
+        { icon: "🏷️", titel: "Ehrliche Preise", text: "Der Übernahmepreis wurde vorher im Browser nachgerechnet. Jetzt kommt jede Zahl vom Server, inklusive Boss-Rabatt und Staffel, und auf dem Knopf steht genau das, was abgebucht wird." },
+      ],
+    },
+    {
       // Zweiter Eintrag am selben Tag. Die Kennung bleibt sortierbar: sie ist
       // als Zeichenkette groesser als "2026-09-06" und kleiner als der
       // naechste Tag, das Comeback-Fenster zeigt sie also genau einmal.

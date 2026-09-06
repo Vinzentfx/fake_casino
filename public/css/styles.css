@@ -4928,3 +4928,70 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .online-last > .muted { flex: 0 0 auto; }
 /* Offline: gedämpft, damit die Online-Liste darüber die stärkere bleibt. */
 .online-player.last-player { opacity: 0.72; }
+
+/* ============================================================
+   "Wem gehört Porta" — Besitzliste in der Stadt
+   Zeilen statt Karten: auf dem iPad soll eine Freundesrunde von
+   sechs bis acht Leuten ohne Scrollen komplett zu sehen sein.
+   ============================================================ */
+.city-board { display: flex; flex-direction: column; gap: var(--sp-1); }
+.cb-block { border-radius: var(--r-sm); overflow: hidden; }
+.cb-block.open { background: var(--surface-sunken); }
+
+.cb-row {
+  display: grid;
+  grid-template-columns: 1.6rem 10px 1fr auto auto;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cb-row:active { background: var(--surface-2); }
+@media (hover: hover) { .cb-row:hover { border-color: var(--line); } }
+.cb-row.mine { border-color: var(--line-strong); background: var(--accent-soft); }
+
+.cb-rank { color: var(--text-mute); font-size: var(--fs-xs); text-align: right; }
+.cb-dot { width: 10px; height: 10px; border-radius: 50%; }
+.cb-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cb-num { font-family: var(--font-num); font-size: var(--fs-sm); white-space: nowrap; }
+.cb-value { color: var(--text-dim); }
+.cb-tags { font-size: var(--fs-xs); white-space: nowrap; }
+.cb-caret { color: var(--text-mute); }
+
+/* Bei wenig Platz fliegen Wert und Abzeichen raus, Name und Hausanzahl
+   bleiben: das ist die Information, um die es geht. */
+@media (max-width: 560px) {
+  .cb-row { grid-template-columns: 1.6rem 10px 1fr auto; }
+  .cb-value, .cb-tags { display: none; }
+}
+
+.cb-items { padding: 0 var(--sp-2) var(--sp-2); }
+.cb-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-2);
+  margin-top: var(--sp-1);
+  border: 1px solid var(--line-neutral);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cb-item:active { transform: scale(0.99); }
+.cb-item-main { display: flex; flex-direction: column; min-width: 0; }
+.cb-item-main small { color: var(--text-mute); font-size: var(--fs-xs); }
+.cb-item b { font-family: var(--font-num); font-size: var(--fs-sm); white-space: nowrap; }

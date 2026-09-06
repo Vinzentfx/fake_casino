@@ -338,6 +338,36 @@ const bankOwner = () => (BANK_ID != null ? ownerOf(BANK_ID) : null);
 
 /** Is `key` the current boss of a district? (Boss buys 10% cheaper there.) */
 const BOSS_DISCOUNT = 0.9;
+
+/* ── Besitzer-Staffel (Anti-Monopol) ──────────────────────────────────────
+ *
+ * Bisher kostete das dreissigste Haus genauso viel wie das erste. Wer einmal
+ * vorne lag, kaufte deshalb immer weiter, und fuer alle anderen war die Stadt
+ * erledigt, bevor sie angefangen hatten.
+ *
+ * Jetzt zahlt jeder auf JEDEN Kauf einen Aufschlag, der mit der Zahl seiner
+ * eigenen Haeuser waechst: vier Prozent je Haus, das man schon besitzt,
+ * gedeckelt beim Dreifachen. Das nimmt niemandem etwas weg und druckt auch
+ * kein Geld, es macht das Weiterkaufen nur teurer, je mehr man schon hat.
+ *
+ * Wichtig ist, was NICHT mitwaechst:
+ *   • Der Verkaufserloes. Sonst waere die Staffel nur eine Zahl, die man
+ *     beim Verkauf wieder hereinholt, und sie wuerde gar nichts bremsen.
+ *   • Die Entschaedigung bei einer Uebernahme. Die richtet sich nach dem
+ *     Marktwert des Hauses, nicht danach, wie viel der Vorbesitzer hortet.
+ *     Sonst wuerde ausgerechnet der Monopolist am Uebernommenwerden verdienen.
+ *
+ * Bis etwa zehn Haeuser merkt man kaum etwas (×1,4), eine komplette Strasse
+ * bleibt also gut erreichbar. Weh tut es ab zwanzig.
+ */
+const OWNER_STEP = 0.04;   // Aufschlag je Haus, das man schon hat
+const OWNER_MAX = 3.0;     // Deckel
+
+/** Preisfaktor fuer `key` beim naechsten Kauf. Ohne Besitz genau 1. */
+function ownerScale(key) {
+  if (!key) return 1;
+  return Math.min(OWNER_MAX, 1 + OWNER_STEP * houseCount(key));
+}
 function isBoss(key, did) {
   const b = getDerived().bossByDistrict[did];
   return !!(b && b.owner === key);
@@ -370,6 +400,66 @@ function territoryDiff(before, after) {
     msgs.push(`🥇 ${o ? o.ownerName : owner} ist jetzt der Boss von ${nameOf(did)}!`);
   }
   return msgs;
+}
+
+/**
+ * Wem gehoert was.
+ *
+ * Die Uebernahme (150 %, Vorbesitzer bekommt den Marktwert) gab es schon
+ * lange, aber man kam nur daran, indem man in einem Ortsteil ein bestimmtes
+ * Haus antippte. Wer neu anfing, sah die Stadt als geschlossene Gesellschaft
+ * und hatte kein einziges Ziel vor Augen. Diese Liste macht den Besitz und
+ * damit die Angreifbarkeit sichtbar.
+ */
+function ownerBoard(key) {
+  const der = getDerived();
+  const zeilen = {};
+  let besetzt = 0, gesamt = 0;
+  for (const d of MAP.districts) gesamt += d.buildings.length;
+  for (const [id, o] of Object.entries(state.own)) {
+    const e = bldIndex.get(Number(id));
+    if (!e) continue;
+    besetzt++;
+    const z = zeilen[o.owner] || (zeilen[o.owner] = {
+      key: o.owner, name: o.ownerName || o.owner, color: colorFor(o.owner),
+      houses: 0, value: 0, streets: streetCount(o.owner),
+      trophies: trophiesOf(o.owner).length, isMe: o.owner === key,
+    });
+    z.houses++;
+    z.value += priceOf(e.b);
+  }
+  const liste = Object.values(zeilen).sort((a, b) => b.value - a.value);
+  liste.forEach((z, i) => { z.rang = i + 1; });
+  return { liste, besetzt, frei: gesamt - besetzt, gesamt };
+}
+
+/**
+ * Die Gebaeude EINES Besitzers, mit dem Preis, den der Betrachter fuer eine
+ * Uebernahme zahlen muesste. Bewusst ein eigener Aufruf: die Uebersicht soll
+ * nicht bei jedem Laden alle Haeuser aller Spieler mitschleppen.
+ */
+function ownerProperties(ownerKey, viewerKey, limit = 60) {
+  const scale = ownerScale(viewerKey);
+  const out = [];
+  for (const [id, o] of Object.entries(state.own)) {
+    if (o.owner !== ownerKey) continue;
+    const e = bldIndex.get(Number(id));
+    if (!e) continue;
+    const price = priceOf(e.b);
+    out.push({
+      id: Number(id), did: e.district.id, districtName: e.district.name,
+      label: e.b.nm || e.b.n || CLASSES[e.b.cls].name,
+      emoji: e.b.trophy ? TROPHIES[e.b.trophy].emoji : CLASSES[e.b.cls].emoji,
+      st: e.b.st || null,
+      price,
+      takeoverCost: Math.ceil(price * BUYOUT_PREMIUM * scale),
+      mine: ownerKey === viewerKey,
+    });
+  }
+  // Billigste zuerst: die Liste soll zeigen, was erreichbar ist, nicht was
+  // am meisten Eindruck macht.
+  out.sort((a, z) => a.takeoverCost - z.takeoverCost);
+  return out.slice(0, limit);
 }
 
 // ─── Public views ───────────────────────────────────────────────────────────
@@ -408,6 +498,9 @@ function publicOverview(key) {
     news: state.news,
     golden: state.golden || null,
     me,
+    board: ownerBoard(key),
+    ownerScale: round2(ownerScale(key)),
+    ownerScaleMax: OWNER_MAX,
     casinoOwnerName: CASINO_ID != null && state.own[CASINO_ID] ? state.own[CASINO_ID].ownerName : null,
     bankOwnerName: BANK_ID != null && state.own[BANK_ID] ? state.own[BANK_ID].ownerName : null,
     districts: MAP.districts.map((d) => {
@@ -438,8 +531,12 @@ function publicDistrict(id, key) {
   // Street progress info for the panel: total addressed houses per street.
   const streetTotals = {};
   for (const [st, ids] of d._streets) streetTotals[st] = ids.length;
+  // Einmal je Aufruf, nicht je Gebaeude: haengt nur am Spieler.
+  const scale = ownerScale(key);
+  const meineHaeuser = key ? houseCount(key) : 0;
   return {
     id: d.id, name: d.name, ring: d.ring,
+    ownerScale: round2(scale), ownerHouses: meineHaeuser, ownerScaleMax: OWNER_MAX,
     idx: round2(idxOf(d.id)),
     classes: Object.fromEntries(Object.entries(CLASSES).map(([k, c]) => [k, { name: c.name, emoji: c.emoji, perk: c.perk || null }])),
     trophies: TROPHIES,
@@ -458,7 +555,12 @@ function publicDistrict(id, key) {
         t: b.t || null, nm: b.nm || null, lv: b.lv || null,
         trophy: b.trophy || null,
         price, sellPrice: sellPriceOf(b),
-        myPrice: key && isBoss(key, d.id) ? Math.round(price * BOSS_DISCOUNT) : price,
+        /* Was DIESER Spieler zahlen wuerde: Boss-Rabatt und Besitzer-Staffel
+           gehoeren auf den Server. Vorher rechnete der Client den
+           Uebernahmepreis selbst als price × 1,5 nach und haette mit der
+           Staffel eine falsche Zahl angezeigt. */
+        myPrice: Math.round(price * (key && isBoss(key, d.id) ? BOSS_DISCOUNT : 1) * scale),
+        takeoverCost: Math.ceil(price * BUYOUT_PREMIUM * scale),
         owner: o ? o.owner : null, ownerName: o ? o.ownerName : null,
         color: o ? colorFor(o.owner) : null,
         mine: !!o && o.owner === key, listed: !!(o && o.listed),
@@ -474,7 +576,7 @@ function buyBuilding(id, key, name) {
   if (ownerOf(e.b.id)) return err("Gehört schon jemandem — nutze „Übernehmen“.");
   // District boss buys 10% cheaper in "his" district (territory rewards territory).
   const discount = isBoss(key, e.b._did) ? BOSS_DISCOUNT : 1;
-  return { ok: true, cost: Math.round(priceOf(e.b) * discount), commit: () => {
+  return { ok: true, cost: Math.round(priceOf(e.b) * discount * ownerScale(key)), commit: () => {
     state.own[e.b.id] = { owner: key, ownerName: name };
     save();
   } };
@@ -497,7 +599,9 @@ function takeover(id, key, name) {
   const value = priceOf(e.b);
   return {
     ok: true,
-    cost: Math.ceil(value * BUYOUT_PREMIUM),
+    // Der Kaeufer zahlt Aufschlag UND Staffel, der Vorbesitzer bekommt den
+    // reinen Marktwert. Die Differenz verbrennt, wie bisher.
+    cost: Math.ceil(value * BUYOUT_PREMIUM * ownerScale(key)),
     payout: { to: o.owner, amount: value },
     commit: () => { state.own[e.b.id] = { owner: key, ownerName: name }; save(); },
   };
@@ -578,6 +682,7 @@ module.exports = {
   streetCount, trophiesOf, hasTrophy, bldExists, bldInfo, isBoss,
   houseCount, rollGoldenStreet, goldenStreet, ownsGolden, setsOf,
   territorySnapshot, territoryDiff,
+  ownerBoard, ownerProperties, ownerScale,
   buyBuilding, sellBuilding, takeover,
   listCompany, adminClearLot, adminRemoveOwner, ownedLots, resetCity,
 };

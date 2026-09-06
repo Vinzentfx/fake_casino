@@ -353,6 +353,10 @@
       if (!res || !res.ok) return;
       overview = res.overview;
       renderEmpire(overview.me);
+      // Nach jedem Kauf aendern sich Besitz UND die eigene Staffel, die
+      // zwischengespeicherten Hauslisten waeren dann veraltet.
+      besitzerHaeuser = {};
+      renderBoard();
       if (view === "district" && district) return loadDistrict(district.id, true);
       view = "overview";
       renderOverview();
@@ -396,22 +400,115 @@
     box.innerHTML = chips.join("") + list;
   }
 
-  // Jump from the property list straight to the building on the map.
-  $("#biz-buffs").addEventListener("click", (e) => {
-    const item = e.target.closest(".empire-item");
-    if (!item) return;
-    const did = item.dataset.gotoD, bid = parseInt(item.dataset.gotoB, 10);
+  // ── "Wem gehört Porta" ───────────────────────────────────────────────────
+  /*
+   * Die Uebernahme gab es schon immer (150 %, der Vorbesitzer bekommt den
+   * Marktwert), aber sie stand nur an einem einzelnen Haus tief in einem
+   * Ortsteil. Wer neu anfing, sah nur eine Karte voller fremder Farben und
+   * hatte kein Ziel. Hier steht jetzt, wem wie viel gehoert, und ein Tipp auf
+   * eine Zeile listet die Haeuser dieser Person mit dem Preis, den DU dafuer
+   * zahlen wuerdest — billigste zuerst, damit sichtbar ist, was erreichbar ist.
+   */
+  let offenerBesitzer = null;
+  let besitzerHaeuser = {};
+
+  function renderBoard() {
+    const box = $("#city-board");
+    const hint = $("#city-board-hint");
+    if (!box || !overview || !overview.board) return;
+    const b = overview.board;
+
+    if (hint) {
+      const staffel = overview.ownerScale || 1;
+      const teile = [`${fmt(b.besetzt)} von ${fmt(b.gesamt)} Gebäuden haben einen Besitzer, ${fmt(b.frei)} sind noch frei.`];
+      if (staffel > 1.01) {
+        teile.push(`Dein Kaufpreis liegt bei ${staffel.toLocaleString("de-DE")}× — je mehr du besitzt, desto teurer wird das nächste Haus (höchstens ${overview.ownerScaleMax}×).`);
+      } else {
+        teile.push("Jedes Haus lässt sich übernehmen: du zahlst 50 % Aufschlag, der Vorbesitzer bekommt den vollen Marktwert.");
+      }
+      hint.textContent = teile.join(" ");
+    }
+
+    if (!b.liste.length) {
+      box.innerHTML = '<p class="muted small" style="margin:0">Noch gehört niemandem etwas. Die ganze Stadt ist frei.</p>';
+      return;
+    }
+
+    box.innerHTML = b.liste.map((z) => {
+      const offen = offenerBesitzer === z.key;
+      const marken = [];
+      if (z.streets) marken.push(`👑 ${z.streets}`);
+      if (z.trophies) marken.push(`🏆 ${z.trophies}`);
+      return `<div class="cb-block${offen ? " open" : ""}">
+          <button class="cb-row${z.isMe ? " mine" : ""}" data-owner="${escapeHtml(z.key)}" type="button">
+            <span class="cb-rank">${z.rang}</span>
+            <span class="cb-dot" style="background:${z.color}"></span>
+            <span class="cb-name">${escapeHtml(z.name)}${z.isMe ? " (du)" : ""}</span>
+            <span class="cb-num">🏠 ${fmt(z.houses)}</span>
+            <span class="cb-num cb-value">${fmt(z.value)} 🪙</span>
+            ${marken.length ? `<span class="cb-tags">${marken.join(" ")}</span>` : ""}
+            <span class="cb-caret">${offen ? "▾" : "▸"}</span>
+          </button>
+          ${offen ? `<div class="cb-items" data-items="${escapeHtml(z.key)}">${renderBesitzerListe(z)}</div>` : ""}
+        </div>`;
+    }).join("");
+  }
+
+  function renderBesitzerListe(z) {
+    const liste = besitzerHaeuser[z.key];
+    if (!liste) return '<p class="muted small" style="margin:6px 0">Lädt…</p>';
+    if (!liste.length) return '<p class="muted small" style="margin:6px 0">Nichts gefunden.</p>';
+    const kopf = z.isMe
+      ? '<p class="muted small" style="margin:6px 0">Deine Häuser, günstigste zuerst.</p>'
+      : '<p class="muted small" style="margin:6px 0">Günstigste zuerst. Der Preis ist, was DU zahlen würdest.</p>';
+    return kopf + liste.map((p) => `
+        <button class="cb-item" data-goto-d="${p.did}" data-goto-b="${p.id}" type="button">
+          <span class="cb-item-main">${p.emoji} ${escapeHtml(p.label)}<small>${escapeHtml(p.districtName)}${p.st ? " · " + escapeHtml(p.st) : ""}</small></span>
+          <b>${p.mine ? fmt(p.price) + " 🪙 Wert" : "Übernehmen " + fmt(p.takeoverCost) + " 🪙"}</b>
+        </button>`).join("");
+  }
+
+  $("#city-board")?.addEventListener("click", (e) => {
+    const zeile = e.target.closest("[data-owner]");
+    if (zeile) {
+      const key = zeile.dataset.owner;
+      offenerBesitzer = offenerBesitzer === key ? null : key;
+      window.Casino.sound.play("tick");
+      renderBoard();
+      if (offenerBesitzer && !besitzerHaeuser[key]) {
+        socket.emit("city:owner", { owner: key }, (res) => {
+          if (!res || !res.ok) return;
+          besitzerHaeuser[res.owner] = res.properties;
+          if (offenerBesitzer === res.owner) renderBoard();
+        });
+      }
+      return;
+    }
+    const ziel = e.target.closest("[data-goto-b]");
+    if (ziel) springeZuGebaeude(ziel.dataset.gotoD, parseInt(ziel.dataset.gotoB, 10));
+  });
+
+  /** Ortsteil laden, Haus auswaehlen und die Karte dorthin schieben. */
+  function springeZuGebaeude(did, bid) {
     socket.emit("city:district", { id: did }, (res) => {
       if (!res || !res.ok) return;
       district = res.district;
+      district.residents = district.residents || {};
       view = "district";
       selectedId = bid;
       const b = district.buildings.find((x) => x.id === bid);
       vb = b ? { x: b.c[0] - 200, y: b.c[1] - 150, w: 400, h: 300 } : null;
       renderDistrict();
       renderDetail();
-      document.querySelector(".city-map-box").scrollIntoView({ behavior: "smooth" });
+      document.querySelector(".city-map-box").scrollIntoView({ behavior: "smooth", block: "center" });
     });
+  }
+
+  // Jump from the property list straight to the building on the map.
+  $("#biz-buffs").addEventListener("click", (e) => {
+    const item = e.target.closest(".empire-item");
+    if (!item) return;
+    springeZuGebaeude(item.dataset.gotoD, parseInt(item.dataset.gotoB, 10));
   });
 
   // ── Geometry helpers ─────────────────────────────────────────────────────
@@ -683,6 +780,21 @@
     community_centre: "Gemeindezentrum", greenhouse: "Gewächshaus", shed: "Schuppen",
   };
 
+  /**
+   * Eine Zeile, die erklaert, warum der eigene Preis vom Marktwert abweicht.
+   * Ohne sie sieht man nur eine hoehere Zahl und haelt sie fuer einen Fehler.
+   */
+  function staffelHinweis(bossRabatt) {
+    let out = "";
+    if (bossRabatt) out += `<div class="cd-row muted small">🥇 Boss-Rabatt: −10 % in deinem Ortsteil.</div>`;
+    const st = district && district.ownerScale;
+    if (st && st > 1.01) {
+      const max = district.ownerScaleMax || 3;
+      out += `<div class="cd-row muted small">🏠 Besitzer-Staffel: du hast ${fmt(district.ownerHouses)} Gebäude, deshalb ×${st.toLocaleString("de-DE")} auf jeden Kauf (höchstens ×${max}). Verkaufen und Entschädigungen bleiben beim Marktwert.</div>`;
+    }
+    return out;
+  }
+
   function renderDetail() {
     const box = $("#city-detail");
     if (!box) return;
@@ -740,9 +852,13 @@
     body += `<div class="cd-section">`;
     body += `<div class="cd-row">Besitzer: <b>${b.mine ? "Du" : b.ownerName ? `<span style="color:${b.color}">${escapeHtml(b.ownerName)}</span>` : "— frei —"}</b></div>`;
     if (!b.owner) {
-      const discounted = b.myPrice != null && b.myPrice < b.price;
-      body += `<button class="btn-primary cd-btn" data-act="buy">Kaufen — ${fmt(discounted ? b.myPrice : b.price)} 🪙${discounted ? ` <s class="muted small">${fmt(b.price)}</s>` : ""}</button>`;
-      if (discounted) body += `<div class="cd-row muted small">🥇 Boss-Rabatt: −10 % in deinem Ortsteil.</div>`;
+      /* myPrice kommt jetzt vom Server und enthaelt Boss-Rabatt UND
+         Besitzer-Staffel. Es kann also unter ODER ueber dem Marktwert
+         liegen, deshalb beide Richtungen zeigen statt nur den Rabatt. */
+      const meiner = b.myPrice != null ? b.myPrice : b.price;
+      const abweichung = meiner !== b.price;
+      body += `<button class="btn-primary cd-btn" data-act="buy">Kaufen — ${fmt(meiner)} 🪙${abweichung ? ` <s class="muted small">${fmt(b.price)}</s>` : ""}</button>`;
+      body += staffelHinweis(meiner < b.price);
     } else if (b.mine) {
       body += `<button class="btn-primary cd-btn" data-act="sell">Verkaufen — ${fmt(b.sellPrice)} 🪙</button>`;
       if (/^(kiosk|cafe|shop|hotel|factory)$/.test(b.cls)) {
@@ -751,8 +867,12 @@
           : `<button class="cd-toggle" data-act="ipo">📈 An die Börse bringen (IPO)</button>`;
       }
     } else {
-      body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen (+50%) — ${fmt(Math.ceil(b.price * 1.5))} 🪙</button>`;
-      body += `<div class="cd-row muted small">Der Vorbesitzer wird zum Marktwert entschädigt.</div>`;
+      /* Preis kommt vom Server: der Client rechnete hier frueher price × 1,5
+         nach und haette mit der Besitzer-Staffel eine falsche Zahl gezeigt. */
+      const kosten = b.takeoverCost != null ? b.takeoverCost : Math.ceil(b.price * 1.5);
+      body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen — ${fmt(kosten)} 🪙</button>`;
+      body += `<div class="cd-row muted small">50 % Aufschlag auf den Marktwert von ${fmt(b.price)} 🪙. Der Vorbesitzer bekommt den vollen Marktwert, der Rest verfällt.</div>`;
+      body += staffelHinweis(false);
     }
     // Wohnsitz: free flavour on any building.
     const myAcc = window.Casino.getAccount && window.Casino.getAccount();
