@@ -930,8 +930,12 @@ socket.on("social:challengeIncoming", ({ from, game, code, stake, label } = {}) 
   if (!from || !game || !code) return;
   const hook = DUEL_JOIN_HOOK[game];
   const txt = `⚔️ ${from} fordert dich zu ${label || DUEL_LABEL[game] || "einem Duell"} heraus\nEinsatz: ${Number(stake || 0).toLocaleString("de-DE")} 🪙\n\nAnnehmen?`;
-  if (hook && window.Casino[hook] && confirm(txt)) window.Casino[hook](code);
-  else { socket.emit("social:challengeDecline", { to: from, game }); toast(`Herausforderung von ${from} abgelehnt.`); }
+  (async () => {
+    const ja = hook && window.Casino[hook]
+      && await window.Casino.dialog.frage(txt, { titel: "Herausforderung", okText: "Annehmen", abbruchText: "Ablehnen" });
+    if (ja) window.Casino[hook](code);
+    else { socket.emit("social:challengeDecline", { to: from, game }); toast(`Herausforderung von ${from} abgelehnt.`); }
+  })();
 });
 socket.on("social:challengeDeclined", ({ by, label } = {}) => {
   toast(`${by || "Der Gegner"} hat deine ${label || "Duell"}-Herausforderung abgelehnt.`);
@@ -1402,8 +1406,8 @@ function loadAdminAccounts() {
         ` <button class="chip-btn" data-stat="bigwin" title="Größter Gewinn">🎰✖</button>` +
         ` <button class="chip-btn" data-stat="bigloss" title="Größter Verlust">💸✖</button>` +
         ` <button class="chip-btn" data-stat="games" title="Aktivste">🎲✖</button></div>`;
-      li.querySelector("[data-admin-clear-bank]")?.addEventListener("click", () => {
-        if (!confirm(`${p.name}: Bank wirklich leeren?`)) return;
+      li.querySelector("[data-admin-clear-bank]")?.addEventListener("click", async () => {
+        if (!await window.Casino.dialog.frage(`${p.name}: Bank wirklich leeren?`, { okText: "Leeren", gefahr: true })) return;
         socket.emit("admin:clearBank", { target: p.name }, (r) => {
           if (r && r.ok) {
             toast(`${p.name}: Bank geleert (${(r.cleared || 0).toLocaleString("de-DE")} 🪙).`);
@@ -1411,8 +1415,8 @@ function loadAdminAccounts() {
           } else toast((r && r.error) || "Fehler.");
         });
       });
-      li.querySelector("[data-admin-delete]")?.addEventListener("click", () => {
-        if (!confirm(`Account "${p.name}" wirklich löschen?`)) return;
+      li.querySelector("[data-admin-delete]")?.addEventListener("click", async () => {
+        if (!await window.Casino.dialog.frage(`Account "${p.name}" wirklich löschen?`, { okText: "Löschen", gefahr: true })) return;
         socket.emit("admin:deleteAccount", { target: p.name }, (res) => {
           if (!res || !res.ok) { toast(res?.error || "Fehler."); return; }
           toast(`${p.name} gelöscht.`);
@@ -1541,8 +1545,8 @@ function loadAdminLots() {
   });
 }
 
-$("#admin-reset-city-btn")?.addEventListener("click", () => {
-  if (!confirm("Wirklich die GANZE Stadt zurücksetzen? Alle Grundstücke & Unternehmen gehen an NPC zurück.")) return;
+$("#admin-reset-city-btn")?.addEventListener("click", async () => {
+  if (!await window.Casino.dialog.frage("Wirklich die GANZE Stadt zurücksetzen? Alle Grundstücke und Unternehmen gehen an NPC zurück.", { okText: "Zurücksetzen", gefahr: true })) return;
   socket.emit("admin:resetCity", (r) => {
     if (r && r.ok) { toast("Stadt zurückgesetzt."); loadAdminLots(); }
     else toast((r && r.error) || "Fehler.");
@@ -1672,7 +1676,7 @@ function loadIpBans() {
 }
 
 // Beim Öffnen des Admin-Screens die IP-Bann-Liste mitladen.
-socket.on("ipbanned", () => { alert("Deine IP-Adresse wurde gesperrt."); });
+socket.on("ipbanned", () => { window.Casino.dialog.hinweis("Deine IP-Adresse wurde gesperrt."); });
 
 // ---- Admin: Test-Tools ----
 $("#admin-force-win-btn")?.addEventListener("click", () => {
@@ -1689,8 +1693,8 @@ $("#admin-city-event-btn")?.addEventListener("click", () => {
   });
 });
 
-$("#admin-new-week-btn")?.addEventListener("click", () => {
-  if (!confirm("Woche JETZT beenden? Kürt den Spieler der Woche und würfelt eine neue Goldene Straße.")) return;
+$("#admin-new-week-btn")?.addEventListener("click", async () => {
+  if (!await window.Casino.dialog.frage("Woche JETZT beenden? Kürt den Spieler der Woche und würfelt eine neue Goldene Straße.", { okText: "Beenden" })) return;
   socket.emit("admin:newWeek", (r) => {
     if (r && r.ok) toast("🗓️ Neue Woche eingeläutet — siehe Chat.");
     else toast((r && r.error) || "Fehler.");
@@ -1778,7 +1782,7 @@ $("#admin-restore-input")?.addEventListener("change", async (e) => {
     if (!data || data.kind !== "fakecasino-backup" || !data.files) throw new Error("Das ist kein Fake-Casino-Backup.");
     const n = Object.keys(data.files).length;
     const when = data.createdAt ? new Date(data.createdAt).toLocaleString("de-DE") : "unbekannt";
-    if (!confirm(`Backup vom ${when} (${n} Dateien) einspielen?\n\n⚠️ ÜBERSCHREIBT alle aktuellen Spieldaten. Der Server startet danach neu — alle Spieler fliegen kurz raus.`)) return;
+    if (!await window.Casino.dialog.frage(`Backup vom ${when} (${n} Dateien) einspielen?\n\nÜBERSCHREIBT alle aktuellen Spieldaten. Der Server startet danach neu, alle Spieler fliegen kurz raus.`, { titel: "⚠️ Backup einspielen", okText: "Einspielen", gefahr: true })) return;
     const res = await fetch("/api/admin/restore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: state.token, files: data.files }) });
     const out = await res.json();
     if (!out.ok) throw new Error(out.error || "Wiederherstellen fehlgeschlagen.");

@@ -5256,3 +5256,57 @@ html:not(.reduce-motion) .fr-sterne::before { animation: pl-spin 6s linear infin
 .duell-banner span { display: flex; flex-direction: column; min-width: 0; }
 .duell-banner b { font-size: var(--fs-md); }
 .duell-banner small { font-size: var(--fs-xs); color: var(--text-dim); }
+
+/* ============================================================
+   Eigene Dialoge (ersetzen confirm/prompt/alert)
+   ============================================================ */
+.dlg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  background: var(--overlay);
+  backdrop-filter: blur(4px);
+}
+.dlg-card {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--sp-5);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+  box-shadow: var(--sh-lg, 0 20px 60px rgba(0, 0, 0, 0.6));
+}
+.dlg-titel { margin: 0 0 var(--sp-2); font-size: var(--fs-lg); }
+.dlg-text { margin: 0; color: var(--text-dim); font-size: var(--fs-md); line-height: var(--lh); }
+.dlg-input {
+  width: 100%;
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font: inherit;
+  /* 16px verhindert, dass Safari auf dem iPad beim Fokus hineinzoomt. */
+  font-size: 16px;
+}
+.dlg-knoepfe { display: flex; gap: var(--sp-2); margin-top: var(--sp-4); }
+.dlg-knoepfe button {
+  flex: 1;
+  min-height: 44px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.dlg-ok { border-color: var(--line-strong); background: var(--accent); color: var(--accent-ink); }
+.dlg-ok.gefahr { background: var(--bad); border-color: var(--bad); color: #2a0b08; }
+.dlg-knoepfe button:active { transform: scale(0.99); }

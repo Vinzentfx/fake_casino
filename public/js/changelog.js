@@ -19,6 +19,15 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-06-dialoge",
+      datum: "6. September 2026",
+      titel: "Keine grauen Systemfenster mehr",
+      items: [
+        { icon: "🪟", titel: "Eigene Dialoge", text: "An achtzehn Stellen kam bisher das graue Fenster des Browsers hoch: Clan verlassen, Kriegs-Einsatz eingeben, Pferd umbenennen, Kopfgeld aussetzen, Automat freischalten, Backup einspielen. Auf dem iPad sah das jedes Mal aus, als wäre etwas kaputt. Jetzt passen sie zum Rest, und die Knöpfe sind groß genug zum Treffen." },
+        { icon: "⏸️", titel: "Und wichtiger: nichts steht mehr still", text: "Die alten Browser-Fenster halten das ganze Spiel an, solange sie offen sind. Chat, Uhren, laufende Runden, alles eingefroren, bis jemand auf OK tippt. Das ist jetzt vorbei." },
+      ],
+    },
+    {
       id: "2026-09-06-duell",
       datum: "6. September 2026",
       titel: "Sudoku-Duell, ohne Termin",

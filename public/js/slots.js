@@ -130,12 +130,12 @@
       grid.appendChild(card);
     });
   }
-  function tryUnlock(m) {
+  async function tryUnlock(m) {
     if (pvpMode) return toast("Im Duell kannst du nichts freischalten.");
     const acc = window.Casino.getAccount();
     if (!acc) return;
     if (acc.chips < m.unlockCost) return toast(`Du brauchst ${m.unlockCost.toLocaleString("de-DE")} 🪙 für ${m.name}.`);
-    if (!confirm(`${m.name} für ${m.unlockCost.toLocaleString("de-DE")} 🪙 freischalten?`)) return;
+    if (!await window.Casino.dialog.frage(`${m.name} für ${m.unlockCost.toLocaleString("de-DE")} 🪙 freischalten?`, { okText: "Freischalten" })) return;
     socket.emit("slots:unlock", { machineId: m.id }, (res) => {
       if (res && res.ok) {
         window.Casino.applyAccount(res.account);

@@ -141,11 +141,13 @@
   }
 
   // Place a bounty on the viewed player.
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", async (e) => {
     const btn = e.target.closest("#bounty-btn");
     if (!btn) return;
     const target = btn.dataset.target;
-    const raw = prompt(`Wie viel Kopfgeld auf ${target} aussetzen? (min. 1.000 🪙)`, "5000");
+    const raw = await window.Casino.dialog.eingabe(
+      `Wie viel Kopfgeld auf ${target} aussetzen? Mindestens 1.000 🪙.`,
+      { titel: "🎯 Kopfgeld", wert: "5000", okText: "Aussetzen" });
     if (raw == null) return;
     const amount = parseInt(raw, 10);
     if (!Number.isFinite(amount) || amount < 1000) return window.Casino.toast("Mindestens 1.000 🪙.");

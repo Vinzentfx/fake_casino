@@ -225,8 +225,8 @@
     doJoin(code);
   });
   $("#chs-start").addEventListener("click", () => socket.emit("chess:start", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); }));
-  $("#chs-resign").addEventListener("click", () => {
-    if (!confirm("Aufgeben? Der Gegner gewinnt den Pot.")) return;
+  $("#chs-resign").addEventListener("click", async () => {
+    if (!await window.Casino.dialog.frage("Aufgeben? Der Gegner gewinnt den Pot.", { okText: "Aufgeben", gefahr: true })) return;
     socket.emit("chess:resign", () => {});
   });
 

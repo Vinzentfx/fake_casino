@@ -156,8 +156,8 @@
     box.innerHTML = html;
 
     // Wire controls
-    $("#clan-leave").addEventListener("click", () => {
-      if (!confirm("Clan wirklich verlassen?")) return;
+    $("#clan-leave").addEventListener("click", async () => {
+      if (!await window.Casino.dialog.frage("Clan wirklich verlassen?", { okText: "Verlassen", gefahr: true })) return;
       socket.emit("clan:leave", (r) => { if (r && r.ok) { toast("Clan verlassen."); load(); } else toast(r?.error || "Fehler."); });
     });
     $("#clan-payout-btn")?.addEventListener("click", () => {
@@ -181,8 +181,8 @@
         if (r.account) applyAccount(r.account); toast(`💰 ${fmt(amt)} 🪙 eingezahlt.`); load();
       });
     });
-    $("#clan-motto-btn")?.addEventListener("click", () => {
-      const motto = prompt("Clan-Motto:", c.motto || "");
+    $("#clan-motto-btn")?.addEventListener("click", async () => {
+      const motto = await window.Casino.dialog.eingabe("Clan-Motto:", { wert: c.motto || "", okText: "Speichern" });
       if (motto == null) return;
       socket.emit("clan:setMotto", { motto }, (r) => { if (r && r.ok) load(); else toast(r?.error || "Fehler."); });
     });
@@ -191,7 +191,9 @@
     });
     box.querySelectorAll(".clan-promote").forEach((b) => b.addEventListener("click", () => act("clan:promote", { key: b.dataset.k })));
     box.querySelectorAll(".clan-demote").forEach((b) => b.addEventListener("click", () => act("clan:demote", { key: b.dataset.k })));
-    box.querySelectorAll(".clan-kick").forEach((b) => b.addEventListener("click", () => { if (confirm("Mitglied kicken?")) act("clan:kick", { key: b.dataset.k }); }));
+    box.querySelectorAll(".clan-kick").forEach((b) => b.addEventListener("click", async () => {
+      if (await window.Casino.dialog.frage("Mitglied wirklich aus dem Clan werfen?", { okText: "Rauswerfen", gefahr: true })) act("clan:kick", { key: b.dataset.k });
+    }));
     box.querySelectorAll(".clan-appr").forEach((b) => b.addEventListener("click", () => act("clan:approveRequest", { key: b.dataset.k })));
     box.querySelectorAll(".clan-deny").forEach((b) => b.addEventListener("click", () => act("clan:denyRequest", { key: b.dataset.k })));
   }
@@ -263,12 +265,15 @@
         else toast(r?.error || "Fehler.");
       });
     }));
-    list.querySelectorAll(".clan-war-btn").forEach((b) => b.addEventListener("click", () => {
+    list.querySelectorAll(".clan-war-btn").forEach((b) => b.addEventListener("click", async () => {
       const cfg = data.warConfig || { minStake: 10000 };
-      const stakeStr = prompt(`Kriegs-Einsatz aus eurer Schatzkammer (min ${fmt(cfg.minStake)} 🪙) gegen [${b.dataset.tag}]:`, String(cfg.minStake));
+      const stakeStr = await window.Casino.dialog.eingabe(
+        `Kriegs-Einsatz aus eurer Schatzkammer gegen [${b.dataset.tag}]. Mindestens ${fmt(cfg.minStake)} 🪙.`,
+        { titel: "⚔️ Clan-Krieg erklären", wert: String(cfg.minStake), okText: "Weiter" });
       if (stakeStr == null) return;
       const stake = parseInt(stakeStr, 10);
-      const daysStr = prompt("Dauer in Tagen (1, 3 oder 7):", "3");
+      const daysStr = await window.Casino.dialog.eingabe("Dauer in Tagen: 1, 3 oder 7.", { wert: "3", okText: "Krieg erklären" });
+      if (daysStr == null) return;
       const days = parseInt(daysStr, 10) || 3;
       socket.emit("clan:declareWar", { targetId: b.dataset.id, stake, days }, (r) => {
         if (r && r.ok) { toast(`⚔️ Krieg gegen [${b.dataset.tag}] erklärt!`); load(); } else toast(r?.error || "Fehler.");

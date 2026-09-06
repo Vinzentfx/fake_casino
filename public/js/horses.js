@@ -407,9 +407,9 @@
         toast(`🏁 Angemeldet fürs nächste Rennen (Startplatz ${r.position})`);
       });
     }));
-    el.querySelectorAll(".hc-sell").forEach((b) => b.addEventListener("click", () => {
+    el.querySelectorAll(".hc-sell").forEach((b) => b.addEventListener("click", async () => {
       const h = stable.find((x) => x.id === b.dataset.id);
-      if (!confirm(`${h.name} ans Haus verkaufen?`)) return;
+      if (!await window.Casino.dialog.frage(`${h.name} ans Haus verkaufen?`, { okText: "Verkaufen" })) return;
       socket.emit("horses:sell", { horseId: b.dataset.id }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Verkauf fehlgeschlagen.");
         if (r.account) applyAccount(r.account);
@@ -417,9 +417,9 @@
         load();
       });
     }));
-    el.querySelectorAll(".hc-rename").forEach((b) => b.addEventListener("click", () => {
+    el.querySelectorAll(".hc-rename").forEach((b) => b.addEventListener("click", async () => {
       const cur = b.dataset.name;
-      const name = prompt(`Neuer Name für ${cur} (2–18 Zeichen):`, cur);
+      const name = await window.Casino.dialog.eingabe(`Neuer Name für ${cur}, 2 bis 18 Zeichen.`, { wert: cur, okText: "Umbenennen" });
       if (name == null || name.trim() === cur) return;
       socket.emit("horses:rename", { horseId: b.dataset.id, name }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Umbenennen fehlgeschlagen.");
