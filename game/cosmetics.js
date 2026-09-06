@@ -144,7 +144,17 @@ const SPRUECHE = [
   { id: "haus",     text: "Das Haus grüßt {name}.",               cost: 150000 },
   { id: "warnung",  text: "Vorsicht, {name} ist wieder im Spiel.", cost: 250000 },
   { id: "legende",  text: "Eine Legende betritt den Raum: {name}.", cost: 600000 },
+  /*
+   * Selbst geschrieben. Teuerstes Stueck im Laden, und mit Absicht so gebaut,
+   * dass daraus kein Aerger werden kann: der eigene Name steht IMMER vorne
+   * und laesst sich nicht wegschreiben, der Rest ist auf 60 Zeichen begrenzt
+   * und wird beim Anzeigen escaped. Man kann sich also einen Satz ausdenken,
+   * aber niemandem etwas in den Mund legen.
+   */
+  { id: "eigen", text: "{name} …", eigen: true, cost: 900000 },
 ];
+
+const SPRUCH_MAX = 60;
 
 /* ── Profil-Banner ────────────────────────────────────────────────────────
  * Der Streifen hinter deinem Namen im Profil. Reine Flaeche, aber es ist das
@@ -160,6 +170,22 @@ const BANNER = [
   { id: "nordlicht", label: "Nordlicht", cost: 700000, motion: true },
 ];
 
+/* ── Namensschild ─────────────────────────────────────────────────────────
+ * Der Hintergrund der Zeile, in der du in der Online-Liste und in der
+ * Bestenliste stehst. Der Rahmen ums Bild war nur ein Ring um ein Emoji; das
+ * Schild faerbt die ganze Plakette und faellt deshalb viel staerker auf.
+ */
+const SCHILDER = [
+  { id: "keins",   label: "Ohne",       cost: 0 },
+  { id: "messing", label: "Messing",    cost: 70000 },
+  { id: "jade",    label: "Jade",       cost: 70000 },
+  { id: "rubin",   label: "Rubin",      cost: 120000 },
+  { id: "karo",    label: "Karo",       cost: 220000 },
+  { id: "neon",    label: "Neonschild", cost: 380000 },
+  { id: "puls",    label: "Herzschlag", cost: 650000, motion: true },
+  { id: "prisma",  label: "Prisma",     cost: 950000, motion: true },
+];
+
 const avaById = Object.fromEntries(AVATARS.map((a) => [a.id, a]));
 const colById = Object.fromEntries(COLORS.map((c) => [c.id, c]));
 const styById = Object.fromEntries(STYLES.map((x) => [x.id, x]));
@@ -168,13 +194,14 @@ const titById = Object.fromEntries(TITLES.map((x) => [x.id, x]));
 const effById = Object.fromEntries(EFFEKTE.map((x) => [x.id, x]));
 const sprById = Object.fromEntries(SPRUECHE.map((x) => [x.id, x]));
 const banById = Object.fromEntries(BANNER.map((x) => [x.id, x]));
+const schById = Object.fromEntries(SCHILDER.map((x) => [x.id, x]));
 
 // Ein Topf je Art. Alte Accounts haben nur avatars/colors, der Rest kommt
 // beim ersten Zugriff dazu.
 const TOPF = { avatar: "avatars", color: "colors", style: "styles", frame: "frames", title: "titles",
-  effect: "effects", spruch: "sprueche", banner: "banner" };
+  effect: "effects", spruch: "sprueche", banner: "banner", schild: "schilder" };
 const KATALOG = { avatar: avaById, color: colById, style: styById, frame: frmById, title: titById,
-  effect: effById, spruch: sprById, banner: banById };
+  effect: effById, spruch: sprById, banner: banById, schild: schById };
 
 function ensureOwned(acc) {
   const o = acc.cosOwned && typeof acc.cosOwned === "object" ? acc.cosOwned : (acc.cosOwned = {});
@@ -203,6 +230,9 @@ function setupCosmetics(io, accounts) {
         effects: EFFEKTE.map((x) => ({ ...x, owned: hat("effect", x.id), equipped: (acc.winEffect || "konfetti") === x.id })),
         sprueche: SPRUECHE.map((x) => ({ ...x, owned: hat("spruch", x.id), equipped: (acc.spruch || "keiner") === x.id })),
         banner: BANNER.map((x) => ({ ...x, owned: hat("banner", x.id), equipped: (acc.banner || "keiner") === x.id })),
+        schilder: SCHILDER.map((x) => ({ ...x, owned: hat("schild", x.id), equipped: (acc.schild || "keins") === x.id })),
+        spruchText: acc.spruchText || "",
+        spruchMax: SPRUCH_MAX,
       };
     }
 
@@ -227,6 +257,18 @@ function setupCosmetics(io, accounts) {
       ack({ ok: true, ...state(acc), account: accounts.publicAccount(acc) });
     });
 
+    // Eigener Spruchtext. Getrennt vom Anlegen, weil er sich aendern laesst,
+    // ohne dass man das Stueck neu kauft.
+    socket.on("cos:spruchText", ({ text } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct(); if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const owned = ensureOwned(acc);
+      if (!owned.sprueche.includes("eigen")) return ack({ ok: false, error: "Eigenen Spruch zuerst kaufen." });
+      acc.spruchText = saubererSpruch(text);
+      accounts.save();
+      ack({ ok: true, ...state(acc) });
+    });
+
     socket.on("cos:equip", ({ type, id } = {}, ack) => {
       if (typeof ack !== "function") return;
       const acc = acct(); if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
@@ -242,6 +284,7 @@ function setupCosmetics(io, accounts) {
       else if (type === "effect") acc.winEffect = id === "konfetti" ? null : id;
       else if (type === "spruch") acc.spruch = id === "keiner" ? null : id;
       else if (type === "banner") acc.banner = id === "keiner" ? null : id;
+      else if (type === "schild") acc.schild = id === "keins" ? null : id;
       accounts.save();
       ack({ ok: true, ...state(acc), account: accounts.publicAccount(acc) });
     });
@@ -283,6 +326,7 @@ function publicLook(acc) {
     frame: acc.frame || null,
     title: t && t.text ? t.text : null,
     banner: acc.banner || null,
+    schild: acc.schild || null,
     winEffect: acc.winEffect || null,
   };
 }
@@ -291,7 +335,20 @@ function publicLook(acc) {
 function eintrittsSpruch(acc) {
   const s2 = acc && acc.spruch ? sprById[acc.spruch] : null;
   if (!s2 || !s2.text) return null;
+  if (s2.eigen) {
+    const eigener = saubererSpruch(acc.spruchText);
+    return eigener ? `${acc.name} ${eigener}` : null;
+  }
   return s2.text.replace("{name}", acc.name);
 }
 
-module.exports = { setupCosmetics, grant, label, publicLook, eintrittsSpruch, AVATARS, COLORS, STYLES, FRAMES, TITLES, EFFEKTE, SPRUECHE, BANNER };
+/** Eigener Spruchtext: eine Zeile, begrenzte Laenge, keine Steuerzeichen. */
+function saubererSpruch(roh) {
+  return String(roh || "")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, SPRUCH_MAX);
+}
+
+module.exports = { setupCosmetics, grant, label, publicLook, eintrittsSpruch, saubererSpruch, SPRUCH_MAX, AVATARS, COLORS, STYLES, FRAMES, TITLES, EFFEKTE, SPRUECHE, BANNER, SCHILDER };

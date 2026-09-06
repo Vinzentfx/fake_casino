@@ -37,6 +37,12 @@
 
   function karte(z) {
     const screen = SCREEN[z.spiel] || z.spiel;
+    // Dieselbe Zeichnung wie auf der Spielkachel. Ein Emoji neben gezeichneten
+    // Kacheln sieht aus, als waere die Karte von woanders.
+    const symbol = (Casino.icons && Casino.icons.icon(screen)) || z.icon;
+    // Farbton des Spiels, damit die Karte zur Kachel passt.
+    const spiel = (Casino._games || []).find((g) => g.id === screen);
+    const ton = spiel ? spiel.h : 45;
     // Die Regel steht auf jeder Karte, weil sie sich je Spiel unterscheidet:
     // Blackjack zahlt hoechstens das Zweieinhalbfache, ein Vielfaches-Rekord
     // waere dort nach der ersten Runde fuer immer festgenagelt. Dort zaehlt
@@ -45,8 +51,8 @@
       const vor = z.vorwoche
         ? `Letzte Woche: ${escapeHtml(z.vorwoche.name)} mit ${escapeHtml(z.vorwoche.text)}`
         : escapeHtml(z.regel);
-      return `<button class="rec rec-frei" data-rec="${screen}" type="button">
-          <span class="rec-icon" aria-hidden="true">${z.icon}</span>
+      return `<button class="rec rec-frei" data-rec="${screen}" style="--h:${ton}" type="button">
+          <span class="rec-icon" aria-hidden="true">${symbol}</span>
           <span class="rec-game">${escapeHtml(z.label)}</span>
           <span class="rec-faktor">frei</span>
           <span class="rec-who">Hol ihn dir</span>
@@ -58,8 +64,8 @@
     const detail = z.art === "serie"
       ? `${escapeHtml(z.regel)} · ${wannKurz(b.at)}`
       : `${fmt(b.einsatz)} → ${fmt(b.gewinn)} 🪙 · ${wannKurz(b.at)}`;
-    return `<button class="rec${b.meiner ? " rec-mein" : ""}" data-rec="${screen}" type="button">
-        <span class="rec-icon" aria-hidden="true">${z.icon}</span>
+    return `<button class="rec${b.meiner ? " rec-mein" : ""}" data-rec="${screen}" style="--h:${ton}" type="button">
+        <span class="rec-icon" aria-hidden="true">${symbol}</span>
         <span class="rec-game">${escapeHtml(z.label)}</span>
         <span class="rec-faktor">${escapeHtml(b.text)}</span>
         <span class="rec-who">${wer}</span>

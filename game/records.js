@@ -69,11 +69,41 @@ let state = load();
 let _io = null;
 let _accounts = null;
 
+/**
+ * Alte Eintraege auf die neue Form bringen.
+ *
+ * Bis zum 7.9. stand in einem Rekord `faktor`; jetzt steht dort `wert` plus
+ * ein fertiger Text, weil nicht jedes Spiel ein Vielfaches misst. Ohne diese
+ * Umstellung standen die vorhandenen Rekorde als "NaN×" da, und der alte
+ * Blackjack-Eintrag als "undefined Siege am Stück".
+ *
+ * Zwei Faelle werden dabei bewusst weggeworfen statt umgerechnet:
+ *   - Spiele, deren Art sich geaendert hat (Blackjack: Vielfaches -> Serie).
+ *     Ein Vielfaches laesst sich nicht in eine Serie umrechnen.
+ *   - Werte unter der neuen Untergrenze. Sonst stuende auf der Karte "ab 3x"
+ *     und darunter ein Rekord von 2,55.
+ */
+function migriere(best) {
+  const out = {};
+  for (const [spiel, b] of Object.entries(best || {})) {
+    const meta = SPIELE[spiel];
+    if (!meta || !b) continue;
+    const wert = b.wert != null ? b.wert : (meta.art === "faktor" ? b.faktor : null);
+    if (wert == null || !Number.isFinite(Number(wert))) continue;
+    if (Number(wert) < meta.min) continue;
+    out[spiel] = { ...b, wert: Number(wert), art: meta.art, text: wertText(spiel, Number(wert)) };
+    delete out[spiel].faktor;
+  }
+  return out;
+}
+
 function load() {
   try {
     const raw = JSON.parse(fs.readFileSync(FILE, "utf8"));
-    if (raw && typeof raw === "object" && raw.week === weekNow()) return raw;
-    if (raw && typeof raw === "object") return { week: weekNow(), best: {}, letzteWoche: raw.best || {} };
+    if (raw && typeof raw === "object" && raw.week === weekNow()) {
+      return { week: raw.week, best: migriere(raw.best), letzteWoche: migriere(raw.letzteWoche) };
+    }
+    if (raw && typeof raw === "object") return { week: weekNow(), best: {}, letzteWoche: migriere(raw.best) };
   } catch {}
   return { week: weekNow(), best: {}, letzteWoche: {} };
 }

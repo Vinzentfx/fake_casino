@@ -556,6 +556,11 @@ socket.on("account:update", ({ account }) => {
   if (currentScreen === "profile") renderProfile();
 });
 
+// Nur bekannte Schilder durchlassen: ein alter Wert aus einer Nachricht darf
+// keine fremde Klasse ins Dokument schreiben.
+const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma"]);
+const schildKlasse = (p) => (p && SCHILDER.has(p.schild) ? " sch-" + p.schild : "");
+
 function renderOnlinePlayers(players = []) {
   const countEl = $("#online-count");
   const listEl = $("#online-list");
@@ -569,7 +574,7 @@ function renderOnlinePlayers(players = []) {
     const level = p.level ? `<small style="color:${p.level.color || ""}">${escapeHtml(p.level.emoji || "🌱")} ${p.level.level}</small>` : "";
     const clan = p.clan ? `<small class="online-clan">[${escapeHtml(p.clan)}]</small>` : "";
     const status = p.status && p.status.label ? escapeHtml(p.status.label) : "online";
-    return `<button class="online-player" type="button" data-player-profile="${escapeHtml(p.name || "")}" title="${escapeHtml(p.name || "?")} ansehen">` +
+    return `<button class="online-player${schildKlasse(p)}" type="button" data-player-profile="${escapeHtml(p.name || "")}" title="${escapeHtml(p.name || "?")} ansehen">` +
       window.Casino.spieler.avatar(p) + window.Casino.spieler.name(p, { tag: "b" }) +
       `${clan}${level}<em>${p.title ? escapeHtml(p.title) : status}</em></button>`;
   }).join("");
@@ -596,7 +601,7 @@ function renderZuletztDa(liste = []) {
   };
   el.classList.remove("hidden");
   el.innerHTML = '<span class="muted small">Zuletzt hier:</span>' + liste.map((p) =>
-    `<button class="online-player last-player" type="button" data-player-profile="${escapeHtml(p.name || "")}">` +
+    `<button class="online-player last-player${schildKlasse(p)}" type="button" data-player-profile="${escapeHtml(p.name || "")}">` +
       window.Casino.spieler.avatar(p) + window.Casino.spieler.name(p, { tag: "b" }) +
       `<em>${wann(p.lastSeen)}</em></button>`).join("");
 }
@@ -1289,6 +1294,7 @@ function renderLbList() {
     const ava = window.Casino.spieler.avatar(p);
     const nm = window.Casino.spieler.name(p, { tag: "b" });
     const titel = window.Casino.spieler.title(p);
+    if (p.schild && SCHILDER.has(p.schild)) li.classList.add("sch-" + p.schild);
     li.innerHTML =
       `<span>${rank}${clan} ${ava} ${nm}${titel}${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
       `<b>${unit ? unit(p.value) : p.value.toLocaleString("de-DE") + " 🪙"}</b>`;

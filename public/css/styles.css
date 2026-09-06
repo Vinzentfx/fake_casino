@@ -5351,23 +5351,6 @@ html:not(.reduce-motion) .nm-s2_phoenix { animation: pl-sweep 1.6s linear infini
 }
 .game-tile.tile-sm .g-icon { width: 72%; height: 72%; }
 
-/* Blitzschlag-Gewinneffekt: kurzes, hartes Aufblitzen über allem. */
-.fx-blitz {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at 50% 30%, rgba(126, 249, 255, 0.55), rgba(255, 255, 255, 0.18) 40%, transparent 70%);
-  animation: fx-blitz-an 0.42s steps(1, end) forwards;
-}
-@keyframes fx-blitz-an {
-  0% { opacity: 0; }
-  10% { opacity: 1; }
-  22% { opacity: 0.15; }
-  34% { opacity: 0.9; }
-  55% { opacity: 0.1; }
-  100% { opacity: 0; }
-}
-html.reduce-motion .fx-blitz { display: none; }
 
 /* ============================================================
    Profil-Banner
@@ -5451,3 +5434,83 @@ html:not(.reduce-motion) .pf-card[data-banner="nordlicht"]::before {
 .cos-preview[data-banner="welle"]::before { background: radial-gradient(90% 60% at 10% 110%, rgba(78,205,196,.75), transparent 70%), radial-gradient(90% 60% at 90% 120%, rgba(94,168,224,.7), transparent 70%), linear-gradient(180deg, #0a2540, #06131f); }
 .cos-preview[data-banner="gold"]::before  { background: linear-gradient(105deg, #6b4f12, #f7dc8c 42%, #fff6d8 50%, #f7dc8c 58%, #6b4f12); }
 .cos-preview[data-banner="nordlicht"]::before { background: radial-gradient(80% 70% at 25% 100%, rgba(74,222,128,.8), transparent 65%), radial-gradient(80% 70% at 75% 110%, rgba(139,92,246,.75), transparent 65%), linear-gradient(180deg, #050b16, #0a1a2b); }
+
+/* ============================================================
+   Kachel-Umschlag
+   Der Favoriten-Stern ist eine eigene Schaltfläche und darf deshalb
+   nicht IN der Kachel stehen, die selbst eine Schaltfläche ist —
+   der Browser hebt sie sonst heraus und macht ein zweites Rasterfeld
+   daraus. Der Umschlag hält beide nebeneinander und ist das, was im
+   Raster zählt.
+   ============================================================ */
+.tile-wrap { position: relative; display: flex; }
+.tile-wrap .game-tile { flex: 1 1 auto; width: 100%; }
+.tile-wrap-sm { flex: 0 0 auto; }
+.tile-wrap > .tile-fav {
+  position: absolute;
+  right: var(--sp-2);
+  bottom: var(--sp-2);
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-mute);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+.tile-wrap > .tile-fav.on { color: var(--accent-strong); }
+@media (hover: hover) {
+  .tile-wrap > .tile-fav:hover { color: var(--accent); transform: scale(1.15); }
+}
+/* Die Zeichnung in der Rekord-Karte hat dieselbe Größe wie das Emoji vorher
+   und den Farbton des jeweiligen Spiels. */
+.rec-icon .g-icon { width: 1.55rem; height: 1.55rem; color: hsl(var(--h, 45) 62% 74%); }
+
+/* ============================================================
+   Namensschild
+   Färbt die ganze Plakette in der Online-Liste, in "Zuletzt hier"
+   und in der Bestenliste. Der Rahmen ums Bild war nur ein Ring um
+   ein Emoji; das Schild sieht man quer über den Bildschirm.
+   ============================================================ */
+[class*="sch-"] { border: 1px solid transparent; }
+.sch-messing { background: linear-gradient(150deg, rgba(201,162,39,.34), rgba(120,90,20,.22)); border-color: rgba(244,215,130,.55); }
+.sch-jade    { background: linear-gradient(150deg, rgba(23,201,100,.3), rgba(10,90,50,.22)); border-color: rgba(102,192,122,.55); }
+.sch-rubin   { background: linear-gradient(150deg, rgba(214,51,108,.32), rgba(90,15,45,.24)); border-color: rgba(240,122,176,.55); }
+.sch-karo    { background: repeating-linear-gradient(135deg, rgba(255,255,255,.09), rgba(255,255,255,.09) 5px, transparent 5px, transparent 10px), rgba(0,0,0,.22); border-color: rgba(255,255,255,.28); }
+.sch-neon    { background: rgba(8,30,38,.6); border-color: #22d3ee; box-shadow: 0 0 8px rgba(34,211,238,.55), inset 0 0 8px rgba(34,211,238,.2); }
+.sch-puls    { background: linear-gradient(150deg, rgba(255,179,71,.28), rgba(120,50,0,.22)); border-color: rgba(255,201,120,.6); }
+.sch-prisma {
+  background: linear-gradient(110deg, rgba(255,107,107,.3), rgba(255,217,61,.3) 25%, rgba(107,203,119,.3) 50%, rgba(78,205,196,.3) 75%, rgba(166,107,255,.3));
+  background-size: 240% 100%;
+  border-color: rgba(255,255,255,.4);
+}
+@keyframes sch-atem {
+  50% { box-shadow: 0 0 12px rgba(255,179,71,.75); border-color: #ffd76e; }
+}
+html:not(.reduce-motion) .sch-puls { animation: sch-atem 2.2s ease-in-out infinite; }
+html:not(.reduce-motion) .sch-prisma { animation: pl-sweep 4.5s linear infinite; }
+
+/* --- Shop: Namensschild und eigener Spruch --- */
+.cos-schild-demo { pointer-events: none; padding: 4px 8px; border-radius: var(--r-pill); font-size: var(--fs-xs); }
+.cos-eigen {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.cos-eigen input { width: 100%; font-size: 16px; }
+.cos-eigen-vorschau {
+  margin: var(--sp-2) 0;
+  padding: var(--sp-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  min-height: 1.6em;
+}

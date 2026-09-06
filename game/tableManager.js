@@ -212,6 +212,7 @@ function setupPoker(io, accounts) {
         nameStyle: pub.nameStyle,
         frame: pub.frame,
         title: pub.title,
+        schild: pub.schild,
         level: pub.level ? { level: pub.level.level, emoji: pub.level.emoji, color: pub.level.color } : null,
         clan: (() => { try { return require("./clans").tagOf(key); } catch { return null; } })(),
         status,

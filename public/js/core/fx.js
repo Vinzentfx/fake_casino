@@ -121,46 +121,108 @@
    * oder fehlender Wert faellt still auf Konfetti zurueck, damit ein
    * geloeschtes Stueck nie einen leeren Bildschirm hinterlaesst.
    */
-  const EFFEKT_PALETTEN = {
-    muenzen:   ["#f4d782", "#e7c66b", "#c9a227", "#fff3c4"],
-    gold:      ["#ffd76e", "#ff9f43", "#fff6d8", "#c9a227"],
-    feuerwerk: ["#ff6b6b", "#4ecdc4", "#ffd93d", "#a66bff", "#ffffff"],
-    blitz:     ["#7ef9ff", "#ffffff", "#22d3ee", "#c9f7ff"],
-    sterne:    ["#fff6d8", "#ffe9a8", "#ffffff", "#f7dc8c"],
-  };
-
+  /*
+   * Jeder gekaufte Effekt hat eine eigene FORM und eine eigene BEWEGUNG,
+   * nicht nur andere Farben. Dasselbe Konfetti in Orange statt Gelb waere
+   * kein Effekt, sondern ein Farbregler — und genau so hatte ich es zuerst
+   * gebaut.
+   *
+   *   muenzen    Münzen springen von unten hoch und fallen zurück.
+   *   gold       Dichter Vorhang dünner Streifen, streng senkrecht.
+   *   feuerwerk  Drei Explosionen: Punkte fliegen radial auseinander.
+   *   blitz      Bildschirm-Aufblitzen plus ein gezackter Blitz.
+   *   sterne     Wenige große Sterne, langsam und schräg, mit Schweif.
+   */
   function gewinnEffekt() {
     const acc = window.Casino.getAccount ? window.Casino.getAccount() : null;
-    const id = acc && acc.winEffect;
-    return EFFEKT_PALETTEN[id] ? id : null;
+    return (acc && acc.winEffect) || null;
+  }
+
+  /** Ein Teilchen auf die Effektebene legen und nach `leben` wieder abraeumen. */
+  function teil(klasse, stil, leben) {
+    const el = document.createElement("i");
+    el.className = klasse;
+    Object.assign(el.style, stil);
+    ebene().appendChild(el);
+    setTimeout(() => el.remove(), leben);
+  }
+
+  const zufall = (a, b) => a + Math.random() * (b - a);
+
+  function muenzflut(anzahl = 26) {
+    for (let i = 0; i < anzahl; i++) {
+      teil("fx-muenze", {
+        left: zufall(4, 96) + "vw",
+        animationDelay: (i * 22) + "ms",
+        // Wie hoch sie springt und wie weit sie dabei zur Seite driftet.
+        "--hoch": zufall(38, 78) + "vh",
+        "--seit": zufall(-70, 70) + "px",
+        "--dreh": zufall(-220, 220) + "deg",
+      }, 1900);
+    }
+  }
+
+  function goldregen(anzahl = 70) {
+    for (let i = 0; i < anzahl; i++) {
+      teil("fx-strahl", {
+        left: zufall(0, 100) + "vw",
+        height: zufall(28, 70) + "px",
+        animationDelay: zufall(0, 500) + "ms",
+        animationDuration: zufall(900, 1500) + "ms",
+        opacity: String(zufall(0.45, 1)),
+      }, 2200);
+    }
+    teil("fx-goldschein", {}, 1600);
+  }
+
+  function feuerwerk(salven = 3) {
+    const farben = ["#ff6b6b", "#4ecdc4", "#ffd93d", "#a66bff", "#7ef9ff"];
+    for (let n = 0; n < salven; n++) {
+      setTimeout(() => {
+        const x = zufall(18, 82), y = zufall(18, 55);
+        const farbe = farben[Math.floor(Math.random() * farben.length)];
+        for (let i = 0; i < 22; i++) {
+          const winkel = (Math.PI * 2 * i) / 22 + zufall(-0.1, 0.1);
+          const weite = zufall(90, 190);
+          teil("fx-funke", {
+            left: x + "vw", top: y + "vh", background: farbe,
+            "--dx": Math.cos(winkel) * weite + "px",
+            "--dy": Math.sin(winkel) * weite + "px",
+          }, 1200);
+        }
+      }, n * 320);
+    }
+  }
+
+  function blitz() {
+    teil("fx-blitz", {}, 460);
+    // Der Zacken selbst, an zufaelliger Stelle, damit es nicht jedes Mal
+    // dieselbe Bahn ist.
+    const x = zufall(25, 75);
+    teil("fx-zacke", { left: x + "vw" }, 500);
+  }
+
+  function sternenfall(anzahl = 9) {
+    for (let i = 0; i < anzahl; i++) {
+      teil("fx-stern", {
+        left: zufall(-5, 85) + "vw",
+        top: zufall(-10, 30) + "vh",
+        animationDelay: (i * 130) + "ms",
+        fontSize: zufall(14, 30) + "px",
+      }, 2600);
+    }
   }
 
   function spieleGewinnEffekt() {
-    const id = gewinnEffekt();
-    const farben = id ? EFFEKT_PALETTEN[id] : null;
-    // Menge und Form je Effekt. Der Blitz ist bewusst kurz und hart, der
-    // Sternenfall langsam und wenig — sonst sehen alle gleich aus.
-    if (id === "blitz") {
-      blitz();
-      confetti({ count: 30, colors: farben });
-      return;
-    }
-    if (id === "feuerwerk") {
-      for (let i = 0; i < 3; i++) {
-        setTimeout(() => confetti({ count: 34, colors: farben, origin: null }), i * 220);
-      }
-      return;
-    }
-    confetti({ count: id === "sterne" ? 40 : id ? 90 : 70, colors: farben });
-  }
-
-  /** Kurzes Aufblitzen des ganzen Bildschirms. */
-  function blitz() {
     if (reduziert()) return;
-    const el = document.createElement("div");
-    el.className = "fx-blitz";
-    ebene().appendChild(el);
-    setTimeout(() => el.remove(), 420);
+    switch (gewinnEffekt()) {
+      case "muenzen": return muenzflut();
+      case "gold": return goldregen();
+      case "feuerwerk": return feuerwerk();
+      case "blitz": return blitz();
+      case "sterne": return sternenfall();
+      default: return confetti({ count: 70 });
+    }
   }
 
   function bigWin(betrag, { label = "Gewinn", sound = true, dauer = 2600 } = {}) {
@@ -196,5 +258,5 @@
   }
 
   window.Casino = window.Casino || {};
-  window.Casino.fx = { confetti, coins, countUp, bigWin, skeleton, spieleGewinnEffekt, blitz };
+  window.Casino.fx = { confetti, coins, countUp, bigWin, skeleton, spieleGewinnEffekt };
 })();

@@ -116,15 +116,27 @@
     // Gezeichnetes Symbol, wenn es eines gibt. Das Emoji bleibt als Rueckfall
     // stehen, damit ein neues Spiel ohne eigenes Symbol trotzdem etwas zeigt.
     const symbol = (Casino.icons && Casino.icons.icon(g.id)) || g.icon;
+    /*
+     * Der Stern steht NEBEN der Kachel, nicht darin.
+     *
+     * Vorher stand er als <button> in der Kachel, die selbst ein <button> ist.
+     * Das ist ungueltiges HTML: der Browser schliesst die aeussere Schaltflaeche
+     * und haengt den Stern als Geschwister dahinter. Im Raster wurde daraus je
+     * Spiel eine zweite, leere Kachel, in der nur der Stern stand — die Haelfte
+     * aller Felder war grau und die Reihenfolge sah zerwuerfelt aus.
+     */
     return `
-      <button class="game-tile${klein ? " tile-sm" : ""}" style="--h:${g.h}" data-game="${g.id}" type="button">
-        <span class="tile-icon" aria-hidden="true">${symbol}</span>
-        <span class="tile-body">
-          <span class="tile-name">${Casino.escapeHtml(g.name)}</span>
-          ${klein ? "" : `<span class="tile-sub">${Casino.escapeHtml(g.sub)}</span>`}
-        </span>
-        ${live}${stern}
-      </button>`;
+      <div class="tile-wrap${klein ? " tile-wrap-sm" : ""}" style="--h:${g.h}">
+        <button class="game-tile${klein ? " tile-sm" : ""}" data-game="${g.id}" type="button">
+          <span class="tile-icon" aria-hidden="true">${symbol}</span>
+          <span class="tile-body">
+            <span class="tile-name">${Casino.escapeHtml(g.name)}</span>
+            ${klein ? "" : `<span class="tile-sub">${Casino.escapeHtml(g.sub)}</span>`}
+          </span>
+          ${live}
+        </button>
+        ${stern}
+      </div>`;
   }
 
   function zeichneTabs() {

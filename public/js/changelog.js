@@ -19,6 +19,20 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-07-fix",
+      datum: "7. September 2026",
+      titel: "Kachel-Chaos behoben und fünf echte Gewinn-Effekte",
+      gross: true,
+      items: [
+        { icon: "🧩", titel: "Jede Kachel hatte ein leeres Zwillingsfeld", text: "Der Favoriten-Stern war eine Schaltfläche INNERHALB der Kachel, die selbst eine Schaltfläche ist. Das ist ungültiges HTML: der Browser reißt den Stern heraus und hängt ihn als eigenes Feld daneben. Im Raster stand deshalb hinter jedem Spiel eine zweite, graue Kachel mit nur einem Stern darin, und die Reihenfolge sah zerwürfelt aus. Den Fehler hatte ich beim Bau der neuen Lobby eingebaut, er ist jetzt weg." },
+        { icon: "📉", titel: "Alte Rekorde standen als NaN da", text: "Beim Umbau auf Serien statt Vielfache habe ich die vorhandenen Einträge nicht mitgenommen. Towers und Mines zeigten „NaN×“, Blackjack „undefined Siege am Stück“. Alte Einträge werden jetzt umgerechnet; der Blackjack-Eintrag ist weg, weil sich ein Vielfaches nicht in eine Serie umrechnen lässt." },
+        { icon: "🎆", titel: "Die Gewinn-Effekte sind jetzt wirklich verschieden", text: "Vorher war alles außer dem Blitz dasselbe Konfetti in anderen Farben. Jetzt hat jeder seine eigene Form und Bewegung: Münzen springen von unten hoch und fallen zurück, der Goldregen ist ein dichter Vorhang senkrechter Streifen, das Feuerwerk sind drei Explosionen mit radial wegfliegenden Funken, der Blitz zieht einen gezackten Schlag über den Schirm, und der Sternenfall sind wenige große Sterne, die langsam schräg durchziehen." },
+        { icon: "🪧", titel: "Namensschild", text: "Deine ganze Zeile in der Online-Liste und der Bestenliste bekommt Farbe, nicht nur der Ring ums Bild: Messing, Jade, Rubin, Karo, Neon, ein pulsierendes Herzschlag-Schild und ein wanderndes Prisma." },
+        { icon: "✍️", titel: "Eigener Eintritts-Satz", text: "Das teuerste Stück im Laden. Du schreibst deinen eigenen Satz, dein Name steht dabei immer davor und lässt sich nicht wegschreiben, und mehr als 60 Zeichen gehen nicht. Damit kann man sich etwas ausdenken, aber niemandem etwas in den Mund legen." },
+        { icon: "🎨", titel: "Auch die Rekord-Karten haben jetzt die Zeichnungen", text: "Sie trugen noch Emoji, während die Kacheln darüber schon gezeichnete Symbole hatten." },
+      ],
+    },
+    {
       id: "2026-09-07-style",
       datum: "7. September 2026",
       titel: "Eigene Spiel-Symbole und drei neue Kosmetik-Arten",

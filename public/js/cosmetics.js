@@ -84,8 +84,23 @@
     setze("#cos-effects", s.effects.map((x) => knopf("effect", x,
       `<span class="cos-effekt-demo">${escapeHtml(x.label)}</span>`)).join(""));
 
+    setze("#cos-schilder", s.schilder.map((x) => knopf("schild", x,
+      `<span class="online-player cos-schild-demo${x.id === "keins" ? "" : " sch-" + x.id}"><span>🙂</span><b>${escapeHtml((Casino.getAccount() || {}).name || "Du")}</b></span>` +
+      `<span class="cos-banner-label">${escapeHtml(x.label)}</span>`)).join(""));
+
     setze("#cos-sprueche", s.sprueche.map((x) => knopf("spruch", x,
-      `<span class="cos-title-demo">${x.text ? escapeHtml(x.text.replace("{name}", (Casino.getAccount() || {}).name || "Du")) : "— ohne —"}</span>`)).join(""));
+      `<span class="cos-title-demo">${x.eigen ? "✍️ Eigener Satz" : x.text ? escapeHtml(x.text.replace("{name}", (Casino.getAccount() || {}).name || "Du")) : "— ohne —"}</span>`)).join(""));
+
+    // Das Eingabefeld erscheint erst, wenn der eigene Satz gekauft ist.
+    const eigen = s.sprueche.find((x) => x.eigen);
+    const box2 = $("#cos-spruch-eigen");
+    if (box2) {
+      box2.classList.toggle("hidden", !(eigen && eigen.owned));
+      const feld = $("#cos-spruch-text");
+      if (feld && document.activeElement !== feld) feld.value = s.spruchText || "";
+      if (feld) feld.maxLength = s.spruchMax || 60;
+      zeigeSpruchVorschau();
+    }
 
     setze("#cos-banner", s.banner.map((x) => knopf("banner", x,
       `<span class="cos-banner-demo" data-banner="${x.id}"></span><span class="cos-banner-label">${escapeHtml(x.label)}</span>`)).join(""));
@@ -103,7 +118,8 @@
     const type = el.dataset.type, id = el.dataset.id;
     if (el.dataset.locked === "1") {
       const liste = { style: stand.styles, title: stand.titles, frame: stand.frames, avatar: stand.avatars,
-        color: stand.colors, effect: stand.effects, spruch: stand.sprueche, banner: stand.banner }[type] || [];
+        color: stand.colors, effect: stand.effects, spruch: stand.sprueche, banner: stand.banner,
+        schild: stand.schilder }[type] || [];
       const x = liste.find((i) => i.id === id);
       return toast(x && x.via ? `Nicht zu kaufen. ${x.via}.` : "Gibt es nur über den Season-Pass.");
     }
@@ -136,7 +152,30 @@
     });
   }
 
+  /** Vorschau des eigenen Satzes, so wie er im Chat stehen wuerde. */
+  function zeigeSpruchVorschau() {
+    const feld = $("#cos-spruch-text");
+    const vor = $("#cos-spruch-vorschau");
+    if (!feld || !vor) return;
+    const name = (Casino.getAccount() || {}).name || "Du";
+    const text = feld.value.trim();
+    vor.textContent = text ? `👋 ${name} ${text}` : "👋 (noch nichts eingetragen)";
+  }
+
+  document.addEventListener("input", (e) => {
+    if (e.target.id === "cos-spruch-text") zeigeSpruchVorschau();
+  });
+
   document.addEventListener("click", (e) => {
+    if (e.target.id === "cos-spruch-save") {
+      const feld = $("#cos-spruch-text");
+      socket.emit("cos:spruchText", { text: feld.value }, (r) => {
+        if (!r || !r.ok) return toast((r && r.error) || "Fehler.");
+        toast("✓ Satz gespeichert.");
+        render(r);
+      });
+      return;
+    }
     const el = e.target.closest('[data-screen="cosmetics"] .cos-item');
     if (el) handle(el);
   });
