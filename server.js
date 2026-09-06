@@ -58,10 +58,17 @@ const ipbans = require("./game/ipbans");
 const PORT = process.env.PORT || 3000;
 const build = require("./game/buildinfo");
 // Fest fuer alles, was einmal gilt (Socket-Handshake, Backup-Metadaten).
-const APP_VERSION = build.VERSION;
-// Aktuell fuer Auslieferung und Cache. Im Betrieb identisch mit APP_VERSION,
-// beim Entwickeln bei jeder Anfrage neu, damit man keinen alten Code
-// ausgeliefert bekommt.
+/**
+ * Bau-Kennung, die der Client zu sehen bekommt.
+ *
+ * Es gibt bewusst nur DIESE eine Quelle. Ein frueherer Versuch hatte den
+ * Socket die Kennung vom Serverstart melden lassen und die API die aktuelle.
+ * Beim Entwickeln laufen die auseinander, und der Client haelt den Unterschied
+ * fuer ein Update: er laedt neu, bekommt wieder beide Werte, laedt wieder neu.
+ * Im Betrieb sind beide identisch (der Dienst startet beim Deploy neu), beim
+ * Entwickeln liefert current() den frischen Stand.
+ */
+const appVersion = () => build.current();
 
 // ---------------------------------------------------------------------------
 // HTTP / account API
@@ -114,7 +121,7 @@ app.use(express.static(path.join(__dirname, "public"), {
     }
     // Mit Kennung in der URL ist der Inhalt eindeutig, also darf er ein Jahr
     // liegen bleiben.
-    if (res.req && res.req.query && res.req.query.v === APP_VERSION) {
+    if (res.req && res.req.query && res.req.query.v === appVersion()) {
       res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
       return;
     }
@@ -292,7 +299,7 @@ app.post("/api/admin/backup", (req, res) => {
   } catch (e) {
     return res.status(500).json({ error: "Backup fehlgeschlagen: " + e.message });
   }
-  res.json({ ok: true, kind: "fakecasino-backup", createdAt: new Date().toISOString(), version: APP_VERSION, files });
+  res.json({ ok: true, kind: "fakecasino-backup", createdAt: new Date().toISOString(), version: appVersion(), files });
 });
 
 app.post("/api/admin/restore", (req, res) => {
@@ -337,9 +344,9 @@ io.on("connection", (socket) => {
     socket.emit("ipbanned");
     return socket.disconnect(true);
   }
-  socket.emit("app:version", { version: APP_VERSION });
+  socket.emit("app:version", { version: appVersion() });
   socket.on("app:version", (ack) => {
-    if (typeof ack === "function") ack({ ok: true, version: APP_VERSION });
+    if (typeof ack === "function") ack({ ok: true, version: appVersion() });
   });
   // Beim Auth die letzte IP am Account merken (damit der Owner per Name IP-bannen kann).
   socket.on("auth", ({ token } = {}) => {

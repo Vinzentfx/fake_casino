@@ -73,11 +73,20 @@
     } else setActive(true);
   }
 
+  const snd = window.Casino.sound;
+
   function reveal(i) {
     if (!game || game.over) return;
     if ((game.revealed || []).includes(i)) return;
     socket.emit("mines:reveal", { tile: i }, (v) => {
       if (!v || !v.ok) { $("#mines-error").textContent = (v && v.error) || "Fehler."; return; }
+      if (v.bust) snd.play("bust");
+      else {
+        // Jeder sichere Stein klingt eine Stufe hoeher. Das baut die Spannung
+        // hoerbar auf, ohne dass man auf den Multiplikator schauen muss.
+        const stufe = (v.revealed || []).length;
+        snd.tone(420 + Math.min(stufe, 18) * 45, 0.09, "triangle", 0.05);
+      }
       apply(v);
     });
   }
@@ -91,6 +100,7 @@
     if (!Number.isFinite(mines) || mines < 1 || mines > 24) { err.textContent = "1–24 Minen."; return; }
     socket.emit("mines:start", { bet, mines }, (v) => {
       if (!v || !v.ok) { err.textContent = (v && v.error) || "Fehler."; return; }
+      snd.play("chip");
       if (v.account) applyAccount(v.account);
       apply(v);
     });
@@ -99,6 +109,7 @@
   $("#mines-cashout").addEventListener("click", () => {
     socket.emit("mines:cashout", (v) => {
       if (!v || !v.ok) { $("#mines-error").textContent = (v && v.error) || "Fehler."; return; }
+      snd.play("cash");
       apply(v);
     });
   });

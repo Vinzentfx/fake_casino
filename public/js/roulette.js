@@ -19,54 +19,10 @@
     red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1–18", high: "19–36",
   };
 
-  // ── Sound (Web Audio) — ball rattle, settle thunk, win/lose, chip click ──
-  let audioCtx = null;
-  const soundOn = () => {
-    const cb = $("#set-sound");
-    return !cb || cb.checked;
-  };
-  function ac() {
-    if (!soundOn()) return null;
-    try {
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") audioCtx.resume();
-      return audioCtx;
-    } catch { return null; }
-  }
-  function tone(freq, dur, type = "sine", gain = 0.05, delay = 0, to = null) {
-    const ctx = ac();
-    if (!ctx) return;
-    gain *= (window.Casino.vol ?? 1);
-    const t = ctx.currentTime + delay;
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t);
-    if (to) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g).connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + dur + 0.02);
-  }
-  function click(freq = 2600, gain = 0.03) {
-    const ctx = ac();
-    if (!ctx) return;
-    gain *= (window.Casino.vol ?? 1);
-    const t = ctx.currentTime;
-    const len = Math.floor(ctx.sampleRate * 0.012);
-    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const filt = ctx.createBiquadFilter();
-    filt.type = "bandpass"; filt.frequency.value = freq; filt.Q.value = 6;
-    const g = ctx.createGain(); g.gain.value = gain;
-    src.connect(filt).connect(g).connect(ctx.destination);
-    src.start(t);
-  }
+  // ── Sound: Kugelrattern, Aufsetzen, Gewinn/Verlust, Chip-Klick ──
+  // Die Bausteine stehen in core/sound.js, hier nur die Klangfarbe.
+  const { tone, click } = window.Casino.sound;
+
   const sndChip   = () => { tone(880, 0.05, "square", 0.05, 0, 1300); click(3000, 0.025); };
   const sndSettle = () => { tone(180, 0.18, "sine", 0.09, 0, 70); click(1200, 0.05); };
   const sndWin    = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, "triangle", 0.07, i * 0.08));

@@ -385,10 +385,22 @@
   }
 
   socket.on("pinco:room", (state) => { if (!state || !state.code) return; roomCode = state.code; renderRoom(state); });
+  const snd = window.Casino.sound;
+
   socket.on("pinco:drop", (drop) => {
     if (!drop || !drop.id) return;
     // Reveal the result (feed row + my balance) only when the ball lands.
-    animateDrop(drop, () => revealDrop(drop));
+    animateDrop(drop, () => {
+      revealDrop(drop);
+      // Nur die eigenen Baelle klingen. In einer vollen Lobby waere jeder
+      // fremde Ball sonst ein Geraeusch.
+      const me = window.Casino.getAccount();
+      const meins = me && drop.name && drop.name.toLowerCase() === me.name.toLowerCase();
+      if (!meins) return;
+      if ((drop.multiplier || 0) >= 5) snd.play("bigwin");
+      else if ((drop.payout || 0) > (drop.bet || 0)) snd.play("win");
+      else snd.play("tick");
+    });
   });
 
   function wire() {

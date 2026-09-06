@@ -148,10 +148,15 @@
     } else setActive(true);
   }
 
+  const snd = window.Casino.sound;
+
   function pick(t) {
     if (!game || game.over) return;
     socket.emit("towers:pick", { tile: t }, (v) => {
       if (!v || !v.ok) { $("#tw-error").textContent = (v && v.error) || "Fehler."; return; }
+      if (v.bust) snd.play("bust");
+      // Je hoeher die Etage, desto hoeher der Ton.
+      else snd.tone(400 + Math.min(v.level || 0, 12) * 60, 0.1, "triangle", 0.05);
       apply(v);
     });
   }
@@ -163,6 +168,7 @@
     if (bet > 50000) { err.textContent = "Maximaleinsatz 50.000 🪙."; return; }
     socket.emit("towers:start", { bet, difficulty: diffKey }, (v) => {
       if (!v || !v.ok) { err.textContent = (v && v.error) || "Fehler."; return; }
+      snd.play("chip");
       if (v.account) applyAccount(v.account);
       apply(v);
     });
@@ -171,6 +177,7 @@
   $("#tw-cashout").addEventListener("click", () => {
     socket.emit("towers:cashout", (v) => {
       if (!v || !v.ok) { $("#tw-error").textContent = (v && v.error) || "Fehler."; return; }
+      snd.play("cash");
       apply(v);
     });
   });

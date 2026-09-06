@@ -353,11 +353,33 @@
     if (onCrashScreen()) renderAll();
   }
 
+  const snd = window.Casino.sound;
+  let letzterTickTon = 0;
+
   socket.on("crash:round", apply);
-  socket.on("crash:flying", (s) => { apply(s); crashPoint = null; startDraw(); });
-  socket.on("crash:tick", (s) => { multiplier = s.multiplier; if (onCrashScreen()) renderMult(); });
-  socket.on("crash:end", (s) => { apply(s); needBoom = true; renderAll(); startDraw(); });
-  socket.on("crash:cashed", (d) => { if (d && d.auto) toast(`🚀 Auto-Cashout bei ${d.mult.toFixed(2)}× — +${fmt(d.payout)} 🪙!`); });
+  socket.on("crash:flying", (s) => {
+    apply(s); crashPoint = null; startDraw();
+    if (onCrashScreen() && myBet) snd.tone(240, 0.18, "sawtooth", 0.04, 0, 420);
+  });
+  socket.on("crash:tick", (s) => {
+    multiplier = s.multiplier;
+    if (onCrashScreen()) renderMult();
+    // Steigender Ton mit dem Multiplikator, aber hoechstens dreimal pro
+    // Sekunde. Der Tick kommt viel haeufiger, das waere sonst ein Dauerton.
+    if (onCrashScreen() && myBet && !myBet.cashedAt && Date.now() - letzterTickTon > 320) {
+      letzterTickTon = Date.now();
+      snd.tone(300 + Math.min(multiplier, 12) * 70, 0.07, "triangle", 0.03);
+    }
+  });
+  socket.on("crash:end", (s) => {
+    const hatVerloren = myBet && !myBet.cashedAt;
+    apply(s); needBoom = true; renderAll(); startDraw();
+    if (onCrashScreen() && hatVerloren) snd.play("bust");
+  });
+  socket.on("crash:cashed", (d) => {
+    if (onCrashScreen()) snd.play("cash");
+    if (d && d.auto) toast(`🚀 Auto-Cashout bei ${d.mult.toFixed(2)}× — +${fmt(d.payout)} 🪙!`);
+  });
 
   // ── Actions ──────────────────────────────────────────────────────────────
   $("#crash-action").addEventListener("click", () => {

@@ -193,9 +193,6 @@ window.Casino = Object.assign(window.Casino || {}, {
     renderTopbar();
     if (currentScreen === "profile") renderProfile();
   },
-  // Master volume (0-1) - every game's WebAudio gain multiplies by this.
-  vol: Math.min(1, Math.max(0, (parseInt(localStorage.getItem("casino_vol"), 10) || 80) / 100)),
-
   /**
    * Einstellung am Account speichern (Theme, Ton, Favoriten …).
    * Gesammelt und verzögert geschickt: am Theme-Umschalter hängt eine
@@ -229,13 +226,12 @@ function applyPrefs(prefs) {
   if (prefs.theme && window.Casino.theme) window.Casino.theme.adoptFromAccount(prefs.theme);
 
   if (typeof prefs.volume === "number") {
-    window.Casino.vol = prefs.volume;
-    try { localStorage.setItem("casino_vol", String(Math.round(prefs.volume * 100))); } catch {}
+    window.Casino.sound.setVolume(prefs.volume);
     const slider = $("#set-volume");
     if (slider) slider.value = String(Math.round(prefs.volume * 100));
   }
   if (typeof prefs.sound === "boolean") {
-    try { localStorage.setItem("casino_sound", prefs.sound ? "on" : "off"); } catch {}
+    window.Casino.sound.setEnabled(prefs.sound);
     const box = $("#set-sound");
     if (box) box.checked = prefs.sound;
   }
@@ -1399,26 +1395,30 @@ $("#theme-picker")?.addEventListener("click", (e) => {
 // beim Login vom Account eines anderen Geräts.
 document.addEventListener("casino:themechange", renderThemePicker);
 
-// Master volume slider (settings).
+// Lautstaerke und Ton-Schalter. Die Engine haelt den Wert, hier haengt nur
+// die Bedienung dran.
 (function () {
-  const slider = document.getElementById("set-volume");
-  if (!slider) return;
-  slider.value = Math.round(window.Casino.vol * 100);
-  slider.addEventListener("input", () => {
-    window.Casino.vol = Math.min(1, Math.max(0, slider.value / 100));
-    localStorage.setItem("casino_vol", String(slider.value));
-  });
-  // Erst beim Loslassen an den Server, nicht bei jedem Pixel des Schiebers.
-  slider.addEventListener("change", () => {
-    window.Casino.savePrefs({ volume: window.Casino.vol });
-  });
+  const slider = $("#set-volume");
+  const box = $("#set-sound");
+  if (slider) {
+    slider.value = String(Math.round(window.Casino.sound.getVolume() * 100));
+    slider.addEventListener("input", () => window.Casino.sound.setVolume(slider.value / 100));
+    // Erst beim Loslassen an den Server, nicht bei jedem Pixel des Schiebers.
+    slider.addEventListener("change", () => {
+      window.Casino.sound.setVolume(slider.value / 100);
+      window.Casino.savePrefs({ volume: window.Casino.sound.getVolume() });
+      window.Casino.sound.play("tick"); // kurze Hoerprobe
+    });
+  }
+  if (box) {
+    box.checked = window.Casino.sound.isEnabled();
+    box.addEventListener("change", () => {
+      window.Casino.sound.setEnabled(box.checked);
+      window.Casino.savePrefs({ sound: box.checked });
+      if (box.checked) window.Casino.sound.play("select");
+    });
+  }
 })();
-
-$("#set-sound")?.addEventListener("change", (e) => {
-  const on = e.target.checked;
-  try { localStorage.setItem("casino_sound", on ? "on" : "off"); } catch {}
-  window.Casino.savePrefs({ sound: on });
-});
 
 $("#set-motion")?.addEventListener("change", (e) => {
   const on = e.target.checked;

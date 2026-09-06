@@ -18,32 +18,14 @@
   // ---- State ----
   let state = null;   // last bj:state payload
   let betAmount = 100;
-  let soundOn = true;
 
   // ---- Audio ----
-  let audioCtx = null;
-  function getAudio() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    return audioCtx;
-  }
-  function playTone(freq, dur, type = "sine", vol = 0.18) {
-    if (!soundOn) return;
-    vol *= (window.Casino.vol ?? 1);
-    try {
-      const ctx = getAudio();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = type; osc.frequency.value = freq;
-      gain.gain.setValueAtTime(vol, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-      osc.start(); osc.stop(ctx.currentTime + dur);
-    } catch {}
-  }
-  function sfxCard()  { playTone(600, 0.07, "triangle", 0.12); }
-  function sfxWin()   { [520,660,800].forEach((f,i) => setTimeout(() => playTone(f, 0.15, "sine", 0.2), i*90)); }
-  function sfxLose()  { playTone(220, 0.35, "sawtooth", 0.1); }
-  function sfxChip()  { playTone(900, 0.05, "square", 0.08); }
+  // Karten und Chips klingen jetzt im ganzen Haus gleich.
+  const snd = window.Casino.sound;
+  function sfxCard()  { snd.play("deal"); }
+  function sfxWin()   { snd.play("win"); }
+  function sfxLose()  { snd.play("lose"); }
+  function sfxChip()  { snd.play("chip"); }
 
   // ---- Render ----
   function cardHTML(card, faceDown = false) {
@@ -202,7 +184,6 @@
 
   // ---- Init ----
   function onEnterBlackjack() {
-    soundOn = localStorage.getItem("casino_sound") !== "off";
     socket.emit("bj:init");
     setupChipButtons();
   }
@@ -235,8 +216,4 @@
     $("bj-bet-down")   ?.addEventListener("click", () => stepBet(-1));
   }
 
-  // Settings sync
-  document.addEventListener("change", (e) => {
-    if (e.target?.id === "set-sound") soundOn = e.target.checked;
-  });
 })();

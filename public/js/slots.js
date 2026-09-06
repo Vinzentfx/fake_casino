@@ -41,60 +41,9 @@
   let pvp = null; // { code, buyIn, state, isHost, chips, spinsLeft, done, youName, opponent, result }
 
   // ===============================================================
-  // Sound — classic mechanical slot (ratchet) + wins
+  // Sound — Klangfarbe bleibt hier, die Mechanik kommt aus core/sound.js
   // ===============================================================
-  let audioCtx = null;
-  const soundOn = () => {
-    const cb = $("#set-sound");
-    return !cb || cb.checked;
-  };
-  function ac() {
-    if (!soundOn()) return null;
-    try {
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") audioCtx.resume();
-      return audioCtx;
-    } catch {
-      return null;
-    }
-  }
-  function tone(freq, dur, type = "square", gain = 0.05, delay = 0, to = null) {
-    const ctx = ac();
-    if (!ctx) return;
-    gain *= (window.Casino.vol ?? 1);
-    const t = ctx.currentTime + delay;
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t);
-    if (to) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g).connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + dur + 0.02);
-  }
-  function noise(dur, gain = 0.05, delay = 0, freq = 1000, q = 1) {
-    const ctx = ac();
-    if (!ctx) return;
-    gain *= (window.Casino.vol ?? 1);
-    const t = ctx.currentTime + delay;
-    const len = Math.max(1, Math.floor(ctx.sampleRate * dur));
-    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const filt = ctx.createBiquadFilter();
-    filt.type = "bandpass";
-    filt.frequency.value = freq;
-    filt.Q.value = q;
-    const g = ctx.createGain();
-    g.gain.value = gain;
-    src.connect(filt).connect(g).connect(ctx.destination);
-    src.start(t);
-  }
+  const { tone, noise } = window.Casino.sound;
 
   // A single ratchet "click" (pawl over gear tooth).
   function ratchetClick() {
