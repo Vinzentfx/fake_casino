@@ -19,6 +19,15 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-07-profil",
+      datum: "7. September 2026",
+      titel: "Fremde Profile zeigen jetzt das ganze Profil",
+      items: [
+        { icon: "👤", titel: "Nicht mehr nur eine Zahlentabelle", text: "Wer jemanden antippte, sah Chips, Networth und Spiele. Jede gekaufte Kosmetik war damit für alle anderen unsichtbar, und genau dafür kauft man sie. Jetzt steht dort dieselbe Visitenkarte wie im eigenen Profil: Banner, Namensstil, Rahmen, Titel, Level, Imperium und die geschafften Achievements." },
+        { icon: "🔒", titel: "Zwei Unterschiede, mit Absicht", text: "Die gesperrten Achievements fehlen, denn was jemand noch NICHT geschafft hat, geht niemanden etwas an. Und statt „Abmelden“ stehen dort Statistik und Herausfordern." },
+      ],
+    },
+    {
       id: "2026-09-07-fix",
       datum: "7. September 2026",
       titel: "Kachel-Chaos behoben und fünf echte Gewinn-Effekte",

@@ -5514,3 +5514,24 @@ html:not(.reduce-motion) .sch-prisma { animation: pl-sweep 4.5s linear infinite;
   font-size: var(--fs-sm);
   min-height: 1.6em;
 }
+
+/* ============================================================
+   Fremdprofil
+   Benutzt dieselben Bausteine wie das eigene Profil (pf-card,
+   pf-stats, badge-grid), nur enger, weil es in einem Fenster
+   steckt. Ohne das wäre jede gekaufte Kosmetik für andere
+   unsichtbar — und genau dafür kauft man sie.
+   ============================================================ */
+.player-profile-card { max-height: 86vh; overflow-y: auto; }
+.pp-card { margin-top: var(--sp-2); }
+.pp-card .pf-avatar { font-size: 2.4rem; }
+.player-profile-card .pf-stats { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.player-profile-card .section-title { font-size: var(--fs-md); margin: var(--sp-4) 0 var(--sp-2); }
+/* Enger als im eigenen Profil: hier stehen nur die geschafften, also viele
+   kleine Kacheln statt weniger großer. */
+.pp-badges { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+.pp-badges .badge { padding: var(--sp-2); }
+.pp-badges .badge-emoji { font-size: 1.3rem; }
+.pp-badges .badge-label { font-size: var(--fs-xs); }
+.player-profile-actions { display: flex; gap: var(--sp-2); margin-top: var(--sp-4); }
+.player-profile-actions button { flex: 1; min-height: 44px; }

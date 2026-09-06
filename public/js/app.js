@@ -951,6 +951,18 @@ socket.on("social:challengeDeclined", ({ by, label } = {}) => {
   toast(`${by || "Der Gegner"} hat deine ${label || "Duell"}-Herausforderung abgelehnt.`);
 });
 
+/**
+ * Das Profil eines anderen Spielers.
+ *
+ * Vorher stand hier eine Statistik-Tabelle: Chips, Networth, Spiele. Damit
+ * war jede gekaufte Kosmetik unsichtbar, sobald jemand anders hinsah — und
+ * genau dafuer kauft man sie. Angezeigt wird deshalb dieselbe Visitenkarte
+ * wie im eigenen Profil, mit Banner, Namensstil, Rahmen, Titel und Imperium.
+ *
+ * Zwei Unterschiede zum eigenen Profil, beide beabsichtigt: die gesperrten
+ * Achievements fehlen (was jemand NICHT geschafft hat, geht niemanden etwas
+ * an), und statt "Abmelden" stehen dort Statistik und Herausfordern.
+ */
 async function openPlayerProfile(name) {
   const modal = $("#player-profile-modal");
   const body = $("#player-profile-body");
@@ -962,34 +974,62 @@ async function openPlayerProfile(name) {
     const acc = data.account || {};
     const stats = acc.stats || {};
     const ach = data.ach || {};
-    const city = data.city || {};
-    const badgeLine = ach.unlocked && ach.unlocked.length
-      ? ach.unlocked.slice(0, 10).map((b) => `<span class="mini-badge" title="${escapeHtml(b.label)}">${escapeHtml(b.emoji)}</span>`).join("")
-      : '<span class="muted small">Noch keine Badges</span>';
-    const clan = data.clan ? `[${escapeHtml(data.clan)}]` : "";
+    const c = data.city || null;
     const isMe = state.account && String(state.account.name || "").toLowerCase() === String(acc.name || name).toLowerCase();
+
+    const kachel = (label, wert) => `<div class="pf-stat"><span>${label}</span><b>${wert}</b></div>`;
+    const zahl = (n) => Number(n || 0).toLocaleString("de-DE");
+
+    const tags = [];
+    if (data.clan) tags.push(`<span class="pf-tag">🛡️ ${escapeHtml(data.clan)}</span>`);
+    if (ach.badge) tags.push(`<span class="pf-tag">${ach.badge}</span>`);
+    if (data.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">🎯 Kopfgeld ${zahl(data.bounty)} 🪙</span>`);
+    if (acc.lastSeen) tags.push(`<span class="pf-tag">👋 ${wannGrob(acc.lastSeen)}</span>`);
+
+    const badges = (ach.unlocked || []).length
+      ? (ach.unlocked || []).map((b) =>
+          `<div class="badge on"><span class="badge-emoji">${escapeHtml(b.emoji)}</span>` +
+          `<span class="badge-label">${escapeHtml(b.label)}</span></div>`).join("")
+      : '<p class="muted small" style="margin:0">Noch keins freigeschaltet.</p>';
+
+    const imperium = c && c.houses
+      ? `<div class="pf-stats">` +
+          kachel("Häuser", zahl(c.houses)) +
+          kachel("Wert", zahl(c.value) + " 🪙") +
+          kachel("Straßen-Monopole", zahl(c.streets)) +
+          ((c.trophies || []).length ? kachel("Trophäen", (c.trophies || []).length) : "") +
+          ((c.bossOf || []).length ? kachel("Stadtteil-Boss", escapeHtml((c.bossOf || []).join(", "))) : "") +
+        `</div>`
+      : '<p class="muted small" style="margin:0">Besitzt noch nichts in der Stadt.</p>';
+
     body.innerHTML = `
-      <div class="player-profile-head"${acc.banner ? ` data-banner="${escapeHtml(acc.banner)}"` : ""}>
-        <div class="player-profile-avatar">${window.Casino.spieler.avatar(acc)}</div>
-        <div>
-          <h2>${window.Casino.spieler.name(acc)} ${clan}</h2>
+      <div class="pf-card pp-card"${acc.banner ? ` data-banner="${escapeHtml(acc.banner)}"` : ""}>
+        <div class="pf-avatar">${window.Casino.spieler.avatar(acc)}</div>
+        <div class="pf-ident">
+          <h2>${window.Casino.spieler.name(acc)}</h2>
           ${acc.title ? `<div class="pl-title">${escapeHtml(acc.title)}</div>` : ""}
-          <div class="muted small">Dabei seit ${acc.createdAt ? new Date(acc.createdAt).toLocaleDateString("de-DE") : "–"}</div>
+          <div class="pf-tags">${tags.join("")}</div>
         </div>
+        <div class="level-box">${levelHtml(acc.level)}</div>
       </div>
-      <div class="player-profile-level">${levelHtml(acc.level)}</div>
-      <div class="player-profile-stats">
-        <div><span>Chips</span><b>${statText(acc.chips)} 🪙</b></div>
-        <div><span>Networth</span><b>${statText(acc.netWorth)} 🪙</b></div>
-        <div><span>Spiele</span><b>${statText(stats.gamesPlayed)}</b></div>
-        <div><span>Größter Gewinn</span><b>${statText(stats.biggestWin)} 🪙</b></div>
-        <div><span>Stadtwert</span><b>${statText(city.value)} 🪙</b></div>
-        <div><span>Häuser</span><b>${statText(city.houses)}</b></div>
+
+      <div class="pf-stats">
+        ${kachel("Guthaben", zahl(acc.chips) + " 🪙")}
+        ${kachel("Netto-Vermögen", zahl(acc.netWorth ?? acc.chips) + " 🪙")}
+        ${kachel("Gespielte Runden", zahl(stats.gamesPlayed))}
+        ${kachel("Größter Gewinn", zahl(stats.biggestWin) + " 🪙")}
+        ${kachel("Mitglied seit", acc.createdAt ? new Date(acc.createdAt).toLocaleDateString("de-DE") : "–")}
       </div>
-      <div class="player-profile-badges">
-        <div class="muted small">${(ach.unlocked || []).length}/${ach.total || 0} Achievements</div>
-        <div>${badgeLine}</div>
+
+      <h3 class="section-title">🏙️ Imperium</h3>
+      ${imperium}
+
+      <div class="pf-ach-head">
+        <h3 class="section-title" style="margin:0">🏆 Achievements</h3>
+        <span class="muted small">${(ach.unlocked || []).length} von ${ach.total || 0}</span>
       </div>
+      <div class="badge-grid pp-badges">${badges}</div>
+
       <div class="player-profile-actions">
         <button class="btn-secondary" id="player-profile-stats-btn">Statistik ansehen</button>
         ${isMe ? "" : `<button class="btn-primary" id="player-profile-challenge-btn">Herausfordern</button>`}
@@ -1002,6 +1042,17 @@ async function openPlayerProfile(name) {
   } catch {
     body.innerHTML = '<div class="muted small">Profil konnte nicht geladen werden.</div>';
   }
+}
+
+/** "vor 3 Std" / "gestern" — grob reicht, auf die Minute waere unheimlich. */
+function wannGrob(ts) {
+  const min = Math.floor((Date.now() - ts) / 60000);
+  if (min < 5) return "gerade hier";
+  if (min < 60) return `vor ${min} Min hier`;
+  const std = Math.floor(min / 60);
+  if (std < 24) return `vor ${std} Std hier`;
+  const tage = Math.floor(std / 24);
+  return tage === 1 ? "gestern hier" : `vor ${tage} Tagen hier`;
 }
 
 function closePlayerProfile() {
