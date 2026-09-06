@@ -76,6 +76,11 @@
       <span class="sheet-label">Miteinander</span>
       <button class="sheet-item" data-nav="clans"><span>🛡️</span><b>Clans</b><small>Gemeinsam spielen und kämpfen</small></button>
       <button class="sheet-item" data-nav="transfer"><span>💸</span><b>Chips senden</b><small>Jemandem aushelfen</small></button>
+    </div>
+
+    <div class="sheet-group">
+      <span class="sheet-label">Das Casino</span>
+      <button class="sheet-item" data-nav="updates"><span>📜</span><b>Updates</b><small id="menu-updates-sub">Was sich zuletzt geändert hat</small></button>
       <button class="sheet-item" data-nav="suggest"><span>💡</span><b>Vorschläge</b><small>Was fehlt dir hier?</small></button>
     </div>
 
@@ -1194,6 +1199,14 @@
       </div>
     </section>
 
+    <!-- ===================== UPDATES ===================== -->
+    <section class="screen" data-screen="updates">
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title">📜 Updates</h2>
+      <p class="muted small" style="margin-top:-6px">Was sich im Casino geändert hat, neueste zuerst. Tippe einen Eintrag an, um ihn aufzuklappen.</p>
+      <div id="updates-list" class="cl-list"></div>
+    </section>
+
     <!-- ===================== EINSTELLUNGEN ===================== -->
     <section class="screen" data-screen="settings">
       <div class="panel">
@@ -1605,18 +1618,19 @@
   </div>
 
   <!-- Update-/Changelog-Modal (erscheint einmalig nach einem Update) -->
+  <!-- Comeback-Fenster. Inhalt kommt aus js/changelog.js, nicht aus dem
+       HTML: sonst muessen Fenster und Updates-Tab getrennt gepflegt werden
+       und laufen irgendwann auseinander. -->
   <div id="update-modal" class="update-modal hidden">
     <div class="update-card">
-      <div class="update-emoji">🎉</div>
-      <h2>Neues Casino-Update!</h2>
-      <p class="muted small" style="text-align:center;margin-top:-4px">Frisch dabei im Fake Casino:</p>
-      <div class="update-list">
-        <div class="update-item"><span>🏠</span><div><b>Neue Lobby</b><small>Guthaben und Level stehen jetzt oben, darunter die Spiele nach Kategorie sortiert. Jedes Spiel hat seine eigene Farbe, und du siehst auf der Karte, wer gerade dort spielt. Mit dem Stern heftest du dir deine Lieblingsspiele nach oben.</small></div></div>
-        <div class="update-item"><span>🎨</span><div><b>Drei Designs</b><small>Klassik (Filzgrün und Gold), Mitternacht (Marineblau) und Neon (fast schwarz mit Türkis). Umschalten in den Einstellungen, die Wahl gilt auf allen deinen Geräten.</small></div></div>
-        <div class="update-item"><span>🔊</span><div><b>Ton in mehr Spielen</b><small>Mines, Towers, Crash und Pinco haben jetzt Klang. In Mines und Towers steigt der Ton mit jedem sicheren Zug. Große Gewinne werden überall gefeiert, nicht nur an den Slots. Wer das nicht mag: alles abschaltbar.</small></div></div>
-        <div class="update-item"><span>⚡</span><div><b>Schneller und app-tauglich</b><small>Die Seite lädt beim zweiten Aufruf fast nichts mehr nach. Auf dem iPad kannst du das Casino jetzt über "Zum Home-Bildschirm" als richtige App ablegen. Und die Zurück-Geste geht endlich einen Screen zurück statt aus der App heraus.</small></div></div>
+      <div class="update-emoji" id="update-emoji">🎉</div>
+      <h2 id="update-title">Comeback!</h2>
+      <p class="muted small" id="update-sub" style="text-align:center;margin-top:-4px"></p>
+      <div class="update-list" id="update-list"></div>
+      <div class="update-actions">
+        <button class="btn-primary" id="update-close">Los geht's! 🎰</button>
+        <button class="chip-btn" id="update-all" data-nav="updates">Alle Updates ansehen</button>
       </div>
-      <button class="btn-primary" id="update-close" style="width:100%;margin-top:14px">Los geht's! 🎰</button>
     </div>
   </div>
 
@@ -1644,6 +1658,7 @@
   <script defer src="/js/core/screens.js"></script>
   <script defer src="/js/core/sound.js"></script>
   <script defer src="/js/core/fx.js"></script>
+  <script defer src="/js/changelog.js"></script>
   <script defer src="/js/app.js"></script>
   <script defer src="/js/home.js"></script>
   <script defer src="/js/chat.js"></script>

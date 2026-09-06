@@ -62,6 +62,7 @@ window.Casino.screens.register("leaderboard", { onEnter: () => loadLeaderboard()
 window.Casino.screens.register("profile", { onEnter: () => renderProfile() });
 window.Casino.screens.register("admin", { onEnter: () => loadAdminAccounts() });
 window.Casino.screens.register("settings", { onEnter: () => renderThemePicker() });
+window.Casino.screens.register("updates", { onEnter: () => renderUpdates() });
 window.Casino.screens.register("calendar", { onEnter: () => loadCalendar() });
 window.Casino.screens.register("lobby", {
   onEnter: () => {
@@ -310,21 +311,133 @@ function setAccount(acc, token) {
   const adminItem = $("#menu-admin");
   if (adminItem) adminItem.style.display = acc.name.toLowerCase() === "vincent" ? "" : "none";
   maybeShowUpdate();
+  renderUpdateBadge();
 }
 
-// ---- Update-/Changelog-Modal (einmal pro Version) ----
-const UPDATE_VERSION = "2026-09-06-neue-lobby";
-function maybeShowUpdate() {
-  let seen = null;
-  try { seen = localStorage.getItem("casino_seen_update"); } catch {}
-  if (seen === UPDATE_VERSION) return;
-  const m = $("#update-modal");
-  if (m) m.classList.remove("hidden");
+// ============================================================
+// Update-Historie: Comeback-Fenster und Updates-Tab
+// ============================================================
+const SEEN_KEY = "casino_seen_update";
+
+function gesehenerStand() {
+  try { return localStorage.getItem(SEEN_KEY); } catch { return null; }
 }
+function merkeStand(id) {
+  try { localStorage.setItem(SEEN_KEY, id); } catch {}
+}
+
+/** Ein einzelner Punkt eines Updates. */
+function punktHTML(item) {
+  return `<div class="update-item"><span>${item.icon}</span><div>` +
+    `<b>${escapeHtml(item.titel)}</b><small>${escapeHtml(item.text)}</small>` +
+    `</div></div>`;
+}
+
+/**
+ * Fenster beim Reinkommen. Zeigt ALLES, was seit dem letzten Besuch dazukam,
+ * nicht nur das neueste Update. Wer zwei Monate weg war, soll nicht raten
+ * muessen, was sich geaendert hat.
+ */
+function maybeShowUpdate() {
+  const cl = window.Casino.changelog;
+  if (!cl) return;
+  const gesehen = gesehenerStand();
+  // Wer noch nie hier war, bekommt das Onboarding, nicht die Historie.
+  if (!gesehen) { merkeStand(cl.neueste); return; }
+
+  const neu = cl.neuSeit(gesehen);
+  if (!neu.length) return;
+
+  const modal = $("#update-modal");
+  if (!modal) return;
+
+  // "Comeback" nur, wenn wirklich etwas verpasst wurde: mehr als ein Update
+  // oder eines, das als grosses markiert ist. Bei einer kleinen Aenderung
+  // waere die Begruessung uebertrieben.
+  const comeback = neu.length > 1 || neu.some((r) => r.gross);
+  $("#update-emoji").textContent = comeback ? "👋" : "🎉";
+  $("#update-title").textContent = comeback ? "Comeback!" : "Neu im Casino";
+  $("#update-sub").textContent = comeback
+    ? `Das ist passiert, seit du zuletzt hier warst (${neu.length} ${neu.length === 1 ? "Update" : "Updates"}):`
+    : "Frisch dabei im Fake Casino:";
+
+  // Bei mehreren Updates die Ueberschrift je Update mit ausgeben, sonst
+  // steht alles als eine lange Liste da und man sieht nicht, was zusammengehoert.
+  $("#update-list").innerHTML = neu.map((r) => {
+    const kopf = neu.length > 1
+      ? `<div class="update-release-head"><b>${escapeHtml(r.titel)}</b><small>${escapeHtml(r.datum)}</small></div>`
+      : "";
+    return kopf + r.items.map(punktHTML).join("");
+  }).join("");
+
+  modal.classList.remove("hidden");
+}
+
 $("#update-close")?.addEventListener("click", () => {
   $("#update-modal")?.classList.add("hidden");
-  try { localStorage.setItem("casino_seen_update", UPDATE_VERSION); } catch {}
+  if (window.Casino.changelog) merkeStand(window.Casino.changelog.neueste);
+  renderUpdateBadge();
 });
+$("#update-all")?.addEventListener("click", () => {
+  $("#update-modal")?.classList.add("hidden");
+  if (window.Casino.changelog) merkeStand(window.Casino.changelog.neueste);
+  renderUpdateBadge();
+});
+
+/** Der Updates-Tab: die ganze Historie, das neueste aufgeklappt. */
+function renderUpdates() {
+  const host = $("#updates-list");
+  const cl = window.Casino.changelog;
+  if (!host || !cl) return;
+  const gesehen = gesehenerStand();
+
+  host.innerHTML = cl.releases.map((r, i) => {
+    const offen = i === 0;
+    const istNeu = gesehen && r.id > gesehen;
+    return `
+      <article class="cl-entry${offen ? " open" : ""}">
+        <button class="cl-head" type="button" data-cl="${r.id}" aria-expanded="${offen}">
+          <span class="cl-date">${escapeHtml(r.datum)}</span>
+          <span class="cl-title">${escapeHtml(r.titel)}</span>
+          ${r.gross ? '<span class="cl-tag">Großes Update</span>' : ""}
+          ${istNeu ? '<span class="cl-tag cl-tag-new">Neu</span>' : ""}
+          <span class="cl-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="cl-body">
+          ${r.intro ? `<p class="cl-intro">${escapeHtml(r.intro)}</p>` : ""}
+          ${r.items.map(punktHTML).join("")}
+        </div>
+      </article>`;
+  }).join("");
+
+  // Ansehen zaehlt als gelesen.
+  merkeStand(cl.neueste);
+  renderUpdateBadge();
+}
+
+$("#updates-list")?.addEventListener("click", (e) => {
+  const head = e.target.closest("[data-cl]");
+  if (!head) return;
+  const entry = head.closest(".cl-entry");
+  const offen = entry.classList.toggle("open");
+  head.setAttribute("aria-expanded", String(offen));
+  window.Casino.sound.play("tick");
+});
+
+/** Punkt am Menue-Knopf, solange es Ungelesenes gibt. */
+function renderUpdateBadge() {
+  const cl = window.Casino.changelog;
+  const btn = $("#menu-btn");
+  const sub = $("#menu-updates-sub");
+  if (!cl || !btn) return;
+  const neu = cl.neuSeit(gesehenerStand());
+  btn.classList.toggle("has-news", neu.length > 0);
+  if (sub) {
+    sub.textContent = neu.length
+      ? `${neu.length} ${neu.length === 1 ? "neues Update" : "neue Updates"}`
+      : "Was sich zuletzt geändert hat";
+  }
+}
 
 const ONBOARDING_VERSION = "2026-07-08-first-steps";
 function maybeShowOnboarding() {
