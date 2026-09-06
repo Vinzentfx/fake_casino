@@ -45,8 +45,48 @@
         <span id="player-name">Spieler</span>
         <span class="level-chip" id="level-chip" style="display:none"></span>
       </div>
+      <button class="menu-btn" id="menu-btn" type="button" aria-label="Menü öffnen"
+              aria-haspopup="true" aria-expanded="false">☰</button>
     </div>
   </header>
+
+  <!-- Menü. Hier steht alles, was kein Spiel ist: Fortschritt, Soziales,
+       eigene Einstellungen. Vorher lag das als vierzehn winzige Emoji-Knöpfe
+       unter den Spielkacheln, wo zwischen Poker und Roulette plötzlich
+       "Einstellungen" stand. -->
+  <div class="sheet-backdrop hidden" id="menu-backdrop"></div>
+  <nav class="sheet hidden" id="menu-sheet" aria-label="Menü">
+    <div class="sheet-grip" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <b>Menü</b>
+      <button class="sheet-close" id="menu-close" type="button" aria-label="Schließen">✕</button>
+    </div>
+
+    <div class="sheet-group">
+      <span class="sheet-label">Fortschritt</span>
+      <button class="sheet-item" data-nav="quests"><span>🎯</span><b>Aufträge</b><small>Tages- und Wochenziele</small></button>
+      <button class="sheet-item" data-nav="season"><span>🎟️</span><b>Season-Pass</b><small>Stufen und Belohnungen</small></button>
+      <button class="sheet-item" data-nav="calendar"><span>📅</span><b>Kalender</b><small>Täglich einmal abholen</small></button>
+      <button class="sheet-item" data-nav="wheel"><span>🎡</span><b>Glücksrad</b><small>Einmal am Tag drehen</small></button>
+      <button class="sheet-item" data-nav="leaderboard"><span>🏆</span><b>Bestenliste</b><small>Wer liegt vorn</small></button>
+      <button class="sheet-item" data-nav="stats"><span>📊</span><b>Statistik</b><small>Deine Bilanz je Spiel</small></button>
+    </div>
+
+    <div class="sheet-group">
+      <span class="sheet-label">Miteinander</span>
+      <button class="sheet-item" data-nav="clans"><span>🛡️</span><b>Clans</b><small>Gemeinsam spielen und kämpfen</small></button>
+      <button class="sheet-item" data-nav="transfer"><span>💸</span><b>Chips senden</b><small>Jemandem aushelfen</small></button>
+      <button class="sheet-item" data-nav="suggest"><span>💡</span><b>Vorschläge</b><small>Was fehlt dir hier?</small></button>
+    </div>
+
+    <div class="sheet-group">
+      <span class="sheet-label">Du</span>
+      <button class="sheet-item" data-nav="profile"><span>👤</span><b>Profil</b><small>Guthaben, Erfolge, Abmelden</small></button>
+      <button class="sheet-item" data-nav="cosmetics"><span>🎨</span><b>Kosmetik</b><small>Avatar und Namensfarbe</small></button>
+      <button class="sheet-item" data-nav="settings"><span>⚙️</span><b>Einstellungen</b><small>Design, Ton, Passwort</small></button>
+      <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><span>🛠️</span><b>Admin</b><small>Verwaltung</small></button>
+    </div>
+  </nav>
   <div id="announcement-strip" class="announcement-strip hidden" aria-live="polite">
     <span class="announcement-icon">📣</span>
     <div>
@@ -87,156 +127,65 @@
     <section class="screen" data-screen="lobby">
       <div class="lobby-inner">
         <div id="liveops-banner" class="liveops-banner hidden"></div>
-        <div class="online-strip" id="online-strip">
-          <span class="online-dot"></span>
-          <b id="online-count">0 online</b>
-          <div class="online-list" id="online-list">
-            <span class="muted small">Lädt…</span>
-          </div>
-        </div>
-        <div class="open-lobbies-head">
-          <h2 class="section-title">🎮 Offene Lobbys</h2>
-          <button class="chip-btn" id="lobby-refresh" title="Aktualisieren">↻</button>
-        </div>
-        <div class="lobby-list" id="lobby-list">
-          <p class="muted small">Lädt…</p>
-        </div>
 
-        <div style="margin-top:14px">
-          <div class="open-lobbies-head">
-            <h2 class="section-title">📡 Live-Feed</h2>
-            <button class="chip-btn" data-nav="leaderboard" title="Mehr ansehen">🏆</button>
+        <!-- Kopf: Guthaben, Fortschritt und die zwei Dinge, die man beim
+             Reinkommen wirklich anklickt (Bonus abholen, Aufträge ansehen). -->
+        <section class="hero">
+          <div class="hero-main">
+            <span class="hero-label">Dein Guthaben</span>
+            <div class="hero-balance"><b id="hero-chips">0</b> <span class="hero-coin">🪙</span></div>
+            <div class="hero-level" id="hero-level"></div>
           </div>
-          <div id="global-feed-list" style="border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:.55rem .75rem;background:rgba(0,0,0,.14)">
+          <div class="hero-actions">
+            <button class="hero-btn hero-btn-bonus" id="hero-bonus" type="button">
+              <span class="hero-btn-icon">🎁</span>
+              <span class="hero-btn-text"><b>Stunden-Bonus</b><small id="hero-bonus-sub">Prüfe…</small></span>
+            </button>
+            <button class="hero-btn" data-nav="quests" type="button">
+              <span class="hero-btn-icon">🎯</span>
+              <span class="hero-btn-text"><b>Aufträge</b><small id="hero-quests-sub">Tages- und Wochenziele</small></span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Schnellzugriff: Favoriten, sonst zuletzt gespielt. Bleibt
+             ausgeblendet, solange es weder das eine noch das andere gibt. -->
+        <section class="quick-row hidden" id="lobby-quick">
+          <h2 class="section-title" id="lobby-quick-title">Zuletzt gespielt</h2>
+          <div class="quick-list" id="lobby-quick-list"></div>
+        </section>
+
+        <!-- Spiele nach Kategorie statt in einem endlosen Band -->
+        <nav class="cat-tabs" id="cat-tabs" role="tablist" aria-label="Spielkategorien"></nav>
+        <div class="game-grid" id="lobby-games"></div>
+
+        <!-- Was gerade läuft. Steht bewusst UNTER den Spielen: die beiden
+             Kästen sind meistens leer und haben oben nur Platz gefressen. -->
+        <section id="lobby-live">
+          <div class="open-lobbies-head">
+            <h2 class="section-title">🎮 Offene Lobbys</h2>
+            <button class="chip-btn" id="lobby-refresh" title="Aktualisieren">↻</button>
+          </div>
+          <div class="lobby-list" id="lobby-list">
+            <p class="muted small">Lädt…</p>
+          </div>
+
+          <div class="open-lobbies-head" style="margin-top:14px">
+            <h2 class="section-title">📡 Live-Feed</h2>
+            <button class="chip-btn" data-nav="leaderboard" title="Bestenliste ansehen">🏆</button>
+          </div>
+          <div id="global-feed-list" class="feed-box">
             <div class="muted small">Lädt…</div>
           </div>
-        </div>
 
-        <h2 class="section-title">Spiele</h2>
-        <div class="game-grid">
-          <button class="game-tile" data-nav="poker">
-            <span class="tile-icon">🃏</span>
-            <span class="tile-name">Texas Hold'em</span>
-            <span class="tile-sub">Pokern mit Freunden</span>
-          </button>
-          <button class="game-tile" data-nav="slots">
-            <span class="tile-icon">🎰</span>
-            <span class="tile-name">Slots</span>
-            <span class="tile-sub">Einarmiger Bandit</span>
-          </button>
-          <button class="game-tile" data-nav="blackjack">
-            <span class="tile-icon">♠️</span>
-            <span class="tile-name">Blackjack</span>
-            <span class="tile-sub">21 schlagen</span>
-          </button>
-          <button class="game-tile" data-nav="roulette">
-            <span class="tile-icon">🎡</span>
-            <span class="tile-name">Roulette</span>
-            <span class="tile-sub">Europäisches Roulette</span>
-          </button>
-          <button class="game-tile" data-nav="sports">
-            <span class="tile-icon">⚽</span>
-            <span class="tile-name">Sportwetten</span>
-            <span class="tile-sub">Quoten · sieh fremde Tipps</span>
-          </button>
-          <button class="game-tile" data-nav="crash">
-            <span class="tile-icon">🚀</span>
-            <span class="tile-name">Crash</span>
-            <span class="tile-sub">Rakete · vor dem Crash raus!</span>
-          </button>
-          <button class="game-tile" data-nav="horses">
-            <span class="tile-icon">🐎</span>
-            <span class="tile-name">Rennbahn</span>
-            <span class="tile-sub">Live-Rennen · eigene Pferde · wetten</span>
-          </button>
-          <button class="game-tile" data-nav="mines">
-            <span class="tile-icon">💣</span>
-            <span class="tile-name">Mines</span>
-            <span class="tile-sub">Edelsteine sammeln, Bomben meiden</span>
-          </button>
-          <button class="game-tile" data-nav="towers">
-            <span class="tile-icon">🗼</span>
-            <span class="tile-name">Towers</span>
-            <span class="tile-sub">Turm erklimmen · Fallen meiden · bis 256.901×</span>
-          </button>
-          <button class="game-tile" data-nav="pinco">
-            <span class="tile-icon">🟢</span>
-            <span class="tile-name">Pinco Ball</span>
-            <span class="tile-sub">Bälle droppen · Live-Lobby</span>
-          </button>
-        </div>
-
-        <h2 class="section-title">🧩 Denkspiele</h2>
-        <div class="game-grid">
-          <button class="game-tile" data-nav="memory">
-            <span class="tile-icon">🧠</span>
-            <span class="tile-name">Memory-Duell</span>
-            <span class="tile-sub">Paare finden · gegeneinander um Chips</span>
-          </button>
-          <button class="game-tile" data-nav="sudoku">
-            <span class="tile-icon">🔢</span>
-            <span class="tile-name">Sudoku-Race</span>
-            <span class="tile-sub">Solo oder Duell · wer zuerst löst</span>
-          </button>
-          <button class="game-tile" data-nav="solitaire">
-            <span class="tile-icon">🃏</span>
-            <span class="tile-name">Solitär</span>
-            <span class="tile-sub">Klondike · frei, gegen Haus oder PvP</span>
-          </button>
-          <button class="game-tile" data-nav="chess">
-            <span class="tile-icon">♟️</span>
-            <span class="tile-name">Schach-Duell</span>
-            <span class="tile-sub">Blitz um Chips · Wertung & Clan-Liga</span>
-          </button>
-        </div>
-
-        <h2 class="section-title">Wirtschaft</h2>
-        <div class="game-grid">
-          <button class="game-tile" data-nav="work">
-            <span class="tile-icon">💼</span>
-            <span class="tile-name">Arbeiten</span>
-            <span class="tile-sub">Starthilfe per Klick</span>
-          </button>
-          <button class="game-tile" data-nav="businesses">
-            <span class="tile-icon">🏙️</span>
-            <span class="tile-name">Stadt</span>
-            <span class="tile-sub">Grundstücke & Unternehmen</span>
-          </button>
-          <button class="game-tile" data-nav="bank">
-            <span class="tile-icon">🏦</span>
-            <span class="tile-name">Bank</span>
-            <span class="tile-sub">Sparkonto</span>
-          </button>
-          <button class="game-tile" data-nav="stocks">
-            <span class="tile-icon">📈</span>
-            <span class="tile-name">Börse</span>
-            <span class="tile-sub">Aktien · Long / Short</span>
-          </button>
-          <!-- Markt stillgelegt: Buffs kommen jetzt aus Gebäude-Besitz, nicht aus Produkten. -->
-          <button class="game-tile" data-nav="market" style="display:none">
-            <span class="tile-icon">🛒</span>
-            <span class="tile-name">Markt</span>
-            <span class="tile-sub">Produkte nutzen & handeln</span>
-          </button>
-        </div>
-
-        <h2 class="section-title">Mehr</h2>
-        <div class="action-grid">
-          <button class="action-tile" id="calendar-tile" data-nav="calendar">📅<span>Kalender</span></button>
-          <button class="action-tile" id="wheel-tile" data-nav="wheel">🎡<span>Glücksrad</span></button>
-          <button class="action-tile" data-nav="quests">🎯<span>Aufträge</span></button>
-          <button class="action-tile locked" data-nav="season" aria-disabled="true">🎟️<span>Kommt bald!</span></button>
-          <button class="action-tile" data-nav="clans">🛡️<span>Clans</span></button>
-          <button class="action-tile" data-nav="cosmetics">🎨<span>Kosmetik</span></button>
-          <button class="action-tile" data-nav="leaderboard">🏆<span>Bestenliste</span></button>
-          <button class="action-tile" data-nav="stats">📊<span>Statistik</span></button>
-          <button class="action-tile" id="bonus-tile">🎁<span>Stunden-Bonus</span></button>
-          <button class="action-tile" data-nav="transfer">💸<span>Chips senden</span></button>
-          <button class="action-tile" data-nav="profile">👤<span>Profil</span></button>
-          <button class="action-tile" data-nav="settings">⚙️<span>Einstellungen</span></button>
-          <button class="action-tile" data-nav="suggest">💡<span>Vorschläge</span></button>
-          <button class="action-tile" id="admin-tile" data-nav="admin" style="display:none">🛠️<span>Admin</span></button>
-        </div>
+          <div class="online-strip" id="online-strip">
+            <span class="online-dot"></span>
+            <b id="online-count">0 online</b>
+            <div class="online-list" id="online-list">
+              <span class="muted small">Lädt…</span>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -1692,6 +1641,7 @@
   <script defer src="/js/core/sound.js"></script>
   <script defer src="/js/core/fx.js"></script>
   <script defer src="/js/app.js"></script>
+  <script defer src="/js/home.js"></script>
   <script defer src="/js/chat.js"></script>
   <script defer src="/js/feed.js"></script>
   <script defer src="/js/lobby.js"></script>

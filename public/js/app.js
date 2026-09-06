@@ -78,6 +78,35 @@ document.addEventListener("casino:screen", (e) => {
   window.scrollTo(0, 0);
 });
 
+// ============================================================
+// Menü (alles, was kein Spiel ist)
+// ============================================================
+(function () {
+  const sheet = $("#menu-sheet");
+  const backdrop = $("#menu-backdrop");
+  const btn = $("#menu-btn");
+  if (!sheet || !backdrop || !btn) return;
+
+  function auf(offen) {
+    sheet.classList.toggle("hidden", !offen);
+    backdrop.classList.toggle("hidden", !offen);
+    btn.setAttribute("aria-expanded", String(offen));
+    // Hintergrund festhalten, sonst scrollt beim Wischen im Menü die Seite
+    // darunter mit. Auf dem iPad fällt das sofort unangenehm auf.
+    document.body.classList.toggle("sheet-open", offen);
+    if (offen) window.Casino.sound.play("select");
+  }
+
+  btn.addEventListener("click", () => auf(sheet.classList.contains("hidden")));
+  backdrop.addEventListener("click", () => auf(false));
+  $("#menu-close")?.addEventListener("click", () => auf(false));
+  // Jede Navigation schließt das Menü, egal von wo sie kam.
+  document.addEventListener("casino:screen", () => auf(false));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !sheet.classList.contains("hidden")) auf(false);
+  });
+})();
+
 // Alle Elemente mit data-nav="screen" navigieren dorthin
 document.addEventListener("click", (e) => {
   const navEl = e.target.closest("[data-nav]");
@@ -263,8 +292,8 @@ function setAccount(acc, token) {
   renderTopbar();
   requestPresence();
   // Admin-Tile nur für Vincent sichtbar
-  const adminTile = $("#admin-tile");
-  if (adminTile) adminTile.style.display = acc.name.toLowerCase() === "vincent" ? "" : "none";
+  const adminItem = $("#menu-admin");
+  if (adminItem) adminItem.style.display = acc.name.toLowerCase() === "vincent" ? "" : "none";
   maybeShowUpdate();
 }
 
@@ -357,11 +386,16 @@ $("#online-list")?.addEventListener("click", (e) => {
 
 function requestPresence() {
   socket.emit("presence:list", (res) => {
-    if (res && res.ok) renderOnlinePlayers(res.online || []);
+    if (!res || !res.ok) return;
+    renderOnlinePlayers(res.online || []);
+    if (window.Casino._lobbyPresence) window.Casino._lobbyPresence(res.online || []);
   });
 }
 
-socket.on("presence:update", ({ online } = {}) => renderOnlinePlayers(online || []));
+socket.on("presence:update", ({ online } = {}) => {
+  renderOnlinePlayers(online || []);
+  if (window.Casino._lobbyPresence) window.Casino._lobbyPresence(online || []);
+});
 
 const RESCUE_THRESHOLD = 50; // mirror of server; controls when the help button shows
 
@@ -721,29 +755,76 @@ socket.on("level:up", (d) => {
 });
 setInterval(renderLiveops, 20000);
 
-// ---- Stunden-Bonus: Live-Countdown auf Button + Lobby-Kachel ----
+// ---- Stunden-Bonus: Countdown auf Topbar-Knopf und Hero-Kachel ----
 function updateBonusUI() {
   const acc = state.account;
   const btn = $("#bonus-btn");
-  const tileSpan = $("#bonus-tile span");
   if (!acc || !btn) return;
   const left = state.bonusCooldownMs - (Date.now() - (acc.lastBonusAt || 0));
   const ready = left <= 0;
+  const heroBtn = $("#hero-bonus");
+  const heroSub = $("#hero-bonus-sub");
+
   btn.disabled = !ready;
   if (ready) {
     btn.textContent = "🎁 Bonus";
-    if (tileSpan) tileSpan.textContent = "Stunden-Bonus abholen!";
-    $("#bonus-tile")?.classList.add("bonus-ready");
+    if (heroSub) heroSub.textContent = "Jetzt abholen";
+    heroBtn?.classList.add("ready");
+    heroBtn && (heroBtn.disabled = false);
   } else {
     const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
     const t = (left >= 3600000 ? Math.floor(left / 3600000) + ":" : "") +
       String(m % 60).padStart(2, "0") + ":" + String(s).padStart(2, "0");
     btn.textContent = `⏳ ${t}`;
-    if (tileSpan) tileSpan.textContent = `Bonus in ${t}`;
-    $("#bonus-tile")?.classList.remove("bonus-ready");
+    if (heroSub) heroSub.textContent = `Wieder in ${t}`;
+    heroBtn?.classList.remove("ready");
+    heroBtn && (heroBtn.disabled = true);
   }
 }
 setInterval(updateBonusUI, 1000);
+
+// ============================================================
+// Hero-Bereich der Lobby
+// ============================================================
+/**
+ * Guthaben gross, Level-Fortschritt darunter. Das Guthaben zaehlt hoch, wenn
+ * es sich geaendert hat: eine Zahl, die von 4.950 auf 128.450 springt, nimmt
+ * man kaum wahr, eine hochlaufende schon.
+ */
+let heroChipsAngezeigt = null;
+function renderHero() {
+  const acc = state.account;
+  if (!acc) return;
+  const el = $("#hero-chips");
+  if (el) {
+    const ziel = acc.chips || 0;
+    if (heroChipsAngezeigt === null || Math.abs(ziel - heroChipsAngezeigt) < 2) {
+      el.textContent = ziel.toLocaleString("de-DE");
+    } else {
+      window.Casino.fx.countUp(el, heroChipsAngezeigt, ziel);
+    }
+    heroChipsAngezeigt = ziel;
+  }
+
+  const lvl = $("#hero-level");
+  if (lvl) {
+    const l = acc.level;
+    if (!l) { lvl.innerHTML = ""; }
+    else {
+      const anteil = l.xpForNext > 0
+        ? Math.min(100, Math.round((l.xpInLevel / l.xpForNext) * 100))
+        : 100;
+      lvl.innerHTML = `
+        <div class="hero-level-row">
+          <span class="hero-level-badge" style="color:${l.color || "inherit"}">${escapeHtml(l.emoji || "🌱")} Level ${l.level}</span>
+          <small>${escapeHtml(l.title || "")}</small>
+        </div>
+        <div class="hero-level-bar" title="${l.xpInLevel} von ${l.xpForNext} XP"><i style="width:${anteil}%"></i></div>`;
+    }
+  }
+  updateBonusUI();
+}
+window.Casino._renderHero = renderHero;
 
 // ---- Stunden-Bonus ----
 async function claimBonus() {
@@ -763,7 +844,7 @@ async function claimBonus() {
   }
 }
 $("#bonus-btn").addEventListener("click", claimBonus);
-$("#bonus-tile").addEventListener("click", claimBonus);
+$("#hero-bonus")?.addEventListener("click", claimBonus);
 
 // ---- Soforthilfe (Pleite-Schutz) ----
 async function claimRescue() {

@@ -110,6 +110,8 @@ function setupPoker(io, accounts) {
     sports: "bei Sportwetten",
     crash: "spielt Crash",
     mines: "spielt Mines",
+    towers: "klettert im Turm",
+    horses: "an der Rennbahn",
     pinco: "spielt Pinco Ball",
     memory: "spielt Memory",
     sudoku: "spielt Sudoku",
@@ -130,8 +132,13 @@ function setupPoker(io, accounts) {
     transfer: "sendet Chips",
     settings: "in Einstellungen",
     suggest: "bei Vorschlägen",
+    market: "auf dem Markt",
+    season: "beim Season-Pass",
   };
-  const GAME_SCREENS = new Set(["poker", "slots", "blackjack", "roulette", "sports", "crash", "mines", "pinco", "memory", "sudoku", "solitaire", "chess"]);
+  // Towers und Rennbahn fehlten hier. Weil presence:screen unbekannte Namen
+  // auf "lobby" zurueckfallen laesst, sah man jeden, der dort spielte, als
+  // "in der Lobby" — und auf den Spielkarten waeren beide dauerhaft leer.
+  const GAME_SCREENS = new Set(["poker", "slots", "blackjack", "roulette", "sports", "crash", "mines", "towers", "horses", "pinco", "memory", "sudoku", "solitaire", "chess"]);
   function pickStatus(sockets) {
     const screens = sockets.map((s) => s.data && s.data.screen).filter(Boolean);
     const game = screens.find((name) => GAME_SCREENS.has(name));
