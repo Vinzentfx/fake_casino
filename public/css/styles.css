@@ -3609,6 +3609,76 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 }
 .se-caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-3); }
 
+/* Die drei Multiplikatoren. Stehen ueber den Tagesdeckeln, weil sie die
+   Frage beantworten, warum man heute ueberhaupt spielen sollte. */
+.se-boosts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+.se-boost {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface);
+  text-align: left;
+  color: var(--text);
+}
+.se-boost-icon { font-size: 1.5rem; flex: 0 0 auto; }
+.se-boost-text { display: flex; flex-direction: column; min-width: 0; }
+.se-boost-text small {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+.se-boost-text b { font-size: var(--fs-md); color: var(--accent-strong); }
+.se-boost-aus .se-boost-text b { color: var(--text-dim); }
+/* Der Fokus ist anklickbar und fuehrt direkt ins Spiel. */
+.se-boost-fokus { border-color: rgba(var(--accent-rgb), 0.45); background: var(--accent-soft); cursor: pointer; }
+.se-boost-fokus:active { transform: scale(0.985); }
+
+/* ---------------- Clan-Season ---------------- */
+.clan-season {
+  margin: var(--sp-3) 0;
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.clan-season-bonus {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+.clan-season-bonus b { color: var(--accent-strong); }
+.clan-season-track { display: flex; flex-direction: column; gap: 3px; margin: var(--sp-3) 0; }
+.clan-season-step {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 5px var(--sp-2);
+  border-radius: var(--r-xs);
+  background: var(--surface-sunken);
+  font-size: var(--fs-sm);
+}
+.clan-season-step .css-num {
+  display: grid; place-items: center;
+  width: 22px; height: 22px; border-radius: var(--r-pill);
+  background: var(--line-neutral); color: var(--text-mute);
+  font-size: var(--fs-xs); font-weight: 900;
+}
+.clan-season-step .css-xp { color: var(--text-mute); font-size: var(--fs-xs); }
+.clan-season-step.done { background: var(--good-soft); }
+.clan-season-step.done .css-num { background: rgba(var(--good-rgb), 0.35); color: var(--good-text); }
+.clan-season-step.done .css-label { color: var(--good-text); }
+
 /* Die Stufenleiter. Eine senkrechte Bahn statt eines Kachelrasters: der Pass
    ist ein Weg, und den liest man von oben nach unten. */
 .se-track { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-4); }

@@ -54,6 +54,34 @@
       `<div class="muted small">XP kommt aus echten Duell-Siegen und Clan-Aufträgen. Keine Chip-Belohnungen, nur Prestige.</div>` +
       `</div>`;
 
+    // Clan-Season: der gemeinsame Fortschritt. Bisher kam Clan-XP nur aus
+    // Duell-Siegen, weshalb alle Clans seit Monaten auf demselben Stand
+    // standen. Jetzt zahlt jede Runde, die irgendwer spielt, hier mit ein.
+    const sa = c.saison;
+    if (sa) {
+      const naechste = (sa.levels || []).find((r) => !r.erreicht);
+      const basis = sa.level > 0 ? (sa.levels[sa.level - 1]?.xp || 0) : 0;
+      const spanne = Math.max(1, (sa.nextXp || 0) - basis);
+      const pct = naechste ? Math.min(100, Math.round((100 * (sa.xp - basis)) / spanne)) : 100;
+      html += `<div class="clan-season">` +
+        `<div class="cd-sub">🎟️ Clan-Season</div>` +
+        `<div class="level-head"><b>Stufe ${sa.level} von ${(sa.levels || []).length}</b>` +
+        `<span class="muted small">${naechste ? `${fmt(sa.xp)} / ${fmt(sa.nextXp)} XP` : "alles erreicht"}</span></div>` +
+        `<div class="level-bar"><div class="level-fill" style="width:${pct}%;background:${c.color}"></div></div>` +
+        (sa.bonus > 0
+          ? `<div class="clan-season-bonus">Alle Mitglieder sammeln <b>+${Math.round(sa.bonus * 100)} %</b> Season-XP.</div>`
+          : `<div class="muted small">Ab Stufe 2 sammeln alle Mitglieder schneller Season-XP.</div>`) +
+        `<div class="clan-season-track">` +
+        (sa.levels || []).map((r) =>
+          `<div class="clan-season-step${r.erreicht ? " done" : ""}">` +
+          `<span class="css-num">${r.level}</span>` +
+          `<span class="css-label">${escapeHtml(r.label)}</span>` +
+          `<span class="css-xp">${fmt(r.xp)} XP</span></div>`).join("") +
+        `</div>` +
+        `<div class="muted small">Jede Season-XP eines Mitglieds zählt hier mit — egal welches Spiel.</div>` +
+        `</div>`;
+    }
+
     // Motto
     html += `<div class="clan-motto">${c.motto ? `„${escapeHtml(c.motto)}”` : '<span class="muted small">Kein Motto.</span>'}`;
     if (manage) html += ` <button class="chip-btn" id="clan-motto-btn" title="Motto ändern">✏️</button>`;

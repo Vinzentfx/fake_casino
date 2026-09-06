@@ -26,6 +26,43 @@
     </div>`;
   }
 
+  /** Das Spiel, das heute doppelte XP gibt. */
+  function fokusKarte(f) {
+    if (!f) return "";
+    return `<button class="se-boost se-boost-fokus" data-nav="${escapeHtml(f.id)}" type="button">
+      <span class="se-boost-icon">${f.icon}</span>
+      <span class="se-boost-text">
+        <small>Fokus heute · ${f.faktor}× XP</small>
+        <b>${escapeHtml(f.label)}</b>
+      </span>
+    </button>`;
+  }
+
+  /** Tagesserie: der Grund, morgen wieder reinzuschauen. */
+  function serienKarte(se) {
+    if (!se) return "";
+    const proz = Math.round((se.faktor - 1) * 100);
+    const amMax = se.faktor >= se.max - 0.001;
+    return `<div class="se-boost">
+      <span class="se-boost-icon">🔥</span>
+      <span class="se-boost-text">
+        <small>${se.tage === 1 ? "Erster Tag" : `${se.tage} Tage in Folge`}${amMax ? " · Maximum" : ""}</small>
+        <b>+${proz} % XP</b>
+      </span>
+    </div>`;
+  }
+
+  function clanKarte(s) {
+    const bonus = Math.round(((s.clanBonus || 1) - 1) * 100);
+    return `<div class="se-boost${bonus ? "" : " se-boost-aus"}">
+      <span class="se-boost-icon">🛡️</span>
+      <span class="se-boost-text">
+        <small>${bonus ? "Durch deinen Clan" : "Ohne Clan"}</small>
+        <b>${bonus ? `+${bonus} % XP` : "kein Bonus"}</b>
+      </span>
+    </div>`;
+  }
+
   function render(s) {
     const box = $("#season-box");
     if (!box || !s || !s.ok) return;
@@ -63,11 +100,17 @@
         ${offen ? `<div class="se-open">${offen} ${offen === 1 ? "Belohnung wartet" : "Belohnungen warten"} auf dich</div>` : ""}
       </div>
 
+      <div class="se-boosts">
+        ${fokusKarte(s.fokus)}
+        ${serienKarte(s.serie)}
+        ${clanKarte(s)}
+      </div>
+
       <div class="se-caps">
         ${capLine("Spiel-XP", s.playCap || { used: 0, max: 0 })}
         ${capLine("Auftrags-XP", s.questCap || { used: 0, max: 0 })}
       </div>
-      <p class="hint">XP kommen vom Spielen und von Aufträgen, beides täglich gedeckelt. Wer den ganzen Tag dreht, kommt schneller voran, aber nicht beliebig schnell.</p>
+      <p class="hint">Die Boni wirken auf jede Runde, der Tagesdeckel bleibt aber die Grenze. Sie entscheiden also, wie schnell du den Deckel erreichst, nicht wie hoch er liegt.</p>
 
       <div class="se-track">
         ${stufen.map((r) => {

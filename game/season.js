@@ -16,51 +16,74 @@ const SEASON = {
   endsAt: Date.UTC(2026, 10, 1, 0, 0, 0),    // 1. November 2026, also acht Wochen
 };
 
-const PLAY_XP_DAILY_CAP = 500;
+const PLAY_XP_DAILY_CAP = 700;
 const QUEST_XP_DAILY_CAP = 280;
 
 /*
- * Die Stufenleiter.
+ * Was das Grinden traegt.
  *
- * Season 1 hatte zehn Stufen mit zusammen 1.860 XP. Bei einer Tagesgrenze von
- * 780 XP war sie damit an einem langen Wochenende durch — bei einer Laufzeit
- * von vierundzwanzig Tagen. Der Pass war also die meiste Zeit leer.
+ * Season 1 gab stumpf 2 XP pro Runde, egal was man spielte, gedeckelt bei
+ * 500 am Tag. Damit war jeder Abend gleich und ab dem Deckel egal. Drei
+ * Zutaten aendern das:
  *
- * Season 2 rechnet andersherum: zwanzig Stufen, zusammen 12.140 XP. Wer
- * gemaechlich spielt (rund 250 XP am Tag, etwa hundert Runden) ist nach gut
- * sieben Wochen durch, also kurz vor Schluss. Wer die Tagesgrenze ausreizt,
- * schafft es in gut zwei Wochen — das darf sein, dafuer hat er gespielt.
+ *   TAGES-FOKUS   Ein Spiel gibt heute doppelte XP. Es wechselt taeglich und
+ *                 ist fuer alle dasselbe, damit man darueber reden kann.
+ *   TAGESSERIE    Wer an aufeinanderfolgenden Tagen spielt, sammelt schneller
+ *                 (+5 % je Tag, hoechstens +50 %). Der Grund, morgen wieder
+ *                 reinzuschauen.
+ *   CLAN-BONUS    Der Clan-Fortschritt gibt allen Mitgliedern bis zu +25 %.
  *
- * Die Chips laufen wie jede andere Gratis-Einnahme durch accounts.faucetFactor:
- * wer ohnehin Millionen hat, bekommt bis auf 25 % heruntergerechnet.
- *
- * Die vier Kosmetik-Stufen sind der eigentliche Reiz. Die Stuecke gibt es
- * nirgends zu kaufen, auch spaeter nicht — daran sieht man, wer dabei war.
+ * Alle drei wirken VOR dem Tagesdeckel. Der Deckel bleibt die harte Grenze,
+ * die Boni entscheiden nur, wie schnell man ihn erreicht.
  */
-const LEVELS = [
-  { level: 1,  xp: 120,    chips: 3000 },
-  { level: 2,  xp: 280,    chips: 5000 },
-  { level: 3,  xp: 480,    chips: 8000 },
-  { level: 4,  xp: 720,    chips: 12000 },
-  { level: 5,  xp: 1000,   chips: 0,      cosmetic: { type: "avatar", id: "s2_joker" },  label: "🃏 Joker-Avatar" },
-  { level: 6,  xp: 1330,   chips: 16000 },
-  { level: 7,  xp: 1710,   chips: 20000 },
-  { level: 8,  xp: 2140,   chips: 25000 },
-  { level: 9,  xp: 2620,   chips: 30000 },
-  { level: 10, xp: 3150,   chips: 35000, cosmetic: { type: "color", id: "s2_amber" },    label: "35.000 Chips + 🟠 Bernstein-Name" },
-  { level: 11, xp: 3740,   chips: 40000 },
-  { level: 12, xp: 4390,   chips: 45000 },
-  { level: 13, xp: 5100,   chips: 50000 },
-  { level: 14, xp: 5880,   chips: 55000 },
-  { level: 15, xp: 6730,   chips: 60000, cosmetic: { type: "avatar", id: "s2_wolf" },    label: "60.000 Chips + 🐺 Wolf-Avatar" },
-  { level: 16, xp: 7650,   chips: 65000 },
-  { level: 17, xp: 8650,   chips: 70000 },
-  { level: 18, xp: 9730,   chips: 75000 },
-  { level: 19, xp: 10890,  chips: 85000 },
-  { level: 20, xp: 12140,  chips: 100000, cosmetic: { type: "avatar", id: "s2_phoenix" }, label: "100.000 Chips + 🔥 Phönix-Avatar" },
+const FOKUS_FAKTOR = 2;
+const SERIE_PRO_TAG = 0.05;
+const SERIE_MAX = 0.50;
+
+// Reihenfolge ist fest, damit der Fokus vorhersehbar durchrotiert.
+const FOKUS_SPIELE = [
+  { id: "slots",     label: "Slots",        icon: "🎰" },
+  { id: "blackjack", label: "Blackjack",    icon: "♠️" },
+  { id: "roulette",  label: "Roulette",     icon: "🎡" },
+  { id: "crash",     label: "Crash",        icon: "🚀" },
+  { id: "mines",     label: "Mines",        icon: "💣" },
+  { id: "towers",    label: "Towers",       icon: "🗼" },
+  { id: "pinco",     label: "Pinco Ball",   icon: "🟢" },
+  { id: "sports",    label: "Sportwetten",  icon: "⚽" },
+  { id: "horses",    label: "Rennbahn",     icon: "🐎" },
+  { id: "poker",     label: "Poker",        icon: "🃏" },
 ];
 
-// Beschriftung fuer Stufen ohne eigene: reine Chip-Stufen.
+const dayNow = () => Math.floor(Date.now() / 86400000);
+
+/** Das Fokus-Spiel des Tages. Fuer alle gleich, weil es aus dem Datum faellt. */
+function fokusHeute() {
+  return FOKUS_SPIELE[dayNow() % FOKUS_SPIELE.length];
+}
+
+const LEVELS = [
+  { level: 1,  xp: 120,    chips: 6000 },
+  { level: 2,  xp: 280,    chips: 10000 },
+  { level: 3,  xp: 480,    chips: 15000 },
+  { level: 4,  xp: 720,    chips: 20000 },
+  { level: 5,  xp: 1000,   chips: 0,      cosmetic: { type: "avatar", id: "s2_joker" },   label: "🃏 Joker-Avatar" },
+  { level: 6,  xp: 1330,   chips: 28000 },
+  { level: 7,  xp: 1710,   chips: 34000 },
+  { level: 8,  xp: 2140,   chips: 42000 },
+  { level: 9,  xp: 2620,   chips: 50000 },
+  { level: 10, xp: 3150,   chips: 60000,  cosmetic: { type: "color", id: "s2_amber" },    label: "60.000 Chips + 🟠 Bernstein-Name" },
+  { level: 11, xp: 3740,   chips: 70000 },
+  { level: 12, xp: 4390,   chips: 80000 },
+  { level: 13, xp: 5100,   chips: 90000 },
+  { level: 14, xp: 5880,   chips: 100000 },
+  { level: 15, xp: 6730,   chips: 115000, cosmetic: { type: "avatar", id: "s2_wolf" },    label: "115.000 Chips + 🐺 Wolf-Avatar" },
+  { level: 16, xp: 7650,   chips: 125000 },
+  { level: 17, xp: 8650,   chips: 140000 },
+  { level: 18, xp: 9730,   chips: 155000 },
+  { level: 19, xp: 10890,  chips: 175000 },
+  { level: 20, xp: 12140,  chips: 200000, cosmetic: { type: "avatar", id: "s2_phoenix" }, label: "200.000 Chips + 🔥 Phönix-Avatar" },
+];
+
 for (const r of LEVELS) {
   if (!r.label) r.label = `${r.chips.toLocaleString("de-DE")} Chips`;
 }
@@ -68,19 +91,36 @@ for (const r of LEVELS) {
 let _io = null;
 let _accounts = null;
 
-const dayNow = () => Math.floor(Date.now() / 86400000);
-
 function ensure(acc) {
   acc.season = acc.season || {};
-  if (acc.season.id !== SEASON.id) acc.season = { id: SEASON.id, xp: 0, claimed: {}, day: dayNow(), playDayXp: 0, questDayXp: 0 };
+  if (acc.season.id !== SEASON.id) {
+    acc.season = { id: SEASON.id, xp: 0, claimed: {}, day: dayNow(), playDayXp: 0, questDayXp: 0, serie: 0 };
+  }
   const s = acc.season;
   s.claimed = s.claimed || {};
-  if (s.day !== dayNow()) {
-    s.day = dayNow();
+  if (typeof s.serie !== "number") s.serie = 0;
+
+  const heute = dayNow();
+  if (s.day !== heute) {
+    // Die Serie zaehlt nur bei LUECKENLOSEN Tagen weiter. Ein ausgelassener
+    // Tag setzt sie zurueck, sonst waere sie keine Serie.
+    s.serie = s.day === heute - 1 ? Math.min(999, (s.serie || 0) + 1) : 1;
+    s.day = heute;
     s.playDayXp = 0;
     s.questDayXp = 0;
   }
+  if (!s.serie) s.serie = 1;
   return s;
+}
+
+/** Serienbonus als Faktor: Tag 1 = 1,0 · Tag 5 = 1,20 · ab Tag 11 = 1,50. */
+function serienFaktor(s) {
+  return 1 + Math.min(SERIE_MAX, Math.max(0, (s.serie || 1) - 1) * SERIE_PRO_TAG);
+}
+
+/** Clan-Bonus als Faktor. Kommt aus der Clan-Season, siehe game/clans.js. */
+function clanFaktor(key) {
+  try { return require("./clans").seasonBonusFor(key); } catch { return 1; }
 }
 
 function publicState(acc) {
@@ -89,6 +129,8 @@ function publicState(acc) {
   const unlocked = LEVELS.filter((r) => xp >= r.xp).length;
   const next = LEVELS.find((r) => xp < r.xp) || null;
   const jetzt = Date.now();
+  const fokus = fokusHeute();
+  const key = String(acc.name || "").trim().toLowerCase();
   // Drei Zustaende, nicht zwei: vor dem Start, laufend, vorbei. Ohne die
   // Unterscheidung stand vor dem Start "beendet" am Screen.
   const phase = jetzt < SEASON.startsAt ? "vor" : jetzt < SEASON.endsAt ? "laeuft" : "vorbei";
@@ -104,6 +146,9 @@ function publicState(acc) {
     nextXp: next ? next.xp : LEVELS[LEVELS.length - 1].xp,
     playCap: { used: Math.floor(s.playDayXp || 0), max: PLAY_XP_DAILY_CAP },
     questCap: { used: Math.floor(s.questDayXp || 0), max: QUEST_XP_DAILY_CAP },
+    fokus: { ...fokus, faktor: FOKUS_FAKTOR },
+    serie: { tage: s.serie || 1, faktor: serienFaktor(s), max: 1 + SERIE_MAX },
+    clanBonus: clanFaktor(key),
     rewards: LEVELS.map((r) => ({
       ...r,
       unlocked: xp >= r.xp,
@@ -122,20 +167,39 @@ function emitState(name) {
   }
 }
 
-function addXp(name, amount, kind = "play") {
+/**
+ * XP gutschreiben.
+ *
+ * Reihenfolge: Grundwert × Fokus × Serie × Clan, danach am Tagesdeckel
+ * abschneiden. Die Boni entscheiden also, wie schnell man den Deckel
+ * erreicht, nicht wie hoch er liegt — sonst waere er keiner.
+ */
+function addXp(name, amount, kind = "play", spiel = null) {
   if (!_accounts) return 0;
   const key = String(name || "").trim().toLowerCase();
   const acc = _accounts.get(key);
   if (!acc) return 0;
   const s = ensure(acc);
+
+  let roh = Math.max(0, Math.floor(amount) || 0);
+  if (!roh) return 0;
+  if (kind === "play" && spiel && spiel === fokusHeute().id) roh *= FOKUS_FAKTOR;
+  roh = Math.floor(roh * serienFaktor(s) * clanFaktor(key));
+
   const capKey = kind === "quest" ? "questDayXp" : "playDayXp";
   const cap = kind === "quest" ? QUEST_XP_DAILY_CAP : PLAY_XP_DAILY_CAP;
   const room = Math.max(0, cap - (s[capKey] || 0));
-  const gain = Math.max(0, Math.min(room, Math.floor(amount) || 0));
+  const gain = Math.max(0, Math.min(room, roh));
   if (!gain) return 0;
   s[capKey] = (s[capKey] || 0) + gain;
   s.xp = (s.xp || 0) + gain;
   _accounts.save();
+
+  // Dieselbe XP zaehlt auch fuer den Clan. Das ist der Grund, warum ein Clan
+  // mehr sein soll als ein Kuerzel neben dem Namen: was einer spielt, bringt
+  // die ganze Gruppe voran.
+  try { require("./clans").addSeasonXp(key, gain); } catch {}
+
   emitState(key);
   return gain;
 }
@@ -147,7 +211,7 @@ function setupSeason(io, accounts) {
   accounts.onHand((name, winnings, house, game, meta) => {
     if (meta && meta.free) return;
     const xp = 2 + (winnings > 0 ? 1 : 0);
-    addXp(name, xp, "play");
+    addXp(name, xp, "play", game);
   });
 
   io.on("connection", (socket) => {
@@ -196,4 +260,4 @@ function setupSeason(io, accounts) {
   });
 }
 
-module.exports = { setupSeason, addXp };
+module.exports = { setupSeason, addXp, fokusHeute, SEASON };

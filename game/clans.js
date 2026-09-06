@@ -43,6 +43,96 @@ const WEEKLY_TOP_PRIZE = 250000;         // "Clan der Woche" treasury prize
 const CLAN_XP_PER_PVP_WIN = 25;
 const CLAN_LEVEL_STEP = 500;
 
+/* ---------------------------------------------------------------------------
+   CLAN-SEASON
+
+   Der Clan-Fortschritt kam bisher AUSSCHLIESSLICH aus PvP-Duellsiegen
+   (25 XP je Sieg). Gemessen an den echten Daten hiess das: alle drei Clans
+   standen bei genau 25 XP, also einem einzigen Sieg, seit Monaten. Alles
+   andere, was jemand spielte, zaehlte fuer seinen Clan gar nichts.
+
+   Jetzt fliesst jede Season-XP eines Mitglieds auch in den Clan. Damit
+   bringt jede Runde, die irgendwer dreht, die ganze Gruppe voran.
+
+   Die Stufen zahlen abwechselnd in die Schatzkammer (alle koennen sie
+   nutzen) und einen XP-Bonus fuer ALLE Mitglieder. Der Bonus ist der Kern:
+   er macht es lohnend, Leute zu holen und sie bei der Stange zu halten,
+   statt nur selbst zu spielen. Gedeckelt bei +25 %, damit die Rueckkopplung
+   (mehr Bonus -> mehr XP -> mehr Bonus) nicht davonlaeuft.
+--------------------------------------------------------------------------- */
+const CLAN_SEASON_LEVELS = [
+  { level: 1,  xp: 2000,  chips: 25000 },
+  { level: 2,  xp: 5000,  bonus: 0.05 },
+  { level: 3,  xp: 9000,  chips: 50000 },
+  { level: 4,  xp: 14000, bonus: 0.10 },
+  { level: 5,  xp: 20000, chips: 100000 },
+  { level: 6,  xp: 27000, bonus: 0.15 },
+  { level: 7,  xp: 35000, chips: 175000 },
+  { level: 8,  xp: 44000, bonus: 0.20 },
+  { level: 9,  xp: 54000, chips: 250000 },
+  { level: 10, xp: 65000, bonus: 0.25, banner: true },
+];
+
+function clanSeasonState(c) {
+  const xp = Math.max(0, Math.floor((c && c.seasonXp) || 0));
+  const erreicht = CLAN_SEASON_LEVELS.filter((r) => xp >= r.xp);
+  const naechste = CLAN_SEASON_LEVELS.find((r) => xp < r.xp) || null;
+  const bonus = erreicht.reduce((b, r) => (r.bonus != null ? r.bonus : b), 0);
+  return {
+    xp,
+    level: erreicht.length,
+    bonus,
+    nextXp: naechste ? naechste.xp : CLAN_SEASON_LEVELS[CLAN_SEASON_LEVELS.length - 1].xp,
+    levels: CLAN_SEASON_LEVELS.map((r) => ({
+      ...r,
+      label: r.chips
+        ? `${r.chips.toLocaleString("de-DE")} Chips in die Kasse`
+        : r.banner
+          ? `+${Math.round(r.bonus * 100)} % Season-XP für alle · Clan-Banner`
+          : `+${Math.round(r.bonus * 100)} % Season-XP für alle`,
+      erreicht: xp >= r.xp,
+    })),
+  };
+}
+
+/**
+ * Season-XP eines Mitglieds dem Clan gutschreiben. Wird aus game/season.js
+ * aufgerufen. Ueberschrittene Stufen zahlen sofort in die Schatzkammer.
+ */
+function addSeasonXp(key, amount) {
+  const acc = _accounts && _accounts.get(key);
+  const c = acc && acc.clan && clans[acc.clan];
+  const gain = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!c || !gain) return;
+  const vorher = clanSeasonState(c).level;
+  c.seasonXp = Math.max(0, Math.floor(c.seasonXp || 0) + gain);
+  const nachher = clanSeasonState(c);
+  if (nachher.level > vorher) {
+    for (let l = vorher + 1; l <= nachher.level; l++) {
+      const stufe = CLAN_SEASON_LEVELS.find((r) => r.level === l);
+      if (stufe && stufe.chips) c.treasury = Math.max(0, Math.floor(c.treasury || 0) + stufe.chips);
+      try {
+        if (_io) {
+          chat.announce(_io, `🏅 [${c.tag}] ${c.name} erreicht Clan-Stufe ${l}: ${
+            stufe && stufe.chips
+              ? `${stufe.chips.toLocaleString("de-DE")} 🪙 in die Schatzkammer`
+              : `+${Math.round((stufe.bonus || 0) * 100)} % Season-XP für alle Mitglieder`
+          }!`);
+        }
+      } catch {}
+    }
+  }
+  save();
+}
+
+/** XP-Faktor, den ein Spieler durch seinen Clan bekommt (1 = kein Bonus). */
+function seasonBonusFor(key) {
+  const acc = _accounts && _accounts.get(key);
+  const c = acc && acc.clan && clans[acc.clan];
+  if (!c) return 1;
+  return 1 + clanSeasonState(c).bonus;
+}
+
 const CLAN_QUESTS = [
   { id: "duels_5", label: "Gewinnt 5 Duelle", type: "pvp", target: 5, xp: 180 },
   { id: "duels_20", label: "Gewinnt 20 Duelle", type: "pvp", target: 20, xp: 520 },
@@ -71,6 +161,7 @@ const slug = (s) => String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").r
 const clanRoom = (id) => "clan:" + id;
 
 let _accounts = null;
+let _io = null; // fuer Ankuendigungen aus addSeasonXp heraus
 
 // Ensure a clan object has all newer fields (lazy migration).
 function ensureClan(c) {
@@ -208,6 +299,7 @@ function clanPublic(id) {
     motto: c.motto || "", closed: !!c.closed,
     treasury: c.treasury || 0, weeklyWins: c.weeklyWins || 0, totalWins: c.totalWins || 0,
     level: clanLevel(c), quests: clanQuestPublic(c),
+    saison: clanSeasonState(c),
     members, size: c.members.length, value: members.reduce((s, m) => s + m.value, 0),
     requests: (c.requests || []).map((k) => { const a = _accounts && _accounts.get(k); return { key: k, name: a ? a.name : k }; }),
     war: warPublic(activeWarOf(id)),
@@ -354,6 +446,7 @@ const newWarId = () => "w" + (_wid++).toString(36);
 
 function setupClans(io, accounts) {
   _accounts = accounts;
+  _io = io;
 
   const myClan = (socket) => {
     const acc = socket.data.account && accounts.get(socket.data.account);
@@ -587,4 +680,5 @@ module.exports = {
   setupClans, tagOf, clanColorOf,
   recordPvpWin, tickWars, weeklyRollover,
   adminRemoveMember,
+  addSeasonXp, seasonBonusFor, clanSeasonState,
 };
