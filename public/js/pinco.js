@@ -52,7 +52,9 @@
     const bottom = h * 0.82;
     const rowGap = (bottom - top) / b.rows;
     const xGap = w / (b.rows + 3);
-    const pegR = Math.max(2.5, w * 0.0062);
+    // Etwas groesser als vorher (0,0062): bei 700 Pixel Breite waren das rund
+    // vier Pixel, also kaum mehr als ein Punkt.
+    const pegR = Math.max(3.2, w * 0.0085);
     const ballR = Math.max(4, xGap * 0.19);
     return { w, h, top, bottom, rowGap, xGap, pegR, ballR };
   }
@@ -202,9 +204,27 @@
           g.beginPath(); g.arc(p.x, p.y, rad * 3.2, 0, Math.PI * 2);
           g.fillStyle = `rgba(255,255,255,${0.18 * flash})`; g.fill();
         }
+        /*
+         * Der Nagel als kleiner Metallstift statt als flacher Punkt: heller
+         * Glanz oben links, dunkler Rand unten rechts. Vorher waren es graue
+         * Kreise, die auf dem dunklen Brett wie Staub aussahen.
+         */
+        const stift = g.createRadialGradient(p.x - rad * 0.35, p.y - rad * 0.4, rad * 0.1, p.x, p.y, rad);
+        if (flash > 0) {
+          stift.addColorStop(0, "#ffffff");
+          stift.addColorStop(1, "#cfe6ff");
+        } else {
+          stift.addColorStop(0, "rgba(255,255,255,0.95)");
+          stift.addColorStop(0.55, "rgba(190,214,246,0.8)");
+          stift.addColorStop(1, "rgba(96,124,168,0.75)");
+        }
+        // Schatten darunter, damit der Stift auf dem Brett steht.
+        g.beginPath(); g.arc(p.x, p.y + rad * 0.45, rad * 0.85, 0, Math.PI * 2);
+        g.fillStyle = "rgba(0,0,0,0.38)"; g.fill();
+
         g.beginPath(); g.arc(p.x, p.y, rad, 0, Math.PI * 2);
-        g.fillStyle = flash > 0 ? "#ffffff" : "rgba(200,220,255,0.55)";
-        g.shadowColor = "rgba(150,190,255,0.6)"; g.shadowBlur = 6 + flash * 10;
+        g.fillStyle = stift;
+        g.shadowColor = "rgba(150,190,255,0.55)"; g.shadowBlur = 4 + flash * 12;
         g.fill(); g.shadowBlur = 0;
       }
     }

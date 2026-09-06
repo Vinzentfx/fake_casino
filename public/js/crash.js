@@ -185,6 +185,40 @@
     }
     ctx.globalAlpha = 1;
 
+    /*
+     * Hilfslinien fuer die Multiplikatoren.
+     *
+     * Vorher war die Flaeche eine leere dunkle Box: man sah die Zahl steigen,
+     * aber nicht, WIE weit oben man ist. Die Linien liegen auf derselben
+     * logarithmischen Skala wie die Flugbahn, damit die Rakete sie genau dann
+     * kreuzt, wenn der Multiplikator sie erreicht.
+     */
+    const MARKEN = [1.5, 2, 3, 5, 10];
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.font = "600 10px ui-rounded, -apple-system, system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    for (const marke of MARKEN) {
+      const mp = Math.log(marke) / Math.log(12);
+      if (mp > 1) continue;
+      const my = (h - pad) - mp * (h - pad * 1.6);
+      // Erreichte Marken heller: das ist die Information, um die es geht.
+      const erreicht = m >= marke;
+      ctx.strokeStyle = erreicht ? `rgba(${col},0.45)` : "rgba(255,255,255,0.17)";
+      ctx.setLineDash(erreicht ? [] : [3, 5]);
+      ctx.beginPath();
+      ctx.moveTo(pad * 0.55, my);
+      ctx.lineTo(w - pad * 0.4, my);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = erreicht ? `rgba(${col},0.9)` : "rgba(255,255,255,0.45)";
+      // Rechtsbuendig am Linienende: eine feste Verschiebung wuerde auf
+      // schmalen Bildschirmen aus dem Bild laufen.
+      ctx.textAlign = "right";
+      ctx.fillText(marke + "×", w - pad * 0.4, my - 7);
+    }
+    ctx.restore();
+
     // Trail mit Verlaufs-Glow (Startrampe → Rakete).
     if (flying || phase === "crashed") {
       const tg = ctx.createLinearGradient(pad, h - pad, x, y);

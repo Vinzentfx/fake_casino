@@ -19,6 +19,15 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-08-e",
+      datum: "8. September 2026",
+      titel: "Pinco und Crash nachgezogen",
+      items: [
+        { icon: "🟢", titel: "Pinco: echte Nägel", text: "Die Nägel waren flache graue Punkte, die auf dem dunklen Brett wie Staub aussahen. Jetzt sind es kleine Metallstifte mit Glanz oben links, dunklem Rand unten rechts und einem Schatten darunter, und sie sind etwas größer." },
+        { icon: "🚀", titel: "Crash: Hilfslinien", text: "Die Fläche war eine leere dunkle Box: man sah die Zahl steigen, aber nicht, wie weit oben man ist. Jetzt liegen Marken bei 1,5×, 2×, 3×, 5× und 10× im Bild, auf derselben Skala wie die Flugbahn. Erreichte Marken leuchten in der Farbe der Rakete, die noch offenen bleiben gestrichelt." },
+      ],
+    },
+    {
       id: "2026-09-08-d",
       datum: "8. September 2026",
       titel: "Mines, Towers und Memory sehen aus wie Spiele",
