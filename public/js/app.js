@@ -660,8 +660,8 @@ setInterval(renderBuffs, 5000); // keep countdowns fresh
  * ausgetauscht statt alles neu zu schreiben.
  */
 const NAMENS_KLASSEN = ["nm-sonne", "nm-eis", "nm-gift", "nm-beere", "nm-puls", "nm-schimmer",
-  "nm-neon", "nm-regenbogen", "nm-feuer", "nm-glitch", "nm-krone"];
-const RAHMEN_KLASSEN = ["fr-silber", "fr-gold", "fr-neon", "fr-rotierend", "fr-flamme", "fr-sterne"];
+  "nm-neon", "nm-regenbogen", "nm-feuer", "nm-glitch", "nm-krone", "nm-s2_bernstein", "nm-s2_phoenix"];
+const RAHMEN_KLASSEN = ["fr-silber", "fr-gold", "fr-neon", "fr-rotierend", "fr-flamme", "fr-sterne", "fr-s2_wolf"];
 
 function setzeNamensStil(el, acc) {
   if (!el) return;

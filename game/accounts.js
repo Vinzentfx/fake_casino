@@ -231,8 +231,20 @@ function _netWorth(acc) {
 // full value while you're still building up, then tapers for the wealthy — so
 // billionaires don't keep minting free chips with nothing to spend them on.
 // New/mid players (< FAUCET_FULL net worth) are completely unaffected.
-const FAUCET_FULL = 10_000_000;      // ≤10M net worth → 100%
-const FAUCET_MIN_NW = 1_000_000_000; // ≥1B net worth → FAUCET_FLOOR
+/*
+ * Die Schwellen stammten aus einer Wirtschaft, die es nie gab: die Bremse
+ * begann bei zehn Millionen Vermoegen und wirkte voll erst bei einer
+ * Milliarde. Im echten Spielstand liegt das GROESSTE Vermoegen bei 5,7
+ * Millionen. Die Bremse griff damit bei exakt niemandem, und alle
+ * Gratis-Einnahmen liefen bei jedem zu hundert Prozent.
+ *
+ * Neu gemessen am tatsaechlichen Spielstand: mittleres Vermoegen 25.000,
+ * neunzigstes Perzentil 210.000, Spitze 5,7 Millionen. Unter einer Million
+ * aendert sich damit fuer rund sechzig der einundsiebzig Konten gar nichts;
+ * gebremst werden nur die, die ohnehin vorne liegen.
+ */
+const FAUCET_FULL = 1_000_000;       // ≤1M Vermögen → 100%
+const FAUCET_MIN_NW = 6_000_000;     // ≥6M Vermögen → FAUCET_FLOOR
 const FAUCET_FLOOR = 0.25;
 function faucetFactor(name) {
   const acc = get(name);

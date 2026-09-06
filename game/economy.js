@@ -628,6 +628,10 @@ function setupEconomy(io, accounts) {
     socket.on("city:state", (ack) => {
       if (typeof ack !== "function") return;
       const key = socket.data.account || null;
+      // Auch beim blossen Oeffnen pruefen. Vorher lief das nur nach einem
+      // Kauf, weshalb alle, die ihren Ortsteil laengst erobert hatten, ewig
+      // auf ihre Kosmetik warteten.
+      if (key) { try { pruefeStadtKosmetik(key, accounts.get(key)); } catch {} }
       ack({ ok: true, overview: city.publicOverview(key) });
     });
 

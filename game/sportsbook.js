@@ -27,7 +27,8 @@ const BET_WINDOW_MS = 80_000;  // betting open before kickoff
 const LIVE_MS = 24_000;        // compressed 90-minute match
 const DONE_LINGER_MS = 20_000; // show the result this long, then drop it
 const MIN_BET = 50;
-const MAX_BET = 5_000_000;
+// Fuenf Millionen besass nie jemand: die gesamte Geldmenge liegt bei 8,6.
+const MAX_BET = 500_000;
 const FEED_MAX = 18;
 
 const LEAGUES = {

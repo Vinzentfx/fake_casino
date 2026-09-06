@@ -116,7 +116,7 @@
         ${stufen.map((r) => {
           const zustand = r.claimed ? "claimed" : r.unlocked ? "ready" : "locked";
           return `
-          <div class="se-step se-${zustand}${r.cosmetic ? " se-special" : ""}">
+          <div class="se-step se-${zustand}${(r.kosmetik && r.kosmetik.length) ? " se-special" : ""}">
             <div class="se-step-num">${r.level}</div>
             <div class="se-step-body">
               <b>${escapeHtml(r.label)}</b>

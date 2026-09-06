@@ -37,10 +37,14 @@
 
   function karte(z) {
     const screen = SCREEN[z.spiel] || z.spiel;
+    // Die Regel steht auf jeder Karte, weil sie sich je Spiel unterscheidet:
+    // Blackjack zahlt hoechstens das Zweieinhalbfache, ein Vielfaches-Rekord
+    // waere dort nach der ersten Runde fuer immer festgenagelt. Dort zaehlt
+    // deshalb die Serie.
     if (!z.best) {
       const vor = z.vorwoche
-        ? `Letzte Woche: ${escapeHtml(z.vorwoche.name)} mit ${z.vorwoche.faktor.toFixed(2)}×`
-        : "Noch nie geknackt";
+        ? `Letzte Woche: ${escapeHtml(z.vorwoche.name)} mit ${escapeHtml(z.vorwoche.text)}`
+        : escapeHtml(z.regel);
       return `<button class="rec rec-frei" data-rec="${screen}" type="button">
           <span class="rec-icon" aria-hidden="true">${z.icon}</span>
           <span class="rec-game">${escapeHtml(z.label)}</span>
@@ -51,12 +55,15 @@
     }
     const b = z.best;
     const wer = b.meiner ? "Dein Rekord" : escapeHtml(b.name);
+    const detail = z.art === "serie"
+      ? `${escapeHtml(z.regel)} · ${wannKurz(b.at)}`
+      : `${fmt(b.einsatz)} → ${fmt(b.gewinn)} 🪙 · ${wannKurz(b.at)}`;
     return `<button class="rec${b.meiner ? " rec-mein" : ""}" data-rec="${screen}" type="button">
         <span class="rec-icon" aria-hidden="true">${z.icon}</span>
         <span class="rec-game">${escapeHtml(z.label)}</span>
-        <span class="rec-faktor">${b.faktor.toFixed(2)}×</span>
+        <span class="rec-faktor">${escapeHtml(b.text)}</span>
         <span class="rec-who">${wer}</span>
-        <small class="rec-detail">${fmt(b.einsatz)} → ${fmt(b.gewinn)} 🪙 · ${wannKurz(b.at)}</small>
+        <small class="rec-detail">${detail}</small>
       </button>`;
   }
 
@@ -70,7 +77,7 @@
     letzterStand = res;
     wrap.classList.remove("hidden");
     if (hint) {
-      hint.textContent = `Bestes Vielfaches des Einsatzes, ab ${fmt(res.minEinsatz)} 🪙 Einsatz. Setzt sich jeden Montag zurück.`;
+      hint.textContent = `Ab ${fmt(res.minEinsatz)} 🪙 Einsatz. Was zählt, steht auf jeder Karte. Setzt sich jeden Montag zurück.`;
     }
     host.innerHTML = res.zeilen.map(karte).join("");
   }

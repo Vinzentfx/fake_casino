@@ -107,24 +107,48 @@ function setupPinco(io, accounts) {
     const acc = accounts.get(socket.data.account);
     return (acc && acc.name) || socket.data.displayName || "?";
   }
-  // Der Einsatz wird ueber die Runde mitgezaehlt, damit der Wochenrekord das
-  // Vielfache ausrechnen kann. Ohne ihn kaeme dort nur der Netto-Gewinn an.
+  /**
+   * Ein geworfener Ball.
+   *
+   * Fuer Statistik, XP und Quests werden zehn Baelle zu einer "Hand"
+   * zusammengefasst — sonst laufen bei einer Pinco-Sitzung hunderte Ereignisse
+   * durch die halbe Anwendung.
+   *
+   * Fuer den Wochenrekord ist genau das aber falsch, und das war der Fehler:
+   * ueber zehn Baelle gemittelt verschwindet jeder gute Treffer im
+   * Durchschnitt, und wer mit einer Ballzahl aufhoert, die nicht durch zehn
+   * teilbar ist, wurde ueberhaupt nie gewertet. Der Rekord bekommt deshalb
+   * jeden Ball einzeln gemeldet.
+   */
   function recordPincoBall(key, net, einsatz = 0) {
     const acc = accounts.get(key);
     if (!acc) return;
+    const payout = net + einsatz;
+    if (einsatz > 0 && payout > 0) {
+      try { require("./records").melde(key, "pinco", einsatz, payout); } catch {}
+    }
     acc.pincoRoundBalls = (acc.pincoRoundBalls || 0) + 1;
     acc.pincoRoundNet = (acc.pincoRoundNet || 0) + net;
     acc.pincoRoundBet = (acc.pincoRoundBet || 0) + einsatz;
-    if (acc.pincoRoundBalls >= BALLS_PER_RECORDED_ROUND) {
-      const roundNet = acc.pincoRoundNet || 0;
-      const roundBet = acc.pincoRoundBet || 0;
-      acc.pincoRoundBalls = 0;
-      acc.pincoRoundNet = 0;
-      acc.pincoRoundBet = 0;
-      accounts.recordHand(key, roundNet, true, "pinco", { balls: BALLS_PER_RECORDED_ROUND, einsatz: roundBet });
-    } else {
-      accounts.save();
-    }
+    if (acc.pincoRoundBalls >= BALLS_PER_RECORDED_ROUND) flushPincoRunde(key);
+    else accounts.save();
+  }
+
+  /**
+   * Angefangene Runde abschliessen. Ohne das blieben die letzten bis zu neun
+   * Baelle einer Sitzung fuer immer liegen: sie zaehlten weder fuer die
+   * Statistik noch fuer Quests noch fuer die Season.
+   */
+  function flushPincoRunde(key) {
+    const acc = accounts.get(key);
+    if (!acc || !acc.pincoRoundBalls) return;
+    const baelle = acc.pincoRoundBalls;
+    const roundNet = acc.pincoRoundNet || 0;
+    const roundBet = acc.pincoRoundBet || 0;
+    acc.pincoRoundBalls = 0;
+    acc.pincoRoundNet = 0;
+    acc.pincoRoundBet = 0;
+    accounts.recordHand(key, roundNet, true, "pinco", { balls: baelle, einsatz: roundBet });
   }
   function currentRoom(socket) {
     return rooms.get(socket.data.pincoRoom);
@@ -133,6 +157,7 @@ function setupPinco(io, accounts) {
     for (const s of room.sockets) s.emit("pinco:room", roomState(room, s.data.account));
   }
   function leave(socket) {
+    if (socket.data.account) { try { flushPincoRunde(socket.data.account); } catch {} }
     const code = socket.data.pincoRoom;
     if (!code) return;
     socket.data.pincoRoom = null;

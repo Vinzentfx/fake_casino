@@ -23,10 +23,10 @@ const crypto = require("crypto");
 
 const ROWS = 9;
 const HOUSE_EDGE = 0.02; // 98% RTP
-/* Gleicher Grund wie in Mines: die Grenze stammt aus der Anfangszeit und
- * passte nicht mehr zu Konten mit sieben Stellen. Der Hausvorteil bleibt bei
- * 2 %, es aendert sich nur die zulaessige Schwankung. */
-const MIN_BET = 50, MAX_BET = 250_000;
+/* Gleicher Grund und dieselbe Korrektur wie in Mines: 250.000 stammten aus
+ * meinen Testdaten, nicht aus dem echten Spielstand. Dort sind 8,6 Millionen
+ * Chips im Umlauf und das mittlere Guthaben liegt bei 25.000. */
+const MIN_BET = 50, MAX_BET = 50_000;
 
 const DIFFICULTIES = {
   easy:   { label: "Einfach", width: 4, safe: 3 },
@@ -48,7 +48,7 @@ const DIFFICULTIES = {
  * Deshalb ein Deckel auf die Auszahlung statt eines kleinen Einsatzlimits.
  * Er greift ausschliesslich in Zweigen, die ohnehin niemand erreicht, und
  * steht sichtbar in der Oberflaeche, damit niemand ueberrascht wird. */
-const MAX_WIN = 50_000_000;
+const MAX_WIN = 2_000_000;
 
 /** Cash-out multiplier after climbing `level` rows (0 = not started → 1×). */
 function multiplier(diff, level) {

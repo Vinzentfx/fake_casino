@@ -31,23 +31,38 @@ const FILE = path.join(DATA_DIR, "records.json");
 /** Epochen-Woche, rollt Montag 00:00 UTC. Gleiche Formel wie in weekly.js. */
 const weekNow = () => Math.floor((Date.now() / 86400000 + 3) / 7);
 
-// Welche Spiele eine eigene Bestmarke fuehren, und wie sie heisst.
+/**
+ * Welche Spiele eine Bestmarke fuehren, und WORAUF.
+ *
+ * Das Vielfache des Einsatzes passt nicht ueberall. Blackjack zahlt hoechstens
+ * das Zweieinhalbfache; dort war die Bestmarke nach dem ersten natuerlichen
+ * Blackjack bei 2,50 und danach fuer immer unschlagbar — alle weiteren
+ * Spieler haetten nur noch gleichziehen koennen. Ein Rekord, den man nicht
+ * brechen kann, ist kein Rekord.
+ *
+ * Deshalb hat jedes Spiel eine `art`:
+ *   faktor  Bestes Vielfaches des Einsatzes. Fuer alles mit offener Decke.
+ *   serie   Laengste Serie gewonnener Haende am Stueck. Fuer Blackjack, wo
+ *           die Auszahlung gedeckelt ist, das Durchhalten aber nicht.
+ *
+ * `min` ist die Untergrenze, ab der etwas ueberhaupt als Rekord zaehlt. Sie
+ * richtet sich nach der Decke des jeweiligen Spiels: bei Pinco sind 15,23×
+ * das Maximum, bei Mines geht es ins Unermessliche.
+ */
 const SPIELE = {
-  slots:     { label: "Slots",       icon: "🎰" },
-  blackjack: { label: "Blackjack",   icon: "♠️" },
-  roulette:  { label: "Roulette",    icon: "🎡" },
-  crash:     { label: "Crash",       icon: "🚀" },
-  mines:     { label: "Mines",       icon: "💣" },
-  towers:    { label: "Towers",      icon: "🗼" },
-  pinco:     { label: "Pinco Ball",  icon: "🟢" },
-  horses:    { label: "Rennbahn",    icon: "🐎" },
-  sportwetten: { label: "Sportwetten", icon: "⚽" },
+  slots:       { label: "Slots",       icon: "🎰", art: "faktor", min: 5 },
+  roulette:    { label: "Roulette",    icon: "🎡", art: "faktor", min: 3 },
+  crash:       { label: "Crash",       icon: "🚀", art: "faktor", min: 3 },
+  mines:       { label: "Mines",       icon: "💣", art: "faktor", min: 3 },
+  towers:      { label: "Towers",      icon: "🗼", art: "faktor", min: 3 },
+  pinco:       { label: "Pinco Ball",  icon: "🟢", art: "faktor", min: 2 },
+  horses:      { label: "Rennbahn",    icon: "🐎", art: "faktor", min: 3 },
+  sportwetten: { label: "Sportwetten", icon: "⚽", art: "faktor", min: 3 },
+  blackjack:   { label: "Blackjack",   icon: "♠️", art: "serie",  min: 3 },
 };
 
-// Unter diesem Vielfachen ist es kein Rekord, sondern ein normaler Treffer.
-const MIN_FAKTOR = 2;
-// Und unter diesem Einsatz zaehlt es nicht: sonst setzt jemand 1 Chip und
-// gewinnt 500, was ein Vielfaches von 500 waere, aber nichts bedeutet.
+// Unter diesem Einsatz zaehlt nichts: sonst setzt jemand 1 Chip und gewinnt
+// 500, was ein Vielfaches von 500 waere, aber nichts bedeutet.
 const MIN_EINSATZ = 50;
 
 let state = load();
@@ -77,7 +92,21 @@ function ensureWeek() {
   state.letzteWoche = state.best || {};
   state.best = {};
   state.week = wk;
+  // Laufende Serien enden mit der Woche. Sonst truege jemand eine Serie aus
+  // der Vorwoche in die neue hinein und haette dort einen Vorsprung, den er
+  // sich gar nicht erspielt hat.
+  if (_accounts) {
+    for (const acc of _accounts.rawAll()) if (acc.serien) acc.serien = {};
+    _accounts.save();
+  }
   save();
+}
+
+/** Wie ein Wert eines Spiels heisst, wenn man ihn hinschreibt. */
+function wertText(spiel, wert) {
+  return SPIELE[spiel].art === "serie"
+    ? `${wert} Siege am Stück`
+    : `${Number(wert).toFixed(2)}×`;
 }
 
 /**
@@ -86,24 +115,52 @@ function ensureWeek() {
  */
 function melde(key, spiel, einsatz, gewinn) {
   ensureWeek();
-  if (!SPIELE[spiel]) return null;
+  const meta = SPIELE[spiel];
+  if (!meta || meta.art !== "faktor") return null;
   einsatz = Math.floor(Number(einsatz) || 0);
   gewinn = Math.floor(Number(gewinn) || 0);
   if (einsatz < MIN_EINSATZ || gewinn <= 0) return null;
 
-  const faktor = gewinn / einsatz;
-  if (faktor < MIN_FAKTOR) return null;
+  const faktor = Math.round((gewinn / einsatz) * 100) / 100;
+  if (faktor < meta.min) return null;
+  return setze(key, spiel, faktor, { einsatz, gewinn });
+}
 
+/**
+ * Blackjack: Serie gewonnener Haende.
+ *
+ * `net` ist das Ergebnis der Hand. Ein Push (0) laesst die Serie stehen — man
+ * hat ja nicht verloren. Die laufende Serie haengt am Account, damit sie einen
+ * Neustart des Servers ueberlebt.
+ */
+function meldeSerie(key, spiel, net) {
+  ensureWeek();
+  const meta = SPIELE[spiel];
+  if (!meta || meta.art !== "serie") return null;
+  const acc = _accounts && _accounts.get(key);
+  if (!acc) return null;
+  if (!acc.serien || typeof acc.serien !== "object") acc.serien = {};
+  if (net === 0) return null;                      // Unentschieden: nichts passiert
+  if (net < 0) { acc.serien[spiel] = 0; return null; }
+  const laenge = (acc.serien[spiel] || 0) + 1;
+  acc.serien[spiel] = laenge;
+  if (laenge < meta.min) return null;
+  return setze(key, spiel, laenge, { serie: laenge });
+}
+
+/** Gemeinsamer Teil: eintragen, ansagen, benachrichtigen. */
+function setze(key, spiel, wert, extra) {
   const alt = state.best[spiel];
-  if (alt && alt.faktor >= faktor) return null;
+  if (alt && alt.wert >= wert) return null;
 
   const acc = _accounts && _accounts.get(key);
   state.best[spiel] = {
     key,
     name: acc ? acc.name : key,
-    faktor: Math.round(faktor * 100) / 100,
-    einsatz,
-    gewinn,
+    wert,
+    art: SPIELE[spiel].art,
+    text: wertText(spiel, wert),
+    ...extra,
     at: Date.now(),
   };
   save();
@@ -112,14 +169,14 @@ function melde(key, spiel, einsatz, gewinn) {
   // verbessert, muss dafuer nicht den Chat vollschreiben.
   if (alt && alt.key !== key && _io) {
     try {
-      chat.announce(_io, `🏅 ${state.best[spiel].name} schlägt ${alt.name} bei ${SPIELE[spiel].label}: ${state.best[spiel].faktor.toFixed(2)}× statt ${alt.faktor.toFixed(2)}×!`);
+      chat.announce(_io, `🏅 ${state.best[spiel].name} schlägt ${alt.name} bei ${SPIELE[spiel].label}: ${state.best[spiel].text} statt ${alt.text}!`);
     } catch {}
     // Der alte Halter ist fast immer gerade NICHT da — das ist ja der Punkt.
     // Genau darum lohnt sich hier eine Nachricht aufs Geraet.
     try {
       require("./push").an(alt.key, "rekord", {
         title: `🏅 ${SPIELE[spiel].label}: Rekord weg`,
-        body: `${state.best[spiel].name} hat deine ${alt.faktor.toFixed(2)}× mit ${state.best[spiel].faktor.toFixed(2)}× überboten.`,
+        body: `${state.best[spiel].name} hat deine ${alt.text} mit ${state.best[spiel].text} überboten.`,
         url: "/",
       });
     } catch {}
@@ -135,15 +192,23 @@ function publicState(meinKey) {
     const b = state.best[id] || null;
     const v = (state.letzteWoche || {})[id] || null;
     return {
-      spiel: id, label: meta.label, icon: meta.icon,
-      best: b ? { name: b.name, faktor: b.faktor, einsatz: b.einsatz, gewinn: b.gewinn, at: b.at, meiner: b.key === meinKey } : null,
-      vorwoche: v ? { name: v.name, faktor: v.faktor } : null,
+      spiel: id, label: meta.label, icon: meta.icon, art: meta.art, min: meta.min,
+      // Worauf hier ueberhaupt gespielt wird. Ohne die Zeile steht bei
+      // Blackjack eine Zahl ohne Einheit.
+      regel: meta.art === "serie"
+        ? `Längste Serie gewonnener Hände, ab ${meta.min}`
+        : `Bestes Vielfaches des Einsatzes, ab ${meta.min}×`,
+      best: b ? {
+        name: b.name, wert: b.wert, text: b.text || wertText(id, b.wert),
+        einsatz: b.einsatz || 0, gewinn: b.gewinn || 0, at: b.at, meiner: b.key === meinKey,
+      } : null,
+      vorwoche: v ? { name: v.name, text: v.text || wertText(id, v.wert) } : null,
     };
   });
   // Spiele mit Rekord zuerst, danach die offenen: die offenen sind die
   // Einladung ("hier steht noch nichts, hol ihn dir").
-  zeilen.sort((a, b) => (b.best ? 1 : 0) - (a.best ? 1 : 0) || (b.best?.faktor || 0) - (a.best?.faktor || 0));
-  return { ok: true, week: state.week, zeilen, minFaktor: MIN_FAKTOR, minEinsatz: MIN_EINSATZ };
+  zeilen.sort((a, b) => (b.best ? 1 : 0) - (a.best ? 1 : 0));
+  return { ok: true, week: state.week, zeilen, minEinsatz: MIN_EINSATZ };
 }
 
 function setupRecords(io, accounts) {
@@ -155,11 +220,19 @@ function setupRecords(io, accounts) {
   // Einsatz mitliefert: Freispiele und Runden ohne echten Einsatz haetten sonst
   // ein unendliches Vielfaches.
   accounts.onHand((name, winnings, house, game, meta) => {
-    if (!meta || meta.free) return;
-    const einsatz = Number(meta.einsatz) || 0;
-    if (einsatz <= 0) return;
+    if (meta && meta.free) return;
+    const art = SPIELE[game] && SPIELE[game].art;
+    if (!art) return;
+    const key = String(name).trim().toLowerCase();
     try {
-      melde(String(name).trim().toLowerCase(), game, einsatz, einsatz + Number(winnings || 0));
+      if (art === "serie") {
+        // Serien brauchen JEDE Hand, auch die verlorene: die beendet sie ja.
+        meldeSerie(key, game, Number(winnings || 0));
+        return;
+      }
+      const einsatz = Number(meta && meta.einsatz) || 0;
+      if (einsatz <= 0) return;
+      melde(key, game, einsatz, einsatz + Number(winnings || 0));
     } catch {}
   });
 
@@ -171,4 +244,4 @@ function setupRecords(io, accounts) {
   });
 }
 
-module.exports = { setupRecords, melde, publicState, SPIELE };
+module.exports = { setupRecords, melde, meldeSerie, publicState, SPIELE };

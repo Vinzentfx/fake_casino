@@ -19,6 +19,23 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-07",
+      datum: "7. September 2026",
+      titel: "Rekorde repariert und ehrlich gerechnet",
+      gross: true,
+      intro: "Zwei Fehler bei den Wochenrekorden, und ein Balancing, das ich mit den falschen Zahlen gemacht hatte. Beides korrigiert.",
+      items: [
+        { icon: "🟢", titel: "Pinco zählte gar nicht", text: "Pinco fasst zehn Bälle zu einer Runde zusammen. Für den Rekord war das falsch: über zehn Bälle gemittelt verschwindet jeder gute Treffer im Durchschnitt, und wer mit einer Ballzahl aufhörte, die nicht durch zehn teilbar ist, wurde überhaupt nie gewertet. Jetzt zählt jeder Ball einzeln. Nebenbei gingen dadurch auch die letzten Bälle einer Sitzung für Statistik, Aufträge und Season verloren, auch das ist behoben." },
+        { icon: "♠️", titel: "Blackjack zählt jetzt Serien", text: "Blackjack zahlt höchstens das Zweieinhalbfache. Ein Rekord auf das Vielfache war dort nach der ersten Runde für immer festgenagelt, niemand hätte ihn je brechen können. Gewertet wird jetzt die längste Serie gewonnener Hände am Stück. Ein Unentschieden lässt die Serie stehen, eine verlorene Hand beendet sie." },
+        { icon: "📏", titel: "Jedes Spiel hat seine eigene Hürde", text: "Pinco kann höchstens 15,23 zahlen, Mines geht ins Unermessliche. Deshalb zählt bei Pinco ab dem Doppelten, bei Slots erst ab dem Fünffachen. Was gilt, steht auf jeder Karte." },
+        { icon: "⚖️", titel: "Einsatzgrenzen neu, diesmal mit den echten Zahlen", text: "Ich hatte Mines und Towers auf 250.000 gesetzt, nach den Testdaten auf meinem Rechner. Im echten Casino sind 8,6 Millionen Chips insgesamt im Umlauf und das mittlere Guthaben liegt bei 25.000. Beide stehen jetzt bei 50.000, Crash bei 250.000 statt einer Million, Sportwetten bei 500.000 statt fünf Millionen. Höchstgewinn pro Runde in Mines und Towers: zwei Millionen." },
+        { icon: "🚰", titel: "Die Vermögensbremse greift endlich", text: "Der Stunden-Bonus, Aufträge, das Rad und der Kalender werden für sehr reiche Spieler abgeschwächt. Nur begann das erst ab zehn Millionen Vermögen, und das höchste im ganzen Casino sind 5,7 Millionen. Die Bremse hat also bei niemandem gewirkt. Jetzt setzt sie ab einer Million ein: 61 von 71 Konten merken davon gar nichts." },
+        { icon: "🎟️", titel: "Season neu gerechnet", text: "Die Season hätte 1,5 Millionen Chips ausgeschüttet, also fast so viel, wie der reichste Spieler überhaupt besitzt. Jetzt sind es 580.500, weiterhin der mit Abstand größte Einzelpreis im Casino. Abgeholt hatte noch niemand etwas, es geht also niemandem etwas verloren." },
+        { icon: "🔥", titel: "Season-Kosmetik neu", text: "Die Belohnung auf Stufe 10 war eine flache orange Namensfarbe, also genau das, was man sich auch kaufen kann. Jetzt gibt es dort den animierten Stil „Bernstein“, auf Stufe 15 zusätzlich zum Wolf einen Wolfsring ums Bild, und auf Stufe 20 den Phönix-Avatar, den Namensstil „Glut“ und den Titel „Phönix von Porta“. Nichts davon ist käuflich." },
+        { icon: "👑", titel: "Stadtteil-Boss-Kosmetik kam nicht an", text: "Die Krone für den Ortsteil-Boss wurde nur geprüft, wenn man gerade etwas kaufte. Wer seinen Ortsteil längst erobert hatte, wartete deshalb ewig. Jetzt reicht es, die Stadt zu öffnen." },
+      ],
+    },
+    {
       id: "2026-09-06-dialoge",
       datum: "6. September 2026",
       titel: "Keine grauen Systemfenster mehr",

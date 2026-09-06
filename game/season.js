@@ -62,26 +62,26 @@ function fokusHeute() {
 }
 
 const LEVELS = [
-  { level: 1,  xp: 120,    chips: 6000 },
-  { level: 2,  xp: 280,    chips: 10000 },
-  { level: 3,  xp: 480,    chips: 15000 },
-  { level: 4,  xp: 720,    chips: 20000 },
-  { level: 5,  xp: 1000,   chips: 0,      cosmetic: { type: "avatar", id: "s2_joker" },   label: "🃏 Joker-Avatar" },
-  { level: 6,  xp: 1330,   chips: 28000 },
-  { level: 7,  xp: 1710,   chips: 34000 },
-  { level: 8,  xp: 2140,   chips: 42000 },
-  { level: 9,  xp: 2620,   chips: 50000 },
-  { level: 10, xp: 3150,   chips: 60000,  cosmetic: { type: "color", id: "s2_amber" },    label: "60.000 Chips + 🟠 Bernstein-Name" },
-  { level: 11, xp: 3740,   chips: 70000 },
-  { level: 12, xp: 4390,   chips: 80000 },
-  { level: 13, xp: 5100,   chips: 90000 },
-  { level: 14, xp: 5880,   chips: 100000 },
-  { level: 15, xp: 6730,   chips: 115000, cosmetic: { type: "avatar", id: "s2_wolf" },    label: "115.000 Chips + 🐺 Wolf-Avatar" },
-  { level: 16, xp: 7650,   chips: 125000 },
-  { level: 17, xp: 8650,   chips: 140000 },
-  { level: 18, xp: 9730,   chips: 155000 },
-  { level: 19, xp: 10890,  chips: 175000 },
-  { level: 20, xp: 12140,  chips: 200000, cosmetic: { type: "avatar", id: "s2_phoenix" }, label: "200.000 Chips + 🔥 Phönix-Avatar" },
+  { level: 1,  xp: 120,    chips: 2500 },
+  { level: 2,  xp: 280,    chips: 4000 },
+  { level: 3,  xp: 480,    chips: 6000 },
+  { level: 4,  xp: 720,    chips: 8000 },
+  { level: 5,  xp: 1000,   chips: 0,      kosmetik: [{ type: "avatar", id: "s2_joker" }] },
+  { level: 6,  xp: 1330,   chips: 11000 },
+  { level: 7,  xp: 1710,   chips: 13000 },
+  { level: 8,  xp: 2140,   chips: 16000 },
+  { level: 9,  xp: 2620,   chips: 19000 },
+  { level: 10, xp: 3150,   chips: 24000,  kosmetik: [{ type: "style", id: "s2_bernstein" }] },
+  { level: 11, xp: 3740,   chips: 27000 },
+  { level: 12, xp: 4390,   chips: 30000 },
+  { level: 13, xp: 5100,   chips: 34000 },
+  { level: 14, xp: 5880,   chips: 38000 },
+  { level: 15, xp: 6730,   chips: 45000,  kosmetik: [{ type: "avatar", id: "s2_wolf" }, { type: "frame", id: "s2_wolf" }] },
+  { level: 16, xp: 7650,   chips: 48000 },
+  { level: 17, xp: 8650,   chips: 53000 },
+  { level: 18, xp: 9730,   chips: 58000 },
+  { level: 19, xp: 10890,  chips: 64000 },
+  { level: 20, xp: 12140,  chips: 80000,  kosmetik: [{ type: "avatar", id: "s2_phoenix" }, { type: "style", id: "s2_phoenix" }, { type: "title", id: "s2_phoenix" }] },
 ];
 
 for (const r of LEVELS) {
@@ -151,6 +151,10 @@ function publicState(acc) {
     clanBonus: clanFaktor(key),
     rewards: LEVELS.map((r) => ({
       ...r,
+      // Beschriftung kommt vom Server aus den echten Werten. Vorher stand sie
+      // als fester Text daneben ("200.000 Chips") und war nach der ersten
+      // Zahlenaenderung falsch.
+      label: belohnungsText(r),
       unlocked: xp >= r.xp,
       claimed: !!s.claimed[r.level],
     })),
@@ -204,6 +208,16 @@ function addXp(name, amount, kind = "play", spiel = null) {
   return gain;
 }
 
+/** Was eine Stufe gibt, als Satz. Einzige Quelle fuer die Beschriftung. */
+function belohnungsText(r) {
+  const teile = [];
+  if (r.chips > 0) teile.push(`${r.chips.toLocaleString("de-DE")} Chips`);
+  for (const k of r.kosmetik || []) {
+    try { teile.push(require("./cosmetics").label(k.type, k.id)); } catch { teile.push(k.id); }
+  }
+  return teile.join(" + ") || "—";
+}
+
 function setupSeason(io, accounts) {
   _io = io;
   _accounts = accounts;
@@ -238,15 +252,17 @@ function setupSeason(io, accounts) {
       const chips = Math.round((reward.chips || 0) * accounts.faucetFactor(key));
       s.claimed[lvl] = true;
       if (chips > 0) accounts.adjustChips(key, chips);
-      let kosmetik = null;
-      if (reward.cosmetic) {
+      // Eine Stufe kann mehrere Stuecke geben: Stufe 20 etwa Avatar, Namensstil
+      // und Titel zusammen. Das ist der Abschluss von acht Wochen, da darf es
+      // mehr sein als ein Emoji.
+      const erhalten = [];
+      for (const k of reward.kosmetik || []) {
         try {
           const cos = require("./cosmetics");
-          if (cos.grant(acc, reward.cosmetic.type, reward.cosmetic.id)) {
-            kosmetik = cos.label(reward.cosmetic.type, reward.cosmetic.id);
-          }
+          if (cos.grant(acc, k.type, k.id)) erhalten.push(cos.label(k.type, k.id));
         } catch {}
       }
+      const kosmetik = erhalten.length ? erhalten.join(" + ") : null;
       accounts.save();
       const state = publicState(acc);
       const account = accounts.publicAccount(acc);

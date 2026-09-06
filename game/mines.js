@@ -19,26 +19,35 @@ const crypto = require("crypto");
 
 const TILES = 25;
 const HOUSE_EDGE = 0.02; // 98% RTP
-/* Die Obergrenze stand seit dem ersten Tag bei 10.000. Damals war das viel.
- * Inzwischen laufen Konten mit sieben und acht Stellen herum, und Mines war
- * das einzige Hausspiel, in dem sie nichts anfangen konnten: Crash erlaubt
- * eine Million, Sportwetten fuenf. Der Hausvorteil bleibt bei 2 %, es aendert
- * sich also nur, wie gross die Schwankung sein darf. */
-const MIN_BET = 50, MAX_BET = 250_000;
+/* Die Obergrenze stand seit dem ersten Tag bei 10.000, was zu wenig war. Ich
+ * hatte sie daraufhin auf 250.000 gesetzt — nach den Testdaten auf meinem
+ * Rechner, in denen Konten mit Milliarden herumliegen. Der echte Spielstand
+ * sieht voellig anders aus: 8,6 Millionen Chips insgesamt, mittleres Guthaben
+ * 25.000, groesstes 1,7 Millionen. 250.000 waeren also das Zehnfache dessen
+ * gewesen, was ein durchschnittlicher Spieler ueberhaupt besitzt.
+ *
+ * 50.000 ist der Kompromiss: das Doppelte des mittleren Guthabens, drei
+ * Prozent vom groessten Konto. Der Hausvorteil bleibt bei 2 %. */
+const MIN_BET = 50, MAX_BET = 50_000;
 
 /* Deckel je Runde.
  *
  * Der hoehere Einsatz hat ein Problem sichtbar gemacht, das vorher schon da
  * war: bei 15 Minen zahlt das Leerraeumen aller zehn sicheren Felder rund
- * 3,2 Millionen mal den Einsatz. Mit 250.000 waeren das 800 Milliarden Chips
+ * 3,2 Millionen mal den Einsatz. Mit 50.000 waeren das 160 Milliarden Chips
  * — ein einziger Treffer wuerde die ganze Wirtschaft erledigen. Die Chance
  * liegt bei etwa 1 zu 3,3 Millionen, das passiert also praktisch nie; aber
  * "praktisch nie" mal "zerstoert alles" ist trotzdem ein schlechtes Geschaeft.
  *
  * Deshalb ein Deckel auf die Auszahlung statt eines kleinen Einsatzlimits.
  * Er greift ausschliesslich in Zweigen, die ohnehin niemand erreicht, und
- * steht sichtbar in der Oberflaeche, damit niemand ueberrascht wird. */
-const MAX_WIN = 50_000_000;
+ * steht sichtbar in der Oberflaeche, damit niemand ueberrascht wird.
+ *
+ * Die Hoehe ist an der echten Wirtschaft gemessen: 8,6 Millionen Chips sind
+ * insgesamt im Umlauf, der groesste je erzielte Einzelgewinn lag bei einer
+ * Million. Zwei Millionen aus einer Runde sind damit die legendaerste Runde
+ * der Casino-Geschichte und trotzdem nichts, was alles umwirft. */
+const MAX_WIN = 2_000_000;
 
 function multiplier(mines, safe) {
   if (safe <= 0) return 1;

@@ -23,7 +23,10 @@ const TICK_MS = 100;        // multiplier broadcast cadence
 const GROWTH = 0.00013;     // exp growth/ms → ~2× at 5.3s, ~10× at 17.7s
 const HOUSE_EDGE = 0.03;    // 97% RTP
 const MAX_CRASH = 120;      // cap so a round can't run forever (~37s)
-const MIN_BET = 50, MAX_BET = 1_000_000;
+// 1.000.000 waren zwoelf Prozent der gesamten Geldmenge auf einen Knopfdruck.
+// Der groesste je gesetzte Betrag im ganzen Casino lag bei rund 886.000, das
+// neunzigste Perzentil bei 200.000.
+const MIN_BET = 50, MAX_BET = 250_000;
 const HISTORY = 15;
 
 const mAt = (elapsedMs) => Math.max(1, Math.floor(Math.exp(GROWTH * elapsedMs) * 100) / 100);

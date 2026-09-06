@@ -27,9 +27,9 @@ const AVATARS = [
   // Nur ueber den Season-Pass. cost: null heisst "nicht kaeuflich" — genau
   // das macht sie zum Statussymbol: man sieht, dass jemand die Season
   // durchgespielt hat, und kann es sich nicht einfach kaufen.
-  { id: "s2_joker",  emoji: "🃏", cost: null, season: "porta-herbst-2" },
-  { id: "s2_wolf",   emoji: "🐺", cost: null, season: "porta-herbst-2" },
-  { id: "s2_phoenix", emoji: "🔥", cost: null, season: "porta-herbst-2" },
+  { id: "s2_joker",  emoji: "🃏", label: "Joker",  cost: null, season: "porta-herbst-2" },
+  { id: "s2_wolf",   emoji: "🐺", label: "Wolf",   cost: null, season: "porta-herbst-2" },
+  { id: "s2_phoenix", emoji: "🔥", label: "Phönix", cost: null, season: "porta-herbst-2" },
 ];
 const COLORS = [
   { id: "white",  color: null,      cost: 0 },
@@ -72,6 +72,11 @@ const STYLES = [
   { id: "glitch",   label: "Glitch",        cost: 1200000, preview: ["#ff2e88", "#00e5ff"], motion: true },
   // Nicht kaeuflich: kommt, wenn man in der Stadt Boss eines Ortsteils wird.
   { id: "krone",    label: "Krone",         cost: null, via: "Boss eines Ortsteils werden", preview: ["#fff1b8", "#d4a017"], motion: true },
+  // Season 2. Die alte Belohnung auf Stufe 10 war eine flache orange Farbe —
+  // dasselbe, was man sich fuer 20.000 Chips kaufen kann. Etwas, wofuer man
+  // acht Wochen spielt, muss anders aussehen als alles Kaufbare.
+  { id: "s2_bernstein", label: "Bernstein", cost: null, via: "Season 2, Stufe 10", season: "porta-herbst-2", preview: ["#ffb347", "#7a3d00"], motion: true },
+  { id: "s2_phoenix",   label: "Glut",      cost: null, via: "Season 2, Stufe 20", season: "porta-herbst-2", preview: ["#fff3b0", "#ff2d00"], motion: true },
 ];
 
 /* ── Rahmen ums Bild ──────────────────────────────────────────────────────
@@ -87,6 +92,7 @@ const FRAMES = [
   { id: "rotierend", label: "Kreisel",     cost: 400000, motion: true },
   { id: "flamme",    label: "Flamme",      cost: 600000, motion: true },
   { id: "sterne",    label: "Sternenring", cost: 900000, motion: true },
+  { id: "s2_wolf",   label: "Wolfsring",   cost: null, via: "Season 2, Stufe 15", season: "porta-herbst-2", motion: true },
 ];
 
 /* ── Titel ────────────────────────────────────────────────────────────────
@@ -107,6 +113,7 @@ const TITLES = [
   { id: "legende",    text: "Legende von Porta",   cost: 1000000 },
   // Nicht kaeuflich: kommt mit dem ersten kompletten Strassen-Monopol.
   { id: "strassenkoenig", text: "Straßenherr", cost: null, via: "Eine Straße komplett besitzen" },
+  { id: "s2_phoenix",     text: "Phönix von Porta", cost: null, via: "Season 2, Stufe 20", season: "porta-herbst-2" },
 ];
 
 const avaById = Object.fromEntries(AVATARS.map((a) => [a.id, a]));
@@ -203,7 +210,9 @@ function grant(acc, type, id) {
 function label(type, id) {
   const item = KATALOG[type] ? KATALOG[type][id] : null;
   if (!item) return id;
-  if (type === "avatar") return item.emoji;
+  // Ein nacktes Emoji als Belohnungstext liest sich wie ein Tippfehler
+  // ("Stufe 5: 🃏"). Wo es einen Namen gibt, steht er dabei.
+  if (type === "avatar") return item.label ? `${item.emoji} ${item.label}` : item.emoji;
   if (type === "color") return item.color;
   return item.label || item.text || id;
 }
