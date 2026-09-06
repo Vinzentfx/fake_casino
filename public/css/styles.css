@@ -4173,8 +4173,24 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .chs-cell.legal:has(.chs-piece)::before { width: 92%; height: 92%; background: transparent;
   border: 4px solid rgba(20,20,20,0.4); box-sizing: border-box; }
 .chs-piece { font-size: min(8vw, 40px); line-height: 1; z-index: 3; user-select: none; }
-.chs-piece.wp { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-.chs-piece.bp { color: #1a1a1a; text-shadow: 0 1px 1px rgba(255,255,255,0.3); }
+/* Beide Farben benutzen dieselbe gefuellte Figur; unterschieden wird ueber
+   Fuellung und Rand. Der Rand ist aus vier Schatten gebaut statt aus
+   -webkit-text-stroke: der zeichnet mittig und frisst die duennen Stellen
+   der Figuren weg. */
+.chs-piece.wp {
+  color: #fbfbfd;
+  text-shadow:
+    -1.5px -1.5px 0 #14161a, 1.5px -1.5px 0 #14161a,
+    -1.5px 1.5px 0 #14161a, 1.5px 1.5px 0 #14161a,
+    0 2px 4px rgba(0, 0, 0, 0.5);
+}
+.chs-piece.bp {
+  color: #14161a;
+  text-shadow:
+    -1.2px -1.2px 0 rgba(255, 255, 255, 0.65), 1.2px -1.2px 0 rgba(255, 255, 255, 0.65),
+    -1.2px 1.2px 0 rgba(255, 255, 255, 0.65), 1.2px 1.2px 0 rgba(255, 255, 255, 0.65),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
 .chs-spec-banner { text-align: center; font-weight: 700; font-size: 0.9rem; margin: 0 0 8px; padding: 8px 12px;
   border-radius: 10px; background: rgba(94,168,224,0.15); border: 1px solid rgba(94,168,224,0.4); color: #bcd8f0; }
 .lobby-watch { white-space: nowrap; }

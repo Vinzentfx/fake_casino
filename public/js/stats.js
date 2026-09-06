@@ -38,7 +38,8 @@
     const isMe = me && me.name.toLowerCase() === name.toLowerCase();
     const acc = (d && d.account) || {};
     const badge = d && d.ach && d.ach.badge ? ` ${d.ach.badge}` : "";
-    $("#stats-title").textContent = isMe ? `📊 Deine Statistik${badge}` : `📊 ${acc.name || name}${badge}`;
+    // Der Name steht jetzt in der Visitenkarte darunter, also nicht zweimal.
+    $("#stats-title").textContent = isMe ? "📊 Deine Statistik" : "📊 Statistik";
 
     // Social profile header + Rivalen/Kopfgeld panel.
     const rivalBox = $("#stats-rival");
@@ -47,27 +48,39 @@
       const city = d && d.city;
       const ach = d && d.ach;
       const bounty = (d && d.bounty) || 0;
-      const display = escapeHtml(acc.name || name);
-      const color = acc.nameColor ? ` style="color:${acc.nameColor}"` : "";
       const achCount = ach ? `${(ach.unlocked || []).length}/${ach.total || 0}` : "0/0";
       const cityLine = city && city.houses
         ? `🏠 ${fmt(city.houses)} · 👑 ${fmt(city.streets || 0)} · 💎 ${fmt(city.value || 0)} 🪙`
         : "Noch kein Stadt-Imperium";
+      /*
+       * Dieselbe Visitenkarte wie im eigenen Profil und im Profil-Fenster.
+       *
+       * Hier stand vorher ein eigener Kasten mit fest eingebauten Farben, dem
+       * nackten Avatar-Emoji und der flachen Namensfarbe. Banner, Namensstil,
+       * Rahmen und Titel fehlten also genau dort, wo man am ehesten landet:
+       * ueber einen Namen in der Bestenliste. Wer Kosmetik kauft, will sie
+       * gesehen haben — dann muss sie ueberall auftauchen, wo ein Spieler
+       * dargestellt wird.
+       */
+      const sp = window.Casino.spieler;
       const social = `
-        <div style="border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.8rem;margin-bottom:.75rem;background:rgba(0,0,0,.16)">
-          <div style="display:flex;gap:.75rem;align-items:center">
-            <div style="font-size:2.1rem;line-height:1">${acc.avatar || "🙂"}</div>
-            <div style="min-width:0;flex:1">
-              <div><b${color}>${display}</b> ${badge ? `<span class="lb-badge">${badge.trim()}</span>` : ""}</div>
-              <div class="muted small">Level ${lvl.level || 1} · ${escapeHtml(lvl.title || "Neuling")} · ${achCount} Achievements</div>
+        <div class="pf-card pp-card"${acc.banner ? ` data-banner="${escapeHtml(acc.banner)}"` : ""}>
+          <div class="pf-avatar">${sp.avatar(acc)}</div>
+          <div class="pf-ident">
+            <h2>${sp.name(acc)}</h2>
+            ${acc.title ? `<div class="pl-title">${escapeHtml(acc.title)}</div>` : ""}
+            <div class="pf-tags">
+              ${badge ? `<span class="pf-tag">${badge.trim()}</span>` : ""}
+              <span class="pf-tag">${lvl.emoji || "🌱"} Level ${lvl.level || 1} · ${escapeHtml(lvl.title || "Neuling")}</span>
+              <span class="pf-tag">🏆 ${achCount}</span>
+              ${bounty ? `<span class="pf-tag pf-tag-bounty">🎯 ${fmt(bounty)} 🪙</span>` : ""}
             </div>
           </div>
-          <div class="biz-buffs" style="margin-top:.65rem">
-            <span class="buff-chip">💰 ${fmt(acc.chips || 0)} 🪙</span>
-            <span class="buff-chip">📈 ${fmt(acc.netWorth || acc.chips || 0)} 🪙 Wert</span>
-            <span class="buff-chip">${cityLine}</span>
-            ${bounty ? `<span class="buff-chip">🎯 ${fmt(bounty)} 🪙 Kopfgeld</span>` : ""}
-          </div>
+        </div>
+        <div class="biz-buffs" style="margin-bottom:.75rem">
+          <span class="buff-chip">💰 ${fmt(acc.chips || 0)} 🪙</span>
+          <span class="buff-chip">📈 ${fmt(acc.netWorth || acc.chips || 0)} 🪙 Wert</span>
+          <span class="buff-chip">${cityLine}</span>
         </div>`;
       if (isMe) {
         rivalBox.innerHTML = social + (bounty

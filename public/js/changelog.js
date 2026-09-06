@@ -19,6 +19,16 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-08-b",
+      datum: "8. September 2026",
+      titel: "Kosmetik auch in der Statistik, weiße Figuren sichtbar",
+      items: [
+        { icon: "📊", titel: "Die Statistik zeigt jetzt auch die Visitenkarte", text: "Wer in der Bestenliste auf einen Namen tippt, landet in der Statistik. Dort stand ein eigener Kasten mit dem nackten Emoji und der flachen Namensfarbe: Banner, Namensstil, Rahmen und Titel fehlten ausgerechnet an der Stelle, wo man am häufigsten hinkommt. Jetzt steht dort dieselbe Visitenkarte wie im Profil." },
+        { icon: "␣", titel: "Titel klebte am Namen", text: "In der Bestenliste stand der Titel ohne Leerzeichen direkt hinter dem Namen." },
+        { icon: "♟️", titel: "Weiße Schachfiguren waren fast unsichtbar", text: "Für Weiß wurden die Umriss-Zeichen benutzt und weiß eingefärbt — übrig blieb ein dünner weißer Strich, der auf hellen Feldern verschwand. Beide Farben benutzen jetzt die gefüllte Figur, Weiß mit dunklem Rand, Schwarz mit hellem. So macht es jedes Schachbrett." },
+      ],
+    },
+    {
       id: "2026-09-08",
       datum: "8. September 2026",
       titel: "Angezeigte Beträge stimmen jetzt",

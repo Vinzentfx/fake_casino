@@ -13,7 +13,16 @@
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
 
   const GLYPH = {
-    w: { k: "♔", q: "♕", r: "♖", b: "♗", n: "♘", p: "♙" },
+    /*
+     * BEIDE Farben benutzen die gefuellten Figuren.
+     *
+     * Vorher standen bei Weiss die Umriss-Zeichen (♔♕♖) und wurden weiss
+     * eingefaerbt: uebrig blieb ein duenner weisser Strich, der auf hellen
+     * Feldern praktisch unsichtbar war. Die gefuellte Form mit weisser
+     * Fuellung und dunklem Rand (siehe .chs-piece.wp im CSS) ist das, was
+     * jedes Schachbrett macht.
+     */
+    w: { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
     b: { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
   };
   const FILES = "abcdefgh";
@@ -151,7 +160,7 @@
 
   function renderPlayerBars() {
     const you = st.you || { name: "Du" }, opp = st.opponent || { name: "Gegner" };
-    const yc = myColor() === "w" ? "♔" : "♚", oc = myColor() === "w" ? "♚" : "♔";
+    const yc = myColor() === "w" ? "♔" : "♚", oc = myColor() === "w" ? "♚" : "♔"; // hier bewusst unterscheidbar, es ist reiner Text
     $("#chs-you-bar").querySelector(".chs-pname").textContent = `${yc} ${you.name} (${you.rating || "?"})`;
     $("#chs-opp-bar").querySelector(".chs-pname").textContent = `${oc} ${opp.name} (${opp.rating || "?"})`;
   }

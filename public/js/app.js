@@ -1347,7 +1347,7 @@ function renderLbList() {
     const titel = window.Casino.spieler.title(p);
     if (p.schild && SCHILDER.has(p.schild)) li.classList.add("sch-" + p.schild);
     li.innerHTML =
-      `<span>${rank}${clan} ${ava} ${nm}${titel}${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
+      `<span>${rank}${clan} ${ava} ${nm}${titel ? " " + titel : ""}${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
       `<b>${unit ? unit(p.value) : p.value.toLocaleString("de-DE") + " 🪙"}</b>`;
     // Tap a row to inspect that player's stats.
     li.classList.add("lb-clickable");
