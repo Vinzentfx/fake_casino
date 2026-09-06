@@ -114,6 +114,13 @@ const TITLES = [
   // Nicht kaeuflich: kommt mit dem ersten kompletten Strassen-Monopol.
   { id: "strassenkoenig", text: "Straßenherr", cost: null, via: "Eine Straße komplett besitzen" },
   { id: "s2_phoenix",     text: "Phönix von Porta", cost: null, via: "Season 2, Stufe 20", season: "porta-herbst-2" },
+  /*
+   * Nur fuer die, die zur Wiedereroeffnung da waren. Danach gibt es ihn nie
+   * wieder — weder zu kaufen noch zu verdienen. Genau das macht ihn wertvoll:
+   * er sagt nichts ueber Koennen oder Kontostand, sondern nur, dass man dabei
+   * war, als das Casino wieder aufmachte.
+   */
+  { id: "rueckkehrer",    text: "Rückkehrer", cost: null, via: "Zur Wiedereröffnung dabei gewesen" },
 ];
 
 /* ── Gewinn-Effekt ────────────────────────────────────────────────────────

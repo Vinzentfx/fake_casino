@@ -146,6 +146,9 @@ document.addEventListener("casino:screen", (e) => {
   }
 
   btn.addEventListener("click", () => auf(sheet.classList.contains("hidden")));
+  // Damit andere Module das Menue schliessen koennen, ohne dessen Innenleben
+  // zu kennen (der Rundgang zum Beispiel).
+  window.Casino.menuSchliessen = () => auf(false);
   backdrop.addEventListener("click", () => auf(false));
   $("#menu-close")?.addEventListener("click", () => auf(false));
   // Jede Navigation schließt das Menü, egal von wo sie kam.
@@ -412,7 +415,14 @@ function maybeShowUpdate() {
 
   const alleNeu = cl.neuSeit(gesehen);
   if (!alleNeu.length) return;
-  const neu = alleNeu.slice(0, MAX_IM_FENSTER);
+  /*
+   * Ein Eintrag mit `soloImFenster` erzaehlt die ganze Geschichte selbst
+   * (der Sammel-Eintrag zur Wiedereroeffnung). Dann steht NUR er im Fenster,
+   * sonst haette man ihn plus vier Einzeleintraege, die dasselbe nochmal
+   * sagen. Die uebrigen bleiben als Fussnote und im Updates-Tab.
+   */
+  const sammel = alleNeu.find((r) => r.soloImFenster);
+  const neu = sammel ? [sammel] : alleNeu.slice(0, MAX_IM_FENSTER);
   const weitere = alleNeu.length - neu.length;
 
   const modal = $("#update-modal");
@@ -424,9 +434,13 @@ function maybeShowUpdate() {
   const comeback = alleNeu.length > 1 || alleNeu.some((r) => r.gross);
   $("#update-emoji").textContent = comeback ? "👋" : "🎉";
   $("#update-title").textContent = comeback ? "Comeback!" : "Neu im Casino";
-  $("#update-sub").textContent = comeback
-    ? `Das ist passiert, seit du zuletzt hier warst (${alleNeu.length} ${alleNeu.length === 1 ? "Update" : "Updates"}):`
-    : "Frisch dabei im Fake Casino:";
+  // Beim Sammel-Eintrag waere "18 Updates" verwirrend: sichtbar ist ja nur
+  // einer. Dort zaehlt die Zeit, nicht die Zahl der Eintraege.
+  $("#update-sub").textContent = sammel
+    ? (sammel.intro || "Das ist passiert, seit du zuletzt hier warst:")
+    : comeback
+      ? `Das ist passiert, seit du zuletzt hier warst (${alleNeu.length} ${alleNeu.length === 1 ? "Update" : "Updates"}):`
+      : "Frisch dabei im Fake Casino:";
 
   // Bei mehreren Updates die Ueberschrift je Update mit ausgeben, sonst
   // steht alles als eine lange Liste da und man sieht nicht, was zusammengehoert.
@@ -436,7 +450,9 @@ function maybeShowUpdate() {
       : "";
     return kopf + r.items.map(punktHTML).join("");
   }).join("") + (weitere
-    ? `<p class="update-more">…und ${weitere} ${weitere === 1 ? "älteres Update" : "ältere Updates"}. Alles davon steht im Menü unter <b>Updates</b>.</p>`
+    ? (sammel
+        ? `<p class="update-more">Jede einzelne Änderung steht im Menü unter <b>Updates</b> — ${weitere} Einträge im Detail.</p>`
+        : `<p class="update-more">…und ${weitere} ${weitere === 1 ? "älteres Update" : "ältere Updates"}. Alles davon steht im Menü unter <b>Updates</b>.</p>`)
     : "");
 
   modal.classList.remove("hidden");
@@ -446,6 +462,9 @@ $("#update-close")?.addEventListener("click", () => {
   $("#update-modal")?.classList.add("hidden");
   if (window.Casino.changelog) merkeStand(window.Casino.changelog.neueste);
   renderUpdateBadge();
+  // Das Fenster sagt, WAS neu ist. Der Rundgang zeigt, WO es ist. Direkt
+  // danach ist der einzige Moment, in dem beides zusammengehoert.
+  if (window.Casino.tour) window.Casino.tour.vielleicht();
 });
 $("#update-all")?.addEventListener("click", () => {
   $("#update-modal")?.classList.add("hidden");
@@ -1767,6 +1786,22 @@ $("#admin-new-week-btn")?.addEventListener("click", async () => {
     if (r && r.ok) toast("🗓️ Neue Woche eingeläutet — siehe Chat.");
     else toast((r && r.error) || "Fehler.");
   });
+});
+
+$("#admin-comeback-on-btn")?.addEventListener("click", async () => {
+  const minutes = parseInt($("#admin-comeback-mins").value, 10) || 120;
+  const pot = parseInt($("#admin-comeback-pot").value, 10) || 250000;
+  // Einmal nachfragen: das laesst sich nicht zurueckdrehen, und alle
+  // einundsiebzig Konten bekommen sofort eine Nachricht.
+  const ja = await window.Casino.dialog.frage(
+    `Wiedereröffnung jetzt ausrufen?\n\nAlle bekommen 14 Tage lang ihr Willkommens-Paket, die Gala läuft ${minutes} Minuten mit ${pot.toLocaleString("de-DE")} 🪙 im Topf. Es geht eine Ansage in den Chat und eine Benachrichtigung an alle, die welche anhaben.`,
+    { titel: "🎊 Wiedereröffnung", okText: "Ausrufen" });
+  if (!ja) return;
+  socket.emit("admin:comeback", { on: true, minutes, pot }, (r) =>
+    toast(r?.ok ? `🎊 Wiedereröffnung läuft — Gala ${r.minuten} Min, ${Number(r.topf).toLocaleString("de-DE")} 🪙 im Topf.` : (r?.error || "Fehler.")));
+});
+$("#admin-comeback-off-btn")?.addEventListener("click", () => {
+  socket.emit("admin:comeback", { on: false }, (r) => toast(r?.ok ? "Gala abgerechnet." : (r?.error || "Fehler.")));
 });
 
 $("#admin-happy-on-btn")?.addEventListener("click", () => {

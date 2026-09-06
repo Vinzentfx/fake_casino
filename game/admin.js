@@ -242,6 +242,19 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
+    /*
+     * Wiedereroeffnung. Loest das Willkommens-Paket fuer alle aus und startet
+     * die Gala. Bewusst von Hand: ein Fest, das von selbst losgeht, waehrend
+     * niemand hinschaut, ist kein Fest.
+     */
+    socket.on("admin:comeback", ({ on, minutes, pot } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const cb = require("./comeback");
+      if (on) return ack(cb.starte({ galaMinuten: minutes, topf: pot }));
+      ack(cb.stoppeGala());
+    });
+
     // ── Live-Ops (owner only) ────────────────────────────────────────────
     socket.on("admin:happyHour", ({ on, minutes } = {}, ack) => {
       if (!ack) return;

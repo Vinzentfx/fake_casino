@@ -5869,3 +5869,63 @@ html:not(.reduce-motion) .sch-prisma { animation: pl-sweep 4.5s linear infinite;
 /* Sonst stehen zwei Ringe ineinander: der eigene Rand des Kastens
    und der gekaufte Rahmen. */
 .pf-avatar:has(.pl-ava[class*="fr-"]) { border-color: transparent; }
+
+/* ============================================================
+   Rundgang durch die Neuerungen
+   ============================================================ */
+.tour-card { text-align: center; }
+.tour-card h2 { margin: var(--sp-2) 0; }
+.tour-card .muted { line-height: var(--lh); text-align: left; }
+#tour-goto { width: 100%; margin-top: var(--sp-4); }
+.tour-dots { display: flex; justify-content: center; gap: 6px; margin: var(--sp-4) 0 var(--sp-3); }
+.tour-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-neutral);
+  transition: background var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+.tour-dot.on { background: var(--accent); transform: scale(1.25); }
+.tour-nav { display: flex; gap: var(--sp-2); }
+.tour-nav button { flex: 1; min-height: 44px; }
+.tour-nav button:disabled { opacity: 0.4; }
+
+/* Wiedereröffnung im Admin-Bereich hervorheben: einmaliger Knopf, der viel
+   auslöst, gehört nicht zwischen die Alltagsschalter. */
+.admin-comeback {
+  padding: var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+}
+
+/* ============================================================
+   Wiedereröffnung: Willkommens-Paket und Gala
+   ============================================================ */
+#lobby-comeback { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.cb-karte {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+}
+.cb-icon { font-size: 1.9rem; line-height: 1; flex: 0 0 auto; }
+.cb-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cb-text b { font-size: var(--fs-md); }
+.cb-text small { font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.35; }
+.cb-karte .btn-primary { flex: 0 0 auto; min-height: 44px; }
+.cb-geschenk { background: var(--accent-soft); }
+.cb-gala {
+  background: linear-gradient(120deg, rgba(var(--accent-rgb), 0.16), rgba(166, 107, 255, 0.14));
+}
+html:not(.reduce-motion) .cb-geschenk .cb-icon { animation: cb-wippen 1.8s ease-in-out infinite; }
+@keyframes cb-wippen {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(8deg) scale(1.06); }
+}
+@media (max-width: 520px) {
+  .cb-karte { flex-wrap: wrap; }
+  .cb-karte .btn-primary { flex: 1 0 100%; }
+}

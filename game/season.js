@@ -192,7 +192,11 @@ function addXp(name, amount, kind = "play", spiel = null) {
   let roh = Math.max(0, Math.floor(amount) || 0);
   if (!roh) return 0;
   if (kind === "play" && spiel && spiel === fokusHeute().id) roh *= FOKUS_FAKTOR;
-  roh = Math.floor(roh * serienFaktor(s) * clanFaktor(key));
+  // Waehrend der Eroeffnungsgala zaehlt jede Runde doppelt. Der Tagesdeckel
+  // unten bleibt: die Gala macht schneller, nicht unbegrenzt.
+  let gala = 1;
+  try { gala = require("./comeback").xpFaktor(); } catch {}
+  roh = Math.floor(roh * serienFaktor(s) * clanFaktor(key) * gala);
 
   const capKey = kind === "quest" ? "questDayXp" : "playDayXp";
   const cap = kind === "quest" ? QUEST_XP_DAILY_CAP : PLAY_XP_DAILY_CAP;

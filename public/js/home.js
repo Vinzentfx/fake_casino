@@ -250,6 +250,7 @@
       if (Casino._loadFeed) Casino._loadFeed();
       if (Casino._loadRecords) Casino._loadRecords();
       zeichneDuelle();
+      if (Casino._loadComeback) Casino._loadComeback();
       if (Casino._renderHero) Casino._renderHero();
     },
   });

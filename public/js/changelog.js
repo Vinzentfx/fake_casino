@@ -19,6 +19,36 @@
 (function () {
   const RELEASES = [
     {
+      /*
+       * Der Sammel-Eintrag zum Comeback.
+       *
+       * Zwischen Juli und September war die Seite weg. In den zwei Tagen des
+       * Umbaus sind daraus siebzehn einzelne Eintraege geworden — die stehen
+       * weiter im Updates-Tab, aber wer nach zwei Monaten reinkommt, soll
+       * nicht siebzehn Kaesten durchscrollen. `soloImFenster` sagt dem
+       * Comeback-Fenster: zeig NUR das hier, der Rest ist die Fussnote.
+       */
+      id: "2026-09-09",
+      datum: "Wiedereröffnung",
+      titel: "Das Casino ist zurück",
+      gross: true,
+      soloImFenster: true,
+      intro: "Zwei Monate war zu. In der Zeit ist fast alles überarbeitet worden. Das Wichtigste in Kürze, alles Einzelne steht im Menü unter Updates.",
+      items: [
+        { icon: "🏠", titel: "Neue Lobby, drei Designs, eigene Symbole", text: "Guthaben und Level stehen oben, darunter die Spiele nach Kategorie, jedes mit eigener Farbe und gezeichnetem Logo. Mit dem Stern heftest du dir Lieblingsspiele nach oben. Umschalten kannst du zwischen Klassik, Mitternacht und Neon; die Wahl gilt auf allen deinen Geräten. Auf dem iPad lässt sich das Casino über „Zum Home-Bildschirm“ als richtige App ablegen, und die Zurück-Geste geht endlich einen Bildschirm zurück statt aus der App heraus." },
+        { icon: "🏅", titel: "Wochenrekorde: gegeneinander, ohne Termin", text: "Das größte Problem war nie der Inhalt, sondern die Uhrzeit: Poker, Duelle, Lobbys und Clan-Kriege verlangen alle, dass zwei Leute gleichzeitig da sind. Jedes Spiel merkt sich jetzt eine Woche lang die beste Runde, mit Namen. Gewertet wird das Vielfache deines Einsatzes, nicht die Höhe des Gewinns: mit 200 Chips hast du dieselbe Chance wie jemand mit zwei Millionen. Bei Blackjack zählt stattdessen die längste Serie gewonnener Hände." },
+        { icon: "⏳", titel: "Sudoku-Duell, das man versetzt spielt", text: "Herausforderung aufmachen, Rätsel sofort lösen, dein Ergebnis wartet. Kommt später jemand vorbei, sieht er dein Ergebnis, nimmt an und spielt dasselbe Rätsel. Niemand muss auf jemanden warten. Nimmt 48 Stunden lang niemand an, bekommst du deinen Einsatz zurück." },
+        { icon: "🔔", titel: "Das Casino meldet sich", text: "Wenn wirklich etwas los ist: ein Turnier läuft, jemand macht einen Poker-Tisch auf, jemand hat deinen Rekord geschlagen. Dazu ein Knopf „Mitspieler rufen“, mit dem du den anderen kurz Bescheid gibst, dass du da bist. Und unter der Online-Liste steht, wer zuletzt hier war, damit man sieht, ob sich Warten lohnt." },
+        { icon: "🎟️", titel: "Season 2 läuft: Porta-Herbst", text: "Acht Wochen, zwanzig Stufen. XP sammelst du einfach beim Spielen, jeden Tag gibt ein anderes Spiel doppelte XP, und wer an aufeinanderfolgenden Tagen spielt, sammelt schneller. Unterwegs vier Sachen, die es nirgends zu kaufen gibt." },
+        { icon: "🛡️", titel: "Clans zählen endlich mit", text: "Vorher hing am Clan alles an Duell-Siegen, weshalb seit Monaten nichts passierte. Jetzt zählt jede Runde, die irgendwer spielt, für den ganzen Clan. Die Schatzkammer ist keine Einbahnstraße mehr: Gründer und Offiziere können an Mitglieder auszahlen." },
+        { icon: "🏙️", titel: "Die Stadt gehört nicht mehr einem allein", text: "Unter der Karte steht jetzt, wem wie viel gehört, und ein Tipp auf jemanden zeigt seine Häuser mit dem Preis, den DU für eine Übernahme zahlen würdest. Übernehmen ging immer schon, aber niemand hat es gefunden. Dazu eine Staffel: jedes Haus, das du hast, macht das nächste etwas teurer. Wer hortet, zahlt mehr; wer anfängt, zahlt den vollen Wert." },
+        { icon: "🎨", titel: "Kosmetik: neun Arten statt zwei", text: "Vorher ein Emoji und eine Schriftfarbe. Jetzt animierte Namensstile, Titel, Rahmen ums Bild, Namensschilder für die Listen, Profil-Banner, Gewinn-Effekte und ein Eintritts-Spruch im Chat. Zwei Stücke sind nicht käuflich: sie kommen für eine komplette Straße und dafür, Boss eines Ortsteils zu sein." },
+        { icon: "💼", titel: "Arbeiten ist jetzt Arbeit im Casino", text: "Kellner, Kasse, Croupier, Sicherheit — und die Aufgaben sind das, was man dort können muss: wechseln, richtig auszahlen, Quoten rechnen, einen falschen Wettschein erkennen. Vorher waren drei Aufgabentypen rechnerisch unlösbar: du hast richtig gelöst, bekamst nichts, und die Wartezeit lief trotzdem." },
+        { icon: "🎲", titel: "Die Spiele sehen anders aus", text: "Mines, Towers und Memory hatten leere Vierecke, in denen ein Emoji auftauchte. Die Kacheln klappen jetzt um und dahinter liegen gezeichnete Motive. Blackjack hat einen Filztisch mit Bande, Roulette ein liegendes Tableau wie am echten Tisch, Sportwetten einen Liga-Filter statt siebzig offener Spiele, Crash Hilfslinien für die Multiplikatoren." },
+        { icon: "🔧", titel: "Und eine Menge kaputter Sachen repariert", text: "Crash und die Rennbahn zeichneten gar nichts mehr. Nach einem Update wurde niemand mehr zum Neuladen aufgefordert. Der Login versprach 1.000 Startchips statt 5.000. Angezeigte Belohnungen stimmten nicht mit den ausgezahlten überein. Und jede Spielkachel hatte ein leeres Zwillingsfeld daneben." },
+      ],
+    },
+    {
       id: "2026-09-08-e",
       datum: "8. September 2026",
       titel: "Pinco und Crash nachgezogen",

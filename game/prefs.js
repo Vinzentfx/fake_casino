@@ -28,6 +28,8 @@ const DEFAULTS = {
   // macht, kommt also ohne Merkwert zurueck — und genau der soll dann sein
   // Comeback-Fenster sehen.
   seenUpdate: null,
+  // Rundgang durch die Neuerungen: laeuft einmal, dann nur noch auf Zuruf.
+  tourGesehen: false,
 };
 
 /** Nimmt entgegen, was der Client schickt, und gibt nur Sauberes zurück. */
@@ -41,6 +43,7 @@ function sanitize(input, current = {}) {
     out.volume = Math.min(1, Math.max(0, input.volume));
   }
   if (typeof input.reduceMotion === "boolean") out.reduceMotion = input.reduceMotion;
+  if (typeof input.tourGesehen === "boolean") out.tourGesehen = input.tourGesehen;
   if (typeof input.seenUpdate === "string" && /^[0-9A-Za-z-]{1,40}$/.test(input.seenUpdate)) {
     out.seenUpdate = input.seenUpdate;
   }

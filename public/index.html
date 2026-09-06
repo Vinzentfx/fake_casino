@@ -81,6 +81,7 @@
     <div class="sheet-group">
       <span class="sheet-label">Das Casino</span>
       <button class="sheet-item" data-nav="updates"><span>📜</span><b>Updates</b><small id="menu-updates-sub">Was sich zuletzt geändert hat</small></button>
+      <button class="sheet-item" id="menu-tour"><span>🧭</span><b>Rundgang</b><small>Die Neuerungen in sieben Schritten</small></button>
       <button class="sheet-item" data-nav="suggest"><span>💡</span><b>Vorschläge</b><small>Was fehlt dir hier?</small></button>
     </div>
 
@@ -132,6 +133,10 @@
     <section class="screen" data-screen="lobby">
       <div class="lobby-inner">
         <div id="liveops-banner" class="liveops-banner hidden"></div>
+
+        <!-- Wiedereröffnung: Willkommens-Paket und Gala. Inhalt aus
+             js/comeback.js, steht nur da, wenn es etwas zu holen gibt. -->
+        <div id="lobby-comeback" class="hidden"></div>
 
         <!-- Kopf: Guthaben, Fortschritt und die zwei Dinge, die man beim
              Reinkommen wirklich anklickt (Bonus abholen, Aufträge ansehen). -->
@@ -1619,6 +1624,19 @@
           <button class="btn-primary" id="admin-force-win-btn">🎰 Nächster Slot-Spin = MAXIMALGEWINN (für dich)</button>
           <button class="btn-primary" id="admin-city-event-btn">📰 Zufälliges Orts-Event auslösen</button>
           <button class="btn-primary" id="admin-new-week-btn">🗓️ Wochen-Rollover jetzt (Pokal + neue Goldene Straße)</button>
+          <!-- Wiedereröffnung: schaltet das Willkommens-Paket frei und startet
+               die Gala. Einmal drücken, dann läuft alles. -->
+          <div class="admin-comeback">
+            <b>🎊 Wiedereröffnung</b>
+            <p class="muted small" style="margin:2px 0 6px">Schaltet das Willkommens-Paket für 14 Tage frei (Chips, Season-XP, Titel „Rückkehrer“ und der Feuerwerk-Effekt) und startet die Gala: doppelte Season-XP und am Ende eine Verlosung unter allen, die mitgespielt haben.</p>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+              <input id="admin-comeback-mins" type="number" min="15" max="480" value="120" style="width:70px" title="Gala-Minuten" />
+              <input id="admin-comeback-pot" type="number" min="1000" step="25000" value="250000" style="width:120px" title="Verlosungs-Topf" />
+              <button class="btn-primary" id="admin-comeback-on-btn">🎊 Wiedereröffnung ausrufen</button>
+              <button class="btn-danger" id="admin-comeback-off-btn">Gala jetzt abrechnen</button>
+            </div>
+          </div>
+
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
             <input id="admin-happy-mins" type="number" min="1" max="240" value="60" style="width:70px" title="Minuten" />
             <button class="btn-primary" id="admin-happy-on-btn">🍹 Happy Hour AN</button>
@@ -1777,13 +1795,29 @@
       <p class="muted small" id="update-sub" style="text-align:center;margin-top:-4px"></p>
       <div class="update-list" id="update-list"></div>
       <div class="update-actions">
-        <button class="btn-primary" id="update-close">Los geht's! 🎰</button>
+        <button class="btn-primary" id="update-close">Zeig mir, was neu ist 🧭</button>
         <button class="chip-btn" id="update-all" data-nav="updates">Alle Updates ansehen</button>
       </div>
     </div>
   </div>
 
   <!-- Kurzes Onboarding für neue Accounts -->
+  <!-- Rundgang durch die Neuerungen. Inhalt und Ablauf in js/tour.js. -->
+  <div id="tour-modal" class="update-modal hidden">
+    <div class="update-card tour-card">
+      <div class="update-emoji" id="tour-icon">👋</div>
+      <h2 id="tour-title">Willkommen zurück</h2>
+      <p class="muted small" id="tour-text"></p>
+      <button class="btn-primary hidden" id="tour-goto" type="button">Zeig mir</button>
+      <div class="tour-dots" id="tour-dots"></div>
+      <div class="tour-nav">
+        <button class="chip-btn" id="tour-back" type="button">Zurück</button>
+        <button class="chip-btn" id="tour-skip" type="button">Überspringen</button>
+        <button class="btn-primary" id="tour-next" type="button">Weiter</button>
+      </div>
+    </div>
+  </div>
+
   <div id="onboarding-modal" class="update-modal hidden">
     <div class="update-card">
       <div class="update-emoji">🎰</div>
@@ -1820,6 +1854,8 @@
   <script defer src="/js/stats.js"></script>
   <script defer src="/js/records.js"></script>
   <script defer src="/js/push.js"></script>
+  <script defer src="/js/tour.js"></script>
+  <script defer src="/js/comeback.js"></script>
   <script defer src="/js/quests.js"></script>
   <script defer src="/js/season.js"></script>
   <script defer src="/js/crash.js"></script>
