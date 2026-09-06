@@ -72,6 +72,9 @@ function showScreen(name, opts) {
 document.addEventListener("casino:screen", (e) => {
   const name = e.detail.screen;
   currentScreen = name;
+  // Haken fuers Layout: manche Screens duerfen breiter werden als die
+  // Standardspalte, die Lobby zum Beispiel im Querformat auf dem iPad.
+  $("#app").dataset.screen = name;
   socket.emit("presence:screen", { screen: name });
   $("#topbar").classList.toggle("hidden", name === "login");
   if (window.Casino.chat) window.Casino.chat.update(name);
@@ -298,7 +301,7 @@ function setAccount(acc, token) {
 }
 
 // ---- Update-/Changelog-Modal (einmal pro Version) ----
-const UPDATE_VERSION = "2026-07-16-sicherheit-fixes";
+const UPDATE_VERSION = "2026-09-06-neue-lobby";
 function maybeShowUpdate() {
   let seen = null;
   try { seen = localStorage.getItem("casino_seen_update"); } catch {}
