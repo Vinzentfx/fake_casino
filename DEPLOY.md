@@ -7,17 +7,30 @@ auf einem eigenen Server.
 
 | | |
 |---|---|
-| **Öffentliche Adresse** | https://206-189-60-121.sslip.io |
+| **Öffentliche Adresse** | https://fake-casino.duckdns.org |
+| **Weitere Namen** | www.fake-casino.duckdns.org · 206-189-60-121.sslip.io (alt, bleibt aktiv) |
 | **Server** | DigitalOcean Droplet, Ubuntu 24.04 LTS, 1 GB RAM / 1 vCPU / 25 GB, Frankfurt |
 | **IP** | 206.189.60.121 |
 | **Kosten** | ca. 6 $/Monat, bezahlt per PayPal-Guthaben (kein Abo, keine Karte hinterlegt) |
 | **Repo** | https://github.com/Vinzentfx/fake_casino |
 
-`sslip.io` löst den Hostnamen auf die IP auf. Dadurch bekommt Caddy ein echtes
-Let's-Encrypt-Zertifikat, ohne dass eine eigene Domain nötig ist. Eine richtige
-Domain oder eine DuckDNS-Subdomain kann jederzeit davorgesetzt werden: DNS auf
-die IP zeigen lassen, den Namen in `/etc/caddy/Caddyfile` eintragen,
-`systemctl reload caddy`.
+Seit 6.9.2026 läuft das Casino unter **fake-casino.duckdns.org**. Die
+Subdomain ist kostenlos bei [duckdns.org](https://www.duckdns.org) angelegt und
+zeigt per A-Record auf 206.189.60.121; DuckDNS beantwortet auch alles darunter
+(`www.` funktioniert deshalb mit).
+
+Die alte `sslip.io`-Adresse steht weiterhin im Caddyfile, damit vorhandene
+Lesezeichen nicht kaputtgehen. `sslip.io` löst einen Hostnamen einfach auf die
+darin enthaltene IP auf, das war die Zwischenlösung ohne eigene Domain.
+
+Ein weiterer Name kommt so dazu: DNS auf die IP zeigen lassen, den Namen in
+`/etc/caddy/Caddyfile` in die Zeile vor der `{` aufnehmen (kommagetrennt),
+`systemctl reload caddy`. Caddy holt das Let's-Encrypt-Zertifikat dann selbst,
+das dauert rund fünf Sekunden.
+
+**Achtung bei DuckDNS:** die Seite trägt beim Anlegen automatisch die IP ein,
+von der man gerade kommt. Die muss man auf die Server-IP ändern, sonst zeigt
+die Domain auf den eigenen Anschluss.
 
 ### Aufbau auf dem Server
 
