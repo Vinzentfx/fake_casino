@@ -3807,6 +3807,42 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .se-boost-fokus { border-color: rgba(var(--accent-rgb), 0.45); background: var(--accent-soft); cursor: pointer; }
 .se-boost-fokus:active { transform: scale(0.985); }
 
+/* ---------------- Clan: Schatzkammer und Protokoll ---------------- */
+.clan-tr-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
+.clan-tr-head b { font-family: var(--font-num); font-size: var(--fs-lg); color: var(--accent-strong); font-variant-numeric: tabular-nums; }
+.clan-payout {
+  display: grid;
+  grid-template-columns: 1fr 110px auto;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+@media (max-width: 480px) {
+  .clan-payout { grid-template-columns: 1fr 1fr; }
+  .clan-payout > button { grid-column: 1 / -1; }
+}
+.clan-payout select, .clan-payout input {
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  min-width: 0;
+}
+.clan-log { margin: var(--sp-3) 0; }
+.clan-log-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 5px var(--sp-2);
+  border-radius: var(--r-xs);
+  background: var(--surface-sunken);
+  margin-bottom: 3px;
+  font-size: var(--fs-sm);
+}
+.clan-log-row small { color: var(--text-mute); font-size: var(--fs-xs); white-space: nowrap; }
+
 /* ---------------- Clan-Season ---------------- */
 .clan-season {
   margin: var(--sp-3) 0;

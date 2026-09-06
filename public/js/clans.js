@@ -88,9 +88,22 @@
     html += `</div>`;
 
     // Treasury
-    html += `<div class="clan-treasury"><div>💰 Schatzkammer: <b>${fmt(c.treasury)} 🪙</b></div>` +
+    // Schatzkammer. Neu: Gruender und Offiziere koennen daraus auszahlen.
+    // Vorher war sie eine Einbahnstrasse — rein ging alles, raus nichts.
+    html += `<div class="clan-treasury">` +
+      `<div class="clan-tr-head"><span class="cd-sub" style="margin:0">💰 Schatzkammer</span><b>${fmt(c.treasury)} 🪙</b></div>` +
       `<div class="clan-donate-row"><input id="clan-donate-amt" type="number" min="1" placeholder="Betrag" />` +
-      `<button class="btn-secondary" id="clan-donate-btn">Spenden</button></div></div>`;
+      `<button class="btn-secondary" id="clan-donate-btn">Einzahlen</button></div>`;
+    if (manage) {
+      html += `<div class="clan-payout">` +
+        `<select id="clan-payout-to">` +
+        (c.members || []).map((m) => `<option value="${escapeHtml(m.key)}">${escapeHtml(m.name)}</option>`).join("") +
+        `</select>` +
+        `<input id="clan-payout-amt" type="number" min="1" placeholder="Betrag" />` +
+        `<button class="btn-secondary" id="clan-payout-btn">Auszahlen</button></div>` +
+        `<p class="hint">Jede Auszahlung steht mit Namen im Protokoll und im Chat.</p>`;
+    }
+    html += `</div>`;
 
     const quests = c.quests || [];
     html += `<div class="clan-quests"><div class="cd-sub">Wöchentliche Clan-Aufträge</div>` +
@@ -129,6 +142,16 @@
       html += `<label class="clan-closed"><input type="checkbox" id="clan-closed-chk" ${c.closed ? "checked" : ""}/> 🔒 Geschlossen (Beitritt nur auf Anfrage)</label>`;
     }
 
+    // Protokoll: wer hat was mit der gemeinsamen Kasse gemacht.
+    const log = c.log || [];
+    if (log.length) {
+      html += `<div class="clan-log"><div class="cd-sub">📜 Letzte Bewegungen</div>` +
+        log.slice(0, 8).map((e) => {
+          const wann = new Date(e.at).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+          return `<div class="clan-log-row"><span>${escapeHtml(e.text)}</span><small>${wann}</small></div>`;
+        }).join("") + `</div>`;
+    }
+
     html += `<button class="btn-danger" id="clan-leave" style="width:100%;margin-top:10px">Clan verlassen</button>`;
     box.innerHTML = html;
 
@@ -137,12 +160,25 @@
       if (!confirm("Clan wirklich verlassen?")) return;
       socket.emit("clan:leave", (r) => { if (r && r.ok) { toast("Clan verlassen."); load(); } else toast(r?.error || "Fehler."); });
     });
+    $("#clan-payout-btn")?.addEventListener("click", () => {
+      const to = $("#clan-payout-to")?.value;
+      const amt = parseInt($("#clan-payout-amt").value, 10);
+      if (!to) { toast("Empfänger wählen."); return; }
+      if (!Number.isFinite(amt) || amt < 1) { toast("Betrag eingeben."); return; }
+      socket.emit("clan:payout", { to, amount: amt }, (r) => {
+        if (!r || !r.ok) { toast(r?.error || "Fehler."); return; }
+        window.Casino.sound.play("cash");
+        toast(`💸 ${fmt(amt)} 🪙 ausgezahlt.`);
+        load();
+      });
+    });
+
     $("#clan-donate-btn")?.addEventListener("click", () => {
       const amt = parseInt($("#clan-donate-amt").value, 10);
       if (!Number.isFinite(amt) || amt < 1) { toast("Betrag eingeben."); return; }
       socket.emit("clan:donate", { amount: amt }, (r) => {
         if (!r || !r.ok) { toast(r?.error || "Fehler."); return; }
-        if (r.account) applyAccount(r.account); toast(`💰 ${fmt(amt)} 🪙 gespendet.`); load();
+        if (r.account) applyAccount(r.account); toast(`💰 ${fmt(amt)} 🪙 eingezahlt.`); load();
       });
     });
     $("#clan-motto-btn")?.addEventListener("click", () => {
@@ -203,7 +239,7 @@
     if (!wl.length) { list.innerHTML = '<li class="muted small">Noch keine Duell-Siege diese Woche.</li>'; return; }
     const medals = ["🥇", "🥈", "🥉"];
     list.innerHTML = wl.map((c, i) =>
-      `<li><span>${medals[i] || (i + 1) + "."} <b style="color:${c.color}">[${escapeHtml(c.tag)}]</b> ${escapeHtml(c.name)}</span><span><b>${c.wins}</b> Siege</span></li>`).join("");
+      `<li><span>${medals[i] || (i + 1) + "."} <b style="color:${c.color}">[${escapeHtml(c.tag)}]</b> ${escapeHtml(c.name)}</span><span><b>${fmt(c.xp)}</b> XP${c.wins ? ` · ${c.wins} Duelle` : ""}</span></li>`).join("");
   }
 
   // ── Value leaderboard (with join / declare-war) ───────────

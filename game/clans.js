@@ -10,12 +10,14 @@
  *
  * Extended features:
  *  • SCHATZKAMMER (treasury): members donate chips into a shared vault.
- *  • CLAN-KRIEGE: a clan stakes treasury chips and challenges another clan; over
- *    a few days each member PvP-duel win scores a point, the higher score takes
- *    the pot minus rake into its treasury (a tie refunds). Chips only move
- *    between clans (rake is the sink) → not farmable.
- *  • WOCHENLIGA: every member PvP win also counts toward the clan's weekly score;
- *    at the Monday rollover the top clan is crowned "Clan der Woche".
+ *  • CLAN-KRIEGE: ein Clan setzt Chips aus der Schatzkammer und fordert einen
+ *    anderen heraus. Ueber ein paar Tage zaehlt die gemeinsam gesammelte
+ *    Season-XP beider Seiten; wer mehr hat, nimmt den Topf minus Rake mit
+ *    (unentschieden zahlt zurueck). Chips wandern nur zwischen Clans, der
+ *    Rake ist die Senke → nicht farmbar. Der Tagesdeckel der Season sorgt
+ *    dafuer, dass Teilnahme zaehlt und nicht ein einzelner Vielspieler.
+ *  • WOCHENLIGA: dasselbe Mass ueber eine Woche; montags wird der beste Clan
+ *    zum "Clan der Woche" gekuert.
  *  • ROLLEN & ANFRAGEN: founder + officers manage the clan (motto, kick, promote,
  *    closed clans with join requests).
  *
@@ -104,6 +106,24 @@ function addSeasonXp(key, amount) {
   const c = acc && acc.clan && clans[acc.clan];
   const gain = Math.max(0, Math.floor(Number(amount) || 0));
   if (!c || !gain) return;
+
+  /* Dieselbe XP zaehlt an drei Stellen: Clan-Season, Wochenliga und ein
+     laufender Krieg. Vorher haingen Liga und Krieg ausschliesslich an
+     PvP-Duellsiegen — dem am wenigsten gespielten Teil der App. Deshalb
+     standen alle drei Clans seit Monaten bei genau 25 XP und die Liga war
+     jede Woche leer.
+
+     Der Tagesdeckel der Season wirkt hier als natuerliche Bremse: ein
+     einzelner Vielspieler kann seinen Clan nicht allein nach oben tragen,
+     fuenf Leute, die normal spielen, schon. Genau so soll ein Clan sich
+     anfuehlen. */
+  c.weeklyXp = Math.max(0, Math.floor(c.weeklyXp || 0) + gain);
+  const krieg = activeWarOf(c.id);
+  if (krieg && krieg.state === "active") {
+    if (krieg.aId === c.id) krieg.aScore += gain; else krieg.bScore += gain;
+  }
+  trackClanQuest(c, "aktiv", gain);
+
   const vorher = clanSeasonState(c).level;
   c.seasonXp = Math.max(0, Math.floor(c.seasonXp || 0) + gain);
   const nachher = clanSeasonState(c);
@@ -133,10 +153,19 @@ function seasonBonusFor(key) {
   return 1 + clanSeasonState(c).bonus;
 }
 
+/*
+ * Woechentliche Clan-Auftraege.
+ *
+ * Vorher: zwei von drei verlangten Duellsiege. Wer keine Denkspiele spielt —
+ * also die meisten — konnte fuer seinen Clan schlicht nichts tun. Jetzt
+ * fuehrt der Hauptauftrag ueber normales Spielen, Duelle sind ein Bonus
+ * daneben statt die Voraussetzung.
+ */
 const CLAN_QUESTS = [
-  { id: "duels_5", label: "Gewinnt 5 Duelle", type: "pvp", target: 5, xp: 180 },
-  { id: "duels_20", label: "Gewinnt 20 Duelle", type: "pvp", target: 20, xp: 520 },
-  { id: "donate_250k", label: "Spendet 250k in die Schatzkammer", type: "donate", target: 250000, xp: 240 },
+  { id: "aktiv_2500", label: "Sammelt zusammen 2.500 Season-XP", type: "aktiv", target: 2500, xp: 220 },
+  { id: "aktiv_8000", label: "Sammelt zusammen 8.000 Season-XP", type: "aktiv", target: 8000, xp: 560 },
+  { id: "duels_5", label: "Gewinnt 5 Duelle gegeneinander", type: "pvp", target: 5, xp: 180 },
+  { id: "donate_250k", label: "Spendet 250.000 in die Schatzkammer", type: "donate", target: 250000, xp: 240 },
 ];
 
 let store = load();
@@ -167,6 +196,9 @@ let _io = null; // fuer Ankuendigungen aus addSeasonXp heraus
 function ensureClan(c) {
   if (!c) return c;
   if (typeof c.treasury !== "number") c.treasury = 0;
+  if (typeof c.weeklyXp !== "number") c.weeklyXp = 0;
+  if (typeof c.seasonXp !== "number") c.seasonXp = 0;
+  if (!Array.isArray(c.log)) c.log = [];
   if (!Array.isArray(c.officers)) c.officers = [];
   if (typeof c.motto !== "string") c.motto = "";
   if (typeof c.closed !== "boolean") c.closed = false;
@@ -195,7 +227,32 @@ function ensureClanQuests(c) {
   if (c.questWeek !== wk || !Array.isArray(c.quests)) {
     c.questWeek = wk;
     c.quests = CLAN_QUESTS.map((q) => ({ id: q.id, progress: 0, done: false }));
+    return;
   }
+  /* Auftraege, die es beim letzten Wochenwechsel noch nicht gab, nachtragen.
+     Ohne das behalten bestehende Clans bis zum naechsten Montag ihre alte
+     Liste, und ein neu eingefuehrter Auftrag bleibt die ganze Woche bei null:
+     trackClanQuest findet den Eintrag nicht und ueberspringt ihn. Genau das
+     ist beim Umbau auf die Aktivitaets-Auftraege passiert. */
+  const vorhanden = new Set(c.quests.map((q) => q.id));
+  for (const meta of CLAN_QUESTS) {
+    if (!vorhanden.has(meta.id)) c.quests.push({ id: meta.id, progress: 0, done: false });
+  }
+  // Abgeschaffte Auftraege entfernen, damit die Liste nicht zuwaechst.
+  const gueltig = new Set(CLAN_QUESTS.map((q) => q.id));
+  c.quests = c.quests.filter((q) => gueltig.has(q.id));
+}
+
+/**
+ * Kurzes Clan-Protokoll. Zwanzig Eintraege reichen, um nachzuvollziehen, wer
+ * was mit der gemeinsamen Kasse gemacht hat.
+ */
+const LOG_MAX = 20;
+function logClan(c, text) {
+  if (!c) return;
+  if (!Array.isArray(c.log)) c.log = [];
+  c.log.unshift({ text: String(text).slice(0, 160), at: Date.now() });
+  if (c.log.length > LOG_MAX) c.log.length = LOG_MAX;
 }
 
 function clanLevel(c) {
@@ -300,6 +357,8 @@ function clanPublic(id) {
     treasury: c.treasury || 0, weeklyWins: c.weeklyWins || 0, totalWins: c.totalWins || 0,
     level: clanLevel(c), quests: clanQuestPublic(c),
     saison: clanSeasonState(c),
+    weeklyXp: c.weeklyXp || 0,
+    log: (c.log || []).slice(0, LOG_MAX),
     members, size: c.members.length, value: members.reduce((s, m) => s + m.value, 0),
     requests: (c.requests || []).map((k) => { const a = _accounts && _accounts.get(k); return { key: k, name: a ? a.name : k }; }),
     war: warPublic(activeWarOf(id)),
@@ -315,11 +374,21 @@ function leaderboard(limit = 15) {
 }
 
 /** Weekly clan league — ranked by PvP-duel wins this week. */
+/**
+ * Wochenliga. Gewertet wird die gemeinsam gesammelte Season-XP der Woche,
+ * nicht mehr die Zahl der Duellsiege. Duellsiege stehen weiter dabei, aber
+ * nur als Zusatzinfo — an ihnen haengt nichts mehr.
+ */
 function weeklyLeague(limit = 15) {
   return Object.keys(clans).map((id) => {
     const c = ensureClan(clans[id]);
-    return { id: c.id, name: c.name, tag: c.tag, color: c.color, wins: c.weeklyWins || 0, size: c.members.length };
-  }).filter((c) => c.wins > 0).sort((a, b) => b.wins - a.wins).slice(0, limit);
+    return {
+      id: c.id, name: c.name, tag: c.tag, color: c.color,
+      xp: c.weeklyXp || 0,
+      wins: c.weeklyWins || 0,
+      size: c.members.length,
+    };
+  }).filter((c) => c.xp > 0).sort((a, b) => b.xp - a.xp).slice(0, limit);
 }
 
 function adminRemoveMember(key) {
@@ -432,12 +501,16 @@ function tickWars(io) {
 /** Called from the weekly rollover: crown the "Clan der Woche", reset scores. */
 function weeklyRollover(io) {
   const board = weeklyLeague(1);
-  if (board.length && board[0].wins > 0) {
+  if (board.length && board[0].xp > 0) {
     const top = clans[board[0].id];
     if (top) { ensureClan(top); top.treasury += WEEKLY_TOP_PRIZE; }
-    if (io) chat.announce(io, `🛡️ CLAN DER WOCHE: [${board[0].tag}] ${board[0].name} mit ${board[0].wins} Duell-Siegen! ${WEEKLY_TOP_PRIZE.toLocaleString("de-DE")} 🪙 in die Schatzkammer.`);
+    if (io) chat.announce(io, `🛡️ CLAN DER WOCHE: [${board[0].tag}] ${board[0].name} mit ${board[0].xp.toLocaleString("de-DE")} XP! ${WEEKLY_TOP_PRIZE.toLocaleString("de-DE")} 🪙 in die Schatzkammer.`);
   }
-  for (const id of Object.keys(clans)) { ensureClan(clans[id]).weeklyWins = 0; }
+  for (const id of Object.keys(clans)) {
+    const c = ensureClan(clans[id]);
+    c.weeklyWins = 0;
+    c.weeklyXp = 0;
+  }
   save();
 }
 
@@ -543,6 +616,47 @@ function setupClans(io, accounts) {
       accounts.adjustChips(socket.data.account, -amount);
       const c = ensureClan(clans[id]); c.treasury += amount;
       trackClanQuest(c, "donate", amount);
+      logClan(c, `${acc.name} spendet ${amount.toLocaleString("de-DE")} 🪙`);
+      save();
+      notifyClan(id);
+      ack({ ok: true, clan: clanPublic(id), account: accounts.publicAccount(acc) });
+    });
+
+    /**
+     * Aus der Schatzkammer an ein Mitglied auszahlen.
+     *
+     * Bisher fuehrte aus der Kasse ueberhaupt kein Weg heraus: man konnte nur
+     * einspenden, und ausgegeben wurde sie ausschliesslich als Kriegseinsatz.
+     * Bei "Die Buben" lagen dadurch 500.001 Chips tot herum. Damit war Spenden
+     * ein Fass ohne Boden statt einer gemeinsamen Kasse.
+     *
+     * Auszahlen duerfen nur Gruender und Offiziere, und jede Auszahlung steht
+     * mit Namen und Betrag im Clan-Protokoll und im Clan-Chat. Missbrauch ist
+     * damit nicht verhindert, aber er ist fuer alle sichtbar — und das ist bei
+     * einer Gruppe von Freunden die passende Bremse.
+     */
+    socket.on("clan:payout", ({ to, amount } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = socket.data.account && accounts.get(socket.data.account);
+      const id = myClan(socket);
+      if (!acc || !id) return ack({ ok: false, error: "Du bist in keinem Clan." });
+      if (!canManage(id, socket.data.account)) return ack({ ok: false, error: "Nur Gründer und Offiziere dürfen auszahlen." });
+
+      const c = ensureClan(clans[id]);
+      const zielKey = String(to || "").trim().toLowerCase();
+      if (!c.members.includes(zielKey)) return ack({ ok: false, error: "Diese Person ist nicht in deinem Clan." });
+      const ziel = accounts.get(zielKey);
+      if (!ziel) return ack({ ok: false, error: "Unbekanntes Mitglied." });
+
+      amount = Math.floor(Number(amount));
+      if (!Number.isFinite(amount) || amount < 1) return ack({ ok: false, error: "Ungültiger Betrag." });
+      if ((c.treasury || 0) < amount) return ack({ ok: false, error: "So viel liegt nicht in der Schatzkammer." });
+
+      c.treasury -= amount;
+      accounts.adjustChips(zielKey, amount);
+      const text = `${acc.name} zahlt ${amount.toLocaleString("de-DE")} 🪙 an ${ziel.name} aus`;
+      logClan(c, text);
+      try { if (_io) chat.announce(_io, `🛡️ [${c.tag}] ${text}.`); } catch {}
       save();
       notifyClan(id);
       ack({ ok: true, clan: clanPublic(id), account: accounts.publicAccount(acc) });
