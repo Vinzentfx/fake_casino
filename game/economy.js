@@ -41,16 +41,16 @@ const JOB_DAY_CAP = 150000;
  * Qualitaet der Aufgaben, nicht um mehr Geld.
  */
 const JOBS = {
-  delivery: { label: "Kellner", emoji: "🍸", cooldown: 28_000, base: 170, xp: 2,
+  delivery: { hue: 190, label: "Kellner", emoji: "🍸", cooldown: 28_000, base: 170, xp: 2,
     hint: "Kurze Runden im Saal. Sicherer Einstieg.",
     tasks: ["bestellung", "wechseln"] },
-  promo: { label: "Kasse", emoji: "🎫", cooldown: 50_000, base: 95, xp: 9,
+  promo: { hue: 45, label: "Kasse", emoji: "🎫", cooldown: 50_000, base: 95, xp: 9,
     hint: "Wechseln und nachrechnen. Wenig Geld, viel XP.",
     tasks: ["wechseln", "quote"] },
-  side: { label: "Croupier", emoji: "🃏", cooldown: 95_000, base: 230, xp: 4, risky: true,
+  side: { hue: 265, label: "Croupier", emoji: "🃏", cooldown: 95_000, base: 230, xp: 4, risky: true,
     hint: "Auszahlen am Tisch. Wer die Quoten kennt, verdient hier.",
     tasks: ["auszahlung", "strategie"] },
-  shift: { label: "Sicherheit", emoji: "🛡️", duration: 75_000, cooldown: 125_000, base: 980, xp: 12,
+  shift: { hue: 210, label: "Sicherheit", emoji: "🛡️", duration: 75_000, cooldown: 125_000, base: 980, xp: 12,
     hint: "Läuft kurz im Hintergrund. Danach: wer schummelt hier?",
     tasks: ["schein", "auszahlung"] },
 };
@@ -355,6 +355,7 @@ function publicJobs(acc, e, now = Date.now()) {
       label: job.label,
       emoji: job.emoji || "💼",
       hint: job.hint || "",
+      hue: job.hue || 40,
       cooldownMs: job.cooldown || 0,
       durationMs: job.duration || 0,
       readyAt: jobs.cooldowns[id] || 0,

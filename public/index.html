@@ -1287,44 +1287,59 @@
     <section class="screen" data-screen="work">
       <div class="work-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div style="text-align:center">
-          <div class="ph-icon">💼</div>
-          <h2>Arbeiten</h2>
-          <p class="muted small">Aktiv hustlen: Jobs helfen vor allem ärmeren Spielern, sind aber gedeckelt.</p>
-        </div>
 
-        <div class="work-jobs" id="work-jobs">
-          <div class="muted small">Jobs laden…</div>
-        </div>
+        <!-- Kopf: was habe ich heute schon verdient und wie viel geht noch.
+             Vorher stand das als zwei nackte Zeilen weit unten, unter der
+             laufenden Aufgabe. -->
+        <section class="wk-head">
+          <div class="wk-head-main">
+            <span class="wk-label">Heute verdient</span>
+            <div class="wk-amount"><b id="work-job-day-earned">0</b> <span>🪙</span></div>
+            <div class="wk-bar" id="work-day-bar"><i></i></div>
+            <small class="wk-sub" id="work-job-day">0 / 0 🪙</small>
+          </div>
+          <div class="wk-head-side">
+            <div class="wk-mini">
+              <span class="wk-label">Diese Stunde</span>
+              <b id="work-job-hour">0 / 0 🪙</b>
+            </div>
+            <div class="wk-mini" id="work-factor-box">
+              <span class="wk-label">Dein Lohnfaktor</span>
+              <b id="work-job-factor-value">1×</b>
+              <small id="work-job-factor"></small>
+            </div>
+          </div>
+        </section>
 
+        <!-- Laufende Aufgabe steht GANZ OBEN, sonst startet man eine und
+             sieht sie nicht, weil sie unter vier Jobkarten liegt. -->
         <div class="panel work-task-panel hidden" id="work-task-panel">
           <div id="work-task-box"></div>
         </div>
 
-        <div class="panel" id="work-job-cap">
-          <div class="stat-row"><span>Job-Cap diese Stunde</span><b id="work-job-hour">0/0 🪙</b></div>
-          <div class="stat-row"><span>Job-Cap heute</span><b id="work-job-day">0/0 🪙</b></div>
-          <p class="muted small" id="work-job-factor" style="margin:.35rem 0 0"></p>
+        <h3 class="section-title">Schichten im Haus</h3>
+        <div class="work-jobs" id="work-jobs">
+          <div class="muted small">Jobs laden…</div>
         </div>
 
-        <div class="clicker-area">
-          <button class="clicker-btn" id="clicker-btn">💼</button>
-          <div class="clicker-sub" id="clicker-sub">+<span id="clicker-power">1</span> 🪙 pro Klick</div>
-        </div>
-
-        <div class="panel">
-          <div class="stat-row">
-            <span>Klick-Stärke</span>
-            <b id="work-power">1 🪙</b>
+        <!-- Klick-Job: die Notfallhilfe, wenn gar nichts mehr geht.
+             Steht deshalb unten und klein. -->
+        <details class="wk-clicker" id="work-clicker-wrap">
+          <summary>
+            <span>🖐️ Trinkgeld sammeln</span>
+            <small>Wenn du wirklich blank bist: +<span id="clicker-power">1</span> 🪙 pro Klick</small>
+          </summary>
+          <div class="wk-clicker-body">
+            <button class="clicker-btn" id="clicker-btn">💼</button>
+            <div id="work-hustle"></div>
+            <div class="wk-upgrade">
+              <div><span class="wk-label">Klick-Stärke</span><b id="work-power">1 🪙</b></div>
+              <div><span class="wk-label">Nächstes Upgrade</span><b id="work-upgrade-cost">50 🪙</b></div>
+              <button class="btn-primary" id="work-upgrade-btn">⬆️ Upgrade kaufen</button>
+            </div>
+            <div class="form-error" id="work-error"></div>
           </div>
-          <div class="stat-row">
-            <span>Upgrade-Kosten</span>
-            <b id="work-upgrade-cost">50 🪙</b>
-          </div>
-          <div id="work-hustle"></div>
-          <button class="btn-primary" id="work-upgrade-btn" style="margin-top:14px">⬆️ Upgrade kaufen</button>
-          <div class="form-error" id="work-error"></div>
-        </div>
+        </details>
       </div>
     </section>
 

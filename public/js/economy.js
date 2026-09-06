@@ -66,30 +66,62 @@
     const box = $("#work-jobs");
     if (!box || !jobs) return;
     workState = jobs;
-    $("#work-job-hour").textContent = `${fmt(jobs.hourEarned || 0)}/${fmt(jobs.hourCap || 0)} 🪙`;
-    $("#work-job-day").textContent = `${fmt(jobs.dayEarned || 0)}/${fmt(jobs.dayCap || 0)} 🪙`;
+    const tag = jobs.dayEarned || 0, tagMax = jobs.dayCap || 1;
+    $("#work-job-day-earned").textContent = fmt(tag);
+    $("#work-job-day").textContent = `${fmt(tag)} / ${fmt(tagMax)} 🪙 Tagesgrenze`;
+    const bar = $("#work-day-bar")?.firstElementChild;
+    if (bar) bar.style.width = Math.min(100, Math.round((100 * tag) / tagMax)) + "%";
+    $("#work-job-hour").textContent = `${fmt(jobs.hourEarned || 0)} / ${fmt(jobs.hourCap || 0)} 🪙`;
+
     const f = jobs.factor || {};
-    $("#work-job-factor").textContent = `Job-Faktor: ${(f.factor || 1).toLocaleString("de-DE")}× bei ${fmt(f.smoothedNetWorth || f.netWorth || 0)} 🪙 Wert.`;
+    const faktor = f.factor || 1;
+    $("#work-job-factor-value").textContent = faktor.toLocaleString("de-DE") + "×";
+    // Der nackte Faktor sagt niemandem etwas. Erklaeren, woher er kommt.
+    $("#work-job-factor").textContent = faktor >= 2.5
+      ? "Je weniger du besitzt, desto mehr zahlt die Schicht."
+      : faktor >= 1
+        ? `Bei ${fmt(f.smoothedNetWorth || f.netWorth || 0)} 🪙 Vermögen.`
+        : "Du bist längst reich — hier gibt es nur noch wenig.";
     renderTask(jobs.activeTask);
     box.innerHTML = (jobs.jobs || []).map((j) => {
       const m = jobMeta(j);
       const cool = timeLeft(j.readyAt);
       const shift = j.id === "shift" && jobs.activeShift;
       const shiftLeft = shift ? timeLeft(jobs.activeShift.readyAt) : "";
-      const disabled = jobs.activeTask || cool || (j.id === "shift" && shift);
-      const label = shift ? (shiftLeft ? `Läuft ${shiftLeft}` : "Abholen") : (cool ? `Cooldown ${cool}` : (j.id === "shift" ? "Schicht starten" : "Job machen"));
-      return `<div class="work-job" data-job="${j.id}">
-        <div class="work-job-icon">${m.icon}</div>
-        <div class="work-job-main">
-          <div class="work-job-head"><b>${escapeHtml(j.label)}</b><span>${fmt(j.payout)} 🪙${j.xp ? ` · ${fmt(j.xp)} XP` : ""}</span></div>
-          <p class="muted small">${escapeHtml(m.text)}</p>
-        </div>
-        <button class="chip-btn" data-job-action="${j.id}" ${disabled ? "disabled" : ""}>${label}</button>
-      </div>`;
+      const blockiert = jobs.activeTask || cool || (j.id === "shift" && shift);
+      const label = shift
+        ? (shiftLeft ? `Läuft ${shiftLeft}` : "Abholen")
+        : (cool ? cool : (j.id === "shift" ? "Schicht starten" : "Antreten"));
+      // Wartezeit als Fortschritt am Kartenrand, damit man sieht, wie lange
+      // es noch dauert, ohne die Sekunden zu lesen.
+      const anteil = cool && j.cooldownMs
+        ? Math.max(0, Math.min(1, (j.readyAt - Date.now()) / j.cooldownMs))
+        : 0;
+      return `<button class="work-job${blockiert ? " is-busy" : ""}" style="--h:${j.hue || 40}"
+                      data-job-action="${j.id}" ${blockiert ? "disabled" : ""}>
+        <span class="work-job-icon">${m.icon}</span>
+        <span class="work-job-main">
+          <span class="work-job-head"><b>${escapeHtml(j.label)}</b></span>
+          <span class="work-job-hint">${escapeHtml(m.text)}</span>
+        </span>
+        <span class="work-job-right">
+          <span class="work-job-pay">${fmt(j.payout)} 🪙</span>
+          ${j.xp ? `<span class="work-job-xp">${fmt(j.xp)} XP</span>` : ""}
+          <span class="work-job-cta">${label}</span>
+        </span>
+        <span class="work-job-cool" style="width:${Math.round(anteil * 100)}%"></span>
+      </button>`;
     }).join("");
     if (jobs.activeShift && !timeLeft(jobs.activeShift.readyAt)) {
-      const btn = box.querySelector('[data-job-action="shift"]');
-      if (btn) { btn.disabled = false; btn.textContent = "Abholen"; }
+      // Achtung: die ganze Karte IST der Knopf. Nur die Beschriftung
+      // austauschen, nicht den Karteninhalt.
+      const karte = box.querySelector('[data-job-action="shift"]');
+      if (karte) {
+        karte.disabled = false;
+        karte.classList.remove("is-busy");
+        const cta = karte.querySelector(".work-job-cta");
+        if (cta) cta.textContent = "Abholen";
+      }
     }
     if (!workTick) workTick = setInterval(() => { if (workState) renderJobs(workState); }, 1000);
   }
