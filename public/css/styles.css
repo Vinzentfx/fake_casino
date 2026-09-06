@@ -2863,88 +2863,146 @@ html.reduce-motion .bj-card { animation: none; }
 }
 .rt-bet-total { font-weight: 700; margin-left: auto; font-size: 0.9rem; }
 
-/* Chip selector */
-.rt-chips {
-  display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap;
-}
-.rt-chip {
-  flex: 1; min-width: 40px;
-  padding: 7px 4px;
-  border: 2px solid rgba(var(--accent-rgb), 0.35);
-  border-radius: 10px;
-  background: rgba(0,0,0,0.3);
-  color: var(--text); font-weight: 700; font-size: 0.82rem;
-  cursor: pointer; transition: all 0.14s;
-}
-.rt-chip.active {
-  border-color: var(--gold);
-  background: rgba(var(--accent-rgb), 0.22);
-  color: var(--gold-strong);
-  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.25);
-}
+/* Die Chip-Auswahl steht weiter unten bei der Bedienleiste; die alte
+   Reiter-Fassung ist entfallen. */
 
-/* Betting table */
-.rt-table { font-size: 0.8rem; user-select: none; margin-bottom: 10px; }
+/* ---------------- Tableau ----------------
+   Ein DOM, zwei Layouts. Jede Zelle traegt ihre Position fuer beide Faelle
+   als Variablen (--lr/--lc quer, --pr/--pc hochkant); hier wird nur
+   entschieden, welche gilt. */
+.rt-table { user-select: none; margin-bottom: var(--sp-3); font-size: 0.82rem; }
+.rt-board { display: grid; gap: 3px; margin-bottom: 3px; }
 .rt-cell {
-  padding: 8px 3px;
-  border-radius: 6px; cursor: pointer; text-align: center;
+  display: grid;
+  place-items: center;
+  padding: 9px 3px;
+  min-height: 38px;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: center;
   font-weight: 700;
-  border: 1px solid rgba(255,255,255,0.14);
-  transition: filter 0.1s, box-shadow 0.1s;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: filter var(--dur-1), box-shadow var(--dur-1), transform var(--dur-1);
   position: relative;
 }
 .rt-cell:active { transform: scale(0.94); }
 .rt-cell:hover  { filter: brightness(1.28); }
-
-.rt-zero {
-  background: #1a8c3c; color: #fff;
-  width: 100%; padding: 9px; margin-bottom: 3px; border-radius: 8px;
-}
-.rt-numbers {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 2px; margin-bottom: 3px;
-}
+.rt-zero { background: #1a8c3c; color: #fff; }
 .rt-r { background: #b52e2e; color: #fff; }
-.rt-b { background: rgba(18,18,18,0.85); color: #fff; border-color: rgba(255,255,255,0.18); }
-
-.rt-col-bets {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 2px; margin-bottom: 3px;
-}
-.rt-col { background: rgba(0,0,0,0.45); color: var(--gold); border-color: rgba(var(--accent-rgb), 0.3); }
-
-.rt-dozens {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 2px; margin-bottom: 3px;
-}
-.rt-dozen { background: rgba(40,75,40,0.55); }
-
-.rt-outside {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 2px; margin-bottom: 4px;
-}
-.rt-out { background: rgba(0,0,0,0.35); }
+.rt-b { background: rgba(18, 18, 18, 0.88); color: #fff; border-color: rgba(255, 255, 255, 0.18); }
+.rt-col { background: rgba(0, 0, 0, 0.45); color: var(--accent); border-color: rgba(var(--accent-rgb), 0.3); font-size: 0.72rem; }
+.rt-dozen { background: rgba(0, 0, 0, 0.4); border-color: rgba(var(--accent-rgb), 0.22); }
+.rt-out { background: rgba(0, 0, 0, 0.35); }
+/* Rot und Schwarz als Aussenwette behalten ihre Farbe. Muss nach .rt-out
+   stehen, sonst gewinnt dessen neutraler Hintergrund. */
 .rt-out.rt-r { background: #b52e2e; }
-.rt-out.rt-b { background: rgba(14,14,14,0.9); }
+.rt-out.rt-b { background: rgba(14, 14, 14, 0.9); }
+.rt-dozens, .rt-outside { display: grid; gap: 3px; margin-bottom: 3px; }
 
-/* Bet badge on cell */
-.rt-bet-badge {
-  position: absolute; top: 1px; right: 2px;
-  background: var(--gold-strong); color: #3a2800;
-  border-radius: 999px; font-size: 0.62rem; font-weight: 900;
-  padding: 0 3px; line-height: 15px; min-width: 15px;
-  text-align: center; pointer-events: none;
+/* --- Hochkant (Handy): drei Spalten, oben 34-36, unten 1-3 --- */
+@media (max-width: 639px) {
+  .rt-board { grid-template-columns: repeat(3, 1fr); }
+  .rt-zero { grid-row: 1; grid-column: 1 / 4; }
+  .rt-num { grid-row: calc(var(--pr) + 1); grid-column: var(--pc); }
+  .rt-col { grid-row: 14; grid-column: var(--pc); }
+  .rt-dozens, .rt-outside { grid-template-columns: repeat(3, 1fr); }
 }
-.rt-has-bet { box-shadow: 0 0 0 2px var(--gold-strong); }
+
+/* --- Quer (iPad und breiter): das klassische Tableau --- */
+@media (min-width: 640px) {
+  .rt-board {
+    grid-template-columns: 1.15fr repeat(12, 1fr) 1.05fr;
+    grid-template-rows: repeat(3, 1fr);
+  }
+  .rt-zero { grid-row: 1 / 4; grid-column: 1; border-radius: 8px 5px 5px 8px; }
+  .rt-num { grid-row: var(--lr); grid-column: calc(var(--lc) + 1); }
+  .rt-col { grid-row: var(--lr); grid-column: 14; }
+  /* Dutzende und Aussenwetten richten sich am Zahlenfeld aus, nicht an der
+     ganzen Breite: sonst stehen sie unter der Null und den Kolonnen. */
+  .rt-dozens, .rt-outside { grid-template-columns: 1.15fr repeat(12, 1fr) 1.05fr; }
+  .rt-dozen:nth-child(1) { grid-column: 2 / 6; }
+  .rt-dozen:nth-child(2) { grid-column: 6 / 10; }
+  .rt-dozen:nth-child(3) { grid-column: 10 / 14; }
+  .rt-out:nth-child(1) { grid-column: 2 / 4; }
+  .rt-out:nth-child(2) { grid-column: 4 / 6; }
+  .rt-out:nth-child(3) { grid-column: 6 / 8; }
+  .rt-out:nth-child(4) { grid-column: 8 / 10; }
+  .rt-out:nth-child(5) { grid-column: 10 / 12; }
+  .rt-out:nth-child(6) { grid-column: 12 / 14; }
+}
+
+/* Gesetzte Chips liegen als Scheibe auf dem Feld, nicht als Rahmen darum. */
+.rt-has-bet { box-shadow: 0 0 0 2px var(--accent-strong), 0 0 14px -2px rgba(var(--accent-rgb), 0.55); }
+.rt-bet-badge {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent));
+  color: var(--accent-ink);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1;
+  z-index: 2;
+  pointer-events: none;
+}
 .rt-win-cell  { animation: winpulse 0.45s ease 3; }
 .rt-lose-cell { opacity: 0.35; transition: opacity 0.3s; }
 
-/* Controls row */
-.rt-controls {
-  display: flex; gap: 10px; margin-top: 4px;
+/* Bedienleiste. Zuruecknehmen, Wiederholen und Loeschen sind Nebensachen
+   und stehen als schmale Knoepfe nebeneinander; Drehen ist die Hauptsache
+   und bekommt die volle Breite darunter. */
+.rt-controls { display: flex; gap: var(--sp-2); margin-top: var(--sp-2); }
+.rt-side-btn {
+  flex: 1;
+  padding: 11px 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  transition: border-color var(--dur-1) var(--ease), opacity var(--dur-1) var(--ease);
 }
-.rt-controls button { flex: 1; }
-.rt-spin-btn { font-size: 1.05rem; padding: 14px; }
+.rt-side-btn:hover:not(:disabled) { border-color: rgba(var(--accent-rgb), 0.5); }
+.rt-side-btn:active:not(:disabled) { transform: scale(0.97); }
+.rt-side-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.rt-clear-btn { color: var(--bad-text); border-color: rgba(var(--bad-rgb), 0.35); }
+.rt-spin-btn { width: 100%; font-size: 1.05rem; padding: 15px; margin-top: var(--sp-2); }
+
+/* Einsatz-Chips als echte Scheiben statt als Reiter. */
+.rt-chips { display: flex; gap: var(--sp-3); justify-content: center; margin-bottom: var(--sp-3); flex-wrap: wrap; }
+.rt-chip {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  background: var(--chip, #ecf0f1);
+  color: #10161c;
+  font-size: 0.8rem;
+  font-weight: 900;
+  /* Die Kerben am Chiprand als gestrichelter Innenring. */
+  box-shadow:
+    inset 0 0 0 4px rgba(0, 0, 0, 0.14),
+    inset 0 0 0 7px rgba(255, 255, 255, 0.55),
+    0 4px 10px rgba(0, 0, 0, 0.5);
+  transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+}
+.rt-chip.active {
+  transform: translateY(-5px) scale(1.06);
+  box-shadow:
+    inset 0 0 0 4px rgba(0, 0, 0, 0.14),
+    inset 0 0 0 7px rgba(255, 255, 255, 0.55),
+    0 0 0 3px var(--accent-strong),
+    0 8px 18px rgba(0, 0, 0, 0.55);
+}
 
 /* ===================== Floating chat dock (bottom-left) ===================== */
 .chat-dock {

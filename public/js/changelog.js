@@ -30,7 +30,8 @@
         { icon: "♠️", titel: "Blackjack am echten Tisch", text: "Filz mit Bande, größere Karten, der Einsatz als Chipstapel und die Hausregel auf dem Tisch. Geteilte Hände stehen nebeneinander, die aktive ist hervorgehoben." },
         { icon: "🔊", titel: "Ton in mehr Spielen", text: "Mines, Towers, Crash und Pinco haben jetzt Klang. In Mines und Towers steigt der Ton mit jedem sicheren Zug. Große Gewinne werden überall gefeiert, nicht nur an den Slots. Alles abschaltbar." },
         { icon: "⚡", titel: "Schneller und app-tauglich", text: "Die Seite lädt beim zweiten Aufruf fast nichts mehr nach. Auf dem iPad kannst du das Casino über \"Zum Home-Bildschirm\" als richtige App ablegen. Und die Zurück-Geste geht endlich einen Screen zurück statt aus der App heraus." },
-        { icon: "🐛", titel: "Vier alte Fehler weg", text: "Wer Towers oder Rennbahn spielte, erschien für alle \"in der Lobby\". Der Login versprach 1.000 Startchips statt 5.000. Nach einem Update wurde niemand mehr zum Neuladen aufgefordert. Und das Passwort-Formular in den Einstellungen hatte gar keine Formatierung." },
+        { icon: "🎡", titel: "Roulette am richtigen Tableau", text: "Statt einer langen Zahlenliste liegt das Tableau jetzt quer, wie am echten Tisch: Null links, zwölf Spalten, Kolonnen rechts. Deine Chips liegen sichtbar auf den Feldern. Neu dazu: Zurück (letzten Chip zurücknehmen) und Wiederholen (dieselben Wetten wie in der letzten Runde). Auf dem Handy bleibt die stehende Fassung." },
+        { icon: "🐛", titel: "Fünf alte Fehler weg", text: "Wer Towers oder Rennbahn spielte, erschien für alle \"in der Lobby\". Der Login versprach 1.000 Startchips statt 5.000. Nach einem Update wurde niemand mehr zum Neuladen aufgefordert. Und das Passwort-Formular in den Einstellungen hatte gar keine Formatierung. Beim Roulette blieb außerdem die Runde hängen, wenn man mitten im Dreh die App wechselte." },
       ],
     },
     {

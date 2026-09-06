@@ -120,66 +120,98 @@
 
     function ease(t) { return 1 - Math.pow(1 - t, 3.5); }
 
+    let abgeschlossen = false;
+    function abschliessen() {
+      if (abgeschlossen) return;
+      abgeschlossen = true;
+      wheelAngle = target;
+      drawWheel();
+      stopRattle();
+      sndSettle();
+      onDone();
+    }
+
     function frame(now) {
+      if (abgeschlossen) return;
       const t = Math.min(1, (now - t0) / duration);
       wheelAngle = startAngle + (target - startAngle) * ease(t);
       drawWheel();
       if (t < 1) requestAnimationFrame(frame);
-      else { wheelAngle = target; drawWheel(); stopRattle(); sndSettle(); onDone(); }
+      else abschliessen();
     }
     requestAnimationFrame(frame);
+
+    /* Sicherheitsnetz. requestAnimationFrame steht still, solange der Tab im
+       Hintergrund liegt — auf dem iPad passiert das bei jedem App-Wechsel.
+       Der Einsatz ist zu diesem Zeitpunkt laengst abgebucht und das Ergebnis
+       steht fest, aber die Runde bliebe bis zur Rueckkehr haengen: kein
+       Ergebnis, kein Guthaben-Update, alle Knoepfe gesperrt.
+       setTimeout wird im Hintergrund nur gedrosselt, nicht angehalten, und
+       schliesst die Runde deshalb zuverlaessig ab. */
+    setTimeout(abschliessen, duration + 1500);
   }
 
   // ── Betting table ──────────────────────────────────────────────
+  /**
+   * Das Tableau.
+   *
+   * Ein echtes Roulette-Tableau liegt quer: Null links, darauf zwoelf
+   * Dreier-Spalten, rechts die Kolonnen. Auf dem iPad ist dafuer Platz, auf
+   * einem schmalen Handy nicht, dort braucht es die stehende Fassung.
+   *
+   * Statt beim Wechsel neu zu bauen, traegt jede Zelle ihre Position fuer
+   * BEIDE Layouts als CSS-Variablen (--lr/--lc quer, --pr/--pc hochkant).
+   * Welche gilt, entscheidet allein eine Media-Query. Ein DOM, zwei Layouts,
+   * kein Neuaufbau beim Drehen des Geraets.
+   */
   function buildTable() {
     const table = $("#rt-table");
     table.innerHTML = "";
 
-    // Zero
+    const board = document.createElement("div");
+    board.className = "rt-board";
+
     const z = makeCell("number", "0", "rt-zero");
     z.textContent = "0";
-    table.appendChild(z);
+    board.appendChild(z);
 
-    // Numbers 1–36  (rows top→bottom: 34-36, 31-33, …, 1-3)
-    const grid = document.createElement("div");
-    grid.className = "rt-numbers";
-    for (let row = 12; row >= 1; row--) {
-      for (let col = 1; col <= 3; col++) {
-        const n    = (row - 1) * 3 + col;
-        const cell = makeCell("number", String(n), "rt-num " + (RED.has(n) ? "rt-r" : "rt-b"));
-        cell.textContent = String(n);
-        grid.appendChild(cell);
-      }
+    for (let n = 1; n <= 36; n++) {
+      // quer: zwoelf Spalten a drei Zahlen, oben 3/6/9…, unten 1/4/7…
+      const lc = Math.ceil(n / 3);
+      const lr = 3 - ((n - 1) % 3);
+      // hochkant: drei Spalten, oben 34-36, unten 1-3
+      const pc = ((n - 1) % 3) + 1;
+      const pr = 13 - lc;
+      const cell = makeCell("number", String(n), "rt-num " + (RED.has(n) ? "rt-r" : "rt-b"));
+      cell.textContent = String(n);
+      cell.style.cssText = `--lr:${lr};--lc:${lc};--pr:${pr};--pc:${pc}`;
+      board.appendChild(cell);
     }
-    table.appendChild(grid);
 
-    // Column bets
-    const cols = document.createElement("div");
-    cols.className = "rt-col-bets";
+    // Kolonnen. Wert 1 trifft 1,4,7… und liegt damit in der UNTERSTEN Reihe.
     for (let v = 1; v <= 3; v++) {
       const c = makeCell("column", String(v), "rt-col");
-      c.textContent = "1,85:1";
-      cols.appendChild(c);
+      c.textContent = "2,85×";
+      c.style.cssText = `--lr:${4 - v};--pc:${v}`;
+      board.appendChild(c);
     }
-    table.appendChild(cols);
+    table.appendChild(board);
 
-    // Dozen bets
     const doz = document.createElement("div");
     doz.className = "rt-dozens";
-    [["1","1–12"],["2","13–24"],["3","25–36"]].forEach(([v, lbl]) => {
+    [["1", "1–12"], ["2", "13–24"], ["3", "25–36"]].forEach(([v, lbl]) => {
       const c = makeCell("dozen", v, "rt-dozen");
       c.textContent = lbl;
       doz.appendChild(c);
     });
     table.appendChild(doz);
 
-    // Outside bets
     const out = document.createElement("div");
     out.className = "rt-outside";
     [
-      ["low","","1–18"], ["even","","Gerade"],
-      ["red","rt-r","Rot"], ["black","rt-b","Schwarz"],
-      ["odd","","Ungerade"], ["high","","19–36"],
+      ["low", "", "1–18"], ["even", "", "Gerade"],
+      ["red", "rt-r", "Rot"], ["black", "rt-b", "Schwarz"],
+      ["odd", "", "Ungerade"], ["high", "", "19–36"],
     ].forEach(([type, cls, lbl]) => {
       const c = makeCell(type, undefined, "rt-out " + cls);
       c.textContent = lbl;
@@ -190,7 +222,7 @@
     table.addEventListener("click", onTableClick);
     table.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      if (lobbyMode) return; // in a lobby, clearing is all-or-nothing (server-side)
+      if (lobbyMode) return; // in einer Lobby raeumt der Server alles auf einmal ab
       const cell = e.target.closest("[data-type]");
       if (cell) { delete bets[betKey(cell)]; renderBets(); updateIndicators(); }
     });
@@ -229,6 +261,8 @@
     }
     const key  = betKey(cell);
     bets[key]  = (bets[key] || 0) + chipValue;
+    betraegeProSetzung.push({ key, betrag: chipValue });
+    merkeSetzung(key);
     sndChip();
     renderBets();
     updateIndicators();
@@ -341,8 +375,10 @@
     if (!tot) { toast("Bitte erst eine Wette setzen."); return; }
 
     spinning = true;
+    letzteRunde = { ...bets }; // fuer "Wiederholen" nach dem Dreh
     $("#rt-spin").disabled  = true;
     $("#rt-clear").disabled = true;
+    aktualisiereSetzKnoepfe();
     $("#rt-error").textContent = "";
     $("#rt-result").style.display = "none";
 
@@ -358,6 +394,7 @@
         spinning = false;
         $("#rt-spin").disabled  = false;
         $("#rt-clear").disabled = false;
+        aktualisiereSetzKnoepfe();
         $("#rt-error").textContent = res?.error || "Fehler.";
         return;
       }
@@ -371,8 +408,11 @@
         highlightBetCells(res.number);
         addHistory(res.number, res.color);
         bets = {};
+        setzHistorie = [];
+        betraegeProSetzung.length = 0;
         renderBets();
         updateIndicators();
+        aktualisiereSetzKnoepfe();
       });
     });
   }
@@ -392,6 +432,10 @@
   }
 
   // ── Chip buttons ───────────────────────────────────────────────
+  // Die ueblichen Casino-Farben je Wert, damit man den Chip an der Farbe
+  // erkennt und nicht erst die Zahl lesen muss.
+  const CHIP_FARBEN = { 100: "#ecf0f1", 1000: "#2980b9", 10000: "#27ae60", 50000: "#2c3e50" };
+
   function setupChips() {
     const container = $("#rt-chips");
     container.innerHTML = "";
@@ -399,13 +443,70 @@
       const btn = document.createElement("button");
       btn.className = "rt-chip" + (v === chipValue ? " active" : "");
       btn.dataset.v = v;
+      btn.style.setProperty("--chip", CHIP_FARBEN[v] || "#ecf0f1");
       btn.textContent = v >= 1e6 ? v / 1e6 + "M" : v >= 1000 ? v / 1000 + "k" : v;
       btn.addEventListener("click", () => {
         chipValue = v;
         container.querySelectorAll(".rt-chip").forEach((b) => b.classList.toggle("active", +b.dataset.v === v));
+        sndChip();
       });
       container.appendChild(btn);
     });
+  }
+
+  // ---- Rueckgaengig und Wiederholen ----------------------------------------
+  // Beim Roulette setzt man viele kleine Wetten hintereinander. Ein Fehlgriff
+  // hiess bisher: alles loeschen und von vorn. Und wer dieselbe Kombination
+  // noch einmal spielen will, musste sie Feld fuer Feld neu antippen.
+  let setzHistorie = [];   // Schluessel in der Reihenfolge, in der gesetzt wurde
+  let letzteRunde = null;  // die Wetten der zuletzt gedrehten Runde
+
+  function merkeSetzung(key) {
+    setzHistorie.push(key);
+    if (setzHistorie.length > 200) setzHistorie.shift();
+    aktualisiereSetzKnoepfe();
+  }
+
+  function rueckgaengig() {
+    const key = setzHistorie.pop();
+    if (!key) return;
+    bets[key] = (bets[key] || 0) - chipValueBeiSetzung(key);
+    if (bets[key] <= 0) delete bets[key];
+    sndChip();
+    renderBets();
+    updateIndicators();
+    aktualisiereSetzKnoepfe();
+  }
+
+  // Jede Setzung merkt sich ihren Betrag, sonst nimmt Rueckgaengig den
+  // aktuell gewaehlten Chip statt des tatsaechlich gesetzten.
+  const betraegeProSetzung = [];
+  function chipValueBeiSetzung(key) {
+    for (let i = betraegeProSetzung.length - 1; i >= 0; i--) {
+      if (betraegeProSetzung[i].key === key) return betraegeProSetzung.splice(i, 1)[0].betrag;
+    }
+    return chipValue;
+  }
+
+  function wiederholen() {
+    if (!letzteRunde || !Object.keys(letzteRunde).length) return;
+    const summe = Object.values(letzteRunde).reduce((s, v) => s + v, 0);
+    const acc = window.Casino.getAccount();
+    if (acc && acc.chips < summe) { toast("Nicht genug Chips für dieselbe Runde."); return; }
+    bets = { ...letzteRunde };
+    setzHistorie = [];
+    betraegeProSetzung.length = 0;
+    sndChip();
+    renderBets();
+    updateIndicators();
+    aktualisiereSetzKnoepfe();
+  }
+
+  function aktualisiereSetzKnoepfe() {
+    const u = $("#rt-undo");
+    const w = $("#rt-repeat");
+    if (u) u.disabled = spinning || lobbyMode || !setzHistorie.length;
+    if (w) w.disabled = spinning || lobbyMode || !letzteRunde || !Object.keys(letzteRunde).length;
   }
 
   $("#rt-spin").addEventListener("click", doSpin);
@@ -413,9 +514,14 @@
     if (spinning) return;
     if (lobbyMode) { socket.emit("rlobby:clear"); return; }
     bets = {};
+    setzHistorie = [];
+    betraegeProSetzung.length = 0;
     renderBets();
     updateIndicators();
+    aktualisiereSetzKnoepfe();
   });
+  $("#rt-undo").addEventListener("click", rueckgaengig);
+  $("#rt-repeat").addEventListener("click", wiederholen);
 
   // ── Shared-lobby integration (driven by public/js/rouletteLobby.js) ──────
   const RT_LBL = { red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1–18", high: "19–36" };
@@ -489,6 +595,7 @@
     if (!screen.classList.contains("active")) return;
     resizeCanvas();
     if (!built) { buildTable(); setupChips(); renderBets(); built = true; }
+    aktualisiereSetzKnoepfe();
   }).observe(screen, { attributes: true, attributeFilter: ["class"] });
 
   window.addEventListener("resize", () => {
