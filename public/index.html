@@ -177,6 +177,10 @@
         <!-- Was gerade läuft. Steht bewusst UNTER den Spielen: die beiden
              Kästen sind meistens leer und haben oben nur Platz gefressen. -->
         <section id="lobby-live">
+          <!-- Herausforderungen, die auf einen Gegner warten. Anders als die
+               Lobbys darunter muss dafür niemand gleichzeitig da sein. -->
+          <button class="duell-banner hidden" id="lobby-duelle" type="button" data-nav="sudoku"></button>
+
           <div class="open-lobbies-head">
             <h2 class="section-title">🎮 Offene Lobbys</h2>
             <button class="chip-btn" id="lobby-refresh" title="Aktualisieren">↻</button>
@@ -956,13 +960,35 @@
             <button type="button" class="mem-size-btn" data-diff="hard">Schwer<span>28 Zahlen</span></button>
           </div>
           <div class="sol-mode-tabs" style="margin-top:12px">
-            <button class="sol-mode-tab active" data-smode="solo">🎯 Solo (ohne Zeit)</button>
-            <button class="sol-mode-tab" data-smode="race">⚔️ PvP-Race</button>
+            <button class="sol-mode-tab active" data-smode="solo">🎯 Solo</button>
+            <button class="sol-mode-tab" data-smode="duell">⏳ Duell</button>
+            <button class="sol-mode-tab" data-smode="race">⚔️ Live-Race</button>
           </div>
 
           <div id="sdk-solo-panel" class="mem-panel">
             <p class="muted small">Ganz in Ruhe lösen — <b>kein Zeitlimit</b>, <b>kein Einsatz</b>. Zählt trotzdem für Achievements & Statistik.</p>
             <button class="btn-primary" id="sdk-solo-start" style="width:100%">🎯 Solo starten</button>
+          </div>
+
+          <!-- Duell ohne Gleichzeitigkeit. Du spielst sofort, dein Ergebnis
+               wartet, bis jemand annimmt. Inhalt aus js/sudoku.js. -->
+          <div id="sdk-duell-panel" style="display:none">
+            <div class="mem-panel">
+              <p class="muted small">Du machst eine Herausforderung auf und löst das Rätsel <b>sofort</b>. Dein Ergebnis wartet dann, bis jemand annimmt und dasselbe Rätsel spielt. Niemand muss gleichzeitig da sein. Nimmt 48 Stunden lang niemand an, bekommst du deinen Einsatz zurück.</p>
+              <label class="mem-label">Einsatz
+                <input id="sdk-duell-einsatz" type="number" inputmode="numeric" min="50" step="50" value="200" />
+              </label>
+              <button class="btn-primary" id="sdk-duell-create" style="width:100%;margin-top:8px">⏳ Herausforderung aufmachen</button>
+            </div>
+
+            <h3 class="section-title">Offene Herausforderungen</h3>
+            <div id="sdk-duell-offen" class="duell-liste"></div>
+
+            <h3 class="section-title" style="margin-top:12px">Deine wartenden</h3>
+            <div id="sdk-duell-meine" class="duell-liste"></div>
+
+            <h3 class="section-title" style="margin-top:12px">Zuletzt entschieden</h3>
+            <div id="sdk-duell-archiv" class="duell-liste"></div>
           </div>
 
           <div id="sdk-pvp-panel" style="display:none">
@@ -1016,6 +1042,7 @@
             <button class="sdk-key" data-n="7">7</button><button class="sdk-key" data-n="8">8</button><button class="sdk-key" data-n="9">9</button>
             <button class="sdk-key sdk-erase" data-n="0">⌫</button>
           </div>
+          <button class="btn-primary" id="sdk-duell-submit" style="width:100%;margin-top:10px;display:none">✅ Ergebnis abgeben</button>
           <button class="btn-secondary" id="sdk-giveup" style="width:100%;margin-top:10px">Spiel beenden</button>
         </div>
 

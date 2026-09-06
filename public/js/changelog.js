@@ -19,6 +19,19 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-06-duell",
+      datum: "6. September 2026",
+      titel: "Sudoku-Duell, ohne Termin",
+      gross: true,
+      intro: "Sudoku-Race, Memory, Schach und Solitär-Race verlangen alle, dass zwei Leute im selben Moment vor dem Bildschirm sitzen. Genau das passiert bei uns fast nie, deshalb standen sie monatelang still.",
+      items: [
+        { icon: "⏳", titel: "Du spielst sofort, dein Gegner wann er will", text: "Neuer Reiter im Sudoku: Herausforderung aufmachen, Einsatz setzen, Rätsel sofort lösen. Dein Ergebnis wartet dann. Kommt später jemand vorbei, sieht er „Tom hat 81 Felder in 6:12 geschafft“, nimmt an, löst dasselbe Rätsel und erfährt sofort, ob er besser war. Niemand muss auf jemanden warten." },
+        { icon: "🎯", titel: "Du siehst, was du schlagen musst", text: "Wer annimmt, hat den Wert des Gegners von Anfang an als Balken vor sich. Gewertet wird erst die Zahl richtiger Felder, dann die Zeit: wer löst, gewinnt gegen jeden, der nicht gelöst hat, egal wie schnell." },
+        { icon: "🛡️", titel: "Warten kostet nichts", text: "Nimmt 48 Stunden lang niemand an, bekommst du deinen Einsatz zurück. Wer annimmt und dann nicht abgibt, verliert; wer selbst nicht fertig spielt, bekommt sein Geld zurück statt es 48 Stunden zu binden. Unentschieden gibt beiden den Einsatz zurück, ohne Abzug." },
+        { icon: "🔔", titel: "Du erfährst, wie es ausging", text: "Wartende Herausforderungen stehen oben in der Lobby. Und wenn dein Duell entschieden wird, während du weg bist, sagt dir das Casino Bescheid, falls du Benachrichtigungen anhast." },
+      ],
+    },
+    {
       id: "2026-09-06-mines",
       datum: "6. September 2026",
       titel: "Mines und Towers überarbeitet",

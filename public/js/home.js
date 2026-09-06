@@ -165,6 +165,29 @@
   }
 
   // ---------------------------------------------------------------
+  // Wartende Herausforderungen
+  // ---------------------------------------------------------------
+  /*
+   * Ein Duell wartet, bis jemand vorbeikommt — deshalb steht es hier oben und
+   * nicht nur im Spiel selbst. Ohne diesen Hinweis findet es niemand, und
+   * genau das war ja das Problem der alten PvP-Modi.
+   */
+  function zeichneDuelle() {
+    const el = $("#lobby-duelle");
+    if (!el) return;
+    Casino.socket.emit("duell:state", (r) => {
+      if (!r || !r.ok) { el.classList.add("hidden"); return; }
+      const dran = (r.laufend || []).length;
+      const offen = (r.offen || []).length;
+      if (!dran && !offen) { el.classList.add("hidden"); return; }
+      el.classList.remove("hidden");
+      el.innerHTML = dran
+        ? `<span class="duell-banner-icon">⏳</span><span><b>Du bist in einem Duell dran</b><small>Deine Partie läuft noch, das Ergebnis fehlt.</small></span>`
+        : `<span class="duell-banner-icon">⚔️</span><span><b>${offen} ${offen === 1 ? "Herausforderung wartet" : "Herausforderungen warten"}</b><small>Jederzeit annehmen, niemand muss gleichzeitig da sein.</small></span>`;
+    });
+  }
+
+  // ---------------------------------------------------------------
   // Live-Spielerzahlen aus der Präsenz
   // ---------------------------------------------------------------
   function setzeAnwesenheit(online) {
@@ -211,8 +234,21 @@
       if (Casino._loadLobbies) Casino._loadLobbies();
       if (Casino._loadFeed) Casino._loadFeed();
       if (Casino._loadRecords) Casino._loadRecords();
+      zeichneDuelle();
       if (Casino._renderHero) Casino._renderHero();
     },
+  });
+
+  // data-nav wuerde nur den Bildschirm oeffnen, nicht den richtigen Reiter.
+  document.getElementById("lobby-duelle")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    Casino.sound.play("select");
+    if (Casino._sudokuDuelle) Casino._sudokuDuelle();
+    else Casino.screens.show("sudoku");
+  });
+
+  Casino.socket.on("duell:update", () => {
+    if (Casino.screens.current() === "lobby") zeichneDuelle();
   });
 
   Casino._lobbyPresence = setzeAnwesenheit;

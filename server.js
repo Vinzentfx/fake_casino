@@ -53,6 +53,7 @@ const quests = require("./game/quests");
 const { setupSeason } = require("./game/season");
 const { setupRecords } = require("./game/records");
 const push = require("./game/push");
+const asyncDuell = require("./game/asyncDuell");
 const feed = require("./game/feed");
 const liveops = require("./game/liveops");
 const ipbans = require("./game/ipbans");
@@ -401,6 +402,7 @@ achievements.setupAchievements(io, accounts);
 setupSeason(io, accounts);
 setupRecords(io, accounts);
 push.setupPush(io, accounts);
+asyncDuell.setup(io, accounts);
 quests.setupQuests(io, accounts);
 liveops.setup(io, accounts, heist);
 

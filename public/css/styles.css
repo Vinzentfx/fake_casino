@@ -5203,3 +5203,56 @@ html:not(.reduce-motion) .fr-sterne::before { animation: pl-spin 6s linear infin
 }
 .rv-chip.up { color: var(--good-text); border-color: rgba(var(--good-rgb), 0.4); }
 .rv-chip.down { color: var(--bad); border-color: rgba(255, 122, 110, 0.35); }
+
+/* --- Duelle ohne Gleichzeitigkeit --- */
+.duell-liste { display: flex; flex-direction: column; gap: var(--sp-2); }
+.duell-zeile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.duell-eigen { border-color: var(--line-strong); background: var(--accent-soft); }
+.duell-info { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.duell-info small { font-size: var(--fs-xs); color: var(--text-dim); }
+.duell-info small.muted { color: var(--text-mute); }
+.duell-btn {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  padding: var(--sp-2) var(--sp-3);
+  /* 44px: die iOS-Empfehlung für eine sichere Tap-Fläche. */
+  min-height: 44px;
+}
+.duell-btn span { font-size: var(--fs-xs); font-weight: 700; opacity: 0.8; }
+.duell-pot { flex: 0 0 auto; font-family: var(--font-num); color: var(--accent); }
+
+/* --- Hinweis auf wartende Duelle in der Lobby --- */
+.duell-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 56px;
+}
+.duell-banner:active { transform: scale(0.995); }
+.duell-banner-icon { font-size: 1.5rem; }
+.duell-banner span { display: flex; flex-direction: column; min-width: 0; }
+.duell-banner b { font-size: var(--fs-md); }
+.duell-banner small { font-size: var(--fs-xs); color: var(--text-dim); }

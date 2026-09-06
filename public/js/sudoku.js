@@ -15,6 +15,9 @@
   let myCode = null;
   let chosenDiff = "medium";
   let soloMode = false, soloPlaying = false;
+  // Laeuft gerade ein asynchrones Duell? Dann steht hier seine Kennung.
+  let duellId = null;
+  let duellStand = null;
   let puzzle = null;      // given cells (0 = blank)
   let grid = null;        // my working grid (81)
   let selected = -1;      // selected cell index
@@ -48,7 +51,9 @@
       document.querySelectorAll("#sdk-setup .sol-mode-tab").forEach((x) => x.classList.toggle("active", x === t));
       const m = t.dataset.smode;
       $("#sdk-solo-panel").style.display = m === "solo" ? "" : "none";
+      $("#sdk-duell-panel").style.display = m === "duell" ? "" : "none";
       $("#sdk-pvp-panel").style.display = m === "race" ? "" : "none";
+      if (m === "duell") ladeDuelle();
     }));
 
   // ── Grid ──────────────────────────────────────────────────
@@ -132,7 +137,12 @@
           setProgress("you", r.progress);
         }
       };
-      if (soloMode) {
+      if (duellId) {
+        // Im Duell zaehlt nur die Abgabe. Waehrenddessen den Fortschritt
+        // trotzdem zeigen, aber ohne den Server zu fragen: der wuerde dabei
+        // verraten, welche Felder richtig sind.
+        setProgress("you", progressCount());
+      } else if (soloMode) {
         socket.emit("sudoku:soloUpdate", { grid }, (r) => { if (r && r.ok && r.solved) onSoloSolved(); else showProgress(r); });
       } else if (myCode) {
         socket.emit("sudoku:update", { grid }, showProgress);
@@ -154,7 +164,7 @@
     b.addEventListener("click", () => setNumber(parseInt(b.dataset.n, 10))));
   // Keyboard support while on the sudoku screen
   document.addEventListener("keydown", (e) => {
-    const active = soloMode ? soloPlaying : (st && st.state === "playing");
+    const active = duellId ? true : soloMode ? soloPlaying : (st && st.state === "playing");
     if (!active) return;
     if (document.querySelector('[data-screen="sudoku"]') && !document.querySelector('[data-screen="sudoku"]').classList.contains("active")) return;
     if (e.key >= "1" && e.key <= "9") setNumber(parseInt(e.key, 10));
@@ -278,6 +288,11 @@
   $("#sdk-start").addEventListener("click", () => socket.emit("sudoku:start", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); }));
 
   function leave() {
+    // Ein laufendes Duell bleibt bewusst stehen: der Einsatz ist bezahlt, die
+    // Spielzeit laeuft, und man soll zurueckkommen koennen.
+    duellId = null;
+    $("#sdk-duell-submit").style.display = "none";
+    $("#sdk-giveup").style.display = "";
     if (myCode) socket.emit("sudoku:leave");
     if (soloMode || soloPlaying) socket.emit("sudoku:soloLeave");
     myCode = null; st = null; grid = null; puzzle = null; soloMode = false; soloPlaying = false; stopTimer();
@@ -289,12 +304,194 @@
     socket.emit("sudoku:rematch", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); else $("#sdk-rematch-status").textContent = "Warte auf Revanche des Gegners…"; });
   });
 
+
+  // ── Duell ohne Gleichzeitigkeit ───────────────────────────
+  /*
+   * Der Live-Race verlangt zwei Leute im selben Moment. Das passiert hier fast
+   * nie, also stand er still. Fuer die Aufgabe selbst ist Gleichzeitigkeit
+   * egal: beide loesen dasselbe Raetsel, am Ende werden zwei Ergebnisse
+   * verglichen. Hier laeuft deshalb dieselbe Partie versetzt.
+   */
+  const zeitText = (ms) => {
+    const s2 = Math.round(Math.max(0, ms) / 1000);
+    return `${Math.floor(s2 / 60)}:${String(s2 % 60).padStart(2, "0")}`;
+  };
+  const restText = (bis) => {
+    const h = Math.max(0, Math.round((bis - Date.now()) / 3600000));
+    return h >= 1 ? `noch ${h} Std` : "läuft bald ab";
+  };
+
+  function ladeDuelle() {
+    socket.emit("duell:state", (r) => {
+      if (!r || !r.ok) return;
+      duellStand = r;
+      const nurSudoku = (liste) => liste.filter((d) => d.spiel === "sudoku");
+
+      const offen = nurSudoku(r.offen);
+      $("#sdk-duell-offen").innerHTML = offen.length ? offen.map((d) => `
+        <div class="duell-zeile">
+          <div class="duell-info">
+            <b>${escapeHtml(d.erstellerName)}</b>
+            <small>${escapeHtml(d.label)} · ${escapeHtml((d.erstellerErgebnis && d.erstellerErgebnis.text) || "")}</small>
+            <small class="muted">${restText(d.laeuftBisAt)}</small>
+          </div>
+          <button class="btn-primary duell-btn" data-duell-accept="${d.id}">Annehmen<span>${fmt(d.einsatz)} 🪙</span></button>
+        </div>`).join("")
+        : '<p class="muted small" style="margin:0">Gerade nichts offen. Mach selbst eine auf, dann kann jemand anders annehmen, wenn er Zeit hat.</p>';
+
+      const meine = nurSudoku(r.meine);
+      $("#sdk-duell-meine").innerHTML = meine.length ? meine.map((d) => `
+        <div class="duell-zeile">
+          <div class="duell-info">
+            <b>${escapeHtml(d.label)} · ${fmt(d.einsatz)} 🪙</b>
+            <small>${escapeHtml((d.erstellerErgebnis && d.erstellerErgebnis.text) || "noch nicht gespielt")}</small>
+            <small class="muted">${d.gegnerName ? escapeHtml(d.gegnerName) + " spielt gerade" : restText(d.laeuftBisAt)}</small>
+          </div>
+        </div>`).join("")
+        : '<p class="muted small" style="margin:0">Keine offenen Herausforderungen von dir.</p>';
+
+      const archiv = nurSudoku(r.archiv);
+      $("#sdk-duell-archiv").innerHTML = archiv.length ? archiv.map((d) => {
+        const sieger = d.sieger === "ersteller" ? d.erstellerName : d.sieger === "gegner" ? d.gegnerName : null;
+        const kopf = d.ausgang === "abgelaufen"
+          ? `${escapeHtml(d.erstellerName)} — niemand hat angenommen, Einsatz zurück`
+          : sieger ? `<b>${escapeHtml(sieger)}</b> schlägt ${escapeHtml(sieger === d.erstellerName ? d.gegnerName : d.erstellerName)}`
+            : `${escapeHtml(d.erstellerName)} und ${escapeHtml(d.gegnerName)} unentschieden`;
+        return `<div class="duell-zeile">
+          <div class="duell-info">
+            <span>${kopf}</span>
+            <small class="muted">${escapeHtml((d.erstellerErgebnis && d.erstellerErgebnis.text) || "—")} · ${escapeHtml((d.gegnerErgebnis && d.gegnerErgebnis.text) || "—")}</small>
+          </div>
+          ${d.auszahlung ? `<b class="duell-pot">${fmt(d.auszahlung)} 🪙</b>` : ""}
+        </div>`;
+      }).join("")
+        : '<p class="muted small" style="margin:0">Noch nichts entschieden.</p>';
+
+      // Steht eine eigene Partie offen, die noch gespielt werden muss?
+      const laufend = nurSudoku(r.laufend)[0];
+      if (laufend && !duellId) zeigeFortsetzen(laufend);
+    });
+  }
+
+  function zeigeFortsetzen(d) {
+    const box = $("#sdk-duell-offen");
+    if (!box) return;
+    box.insertAdjacentHTML("afterbegin", `
+      <div class="duell-zeile duell-eigen">
+        <div class="duell-info">
+          <b>Du bist dran</b>
+          <small>${escapeHtml(d.label)} · ${fmt(d.einsatz)} 🪙 · noch ${zeitText(d.bisAt - Date.now())}</small>
+        </div>
+        <button class="btn-primary duell-btn" data-duell-weiter="${d.id}">Weiterspielen</button>
+      </div>`);
+  }
+
+  /** Ein Duell-Rätsel aufs Brett legen. Gleiche Ansicht wie Solo, aber mit Uhr. */
+  function starteDuellPartie(id, aufgabe, bisAt, gegen) {
+    duellId = id;
+    soloMode = false; soloPlaying = false; myCode = null; st = null;
+    puzzle = aufgabe.puzzle.slice();
+    grid = aufgabe.puzzle.slice();
+    selected = -1;
+    buildGrid(); renderGrid();
+    $("#sdk-topbar").style.display = "";
+    endsAt = bisAt;
+    startTimer();
+    $("#sdk-opp-row").style.display = gegen ? "" : "none";
+    if (gegen) {
+      $("#sdk-opp-name").textContent = gegen.name;
+      // Der Gegner hat schon gespielt: seine Punktzahl ist der Balken, den es
+      // zu schlagen gilt. Genau das ist der Reiz an der versetzten Partie.
+      setProgress("opp", gegen.punkte || 0);
+    }
+    $("#sdk-you-name").textContent = "Richtig";
+    setProgress("you", 0);
+    $("#sdk-duell-submit").style.display = "";
+    $("#sdk-giveup").style.display = "none";
+    show("sdk-game");
+  }
+
+  function duellAbgeben() {
+    if (!duellId) return;
+    const id = duellId;
+    socket.emit("duell:submit", { id, einsendung: grid }, (r) => {
+      if (!r || !r.ok) { toast((r && r.error) || "Fehler."); return; }
+      duellId = null;
+      if (r.account) applyAccount(r.account);
+      stopTimer();
+      $("#sdk-duell-submit").style.display = "none";
+      $("#sdk-giveup").style.display = "";
+      show("sdk-result");
+      $("#sdk-rematch").style.display = "none";
+      $("#sdk-rematch-status").textContent = "";
+      if (r.wartet) {
+        $("#sdk-result-emoji").textContent = "⏳";
+        $("#sdk-result-title").textContent = "Abgegeben";
+        $("#sdk-result-sub").textContent = `${r.ergebnis.text}. Jetzt wartet dein Ergebnis, bis jemand annimmt.`;
+      } else {
+        const ich = getAccount();
+        const gewonnen = r.siegerName && ich && r.siegerName.toLowerCase() === String(ich.name).toLowerCase();
+        $("#sdk-result-emoji").textContent = r.siegerName ? (gewonnen ? "🏆" : "😤") : "🤝";
+        $("#sdk-result-title").textContent = r.siegerName ? (gewonnen ? "Gewonnen!" : `${r.siegerName} war besser`) : "Unentschieden";
+        const e = r.eintrag || {};
+        $("#sdk-result-sub").textContent =
+          `${e.erstellerName}: ${(e.erstellerErgebnis || {}).text || "—"} · ${e.gegnerName}: ${(e.gegnerErgebnis || {}).text || "—"}`
+          + (gewonnen ? ` — +${fmt(r.auszahlung)} 🪙` : "");
+        if (gewonnen) window.Casino.fx.bigWin(r.auszahlung, { label: "Duell gewonnen" });
+      }
+      ladeDuelle();
+    });
+  }
+
+  $("#sdk-duell-create").addEventListener("click", () => {
+    const einsatz = parseInt($("#sdk-duell-einsatz").value, 10);
+    if (!Number.isFinite(einsatz) || einsatz < 50) { toast("Mindestens 50 🪙."); return; }
+    socket.emit("duell:create", { spiel: "sudoku", einsatz, optionen: { difficulty: chosenDiff } }, (r) => {
+      if (!r || !r.ok) { toast((r && r.error) || "Fehler."); return; }
+      if (r.account) applyAccount(r.account);
+      window.Casino.sound.play("chip");
+      starteDuellPartie(r.id, r.aufgabe, r.bisAt, null);
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    const an = e.target.closest("[data-duell-accept]");
+    if (an) {
+      socket.emit("duell:accept", { id: an.dataset.duellAccept }, (r) => {
+        if (!r || !r.ok) { toast((r && r.error) || "Geht nicht mehr."); ladeDuelle(); return; }
+        if (r.account) applyAccount(r.account);
+        window.Casino.sound.play("chip");
+        starteDuellPartie(r.id, r.aufgabe, r.bisAt, { name: r.gegenName, punkte: (r.gegenErgebnis || {}).punkte || 0 });
+      });
+      return;
+    }
+    const weiter = e.target.closest("[data-duell-weiter]");
+    if (weiter && duellStand) {
+      const d = (duellStand.laufend || []).find((x) => x.id === weiter.dataset.duellWeiter);
+      if (d) starteDuellPartie(d.id, d.aufgabe, d.bisAt, d.erstellerErgebnis && !d.meine
+        ? { name: d.erstellerName, punkte: d.erstellerErgebnis.punkte } : null);
+    }
+  });
+
+  $("#sdk-duell-submit").addEventListener("click", duellAbgeben);
+  socket.on("duell:update", () => {
+    if (document.querySelector('[data-screen="sudoku"]')?.classList.contains("active")) ladeDuelle();
+  });
+
   // Leaving the game screen (‹ Lobby) mid-race forfeits → opponent wins the pot.
   const sdkBack = document.querySelector('[data-screen="sudoku"] .back-btn');
   if (sdkBack) sdkBack.addEventListener("click", () => { if (myCode || soloPlaying) leave(); });
 
   window.Casino._sudokuJoinCode = (code) => { window.Casino.showScreen("sudoku"); doJoin(code); };
+  /** Direkt in den Duell-Reiter springen (vom Hinweis in der Lobby aus). */
+  window.Casino._sudokuDuelle = () => {
+    window.Casino.screens.show("sudoku");
+    const tab = document.querySelector('#sdk-setup [data-smode="duell"]');
+    if (tab) tab.click();
+  };
   window.Casino._loadSudoku = () => {
+    ladeDuelle();
+    if (duellId) { show("sdk-game"); return; }
     if (soloMode && soloPlaying) { show("sdk-game"); return; }
     if (!st || st.state === "done") { show("sdk-setup"); $("#sdk-error").textContent = ""; }
     else apply(st);

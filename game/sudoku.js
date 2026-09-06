@@ -350,4 +350,45 @@ function setupSudoku(io, accounts) {
   });
 }
 
+/**
+ * Dasselbe Sudoku als Duell, das NICHT gleichzeitig gespielt werden muss.
+ *
+ * Der Race-Modus verlangt, dass zwei Leute im selben Moment da sind. Genau das
+ * passiert in dieser Runde fast nie, weshalb er praktisch tot war. Fuer die
+ * Aufgabe selbst ist Gleichzeitigkeit aber voellig egal: beide bekommen
+ * dasselbe Raetsel, am Ende werden zwei Ergebnisse verglichen. Also laeuft es
+ * jetzt zusaetzlich versetzt ueber game/asyncDuell.js.
+ *
+ * Gewertet wird erst die Zahl richtiger Felder, dann die Zeit. Wer loest,
+ * gewinnt also gegen jeden, der nicht geloest hat, egal wie schnell der war.
+ */
+function zeitText(ms) {
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+require("./asyncDuell").registriere({
+  id: "sudoku",
+  label: "Sudoku",
+  erzeuge({ difficulty } = {}) {
+    const diff = DIFFICULTIES[difficulty] ? difficulty : DEFAULT_DIFF;
+    const { puzzle, solution } = makePuzzle(diff);
+    return {
+      aufgabe: { puzzle, difficulty: diff },
+      geheim: { puzzle, solution },
+      label: { easy: "Leicht", medium: "Mittel", hard: "Schwer" }[diff] || diff,
+    };
+  },
+  bewerte(geheim, einsendung, ms) {
+    const grid = Array.isArray(einsendung) ? einsendung.map((v) => Math.floor(Number(v)) || 0) : [];
+    const korrekt = correctCount(grid, geheim.solution);
+    const geloest = isSolved(grid, geheim.puzzle);
+    return {
+      punkte: korrekt,
+      ms,
+      text: geloest ? `Gelöst in ${zeitText(ms)}` : `${korrekt} von 81 richtig, ${zeitText(ms)}`,
+    };
+  },
+});
+
 module.exports = { setupSudoku, SUDOKU_RAKE: RAKE, _isSolved: isSolved, _makePuzzle: makePuzzle };
