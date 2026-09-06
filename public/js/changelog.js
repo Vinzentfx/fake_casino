@@ -19,6 +19,16 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-08",
+      datum: "8. September 2026",
+      titel: "Angezeigte Beträge stimmen jetzt",
+      items: [
+        { icon: "💰", titel: "Aufträge, Kalender und Glücksrad zeigten zu viel", text: "Ab einer Million Vermögen werden Gratis-Einnahmen abgeschwächt. Angezeigt wurde trotzdem der volle Betrag: da stand 3.200 und es kamen 2.100 an, was nach einem Fehler aussieht statt nach einer Regel. Überall steht jetzt die Zahl, die wirklich ankommt, und darüber eine Zeile, warum sie kleiner ist. Dasselbe in der Season-Leiter. Wer unter einer Million liegt, also fast alle, merkt davon nichts." },
+        { icon: "💾", titel: "Sudoku-Duell überlebt das Neuladen", text: "Ein Duell läuft dreißig Minuten. Auf dem iPad räumt Safari den Tab in der Zeit gern weg, und beim Zurückkommen stand ein leeres Rätsel da: die halbe Stunde Arbeit weg, der Einsatz bezahlt. Der Zwischenstand bleibt jetzt erhalten, samt Uhr." },
+        { icon: "♠️", titel: "Blackjack-Serie überlebt einen Neustart", text: "Die laufende Serie wurde erst gespeichert, wenn zufällig etwas anderes speicherte. Bei einem Server-Neustart war sie deshalb manchmal weg." },
+      ],
+    },
+    {
       id: "2026-09-07-profil",
       datum: "7. September 2026",
       titel: "Fremde Profile zeigen jetzt das ganze Profil",

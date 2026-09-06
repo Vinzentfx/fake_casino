@@ -134,6 +134,7 @@ function publicState(acc) {
   // Drei Zustaende, nicht zwei: vor dem Start, laufend, vorbei. Ohne die
   // Unterscheidung stand vor dem Start "beendet" am Screen.
   const phase = jetzt < SEASON.startsAt ? "vor" : jetzt < SEASON.endsAt ? "laeuft" : "vorbei";
+  const faktor = _accounts ? _accounts.faucetFactor(acc.name) : 1;
   return {
     ok: true,
     season: SEASON,
@@ -154,10 +155,13 @@ function publicState(acc) {
       // Beschriftung kommt vom Server aus den echten Werten. Vorher stand sie
       // als fester Text daneben ("200.000 Chips") und war nach der ersten
       // Zahlenaenderung falsch.
-      label: belohnungsText(r),
+      label: belohnungsText(r, faktor),
+      chipsFuerDich: Math.round((r.chips || 0) * faktor),
       unlocked: xp >= r.xp,
       claimed: !!s.claimed[r.level],
     })),
+    // Prozent der vollen Auszahlung. Unter 100 wird es im Screen erklaert.
+    faucet: Math.round(faktor * 100),
   };
 }
 
@@ -208,10 +212,17 @@ function addXp(name, amount, kind = "play", spiel = null) {
   return gain;
 }
 
-/** Was eine Stufe gibt, als Satz. Einzige Quelle fuer die Beschriftung. */
-function belohnungsText(r) {
+/**
+ * Was eine Stufe gibt, als Satz. Einzige Quelle fuer die Beschriftung.
+ *
+ * `faktor` ist die Vermoegensbremse des Spielers. Ohne sie stand auf der
+ * Leiter "24.000 Chips", ausgezahlt wurden aber 16.043, und niemand konnte
+ * sehen warum. Jetzt steht die Zahl da, die wirklich ankommt.
+ */
+function belohnungsText(r, faktor = 1) {
   const teile = [];
-  if (r.chips > 0) teile.push(`${r.chips.toLocaleString("de-DE")} Chips`);
+  const chips = Math.round((r.chips || 0) * faktor);
+  if (chips > 0) teile.push(`${chips.toLocaleString("de-DE")} Chips`);
   for (const k of r.kosmetik || []) {
     try { teile.push(require("./cosmetics").label(k.type, k.id)); } catch { teile.push(k.id); }
   }

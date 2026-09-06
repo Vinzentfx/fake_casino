@@ -18,6 +18,8 @@
   // Laeuft gerade ein asynchrones Duell? Dann steht hier seine Kennung.
   let duellId = null;
   let duellStand = null;
+  // Ein laufendes Duell ueberlebt das Neuladen der Seite.
+  const DUELL_KEY = "casino_duell_sudoku";
   let puzzle = null;      // given cells (0 = blank)
   let grid = null;        // my working grid (81)
   let selected = -1;      // selected cell index
@@ -142,6 +144,7 @@
         // trotzdem zeigen, aber ohne den Server zu fragen: der wuerde dabei
         // verraten, welche Felder richtig sind.
         setProgress("you", progressCount());
+        merkeDuellStand();
       } else if (soloMode) {
         socket.emit("sudoku:soloUpdate", { grid }, (r) => { if (r && r.ok && r.solved) onSoloSolved(); else showProgress(r); });
       } else if (myCode) {
@@ -387,11 +390,32 @@
   }
 
   /** Ein Duell-Rätsel aufs Brett legen. Gleiche Ansicht wie Solo, aber mit Uhr. */
+  /*
+   * Ein Duell laeuft dreissig Minuten. Auf dem iPad raeumt Safari den Tab in
+   * der Zeit regelmaessig weg, und beim Zurueckkommen stand vorher wieder ein
+   * leeres Raetsel da — die halbe Stunde Arbeit war weg, der Einsatz aber
+   * bezahlt. Der Zwischenstand liegt deshalb lokal, gebunden an die Kennung
+   * des Duells.
+   */
+  function merkeDuellStand() {
+    if (!duellId || !grid) return;
+    try { localStorage.setItem(DUELL_KEY, JSON.stringify({ id: duellId, grid })); } catch {}
+  }
+  function holeDuellStand(id) {
+    try {
+      const v = JSON.parse(localStorage.getItem(DUELL_KEY) || "null");
+      return v && v.id === id && Array.isArray(v.grid) && v.grid.length === 81 ? v.grid : null;
+    } catch { return null; }
+  }
+  function vergissDuellStand() {
+    try { localStorage.removeItem(DUELL_KEY); } catch {}
+  }
+
   function starteDuellPartie(id, aufgabe, bisAt, gegen) {
     duellId = id;
     soloMode = false; soloPlaying = false; myCode = null; st = null;
     puzzle = aufgabe.puzzle.slice();
-    grid = aufgabe.puzzle.slice();
+    grid = holeDuellStand(id) || aufgabe.puzzle.slice();
     selected = -1;
     buildGrid(); renderGrid();
     $("#sdk-topbar").style.display = "";
@@ -404,8 +428,8 @@
       // zu schlagen gilt. Genau das ist der Reiz an der versetzten Partie.
       setProgress("opp", gegen.punkte || 0);
     }
-    $("#sdk-you-name").textContent = "Richtig";
-    setProgress("you", 0);
+    $("#sdk-you-name").textContent = "Ausgefüllt";
+    setProgress("you", progressCount());
     $("#sdk-duell-submit").style.display = "";
     $("#sdk-giveup").style.display = "none";
     show("sdk-game");
@@ -417,6 +441,7 @@
     socket.emit("duell:submit", { id, einsendung: grid }, (r) => {
       if (!r || !r.ok) { toast((r && r.error) || "Fehler."); return; }
       duellId = null;
+      vergissDuellStand();
       if (r.account) applyAccount(r.account);
       stopTimer();
       $("#sdk-duell-submit").style.display = "none";
@@ -492,6 +517,22 @@
   window.Casino._loadSudoku = () => {
     ladeDuelle();
     if (duellId) { show("sdk-game"); return; }
+    // Nach einem Neuladen ist duellId weg. Steht im Speicher noch ein Stand,
+    // wird die Partie samt Zwischenstand wieder aufgenommen.
+    let gemerkt = null;
+    try { gemerkt = JSON.parse(localStorage.getItem(DUELL_KEY) || "null"); } catch {}
+    if (gemerkt && gemerkt.id) {
+      socket.emit("duell:state", (r) => {
+        if (!r || !r.ok) return;
+        const d = (r.laufend || []).find((x) => x.id === gemerkt.id);
+        if (!d) { vergissDuellStand(); return; }
+        const tab = document.querySelector('#sdk-setup [data-smode="duell"]');
+        if (tab) tab.click();
+        starteDuellPartie(d.id, d.aufgabe, d.bisAt,
+          d.erstellerErgebnis && !d.meine ? { name: d.erstellerName, punkte: d.erstellerErgebnis.punkte } : null);
+      });
+      return;
+    }
     if (soloMode && soloPlaying) { show("sdk-game"); return; }
     if (!st || st.state === "done") { show("sdk-setup"); $("#sdk-error").textContent = ""; }
     else apply(st);

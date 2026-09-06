@@ -112,6 +112,8 @@
       </div>
       <p class="hint">Die Boni wirken auf jede Runde, der Tagesdeckel bleibt aber die Grenze. Sie entscheiden also, wie schnell du den Deckel erreichst, nicht wie hoch er liegt.</p>
 
+      ${s.faucet != null && s.faucet < 100 ? `<p class="hint">Die Chip-Beträge unten sind schon deine: ab einer Million Vermögen werden Gratis-Einnahmen abgeschwächt, bei dir auf ${s.faucet} %. Kosmetik ist davon nie betroffen.</p>` : ""}
+
       <div class="se-track">
         ${stufen.map((r) => {
           const zustand = r.claimed ? "claimed" : r.unlocked ? "ready" : "locked";

@@ -171,9 +171,14 @@ function meldeSerie(key, spiel, net) {
   if (!acc) return null;
   if (!acc.serien || typeof acc.serien !== "object") acc.serien = {};
   if (net === 0) return null;                      // Unentschieden: nichts passiert
-  if (net < 0) { acc.serien[spiel] = 0; return null; }
+  if (net < 0) { acc.serien[spiel] = 0; _accounts.save(); return null; }
   const laenge = (acc.serien[spiel] || 0) + 1;
   acc.serien[spiel] = laenge;
+  // recordHand speichert die Konten BEVOR es die Zuhoerer aufruft. Diese
+  // Aenderung liegt also hinter dem Speichern und muesste sonst darauf warten,
+  // dass irgendwer anders speichert — bei einem Neustart waere die laufende
+  // Serie weg.
+  _accounts.save();
   if (laenge < meta.min) return null;
   return setze(key, spiel, laenge, { serie: laenge });
 }
@@ -245,6 +250,10 @@ function setupRecords(io, accounts) {
   _io = io;
   _accounts = accounts;
   ensureWeek();
+  // Die Umstellung alter Eintraege passiert beim Laden im Speicher. Einmal
+  // schreiben, damit die Datei danach auch die neue Form hat und nicht erst
+  // beim naechsten Rekord.
+  save();
 
   // Jede abgerechnete Runde laeuft hier durch. Gewertet wird nur, was einen
   // Einsatz mitliefert: Freispiele und Runden ohne echten Einsatz haetten sonst

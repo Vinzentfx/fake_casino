@@ -792,13 +792,30 @@ const WHEEL_SEGMENTS = [
   { label: "5.000",  prize: 5000,  weight: 10, color: "#66c07a" },
   { label: "JACKPOT", prize: 50000, weight: 1, color: "#f4d782" },
 ];
-const wheelSegmentsPublic = () => WHEEL_SEGMENTS.map((s) => ({ label: s.label, color: s.color }));
+/**
+ * Die Felder des Rads, wie sie der Spieler sieht.
+ *
+ * `faktor` ist seine Vermoegensbremse. Ohne sie stand "10.000" auf dem Rad und
+ * es kamen 6.500 an — das sieht nach einem Fehler aus, nicht nach einer Regel.
+ * JACKPOT bleibt JACKPOT, dort steht ohnehin keine Zahl.
+ */
+const wheelSegmentsPublic = (faktor = 1) => WHEEL_SEGMENTS.map((s) => ({
+  label: /^\d/.test(s.label) ? Math.round(s.prize * faktor).toLocaleString("de-DE") : s.label,
+  color: s.color,
+}));
 
 function wheelState(name) {
   const acc = get(name);
   if (!acc) return null;
   const since = Date.now() - (acc.lastWheelAt || 0);
-  return { segments: wheelSegmentsPublic(), canSpin: since >= WHEEL_COOLDOWN_MS, msLeft: Math.max(0, WHEEL_COOLDOWN_MS - since) };
+  // Dieselbe Sache wie beim Kalender: das Rad zahlt gebremst aus.
+  const f = faucetFactor(acc.name);
+  return {
+    segments: wheelSegmentsPublic(f),
+    canSpin: since >= WHEEL_COOLDOWN_MS,
+    msLeft: Math.max(0, WHEEL_COOLDOWN_MS - since),
+    faucet: Math.round(f * 100),
+  };
 }
 
 function spinWheel(name) {
@@ -878,8 +895,14 @@ function calendarState(name) {
   const claimedToday = cal.lastDay === today;
   // If they didn't claim yesterday or today, the ladder has reset to day 1.
   const idx = (cal.lastDay === today || cal.lastDay === today - 1) ? cal.idx : 0;
+  // Ausgezahlt wird mit Vermoegensbremse, angezeigt wurde bisher der volle
+  // Wert. Wer 20.000 gelesen und 13.000 bekommen hat, musste das fuer einen
+  // Fehler halten.
+  const f = faucetFactor(acc.name);
   return {
-    rewards: CAL_REWARDS,
+    rewards: CAL_REWARDS.map((r) => Math.round(r * f)),
+    grundwerte: CAL_REWARDS,
+    faucet: Math.round(f * 100),
     current: idx,              // ladder position claimable next (0-based)
     claimedToday,
     canClaim: !claimedToday,

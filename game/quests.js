@@ -182,15 +182,26 @@ function listFor(name) {
   const acc = _accounts && _accounts.get(name);
   if (!acc) return null;
   const q = ensureQuests(acc);
+  /*
+   * Ausgezahlt wird `reward` mal Happy Hour mal Vermoegensbremse. Angezeigt
+   * wurde bisher nur `reward` — wer 3.200 gelesen und 2.100 bekommen hat,
+   * musste das fuer einen Fehler halten. Der Client bekommt jetzt beides: den
+   * Grundwert und das, was wirklich ankommt.
+   */
+  const key = String(name).trim().toLowerCase();
+  const happy = require("./liveops").questMult();
+  const bremse = _accounts.faucetFactor(key);
+  const echt = (r) => Math.round(r * happy * bremse);
+
   const view = (def) => ({
-    id: def.id, label: def.label, target: def.target, reward: def.reward,
+    id: def.id, label: def.label, target: def.target, reward: echt(def.reward), grundwert: def.reward,
     prog: Math.min(def.target, q.prog[def.id] || 0), done: !!q.claimed[def.id],
   });
   q.rep = q.rep || {};
   const repView = (def) => {
     const r = q.rep[def.id] || { prog: 0, done: 0 };
     return {
-      id: def.id, label: def.label, target: def.target, reward: def.reward,
+      id: def.id, label: def.label, target: def.target, reward: echt(def.reward), grundwert: def.reward,
       cap: def.cap, done: r.done, prog: Math.min(def.target, r.prog),
       maxed: r.done >= def.cap,
     };
@@ -205,6 +216,8 @@ function listFor(name) {
     rotation: rotationInfo(),
     msDay,
     msWeek: Math.max(0, msWeek),
+    happy: happy > 1,
+    faucet: Math.round(bremse * 100),
   };
 }
 

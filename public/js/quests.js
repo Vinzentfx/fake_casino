@@ -49,6 +49,16 @@
         if (wBox) wBox.innerHTML = "";
         return;
       }
+      // Was oben steht, ist das, was ankommt. Happy Hour verdoppelt, die
+      // Vermoegensbremse zieht ab; beides war vorher unsichtbar.
+      const hinweis = $("#quest-hinweis");
+      if (hinweis) {
+        const teile = [];
+        if (res.happy) teile.push("🍹 Happy Hour: doppelte Belohnung.");
+        if (res.faucet != null && res.faucet < 100) teile.push(`Ab einer Million Vermögen werden Gratis-Einnahmen abgeschwächt, bei dir auf ${res.faucet} %.`);
+        hinweis.textContent = teile.join(" ");
+        hinweis.classList.toggle("hidden", !teile.length);
+      }
       const rBox = $("#quest-repeat");
       if (rBox) rBox.innerHTML = (res.repeatable || []).map(repeatRow).join("");
       if (dBox) dBox.innerHTML = res.dailies.map(questRow).join("");
