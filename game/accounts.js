@@ -360,8 +360,9 @@ function publicAccount(acc) {
     buffs: acc.buffs ? activeBuffs(acc) : {},
     residence: acc.residence != null ? { id: acc.residence, ...city.bldInfo(acc.residence) } : null,
     level: levelInfo(acc),
-    avatar: acc.avatar || "🙂",
-    nameColor: acc.nameColor || null,
+    // Aussehen (Bild, Namensstil, Rahmen, Titel) kommt gesammelt aus der
+    // Kosmetik, damit alle Anzeigestellen dieselbe Quelle haben.
+    ...require("./cosmetics").publicLook(acc),
     prefs: require("./prefs").get(acc),
     lastSeen: acc.lastSeen || null,
   };
@@ -626,7 +627,7 @@ function leaderboardBy(cat, limit = 10) {
       champ: champ != null && normalizeName(a.name) === champ,
       level: levelFromXp(a.xp || 0),
       clan: require("./clans").tagOf(normalizeName(a.name)),
-      avatar: a.avatar || "🙂", nameColor: a.nameColor || null,
+      ...require("./cosmetics").publicLook(a),
     }))
     .filter((x) => x.value > 0 || cat === "rich")
     .sort((a, b) => b.value - a.value)

@@ -19,6 +19,21 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-06-style",
+      datum: "6. September 2026",
+      titel: "Endlich mehr als ein Emoji",
+      gross: true,
+      intro: "Kosmetik hieß bisher: ein Emoji und eine flache Schriftfarbe. Beides sah bei allen gleich aus. Jetzt gibt es drei neue Sachen, und man sieht sie überall, wo dein Name steht.",
+      items: [
+        { icon: "✨", titel: "Namensstile", text: "Dein Name bekommt einen Farbverlauf statt einer flachen Farbe, und die teureren bewegen sich: Goldschimmer, Puls, Neon, Regenbogen, Feuer und Glitch. Falls dir das zu unruhig ist, stehen sie still, sobald du in den Einstellungen „Bewegung reduzieren“ anhast." },
+        { icon: "🏷️", titel: "Titel", text: "Eine kleine Zeile unter deinem Namen: Stammgast, Nachtschicht, Pechvogel, Hochroller, Kartenzähler, Legende von Porta und ein paar mehr. Steht in der Online-Liste, der Bestenliste und auf deinem Profil." },
+        { icon: "⭕", titel: "Rahmen", text: "Ein Ring um dein Bild. Silber und Gold ruhig, Kreisel, Flamme und Sternenring drehen sich." },
+        { icon: "👑", titel: "Zwei Sachen kann man nicht kaufen", text: "Den Titel „Straßenkönig“ gibt es für die erste komplette Straße, den Namensstil „Krone“ dafür, dass du Boss eines Ortsteils bist. Damit hängt zum ersten Mal etwas Sichtbares daran, was du in der Stadt wirklich geschafft hast." },
+        { icon: "👀", titel: "Vorschau vor dem Kauf", text: "Oben im Shop steht dein Name so, wie ihn die anderen sehen würden. Einmal antippen zeigt, zweimal kauft. Niemand soll eine Animation blind bezahlen." },
+        { icon: "💬", titel: "Farben im Chat", text: "Der Chat hat Namen bisher grau angezeigt. Ausgerechnet dort, wo man sich am meisten sieht, war von gekaufter Kosmetik nichts zu sehen. Jetzt schon." },
+      ],
+    },
+    {
       id: "2026-09-06-stadt",
       datum: "6. September 2026",
       titel: "Die Stadt gehört nicht einem allein",

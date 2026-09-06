@@ -67,7 +67,18 @@ function setupChat(io, accounts) {
         return ack && ack({ ok: false, error: "Du bist nicht in dieser Lobby." });
 
       const acc = accounts.get(socket.data.account);
-      const msg = { name: (acc && acc.name) || socket.data.displayName || "?", text, ts: now };
+      // Der Chat zeigte Namen bisher als nackten Text: wer sich eine Farbe
+      // gekauft hatte, sah davon ausgerechnet dort nichts, wo man sich am
+      // meisten sieht. Das Aussehen haengt jetzt an der Nachricht.
+      const look = acc ? require("./cosmetics").publicLook(acc) : {};
+      const msg = {
+        name: (acc && acc.name) || socket.data.displayName || "?",
+        text, ts: now,
+        avatar: look.avatar || null,
+        nameColor: look.nameColor || null,
+        nameStyle: look.nameStyle || null,
+        title: look.title || null,
+      };
       push(room, msg);
 
       if (room === "global") io.emit("chat:msg", { room, msg });

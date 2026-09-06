@@ -1111,10 +1111,28 @@
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <h2>🎨 Kosmetik</h2>
-        <p class="muted small">Gib Chips für Style aus — Avatar & Namensfarbe. Antippen: kaufen oder anlegen.</p>
-        <h3 class="section-title">🙂 Avatare</h3>
+        <p class="muted small">Gib Chips für Style aus. Antippen: kaufen oder anlegen. Nichts davon verändert das Spiel, es sieht nur besser aus als bei den anderen.</p>
+
+        <!-- Vorschau. Ohne sie kauft man eine Animation, ohne sie je gesehen
+             zu haben, und merkt erst hinterher, dass sie einem nicht gefällt. -->
+        <div class="cos-preview" id="cos-preview"></div>
+
+        <h3 class="section-title">✨ Namensstile</h3>
+        <p class="hint" style="margin-top:-4px">Ersetzt die flache Farbe. Die bewegten stehen still, wenn du in den Einstellungen „Bewegung reduzieren“ anhast.</p>
+        <div class="cos-grid cos-grid-wide" id="cos-styles"></div>
+
+        <h3 class="section-title" style="margin-top:14px">🏷️ Titel</h3>
+        <p class="hint" style="margin-top:-4px">Eine Zeile unter deinem Namen, überall wo du auftauchst.</p>
+        <div class="cos-grid cos-grid-wide" id="cos-titles"></div>
+
+        <h3 class="section-title" style="margin-top:14px">⭕ Rahmen</h3>
+        <div class="cos-grid" id="cos-frames"></div>
+
+        <h3 class="section-title" style="margin-top:14px">🙂 Avatare</h3>
         <div class="cos-grid" id="cos-avatars"></div>
+
         <h3 class="section-title" style="margin-top:14px">🎨 Namensfarben</h3>
+        <p class="hint" style="margin-top:-4px">Wirkt nur, solange kein Namensstil angelegt ist.</p>
         <div class="cos-grid" id="cos-colors"></div>
       </div>
     </section>
@@ -1207,6 +1225,7 @@
         <div class="pf-avatar" id="profile-big">🙂</div>
         <div class="pf-ident">
           <h2 id="profile-name">Spieler</h2>
+          <div class="pl-title hidden" id="profile-title"></div>
           <div class="pf-tags" id="profile-tags"></div>
         </div>
         <div class="level-box" id="profile-level"></div>
@@ -1713,6 +1732,7 @@
   <script defer src="/js/core/screens.js"></script>
   <script defer src="/js/core/sound.js"></script>
   <script defer src="/js/core/fx.js"></script>
+  <script defer src="/js/core/player.js"></script>
   <script defer src="/js/changelog.js"></script>
   <script defer src="/js/app.js"></script>
   <script defer src="/js/home.js"></script>

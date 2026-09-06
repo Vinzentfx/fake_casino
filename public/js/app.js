@@ -567,11 +567,11 @@ function renderOnlinePlayers(players = []) {
   }
   listEl.innerHTML = players.map((p) => {
     const level = p.level ? `<small style="color:${p.level.color || ""}">${escapeHtml(p.level.emoji || "🌱")} ${p.level.level}</small>` : "";
-    const color = p.nameColor ? ` style="color:${p.nameColor}"` : "";
     const clan = p.clan ? `<small class="online-clan">[${escapeHtml(p.clan)}]</small>` : "";
     const status = p.status && p.status.label ? escapeHtml(p.status.label) : "online";
     return `<button class="online-player" type="button" data-player-profile="${escapeHtml(p.name || "")}" title="${escapeHtml(p.name || "?")} ansehen">` +
-      `<span>${escapeHtml(p.avatar || "🙂")}</span><b${color}>${escapeHtml(p.name || "?")}</b>${clan}${level}<em>${status}</em></button>`;
+      window.Casino.spieler.avatar(p) + window.Casino.spieler.name(p, { tag: "b" }) +
+      `${clan}${level}<em>${p.title ? escapeHtml(p.title) : status}</em></button>`;
   }).join("");
 }
 
@@ -595,11 +595,10 @@ function renderZuletztDa(liste = []) {
     return tage === 1 ? "gestern" : `vor ${tage} Tagen`;
   };
   el.classList.remove("hidden");
-  el.innerHTML = '<span class="muted small">Zuletzt hier:</span>' + liste.map((p) => {
-    const color = p.nameColor ? ` style="color:${p.nameColor}"` : "";
-    return `<button class="online-player last-player" type="button" data-player-profile="${escapeHtml(p.name || "")}">` +
-      `<span>${escapeHtml(p.avatar || "🙂")}</span><b${color}>${escapeHtml(p.name || "?")}</b><em>${wann(p.lastSeen)}</em></button>`;
-  }).join("");
+  el.innerHTML = '<span class="muted small">Zuletzt hier:</span>' + liste.map((p) =>
+    `<button class="online-player last-player" type="button" data-player-profile="${escapeHtml(p.name || "")}">` +
+      window.Casino.spieler.avatar(p) + window.Casino.spieler.name(p, { tag: "b" }) +
+      `<em>${wann(p.lastSeen)}</em></button>`).join("");
 }
 
 $("#online-last")?.addEventListener("click", (e) => {
@@ -653,13 +652,44 @@ function renderBuffs() {
 }
 setInterval(renderBuffs, 5000); // keep countdowns fresh
 
+/**
+ * Namensstil auf ein vorhandenes Element legen.
+ *
+ * In Listen baut Casino.spieler.name() das HTML. Topbar und Profil haben ihr
+ * Element aber fest im Dokument, deshalb werden hier nur die Klassen
+ * ausgetauscht statt alles neu zu schreiben.
+ */
+const NAMENS_KLASSEN = ["nm-sonne", "nm-eis", "nm-gift", "nm-beere", "nm-puls", "nm-schimmer",
+  "nm-neon", "nm-regenbogen", "nm-feuer", "nm-glitch", "nm-krone"];
+const RAHMEN_KLASSEN = ["fr-silber", "fr-gold", "fr-neon", "fr-rotierend", "fr-flamme", "fr-sterne"];
+
+function setzeNamensStil(el, acc) {
+  if (!el) return;
+  el.textContent = acc.name;
+  el.classList.remove(...NAMENS_KLASSEN);
+  const stil = acc.nameStyle && NAMENS_KLASSEN.includes("nm-" + acc.nameStyle) ? "nm-" + acc.nameStyle : null;
+  if (stil) { el.classList.add(stil); el.style.color = ""; }
+  else el.style.color = acc.nameColor || "";
+}
+
+function setzeRahmen(el, acc) {
+  if (!el) return;
+  el.classList.remove(...RAHMEN_KLASSEN, "pl-ava");
+  if (!acc.frame) return;
+  const kl = "fr-" + acc.frame;
+  if (!RAHMEN_KLASSEN.includes(kl)) return;
+  el.classList.add("pl-ava", kl);
+}
+
 function renderTopbar() {
   const acc = state.account;
   if (!acc) return;
   $("#balance-amount").textContent = acc.chips.toLocaleString("de-DE");
-  $("#player-name").textContent = acc.name;
+  // Stil statt fester Farbe: die Klasse setzt den Verlauf, deshalb wird die
+  // Farbe zurueckgesetzt, sonst kaempfen beide gegeneinander.
+  setzeNamensStil($("#player-name"), acc);
   if (acc.avatar) $("#avatar").textContent = acc.avatar;
-  $("#player-name").style.color = acc.nameColor || "";
+  setzeRahmen($("#avatar"), acc);
   const lc = $("#level-chip");
   if (lc && acc.level) {
     lc.style.display = "";
@@ -685,9 +715,11 @@ let achAlleZeigen = false;
 function renderProfile() {
   const acc = state.account;
   if (!acc) return;
-  $("#profile-name").textContent = acc.name;
+  setzeNamensStil($("#profile-name"), acc);
   if (acc.avatar) $("#profile-big").textContent = acc.avatar;
-  $("#profile-name").style.color = acc.nameColor || "";
+  setzeRahmen($("#profile-big"), acc);
+  const titelEl = $("#profile-title");
+  if (titelEl) { titelEl.textContent = acc.title || ""; titelEl.classList.toggle("hidden", !acc.title); }
 
   const renderLevel = (l) => {
     const lb = $("#profile-level");
@@ -924,9 +956,10 @@ async function openPlayerProfile(name) {
     const isMe = state.account && String(state.account.name || "").toLowerCase() === String(acc.name || name).toLowerCase();
     body.innerHTML = `
       <div class="player-profile-head">
-        <div class="player-profile-avatar">${escapeHtml(acc.avatar || "🙂")}</div>
+        <div class="player-profile-avatar">${window.Casino.spieler.avatar(acc)}</div>
         <div>
-          <h2 style="color:${acc.nameColor || ""}">${escapeHtml(acc.name || name)} ${clan}</h2>
+          <h2>${window.Casino.spieler.name(acc)} ${clan}</h2>
+          ${acc.title ? `<div class="pl-title">${escapeHtml(acc.title)}</div>` : ""}
           <div class="muted small">Dabei seit ${acc.createdAt ? new Date(acc.createdAt).toLocaleDateString("de-DE") : "–"}</div>
         </div>
       </div>
@@ -1070,6 +1103,10 @@ function renderLiveops() {
 socket.on("liveops:state", (s) => { liveopsState = s; renderLiveops(); });
 socket.on("connect", () => socket.emit("liveops:state", (r) => { if (r && r.ok) { liveopsState = r; renderLiveops(); } }));
 socket.on("liveops:tourneyWin", (w) => { if (w) toast(`🏆 Turnier gewonnen: ${w.name} mit ${w.mult}× (+${w.prize.toLocaleString("de-DE")} 🪙)!`); });
+// Kurze Server-Meldung an genau einen Spieler. Wird bisher nur genutzt, wenn
+// die Stadt eine Kosmetik freischaltet.
+socket.on("notice", ({ text } = {}) => { if (text) toast(String(text)); });
+
 socket.on("level:up", (d) => {
   if (!d) return;
   if (state.account) state.account.level = { ...(state.account.level || {}), level: d.level, title: d.title, emoji: d.emoji };
@@ -1240,10 +1277,11 @@ function renderLbList() {
     const champ = p.champ ? ` <span class="lb-badge" title="Spieler der Woche">🏆</span>` : "";
     const lvl = p.level ? ` <span class="lb-level" title="Level ${p.level}">Lv ${p.level}</span>` : "";
     const clan = p.clan ? ` <span class="lb-clan">[${escapeHtml(p.clan)}]</span>` : "";
-    const ava = p.avatar ? `${p.avatar} ` : "";
-    const nameCol = p.nameColor ? ` style="color:${p.nameColor}"` : "";
+    const ava = window.Casino.spieler.avatar(p);
+    const nm = window.Casino.spieler.name(p, { tag: "b" });
+    const titel = window.Casino.spieler.title(p);
     li.innerHTML =
-      `<span>${rank}${clan} ${ava}<b${nameCol}>${escapeHtml(p.name)}</b>${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
+      `<span>${rank}${clan} ${ava} ${nm}${titel}${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
       `<b>${unit ? unit(p.value) : p.value.toLocaleString("de-DE") + " 🪙"}</b>`;
     // Tap a row to inspect that player's stats.
     li.classList.add("lb-clickable");

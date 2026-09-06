@@ -37,7 +37,7 @@ function kuerzlichDa(accounts, online, grenzeTage = 7, max = 6) {
     .filter((a) => a.lastSeen && jetzt - a.lastSeen < grenze && !drin.has(String(a.name || "").toLowerCase()))
     .sort((a, b) => b.lastSeen - a.lastSeen)
     .slice(0, max)
-    .map((a) => ({ name: a.name, avatar: a.avatar || "🙂", nameColor: a.nameColor || null, lastSeen: a.lastSeen }));
+    .map((a) => ({ ...require("./cosmetics").publicLook(a), name: a.name, lastSeen: a.lastSeen }));
 }
 
 function setupPoker(io, accounts) {
@@ -187,6 +187,9 @@ function setupPoker(io, accounts) {
         name: pub.name,
         avatar: pub.avatar,
         nameColor: pub.nameColor,
+        nameStyle: pub.nameStyle,
+        frame: pub.frame,
+        title: pub.title,
         level: pub.level ? { level: pub.level.level, emoji: pub.level.emoji, color: pub.level.color } : null,
         clan: (() => { try { return require("./clans").tagOf(key); } catch { return null; } })(),
         status,

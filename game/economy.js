@@ -697,7 +697,33 @@ function setupEconomy(io, accounts) {
       // Buys & takeovers count for quests, but each building only once/day.
       if (r.cost) quests.track(key, "buy_house", 1, buildingId);
       achievements.check(key);
+      pruefeStadtKosmetik(key, acc);
       broadcastCity();
+    }
+
+    /**
+     * Zwei Kosmetik-Stuecke gibt es nicht zu kaufen, sondern nur ueber die
+     * Stadt: der Titel "Straßenkönig" fuer die erste komplette Strasse, der
+     * Namensstil "Krone" dafuer, Boss eines Ortsteils zu sein.
+     *
+     * Damit haengt zum ersten Mal etwas Sichtbares daran, ob man in der Stadt
+     * wirklich etwas erreicht hat, statt nur genug Chips zu haben.
+     */
+    function pruefeStadtKosmetik(key, acc) {
+      if (!acc) return;
+      const cos = require("./cosmetics");
+      let neu = null;
+      if (city.streetCount(key) > 0 && cos.grant(acc, "title", "strassenkoenig")) neu = "Titel „Straßenkönig“";
+      const istBoss = city.publicOverview(key).districts.some((d) => d.boss && d.boss.isMe);
+      if (istBoss && cos.grant(acc, "style", "krone")) neu = "Namensstil „Krone“";
+      if (!neu) return;
+      accounts.save();
+      for (const s2 of io.of("/").sockets.values()) {
+        if (s2.data && s2.data.account === key) {
+          s2.emit("notice", { text: `🎨 Freigeschaltet: ${neu} — anlegen in der Kosmetik.` });
+          break;
+        }
+      }
     }
 
     const A = (fn) => ({ buildingId, districtId } = {}, ack) => {

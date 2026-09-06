@@ -31,8 +31,13 @@
   function rowHtml(msg) {
     const me = window.Casino.getAccount && window.Casino.getAccount();
     const mine = me && msg.name && me.name && msg.name.toLowerCase() === me.name.toLowerCase();
+    // Namensstil und Farbe kommen jetzt mit der Nachricht mit. Vorher war der
+    // Chat die einzige Stelle, an der alle Namen gleich grau aussahen.
+    const nm = window.Casino.spieler
+      ? window.Casino.spieler.name(msg, { extra: "chat-name" })
+      : `<span class="chat-name">${escapeHtml(msg.name)}</span>`;
     return `<div class="chat-row${mine ? " mine" : ""}">
-      <span class="chat-name">${escapeHtml(msg.name)}</span>
+      ${nm}
       <span class="chat-text">${escapeHtml(msg.text)}</span>
     </div>`;
   }

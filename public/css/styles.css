@@ -4995,3 +4995,133 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .cb-item-main { display: flex; flex-direction: column; min-width: 0; }
 .cb-item-main small { color: var(--text-mute); font-size: var(--fs-xs); }
 .cb-item b { font-family: var(--font-num); font-size: var(--fs-sm); white-space: nowrap; }
+
+/* ============================================================
+   Spieler-Aussehen: Namensstile, Rahmen, Titel
+
+   Alle Stile faerben den Text ueber einen Verlauf mit
+   background-clip. Safari braucht dafuer zwingend
+   -webkit-text-fill-color: transparent, sonst bleibt der Name
+   einfarbig — und auf dem iPad ist Safari der Normalfall.
+
+   Jede Bewegung steht in EINER Regel am Ende, hinter
+   html:not(.reduce-motion). Wer in den Einstellungen Bewegung
+   reduziert hat, sieht dieselben Farben, nur still.
+   ============================================================ */
+.pl-name { font-weight: 700; }
+.pl-ava { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+.pl-text { display: inline-flex; flex-direction: column; min-width: 0; }
+.pl-title {
+  font-size: var(--fs-xs);
+  color: var(--text-mute);
+  font-style: italic;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Verlaufsstile --- */
+[class*="nm-"] {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+}
+.nm-sonne  { background-image: linear-gradient(100deg, #ffd76e, #ff8a3d, #ffd76e); }
+.nm-eis    { background-image: linear-gradient(100deg, #9ddcff, #5e7bff, #9ddcff); }
+.nm-gift   { background-image: linear-gradient(100deg, #a8ff60, #17c964, #a8ff60); }
+.nm-beere  { background-image: linear-gradient(100deg, #ff8ad4, #8b5cf6, #ff8ad4); }
+.nm-schimmer { background-image: linear-gradient(100deg, #c8a44e, #fff6d8 45%, #c8a44e 60%); }
+.nm-krone  { background-image: linear-gradient(100deg, #d4a017, #fff1b8 45%, #d4a017 60%); }
+.nm-feuer  { background-image: linear-gradient(100deg, #ff4d1c, #ffdd55 50%, #ff4d1c); }
+.nm-regenbogen { background-image: linear-gradient(100deg, #ff6b6b, #ffd93d, #6bcB77, #4ecdc4, #a66bff, #ff6b6b); }
+
+/* Puls und Neon leuchten statt zu wandern, deshalb volle Farbe statt Verlauf.
+   drop-shadow statt text-shadow: text-shadow liegt bei
+   -webkit-text-fill-color: transparent hinter dem Text und ist unsichtbar. */
+.nm-puls { background-image: linear-gradient(100deg, #ffe9a8, #ffb347, #ffe9a8); filter: drop-shadow(0 0 4px rgba(255, 179, 71, 0.55)); }
+.nm-neon { background-image: linear-gradient(100deg, #7ef9ff, #22d3ee, #7ef9ff); filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.8)); }
+.nm-glitch { background-image: linear-gradient(100deg, #ff2e88, #00e5ff, #ff2e88); filter: drop-shadow(1px 0 0 rgba(255, 46, 136, 0.7)) drop-shadow(-1px 0 0 rgba(0, 229, 255, 0.7)); }
+
+/* --- Rahmen ums Bild --- */
+.pl-ava[class*="fr-"] {
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+}
+.fr-silber { border-color: #cfd6dd; }
+.fr-gold   { border-color: var(--accent); }
+.fr-neon   { border-color: #22d3ee; box-shadow: 0 0 6px rgba(34, 211, 238, 0.75); }
+/* Die bunten Ringe liegen als eigene Ebene ueber dem Bild und werden in der
+   Mitte ausgestanzt. Nur so kann sich der Ring drehen, ohne das Emoji
+   mitzudrehen — mit einem echten border haette die Figur auf dem Kopf
+   gestanden. */
+.fr-rotierend, .fr-flamme, .fr-sterne { border-color: transparent; position: relative; }
+.fr-rotierend::before, .fr-flamme::before, .fr-sterne::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  padding: 2px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.fr-rotierend::before { background: conic-gradient(from 0deg, #22d3ee, #a66bff, #ff6b6b, #22d3ee); }
+.fr-flamme::before    { background: conic-gradient(from 0deg, #ff4d1c, #ffdd55, #ff4d1c); }
+.fr-sterne::before    { background: conic-gradient(from 0deg, var(--accent) 0 8%, transparent 8% 25%, var(--accent) 25% 33%, transparent 33% 50%, var(--accent) 50% 58%, transparent 58% 75%, var(--accent) 75% 83%, transparent 83%); }
+
+/* --- Bewegung. Alles hierunter faellt bei "Bewegung reduzieren" weg. --- */
+@keyframes pl-sweep { to { background-position: 200% 50%; } }
+@keyframes pl-breathe { 50% { filter: drop-shadow(0 0 10px rgba(255, 179, 71, 0.95)); } }
+@keyframes pl-flicker { 0%, 100% { opacity: 1; } 47% { opacity: 1; } 50% { opacity: 0.55; } 53% { opacity: 1; } }
+@keyframes pl-jitter { 0%, 92%, 100% { transform: translateX(0); } 94% { transform: translateX(-1px); } 96% { transform: translateX(1.5px); } 98% { transform: translateX(-0.5px); } }
+@keyframes pl-spin { to { transform: rotate(360deg); } }
+
+html:not(.reduce-motion) .nm-schimmer,
+html:not(.reduce-motion) .nm-krone { animation: pl-sweep 2.6s linear infinite; }
+html:not(.reduce-motion) .nm-feuer { animation: pl-sweep 1.8s linear infinite; }
+html:not(.reduce-motion) .nm-regenbogen { animation: pl-sweep 4s linear infinite; }
+html:not(.reduce-motion) .nm-puls { animation: pl-breathe 2.2s ease-in-out infinite; }
+html:not(.reduce-motion) .nm-neon { animation: pl-flicker 3.4s steps(1, end) infinite; }
+html:not(.reduce-motion) .nm-glitch { animation: pl-sweep 3s linear infinite, pl-jitter 2.4s steps(1, end) infinite; display: inline-block; }
+/* Der Ring dreht sich, nicht das Emoji darin: sonst steht die Figur auf dem Kopf. */
+html:not(.reduce-motion) .fr-rotierend::before,
+html:not(.reduce-motion) .fr-flamme::before,
+html:not(.reduce-motion) .fr-sterne::before { animation: pl-spin 6s linear infinite; }
+
+/* --- Kosmetik-Shop: Vorschau, Stile, Titel --- */
+.cos-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  align-items: center;
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.cos-preview-label { font-size: var(--fs-xs); color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.05em; }
+.cos-preview-row { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xl); }
+.cos-preview-row .pl-ava { font-size: 1.6rem; }
+.cos-preview-row .pl-title { font-size: var(--fs-sm); }
+
+/* Stile und Titel brauchen Text statt eines Symbols, deshalb breiter. */
+.cos-grid-wide { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+.cos-style-demo { font-weight: 800; font-size: var(--fs-lg); }
+.cos-title-demo { font-size: var(--fs-sm); font-style: italic; text-align: center; line-height: 1.2; }
+.cos-motion { position: absolute; top: 4px; right: 6px; font-size: var(--fs-xs); opacity: 0.75; }
+.cos-item { position: relative; }
+/* Nicht kaeuflich: sichtbar, aber erkennbar unerreichbar. Ausgrauen waere
+   falsch, gerade die Stuecke sollen Lust machen. */
+.cos-item.locked { opacity: 0.85; border-style: dashed; }
+.cos-item.locked small { color: var(--text-mute); }
+.cos-item .pl-ava { font-size: 1.5rem; }
