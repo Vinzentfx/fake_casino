@@ -2728,7 +2728,38 @@ html.reduce-motion .bj-card { animation: none; }
 .work-job-head span { color: var(--good-text); font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
 .work-job p { margin: 2px 0 0; }
 .work-job .chip-btn { white-space: nowrap; }
-.work-task-panel { border-color: rgba(94,168,224,0.28); background: rgba(94,168,224,0.07); }
+.work-task-panel { border-color: rgba(var(--info-rgb), 0.28); background: rgba(var(--info-rgb), 0.07); }
+
+/* Chips zum Wechseln. Farben wie am Tisch, damit der Wert am Aussehen haengt
+   und nicht nur an der Zahl. */
+.work-chip-row { display: flex; gap: var(--sp-3); justify-content: center; flex-wrap: wrap; margin: var(--sp-3) 0; }
+.work-chip {
+  width: 60px; height: 60px; border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  font-size: 0.78rem; font-weight: 900; color: #10161c;
+  box-shadow: inset 0 0 0 4px rgba(0,0,0,0.14), inset 0 0 0 7px rgba(255,255,255,0.55), 0 4px 10px rgba(0,0,0,0.5);
+  transition: transform var(--dur-1) var(--ease);
+}
+.work-chip:active { transform: scale(0.93); }
+.work-chip:nth-child(1) { background: #8e44ad; color: #fff; }
+.work-chip:nth-child(2) { background: #2980b9; color: #fff; }
+.work-chip:nth-child(3) { background: #27ae60; color: #fff; }
+.work-chip:nth-child(4) { background: #ecf0f1; }
+
+/* Wettscheine zum Nachrechnen. Feste Zeichenbreite, sonst vergleicht man
+   Zahlen, die unterschiedlich breit stehen. */
+.work-slips { display: flex; flex-direction: column; gap: var(--sp-1); margin: var(--sp-3) 0; }
+.work-slip {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-xs);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-neutral);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+}
+/* Auswahlfragen zweispaltig, damit lange Betraege nicht umbrechen. */
+.work-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--sp-2); }
+.work-choice .work-crate-btn { font-variant-numeric: tabular-nums; }
 .work-task-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
 .work-task-head b { color: #bcd8f0; }
 .work-task-head p { margin: 3px 0 0; }

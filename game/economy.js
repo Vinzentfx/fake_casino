@@ -28,14 +28,40 @@ const HUSTLE_DAY_CAP = 60000;
 const WORK_FACTOR_WINDOW = 15 * 60 * 1000;
 const JOB_HOUR_CAP = 32000;
 const JOB_DAY_CAP = 150000;
+/*
+ * Die Jobs sind jetzt Rollen IM Haus, und die Aufgaben sind das, was man in
+ * so einer Rolle wirklich koennen muss: wechseln, richtig auszahlen, Quoten
+ * rechnen, einen falschen Wettschein erkennen.
+ *
+ * Vorher waren es Paketstapel, Kabelfarben und Zahlenfelder — thematisch
+ * beliebig, und fast alle nach demselben Muster "die Loesung steht da, tippe
+ * sie ab". Das war kein Raetsel, sondern eine Gehorsamspruefung.
+ *
+ * Zahlen (base, cooldown, xp) bleiben unveraendert: hier geht es um die
+ * Qualitaet der Aufgaben, nicht um mehr Geld.
+ */
 const JOBS = {
-  delivery: { label: "Lieferdienst", cooldown: 28_000, base: 170, xp: 2, tasks: ["route", "stack", "scanner"] },
-  promo: { label: "Casino-Promo", cooldown: 50_000, base: 95, xp: 9, tasks: ["keypad", "math", "signal"] },
-  side: { label: "Riskanter Nebenjob", cooldown: 95_000, base: 230, xp: 4, risky: true, tasks: ["crate", "meter", "wires"] },
-  shift: { label: "Schichtarbeit", duration: 75_000, cooldown: 125_000, base: 980, xp: 12, tasks: ["switches", "wires", "meter"] },
+  delivery: { label: "Kellner", emoji: "🍸", cooldown: 28_000, base: 170, xp: 2,
+    hint: "Kurze Runden im Saal. Sicherer Einstieg.",
+    tasks: ["bestellung", "wechseln"] },
+  promo: { label: "Kasse", emoji: "🎫", cooldown: 50_000, base: 95, xp: 9,
+    hint: "Wechseln und nachrechnen. Wenig Geld, viel XP.",
+    tasks: ["wechseln", "quote"] },
+  side: { label: "Croupier", emoji: "🃏", cooldown: 95_000, base: 230, xp: 4, risky: true,
+    hint: "Auszahlen am Tisch. Wer die Quoten kennt, verdient hier.",
+    tasks: ["auszahlung", "strategie"] },
+  shift: { label: "Sicherheit", emoji: "🛡️", duration: 75_000, cooldown: 125_000, base: 980, xp: 12,
+    hint: "Läuft kurz im Hintergrund. Danach: wer schummelt hier?",
+    tasks: ["schein", "auszahlung"] },
 };
 const dayNow = () => Math.floor(Date.now() / 86400000);
-const TASK_TTL = 35_000;
+// Die alten Aufgaben waren Abtippen, da reichten 35 Sekunden. Die neuen muss
+// man rechnen, deshalb eine Minute.
+const TASK_TTL = 60_000;
+// Wer falsch liegt, bekommt trotzdem etwas. Die Wartezeit laeuft ohnehin, und
+// Arbeiten ist die Hilfe fuer Leute ohne Chips — ein Totalausfall ist da die
+// falsche Strafe. Richtig liegen lohnt sich trotzdem deutlich.
+const TROSTLOHN = 0.4;
 const WORK_STOPS = ["Depot", "Bank", "Markt", "Park", "Kiosk", "Hotel"];
 const WORK_SYMBOLS = ["◆", "●", "▲", "■", "★", "✚"];
 const WORK_CRATES = ["Rot", "Blau", "Gelb"];
@@ -51,91 +77,201 @@ function shuffle(xs) {
   return arr;
 }
 
+const CHIP_WERTE = [5000, 1000, 500, 100];
+const TISCHE = ["Tisch 1", "Tisch 2", "Tisch 3", "Tisch 4", "Tisch 5", "Bar"];
+const GETRAENKE = ["🍸", "🍺", "☕", "🥤", "🍾"];
+
+const zufall = (n) => Math.floor(Math.random() * n);
+const waehle = (xs) => xs[zufall(xs.length)];
+
+/** Greedy-Zerlegung eines Betrags in Chips, groesste zuerst. */
+function zerlege(betrag) {
+  const out = [];
+  let rest = betrag;
+  for (const w of CHIP_WERTE) {
+    while (rest >= w) { out.push(w); rest -= w; }
+  }
+  return rest === 0 ? out : null;
+}
+
+/**
+ * Betrag suchen, der sich mit drei bis fuenf Chips auszahlen laesst. Ohne die
+ * Schranke kommen Betraege wie 9.900 heraus, und dann tippt man zehn Chips.
+ */
+function wechselBetrag() {
+  for (let i = 0; i < 60; i++) {
+    const betrag = (2 + zufall(58)) * 100; // 200 bis 5.900
+    const chips = zerlege(betrag);
+    if (chips && chips.length >= 3 && chips.length <= 5) return { betrag, chips };
+  }
+  return { betrag: 1600, chips: [1000, 500, 100] };
+}
+
+/** Vier Antwortmoeglichkeiten, die richtige ist dabei, Reihenfolge gemischt. */
+function auswahl(richtig, ablenker) {
+  const set = [String(richtig)];
+  for (const a of ablenker) {
+    const v = String(Math.round(a));
+    if (v !== String(richtig) && !set.includes(v) && Number(v) > 0) set.push(v);
+    if (set.length >= 4) break;
+  }
+  return shuffle(set);
+}
+
+const fmtChips = (n) => Math.round(n).toLocaleString("de-DE");
+
+/*
+ * Grundstrategie Blackjack, auf die Faelle beschraenkt, die eindeutig sind.
+ * Genau diese Situationen kosten am Tisch am meisten Geld, wenn man sie
+ * falsch spielt — deshalb stehen sie hier.
+ */
+const BJ_FAELLE = [
+  { hand: "harte 16", dealer: 10, richtig: "Karte", warum: "Gegen eine hohe Dealer-Karte musst du verbessern." },
+  { hand: "harte 16", dealer: 6,  richtig: "Passen", warum: "Der Dealer hat die schlechteste Karte und überkauft oft." },
+  { hand: "harte 12", dealer: 4,  richtig: "Passen", warum: "Dealer 4 überkauft häufig, kein Risiko nötig." },
+  { hand: "harte 12", dealer: 2,  richtig: "Karte",  warum: "Bei Dealer 2 ist Passen mit 12 noch zu schwach." },
+  { hand: "harte 11", dealer: 6,  richtig: "Verdoppeln", warum: "Mit 11 gegen eine schwache Karte verdoppelt man immer." },
+  { hand: "harte 10", dealer: 9,  richtig: "Verdoppeln", warum: "10 gegen 9 ist noch klar im Vorteil." },
+  { hand: "zwei Achter", dealer: 7, richtig: "Teilen", warum: "16 ist die schlechteste Hand — zwei Achten sind besser." },
+  { hand: "zwei Asse", dealer: 6, richtig: "Teilen", warum: "Asse teilt man immer." },
+  { hand: "harte 17", dealer: 10, richtig: "Passen", warum: "Ab 17 wird nicht mehr gezogen." },
+  { hand: "harte 9", dealer: 3, richtig: "Verdoppeln", warum: "9 gegen 3 bis 6 wird verdoppelt." },
+];
+const BJ_AKTIONEN = ["Karte", "Passen", "Verdoppeln", "Teilen"];
+
 function makeWorkTask(id, job, now = Date.now()) {
-  const taskPool = Array.isArray(job.tasks) && job.tasks.length ? job.tasks : [job.task || "code"];
-  const type = taskPool[Math.floor(Math.random() * taskPool.length)];
-  if (type === "route") {
-    const route = shuffle(WORK_STOPS).slice(0, 4);
+  const taskPool = Array.isArray(job.tasks) && job.tasks.length ? job.tasks : [job.task || "wechseln"];
+  const type = taskPool[zufall(taskPool.length)];
+  const ende = now + TASK_TTL;
+
+  // ── Kasse: Betrag in moeglichst wenige Chips wechseln ────────────────────
+  if (type === "wechseln") {
+    const { betrag, chips } = wechselBetrag();
     return {
-      id, type, expiresAt: now + TASK_TTL, answer: route.join(""),
-      public: { id, type, title: "Route planen", prompt: "Baue die Route in der richtigen Reihenfolge nach.", target: route, options: shuffle(route) },
+      id, type, expiresAt: ende,
+      answer: chips.join(""),
+      sortAnswer: "desc", // Reihenfolge beim Tippen soll egal sein
+      loesung: chips.map((c) => fmtChips(c)).join(" + "),
+      public: {
+        id, type, title: "Wechseln",
+        prompt: `Ein Gast will ${fmtChips(betrag)} 🪙 in Chips. Gib sie mit möglichst wenigen Chips aus.`,
+        chips: CHIP_WERTE,
+      },
     };
   }
-  if (type === "crate") {
-    const safe = WORK_CRATES[Math.floor(Math.random() * WORK_CRATES.length)];
+
+  // ── Croupier: was zahlt der Tisch aus? ───────────────────────────────────
+  if (type === "auszahlung") {
+    const { payoutFactor } = require("./roulette");
+    const einsatz = (1 + zufall(20)) * 50; // 50 bis 1.000
+    const art = waehle(["zahl", "einfach", "dutzend"]);
+    let faktor, frage;
+    if (art === "zahl") {
+      const n = 1 + zufall(36);
+      faktor = payoutFactor("number", n, n);
+      frage = `Jemand setzt ${fmtChips(einsatz)} 🪙 auf die ${n}. Die ${n} kommt. Was zahlst du aus?`;
+    } else if (art === "einfach") {
+      faktor = payoutFactor("red", null, 3); // 3 ist rot -> einfache Chance
+      frage = `${fmtChips(einsatz)} 🪙 auf Rot, es kommt Rot. Was zahlst du aus?`;
+    } else {
+      faktor = payoutFactor("dozen", 1, 5); // 5 liegt im ersten Dutzend
+      frage = `${fmtChips(einsatz)} 🪙 auf das erste Dutzend, es kommt die 5. Was zahlst du aus?`;
+    }
+    const richtig = Math.floor(einsatz * faktor);
     return {
-      id, type, expiresAt: now + TASK_TTL, answer: safe.toLowerCase(),
-      public: { id, type, title: "Lieferkiste prüfen", prompt: `Wähle die ${safe}-markierte Kiste.`, options: shuffle(WORK_CRATES) },
+      id, type, expiresAt: ende,
+      answer: String(richtig),
+      loesung: `${fmtChips(einsatz)} × ${String(faktor).replace(".", ",")} = ${fmtChips(richtig)} 🪙`,
+      public: {
+        id, type, title: "Auszahlung am Tisch", prompt: frage,
+        options: auswahl(richtig, [einsatz * faktor + einsatz, einsatz, richtig * 2, Math.floor(richtig / 2)]),
+        suffix: "🪙",
+      },
     };
   }
-  if (type === "scanner") {
-    const target = WORK_SCAN[Math.floor(Math.random() * WORK_SCAN.length)];
+
+  // ── Kasse: Quote ausrechnen ──────────────────────────────────────────────
+  if (type === "quote") {
+    const einsatz = (1 + zufall(20)) * 100;
+    const quote = Math.round((1.2 + Math.random() * 4) * 100) / 100;
+    const richtig = Math.floor(einsatz * quote);
     return {
-      id, type, expiresAt: now + TASK_TTL, answer: target,
-      public: { id, type, title: "Scanner kalibrieren", prompt: "Finde das gesuchte Symbol im Scanner-Raster.", target, options: shuffle(WORK_SCAN) },
+      id, type, expiresAt: ende,
+      answer: String(richtig),
+      loesung: `${fmtChips(einsatz)} × ${String(quote).replace(".", ",")} = ${fmtChips(richtig)} 🪙`,
+      public: {
+        id, type, title: "Wettschein auszahlen",
+        prompt: `Sportwette gewonnen: ${fmtChips(einsatz)} 🪙 bei Quote ${String(quote).replace(".", ",")}. Was kommt zurück?`,
+        options: auswahl(richtig, [einsatz * quote + einsatz, einsatz, richtig - einsatz, richtig * 2]),
+        suffix: "🪙",
+      },
     };
   }
-  if (type === "stack") {
-    const weights = shuffle([2, 3, 5, 7, 9, 11]).slice(0, 4);
-    const packs = weights.map((w, i) => ({ id: `P${i + 1}`, label: `P${i + 1}`, weight: w }));
-    const answer = [...packs].sort((a, b) => a.weight - b.weight).map((p) => p.id).join("");
+
+  // ── Croupier: Grundstrategie ─────────────────────────────────────────────
+  if (type === "strategie") {
+    const f = waehle(BJ_FAELLE);
     return {
-      id, type, expiresAt: now + TASK_TTL, answer,
-      public: { id, type, title: "Pakete stapeln", prompt: "Tippe die Pakete von leicht nach schwer an.", options: shuffle(packs) },
+      id, type, expiresAt: ende,
+      answer: f.richtig.toLowerCase(),
+      loesung: `${f.richtig} — ${f.warum}`,
+      public: {
+        id, type, title: "Richtig beraten",
+        prompt: `Ein Gast hat ${f.hand}, der Dealer zeigt ${f.dealer}. Was rätst du?`,
+        options: shuffle(BJ_AKTIONEN),
+      },
     };
   }
-  if (type === "switches") {
-    const pattern = Array.from({ length: 5 }, () => (Math.random() < 0.5 ? "1" : "0")).join("");
+
+  // ── Sicherheit: welcher Schein rechnet nicht auf? ────────────────────────
+  if (type === "schein") {
+    const scheine = [];
+    const falschIdx = zufall(4);
+    for (let i = 0; i < 4; i++) {
+      const einsatz = (1 + zufall(15)) * 100;
+      const quote = Math.round((1.3 + Math.random() * 3) * 100) / 100;
+      const korrekt = Math.floor(einsatz * quote);
+      const abweichung = Math.max(50, Math.round(korrekt * (0.12 + Math.random() * 0.25)));
+      const gezeigt = i === falschIdx
+        ? korrekt + (Math.random() < 0.5 ? abweichung : -abweichung)
+        : korrekt;
+      scheine.push({
+        id: `S${i + 1}`,
+        text: `S${i + 1}: ${fmtChips(einsatz)} 🪙 × ${String(quote).replace(".", ",")} = ${fmtChips(gezeigt)} 🪙`,
+      });
+    }
     return {
-      id, type, expiresAt: now + TASK_TTL + 10_000, answer: pattern,
-      public: { id, type, title: "Schaltpult einstellen", prompt: "Stelle die Schalter exakt wie das Muster ein.", pattern },
+      id, type, expiresAt: ende,
+      answer: `s${falschIdx + 1}`,
+      loesung: `Schein S${falschIdx + 1} stimmt nicht.`,
+      public: {
+        id, type, title: "Falschen Schein finden",
+        prompt: "Einer dieser vier Wettscheine rechnet nicht auf. Welcher?",
+        options: scheine.map((x) => x.id),
+        zeilen: scheine.map((x) => x.text),
+      },
     };
   }
-  if (type === "signal") {
-    const seq = shuffle(WORK_SYMBOLS).slice(0, 4);
-    return {
-      id, type, expiresAt: now + TASK_TTL, answer: seq.join(""),
-      public: { id, type, title: "Signal merken", prompt: "Tippe die Symbolfolge nach.", target: seq, options: shuffle(seq) },
-    };
-  }
-  if (type === "math") {
-    const a = Math.floor(4 + Math.random() * 9);
-    const b = Math.floor(3 + Math.random() * 8);
-    const op = Math.random() < 0.5 ? "+" : "-";
-    const left = op === "-" && b > a ? b : a;
-    const right = op === "-" && b > a ? a : b;
-    const answer = op === "+" ? left + right : left - right;
-    const options = shuffle([...new Set([answer, answer + 1, Math.max(0, answer - 1), answer + 2, answer + 3])].slice(0, 4).map(String));
-    return {
-      id, type, expiresAt: now + TASK_TTL, answer: String(answer),
-      public: { id, type, title: "Kasse prüfen", prompt: `Was ist ${left} ${op} ${right}?`, options },
-    };
-  }
-  if (type === "wires") {
-    const pattern = shuffle(WORK_WIRES).slice(0, 4);
-    return {
-      id, type, expiresAt: now + TASK_TTL + 10_000, answer: pattern.join(""),
-      public: { id, type, title: "Kabel verbinden", prompt: "Verbinde die Farben in der Ziel-Reihenfolge.", target: pattern, options: shuffle(pattern) },
-    };
-  }
-  if (type === "meter") {
-    const target = 2 + Math.floor(Math.random() * 3);
-    return {
-      id, type, expiresAt: now + TASK_TTL, answer: String(target),
-      public: { id, type, title: "Druck justieren", prompt: "Wähle das goldene Druckfeld.", target, slots: 5 },
-    };
-  }
-  if (type === "keypad") {
-    const code = String(Math.floor(1000 + Math.random() * 9000));
-    return {
-      id, type, expiresAt: now + TASK_TTL, answer: code,
-      public: { id, type, title: "Keypad hacken", prompt: "Gib den Code über das Tastenfeld ein.", code },
-    };
-  }
-  const code = String(Math.floor(1000 + Math.random() * 9000));
+
+  // ── Kellner: Bestellungen in der richtigen Reihenfolge ───────────────────
+  const anzahl = 3 + zufall(2);
+  const bestellung = Array.from({ length: anzahl }, () => ({
+    tisch: waehle(TISCHE), getraenk: waehle(GETRAENKE),
+  }));
+  // Doppelte Tische raus, sonst ist die Reihenfolge nicht eindeutig tippbar.
+  const gesehen = new Set();
+  const eindeutig = bestellung.filter((b) => (gesehen.has(b.tisch) ? false : gesehen.add(b.tisch)));
+  const folge = eindeutig.map((b) => b.tisch);
   return {
-    id, type: "code", expiresAt: now + TASK_TTL, answer: code,
-    public: { id, type: "code", title: "Promo-Code synchronisieren", prompt: "Tippe den Code ab, bevor der Auftrag verfällt.", code },
+    id, type: "bestellung", expiresAt: ende,
+    answer: folge.join(""),
+    loesung: folge.join(" → "),
+    public: {
+      id, type: "bestellung", title: "Bestellungen ausliefern",
+      prompt: "Liefere die Bestellungen in genau dieser Reihenfolge aus.",
+      target: eindeutig.map((b) => `${b.getraenk} ${b.tisch}`),
+      options: shuffle(folge),
+    },
   };
 }
 
@@ -217,6 +353,8 @@ function publicJobs(acc, e, now = Date.now()) {
     jobs: Object.entries(JOBS).map(([id, job]) => ({
       id,
       label: job.label,
+      emoji: job.emoji || "💼",
+      hint: job.hint || "",
       cooldownMs: job.cooldown || 0,
       durationMs: job.duration || 0,
       readyAt: jobs.cooldowns[id] || 0,
@@ -420,17 +558,39 @@ function setupEconomy(io, accounts) {
       const jobs = ensureJobState(e, now);
       const task = activeTask(jobs, now);
       if (!task) return ack({ ok: false, error: "Keine aktive Aufgabe.", jobs: publicJobs(acc, e, now) });
-      if (normalizeTaskAnswer(answer) !== normalizeTaskAnswer(task.answer)) {
-        delete jobs.activeTask;
-        accounts.save();
-        return ack({ ok: false, error: "Aufgabe falsch gelöst. Auftrag fehlgeschlagen.", failed: true, jobs: publicJobs(acc, e, now) });
-      }
+
       const job = JOBS[task.jobId];
       if (!job) { delete jobs.activeTask; accounts.save(); return ack({ ok: false, error: "Job nicht gefunden.", jobs: publicJobs(acc, e, now) }); }
+
+      /* Beim Wechseln soll die Reihenfolge der angetippten Chips egal sein —
+         wichtig ist, WELCHE Chips, nicht in welcher Folge man sie greift. */
+      let eingabe = answer;
+      if (task.sortAnswer === "desc" && Array.isArray(eingabe)) {
+        eingabe = [...eingabe].map(Number).sort((a, b) => b - a);
+      }
+      const richtig = normalizeTaskAnswer(eingabe) === normalizeTaskAnswer(task.answer);
+
       if (task.shiftDone) delete jobs.activeShift;
       delete jobs.activeTask;
-      const result = awardJob(acc, socket.data.account, e, job, now, task.mult || 1);
-      return ack({ ok: true, ...result, outcome: task.outcome, shiftDone: !!task.shiftDone });
+
+      /* Kein Totalausfall mehr. Die Wartezeit laeuft ohnehin, und Arbeiten ist
+         die Hilfe fuer Leute ohne Chips — wer danebenliegt, bekommt den
+         Trostlohn und erfaehrt die richtige Antwort. Richtig liegen bringt
+         immer noch das Zweieinhalbfache. */
+      const result = awardJob(acc, socket.data.account, e, job, now,
+        (task.mult || 1) * (richtig ? 1 : TROSTLOHN));
+
+      // Arbeiten zaehlt jetzt auch fuer die Season. Wenig, aber nicht null:
+      // wer sich hochkaempft, kommt dabei auch im Pass voran.
+      try { require("./season").addXp(socket.data.account, richtig ? 3 : 1, "play"); } catch {}
+
+      return ack({
+        ok: true, ...result,
+        richtig,
+        loesung: richtig ? null : (task.loesung || null),
+        outcome: task.outcome,
+        shiftDone: !!task.shiftDone,
+      });
     });
 
     socket.on("economy:state", (ack) => {

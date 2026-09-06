@@ -48,13 +48,11 @@
     }
   }
 
-  function jobMeta(id) {
-    return ({
-      delivery: { icon: "🚲", text: "Kurze aktive Aufgaben: Route, Scanner oder Pakete. Sicherer Starter-Lohn." },
-      shift: { icon: "🏭", text: "Läuft kurz im Hintergrund. Danach Schaltpult, Kabel oder Druckfeld lösen." },
-      promo: { icon: "📣", text: "Promo-Aufgaben wie Keypad, Kasse oder Signal. Mehr XP fürs Leveln." },
-      side: { icon: "🎲", text: "Riskantere Aufgaben mit Bonuschance. Kein Verlust, aber schwankender Lohn." },
-    })[id] || { icon: "💼", text: "Aktiver Job." };
+  /* Emoji und Beschreibung kommen vom Server. Vorher lagen sie hier als
+     zweite Kopie und beschrieben nach dem Umbau noch die alten Aufgaben
+     ("Route, Scanner oder Pakete"), obwohl es die nicht mehr gibt. */
+  function jobMeta(job) {
+    return { icon: job.emoji || "💼", text: job.hint || "Aktiver Job." };
   }
 
   function timeLeft(ts) {
@@ -74,7 +72,7 @@
     $("#work-job-factor").textContent = `Job-Faktor: ${(f.factor || 1).toLocaleString("de-DE")}× bei ${fmt(f.smoothedNetWorth || f.netWorth || 0)} 🪙 Wert.`;
     renderTask(jobs.activeTask);
     box.innerHTML = (jobs.jobs || []).map((j) => {
-      const m = jobMeta(j.id);
+      const m = jobMeta(j);
       const cool = timeLeft(j.readyAt);
       const shift = j.id === "shift" && jobs.activeShift;
       const shiftLeft = shift ? timeLeft(jobs.activeShift.readyAt) : "";
@@ -124,43 +122,36 @@
     panel.classList.remove("hidden");
     const left = timeLeft(task.expiresAt);
     let inner = `<div class="work-task-head"><div><b>${escapeHtml(task.title || "Aufgabe")}</b><p class="muted small">${escapeHtml(task.prompt || "")}</p></div><span>${left || "jetzt"}</span></div>`;
-    if (task.type === "route" || task.type === "signal" || task.type === "wires") {
-      const sep = taskSep(task);
-      inner += `<div class="work-route-target">${(task.target || []).map(escapeHtml).join(sep)}</div>`;
-      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-pick-btn" data-pick="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
-      inner += `<div class="work-input-line">Eingabe: <b id="work-route-current">${routeAnswer.join(sep) || "–"}</b></div>`;
-      inner += `<div class="work-task-actions"><button class="btn-secondary" id="work-task-reset">Reset</button><button class="btn-primary" id="work-task-submit">Abgeben</button></div>`;
-    } else if (task.type === "stack") {
-      inner += `<div class="work-task-buttons">${(task.options || []).map((p) => `<button class="btn-secondary work-pick-btn" data-pick="${escapeHtml(p.id)}">📦 ${escapeHtml(p.label)} <small>${fmt(p.weight)}kg</small></button>`).join("")}</div>`;
-      inner += `<div class="work-input-line">Stapel: <b id="work-route-current">${routeAnswer.join(" → ") || "–"}</b></div>`;
-      inner += `<div class="work-task-actions"><button class="btn-secondary" id="work-task-reset">Reset</button><button class="btn-primary" id="work-task-submit">Stapel prüfen</button></div>`;
-    } else if (task.type === "crate") {
-      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-crate-btn" data-answer="${escapeHtml(o)}">📦 ${escapeHtml(o)}</button>`).join("")}</div>`;
-    } else if (task.type === "scanner") {
-      inner += `<div class="work-route-target">Gesucht: ${escapeHtml(task.target || "")}</div>`;
-      inner += `<div class="work-scan-grid">${(task.options || []).map((o) => `<button class="work-scan-card" data-answer="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
-    } else if (task.type === "math") {
-      inner += `<div class="work-route-target">${escapeHtml(task.prompt || "")}</div>`;
-      inner += `<div class="work-task-buttons">${(task.options || []).map((o) => `<button class="btn-secondary work-crate-btn" data-answer="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
-    } else if (task.type === "keypad") {
-      inner += `<div class="work-code-display">${escapeHtml(task.code || "")}</div>`;
-      inner += `<div class="work-keypad-screen">${keypadInput || "----"}</div>`;
-      inner += `<div class="work-keypad">${["1","2","3","4","5","6","7","8","9","⌫","0","OK"].map((n) => `<button class="work-key" data-key="${n}">${n}</button>`).join("")}</div>`;
-    } else if (task.type === "meter") {
-      const slots = Math.max(3, Math.floor(Number(task.slots) || 5));
-      inner += `<div class="work-meter">${Array.from({ length: slots }, (_, i) => {
-        const n = i + 1;
-        return `<button class="work-meter-slot ${n === task.target ? "target" : ""}" data-answer="${n}">${n === task.target ? "★" : ""}</button>`;
-      }).join("")}</div>`;
-    } else if (task.type === "switches") {
-      if (!switchBits.length) switchBits = Array.from({ length: String(task.pattern || "").length }, () => "0");
-      inner += `<div class="work-route-target">${String(task.pattern || "").split("").map((b) => b === "1" ? "AN" : "AUS").join(" · ")}</div>`;
-      inner += `<div class="work-switches">${switchBits.map((b, i) => `<button class="work-switch ${b === "1" ? "on" : ""}" data-switch="${i}">${b === "1" ? "AN" : "AUS"}</button>`).join("")}</div>`;
-      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Schaltpult prüfen</button>`;
+    if (task.type === "wechseln") {
+      // Chips antippen, Reihenfolge egal. Der Server sortiert vor dem Vergleich.
+      const summe = routeAnswer.reduce((a, b) => a + Number(b), 0);
+      inner += `<div class="work-chip-row">${(task.chips || []).map((c) =>
+        `<button class="work-chip" data-pick="${c}">${fmt(c)}</button>`).join("")}</div>`;
+      inner += `<div class="work-input-line">Gelegt: <b id="work-route-current">${
+        routeAnswer.length ? routeAnswer.map((c) => fmt(c)).join(" + ") + " = " + fmt(summe) + " 🪙" : "–"
+      }</b></div>`;
+      inner += `<div class="work-task-actions"><button class="btn-secondary" id="work-task-reset">Zurück</button><button class="btn-primary" id="work-task-submit">Auszahlen</button></div>`;
+    } else if (task.type === "bestellung") {
+      inner += `<div class="work-route-target">${(task.target || []).map(escapeHtml).join(" → ")}</div>`;
+      inner += `<div class="work-task-buttons">${(task.options || []).map((o) =>
+        `<button class="btn-secondary work-pick-btn" data-pick="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
+      inner += `<div class="work-input-line">Reihenfolge: <b id="work-route-current">${routeAnswer.join(" → ") || "–"}</b></div>`;
+      inner += `<div class="work-task-actions"><button class="btn-secondary" id="work-task-reset">Zurück</button><button class="btn-primary" id="work-task-submit">Ausliefern</button></div>`;
+    } else if (task.zeilen) {
+      // Wettscheine pruefen: erst die Zeilen lesen, dann den falschen tippen.
+      inner += `<div class="work-slips">${task.zeilen.map((z) =>
+        `<div class="work-slip">${escapeHtml(z)}</div>`).join("")}</div>`;
+      inner += `<div class="work-task-buttons">${(task.options || []).map((o) =>
+        `<button class="btn-secondary work-crate-btn" data-answer="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
+    } else if (task.options) {
+      // Alle uebrigen sind Auswahlfragen (Auszahlung, Quote, Grundstrategie).
+      inner += `<div class="work-task-buttons work-choice">${(task.options || []).map((o) =>
+        `<button class="btn-secondary work-crate-btn" data-answer="${escapeHtml(o)}">${escapeHtml(o)}${
+          task.suffix ? " " + task.suffix : ""}</button>`).join("")}</div>`;
     } else {
       inner += `<div class="work-code-display">${escapeHtml(task.code || "")}</div>`;
       inner += `<input id="work-code-input" class="work-code-input" inputmode="numeric" autocomplete="off" placeholder="Code eingeben" />`;
-      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Code senden</button>`;
+      inner += `<button class="btn-primary" id="work-task-submit" style="width:100%;margin-top:8px">Senden</button>`;
     }
     box.innerHTML = inner;
   }
@@ -175,7 +166,15 @@
       if (res.account) applyAccount(res.account);
       if (res.jobs) renderJobs(res.jobs);
       const extra = res.outcome === "bonus" ? " · Bonus!" : (res.outcome === "schwach" ? " · schwacher Auftrag" : "");
-      toast(`+${fmt(res.earned || 0)} 🪙${res.xp ? ` · +${fmt(res.xp)} XP` : ""}${extra}${res.capped ? " · Cap erreicht" : ""}`);
+      if (res.richtig === false) {
+        // Kein Totalausfall: sagen, was richtig gewesen waere, damit man es
+        // beim naechsten Mal weiss.
+        window.Casino.sound.play("error");
+        toast(`Daneben. Richtig wäre: ${res.loesung || "?"} · Trostlohn +${fmt(res.earned || 0)} 🪙`);
+      } else {
+        window.Casino.sound.play("cash");
+        toast(`✓ +${fmt(res.earned || 0)} 🪙${res.xp ? ` · +${fmt(res.xp)} XP` : ""}${extra}${res.capped ? " · Cap erreicht" : ""}`);
+      }
     });
   }
 
@@ -234,6 +233,12 @@
       if (cur) cur.textContent = routeAnswer.join(taskSep(task)) || "–";
       return;
     }
+    const chip = e.target.closest(".work-chip");
+    if (chip) {
+      routeAnswer.push(Number(chip.dataset.pick) || 0);
+      renderTask(workState && workState.activeTask, true);
+      return;
+    }
     const crate = e.target.closest(".work-crate-btn");
     if (crate) { submitTask(crate.dataset.answer || ""); return; }
     const scan = e.target.closest(".work-scan-card");
@@ -269,8 +274,7 @@
     if (e.target.closest("#work-task-submit")) {
       const task = workState && workState.activeTask;
       if (!task) return;
-      if (task.type === "route" || task.type === "signal" || task.type === "wires" || task.type === "stack") submitTask(routeAnswer);
-      else if (task.type === "switches") submitTask(switchBits.join(""));
+      if (task.type === "wechseln" || task.type === "bestellung") submitTask(routeAnswer);
       else submitTask($("#work-code-input")?.value || "");
     }
   });
