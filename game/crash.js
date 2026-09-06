@@ -146,7 +146,7 @@ function setupCrash(io, accounts) {
   }
 
   io.on("connection", (socket) => {
-    socket.on("crash:state", (ack) => { if (typeof ack === "function") ack({ ok: true, ...snapshot() }); });
+    socket.on("crash:state", (ack) => { if (typeof ack === "function") ack({ ok: true, ...snapshot(), minBet: MIN_BET, maxBet: MAX_BET }); });
 
     socket.on("crash:bet", ({ amount, target } = {}, ack) => {
       if (typeof ack !== "function") return;

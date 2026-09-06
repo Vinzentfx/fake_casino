@@ -422,7 +422,15 @@
   // ── Screen hook ──────────────────────────────────────────────────────────
   window.Casino._loadCrash = () => {
     resize();
-    socket.emit("crash:state", (s) => { if (s && s.ok) apply(s); });
+    socket.emit("crash:state", (s) => {
+      if (!s || !s.ok) return;
+      if (s.minBet) {
+        const feld = $("#crash-amount");
+        feld.min = s.minBet; feld.max = s.maxBet;
+        window.Casino.einsatz.leiste(feld, { min: s.minBet, max: s.maxBet, schritt: 50 });
+      }
+      apply(s);
+    });
     startDraw();
   };
   document.addEventListener("visibilitychange", () => {

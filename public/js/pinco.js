@@ -421,8 +421,10 @@
     socket.emit("pinco:config", (res) => {
       if (res && res.ok) {
         boards = res.boards || boards;
-        $("#pinco-bet").min = res.minBet || 50;
-        $("#pinco-bet").max = res.maxBet || 100000;
+        const feld = $("#pinco-bet");
+        feld.min = res.minBet || 50;
+        feld.max = res.maxBet || 100000;
+        window.Casino.einsatz.leiste(feld, { min: res.minBet || 50, max: res.maxBet || 100000, schritt: 50 });
       }
       setSize(selectedSize);
       renderRoom(roomCode ? { code: roomCode, players: [], history: drops } : null);
