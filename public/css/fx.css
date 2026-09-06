@@ -205,3 +205,62 @@ html.reduce-motion .fx-skeleton { animation: none; }
   15%  { opacity: 1; }
   100% { opacity: 0; transform: translate(45vw, 85vh) rotate(220deg) scale(1.1); }
 }
+
+/* ============================================================
+   Wucht: die Effekte werden mit der Größe des Gewinns stärker.
+   Was hier steht, sind die Teile, die es erst ab Stufe 3 gibt.
+   ============================================================ */
+
+/* Farbschwall über den ganzen Bildschirm. Läuft ab Stufe 3 bei JEDEM Effekt
+   mit, damit ein großer Gewinn groß wirkt, egal welchen man gekauft hat. */
+.fx-schwall {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(var(--fx-farbe), 0.42), transparent 62%),
+    linear-gradient(180deg, rgba(var(--fx-farbe), 0.22), transparent 45%, rgba(var(--fx-farbe), 0.22));
+  animation: fx-schwall-an 0.9s ease-out forwards;
+}
+@keyframes fx-schwall-an {
+  0% { opacity: 0; transform: scale(1.06); }
+  22% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.02); }
+}
+
+/* Münzen, die von OBEN fallen (zweite Richtung ab Stufe 3). */
+.fx-muenze-fall {
+  top: -50px;
+  bottom: auto;
+  animation: fx-muenze-regen 1.9s cubic-bezier(0.3, 0.5, 0.6, 1) forwards;
+}
+@keyframes fx-muenze-regen {
+  0% { opacity: 0; transform: translateY(0) rotate(0deg); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(112vh) rotate(var(--dreh)); }
+}
+
+/* Der Knall im Zentrum einer Feuerwerks-Salve. */
+.fx-knall {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  animation: fx-knall-an 0.5s ease-out forwards;
+}
+@keyframes fx-knall-an {
+  0% { transform: scale(0.4); opacity: 1; filter: blur(0); }
+  100% { transform: scale(9); opacity: 0; filter: blur(6px); }
+}
+
+/* Bildschirm-Beben beim Blitzschlag ab Stufe 3. */
+@keyframes fx-beben-an {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-5px, 3px); }
+  30% { transform: translate(4px, -4px); }
+  45% { transform: translate(-3px, -2px); }
+  60% { transform: translate(3px, 3px); }
+  80% { transform: translate(-2px, 1px); }
+}
+.fx-beben { animation: fx-beben-an 0.6s ease-out; }
+html.reduce-motion .fx-beben { animation: none; }

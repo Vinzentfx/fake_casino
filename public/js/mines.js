@@ -233,7 +233,7 @@
       const gewinn = v.payout || 0;
       // Ab dem Dreifachen des Einsatzes ist es ein Ereignis, darunter reicht
       // der Muenzwurf. Sonst feiert man sich bei 1,05x zu Tode.
-      if (gewinn > 0 && (v.multiplier || 0) >= 3) Casino.fx.bigWin(gewinn, { label: "Ausgezahlt" });
+      if (gewinn > 0 && (v.multiplier || 0) >= 3) Casino.fx.bigWin(gewinn, { label: "Ausgezahlt", faktor: v.multiplier });
       else { snd.play("cash"); Casino.fx.coins($("#mines-cashout")); }
       apply(v);
     });

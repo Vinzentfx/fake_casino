@@ -30,7 +30,7 @@
    * Konfetti. Ohne Zielelement regnet es von oben, mit Zielelement fliegt es
    * aus dessen Mitte weg (etwa aus dem Gewinnfeld heraus).
    */
-  function confetti({ count = 60, origin = null, colors = null } = {}) {
+  function confetti({ count = 60, origin = null, colors = null, wucht = 1 } = {}) {
     if (reduziert()) return;
     const host = ebene();
     const stil = getComputedStyle(document.documentElement);
@@ -60,9 +60,12 @@
       }
       p.style.setProperty("--rot", (Math.random() * 720 - 360) + "deg");
       p.style.animationDelay = Math.random() * 0.25 + "s";
-      p.style.animationDuration = 1.1 + Math.random() * 0.9 + "s";
+      // Groesser und laenger, je groesser der Gewinn war.
+      p.style.animationDuration = 1.2 + wucht * 0.22 + Math.random() * 0.9 + "s";
+      p.style.width = (8 + wucht * 2) + "px";
+      p.style.height = (13 + wucht * 3) + "px";
       host.appendChild(p);
-      setTimeout(() => p.remove(), 2600);
+      setTimeout(() => p.remove(), 3400);
     }
   }
 
@@ -138,94 +141,197 @@
     return (acc && acc.winEffect) || null;
   }
 
-  /** Ein Teilchen auf die Effektebene legen und nach `leben` wieder abraeumen. */
+  /**
+   * Wie gross ein Gewinn sich anfuehlt, als Stufe 1 bis 4.
+   *
+   * Der reine Betrag taugt dafuer nicht: 100.000 sind fuer die Haelfte der
+   * Runde ein Lebensereignis und fuer die Spitze ein Achselzucken. Gemessen
+   * wird deshalb an zwei Groessen, und die groessere gewinnt:
+   *
+   *   das VIELFACHE des Einsatzes, falls das Spiel es mitliefert, und
+   *   der Gewinn im VERHAELTNIS zum eigenen Guthaben.
+   *
+   * Damit feiert dieselbe Runde bei einem Neuling lauter als bei jemandem
+   * mit drei Millionen, und das ist genau richtig.
+   */
+  function wucht(betrag, faktor) {
+    const acc = window.Casino.getAccount ? window.Casino.getAccount() : null;
+    const guthaben = acc && acc.chips > 0 ? acc.chips : 0;
+    const anteil = guthaben ? betrag / guthaben : 0;
+
+    let stufe = 1;
+    if (faktor >= 3 || anteil >= 0.08) stufe = 2;
+    if (faktor >= 10 || anteil >= 0.25) stufe = 3;
+    if (faktor >= 40 || anteil >= 0.75) stufe = 4;
+    return stufe;
+  }
+
+  /**
+   * Ein Teilchen auf die Effektebene legen und nach `leben` wieder abraeumen.
+   *
+   * Eigene CSS-Variablen (--hoch, --dx, …) MUESSEN ueber setProperty gesetzt
+   * werden. Object.assign auf el.style legt bei unbekannten Namen nur eine
+   * JavaScript-Eigenschaft an, die das Stylesheet nie zu sehen bekommt — die
+   * Animationen liefen dadurch gegen leere Werte und bewegten sich gar nicht.
+   */
   function teil(klasse, stil, leben) {
     const el = document.createElement("i");
     el.className = klasse;
-    Object.assign(el.style, stil);
+    for (const [k, v] of Object.entries(stil)) {
+      if (k.startsWith("--")) el.style.setProperty(k, v);
+      else el.style[k] = v;
+    }
     ebene().appendChild(el);
     setTimeout(() => el.remove(), leben);
   }
 
   const zufall = (a, b) => a + Math.random() * (b - a);
 
-  function muenzflut(anzahl = 26) {
-    for (let i = 0; i < anzahl; i++) {
-      teil("fx-muenze", {
-        left: zufall(4, 96) + "vw",
-        animationDelay: (i * 22) + "ms",
-        // Wie hoch sie springt und wie weit sie dabei zur Seite driftet.
-        "--hoch": zufall(38, 78) + "vh",
-        "--seit": zufall(-70, 70) + "px",
-        "--dreh": zufall(-220, 220) + "deg",
-      }, 1900);
-    }
+  /**
+   * Ein Farbschwall ueber den ganzen Bildschirm. Ab Stufe 3 laeuft er bei
+   * JEDEM Effekt mit — ein grosser Gewinn soll gross wirken, egal welchen
+   * Effekt jemand gekauft hat.
+   */
+  function schwall(farbe, w) {
+    teil("fx-schwall", { "--fx-farbe": farbe, animationDuration: (700 + w * 180) + "ms" }, 1500);
   }
 
-  function goldregen(anzahl = 70) {
-    for (let i = 0; i < anzahl; i++) {
+  function muenzflut(w) {
+    const n = 30 * w;
+    for (let i = 0; i < n; i++) {
+      teil("fx-muenze", {
+        left: zufall(2, 98) + "vw",
+        animationDelay: (i * (18 - w * 2)) + "ms",
+        width: (16 + w * 4) + "px",
+        height: (16 + w * 4) + "px",
+        animationDuration: (1500 + w * 200) + "ms",
+        // Wie hoch sie springt und wie weit sie dabei zur Seite driftet.
+        "--hoch": zufall(45 + w * 8, 80 + w * 12) + "vh",
+        "--seit": zufall(-90, 90) + "px",
+        "--dreh": zufall(-320, 320) + "deg",
+      }, 2400 + w * 200);
+    }
+    // Ab Stufe 3 regnet es zusaetzlich von oben: doppelte Richtung, doppelt
+    // so voll.
+    if (w >= 3) {
+      for (let i = 0; i < 18 * w; i++) {
+        teil("fx-muenze fx-muenze-fall", {
+          left: zufall(0, 100) + "vw",
+          animationDelay: zufall(0, 700) + "ms",
+          width: (14 + w * 3) + "px",
+          height: (14 + w * 3) + "px",
+          "--dreh": zufall(-360, 360) + "deg",
+        }, 2600);
+      }
+    }
+    if (w >= 3) schwall("255,215,110", w);
+  }
+
+  function goldregen(w) {
+    const n = 70 * w;
+    for (let i = 0; i < n; i++) {
       teil("fx-strahl", {
         left: zufall(0, 100) + "vw",
-        height: zufall(28, 70) + "px",
-        animationDelay: zufall(0, 500) + "ms",
-        animationDuration: zufall(900, 1500) + "ms",
-        opacity: String(zufall(0.45, 1)),
-      }, 2200);
+        height: zufall(34 + w * 8, 80 + w * 22) + "px",
+        width: (2 + (w >= 3 ? 1 : 0)) + "px",
+        animationDelay: zufall(0, 420) + "ms",
+        animationDuration: zufall(750, 1350) + "ms",
+        opacity: String(zufall(0.55, 1)),
+      }, 2400);
     }
-    teil("fx-goldschein", {}, 1600);
+    teil("fx-goldschein", { animationDuration: (1400 + w * 350) + "ms", opacity: String(0.5 + w * 0.16) }, 2600);
+    if (w >= 3) schwall("255,190,80", w);
   }
 
-  function feuerwerk(salven = 3) {
-    const farben = ["#ff6b6b", "#4ecdc4", "#ffd93d", "#a66bff", "#7ef9ff"];
+  function feuerwerk(w) {
+    const farben = ["#ff6b6b", "#4ecdc4", "#ffd93d", "#a66bff", "#7ef9ff", "#ffffff"];
+    const salven = 2 + w * 2;
+    const proSalve = 22 + w * 8;
     for (let n = 0; n < salven; n++) {
       setTimeout(() => {
-        const x = zufall(18, 82), y = zufall(18, 55);
+        const x = zufall(14, 86), y = zufall(14, 58);
         const farbe = farben[Math.floor(Math.random() * farben.length)];
-        for (let i = 0; i < 22; i++) {
-          const winkel = (Math.PI * 2 * i) / 22 + zufall(-0.1, 0.1);
-          const weite = zufall(90, 190);
+        for (let i = 0; i < proSalve; i++) {
+          const winkel = (Math.PI * 2 * i) / proSalve + zufall(-0.12, 0.12);
+          const weite = zufall(110 + w * 20, 210 + w * 60);
           teil("fx-funke", {
             left: x + "vw", top: y + "vh", background: farbe,
+            width: (5 + w) + "px", height: (5 + w) + "px",
+            animationDuration: (1000 + w * 220) + "ms",
             "--dx": Math.cos(winkel) * weite + "px",
             "--dy": Math.sin(winkel) * weite + "px",
-          }, 1200);
+          }, 1400 + w * 250);
         }
-      }, n * 320);
+        if (w >= 3) teil("fx-knall", { left: x + "vw", top: y + "vh", background: farbe }, 600);
+      }, n * (280 - w * 25));
+    }
+    if (w >= 3) schwall("255,220,120", w);
+  }
+
+  function blitz(w) {
+    // Mehrere Schlaege nacheinander statt eines einzigen.
+    for (let n = 0; n < w; n++) {
+      setTimeout(() => {
+        teil("fx-blitz", { animationDuration: (440 + w * 60) + "ms" }, 620);
+        const x = zufall(18, 82);
+        teil("fx-zacke", {
+          left: x + "vw",
+          width: (26 + w * 6) + "px",
+          height: (62 + w * 6) + "vh",
+        }, 640);
+      }, n * 220);
+    }
+    if (w >= 3) {
+      schwall("126,249,255", w);
+      // Bei einem Einschlag dieser Groesse wackelt auch der Bildschirm.
+      const el = document.getElementById("app");
+      if (el) { el.classList.remove("fx-beben"); void el.offsetWidth; el.classList.add("fx-beben"); setTimeout(() => el.classList.remove("fx-beben"), 700); }
     }
   }
 
-  function blitz() {
-    teil("fx-blitz", {}, 460);
-    // Der Zacken selbst, an zufaelliger Stelle, damit es nicht jedes Mal
-    // dieselbe Bahn ist.
-    const x = zufall(25, 75);
-    teil("fx-zacke", { left: x + "vw" }, 500);
-  }
-
-  function sternenfall(anzahl = 9) {
-    for (let i = 0; i < anzahl; i++) {
+  function sternenfall(w) {
+    const n = 8 * w;
+    for (let i = 0; i < n; i++) {
       teil("fx-stern", {
-        left: zufall(-5, 85) + "vw",
-        top: zufall(-10, 30) + "vh",
-        animationDelay: (i * 130) + "ms",
-        fontSize: zufall(14, 30) + "px",
-      }, 2600);
+        left: zufall(-10, 90) + "vw",
+        top: zufall(-15, 30) + "vh",
+        animationDelay: (i * (120 - w * 12)) + "ms",
+        animationDuration: (2200 - w * 150) + "ms",
+        fontSize: zufall(16 + w * 3, 32 + w * 10) + "px",
+      }, 3000);
     }
+    if (w >= 3) schwall("255,246,216", w);
   }
 
-  function spieleGewinnEffekt() {
+  /**
+   * Spielt den gekauften Effekt.
+   * @param {{betrag?: number, faktor?: number, stufe?: number}} [opts]
+   */
+  function spieleGewinnEffekt(opts = {}) {
     if (reduziert()) return;
+    const w = Math.max(1, Math.min(4, opts.stufe || wucht(opts.betrag || 0, opts.faktor || 0)));
     switch (gewinnEffekt()) {
-      case "muenzen": return muenzflut();
-      case "gold": return goldregen();
-      case "feuerwerk": return feuerwerk();
-      case "blitz": return blitz();
-      case "sterne": return sternenfall();
-      default: return confetti({ count: 70 });
+      case "muenzen": return muenzflut(w);
+      case "gold": return goldregen(w);
+      case "feuerwerk": return feuerwerk(w);
+      case "blitz": return blitz(w);
+      case "sterne": return sternenfall(w);
+      default: {
+        // Konfetti: mehr, groesser, laenger — und ab Stufe 3 eine zweite Welle.
+        confetti({ count: 60 * w, wucht: w });
+        if (w >= 3) setTimeout(() => confetti({ count: 40 * w, wucht: w }), 260);
+        if (w >= 3) schwall("247,220,140", w);
+        return;
+      }
     }
   }
 
-  function bigWin(betrag, { label = "Gewinn", sound = true, dauer = 2600 } = {}) {
+  /**
+   * @param {number} betrag
+   * @param {{label?: string, sound?: boolean, dauer?: number, faktor?: number}} [opts]
+   *   `faktor` ist das Vielfache des Einsatzes, falls das Spiel es kennt.
+   */
+  function bigWin(betrag, { label = "Gewinn", sound = true, dauer = 2600, faktor = 0 } = {}) {
     const host = ebene();
     const karte = document.createElement("div");
     karte.className = "fx-bigwin";
@@ -236,7 +342,7 @@
 
     countUp(karte.querySelector("b"), 0, betrag, { format: (n) => fmt(n) + " 🪙", sound: false });
     if (sound && window.Casino.sound) window.Casino.sound.play(betrag > 0 ? "bigwin" : "win");
-    spieleGewinnEffekt();
+    spieleGewinnEffekt({ betrag, faktor });
 
     const weg = () => {
       karte.classList.remove("show");

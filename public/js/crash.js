@@ -413,7 +413,7 @@
   /** Ausstieg feiern. Ab dem Dreifachen gross, darunter reicht der Muenzwurf. */
   function feiereAusstieg(mult, payout) {
     if (!onCrashScreen()) return;
-    if ((mult || 0) >= 3) window.Casino.fx.bigWin(payout || 0, { label: `Ausgestiegen bei ${mult.toFixed(2)}×` });
+    if ((mult || 0) >= 3) window.Casino.fx.bigWin(payout || 0, { label: `Ausgestiegen bei ${mult.toFixed(2)}×`, faktor: mult });
     else { snd.play("cash"); window.Casino.fx.coins($("#crash-action")); }
   }
 

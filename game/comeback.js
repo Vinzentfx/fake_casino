@@ -37,7 +37,17 @@ const FILE = path.join(DATA_DIR, "comeback.json");
 // Wie lange das Geschenk abholbar bleibt. Lang genug, dass auch jemand, der
 // erst am naechsten Wochenende reinschaut, es noch bekommt.
 const GESCHENK_TAGE = 14;
-const GESCHENK_CHIPS = 15000;
+/*
+ * 150.000. Das ist bewusst viel: der Median liegt bei 25.000, das Paket ist
+ * also fuer die meisten das Sechsfache ihres Guthabens. Genau das ist der
+ * Zweck — es soll ein Ereignis sein, kein Trostpflaster.
+ *
+ * Wirkung auf die Wirtschaft: rund 8 Mio neu bei 8,6 Mio im Umlauf. Weil es
+ * ALLE bekommen und die Vermoegensbremse die Spitze kuerzt, verschiebt es die
+ * Rangfolge kaum, drueckt aber den Abstand zwischen Mitte und Spitze deutlich
+ * zusammen — ein weicher Neuanfang, ohne jemandem etwas wegzunehmen.
+ */
+const GESCHENK_CHIPS = 150000;
 const GESCHENK_XP = 250;
 
 // Gala: Dauer und Topf werden beim Start gesetzt, das hier sind die Grenzen.

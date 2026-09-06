@@ -418,7 +418,7 @@
       const meins = me && drop.name && drop.name.toLowerCase() === me.name.toLowerCase();
       if (!meins) return;
       if ((drop.multiplier || 0) >= 5) {
-        window.Casino.fx.bigWin(drop.payout || 0, { label: `${drop.multiplier}× getroffen` });
+        window.Casino.fx.bigWin(drop.payout || 0, { label: `${drop.multiplier}× getroffen`, faktor: drop.multiplier });
       } else if ((drop.payout || 0) > (drop.bet || 0)) {
         snd.play("win");
       } else {
