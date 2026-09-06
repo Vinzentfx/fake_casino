@@ -206,7 +206,7 @@ button { font-family: inherit; cursor: pointer; }
    Querformat die Breite nutzen, statt zwei Spalten in einem Meer von Rand
    zu zeigen. */
 @media (min-width: 1080px) {
-  #app[data-screen="lobby"] { max-width: 1240px; }
+  #app[data-active-screen="lobby"] { max-width: 1240px; }
 }
 .screen { display: none; animation: fade 0.22s ease; }
 .screen.active { display: block; }

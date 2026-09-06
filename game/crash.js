@@ -121,7 +121,16 @@ function setupCrash(io, accounts) {
         if (!b.cashedAt && b.target && m >= b.target && b.target <= state.crashPoint) {
           const payout = cashOut(key, b.target);
           const s = onlineSocket(key);
-          if (s && payout != null) s.emit("crash:cashed", { mult: b.target, payout, auto: true });
+          // Den Kontostand mitschicken. Ohne ihn blieb nach einem
+          // Auto-Cashout der Abzug des Einsatzes stehen und der Gewinn
+          // tauchte erst beim naechsten Ereignis auf, das zufaellig ein
+          // Konto mitbrachte: man gewann, und die Zahl oben ging runter.
+          if (s && payout != null) {
+            s.emit("crash:cashed", {
+              mult: b.target, payout, auto: true,
+              account: accounts.publicAccount(accounts.get(key)),
+            });
+          }
         }
       }
       if (elapsed >= crashTimeMs(state.crashPoint)) crash();

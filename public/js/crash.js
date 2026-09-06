@@ -387,6 +387,7 @@
   // Antwort auf crash:cashout, siehe unten.
   socket.on("crash:cashed", (d) => {
     if (!d) return;
+    if (d.account) applyAccount(d.account);
     feiereAusstieg(d.mult, d.payout);
     if (d.auto) toast(`🚀 Auto-Cashout bei ${d.mult.toFixed(2)}× — +${fmt(d.payout)} 🪙!`);
   });

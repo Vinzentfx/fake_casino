@@ -139,9 +139,19 @@ function makeWorkTask(id, job, now = Date.now()) {
   };
 }
 
+/**
+ * Antwort einer Mini-Aufgabe vergleichbar machen.
+ *
+ * Der Haken war, dass Liste und Text unterschiedlich behandelt wurden: eine
+ * Liste wurde nur zusammengefuegt, ein Text zusaetzlich kleingeschrieben. Der
+ * Server legt die Loesung als Text ab ("P3P1P2P4"), der Client schickt eine
+ * Liste (["P3","P1","P2","P4"]). Damit verglich man "p3p1p2p4" mit
+ * "P3P1P2P4" — die Aufgaben route, wires und stack waren dadurch schlicht
+ * unloesbar, und ein Fehlversuch verbrannte trotzdem die Wartezeit.
+ */
 function normalizeTaskAnswer(answer) {
-  if (Array.isArray(answer)) return answer.join("");
-  return String(answer || "").trim().toLowerCase().replace(/\s+/g, "");
+  const roh = Array.isArray(answer) ? answer.join("") : String(answer || "");
+  return roh.trim().toLowerCase().replace(/\s+/g, "");
 }
 
 function ensureEconomy(acc) {

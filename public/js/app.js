@@ -85,9 +85,18 @@ versteckeGesperrteMenueeintraege();
 document.addEventListener("casino:screen", (e) => {
   const name = e.detail.screen;
   currentScreen = name;
-  // Haken fuers Layout: manche Screens duerfen breiter werden als die
-  // Standardspalte, die Lobby zum Beispiel im Querformat auf dem iPad.
-  $("#app").dataset.screen = name;
+  /* Haken fuers Layout: manche Screens duerfen breiter werden als die
+     Standardspalte, die Lobby zum Beispiel im Querformat auf dem iPad.
+
+     Der Name ist mit Bedacht NICHT data-screen. Fuenfundzwanzig Stellen in
+     den Spielmodulen fragen mit
+       document.querySelector('[data-screen="crash"]')
+     ab, ob ihr Screen gerade offen ist. #app steht im DOM vor den Screens,
+     haette also jedes Mal den Container zurueckgegeben — und zwar genau dann,
+     wenn der betreffende Screen aktiv ist. Der Container traegt nie .active,
+     also hielten sich saemtliche Spiele fuer geschlossen und hoerten auf zu
+     zeichnen. Crash und die Rennbahn waren dadurch komplett tot. */
+  $("#app").dataset.activeScreen = name;
   socket.emit("presence:screen", { screen: name });
   $("#topbar").classList.toggle("hidden", name === "login");
   if (window.Casino.chat) window.Casino.chat.update(name);
