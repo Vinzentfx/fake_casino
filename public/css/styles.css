@@ -3886,6 +3886,45 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .sb-teams > span:last-child { text-align: right; }
 .sb-score { color: var(--gold-strong); font-size: 1.2rem; }
 .sb-vs { color: var(--text-dim); font-weight: 400; flex: 0 !important; }
+/* Aufklapper fuer die Nebenmaerkte. Sichtbar bleibt nur der Sieger-Markt;
+   alles andere kostete bei siebzig Spielen ueber 700 Knoepfe und rund
+   vierunddreissig Bildschirme Scrollen. */
+.sb-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  width: 100%;
+  margin-top: var(--sp-2);
+  padding: 8px;
+  border-radius: var(--r-sm);
+  border: 1px dashed var(--line-neutral);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.sb-more:hover { border-color: rgba(var(--accent-rgb), 0.45); color: var(--accent-strong); }
+/* Punkt, wenn in einem eingeklappten Markt etwas im Wettschein liegt. */
+.sb-more-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent-strong);
+  box-shadow: 0 0 8px var(--accent-strong);
+}
+.sb-more-body { margin-top: var(--sp-2); }
+.sb-load-more {
+  width: 100%;
+  margin-top: var(--sp-3);
+  padding: 13px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+}
+.sb-load-more:hover { border-color: rgba(var(--accent-rgb), 0.5); }
+#sb-leagues { margin-bottom: var(--sp-3); }
+
 .sb-market { margin-top: 8px; }
 .sb-mk-label { font-size: 0.74rem; color: var(--text-dim); margin-bottom: 4px; }
 .sb-sels { display: flex; gap: 6px; }
@@ -3934,12 +3973,21 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .sb-pending { color: #d9c463; font-weight: 600; }
 
 /* ===================== Sportwetten bet slip + combos ===================== */
+/* Der Wettschein bleibt beim Scrollen stehen — aber UNTER der Topbar, nicht
+   darunter durchrutschend. Vorher klebte er bei top:8px und verschwand halb
+   hinter der Leiste. Die Farben kamen aus einem fest verdrahteten Gruen und
+   sahen in den anderen beiden Themes falsch aus. */
 .sb-slip-panel {
-  position: sticky; top: 8px; z-index: 30;
-  background: linear-gradient(180deg, rgba(20,40,30,0.97), rgba(10,25,18,0.97));
-  border: 1px solid var(--gold); border-radius: var(--radius);
-  padding: 12px 14px; margin-bottom: 12px;
-  box-shadow: var(--shadow); backdrop-filter: blur(8px);
+  position: sticky;
+  top: calc(var(--topbar-h, 58px) + var(--sp-2));
+  z-index: 30;
+  background: var(--overlay);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-3);
+  box-shadow: var(--e-3);
+  backdrop-filter: blur(10px);
 }
 .sb-slip-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .sb-slip-head .sb-odds { color: var(--gold-strong); font-size: 1.1rem; }

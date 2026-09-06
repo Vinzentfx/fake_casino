@@ -94,6 +94,29 @@ document.addEventListener("casino:screen", (e) => {
   window.scrollTo(0, 0);
 });
 
+/**
+ * Hoehe der Topbar als CSS-Variable bereitstellen.
+ *
+ * Alles, was beim Scrollen stehen bleiben soll (Wettschein, spaeter mehr),
+ * muss UNTER der Leiste kleben. Eine geratene Zahl geht schief, sobald sich
+ * an der Leiste etwas aendert: auf schmalen Geraeten hat sie weniger
+ * Polsterung, auf dem iPhone kommt der sichere Bereich oben dazu.
+ */
+(function () {
+  const bar = $("#topbar");
+  if (!bar) return;
+  const messen = () => {
+    // Auf dem Login ist die Leiste ausgeblendet und misst sich als 0. Diesen
+    // Wert nicht uebernehmen, sonst klebt spaeter alles unter der Leiste.
+    const h = bar.offsetHeight;
+    if (h > 0) document.documentElement.style.setProperty("--topbar-h", h + "px");
+  };
+  messen();
+  if (window.ResizeObserver) new ResizeObserver(messen).observe(bar);
+  document.addEventListener("casino:screen", messen);
+  window.addEventListener("orientationchange", () => setTimeout(messen, 200));
+})();
+
 // ============================================================
 // Menü (alles, was kein Spiel ist)
 // ============================================================

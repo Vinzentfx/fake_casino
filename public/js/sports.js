@@ -16,6 +16,48 @@
   let betAmount = 100;
   let slip = []; // legs: { matchId, market, selection, odds, label }
 
+  /* ---------------------------------------------------------------------
+     Filter und Aufklappen.
+
+     Vorher stand jedes Spiel mit ALLEN sechs Maerkten offen da. Bei siebzig
+     Spielen waren das 714 Wettknoepfe und eine Seite von ueber 34.000 Pixeln
+     Hoehe — rund vierunddreissig Bildschirme Scrollen, um ans Ende zu kommen.
+
+     Jetzt steht nur der Hauptmarkt (Sieger) offen, der Rest kommt auf Tipp.
+     Dazu ein Liga-Filter und eine Grundmenge, die sich nachladen laesst.
+  --------------------------------------------------------------------- */
+  const HAUPTMARKT = "1x2";
+  const GRUNDMENGE = 12;
+  let filterLiga = "alle";
+  let sichtbar = GRUNDMENGE;
+  const offeneSpiele = new Set(); // Spiel-ids, bei denen alle Maerkte offen sind
+
+  /** Laufende Spiele zuerst, dann die naechsten Anpfiffe, Beendetes zuletzt. */
+  function rang(m) {
+    if (m.state === "live") return 0;
+    if (m.state === "open") return 1;
+    return 2;
+  }
+
+  function ligenListe() {
+    const echte = [...new Set(data.matches.filter((m) => m.real).map((m) => m.league))];
+    const liste = [{ id: "alle", label: "Alle", n: data.matches.length }];
+    for (const l of echte) {
+      liste.push({ id: l, label: l, n: data.matches.filter((m) => m.real && m.league === l).length });
+    }
+    const simN = data.matches.filter((m) => !m.real).length;
+    if (simN) liste.push({ id: "__sim", label: "Simuliert", n: simN });
+    return liste;
+  }
+
+  function gefilterteSpiele() {
+    let liste = data.matches.slice();
+    if (filterLiga === "__sim") liste = liste.filter((m) => !m.real);
+    else if (filterLiga !== "alle") liste = liste.filter((m) => m.real && m.league === filterLiga);
+    liste.sort((a, b) => rang(a) - rang(b) || (a.kickoffAt || 0) - (b.kickoffAt || 0));
+    return liste;
+  }
+
   const onScreen = () => {
     const s = document.querySelector('[data-screen="sports"]');
     return s && s.classList.contains("active");
@@ -138,30 +180,53 @@
     }).join("");
   }
 
+  /** Ein einzelner Markt-Block (Sieger, Ueber/Unter, …). */
+  function marktHTML(m, mk, def) {
+    const book = m.book[mk] || {};
+    const total = Object.values(book).reduce((s2, c) => s2 + c.stake, 0) || 0;
+    let out = `<div class="sb-market"><div class="sb-mk-label">${escapeHtml(def.label)}</div><div class="sb-sels">`;
+    for (const [sel, od] of Object.entries(def.sels)) {
+      const c = book[sel] || { stake: 0, backers: 0 };
+      const share = total ? Math.round((c.stake / total) * 100) : 0;
+      const on = legIn(m.id, mk, sel) ? " on" : "";
+      out += `<button class="sb-sel${on}" data-id="${m.id}" data-mk="${mk}" data-sel="${sel}">
+        <span class="sb-sel-name">${escapeHtml(selLabel(m, mk, sel))}</span>
+        <b class="sb-odds">${od.toFixed(2)}</b>
+        <span class="sb-book">${c.backers ? `${c.backers}·${fmt(c.stake)}` : "—"}</span>
+        <span class="sb-bar" style="width:${share}%"></span></button>`;
+    }
+    return out + `</div></div>`;
+  }
+
   function renderMatches() {
     const el = $("sb-matches");
     if (!el) return;
-    if (document.activeElement && document.activeElement.classList.contains("sb-amount")) return; // don't wipe typing
+    if (document.activeElement && document.activeElement.classList.contains("sb-amount")) return; // nicht beim Tippen neu zeichnen
+    renderLigaFilter();
     if (!data.matches.length) { el.innerHTML = '<p class="muted small">Neue Spiele werden angesetzt…</p>'; return; }
+
     const cardHtml = (m) => {
       const showScore = m.state === "live" || m.state === "done";
       let markets = "";
       if (m.state === "open") {
-        for (const [mk, def] of Object.entries(m.markets)) {
-          const book = m.book[mk] || {};
-          const total = Object.values(book).reduce((s, c) => s + c.stake, 0) || 0;
-          markets += `<div class="sb-market"><div class="sb-mk-label">${escapeHtml(def.label)}</div><div class="sb-sels">`;
-          for (const [sel, od] of Object.entries(def.sels)) {
-            const c = book[sel] || { stake: 0, backers: 0 };
-            const share = total ? Math.round((c.stake / total) * 100) : 0;
-            const on = legIn(m.id, mk, sel) ? " on" : "";
-            markets += `<button class="sb-sel${on}" data-id="${m.id}" data-mk="${mk}" data-sel="${sel}">
-              <span class="sb-sel-name">${escapeHtml(selLabel(m, mk, sel))}</span>
-              <b class="sb-odds">${od.toFixed(2)}</b>
-              <span class="sb-book">${c.backers ? `${c.backers}·${fmt(c.stake)}` : "—"}</span>
-              <span class="sb-bar" style="width:${share}%"></span></button>`;
-          }
-          markets += `</div></div>`;
+        const eintraege = Object.entries(m.markets);
+        const haupt = eintraege.filter(([mk]) => mk === HAUPTMARKT);
+        const weitere = eintraege.filter(([mk]) => mk !== HAUPTMARKT);
+        const offen = offeneSpiele.has(m.id);
+
+        markets = (haupt.length ? haupt : eintraege.slice(0, 1))
+          .map(([mk, def]) => marktHTML(m, mk, def)).join("");
+
+        if (weitere.length) {
+          // Ein Tipp im Wettschein liegt vielleicht in einem eingeklappten
+          // Markt. Dann muss man sehen, dass da noch etwas ist.
+          const gesetzt = weitere.some(([mk]) =>
+            Object.keys(m.markets[mk].sels).some((sel) => legIn(m.id, mk, sel)));
+          markets += `<button class="sb-more" data-more="${m.id}" aria-expanded="${offen}">
+            ${offen ? "▴ Weniger" : `▾ ${weitere.length} weitere Wetten`}
+            ${gesetzt && !offen ? '<span class="sb-more-dot" title="Du hast hier etwas im Schein"></span>' : ""}
+          </button>`;
+          if (offen) markets += `<div class="sb-more-body">${weitere.map(([mk, def]) => marktHTML(m, mk, def)).join("")}</div>`;
         }
       }
       const myb = (m.myBets || []).map((b) => {
@@ -177,11 +242,14 @@
       </div>`;
     };
 
-    const real = data.matches.filter((m) => m.real);
-    const sim = data.matches.filter((m) => !m.real);
-    let html = "";
-    if (real.length) html += `<div class="sb-section-head">🌍 Echte Spiele <span class="muted small">· hier zählt das echte Endergebnis</span></div>` + real.map(cardHtml).join("");
-    if (sim.length) html += `<div class="sb-section-head">🎮 Simulierte Spiele <span class="muted small">· sofortige Action zwischendurch</span></div>` + sim.map(cardHtml).join("");
+    const alle = gefilterteSpiele();
+    const zeigen = alle.slice(0, sichtbar);
+    let html = zeigen.map(cardHtml).join("");
+    const rest = alle.length - zeigen.length;
+    if (rest > 0) {
+      html += `<button class="sb-load-more" id="sb-load-more">Weitere ${Math.min(rest, GRUNDMENGE)} von ${rest} Spielen anzeigen</button>`;
+    }
+    if (!alle.length) html = '<p class="muted small">In dieser Liga läuft gerade nichts.</p>';
     el.innerHTML = html;
 
     el.querySelectorAll(".sb-sel").forEach((b) => b.addEventListener("click", () => {
@@ -190,6 +258,16 @@
       toggleLeg(m, b.dataset.mk, b.dataset.sel);
       render();
     }));
+    el.querySelectorAll("[data-more]").forEach((b) => b.addEventListener("click", () => {
+      const id = +b.dataset.more;
+      if (offeneSpiele.has(id)) offeneSpiele.delete(id); else offeneSpiele.add(id);
+      window.Casino.sound.play("tick");
+      renderMatches();
+    }));
+    $("sb-load-more")?.addEventListener("click", () => {
+      sichtbar += GRUNDMENGE;
+      renderMatches();
+    });
     el.querySelectorAll(".sb-cashout").forEach((b) => b.addEventListener("click", (e) => {
       e.stopPropagation();
       socket.emit("sports:cashout", { matchId: +b.dataset.id, betId: b.dataset.bet }, (res) => {
@@ -198,6 +276,21 @@
         toast(`💸 Cash-out: +${fmt(res.refund)} 🪙`);
         load();
       });
+    }));
+  }
+
+  function renderLigaFilter() {
+    const host = $("sb-leagues");
+    if (!host) return;
+    host.innerHTML = ligenListe().map((l) =>
+      `<button class="cat-tab${l.id === filterLiga ? " active" : ""}" data-liga="${escapeHtml(l.id)}" type="button">
+         ${escapeHtml(l.label)}<small>${l.n}</small>
+       </button>`).join("");
+    host.querySelectorAll("[data-liga]").forEach((b) => b.addEventListener("click", () => {
+      filterLiga = b.dataset.liga;
+      sichtbar = GRUNDMENGE;
+      window.Casino.sound.play("tick");
+      renderMatches();
     }));
   }
 
