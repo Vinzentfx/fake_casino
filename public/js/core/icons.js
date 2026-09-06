@@ -144,6 +144,46 @@
       <rect x="10.6" y="6.8" width="2.8" height="2.8" rx=".8" ${S}/>`,
   };
 
+  /*
+   * Symbole INNERHALB der Spiele (Edelstein, Bombe, Ei, Totenkopf). Emoji
+   * sahen dort auf jedem Geraet anders aus und poppten beim Aufdecken einfach
+   * auf; gezeichnet lassen sie sich faerben, glaenzen und mit dem Feld
+   * zusammen umdrehen.
+   */
+  const SPIEL = {
+    edelstein: `<path d="M7.4 3h9.2l4.4 6-9 12-9-12Z" fill="url(#gemV)" stroke="#bff5d0" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7.4 3 12 9l4.6-6M3 9h18M12 9v12" stroke="rgba(255,255,255,.6)" stroke-width=".9" fill="none"/>
+      <defs><linearGradient id="gemV" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#8ef7c0"/><stop offset=".5" stop-color="#2fd18a"/><stop offset="1" stop-color="#0e8f5c"/>
+      </linearGradient></defs>`,
+
+    bombe: `<circle cx="11" cy="14.5" r="6.6" fill="#2a2f38" stroke="#12151a" stroke-width="1.1"/>
+      <path d="M8.4 12.2a3.6 3.6 0 0 1 2.3-2" stroke="rgba(255,255,255,.55)" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+      <path d="M14.6 9.4 16.4 7" stroke="#8a5a2b" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M16.4 7c1.3-1.2 3-1.1 3.9.2" stroke="#c8862f" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <circle cx="20.6" cy="7.6" r="1.7" fill="#ffb347"/>
+      <circle cx="20.6" cy="7.6" r=".8" fill="#fff3c4"/>`,
+
+    ei: `<path d="M12 3.2c3.2 0 5.8 4.6 5.8 8.6a5.8 5.8 0 0 1-11.6 0c0-4 2.6-8.6 5.8-8.6Z" fill="url(#eiV)" stroke="#bff5d0" stroke-width="1.1"/>
+      <path d="M9.2 9.4c.3-1.6 1-3 1.9-3.9" stroke="rgba(255,255,255,.65)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <defs><linearGradient id="eiV" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#a8f7cd"/><stop offset="1" stop-color="#1e9f68"/>
+      </linearGradient></defs>`,
+
+    totenkopf: `<path d="M12 2.8c4.4 0 7.3 3 7.3 7 0 2.5-1.1 4-2.4 5v2.1a1.6 1.6 0 0 1-1.6 1.6H8.7a1.6 1.6 0 0 1-1.6-1.6v-2.1c-1.3-1-2.4-2.5-2.4-5 0-4 2.9-7 7.3-7Z"
+        fill="#e8e6e1" stroke="#9a978f" stroke-width="1"/>
+      <ellipse cx="9.1" cy="10.2" rx="2.05" ry="2.35" fill="#1b1d22"/>
+      <ellipse cx="14.9" cy="10.2" rx="2.05" ry="2.35" fill="#1b1d22"/>
+      <path d="M12 13.4l-1 2h2Z" fill="#1b1d22"/>
+      <path d="M9.4 18.5v2.1M12 18.5v2.1M14.6 18.5v2.1" stroke="#9a978f" stroke-width="1.3" stroke-linecap="round"/>`,
+  };
+
+  /** Symbol aus einem Spiel (Edelstein, Bombe, …), fertig als SVG. */
+  function spielSymbol(id) {
+    const d = SPIEL[id];
+    return d ? `<svg class="sp-icon" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>` : "";
+  }
+
   /** Fertiges SVG fuer eine Spielkennung, oder null. */
   function icon(id) {
     const d = ICONS[id];
@@ -152,5 +192,5 @@
       stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   }
 
-  Casino.icons = { icon, has: (id) => !!ICONS[id] };
+  Casino.icons = { icon, has: (id) => !!ICONS[id], spielSymbol };
 })();

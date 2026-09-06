@@ -91,6 +91,8 @@
 
   // Zeichnet den Turm aus einer Server-View. Reihen oben (Ebene 9) → unten (Ebene 1).
   // fx: { pop:{row,tile} } markiert die frisch aufgedeckte Kachel für die Animation.
+  const sym = (id) => (window.Casino.icons ? window.Casino.icons.spielSymbol(id) : "");
+
   function renderBoard(v, fx = {}) {
     const board = $("#tw-board");
     const width = v.width;
@@ -115,17 +117,25 @@
       for (let t = 0; t < width; t++) {
         const b = document.createElement("button");
         b.className = "tw-tile";
+        /*
+         * Zwei Seiten wie in Mines: der Deckel klappt um, dahinter liegt eine
+         * gezeichnete Seite. Vorher stand die Kachel leer da und beim Tippen
+         * erschien ein Emoji darin — kein Moment, und auf jedem Geraet ein
+         * anderes Bild.
+         */
+        b.innerHTML = `<span class="tw-flip"><span class="tw-back"></span><span class="tw-front"></span></span>`;
+        const face = (id) => { b.querySelector(".tw-front").innerHTML = sym(id); b.classList.add("auf"); };
         const isTrap = v.trapLayout && v.trapLayout[disp] && v.trapLayout[disp].includes(t);
         if (climbed) {
           b.disabled = true;
-          if (v.picks[disp] === t) { b.classList.add("egg"); b.textContent = "🥚"; }
-          else if (v.trapLayout) { b.classList.add(isTrap ? "trap" : "safe-dim"); b.textContent = isTrap ? "💀" : "🥚"; }
+          if (v.picks[disp] === t) { b.classList.add("egg"); face("ei"); }
+          else if (v.trapLayout) { b.classList.add(isTrap ? "trap" : "safe-dim"); face(isTrap ? "totenkopf" : "ei"); }
           else b.classList.add("covered");
         } else if (active) {
           b.addEventListener("click", () => pick(t));
         } else {
           b.disabled = true;
-          if (v.over && v.trapLayout) { b.classList.add(isTrap ? "trap" : "safe-dim"); b.textContent = isTrap ? "💀" : "🥚"; }
+          if (v.over && v.trapLayout) { b.classList.add(isTrap ? "trap" : "safe-dim"); face(isTrap ? "totenkopf" : "ei"); }
         }
         if (v.over && v.bust && disp === v.row && t === v.tile) b.classList.add("boom");
         if (fx.pop && disp === fx.pop.row && t === fx.pop.tile) b.classList.add("pop");

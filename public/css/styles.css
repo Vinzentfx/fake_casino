@@ -4048,15 +4048,116 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .mines-stat { flex: 1; text-align: center; padding: 8px; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); }
 .mines-stat span { display: block; font-size: 0.65rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.04em; }
 .mines-stat b { font-size: 1rem; color: var(--accent-strong); }
-.mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0; }
-.mine-tile { aspect-ratio: 1; border-radius: 12px; font-size: 1.6rem; cursor: pointer;
-  background: linear-gradient(180deg, #3a4150, #2a303c); border: 1px solid rgba(255,255,255,0.12);
-  transition: transform 0.08s, background 0.2s; display: flex; align-items: center; justify-content: center; }
-.mine-tile:hover:not(:disabled) { background: linear-gradient(180deg, #454d5e, #333a47); transform: translateY(-2px); }
+/* ============================================================
+   Mines
+   Jede Kachel hat zwei Seiten und klappt beim Aufdecken um. Vorher
+   war es ein leeres Viereck, in dem ein Emoji erschien: kein
+   Moment, keine Bewegung, und auf jedem Gerät ein anderes Bild.
+   ============================================================ */
+.mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-2); margin: var(--sp-3) 0; }
+.mine-tile {
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  perspective: 640px;
+  -webkit-tap-highlight-color: transparent;
+}
 .mine-tile:disabled { cursor: default; }
-.mine-tile.gem { background: rgba(var(--good-rgb), 0.18); border-color: rgba(var(--good-rgb), 0.5); }
-.mine-tile.bomb { background: rgba(214,90,90,0.15); border-color: rgba(214,90,90,0.4); opacity: 0.75; }
-.mine-tile.boom { background: rgba(214,90,90,0.4); border-color: #d65a5a; animation: crashShake 0.4s; }
+
+.mt-flip {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform var(--dur-3) var(--ease-out);
+}
+.mine-tile.auf .mt-flip { transform: rotateY(180deg); }
+
+.mt-back, .mt-front {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+/* Der Deckel: leichte Wölbung, eine feine Rautenstruktur und ein Niet in der
+   Mitte, damit er nicht wie ein leeres Rechteck wirkt. */
+.mt-back {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.035) 0 6px, transparent 6px 12px),
+    linear-gradient(180deg, #3f4756, #262c37);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -3px 0 rgba(0, 0, 0, 0.4);
+}
+.mt-back::after {
+  content: "";
+  width: 22%;
+  height: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05) 60%, transparent 70%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.mine-tile:not(:disabled):active .mt-flip { transform: scale(0.96); }
+@media (hover: hover) {
+  .mine-tile:not(:disabled):not(.auf):hover .mt-back {
+    background:
+      repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 6px, transparent 6px 12px),
+      linear-gradient(180deg, #4b5566, #2e3542);
+    border-color: rgba(255, 255, 255, 0.24);
+  }
+}
+
+.mt-front {
+  transform: rotateY(180deg);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, #2b3240, #1d222c);
+}
+.sp-icon { width: 62%; height: 62%; }
+
+.mine-tile.gem .mt-front {
+  background: radial-gradient(circle at 50% 45%, rgba(var(--good-rgb), 0.32), rgba(var(--good-rgb), 0.08) 65%, transparent),
+    linear-gradient(180deg, #23342c, #16211c);
+  border-color: rgba(var(--good-rgb), 0.55);
+}
+.mine-tile.gem .sp-icon { filter: drop-shadow(0 0 7px rgba(var(--good-rgb), 0.7)); }
+/* Nicht getroffene Bomben am Rundenende: sichtbar, aber zurückgenommen. */
+.mine-tile.bomb .mt-front { background: linear-gradient(180deg, #33232a, #201519); border-color: rgba(214, 90, 90, 0.35); }
+.mine-tile.bomb { opacity: 0.6; }
+.mine-tile.boom { opacity: 1; }
+.mine-tile.boom .mt-front {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 120, 70, 0.5), rgba(160, 40, 30, 0.35) 60%, transparent),
+    linear-gradient(180deg, #5a2320, #34120f);
+  border-color: #ff7a4e;
+}
+.mine-tile.boom .sp-icon { filter: drop-shadow(0 0 10px rgba(255, 140, 70, 0.95)); }
+
+html:not(.reduce-motion) .mine-tile.gem.auf .mt-front { animation: mtFunkeln 0.7s ease-out; }
+@keyframes mtFunkeln {
+  0% { box-shadow: 0 0 0 rgba(var(--good-rgb), 0); }
+  40% { box-shadow: 0 0 22px rgba(var(--good-rgb), 0.85); }
+  100% { box-shadow: 0 0 0 rgba(var(--good-rgb), 0); }
+}
+/* Die getroffene Bombe: Druckwelle plus Rütteln. */
+html:not(.reduce-motion) .mine-tile.boom { animation: crashShake 0.45s; }
+html:not(.reduce-motion) .mine-tile.boom .mt-front::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-md);
+  border: 2px solid rgba(255, 150, 90, 0.9);
+  animation: mtWelle 0.6s ease-out forwards;
+}
+@keyframes mtWelle {
+  0% { transform: scale(0.7); opacity: 1; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+/* Ohne Bewegung klappt nichts um, die Seite wird sofort getauscht. */
+html.reduce-motion .mt-flip { transition: none; }
 
 /* Pinco Ball. */
 .pinco-wrap { max-width: 720px; margin: 0 auto; }
@@ -4152,13 +4253,70 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .mem-turn.me { color: var(--good); }
 .mem-pot { text-align: center; margin-bottom: 8px; }
 .mem-grid { display: grid; gap: 8px; margin: 8px 0; }
-.mem-card { aspect-ratio: 1; border-radius: 12px; font-size: 1.9rem; cursor: pointer;
-  background: linear-gradient(180deg, #3a4150, #2a303c); border: 1px solid rgba(255,255,255,0.12);
-  transition: transform 0.12s, background 0.2s; display: flex; align-items: center; justify-content: center; }
-.mem-card:hover:not(:disabled) { transform: translateY(-2px); background: linear-gradient(180deg, #454d5e, #333a47); }
+/* Memory: echte Karten mit Rückseite und Umdrehen. Vorher ein leeres Viereck,
+   in dem beim Antippen ein Emoji erschien — bei einem Spiel, dessen ganzer
+   Vorgang das Umdrehen ist. */
+.mem-card {
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  perspective: 700px;
+  -webkit-tap-highlight-color: transparent;
+}
 .mem-card:disabled { cursor: default; }
-.mem-card.up { background: linear-gradient(180deg, #4a5568, #39414f); }
-.mem-card.matched { background: rgba(var(--good-rgb), 0.16); border-color: rgba(var(--good-rgb), 0.45); opacity: 0.85; }
+.mem-flip {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform var(--dur-3) var(--ease-out);
+}
+.mem-card.up .mem-flip { transform: rotateY(180deg); }
+.mem-back, .mem-front {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 1.9rem;
+}
+/* Rückseite wie ein Kartenrücken: Rautenmuster mit einem Rahmen darin. */
+.mem-back {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 5px, transparent 5px 10px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.05) 0 5px, transparent 5px 10px),
+    linear-gradient(180deg, #3f4756, #262c37);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -3px 0 rgba(0, 0, 0, 0.4);
+}
+.mem-back::after {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: var(--r-xs);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.mem-front {
+  transform: rotateY(180deg);
+  background: linear-gradient(180deg, #4a5568, #333b48);
+}
+@media (hover: hover) {
+  .mem-card:not(:disabled):not(.up):hover .mem-back { border-color: rgba(255, 255, 255, 0.3); }
+}
+.mem-card:not(:disabled):active .mem-flip { transform: scale(0.97); }
+.mem-card.up:not(:disabled):active .mem-flip { transform: rotateY(180deg) scale(0.97); }
+.mem-card.matched .mem-front {
+  background: radial-gradient(circle at 50% 45%, rgba(var(--good-rgb), 0.3), transparent 70%),
+    linear-gradient(180deg, #24402f, #16241b);
+  border-color: rgba(var(--good-rgb), 0.5);
+}
+.mem-card.matched { opacity: 0.85; }
+html.reduce-motion .mem-flip { transition: none; }
 .mem-result-emoji { font-size: 3.2rem; margin-bottom: 6px; }
 
 /* Schach-Duell. */
@@ -4827,31 +4985,82 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 }
 @keyframes twDragonBob { from { transform: translateY(-58%) scaleX(-1); } to { transform: translateY(-42%) scaleX(-1); } }
 .tw-tiles { display: flex; gap: 6px; flex: 1; }
+/* Kacheln mit zwei Seiten, wie in Mines: der Deckel klappt um, dahinter liegt
+   die gezeichnete Seite. */
 .tw-tile {
-  flex: 1; aspect-ratio: 2.6 / 1; min-height: 34px; border-radius: 10px; font-size: 1.25rem; cursor: default;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: linear-gradient(180deg, #3d3556, #262038);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 0 rgba(0,0,0,0.35);
-  display: flex; align-items: center; justify-content: center; transition: transform 0.08s, background 0.15s;
+  flex: 1;
+  aspect-ratio: 2.6 / 1;
+  min-height: 38px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: default;
+  perspective: 700px;
+  -webkit-tap-highlight-color: transparent;
 }
-.tw-row.active .tw-tile {
-  cursor: pointer; border-color: rgba(var(--accent-rgb), 0.5);
-  background: linear-gradient(180deg, #4e4270, #2e2647);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -3px 0 rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.35);
+.tw-flip {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform var(--dur-3) var(--ease-out);
 }
-.tw-row.active .tw-tile:hover { transform: translateY(-2px); background: linear-gradient(180deg, #5a4d80, #352c52); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-.tw-row.active .tw-tile:active { transform: translateY(1px) scale(0.98); }
-.tw-tile.egg { background: linear-gradient(180deg, #2f8f5a, #1b6b3f); border-color: #3fbf78; text-shadow: 0 0 10px rgba(120,255,180,0.8); }
-.tw-tile.safe-dim { background: linear-gradient(180deg, #24503a, #163826); opacity: 0.6; }
-.tw-tile.trap { background: linear-gradient(180deg, #7a2b2b, #4a1616); border-color: #d65a5a; }
-.tw-tile.covered { opacity: 0.5; }
-.tw-tile.pop { animation: twPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.tw-tile.auf .tw-flip { transform: rotateX(180deg); }
+.tw-back, .tw-front {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.tw-back {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 3px, transparent 3px 9px),
+    linear-gradient(180deg, #3d3556, #262038);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 -3px 0 rgba(0, 0, 0, 0.38);
+}
+.tw-front { transform: rotateX(180deg); background: linear-gradient(180deg, #2b2540, #1b1730); }
+.tw-tile .sp-icon { width: 26px; height: 26px; }
+
+.tw-row.active .tw-tile { cursor: pointer; }
+.tw-row.active .tw-back {
+  border-color: rgba(var(--accent-rgb), 0.5);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 3px, transparent 3px 9px),
+    linear-gradient(180deg, #514476, #302749);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -3px 0 rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+@media (hover: hover) {
+  .tw-row.active .tw-tile:hover .tw-back { background: linear-gradient(180deg, #5e5090, #3a3059); border-color: rgba(var(--accent-rgb), 0.85); }
+}
+.tw-row.active .tw-tile:active .tw-flip { transform: scale(0.97); }
+
+.tw-tile.egg .tw-front {
+  background: radial-gradient(circle at 50% 45%, rgba(63, 191, 120, 0.4), transparent 70%),
+    linear-gradient(180deg, #24603f, #143024);
+  border-color: #3fbf78;
+}
+.tw-tile.egg .sp-icon { filter: drop-shadow(0 0 6px rgba(120, 255, 180, 0.85)); }
+.tw-tile.safe-dim .tw-front { background: linear-gradient(180deg, #21402f, #142219); }
+.tw-tile.safe-dim { opacity: 0.55; }
+.tw-tile.trap .tw-front {
+  background: radial-gradient(circle at 50% 50%, rgba(214, 90, 90, 0.4), transparent 70%),
+    linear-gradient(180deg, #5c2020, #2f1010);
+  border-color: #d65a5a;
+}
+.tw-tile.covered { opacity: 0.45; }
+html.reduce-motion .tw-flip { transition: none; }
+.tw-tile.pop .tw-front { animation: twPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
 @keyframes twPop {
   0% { transform: scale(0.6); box-shadow: 0 0 0 rgba(120,255,180,0); }
   45% { transform: scale(1.16); box-shadow: 0 0 22px rgba(120,255,180,0.8); }
   100% { transform: scale(1); }
 }
-.tw-tile.boom { animation: twBoom 0.6s; box-shadow: 0 0 24px rgba(255,90,60,0.9); }
+.tw-tile.boom .tw-front { animation: twBoom 0.6s; box-shadow: 0 0 24px rgba(255,90,60,0.9); }
 @keyframes twBoom {
   0% { transform: scale(1); }
   15% { transform: scale(1.28) rotate(-4deg); background: #a33; }

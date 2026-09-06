@@ -40,6 +40,12 @@
       const b = document.createElement("button");
       b.className = "mem-card";
       b.dataset.i = i;
+      /*
+       * Zwei Seiten statt eines leeren Vierecks, in dem ein Emoji erscheint.
+       * Bei einem Spiel, das Memory heisst, ist das Umdrehen der Karte der
+       * ganze Vorgang — der darf man auch sehen.
+       */
+      b.innerHTML = `<span class="mem-flip"><span class="mem-back"></span><span class="mem-front"></span></span>`;
       b.addEventListener("click", () => flip(i));
       grid.appendChild(b);
     }
@@ -51,7 +57,9 @@
     for (const c of s.board) {
       const el = cards[c.i];
       if (!el) continue;
-      el.textContent = c.up ? c.face : "";
+      // Die Vorderseite behaelt ihr Motiv, auch wenn die Karte wieder
+      // zugeklappt wird: sonst blitzt sie beim Zurueckdrehen leer auf.
+      if (c.up) el.querySelector(".mem-front").textContent = c.face;
       el.classList.toggle("up", c.up);
       el.classList.toggle("matched", c.matched);
       el.disabled = !s.yourTurn || c.up;

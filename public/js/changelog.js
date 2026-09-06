@@ -19,6 +19,19 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-08-d",
+      datum: "8. September 2026",
+      titel: "Mines, Towers und Memory sehen aus wie Spiele",
+      gross: true,
+      intro: "Alle drei waren leere Vierecke, in denen beim Antippen ein Emoji erschien. Kein Moment, keine Bewegung, und auf jedem Gerät ein anderes Bild.",
+      items: [
+        { icon: "💣", titel: "Mines", text: "Die Felder haben jetzt einen echten Deckel mit Struktur und Wölbung und klappen beim Aufdecken um. Dahinter liegt ein gezeichneter Edelstein, der grün glüht, oder eine gezeichnete Bombe. Die Bombe, die du erwischst, bekommt eine Druckwelle und rüttelt; die anderen bleiben zurückgenommen im Hintergrund." },
+        { icon: "🗼", titel: "Towers", text: "Dieselben zwei Seiten, hier klappt die Kachel nach hinten weg. Ei und Totenkopf sind gezeichnet statt Emoji, das gewählte Feld leuchtet grün, Fallen rot." },
+        { icon: "🧠", titel: "Memory", text: "Endlich echte Karten: gemusterte Rückseite mit Rahmen, und beim Antippen dreht sich die Karte um. Bei einem Spiel, dessen ganzer Vorgang das Umdrehen ist, war das vorher nur ein Emoji, das im Viereck auftauchte." },
+        { icon: "♿", titel: "Weiterhin abschaltbar", text: "Wer in den Einstellungen „Bewegung reduzieren“ anhat, sieht dieselben Bilder ohne Drehung. Der Effekt entfällt, die Information nicht." },
+      ],
+    },
+    {
       id: "2026-09-08-c",
       datum: "8. September 2026",
       titel: "Rahmen sitzt, Mines und Towers aufgeräumt",

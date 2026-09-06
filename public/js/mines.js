@@ -56,6 +56,14 @@
   }
 
   // ── Aufbau ───────────────────────────────────────────────────────────────
+  /*
+   * Jede Kachel hat zwei Seiten und dreht sich beim Aufdecken um.
+   *
+   * Vorher war es ein leeres Viereck, in dem beim Aufdecken einfach ein Emoji
+   * erschien. Das sah nach nichts aus: kein Moment, keine Bewegung, und das
+   * Emoji sieht auf jedem Geraet anders aus. Jetzt liegt hinter dem Deckel
+   * eine gezeichnete Seite, und die Kachel klappt darauf um.
+   */
   function buildGrid() {
     const grid = $("#mines-grid");
     if (grid.childElementCount === TILES) return;
@@ -64,6 +72,7 @@
       const b = document.createElement("button");
       b.className = "mine-tile";
       b.dataset.tile = i;
+      b.innerHTML = `<span class="mt-flip"><span class="mt-back"></span><span class="mt-front"></span></span>`;
       b.addEventListener("click", () => reveal(i));
       grid.appendChild(b);
     }
@@ -124,18 +133,25 @@
     $("#mines-cashout").disabled = !v.cashout;
   }
 
+  const SYM = (id) => (Casino.icons ? Casino.icons.spielSymbol(id) : "");
+
   function paint(v) {
     const tiles = $("#mines-grid").children;
     for (let i = 0; i < TILES; i++) {
       const t = tiles[i];
       t.className = "mine-tile";
-      t.textContent = "";
+      t.querySelector(".mt-front").innerHTML = "";
       t.disabled = !!v.over;
     }
-    for (const idx of v.revealed || []) { tiles[idx].classList.add("gem"); tiles[idx].textContent = "💎"; }
+    for (const idx of v.revealed || []) {
+      tiles[idx].classList.add("gem", "auf");
+      tiles[idx].querySelector(".mt-front").innerHTML = SYM("edelstein");
+    }
     if (v.over && v.mineSet) {
       for (const idx of v.mineSet) {
-        if (!tiles[idx].classList.contains("gem")) { tiles[idx].classList.add("bomb"); tiles[idx].textContent = "💣"; }
+        if (tiles[idx].classList.contains("gem")) continue;
+        tiles[idx].classList.add("bomb", "auf");
+        tiles[idx].querySelector(".mt-front").innerHTML = SYM("bombe");
       }
       if (v.bust && v.tile != null) tiles[v.tile].classList.add("boom");
     }
@@ -262,7 +278,11 @@
         $("#mines-error").textContent = "";
         setActive(false);
         const tiles = $("#mines-grid").children;
-        for (let i = 0; i < TILES; i++) { tiles[i].className = "mine-tile"; tiles[i].textContent = ""; tiles[i].disabled = false; }
+        for (let i = 0; i < TILES; i++) {
+          tiles[i].className = "mine-tile";
+          tiles[i].querySelector(".mt-front").innerHTML = "";
+          tiles[i].disabled = false;
+        }
         renderTop({ multiplier: 1, cashout: 0, nextMultiplier: null });
       }
     });
