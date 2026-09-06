@@ -175,6 +175,7 @@ function resumeSession(token) {
   if (!key) return { ok: false, error: "Sitzung abgelaufen." };
   const acc = accounts[key];
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  acc.lastSeen = Date.now();
   return { ok: true, account: publicAccount(acc), token: issueToken(acc.name) };
 }
 
@@ -362,7 +363,28 @@ function publicAccount(acc) {
     avatar: acc.avatar || "🙂",
     nameColor: acc.nameColor || null,
     prefs: require("./prefs").get(acc),
+    lastSeen: acc.lastSeen || null,
   };
+}
+
+/**
+ * Merkt, wann jemand zuletzt da war.
+ *
+ * Bis jetzt hat das niemand aufgeschrieben — man konnte nicht sehen, wer heute
+ * schon gespielt hat oder wer seit Wochen weg ist. Fuer eine Freundesrunde ist
+ * das die naheliegendste Information ueberhaupt.
+ *
+ * Wird beim Anmelden und bei jeder gewerteten Runde aufgefrischt, aber
+ * hoechstens einmal pro Minute geschrieben: sonst schreibt jede Slot-Drehung
+ * die Datei neu.
+ */
+const SEEN_MIN_ABSTAND = 60 * 1000;
+function touchSeen(name) {
+  const acc = get(name);
+  if (!acc) return;
+  const now = Date.now();
+  if (acc.lastSeen && now - acc.lastSeen < SEEN_MIN_ABSTAND) return;
+  acc.lastSeen = now;
 }
 
 function bonusAvailable(acc) {
@@ -414,6 +436,7 @@ function login(name, pin) {
     return { ok: false, error: "Falsches Passwort für diesen Namen." };
   }
   const warnFails = recordAuthSuccess(acc);
+  acc.lastSeen = Date.now();
   return { ok: true, created: false, account: publicAccount(acc), token: issueToken(acc.name), warnFails };
 }
 
@@ -527,6 +550,7 @@ const onHand = (cb) => handListeners.push(cb);
 function recordHand(name, winnings, house = true, game = null, meta = null) {
   const acc = get(name);
   if (!acc) return;
+  touchSeen(name);
   acc.stats = acc.stats || { gamesPlayed: 0, handsWon: 0, biggestWin: 0, biggestLoss: 0 };
   if (acc.stats.biggestLoss === undefined) acc.stats.biggestLoss = 0;
   acc.stats.gamesPlayed += 1;
@@ -908,6 +932,7 @@ function unlock(name, machineId, cost) {
 
 module.exports = {
   STARTING_CHIPS,
+  touchSeen,
   DAILY_BONUS,
   DAILY_BONUS_COOLDOWN_MS,
   save,

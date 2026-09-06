@@ -95,7 +95,7 @@ function setupRoulette(io, accounts) {
         accounts.adjustChips(socket.data.account, totalReturn);
       }
       // Record every spin (win or loss) so gamesPlayed stays accurate.
-      accounts.recordHand(socket.data.account, totalReturn - totalBet, true, "roulette");
+      accounts.recordHand(socket.data.account, totalReturn - totalBet, true, "roulette", { einsatz: totalBet });
 
       ack({
         ok: true,

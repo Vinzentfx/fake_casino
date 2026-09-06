@@ -634,7 +634,7 @@ function finishRace() {
       const r = accounts.adjustChips(b.key, payout);
       if (r.ok) pushAccount(b.key, r.account);
     }
-    accounts.recordHand(b.key, payout - b.amount, true, "horses");
+    accounts.recordHand(b.key, payout - b.amount, true, "horses", { einsatz: b.amount });
   }
 
   // Verschleiß + Statistik + Erfolgs-Handicap + Events + Rente.

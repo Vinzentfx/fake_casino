@@ -107,16 +107,21 @@ function setupPinco(io, accounts) {
     const acc = accounts.get(socket.data.account);
     return (acc && acc.name) || socket.data.displayName || "?";
   }
-  function recordPincoBall(key, net) {
+  // Der Einsatz wird ueber die Runde mitgezaehlt, damit der Wochenrekord das
+  // Vielfache ausrechnen kann. Ohne ihn kaeme dort nur der Netto-Gewinn an.
+  function recordPincoBall(key, net, einsatz = 0) {
     const acc = accounts.get(key);
     if (!acc) return;
     acc.pincoRoundBalls = (acc.pincoRoundBalls || 0) + 1;
     acc.pincoRoundNet = (acc.pincoRoundNet || 0) + net;
+    acc.pincoRoundBet = (acc.pincoRoundBet || 0) + einsatz;
     if (acc.pincoRoundBalls >= BALLS_PER_RECORDED_ROUND) {
       const roundNet = acc.pincoRoundNet || 0;
+      const roundBet = acc.pincoRoundBet || 0;
       acc.pincoRoundBalls = 0;
       acc.pincoRoundNet = 0;
-      accounts.recordHand(key, roundNet, true, "pinco", { balls: BALLS_PER_RECORDED_ROUND });
+      acc.pincoRoundBet = 0;
+      accounts.recordHand(key, roundNet, true, "pinco", { balls: BALLS_PER_RECORDED_ROUND, einsatz: roundBet });
     } else {
       accounts.save();
     }
@@ -182,7 +187,7 @@ function setupPinco(io, accounts) {
         const credit = accounts.adjustChips(socket.data.account, drop.payout);
         if (credit.ok) account = credit.account;
       }
-      recordPincoBall(socket.data.account, drop.payout - bet);
+      recordPincoBall(socket.data.account, drop.payout - bet, bet);
 
       const room = currentRoom(socket);
       const roomPlayer = room && room.players.get(socket.data.account);

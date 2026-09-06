@@ -322,7 +322,8 @@ function settleAll(session, accounts) {
     }
   }
 
-  accounts.recordHand(session.name, net, true, "blackjack");
+  const gesamtEinsatz = session.playerHands.reduce((s2, h) => s2 + (h.bet || 0), 0);
+  accounts.recordHand(session.name, net, true, "blackjack", { einsatz: gesamtEinsatz });
 
   session.lastNet = net;
   session.phase = "done";

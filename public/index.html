@@ -164,6 +164,16 @@
         <nav class="cat-tabs" id="cat-tabs" role="tablist" aria-label="Spielkategorien"></nav>
         <div class="game-grid" id="lobby-games"></div>
 
+        <!-- Wochenrekorde: der einzige Wettbewerb, fuer den niemand
+             gleichzeitig online sein muss. Inhalt kommt aus js/records.js. -->
+        <section class="recs hidden" id="lobby-records">
+          <div class="recs-head">
+            <h2 class="section-title">🏅 Wochenrekorde</h2>
+            <small class="muted" id="recs-hint"></small>
+          </div>
+          <div class="recs-grid" id="recs-grid"></div>
+        </section>
+
         <!-- Was gerade läuft. Steht bewusst UNTER den Spielen: die beiden
              Kästen sind meistens leer und haben oben nur Platz gefressen. -->
         <section id="lobby-live">
@@ -189,6 +199,9 @@
             <div class="online-list" id="online-list">
               <span class="muted small">Lädt…</span>
             </div>
+            <button class="chip-btn" id="ruf-btn" type="button" hidden
+                    title="Alle anpingen, die Benachrichtigungen an haben">📣 Mitspieler rufen</button>
+            <div class="online-last hidden" id="online-last"></div>
           </div>
         </section>
       </div>
@@ -1247,6 +1260,11 @@
         </label>
 
         <hr class="settings-rule" />
+        <h3 class="settings-head">🔔 Benachrichtigungen</h3>
+        <p class="hint" id="push-hint">Prüfe…</p>
+        <div id="push-box"></div>
+
+        <hr class="settings-rule" />
         <h3>🔑 Passwort ändern</h3>
         <p class="hint" style="margin-top:-4px">Tipp: Dein Name steht öffentlich in der Bestenliste — eine 4-stellige PIN ist leicht zu erraten. Nimm ein richtiges Passwort (6–24 Zeichen).</p>
         <form id="change-pin-form" autocomplete="off">
@@ -1695,6 +1713,8 @@
   <script defer src="/js/feed.js"></script>
   <script defer src="/js/lobby.js"></script>
   <script defer src="/js/stats.js"></script>
+  <script defer src="/js/records.js"></script>
+  <script defer src="/js/push.js"></script>
   <script defer src="/js/quests.js"></script>
   <script defer src="/js/season.js"></script>
   <script defer src="/js/crash.js"></script>

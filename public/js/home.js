@@ -210,6 +210,7 @@
       zeichneSpiele();
       if (Casino._loadLobbies) Casino._loadLobbies();
       if (Casino._loadFeed) Casino._loadFeed();
+      if (Casino._loadRecords) Casino._loadRecords();
       if (Casino._renderHero) Casino._renderHero();
     },
   });

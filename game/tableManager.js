@@ -21,6 +21,25 @@ const MAX_BUYIN = 100000;
 const MAX_BB = 2000;
 const TURN_MS = 30000; // auto-fold a stalling player after 30s
 
+/**
+ * Wer war zuletzt da, ist aber gerade nicht online.
+ *
+ * Das Casino sah bisher immer leer aus, wenn man allein reinkam, und man
+ * konnte nicht unterscheiden zwischen "alle sind weg" und "vor zwanzig
+ * Minuten war hier noch was los". Genau diese Auskunft entscheidet, ob es
+ * sich lohnt, kurz zu warten oder die anderen zu rufen.
+ */
+function kuerzlichDa(accounts, online, grenzeTage = 7, max = 6) {
+  const jetzt = Date.now();
+  const grenze = grenzeTage * 86400000;
+  const drin = new Set((online || []).map((p) => String(p.name || "").toLowerCase()));
+  return accounts.rawAll()
+    .filter((a) => a.lastSeen && jetzt - a.lastSeen < grenze && !drin.has(String(a.name || "").toLowerCase()))
+    .sort((a, b) => b.lastSeen - a.lastSeen)
+    .slice(0, max)
+    .map((a) => ({ name: a.name, avatar: a.avatar || "🙂", nameColor: a.nameColor || null, lastSeen: a.lastSeen }));
+}
+
 function setupPoker(io, accounts) {
   /** code -> { table, sockets:Set<Socket>, timer } */
   const tables = new Map();
@@ -285,7 +304,7 @@ function setupPoker(io, accounts) {
     });
 
     socket.on("presence:list", (ack) => {
-      if (typeof ack === "function") ack({ ok: true, online: onlinePlayers() });
+      if (typeof ack === "function") ack({ ok: true, online: onlinePlayers(), zuletzt: kuerzlichDa(accounts, onlinePlayers()) });
     });
 
     socket.on("poker:create", ({ smallBlind = 10, bigBlind = 20 } = {}, ack) => {
@@ -309,6 +328,15 @@ function setupPoker(io, accounts) {
       registerLobby(code);
       ack && ack({ ok: true, code });
       broadcast(code);
+      // Ein frisch aufgemachter Tisch ist genau der Moment, in dem jemand auf
+      // Mitspieler wartet. Wer nicht da ist, erfaehrt es sonst nie.
+      try {
+        require("./push").anAlle("tisch", {
+          title: `🃏 ${entry.hostName} macht einen Poker-Tisch auf`,
+          body: `Blinds ${sb}/${bb}. Code ${code}.`,
+          url: "/",
+        }, { ausser: [socket.data.account] });
+      } catch {}
     });
 
     // Poker bots removed: their stacks were house-funded, so beating them

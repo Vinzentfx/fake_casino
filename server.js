@@ -51,6 +51,8 @@ const achievements = require("./game/achievements");
 const city = require("./game/city");
 const quests = require("./game/quests");
 const { setupSeason } = require("./game/season");
+const { setupRecords } = require("./game/records");
+const push = require("./game/push");
 const feed = require("./game/feed");
 const liveops = require("./game/liveops");
 const ipbans = require("./game/ipbans");
@@ -397,6 +399,8 @@ setupPrefs(io, accounts);
 feed.setupFeed(io, accounts);
 achievements.setupAchievements(io, accounts);
 setupSeason(io, accounts);
+setupRecords(io, accounts);
+push.setupPush(io, accounts);
 quests.setupQuests(io, accounts);
 liveops.setup(io, accounts, heist);
 

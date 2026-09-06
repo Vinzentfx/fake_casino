@@ -249,7 +249,7 @@ function settle(m, accounts, io) {
       const boost = accounts.buffMult(b.user, "winBoost");
       if (boost > 1) payout = Math.round(payout * boost);
       accounts.adjustChips(b.user, payout);
-      accounts.recordHand(b.user, payout - b.amount, true, "sportwetten"); // house game → casino rake on the margin
+      accounts.recordHand(b.user, payout - b.amount, true, "sportwetten", { einsatz: b.amount }); // house game → casino rake on the margin
       b.won = true; b.payout = payout;
       winners.add(b.user);
     } else {
@@ -548,7 +548,7 @@ function settleCombos(accounts, io) {
       const boost = accounts.buffMult(c.user, "winBoost");
       if (boost > 1) payout = Math.round(payout * boost);
       accounts.adjustChips(c.user, payout);
-      accounts.recordHand(c.user, payout - c.amount, true, "sportwetten");
+      accounts.recordHand(c.user, payout - c.amount, true, "sportwetten", { einsatz: c.amount });
       c.payout = payout;
       for (const s of io.of("/").sockets.values()) {
         if (s.data.account === c.user) { const a = accounts.get(c.user); if (a) s.emit("account:update", { account: accounts.publicAccount(a) }); }
@@ -641,7 +641,7 @@ function settleRestoredSingle(b, accounts) {
     let payout = Math.floor(b.amount * b.odds);
     const boost = accounts.buffMult(b.user, "winBoost"); if (boost > 1) payout = Math.round(payout * boost);
     accounts.adjustChips(b.user, payout);
-    accounts.recordHand(b.user, payout - b.amount, true, "sportwetten");
+    accounts.recordHand(b.user, payout - b.amount, true, "sportwetten", { einsatz: b.amount });
   } else accounts.recordHand(b.user, -b.amount, true, "sportwetten");
   return true;
 }

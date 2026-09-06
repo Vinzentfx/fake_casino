@@ -73,6 +73,17 @@ function onlineCount() {
   return n;
 }
 
+/**
+ * Push nur fuer Events, die lange genug laufen, dass Nachkommen sich lohnt.
+ * Chip-Regen, Heist und Tresorkampf dauern unter zwei Minuten — wer da erst
+ * durch die Nachricht aufwacht, kommt zu spaet und aergert sich nur.
+ */
+function meldePush(titel, text) {
+  try {
+    require("./push").anAlle("live", { title: titel, body: text, url: "/" });
+  } catch {}
+}
+
 // ─── Happy Hour ─────────────────────────────────────────────────────────────
 const happyActive = () => state.happyUntil > Date.now();
 /** Quest reward multiplier (used by quests.js). */
@@ -83,6 +94,7 @@ function startHappy(minutes) {
   state.happyUntil = Date.now() + mins * 60000;
   save();
   if (_io) { chat.announce(_io, `🍹 HAPPY HOUR! Für ${mins} Minuten gibt's DOPPELTE Quest-Belohnungen — ran an die Aufträge!`); broadcast(); }
+  meldePush("🍹 Happy Hour läuft", `${mins} Minuten lang doppelte Quest-Belohnungen.`);
 }
 function stopHappy() {
   state.happyUntil = 0;
@@ -102,6 +114,7 @@ function startTourney(minutes, prize, opts = {}) {
   save();
   const prefix = opts.auto ? "🎲 Zufälliges " : "";
   if (_io) { chat.announce(_io, `🏁 ${prefix}SLOT-TURNIER gestartet! ${mins} Min — der größte Einzelgewinn holt ${pr.toLocaleString("de-DE")} 🪙. Los!`); broadcast(); }
+  meldePush("🏁 Slot-Turnier läuft", `${mins} Minuten, ${pr.toLocaleString("de-DE")} 🪙 für das beste Vielfache.`);
   return { ok: true };
 }
 

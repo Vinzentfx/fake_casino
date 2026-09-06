@@ -70,7 +70,13 @@ ssh -i ~/.ssh/id_ed25519_casino root@206.189.60.121 casino-deploy
 ```
 
 `casino-deploy` macht ein Backup, holt den Code, installiert Abhängigkeiten und
-startet den Dienst neu. Während des Neustarts sehen Besucher etwa drei Sekunden
+startet den Dienst neu.
+
+Seit 6.9.2026 hängt eine neue Abhängigkeit dran (`web-push`), die kommt über den
+Installationsschritt automatisch mit. Beim ersten Start danach legt der Server
+`data/vapid.json` an — den Schlüssel für Benachrichtigungen. Die Datei liegt in
+`data/`, ist also gitignored und wird mitgesichert. Löscht man sie, muss sich
+jedes Gerät neu anmelden. Während des Neustarts sehen Besucher etwa drei Sekunden
 lang einen 502. Nicht mitten in einer Pokerrunde deployen.
 
 ## Backups

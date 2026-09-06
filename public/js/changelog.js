@@ -19,6 +19,23 @@
 (function () {
   const RELEASES = [
     {
+      // Zweiter Eintrag am selben Tag. Die Kennung bleibt sortierbar: sie ist
+      // als Zeichenkette groesser als "2026-09-06" und kleiner als der
+      // naechste Tag, das Comeback-Fenster zeigt sie also genau einmal.
+      id: "2026-09-06-abend",
+      datum: "6. September 2026",
+      titel: "Gegeneinander spielen, ohne gleichzeitig da zu sein",
+      gross: true,
+      intro: "Fast alles Gesellige hier verlangte, dass zwei Leute zur selben Zeit online sind. Das passiert praktisch nie. Diese drei Sachen ändern das.",
+      items: [
+        { icon: "🏅", titel: "Wochenrekorde", text: "Jedes Spiel merkt sich eine Woche lang die beste Runde, mit Namen. Du kommst rein, siehst was die anderen hinterlassen haben, und kannst es schlagen. Gewertet wird nicht der größte Gewinn, sondern das beste Vielfache deines Einsatzes: mit 200 Chips hast du dieselbe Chance wie jemand mit zwei Millionen. Steht in der Lobby unter den Spielen, jeden Montag wieder frei." },
+        { icon: "🔔", titel: "Benachrichtigungen", text: "Das Casino kann sich melden, wenn wirklich etwas los ist: ein Turnier oder eine Happy Hour läuft, jemand macht einen Poker-Tisch auf, jemand hat deinen Wochenrekord geschlagen, oder deine Login-Serie reißt gleich. Jeder Anlass ist einzeln abschaltbar, und solange du im Casino bist, kommt gar nichts. Auf dem iPad musst du die Seite dafür einmal über Teilen → \"Zum Home-Bildschirm\" ablegen, das verlangt Safari so. Einschalten in den Einstellungen." },
+        { icon: "📣", titel: "Mitspieler rufen", text: "Ein Knopf unten in der Lobby. Er schickt allen, die Benachrichtigungen anhaben, kurz Bescheid, dass du da bist. Höchstens alle drei Stunden pro Person, und wenn ihn gerade niemand bekommen kann, bleibt er dir erhalten." },
+        { icon: "👋", titel: "Zuletzt hier", text: "Unter der Online-Liste steht jetzt, wer in den letzten Tagen da war und wann. Damit man sieht, ob hier vor zwanzig Minuten noch etwas los war oder seit einer Woche nichts mehr." },
+        { icon: "🏆", titel: "Achievements auf dem iPad lesbar", text: "Wofür es ein Achievement gibt, stand nur im Tooltip — also nur sichtbar, wenn man mit einer Maus darauf zeigt. Auf dem iPad war die Information damit gar nicht erreichbar. Jetzt steht die Bedingung immer auf der Karte, dazu die Belohnung und bei den geschafften das Datum." },
+      ],
+    },
+    {
       id: "2026-09-06",
       datum: "6. September 2026",
       titel: "Das Casino ist zurück",

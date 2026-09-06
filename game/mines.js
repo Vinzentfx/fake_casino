@@ -66,7 +66,7 @@ function setupMines(io, accounts) {
       if (g.revealed.length > 0) {
         const payout = Math.floor(g.bet * multiplier(g.mines, g.revealed.length));
         accounts.adjustChips(key, payout);
-        accounts.recordHand(key, payout - g.bet, true, "mines");
+        accounts.recordHand(key, payout - g.bet, true, "mines", { einsatz: g.bet });
       } else {
         accounts.adjustChips(key, g.bet);
       }
@@ -143,7 +143,7 @@ function setupMines(io, accounts) {
         const payout = Math.floor(g.bet * multiplier(g.mines, g.revealed.length));
         g.over = true;
         const r = accounts.adjustChips(socket.data.account, payout);
-        accounts.recordHand(socket.data.account, payout - g.bet, true, "mines");
+        accounts.recordHand(socket.data.account, payout - g.bet, true, "mines", { einsatz: g.bet });
         return ack({ ...view(g, { tile, cleared: true, payout, mineSet: [...g.mineSet] }), account: r.account });
       }
       ack({ ...view(g, { tile }) });
@@ -158,7 +158,7 @@ function setupMines(io, accounts) {
       const payout = Math.floor(g.bet * mult);
       g.over = true;
       const r = accounts.adjustChips(socket.data.account, payout);
-      accounts.recordHand(socket.data.account, payout - g.bet, true, "mines");
+      accounts.recordHand(socket.data.account, payout - g.bet, true, "mines", { einsatz: g.bet });
       ack({ ...view(g, { cashedOut: true, payout, mult, mineSet: [...g.mineSet] }), account: r.account });
     });
   });

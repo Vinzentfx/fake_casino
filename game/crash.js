@@ -105,7 +105,7 @@ function setupCrash(io, accounts) {
     b.cashedAt = mult;
     const payout = Math.round(b.amount * mult);
     accounts.adjustChips(key, payout);
-    accounts.recordHand(key, payout - b.amount, true, "crash");
+    accounts.recordHand(key, payout - b.amount, true, "crash", { einsatz: b.amount });
     return payout;
   }
 

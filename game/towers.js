@@ -81,7 +81,7 @@ function setupTowers(io, accounts) {
       if (g.level > 0) {
         const payout = Math.floor(g.bet * multiplier(diff, g.level));
         accounts.adjustChips(key, payout);
-        accounts.recordHand(key, payout - g.bet, true, "towers");
+        accounts.recordHand(key, payout - g.bet, true, "towers", { einsatz: g.bet });
       } else {
         accounts.adjustChips(key, g.bet); // nichts aufgedeckt → einfach zurück
       }
@@ -172,7 +172,7 @@ function setupTowers(io, accounts) {
         const payout = Math.floor(g.bet * multiplier(diff, g.level));
         g.over = true;
         const r = accounts.adjustChips(socket.data.account, payout);
-        accounts.recordHand(socket.data.account, payout - g.bet, true, "towers");
+        accounts.recordHand(socket.data.account, payout - g.bet, true, "towers", { einsatz: g.bet });
         return ack({ ...view(g, { tile, row: g.level - 1, cleared: true, payout, trapLayout: g.traps.map((s) => [...s]) }), account: r.account });
       }
       ack({ ...view(g, { tile, row: g.level - 1 }) });
@@ -188,7 +188,7 @@ function setupTowers(io, accounts) {
       const payout = Math.floor(g.bet * mult);
       g.over = true;
       const r = accounts.adjustChips(socket.data.account, payout);
-      accounts.recordHand(socket.data.account, payout - g.bet, true, "towers");
+      accounts.recordHand(socket.data.account, payout - g.bet, true, "towers", { einsatz: g.bet });
       ack({ ...view(g, { cashedOut: true, payout, mult, trapLayout: g.traps.map((s) => [...s]) }), account: r.account });
     });
   });

@@ -990,7 +990,7 @@ function setupSlots(io, accounts) {
         if (credit.ok) {
           balance = credit.account.chips;
           if (!showcase) {
-            accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots", { free: inFree });
+            accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots", { free: inFree, einsatz: inFree ? 0 : spinBet });
             liveops.recordTourneyWin(socket.data.account, totalWin, spinBet); // ranked by win multiple
           }
         }

@@ -61,7 +61,7 @@ window.Casino.screens.setGuard((name) => {
 window.Casino.screens.register("leaderboard", { onEnter: () => loadLeaderboard() });
 window.Casino.screens.register("profile", { onEnter: () => renderProfile() });
 window.Casino.screens.register("admin", { onEnter: () => loadAdminAccounts() });
-window.Casino.screens.register("settings", { onEnter: () => renderThemePicker() });
+window.Casino.screens.register("settings", { onEnter: () => { renderThemePicker(); if (window.Casino._loadPush) window.Casino._loadPush(); } });
 window.Casino.screens.register("updates", { onEnter: () => renderUpdates() });
 window.Casino.screens.register("calendar", { onEnter: () => loadCalendar() });
 window.Casino.screens.register("lobby", {
@@ -575,6 +575,38 @@ function renderOnlinePlayers(players = []) {
   }).join("");
 }
 
+/**
+ * "Zuletzt hier" unter der Online-Liste.
+ *
+ * Ein leeres Casino sagte bisher nur "Niemand online" und man wusste nicht, ob
+ * die anderen vor zehn Minuten oder vor zwei Wochen da waren. Mit der Zeile
+ * kann man entscheiden, ob es sich lohnt zu rufen oder kurz zu warten.
+ */
+function renderZuletztDa(liste = []) {
+  const el = $("#online-last");
+  if (!el) return;
+  if (!liste.length) { el.classList.add("hidden"); el.innerHTML = ""; return; }
+  const wann = (ts) => {
+    const min = Math.floor((Date.now() - ts) / 60000);
+    if (min < 60) return `vor ${Math.max(1, min)} Min`;
+    const std = Math.floor(min / 60);
+    if (std < 24) return `vor ${std} Std`;
+    const tage = Math.floor(std / 24);
+    return tage === 1 ? "gestern" : `vor ${tage} Tagen`;
+  };
+  el.classList.remove("hidden");
+  el.innerHTML = '<span class="muted small">Zuletzt hier:</span>' + liste.map((p) => {
+    const color = p.nameColor ? ` style="color:${p.nameColor}"` : "";
+    return `<button class="online-player last-player" type="button" data-player-profile="${escapeHtml(p.name || "")}">` +
+      `<span>${escapeHtml(p.avatar || "🙂")}</span><b${color}>${escapeHtml(p.name || "?")}</b><em>${wann(p.lastSeen)}</em></button>`;
+  }).join("");
+}
+
+$("#online-last")?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-player-profile]");
+  if (btn) openPlayerProfile(btn.dataset.playerProfile);
+});
+
 $("#online-list")?.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-player-profile]");
   if (!btn) return;
@@ -585,6 +617,7 @@ function requestPresence() {
   socket.emit("presence:list", (res) => {
     if (!res || !res.ok) return;
     renderOnlinePlayers(res.online || []);
+    renderZuletztDa(res.zuletzt || []);
     if (window.Casino._lobbyPresence) window.Casino._lobbyPresence(res.online || []);
   });
 }
@@ -737,11 +770,29 @@ function renderAchievements() {
     const zu = res.list.filter((a) => !a.unlocked);
     if (zaehler) zaehler.textContent = `${offen.length} von ${res.list.length}`;
 
+    /*
+     * Die Bedingung stand nur bei den GESPERRTEN in der Karte; bei den
+     * freigeschalteten stand dort ein Haken. Wofuer man eines bekommen hat,
+     * war ausschliesslich im title-Attribut zu sehen — also nur beim
+     * Draufzeigen mit der Maus. Auf dem iPad gibt es kein Draufzeigen, dort
+     * war die Information damit gar nicht erreichbar.
+     *
+     * Jetzt steht die Bedingung immer da, dazu die Belohnung und bei den
+     * freigeschalteten das Datum.
+     */
     const karte = (a) => {
       const sel = res.badge === a.id;
-      return `<div class="badge ${a.unlocked ? "on" : ""}${sel ? " selected" : ""}" data-ach="${a.id}" data-unlocked="${a.unlocked ? 1 : 0}" title="${escapeHtml(a.desc)} · +${a.reward.toLocaleString("de-DE")} 🪙">` +
-        `<span class="badge-emoji">${a.unlocked ? a.emoji : "🔒"}</span><span class="badge-label">${escapeHtml(a.label)}</span>` +
-        `<small>${sel ? "★ in der Bestenliste" : a.unlocked ? "✓" : escapeHtml(a.desc)}</small></div>`;
+      const wann = a.at ? new Date(a.at).toLocaleDateString("de-DE") : null;
+      const zeile = sel
+        ? "★ Wird in der Bestenliste getragen"
+        : a.unlocked
+          ? `✓ Geschafft${wann ? " am " + wann : ""}`
+          : `+${a.reward.toLocaleString("de-DE")} 🪙`;
+      return `<div class="badge ${a.unlocked ? "on" : ""}${sel ? " selected" : ""}" data-ach="${a.id}" data-unlocked="${a.unlocked ? 1 : 0}">` +
+        `<span class="badge-emoji">${a.unlocked ? a.emoji : "🔒"}</span>` +
+        `<span class="badge-label">${escapeHtml(a.label)}</span>` +
+        `<span class="badge-desc">${escapeHtml(a.desc)}</span>` +
+        `<small>${zeile}</small></div>`;
     };
 
     const zeigen = achAlleZeigen ? [...offen, ...zu] : offen;
