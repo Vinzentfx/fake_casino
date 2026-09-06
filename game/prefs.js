@@ -22,6 +22,12 @@ const DEFAULTS = {
   volume: 0.8,
   reduceMotion: false,
   favorites: [],
+  // Zuletzt gelesener Update-Eintrag. Gehoert an den Account und nicht nur in
+  // den localStorage: Safari raeumt bei Seiten, die man laenger nicht besucht
+  // hat, nach sieben Tagen allen lokalen Speicher weg. Wer zwei Monate Pause
+  // macht, kommt also ohne Merkwert zurueck — und genau der soll dann sein
+  // Comeback-Fenster sehen.
+  seenUpdate: null,
 };
 
 /** Nimmt entgegen, was der Client schickt, und gibt nur Sauberes zurück. */
@@ -35,6 +41,9 @@ function sanitize(input, current = {}) {
     out.volume = Math.min(1, Math.max(0, input.volume));
   }
   if (typeof input.reduceMotion === "boolean") out.reduceMotion = input.reduceMotion;
+  if (typeof input.seenUpdate === "string" && /^[0-9A-Za-z-]{1,40}$/.test(input.seenUpdate)) {
+    out.seenUpdate = input.seenUpdate;
+  }
   if (Array.isArray(input.favorites)) {
     out.favorites = input.favorites
       .filter((f) => typeof f === "string" && /^[a-z]{2,20}$/.test(f))

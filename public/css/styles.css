@@ -3448,6 +3448,16 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .update-release-head:first-child { margin-top: 0; }
 .update-release-head b { color: var(--accent-strong); font-size: var(--fs-md); }
 .update-release-head small { color: var(--text-mute); font-size: var(--fs-xs); white-space: nowrap; }
+.update-more {
+  margin: var(--sp-3) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+.update-more b { color: var(--accent-strong); }
 .update-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .update-actions .btn-primary { flex: 1; min-width: 150px; }
 .update-actions .chip-btn { flex: 1; min-width: 150px; }

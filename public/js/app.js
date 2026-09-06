@@ -318,12 +318,46 @@ function setAccount(acc, token) {
 // Update-Historie: Comeback-Fenster und Updates-Tab
 // ============================================================
 const SEEN_KEY = "casino_seen_update";
+// Wie viele Updates das Fenster hoechstens auf einmal zeigt. Wer ein halbes
+// Jahr weg war, soll nicht durch zwoelf Bloecke scrollen muessen; der Rest
+// steht im Updates-Tab.
+const MAX_IM_FENSTER = 4;
 
+/**
+ * Ab welchem Stand gilt etwas als neu?
+ *
+ * Drei Quellen, in dieser Reihenfolge:
+ *   1. der Account. Ueberlebt Safaris Aufraeumen und gilt geraeteuebergreifend.
+ *   2. der localStorage. Fuer alles, was noch vor dieser Aenderung entstand.
+ *   3. der Tag der Kontoeroeffnung.
+ *
+ * Der dritte Fall ist der wichtige: Safari loescht bei Seiten, die man laenger
+ * nicht besucht hat, nach sieben Tagen allen lokalen Speicher. Wer zwei Monate
+ * Pause macht, kommt also OHNE Merkwert zurueck. Vorher galt das als "neuer
+ * Spieler" und das Comeback-Fenster wurde stillschweigend uebersprungen —
+ * genau bei den Leuten, fuer die es gedacht ist.
+ */
 function gesehenerStand() {
-  try { return localStorage.getItem(SEEN_KEY); } catch { return null; }
+  const acc = state.account;
+  if (acc && acc.prefs && acc.prefs.seenUpdate) return acc.prefs.seenUpdate;
+  try {
+    const lokal = localStorage.getItem(SEEN_KEY);
+    if (lokal) return lokal;
+  } catch {}
+  if (acc && acc.createdAt) {
+    // Wer heute erst angelegt wurde, hat nichts verpasst: sein Eroeffnungstag
+    // ist dann >= dem neuesten Eintrag und es bleibt alles stumm.
+    return new Date(acc.createdAt).toISOString().slice(0, 10);
+  }
+  return null;
 }
+
 function merkeStand(id) {
   try { localStorage.setItem(SEEN_KEY, id); } catch {}
+  const acc = state.account;
+  if (!acc) return;
+  acc.prefs = { ...(acc.prefs || {}), seenUpdate: id };
+  window.Casino.savePrefs({ seenUpdate: id });
 }
 
 /** Ein einzelner Punkt eines Updates. */
@@ -342,11 +376,12 @@ function maybeShowUpdate() {
   const cl = window.Casino.changelog;
   if (!cl) return;
   const gesehen = gesehenerStand();
-  // Wer noch nie hier war, bekommt das Onboarding, nicht die Historie.
-  if (!gesehen) { merkeStand(cl.neueste); return; }
+  if (!gesehen) return; // ohne Account gibt es nichts zu vergleichen
 
-  const neu = cl.neuSeit(gesehen);
-  if (!neu.length) return;
+  const alleNeu = cl.neuSeit(gesehen);
+  if (!alleNeu.length) return;
+  const neu = alleNeu.slice(0, MAX_IM_FENSTER);
+  const weitere = alleNeu.length - neu.length;
 
   const modal = $("#update-modal");
   if (!modal) return;
@@ -354,11 +389,11 @@ function maybeShowUpdate() {
   // "Comeback" nur, wenn wirklich etwas verpasst wurde: mehr als ein Update
   // oder eines, das als grosses markiert ist. Bei einer kleinen Aenderung
   // waere die Begruessung uebertrieben.
-  const comeback = neu.length > 1 || neu.some((r) => r.gross);
+  const comeback = alleNeu.length > 1 || alleNeu.some((r) => r.gross);
   $("#update-emoji").textContent = comeback ? "👋" : "🎉";
   $("#update-title").textContent = comeback ? "Comeback!" : "Neu im Casino";
   $("#update-sub").textContent = comeback
-    ? `Das ist passiert, seit du zuletzt hier warst (${neu.length} ${neu.length === 1 ? "Update" : "Updates"}):`
+    ? `Das ist passiert, seit du zuletzt hier warst (${alleNeu.length} ${alleNeu.length === 1 ? "Update" : "Updates"}):`
     : "Frisch dabei im Fake Casino:";
 
   // Bei mehreren Updates die Ueberschrift je Update mit ausgeben, sonst
@@ -368,7 +403,9 @@ function maybeShowUpdate() {
       ? `<div class="update-release-head"><b>${escapeHtml(r.titel)}</b><small>${escapeHtml(r.datum)}</small></div>`
       : "";
     return kopf + r.items.map(punktHTML).join("");
-  }).join("");
+  }).join("") + (weitere
+    ? `<p class="update-more">…und ${weitere} ${weitere === 1 ? "älteres Update" : "ältere Updates"}. Alles davon steht im Menü unter <b>Updates</b>.</p>`
+    : "");
 
   modal.classList.remove("hidden");
 }
