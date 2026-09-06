@@ -720,6 +720,11 @@ function renderProfile() {
   setzeRahmen($("#profile-big"), acc);
   const titelEl = $("#profile-title");
   if (titelEl) { titelEl.textContent = acc.title || ""; titelEl.classList.toggle("hidden", !acc.title); }
+  const karte = $("#profile-card");
+  if (karte) {
+    if (acc.banner) karte.dataset.banner = acc.banner;
+    else delete karte.dataset.banner;
+  }
 
   const renderLevel = (l) => {
     const lb = $("#profile-level");
@@ -959,7 +964,7 @@ async function openPlayerProfile(name) {
     const clan = data.clan ? `[${escapeHtml(data.clan)}]` : "";
     const isMe = state.account && String(state.account.name || "").toLowerCase() === String(acc.name || name).toLowerCase();
     body.innerHTML = `
-      <div class="player-profile-head">
+      <div class="player-profile-head"${acc.banner ? ` data-banner="${escapeHtml(acc.banner)}"` : ""}>
         <div class="player-profile-avatar">${window.Casino.spieler.avatar(acc)}</div>
         <div>
           <h2>${window.Casino.spieler.name(acc)} ${clan}</h2>

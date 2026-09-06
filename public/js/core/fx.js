@@ -115,6 +115,54 @@
    * Grosse Gewinnfeier ueber dem ganzen Bild. Verschwindet von selbst und
    * laesst sich wegtippen, damit sie nie im Weg steht.
    */
+  /**
+   * Der gekaufte Gewinn-Effekt. Vorher regnete es bei allen dieselben
+   * Konfetti; jetzt entscheidet die Kosmetik, was passiert. Ein unbekannter
+   * oder fehlender Wert faellt still auf Konfetti zurueck, damit ein
+   * geloeschtes Stueck nie einen leeren Bildschirm hinterlaesst.
+   */
+  const EFFEKT_PALETTEN = {
+    muenzen:   ["#f4d782", "#e7c66b", "#c9a227", "#fff3c4"],
+    gold:      ["#ffd76e", "#ff9f43", "#fff6d8", "#c9a227"],
+    feuerwerk: ["#ff6b6b", "#4ecdc4", "#ffd93d", "#a66bff", "#ffffff"],
+    blitz:     ["#7ef9ff", "#ffffff", "#22d3ee", "#c9f7ff"],
+    sterne:    ["#fff6d8", "#ffe9a8", "#ffffff", "#f7dc8c"],
+  };
+
+  function gewinnEffekt() {
+    const acc = window.Casino.getAccount ? window.Casino.getAccount() : null;
+    const id = acc && acc.winEffect;
+    return EFFEKT_PALETTEN[id] ? id : null;
+  }
+
+  function spieleGewinnEffekt() {
+    const id = gewinnEffekt();
+    const farben = id ? EFFEKT_PALETTEN[id] : null;
+    // Menge und Form je Effekt. Der Blitz ist bewusst kurz und hart, der
+    // Sternenfall langsam und wenig — sonst sehen alle gleich aus.
+    if (id === "blitz") {
+      blitz();
+      confetti({ count: 30, colors: farben });
+      return;
+    }
+    if (id === "feuerwerk") {
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => confetti({ count: 34, colors: farben, origin: null }), i * 220);
+      }
+      return;
+    }
+    confetti({ count: id === "sterne" ? 40 : id ? 90 : 70, colors: farben });
+  }
+
+  /** Kurzes Aufblitzen des ganzen Bildschirms. */
+  function blitz() {
+    if (reduziert()) return;
+    const el = document.createElement("div");
+    el.className = "fx-blitz";
+    ebene().appendChild(el);
+    setTimeout(() => el.remove(), 420);
+  }
+
   function bigWin(betrag, { label = "Gewinn", sound = true, dauer = 2600 } = {}) {
     const host = ebene();
     const karte = document.createElement("div");
@@ -126,7 +174,7 @@
 
     countUp(karte.querySelector("b"), 0, betrag, { format: (n) => fmt(n) + " 🪙", sound: false });
     if (sound && window.Casino.sound) window.Casino.sound.play(betrag > 0 ? "bigwin" : "win");
-    confetti({ count: 70 });
+    spieleGewinnEffekt();
 
     const weg = () => {
       karte.classList.remove("show");
@@ -148,5 +196,5 @@
   }
 
   window.Casino = window.Casino || {};
-  window.Casino.fx = { confetti, coins, countUp, bigWin, skeleton };
+  window.Casino.fx = { confetti, coins, countUp, bigWin, skeleton, spieleGewinnEffekt, blitz };
 })();

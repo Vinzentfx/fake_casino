@@ -55,6 +55,7 @@
         : acc.nameColor || null,
       nameStyle: gewaehlt("style", "nameStyle", "standard"),
       frame: gewaehlt("frame", "frame", "keiner"),
+      banner: gewaehlt("banner", "banner", "keiner"),
       title: vorschau && vorschau.type === "title"
         ? (stand.titles.find((t) => t.id === vorschau.id) || {}).text || null
         : acc.title || null,
@@ -63,6 +64,7 @@
       `<span class="cos-preview-label">So sehen dich die anderen</span>` +
       `<span class="cos-preview-row">${Casino.spieler.avatar(p)}` +
       `<span class="pl-text">${Casino.spieler.name(p)}${Casino.spieler.title(p)}</span></span>`;
+    if (p.banner) box.dataset.banner = p.banner; else delete box.dataset.banner;
   }
 
   function render(s) {
@@ -79,6 +81,15 @@
     setze("#cos-frames", s.frames.map((x) => knopf("frame", x,
       `<span class="pl-ava ${x.id === "keiner" ? "" : "fr-" + x.id}">🙂</span>`)).join(""));
 
+    setze("#cos-effects", s.effects.map((x) => knopf("effect", x,
+      `<span class="cos-effekt-demo">${escapeHtml(x.label)}</span>`)).join(""));
+
+    setze("#cos-sprueche", s.sprueche.map((x) => knopf("spruch", x,
+      `<span class="cos-title-demo">${x.text ? escapeHtml(x.text.replace("{name}", (Casino.getAccount() || {}).name || "Du")) : "— ohne —"}</span>`)).join(""));
+
+    setze("#cos-banner", s.banner.map((x) => knopf("banner", x,
+      `<span class="cos-banner-demo" data-banner="${x.id}"></span><span class="cos-banner-label">${escapeHtml(x.label)}</span>`)).join(""));
+
     setze("#cos-avatars", s.avatars.map((x) => knopf("avatar", x,
       `<span class="cos-emoji">${x.emoji}</span>`)).join(""));
 
@@ -91,11 +102,21 @@
   function handle(el) {
     const type = el.dataset.type, id = el.dataset.id;
     if (el.dataset.locked === "1") {
-      const liste = { style: stand.styles, title: stand.titles, frame: stand.frames, avatar: stand.avatars, color: stand.colors }[type] || [];
+      const liste = { style: stand.styles, title: stand.titles, frame: stand.frames, avatar: stand.avatars,
+        color: stand.colors, effect: stand.effects, spruch: stand.sprueche, banner: stand.banner }[type] || [];
       const x = liste.find((i) => i.id === id);
       return toast(x && x.via ? `Nicht zu kaufen. ${x.via}.` : "Gibt es nur über den Season-Pass.");
     }
     const owned = el.dataset.owned === "1";
+    // Einen Effekt kann man nicht in einer Zeile zeigen — der muss laufen.
+    // Deshalb spielt jeder Tipp ihn einmal ab, egal ob gekauft oder nicht.
+    if (type === "effect") {
+      const acc = Casino.getAccount() || {};
+      const gemerkt = acc.winEffect;
+      acc.winEffect = id === "konfetti" ? null : id;
+      Casino.fx.spieleGewinnEffekt();
+      setTimeout(() => { acc.winEffect = gemerkt; }, 1400);
+    }
     // Erst ansehen, dann kaufen: ein Tipp auf etwas Fremdes zeigt es nur in
     // der Vorschau. Der zweite Tipp auf dasselbe kauft.
     if (!owned && !(vorschau && vorschau.type === type && vorschau.id === id)) {

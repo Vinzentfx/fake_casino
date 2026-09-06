@@ -116,16 +116,65 @@ const TITLES = [
   { id: "s2_phoenix",     text: "Phönix von Porta", cost: null, via: "Season 2, Stufe 20", season: "porta-herbst-2" },
 ];
 
+/* ── Gewinn-Effekt ────────────────────────────────────────────────────────
+ * Was auf dem Bildschirm passiert, wenn du gross gewinnst. Bisher sah das bei
+ * allen gleich aus. Der Effekt gehoert zu den Sachen, die man am haeufigsten
+ * von seiner eigenen Kosmetik sieht — jedes Mal, wenn es sich gelohnt hat.
+ */
+const EFFEKTE = [
+  { id: "konfetti", label: "Konfetti",   cost: 0 },
+  { id: "muenzen",  label: "Münzflut",   cost: 90000 },
+  { id: "gold",     label: "Goldregen",  cost: 180000 },
+  { id: "feuerwerk", label: "Feuerwerk", cost: 350000 },
+  { id: "blitz",    label: "Blitzschlag", cost: 550000 },
+  { id: "sterne",   label: "Sternenfall", cost: 800000 },
+];
+
+/* ── Eintritts-Spruch ─────────────────────────────────────────────────────
+ * Eine Zeile im Chat, wenn du reinkommst. Das ist die einzige Kosmetik, die
+ * die anderen sehen, ohne dich anzutippen — und in einer Runde, die versetzt
+ * spielt, ist "wer ist gerade aufgetaucht" die interessanteste Nachricht
+ * ueberhaupt.
+ */
+const SPRUECHE = [
+  { id: "keiner",   text: null,                                   cost: 0 },
+  { id: "da",       text: "{name} ist da.",                       cost: 30000 },
+  { id: "betritt",  text: "{name} betritt das Casino.",           cost: 60000 },
+  { id: "tuer",     text: "Die Tür geht auf: {name}.",            cost: 90000 },
+  { id: "haus",     text: "Das Haus grüßt {name}.",               cost: 150000 },
+  { id: "warnung",  text: "Vorsicht, {name} ist wieder im Spiel.", cost: 250000 },
+  { id: "legende",  text: "Eine Legende betritt den Raum: {name}.", cost: 600000 },
+];
+
+/* ── Profil-Banner ────────────────────────────────────────────────────────
+ * Der Streifen hinter deinem Namen im Profil. Reine Flaeche, aber es ist das
+ * Erste, was jemand sieht, der dich antippt.
+ */
+const BANNER = [
+  { id: "keiner",  label: "Ohne",        cost: 0 },
+  { id: "filz",    label: "Filztisch",   cost: 50000 },
+  { id: "nacht",   label: "Mitternacht", cost: 50000 },
+  { id: "sonne",   label: "Abendrot",    cost: 120000 },
+  { id: "welle",   label: "Weserwelle",  cost: 200000 },
+  { id: "gold",    label: "Blattgold",   cost: 400000 },
+  { id: "nordlicht", label: "Nordlicht", cost: 700000, motion: true },
+];
+
 const avaById = Object.fromEntries(AVATARS.map((a) => [a.id, a]));
 const colById = Object.fromEntries(COLORS.map((c) => [c.id, c]));
 const styById = Object.fromEntries(STYLES.map((x) => [x.id, x]));
 const frmById = Object.fromEntries(FRAMES.map((x) => [x.id, x]));
 const titById = Object.fromEntries(TITLES.map((x) => [x.id, x]));
+const effById = Object.fromEntries(EFFEKTE.map((x) => [x.id, x]));
+const sprById = Object.fromEntries(SPRUECHE.map((x) => [x.id, x]));
+const banById = Object.fromEntries(BANNER.map((x) => [x.id, x]));
 
 // Ein Topf je Art. Alte Accounts haben nur avatars/colors, der Rest kommt
 // beim ersten Zugriff dazu.
-const TOPF = { avatar: "avatars", color: "colors", style: "styles", frame: "frames", title: "titles" };
-const KATALOG = { avatar: avaById, color: colById, style: styById, frame: frmById, title: titById };
+const TOPF = { avatar: "avatars", color: "colors", style: "styles", frame: "frames", title: "titles",
+  effect: "effects", spruch: "sprueche", banner: "banner" };
+const KATALOG = { avatar: avaById, color: colById, style: styById, frame: frmById, title: titById,
+  effect: effById, spruch: sprById, banner: banById };
 
 function ensureOwned(acc) {
   const o = acc.cosOwned && typeof acc.cosOwned === "object" ? acc.cosOwned : (acc.cosOwned = {});
@@ -151,6 +200,9 @@ function setupCosmetics(io, accounts) {
         styles: STYLES.map((x) => ({ ...x, owned: hat("style", x.id), equipped: (acc.nameStyle || "standard") === x.id })),
         frames: FRAMES.map((x) => ({ ...x, owned: hat("frame", x.id), equipped: (acc.frame || "keiner") === x.id })),
         titles: TITLES.map((x) => ({ ...x, owned: hat("title", x.id), equipped: (acc.title || "keiner") === x.id })),
+        effects: EFFEKTE.map((x) => ({ ...x, owned: hat("effect", x.id), equipped: (acc.winEffect || "konfetti") === x.id })),
+        sprueche: SPRUECHE.map((x) => ({ ...x, owned: hat("spruch", x.id), equipped: (acc.spruch || "keiner") === x.id })),
+        banner: BANNER.map((x) => ({ ...x, owned: hat("banner", x.id), equipped: (acc.banner || "keiner") === x.id })),
       };
     }
 
@@ -187,6 +239,9 @@ function setupCosmetics(io, accounts) {
       else if (type === "style") acc.nameStyle = id === "standard" ? null : id;
       else if (type === "frame") acc.frame = id === "keiner" ? null : id;
       else if (type === "title") acc.title = id === "keiner" ? null : id;
+      else if (type === "effect") acc.winEffect = id === "konfetti" ? null : id;
+      else if (type === "spruch") acc.spruch = id === "keiner" ? null : id;
+      else if (type === "banner") acc.banner = id === "keiner" ? null : id;
       accounts.save();
       ack({ ok: true, ...state(acc), account: accounts.publicAccount(acc) });
     });
@@ -214,6 +269,7 @@ function label(type, id) {
   // ("Stufe 5: 🃏"). Wo es einen Namen gibt, steht er dabei.
   if (type === "avatar") return item.label ? `${item.emoji} ${item.label}` : item.emoji;
   if (type === "color") return item.color;
+  if (type === "spruch") return item.text ? item.text.replace("{name}", "…") : "ohne";
   return item.label || item.text || id;
 }
 
@@ -226,7 +282,16 @@ function publicLook(acc) {
     nameStyle: acc.nameStyle || null,
     frame: acc.frame || null,
     title: t && t.text ? t.text : null,
+    banner: acc.banner || null,
+    winEffect: acc.winEffect || null,
   };
 }
 
-module.exports = { setupCosmetics, grant, label, publicLook, AVATARS, COLORS, STYLES, FRAMES, TITLES };
+/** Der Eintritts-Spruch, fertig mit Namen. Null, wenn keiner angelegt ist. */
+function eintrittsSpruch(acc) {
+  const s2 = acc && acc.spruch ? sprById[acc.spruch] : null;
+  if (!s2 || !s2.text) return null;
+  return s2.text.replace("{name}", acc.name);
+}
+
+module.exports = { setupCosmetics, grant, label, publicLook, eintrittsSpruch, AVATARS, COLORS, STYLES, FRAMES, TITLES, EFFEKTE, SPRUECHE, BANNER };

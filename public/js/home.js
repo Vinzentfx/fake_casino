@@ -113,9 +113,12 @@
       `<button class="tile-fav${istFavorit ? " on" : ""}" data-fav="${g.id}" type="button"
                aria-label="${istFavorit ? "Favorit entfernen" : "Als Favorit merken"}"
                title="${istFavorit ? "Favorit entfernen" : "Als Favorit merken"}">${istFavorit ? "★" : "☆"}</button>`;
+    // Gezeichnetes Symbol, wenn es eines gibt. Das Emoji bleibt als Rueckfall
+    // stehen, damit ein neues Spiel ohne eigenes Symbol trotzdem etwas zeigt.
+    const symbol = (Casino.icons && Casino.icons.icon(g.id)) || g.icon;
     return `
       <button class="game-tile${klein ? " tile-sm" : ""}" style="--h:${g.h}" data-game="${g.id}" type="button">
-        <span class="tile-icon" aria-hidden="true">${g.icon}</span>
+        <span class="tile-icon" aria-hidden="true">${symbol}</span>
         <span class="tile-body">
           <span class="tile-name">${Casino.escapeHtml(g.name)}</span>
           ${klein ? "" : `<span class="tile-sub">${Casino.escapeHtml(g.sub)}</span>`}

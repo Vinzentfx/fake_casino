@@ -40,7 +40,29 @@ function kuerzlichDa(accounts, online, grenzeTage = 7, max = 6) {
     .map((a) => ({ ...require("./cosmetics").publicLook(a), name: a.name, lastSeen: a.lastSeen }));
 }
 
+/**
+ * Eintritts-Spruch im Chat.
+ *
+ * Nur, wenn der Spieler sich einen gekauft hat, und hoechstens einmal pro
+ * Stunde: sonst wird aus jedem Wackler der Mobilfunkverbindung eine Ansage.
+ * Auf dem iPad passiert genau das staendig, wenn Safari den Tab wegraeumt.
+ */
+const EINTRITT_ABSTAND_MS = 60 * 60 * 1000;
+function meldeEintritt(acc) {
+  try {
+    const spruch = require("./cosmetics").eintrittsSpruch(acc);
+    if (!spruch) return;
+    const jetzt = Date.now();
+    if (jetzt - (acc.letzterEintritt || 0) < EINTRITT_ABSTAND_MS) return;
+    acc.letzterEintritt = jetzt;
+    require("./chat").announce(_io, `👋 ${spruch}`);
+  } catch {}
+}
+
+let _io = null;
+
 function setupPoker(io, accounts) {
+  _io = io;
   /** code -> { table, sockets:Set<Socket>, timer } */
   const tables = new Map();
 
@@ -295,9 +317,12 @@ function setupPoker(io, accounts) {
     socket.on("auth", ({ token } = {}) => {
       const key = accounts.verifyToken(token);
       const acc = key ? accounts.get(key) : null;
+      const warSchonDa = acc && [...io.of("/").sockets.values()]
+        .some((s2) => s2 !== socket && s2.data && s2.data.account === acc.name.toLowerCase());
       socket.data.account = acc ? acc.name.toLowerCase() : null;
       socket.data.displayName = acc ? acc.name : null;
       broadcastPresence();
+      if (acc && !warSchonDa) meldeEintritt(acc);
     });
 
     socket.on("presence:screen", ({ screen } = {}) => {

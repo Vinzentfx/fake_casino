@@ -19,6 +19,18 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-07-style",
+      datum: "7. September 2026",
+      titel: "Eigene Spiel-Symbole und drei neue Kosmetik-Arten",
+      gross: true,
+      items: [
+        { icon: "🎨", titel: "Die Kacheln haben jetzt gezeichnete Symbole", text: "Vorher stand in jeder Kachel ein Emoji. Die sehen auf jedem Gerät anders aus, bringen ihre eigenen Farben mit und passen zu keinem der drei Designs. Und manche sagten schlicht nichts: Pinco Ball war ein grüner Kreis, was ein Spiel mit Nägeln und Fächern überhaupt nicht beschreibt. Jetzt hat jedes Spiel eine eigene Zeichnung, die die Farbe des Spiels annimmt." },
+        { icon: "🎆", titel: "Gewinn-Effekt", text: "Was auf dem Bildschirm passiert, wenn du groß gewinnst: Konfetti, Münzflut, Goldregen, Feuerwerk, Blitzschlag oder Sternenfall. Das ist die Kosmetik, die du selbst am häufigsten siehst. Im Shop einmal antippen spielt sie ab, bevor du zahlst." },
+        { icon: "👋", titel: "Eintritts-Spruch", text: "Eine Zeile im Chat, wenn du reinkommst: „Vorsicht, Tom ist wieder im Spiel.“ Das ist die einzige Kosmetik, die die anderen sehen, ohne dich anzutippen. Höchstens einmal pro Stunde, damit ein Verbindungsabbruch keine Ansage wird." },
+        { icon: "🖼️", titel: "Profil-Banner", text: "Der Streifen hinter deinem Namen im Profil: Filztisch, Mitternacht, Abendrot, Weserwelle, Blattgold und ein bewegtes Nordlicht. Das Erste, was jemand sieht, der dich antippt." },
+      ],
+    },
+    {
       id: "2026-09-07",
       datum: "7. September 2026",
       titel: "Rekorde repariert und ehrlich gerechnet",
