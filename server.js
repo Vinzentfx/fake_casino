@@ -77,7 +77,7 @@ const appVersion = () => build.current();
 // ---------------------------------------------------------------------------
 
 const app = express();
-app.set("trust proxy", true); // Railway runs behind a proxy → real client IP in x-forwarded-for
+app.set("trust proxy", true); // hinter Caddy → echte Client-IP steht in x-forwarded-for
 app.use(express.json({ limit: "25mb" })); // Restore-Upload = kompletter data/-Ordner als JSON
 
 /**
@@ -274,7 +274,7 @@ app.post("/api/change-pin", (req, res) => {
 // ---------------------------------------------------------------------------
 // Owner-Backup: der komplette data/-Ordner (Accounts, Pferde, Stadt, …) als
 // EIN JSON-Bundle zum Herunterladen — und als Upload zum Wiederherstellen,
-// z.B. beim Umzug auf einen neuen Host, wenn das Railway-Volume wegfällt.
+// z.B. beim Umzug auf einen neuen Host, wenn der Datenordner leer startet.
 // ---------------------------------------------------------------------------
 
 const OWNER_KEY = "vincent"; // muss zu OWNER in game/admin.js passen
@@ -326,7 +326,7 @@ app.post("/api/admin/restore", (req, res) => {
   }
   // Alle Module halten ihren Zustand im RAM und würden die frisch geschriebenen
   // Dateien beim nächsten save() wieder überschreiben → sauber neu starten.
-  // Railway (und lokal ein Prozess-Manager) starten den Server automatisch neu.
+  // systemd (und lokal ein Prozess-Manager) startet den Server automatisch neu.
   console.log("💾 Backup eingespielt — Server startet neu, um die Daten zu laden.");
   setTimeout(() => process.exit(0), 800);
 });
@@ -441,7 +441,7 @@ server.listen(PORT, () => {
   console.log(`🎰 Fake-Casino läuft auf http://localhost:${PORT}`);
 });
 
-// On a graceful shutdown (e.g. a Railway redeploy), refund open sports bets so
+// On a graceful shutdown (e.g. a redeploy), refund open sports bets so
 // no stake is lost when the in-memory match state resets.
 let shuttingDown = false;
 function gracefulShutdown(sig) {

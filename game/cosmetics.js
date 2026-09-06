@@ -106,7 +106,7 @@ const TITLES = [
   { id: "hausherr",   text: "Hausherr von Porta",  cost: 200000 },
   { id: "legende",    text: "Legende von Porta",   cost: 1000000 },
   // Nicht kaeuflich: kommt mit dem ersten kompletten Strassen-Monopol.
-  { id: "strassenkoenig", text: "Straßenkönig", cost: null, via: "Eine Straße komplett besitzen" },
+  { id: "strassenkoenig", text: "Straßenherr", cost: null, via: "Eine Straße komplett besitzen" },
 ];
 
 const avaById = Object.fromEntries(AVATARS.map((a) => [a.id, a]));

@@ -713,7 +713,7 @@ function setupEconomy(io, accounts) {
       if (!acc) return;
       const cos = require("./cosmetics");
       let neu = null;
-      if (city.streetCount(key) > 0 && cos.grant(acc, "title", "strassenkoenig")) neu = "Titel „Straßenkönig“";
+      if (city.streetCount(key) > 0 && cos.grant(acc, "title", "strassenkoenig")) neu = "Titel „Straßenherr“";
       const istBoss = city.publicOverview(key).districts.some((d) => d.boss && d.boss.isMe);
       if (istBoss && cos.grant(acc, "style", "krone")) neu = "Namensstil „Krone“";
       if (!neu) return;

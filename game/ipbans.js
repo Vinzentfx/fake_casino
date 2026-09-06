@@ -3,7 +3,7 @@
 /**
  * IP-Bans — Owner-Tool, um eine IP-Adresse komplett auszusperren (unabhängig
  * vom Account). Persistiert in data/ipbans.json (überlebt Neustarts im
- * Railway-Volume). Gesperrte IPs werden bei jeder neuen Verbindung getrennt.
+ * Datenordner). Gesperrte IPs werden bei jeder neuen Verbindung getrennt.
  */
 
 const fs = require("fs");
@@ -32,7 +32,7 @@ function normIp(ip) {
   return ip;
 }
 
-/** Echte Client-IP eines Sockets (Railway läuft hinter Proxy → x-forwarded-for). */
+/** Echte Client-IP eines Sockets (hinter Caddy → x-forwarded-for). */
 function ipOf(socket) {
   const h = socket.handshake || {};
   const xff = h.headers && (h.headers["x-forwarded-for"] || h.headers["X-Forwarded-For"]);

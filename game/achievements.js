@@ -24,7 +24,7 @@ const DEFS = [
     check: (a) => ((a.stats && a.stats.handsWon) || 0) >= 1 },
   { id: "plays_100",   emoji: "🎲", label: "Stammgast",       desc: "Spiele 100 Runden",                      reward: 10000,
     check: (a) => ((a.stats && a.stats.gamesPlayed) || 0) >= 100 },
-  { id: "plays_1000",  emoji: "🔥", label: "Inventar",        desc: "Spiele 1.000 Runden",                    reward: 100000,
+  { id: "plays_1000",  emoji: "🔥", label: "Dauergast",       desc: "Spiele 1.000 Runden",                    reward: 100000,
     check: (a) => ((a.stats && a.stats.gamesPlayed) || 0) >= 1000 },
   { id: "bigwin_10k",  emoji: "💥", label: "Dicker Fisch",    desc: "Einzelgewinn über 10.000",               reward: 5000,
     check: (a) => ((a.stats && a.stats.biggestWin) || 0) >= 10000 },
