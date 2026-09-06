@@ -30,7 +30,7 @@ const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 // Praesenz und Chat.
 
 let currentScreen = "login";
-const lockedScreens = new Set(["season"]);
+const lockedScreens = new Set();
 
 /**
  * Gesperrte Screens aus dem Menü nehmen. Ein Eintrag, der beim Antippen nur

@@ -9,27 +9,61 @@
  */
 
 const SEASON = {
-  id: "porta-sommer-1",
-  name: "Porta-Sommer Season",
-  subtitle: "Spiele Runden, erledige Aufträge und sammle Pass-XP.",
-  endsAt: Date.UTC(2026, 7, 1, 0, 0, 0),
+  id: "porta-herbst-2",
+  name: "Porta-Herbst",
+  subtitle: "Acht Wochen, zwanzig Stufen. Spiel einfach, der Rest läuft nebenbei mit.",
+  startsAt: Date.UTC(2026, 8, 6, 0, 0, 0),   // 6. September 2026
+  endsAt: Date.UTC(2026, 10, 1, 0, 0, 0),    // 1. November 2026, also acht Wochen
 };
 
 const PLAY_XP_DAILY_CAP = 500;
 const QUEST_XP_DAILY_CAP = 280;
 
+/*
+ * Die Stufenleiter.
+ *
+ * Season 1 hatte zehn Stufen mit zusammen 1.860 XP. Bei einer Tagesgrenze von
+ * 780 XP war sie damit an einem langen Wochenende durch — bei einer Laufzeit
+ * von vierundzwanzig Tagen. Der Pass war also die meiste Zeit leer.
+ *
+ * Season 2 rechnet andersherum: zwanzig Stufen, zusammen 12.140 XP. Wer
+ * gemaechlich spielt (rund 250 XP am Tag, etwa hundert Runden) ist nach gut
+ * sieben Wochen durch, also kurz vor Schluss. Wer die Tagesgrenze ausreizt,
+ * schafft es in gut zwei Wochen — das darf sein, dafuer hat er gespielt.
+ *
+ * Die Chips laufen wie jede andere Gratis-Einnahme durch accounts.faucetFactor:
+ * wer ohnehin Millionen hat, bekommt bis auf 25 % heruntergerechnet.
+ *
+ * Die vier Kosmetik-Stufen sind der eigentliche Reiz. Die Stuecke gibt es
+ * nirgends zu kaufen, auch spaeter nicht — daran sieht man, wer dabei war.
+ */
 const LEVELS = [
-  { level: 1, xp: 40,   chips: 5000,   label: "5.000 Chips" },
-  { level: 2, xp: 100,  chips: 8000,   label: "8.000 Chips" },
-  { level: 3, xp: 180,  chips: 12000,  label: "12.000 Chips" },
-  { level: 4, xp: 290,  chips: 16000,  label: "16.000 Chips" },
-  { level: 5, xp: 430,  chips: 25000,  label: "25.000 Chips" },
-  { level: 6, xp: 610,  chips: 35000,  label: "35.000 Chips" },
-  { level: 7, xp: 840,  chips: 45000,  label: "45.000 Chips" },
-  { level: 8, xp: 1120, chips: 60000,  label: "60.000 Chips" },
-  { level: 9, xp: 1460, chips: 75000,  label: "75.000 Chips" },
-  { level: 10, xp: 1860, chips: 100000, label: "100.000 Chips" },
+  { level: 1,  xp: 120,    chips: 3000 },
+  { level: 2,  xp: 280,    chips: 5000 },
+  { level: 3,  xp: 480,    chips: 8000 },
+  { level: 4,  xp: 720,    chips: 12000 },
+  { level: 5,  xp: 1000,   chips: 0,      cosmetic: { type: "avatar", id: "s2_joker" },  label: "🃏 Joker-Avatar" },
+  { level: 6,  xp: 1330,   chips: 16000 },
+  { level: 7,  xp: 1710,   chips: 20000 },
+  { level: 8,  xp: 2140,   chips: 25000 },
+  { level: 9,  xp: 2620,   chips: 30000 },
+  { level: 10, xp: 3150,   chips: 35000, cosmetic: { type: "color", id: "s2_amber" },    label: "35.000 Chips + 🟠 Bernstein-Name" },
+  { level: 11, xp: 3740,   chips: 40000 },
+  { level: 12, xp: 4390,   chips: 45000 },
+  { level: 13, xp: 5100,   chips: 50000 },
+  { level: 14, xp: 5880,   chips: 55000 },
+  { level: 15, xp: 6730,   chips: 60000, cosmetic: { type: "avatar", id: "s2_wolf" },    label: "60.000 Chips + 🐺 Wolf-Avatar" },
+  { level: 16, xp: 7650,   chips: 65000 },
+  { level: 17, xp: 8650,   chips: 70000 },
+  { level: 18, xp: 9730,   chips: 75000 },
+  { level: 19, xp: 10890,  chips: 85000 },
+  { level: 20, xp: 12140,  chips: 100000, cosmetic: { type: "avatar", id: "s2_phoenix" }, label: "100.000 Chips + 🔥 Phönix-Avatar" },
 ];
+
+// Beschriftung fuer Stufen ohne eigene: reine Chip-Stufen.
+for (const r of LEVELS) {
+  if (!r.label) r.label = `${r.chips.toLocaleString("de-DE")} Chips`;
+}
 
 let _io = null;
 let _accounts = null;
@@ -54,9 +88,17 @@ function publicState(acc) {
   const xp = Math.floor(s.xp || 0);
   const unlocked = LEVELS.filter((r) => xp >= r.xp).length;
   const next = LEVELS.find((r) => xp < r.xp) || null;
+  const jetzt = Date.now();
+  // Drei Zustaende, nicht zwei: vor dem Start, laufend, vorbei. Ohne die
+  // Unterscheidung stand vor dem Start "beendet" am Screen.
+  const phase = jetzt < SEASON.startsAt ? "vor" : jetzt < SEASON.endsAt ? "laeuft" : "vorbei";
   return {
     ok: true,
     season: SEASON,
+    phase,
+    laeuft: phase === "laeuft",
+    msLeft: Math.max(0, SEASON.endsAt - jetzt),
+    msToStart: Math.max(0, SEASON.startsAt - jetzt),
     xp,
     level: unlocked,
     nextXp: next ? next.xp : LEVELS[LEVELS.length - 1].xp,
@@ -129,15 +171,27 @@ function setupSeason(io, accounts) {
       if ((s.xp || 0) < reward.xp) return ack({ ok: false, error: "Noch nicht freigeschaltet." });
       if (s.claimed[lvl]) return ack({ ok: false, error: "Schon abgeholt." });
       const key = socket.data.account;
-      const chips = Math.round(reward.chips * accounts.faucetFactor(key));
+      const chips = Math.round((reward.chips || 0) * accounts.faucetFactor(key));
       s.claimed[lvl] = true;
       if (chips > 0) accounts.adjustChips(key, chips);
+      let kosmetik = null;
+      if (reward.cosmetic) {
+        try {
+          const cos = require("./cosmetics");
+          if (cos.grant(acc, reward.cosmetic.type, reward.cosmetic.id)) {
+            kosmetik = cos.label(reward.cosmetic.type, reward.cosmetic.id);
+          }
+        } catch {}
+      }
       accounts.save();
       const state = publicState(acc);
       const account = accounts.publicAccount(acc);
-      try { require("./feed").add("season", `${acc.name} holt Season-Stufe ${lvl}: ${chips.toLocaleString("de-DE")} Chips.`, { user: acc.name, level: lvl, chips }); } catch {}
+      const was = kosmetik
+        ? (chips > 0 ? `${chips.toLocaleString("de-DE")} Chips und ${kosmetik}` : String(kosmetik))
+        : `${chips.toLocaleString("de-DE")} Chips`;
+      try { require("./feed").add("season", `${acc.name} holt Season-Stufe ${lvl}: ${was}.`, { user: acc.name, level: lvl, chips }); } catch {}
       socket.emit("account:update", { account });
-      ack({ ok: true, chips, account, ...state });
+      ack({ ok: true, chips, kosmetik, account, ...state });
     });
   });
 }

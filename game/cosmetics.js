@@ -24,6 +24,12 @@ const AVATARS = [
   { id: "crown",  emoji: "👑", cost: 100000 },
   { id: "dragon", emoji: "🐉", cost: 150000 },
   { id: "money",  emoji: "🤑", cost: 250000 },
+  // Nur ueber den Season-Pass. cost: null heisst "nicht kaeuflich" — genau
+  // das macht sie zum Statussymbol: man sieht, dass jemand die Season
+  // durchgespielt hat, und kann es sich nicht einfach kaufen.
+  { id: "s2_joker",  emoji: "🃏", cost: null, season: "porta-herbst-2" },
+  { id: "s2_wolf",   emoji: "🐺", cost: null, season: "porta-herbst-2" },
+  { id: "s2_phoenix", emoji: "🔥", cost: null, season: "porta-herbst-2" },
 ];
 const COLORS = [
   { id: "white",  color: null,      cost: 0 },
@@ -34,6 +40,7 @@ const COLORS = [
   { id: "purple", color: "#c86bd6", cost: 25000 },
   { id: "cyan",   color: "#4fc7c0", cost: 20000 },
   { id: "pink",   color: "#f07ab0", cost: 20000 },
+  { id: "s2_amber", color: "#ff9f43", cost: null, season: "porta-herbst-2" },
 ];
 
 const avaById = Object.fromEntries(AVATARS.map((a) => [a.id, a]));
@@ -45,6 +52,9 @@ function setupCosmetics(io, accounts) {
 
     function state(acc) {
       const owned = acc.cosOwned || { avatars: [], colors: [] };
+      // Achtung: cost === 0 ist "gratis fuer alle", cost === null ist
+      // "nicht kaeuflich, nur ueber die Season". Die beiden duerfen nicht
+      // in denselben Topf, sonst gehoerten die Season-Stuecke jedem.
       const ownsAva = (id) => avaById[id].cost === 0 || (owned.avatars || []).includes(id);
       const ownsCol = (id) => colById[id].cost === 0 || (owned.colors || []).includes(id);
       const eqAva = acc.avatar || "🙂", eqCol = acc.nameColor || null;
@@ -68,6 +78,7 @@ function setupCosmetics(io, accounts) {
       if (!item) return ack({ ok: false, error: "Unbekannt." });
       acc.cosOwned = acc.cosOwned || { avatars: [], colors: [] };
       const list = type === "avatar" ? acc.cosOwned.avatars : acc.cosOwned.colors;
+      if (item.cost === null) return ack({ ok: false, error: "Gibt es nur über den Season-Pass." });
       if (item.cost === 0 || list.includes(id)) return ack({ ok: false, error: "Schon im Besitz." });
       if (acc.chips < item.cost) return ack({ ok: false, error: "Nicht genug Chips." });
       accounts.adjustChips(socket.data.account, -item.cost); // pure sink
@@ -95,4 +106,25 @@ function setupCosmetics(io, accounts) {
   });
 }
 
-module.exports = { setupCosmetics };
+/**
+ * Ein Stueck verschenken (Season-Belohnung). Gibt true zurueck, wenn es neu
+ * dazukam, false wenn es schon im Besitz war.
+ */
+function grant(acc, type, id) {
+  const item = type === "avatar" ? avaById[id] : type === "color" ? colById[id] : null;
+  if (!acc || !item) return false;
+  acc.cosOwned = acc.cosOwned || { avatars: [], colors: [] };
+  const list = type === "avatar" ? acc.cosOwned.avatars : acc.cosOwned.colors;
+  if (list.includes(id)) return false;
+  list.push(id);
+  return true;
+}
+
+/** Anzeigename fuer Belohnungslisten. */
+function label(type, id) {
+  const item = type === "avatar" ? avaById[id] : colById[id];
+  if (!item) return id;
+  return type === "avatar" ? item.emoji : item.color;
+}
+
+module.exports = { setupCosmetics, grant, label, AVATARS, COLORS };
