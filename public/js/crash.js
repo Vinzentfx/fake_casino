@@ -376,9 +376,19 @@
     apply(s); needBoom = true; renderAll(); startDraw();
     if (onCrashScreen() && hatVerloren) snd.play("bust");
   });
+  /** Ausstieg feiern. Ab dem Dreifachen gross, darunter reicht der Muenzwurf. */
+  function feiereAusstieg(mult, payout) {
+    if (!onCrashScreen()) return;
+    if ((mult || 0) >= 3) window.Casino.fx.bigWin(payout || 0, { label: `Ausgestiegen bei ${mult.toFixed(2)}×` });
+    else { snd.play("cash"); window.Casino.fx.coins($("#crash-action")); }
+  }
+
+  // Kommt nur beim Auto-Cashout. Von Hand laeuft der Ausstieg ueber die
+  // Antwort auf crash:cashout, siehe unten.
   socket.on("crash:cashed", (d) => {
-    if (onCrashScreen()) snd.play("cash");
-    if (d && d.auto) toast(`🚀 Auto-Cashout bei ${d.mult.toFixed(2)}× — +${fmt(d.payout)} 🪙!`);
+    if (!d) return;
+    feiereAusstieg(d.mult, d.payout);
+    if (d.auto) toast(`🚀 Auto-Cashout bei ${d.mult.toFixed(2)}× — +${fmt(d.payout)} 🪙!`);
   });
 
   // ── Actions ──────────────────────────────────────────────────────────────
@@ -388,6 +398,7 @@
       socket.emit("crash:cashout", (r) => {
         if (!r || !r.ok) { err.textContent = (r && r.error) || "Zu spät."; return; }
         applyAccount(r.account); myBet.cashedAt = r.mult;
+        feiereAusstieg(r.mult, r.payout);
         toast(`💸 Ausgezahlt bei ${r.mult.toFixed(2)}× — +${fmt(r.payout)} 🪙!`);
         renderAll();
       });

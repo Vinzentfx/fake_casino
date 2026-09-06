@@ -177,7 +177,9 @@
   $("#tw-cashout").addEventListener("click", () => {
     socket.emit("towers:cashout", (v) => {
       if (!v || !v.ok) { $("#tw-error").textContent = (v && v.error) || "Fehler."; return; }
-      snd.play("cash");
+      const gewinn = v.payout || 0;
+      if (gewinn > 0 && (v.multiplier || 0) >= 3) window.Casino.fx.bigWin(gewinn, { label: "Ausgezahlt" });
+      else { snd.play("cash"); window.Casino.fx.coins($("#tw-cashout")); }
       apply(v);
     });
   });

@@ -109,7 +109,11 @@
   $("#mines-cashout").addEventListener("click", () => {
     socket.emit("mines:cashout", (v) => {
       if (!v || !v.ok) { $("#mines-error").textContent = (v && v.error) || "Fehler."; return; }
-      snd.play("cash");
+      const gewinn = v.payout || 0;
+      // Ab dem Dreifachen des Einsatzes ist es ein Ereignis, darunter reicht
+      // der Muenzwurf. Sonst feiert man sich bei 1,05x zu Tode.
+      if (gewinn > 0 && (v.multiplier || 0) >= 3) window.Casino.fx.bigWin(gewinn, { label: "Ausgezahlt" });
+      else { snd.play("cash"); window.Casino.fx.coins($("#mines-cashout")); }
       apply(v);
     });
   });

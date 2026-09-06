@@ -1,0 +1,101 @@
+/* ============================================================
+   Fake Casino – Effekte
+   Gehoert zu js/core/fx.js. Konfetti, Muenzen, Gewinnfeier und
+   Ladeplatzhalter. Alles rein visuell, nichts hier traegt
+   Information, deshalb faellt es bei "Bewegung reduzieren"
+   ersatzlos weg.
+   ============================================================ */
+
+/* Eine Ebene ueber allem, die selbst keine Klicks abfaengt. Sonst wuerde
+   herunterfallendes Konfetti den Auszahlen-Knopf blockieren. */
+.fx-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.fx-confetti {
+  position: absolute;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: fx-fall 1.6s cubic-bezier(0.25, 0.6, 0.4, 1) forwards;
+}
+@keyframes fx-fall {
+  0%   { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
+}
+
+.fx-coin {
+  position: absolute;
+  font-size: 1.4rem;
+  font-style: normal;
+  opacity: 0;
+  animation: fx-coin 1.2s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+/* Hoch und wieder runter, damit es nach Wurf aussieht und nicht nach Rakete. */
+@keyframes fx-coin {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  20%  { opacity: 1; }
+  60%  { transform: translate(calc(var(--dx) * 0.7), var(--dy)) scale(1.1); }
+  100% { opacity: 0; transform: translate(var(--dx), 40px) scale(0.8); }
+}
+
+.fx-bigwin {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%) scale(0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-6);
+  border-radius: var(--r-xl);
+  background: var(--overlay);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--e-4);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+.fx-bigwin.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.fx-bigwin small {
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.fx-bigwin b {
+  font-family: var(--font-num);
+  font-size: clamp(1.9rem, 7vw, 3rem);
+  font-weight: 900;
+  color: var(--accent-strong);
+  text-shadow: 0 2px 20px rgba(var(--accent-rgb), 0.5);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ladeplatzhalter: zeigt die Form dessen, was gleich kommt. */
+.fx-skeleton {
+  border-radius: var(--r-xs);
+  margin-bottom: var(--sp-2);
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 0%,
+    rgba(255, 255, 255, 0.07) 50%,
+    var(--surface-sunken) 100%
+  );
+  background-size: 200% 100%;
+  animation: fx-shimmer 1.3s ease-in-out infinite;
+}
+@keyframes fx-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+html.reduce-motion .fx-skeleton { animation: none; }

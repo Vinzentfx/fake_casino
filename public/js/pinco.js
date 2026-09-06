@@ -397,9 +397,13 @@
       const me = window.Casino.getAccount();
       const meins = me && drop.name && drop.name.toLowerCase() === me.name.toLowerCase();
       if (!meins) return;
-      if ((drop.multiplier || 0) >= 5) snd.play("bigwin");
-      else if ((drop.payout || 0) > (drop.bet || 0)) snd.play("win");
-      else snd.play("tick");
+      if ((drop.multiplier || 0) >= 5) {
+        window.Casino.fx.bigWin(drop.payout || 0, { label: `${drop.multiplier}× getroffen` });
+      } else if ((drop.payout || 0) > (drop.bet || 0)) {
+        snd.play("win");
+      } else {
+        snd.play("tick");
+      }
     });
   });
 
