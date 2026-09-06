@@ -46,6 +46,9 @@ function setupPoker(io, accounts) {
       st.hostName = entry.hostName || null;
       st.vsBots = !!entry.vsBots;
       st.turnDeadline = entry.turnDeadline || null;
+      // Der Client zeichnet daraus den Balken am Sitz. Die Dauer kommt mit,
+      // damit sie nicht doppelt gepflegt werden muss.
+      st.turnMs = TURN_MS;
       sock.emit("poker:state", st);
     }
   }

@@ -936,24 +936,46 @@ html.reduce-motion .screen { animation: none; }
 .bots-config #bot-buyin { width: 110px; }
 .bots-config .btn-primary { padding: 11px 18px; }
 
-/* Felt */
+/* Filz. Farben aus den --felt-Tokens, damit der Tisch dem Theme folgt: vorher
+   war er in jedem Theme gruen mit brauner Bande, auch im blauen Mitternacht
+   und im fast schwarzen Neon. Die Bande ist aus Schatten gebaut statt aus
+   einem Rahmen, sonst bricht sie an der Ellipse auf. */
 .felt {
   position: relative;
-  width: 100%;
+  width: calc(100% - 24px);
   aspect-ratio: 4 / 3;
   max-height: 62vh;
-  margin: 0 auto;
+  margin: var(--sp-3) auto 0;
   border-radius: 48% / 42%;
   background:
-    radial-gradient(ellipse at 50% 45%, #1c6b46 0%, #134e33 60%, #0c3a25 100%);
-  border: 10px solid #5a3c1a;
-  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5), var(--shadow);
+    radial-gradient(ellipse at 50% 42%, var(--felt-light) 0%, var(--felt) 58%, var(--felt-dark) 100%);
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(var(--accent-rgb), 0.28),
+    0 0 0 11px rgba(0, 0, 0, 0.55),
+    0 0 0 12px rgba(var(--accent-rgb), 0.16),
+    var(--e-3);
 }
 .pot {
-  position: absolute; left: 50%; top: 34%; transform: translateX(-50%);
-  color: var(--gold-strong); font-weight: 800; font-size: 0.95rem;
-  background: rgba(0, 0, 0, 0.35); padding: 4px 12px; border-radius: 999px;
+  position: absolute; left: 50%; top: 30%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: var(--sp-2);
+  color: var(--accent-strong); font-weight: 800; font-size: 0.95rem;
   white-space: nowrap;
+  padding: 0;
+}
+/* Ohne Pot bleibt nichts stehen — vorher war dort ein leeres graues Oval. */
+.pot.has-pot {
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  padding: 5px 14px 5px 10px;
+  border-radius: var(--r-pill);
+}
+.pot-chips { position: relative; display: block; width: 22px; height: 26px; }
+.pot-chips i {
+  position: absolute; left: 0;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 .board {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -991,14 +1013,45 @@ html.reduce-motion .screen { animation: none; }
   width: 92px; text-align: center;
 }
 .seat.empty .seat-empty {
-  color: var(--text-dim); font-size: 0.8rem;
-  border: 1px dashed rgba(255, 255, 255, 0.25); border-radius: 999px; padding: 8px 14px;
+  color: rgba(255, 255, 255, 0.42); font-size: var(--fs-xs); font-weight: 700;
+  letter-spacing: 0.06em;
+  border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: var(--r-pill); padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.16);
 }
 .seat .hole { display: flex; gap: 3px; justify-content: center; }
 .seat-plate {
+  position: relative;
   background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(var(--accent-rgb), 0.3);
-  border-radius: 10px; padding: 5px 8px; min-width: 84px;
+  border-radius: var(--r-sm); padding: 5px 8px; min-width: 84px;
 }
+/* Zug-Uhr direkt am Sitz. Vorher lief sie nur als Text im Banner ueber dem
+   Tisch — man schaut aber auf den Sitz, nicht auf das Banner, und merkte
+   deshalb erst am Auto-Fold, dass die Zeit weg war. */
+.seat.active-turn .seat-plate::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: -4px;
+  height: 3px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.14);
+}
+.seat.active-turn .seat-plate::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  bottom: -4px;
+  z-index: 1;
+  width: calc(var(--turn, 1) * (100% - 8px));
+  height: 3px;
+  border-radius: var(--r-pill);
+  background: var(--accent-strong);
+  transition: width 0.5s linear, background 0.3s var(--ease);
+}
+/* Letzte zehn Sekunden: die Farbe wechselt, damit man es aus dem Augenwinkel
+   mitbekommt. */
+.seat.active-turn.turn-low .seat-plate::before { background: var(--bad); }
 .seat-name { font-size: 0.78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seat-chips { font-size: 0.72rem; color: var(--gold-strong); }
 .btn-chip {

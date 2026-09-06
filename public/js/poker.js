@@ -119,18 +119,44 @@
 
   socket.on("poker:error", ({ message }) => toast(message));
 
-  // Live turn-timer countdown (server auto-folds at the deadline).
+  // Zug-Uhr. Der Server foldet am Ende automatisch; hier laeuft die Anzeige.
+  // Zwei Orte: der Text im Banner und der Balken am Sitz des Spielers, der
+  // dran ist. Der Balken ist der wichtigere — dorthin schaut man.
   setInterval(() => {
     const els = document.querySelectorAll(".pk-timer");
-    if (!els.length) return;
-    if (!joined || !state || !state.turnDeadline) { els.forEach((e) => (e.textContent = "")); return; }
-    const secs = Math.max(0, Math.ceil((state.turnDeadline - Date.now()) / 1000));
+    const sitz = document.querySelector(".seat.active-turn");
+    if (!joined || !state || !state.turnDeadline) {
+      els.forEach((e) => (e.textContent = ""));
+      if (sitz) { sitz.style.removeProperty("--turn"); sitz.classList.remove("turn-low"); }
+      return;
+    }
+    const restMs = Math.max(0, state.turnDeadline - Date.now());
+    const secs = Math.ceil(restMs / 1000);
     els.forEach((e) => { e.textContent = `⏱ ${secs}s`; e.classList.toggle("low", secs <= 10); });
+    if (sitz) {
+      const gesamt = state.turnMs || 30000; // Dauer kommt vom Server
+      sitz.style.setProperty("--turn", String(Math.min(1, restMs / gesamt)));
+      sitz.classList.toggle("turn-low", secs <= 10);
+    }
   }, 500);
 
   // ----------------------------------------------------------------
   // Rendering
   // ----------------------------------------------------------------
+  /**
+   * Chipstapel fuer den Pot. Die Hoehe waechst logarithmisch mit dem Betrag:
+   * linear waere ein Pot von 200.000 eine Saeule bis zum Bildrand.
+   */
+  const POT_FARBEN = ["#ecf0f1", "#2980b9", "#27ae60", "#2c3e50", "#c0392b", "#8e44ad"];
+  function potChipsHTML(betrag) {
+    const stufen = Math.max(1, Math.min(6, Math.floor(Math.log10(Math.max(1, betrag) / 50)) + 1));
+    let out = '<span class="pot-chips">';
+    for (let i = 0; i < stufen; i++) {
+      out += `<i style="background:${POT_FARBEN[i]};bottom:${i * 4}px"></i>`;
+    }
+    return out + "</span>";
+  }
+
   function cardEl(card, faceDown) {
     const d = document.createElement("div");
     d.className = "card" + (faceDown ? " back" : "");
@@ -146,7 +172,16 @@
     $("#table-code").textContent = state.code;
 
     // Pot & board
-    $("#pot").textContent = state.pot > 0 ? `Pot: ${state.pot.toLocaleString("de-DE")} 🪙` : "";
+    // Pot mit Chipstapel. Eine Zahl allein sagt nicht, ob gerade viel oder
+    // wenig auf dem Tisch liegt; ein wachsender Stapel schon.
+    const potEl = $("#pot");
+    if (state.pot > 0) {
+      potEl.classList.add("has-pot");
+      potEl.innerHTML = `${potChipsHTML(state.pot)}<b>${state.pot.toLocaleString("de-DE")} 🪙</b>`;
+    } else {
+      potEl.classList.remove("has-pot");
+      potEl.innerHTML = "";
+    }
     const board = $("#board");
     board.innerHTML = "";
     state.board.forEach((c) => board.appendChild(cardEl(c, false)));
