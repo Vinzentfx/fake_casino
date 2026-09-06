@@ -2256,138 +2256,214 @@ html.reduce-motion .screen { animation: none; }
 .bj-wrap {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-width: 600px;
+  gap: var(--sp-3);
+  max-width: 620px;
   margin: 0 auto;
-  padding-bottom: 24px;
+  padding-bottom: var(--sp-6);
 }
 
-/* Dealer + player card areas */
-.bj-dealer-area {
-  background: rgba(0,0,0,0.28);
-  border: 1px solid rgba(var(--accent-rgb), 0.2);
-  border-radius: var(--radius);
-  padding: 16px;
+/* ---------------- Der Tisch ----------------
+   Filz mit Bande statt drei Kaesten untereinander. Die Farben kommen aus den
+   --felt-Tokens, damit der Tisch in jedem Theme passt: gruen im Klassik,
+   blau im Mitternacht, fast schwarz im Neon. */
+.bj-table {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 380px;
+  padding: var(--sp-6) var(--sp-4) var(--sp-5);
+  margin: var(--sp-3) 12px 0;
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--felt-light), transparent 62%),
+    radial-gradient(100% 70% at 50% 110%, rgba(0, 0, 0, 0.4), transparent 60%),
+    var(--felt);
+  /* Die Bande aus Schatten statt aus border-image: ein Rahmen mit Verlauf
+     folgt dem border-radius nicht und brach an den Ecken auf. Von innen nach
+     aussen: Haarlinie, dunkle Bande, aeussere Haarlinie. */
+  box-shadow:
+    inset 0 0 70px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 0 0 2px rgba(var(--accent-rgb), 0.3),
+    0 0 0 12px rgba(0, 0, 0, 0.55),
+    0 0 0 13px rgba(var(--accent-rgb), 0.16),
+    var(--e-3);
 }
-.bj-area-label {
-  font-size: 0.82rem;
+/* Die aufgedruckte Hausregel. Steht auf jedem echten Tisch und beantwortet
+   die Frage, die sonst im Cheatsheet nachgeschlagen werden muss. */
+.bj-felt-line {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(88%, 420px);
+  text-align: center;
+  font-size: var(--fs-xs);
   font-weight: 700;
-  color: var(--text-dim);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.13);
+  pointer-events: none;
+  user-select: none;
+  transition: opacity var(--dur-2) var(--ease);
+}
+/* Wenn eine Meldung steht ("Verloren.", "Blackjack!"), tritt die aufgedruckte
+   Hausregel zurueck. Sonst liegen beide Texte uebereinander. */
+.bj-table:has(.bj-message.show) .bj-felt-line { opacity: 0; }
+
+.bj-dealer-area { width: 100%; display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); }
+.bj-area-label {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 .bj-value-chip {
-  background: rgba(var(--accent-rgb), 0.15);
-  border: 1px solid rgba(var(--accent-rgb), 0.4);
-  color: var(--gold-strong);
-  font-size: 0.9rem;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  color: var(--accent-strong);
+  font-size: var(--fs-sm);
   font-weight: 800;
   padding: 2px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 
-/* Card row */
+/* Kartenreihe. Die Karten ueberlappen leicht, wie auf der Hand. */
 .bj-cards {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: center;
+  gap: var(--sp-2);
   align-items: flex-start;
+  min-height: 96px;
 }
+.bj-cards .bj-card + .bj-card { margin-left: -6px; }
 
-/* Individual BJ card */
 .bj-card {
-  width: 56px;
-  height: 82px;
-  border-radius: 8px;
-  background: #fff;
-  color: #111;
-  border: 1px solid rgba(0,0,0,0.15);
-  box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+  width: 64px;
+  height: 92px;
+  border-radius: var(--r-xs);
+  background: linear-gradient(160deg, #ffffff, var(--card-face));
+  color: var(--card-black);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
   position: relative;
-  font-family: Georgia, serif;
+  font-family: Georgia, "Times New Roman", serif;
   flex-shrink: 0;
-  animation: bjCardIn 0.18s ease;
+  /* Aus dem Kartenschlitten oben rechts hereingeschoben statt aus dem Nichts. */
+  animation: bjCardIn 0.26s var(--ease-out) backwards;
 }
 @keyframes bjCardIn {
-  from { transform: translateY(-12px) scale(0.88); opacity: 0; }
+  from { transform: translate(60px, -70px) rotate(14deg) scale(0.9); opacity: 0; }
   to   { transform: none; opacity: 1; }
 }
+html.reduce-motion .bj-card { animation: none; }
 .bj-card.red { color: var(--card-red); }
-.bj-card-tl { position: absolute; top: 4px; left: 5px; font-size: 0.72rem; font-weight: 700; line-height: 1.15; }
-.bj-card-br { position: absolute; bottom: 4px; right: 5px; font-size: 0.72rem; font-weight: 700; line-height: 1.15; transform: rotate(180deg); }
-.bj-card-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; }
-.bj-card.face-down { background: linear-gradient(135deg, #1a4d8f 25%, #0f2d5a 100%); }
+.bj-card-tl { position: absolute; top: 5px; left: 6px; font-size: 0.8rem; font-weight: 700; line-height: 1.1; }
+.bj-card-br { position: absolute; bottom: 5px; right: 6px; font-size: 0.8rem; font-weight: 700; line-height: 1.1; transform: rotate(180deg); }
+.bj-card-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+.bj-card.face-down { background: linear-gradient(135deg, #1e5399 25%, #0d2750 100%); }
 .bj-card.face-down .bj-card-inner {
   position: absolute;
   inset: 5px;
-  border: 2px solid rgba(255,255,255,0.2);
-  border-radius: 4px;
-  background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.05) 4px, rgba(255,255,255,0.05) 8px);
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 5px;
+  background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 8px);
 }
 
-/* Player hands */
+/* ---------------- Eigene Haende ----------------
+   Beim Teilen stehen sie nebeneinander, damit man sieht, dass es zwei sind,
+   und welche gerade dran ist. Vorher lagen sie untereinander und die aktive
+   Hand war nur an einem Rahmen zu erkennen. */
 .bj-player-hands {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  width: 100%;
+  flex-wrap: wrap;
 }
 .bj-hand {
-  background: rgba(0,0,0,0.22);
-  border: 1px solid rgba(var(--accent-rgb), 0.15);
-  border-radius: var(--radius);
-  padding: 14px;
-  transition: border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  transition: border-color var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
 }
 .bj-hand.active {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.3);
+  border-color: rgba(var(--accent-rgb), 0.55);
+  background: rgba(0, 0, 0, 0.22);
+  box-shadow: 0 0 22px -6px rgba(var(--accent-rgb), 0.5);
 }
+.bj-player-hands .bj-hand:only-child { border-color: transparent; background: none; box-shadow: none; }
 .bj-hand-label {
-  font-size: 0.82rem;
-  color: var(--text-dim);
-  margin-bottom: 8px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
 }
 .bj-hand-value {
-  background: rgba(var(--accent-rgb), 0.15);
-  border: 1px solid rgba(var(--accent-rgb), 0.35);
-  color: var(--gold-strong);
-  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: var(--fs-sm);
   font-weight: 800;
-  padding: 1px 8px;
-  border-radius: 999px;
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  letter-spacing: 0;
 }
+.bj-hand.active .bj-hand-value { border-color: rgba(var(--accent-rgb), 0.6); color: var(--accent-strong); }
 .bj-badge {
-  background: var(--gold);
-  color: var(--accent-ink);
-  font-size: 0.7rem;
+  background: rgba(var(--accent-rgb), 0.22);
+  border: 1px solid rgba(var(--accent-rgb), 0.5);
+  color: var(--accent-strong);
+  font-size: var(--fs-xs);
   font-weight: 800;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
-.bj-hand-bet { font-size: 0.8rem; color: var(--text-dim); margin-top: 8px; }
-.bj-hand-bet b { color: var(--gold-strong); }
 
-/* Hand result badge */
+/* Einsatz als Chipstapel statt als Textzeile. */
+.bj-hand-bet { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: var(--sp-1); }
+.bj-chip-stack { position: relative; height: 26px; display: flex; justify-content: center; }
+.bj-chip-stack i {
+  position: absolute;
+  bottom: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  /* Heller Rand und die typischen Kerben am Chiprand. */
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 3px rgba(0, 0, 0, 0.16),
+    inset 0 0 0 5px rgba(255, 255, 255, 0.5);
+}
+.bj-hand-bet b { color: var(--accent-strong); font-size: var(--fs-sm); }
+
 .bj-hand-result {
-  margin-top: 8px;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-sm);
   font-weight: 800;
-  font-size: 0.95rem;
-  padding: 4px 10px;
-  border-radius: 8px;
-  display: inline-block;
+  padding: 3px 12px;
+  border-radius: var(--r-pill);
 }
-.bj-hand-result.win, .bj-hand-result.blackjack { color: var(--good-text); background: rgba(111,227,156,0.1); }
-.bj-hand-result.lose, .bj-hand-result.bust      { color: var(--bad-text); background: rgba(255,100,80,0.1); }
-.bj-hand-result.push                            { color: var(--text-dim); background: rgba(255,255,255,0.06); }
+.bj-hand-result.win, .bj-hand-result.blackjack { color: var(--good-text); background: var(--good-soft); }
+.bj-hand-result.lose, .bj-hand-result.bust      { color: var(--bad-text); background: var(--bad-soft); }
+.bj-hand-result.push                            { color: var(--text-dim); background: rgba(255, 255, 255, 0.08); }
 
-/* Message bar */
 .bj-message {
   text-align: center;
   font-size: 1.1rem;

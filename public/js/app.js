@@ -32,6 +32,16 @@ const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 let currentScreen = "login";
 const lockedScreens = new Set(["season"]);
 
+/**
+ * Gesperrte Screens aus dem Menü nehmen. Ein Eintrag, der beim Antippen nur
+ * "ist gerade gesperrt" sagt, ist schlechter als gar kein Eintrag.
+ */
+function versteckeGesperrteMenueeintraege() {
+  document.querySelectorAll("#menu-sheet [data-nav]").forEach((el) => {
+    if (lockedScreens.has(el.dataset.nav)) el.style.display = "none";
+  });
+}
+
 // Screens, die es nur mit Account gibt. Wer einen geteilten Link oeffnet,
 // ohne eingeloggt zu sein, landet auf dem Login statt in einem leeren Spiel.
 const publicScreens = new Set(["login"]);
@@ -67,6 +77,8 @@ window.Casino.screens.register("slots", {
 function showScreen(name, opts) {
   return window.Casino.screens.show(name, opts);
 }
+
+versteckeGesperrteMenueeintraege();
 
 // Alles, was bei jedem Wechsel passiert, unabhaengig vom Screen.
 document.addEventListener("casino:screen", (e) => {

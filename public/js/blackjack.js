@@ -42,6 +42,34 @@
     </div>`;
   }
 
+  /**
+   * Einsatz als Chipstapel. Ein Stapel sagt auf einen Blick, ob viel oder
+   * wenig im Spiel ist; "Einsatz: 250.000 🪙" muss man erst lesen.
+   * Die Farben sind die ueblichen Casino-Werte.
+   */
+  const CHIP_WERTE = [
+    { wert: 1000000, farbe: "#8e44ad" },
+    { wert: 250000,  farbe: "#c0392b" },
+    { wert: 50000,   farbe: "#2c3e50" },
+    { wert: 10000,   farbe: "#27ae60" },
+    { wert: 1000,    farbe: "#2980b9" },
+    { wert: 100,     farbe: "#ecf0f1" },
+  ];
+  const MAX_CHIPS = 8; // hoechstens acht Scheiben, sonst wird der Stapel zur Saeule
+  function chipStackHTML(betrag) {
+    let rest = Math.max(0, Math.floor(betrag) || 0);
+    const chips = [];
+    for (const c of CHIP_WERTE) {
+      while (rest >= c.wert && chips.length < MAX_CHIPS) { chips.push(c.farbe); rest -= c.wert; }
+      if (chips.length >= MAX_CHIPS) break;
+    }
+    if (!chips.length) chips.push(CHIP_WERTE[CHIP_WERTE.length - 1].farbe);
+    // Von unten nach oben stapeln: die dicksten Scheiben liegen zuunterst.
+    return `<span class="bj-chip-stack">${chips
+      .map((f, i) => `<i style="background:${f};bottom:${(chips.length - 1 - i) * 3}px"></i>`)
+      .join("")}</span>`;
+  }
+
   function handResult(hand) {
     if (!hand.result) return "";
     const map = { win:"✅ Gewonnen", blackjack:"🃏 Blackjack!", push:"🤝 Unentschieden", lose:"❌ Verloren", bust:"💥 Überkauft" };
@@ -76,7 +104,7 @@
             ${hand.doubled ? '<span class="bj-badge">×2</span>' : ""}
           </div>
           <div class="bj-cards">${hand.cards.map(c => cardHTML(c)).join("")}</div>
-          <div class="bj-hand-bet">Einsatz: <b>${hand.bet.toLocaleString("de-DE")} 🪙</b></div>
+          <div class="bj-hand-bet">${chipStackHTML(hand.bet)}<b>${hand.bet.toLocaleString("de-DE")} 🪙</b></div>
           ${res}
         </div>`;
       }).join("");
@@ -123,10 +151,32 @@
     if (s.phase === "player" && wasDealing) {
       [0,80,160,240].forEach(t => setTimeout(sfxCard, t));
     }
-    if (s.phase === "done") {
+    // Nur einmal je Runde feiern: bj:state kommt auch danach noch, etwa
+    // wenn ein Mitspieler in der Lobby fertig wird.
+    if (s.phase === "done" && (!prev || prev.phase !== "done")) {
       const anyWin = s.playerHands.some(h => h.result === "win" || h.result === "blackjack");
       const allLost = s.playerHands.every(h => h.result === "lose" || h.result === "bust");
-      if (anyWin) sfxWin(); else if (allLost) sfxLose();
+      const blackjack = s.playerHands.some(h => h.result === "blackjack");
+      // Auszahlung: Gewinn zahlt 2x den Einsatz, Blackjack 2,5x.
+      const auszahlung = s.playerHands.reduce((sum, h) => {
+        if (h.result === "blackjack") return sum + Math.floor(h.bet * 2.5);
+        if (h.result === "win") return sum + h.bet * 2;
+        if (h.result === "push") return sum + h.bet;
+        return sum;
+      }, 0);
+      const einsatz = s.playerHands.reduce((sum, h) => sum + h.bet, 0);
+
+      if (blackjack) {
+        window.Casino.fx.bigWin(auszahlung, { label: "🃏 Blackjack" });
+      } else if (anyWin && auszahlung >= einsatz * 2) {
+        // Echter Gewinn (nicht nur eine gepushte Hand): Muenzwurf am Tisch.
+        sfxWin();
+        window.Casino.fx.coins(document.querySelector(".bj-table"));
+      } else if (anyWin) {
+        sfxWin();
+      } else if (allLost) {
+        sfxLose();
+      }
     }
   });
 

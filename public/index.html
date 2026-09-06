@@ -436,17 +436,21 @@
           <div class="bj-lobby-feed" id="bj-lobby-feed"></div>
         </div>
 
-        <!-- Dealer -->
-        <div class="bj-dealer-area">
-          <div class="bj-area-label">Dealer <span id="bj-dealer-value" class="bj-value-chip"></span></div>
-          <div class="bj-cards" id="bj-dealer-cards"></div>
+        <!-- Der Tisch. Dealer oben, eigene Haende unten, dazwischen die
+             Meldung. Vorher waren das drei Kaesten untereinander auf dem
+             Seitenhintergrund; ein Blackjack-Tisch sah das nicht. -->
+        <div class="bj-table">
+          <div class="bj-felt-line" aria-hidden="true">Dealer zieht bis 17 · Blackjack zahlt 3:2</div>
+
+          <div class="bj-dealer-area">
+            <div class="bj-area-label">Dealer <span id="bj-dealer-value" class="bj-value-chip"></span></div>
+            <div class="bj-cards" id="bj-dealer-cards"></div>
+          </div>
+
+          <div class="bj-message" id="bj-message"></div>
+
+          <div id="bj-player-hands" class="bj-player-hands"></div>
         </div>
-
-        <!-- Meldung (Gewonnen / Verloren etc.) -->
-        <div class="bj-message" id="bj-message"></div>
-
-        <!-- Spieler-Hände -->
-        <div id="bj-player-hands" class="bj-player-hands"></div>
 
         <!-- Aktions-Controls: Treffen / Passen / … -->
         <div class="bj-controls-wrap">
