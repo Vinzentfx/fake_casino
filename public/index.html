@@ -611,15 +611,39 @@
           <div class="mines-stat"><span>Nächstes Feld</span><b id="mines-next">—</b></div>
         </div>
         <div class="mines-grid" id="mines-grid"></div>
+
+        <!-- Während der Runde: Zufallsfeld statt zielen. Auf dem iPad sind die
+             Kacheln klein, und beim Aufdecken gibt es nichts zu können. -->
+        <div class="mines-live hidden" id="mines-live">
+          <button class="chip-btn" id="mines-random" type="button">🎲 Zufälliges Feld</button>
+          <button class="chip-btn" id="mines-auto" type="button">⏩ Bis zum Ziel aufdecken</button>
+        </div>
+
         <div class="mines-setup" id="mines-setup">
           <div class="crash-betrow">
-            <label>Einsatz<input id="mines-amount" type="number" inputmode="numeric" min="50" max="10000" step="50" value="100" /></label>
-            <label>Minen<input id="mines-count" type="number" inputmode="numeric" min="1" max="24" value="3" /></label>
+            <label>Einsatz<input id="mines-amount" type="number" inputmode="numeric" min="50" step="50" value="100" /></label>
           </div>
+
+          <!-- Minen als Knopfreihe statt Zahlenfeld: niemand tippt "17". -->
+          <div class="mines-choice">
+            <span class="mines-choice-label">Minen</span>
+            <div class="mines-mine-row" id="mines-mine-row"></div>
+          </div>
+
+          <!-- Was die Minenzahl zahlt. Stand vorher nirgends: man hat eine
+               Zahl eingetippt und erst nach dem Einsatz gesehen, was sie wert
+               ist. Kommt vom Server, damit beide dieselbe Formel benutzen. -->
+          <div class="mines-pay" id="mines-pay"></div>
+
+          <label class="mines-target">Automatisch auszahlen ab
+            <input id="mines-target" type="number" inputmode="decimal" min="1.1" step="0.1" value="2" />×
+          </label>
+
           <button class="btn-primary" id="mines-start" style="width:100%;margin-top:10px">💣 Spiel starten</button>
         </div>
         <button class="btn-primary crash-cashbtn" id="mines-cashout" style="width:100%;display:none">💸 Auszahlen</button>
         <div class="form-error" id="mines-error"></div>
+        <div class="runden-verlauf" id="mines-history"></div>
       </div>
     </section>
 
@@ -637,12 +661,13 @@
         <div class="towers-setup" id="tw-setup">
           <div class="tw-diffs" id="tw-diffs"></div>
           <div class="crash-betrow">
-            <label>Einsatz<input id="tw-amount" type="number" inputmode="numeric" min="50" max="50000" step="50" value="100" /></label>
+            <label>Einsatz<input id="tw-amount" type="number" inputmode="numeric" min="50" step="50" value="100" /></label>
           </div>
           <button class="btn-primary" id="tw-start" style="width:100%;margin-top:10px">🗼 Turm starten</button>
         </div>
         <button class="btn-primary crash-cashbtn" id="tw-cashout" style="width:100%;display:none">💸 Auszahlen</button>
         <div class="form-error" id="tw-error"></div>
+        <div class="runden-verlauf" id="tw-history"></div>
       </div>
     </section>
 
@@ -1733,6 +1758,7 @@
   <script defer src="/js/core/sound.js"></script>
   <script defer src="/js/core/fx.js"></script>
   <script defer src="/js/core/player.js"></script>
+  <script defer src="/js/core/bet.js"></script>
   <script defer src="/js/changelog.js"></script>
   <script defer src="/js/app.js"></script>
   <script defer src="/js/home.js"></script>

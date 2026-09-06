@@ -19,13 +19,45 @@ const crypto = require("crypto");
 
 const TILES = 25;
 const HOUSE_EDGE = 0.02; // 98% RTP
-const MIN_BET = 50, MAX_BET = 10_000;
+/* Die Obergrenze stand seit dem ersten Tag bei 10.000. Damals war das viel.
+ * Inzwischen laufen Konten mit sieben und acht Stellen herum, und Mines war
+ * das einzige Hausspiel, in dem sie nichts anfangen konnten: Crash erlaubt
+ * eine Million, Sportwetten fuenf. Der Hausvorteil bleibt bei 2 %, es aendert
+ * sich also nur, wie gross die Schwankung sein darf. */
+const MIN_BET = 50, MAX_BET = 250_000;
+
+/* Deckel je Runde.
+ *
+ * Der hoehere Einsatz hat ein Problem sichtbar gemacht, das vorher schon da
+ * war: bei 15 Minen zahlt das Leerraeumen aller zehn sicheren Felder rund
+ * 3,2 Millionen mal den Einsatz. Mit 250.000 waeren das 800 Milliarden Chips
+ * — ein einziger Treffer wuerde die ganze Wirtschaft erledigen. Die Chance
+ * liegt bei etwa 1 zu 3,3 Millionen, das passiert also praktisch nie; aber
+ * "praktisch nie" mal "zerstoert alles" ist trotzdem ein schlechtes Geschaeft.
+ *
+ * Deshalb ein Deckel auf die Auszahlung statt eines kleinen Einsatzlimits.
+ * Er greift ausschliesslich in Zweigen, die ohnehin niemand erreicht, und
+ * steht sichtbar in der Oberflaeche, damit niemand ueberrascht wird. */
+const MAX_WIN = 50_000_000;
 
 function multiplier(mines, safe) {
   if (safe <= 0) return 1;
   let p = 1;
   for (let i = 0; i < safe; i++) p *= (TILES - i) / (TILES - mines - i);
   return Math.max(1, Math.floor(p * (1 - HOUSE_EDGE) * 100) / 100);
+}
+
+/**
+ * Was die naechsten Schritte bringen wuerden — fuer die Vorschau, bevor
+ * ueberhaupt ein Einsatz steht.
+ *
+ * Bisher tippte man eine Minenzahl ein, ohne zu wissen, was sie zahlt. Zwei
+ * Minen und zwanzig Minen sahen im Formular gleich aus.
+ */
+function paytable(mines) {
+  const stufen = [1, 2, 3, 5, 10];
+  const max = TILES - mines;
+  return stufen.filter((k) => k <= max).map((k) => ({ safe: k, mult: multiplier(mines, k) }));
 }
 
 function pickMines(m) {
@@ -83,16 +115,25 @@ function setupMines(io, accounts) {
         revealed: g.revealed, over: g.over,
         multiplier: multiplier(g.mines, safe),
         nextMultiplier: g.over ? null : multiplier(g.mines, safe + 1),
-        cashout: safe > 0 ? Math.floor(g.bet * multiplier(g.mines, safe)) : 0,
+        cashout: safe > 0 ? Math.min(MAX_WIN, Math.floor(g.bet * multiplier(g.mines, safe))) : 0,
+        paytable: paytable(g.mines), maxWin: MAX_WIN,
         ...extra,
       };
     }
+
+    // Grenzen und Auszahlungen kommen vom Server: fest ins HTML getippt
+    // laufen sie auseinander, sobald hier eine Zahl geaendert wird.
+    socket.on("mines:config", ({ mines } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const m = Math.min(24, Math.max(1, Math.floor(Number(mines)) || 3));
+      ack({ ok: true, minBet: MIN_BET, maxBet: MAX_BET, maxWin: MAX_WIN, tiles: TILES, mines: m, paytable: paytable(m) });
+    });
 
     // Laufendes Spiel nach Reload/Reconnect wieder aufnehmen.
     socket.on("mines:state", (ack) => {
       if (typeof ack !== "function") return;
       const g = socket.data.account ? games.get(socket.data.account) : null;
-      if (!g || g.over) return ack({ ok: true, none: true });
+      if (!g || g.over) return ack({ ok: true, none: true, minBet: MIN_BET, maxBet: MAX_BET });
       g.lastAt = Date.now();
       ack(view(g));
     });
@@ -116,10 +157,13 @@ function setupMines(io, accounts) {
       ack({ ...view(g), account: res.account });
     });
 
-    socket.on("mines:reveal", ({ tile } = {}, ack) => {
-      if (typeof ack !== "function") return;
-      const g = socket.data.account ? games.get(socket.data.account) : null;
-      if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
+    /**
+     * Ein Feld aufdecken. Steht als eigene Funktion da, weil es zwei Wege
+     * hierher gibt: der Tipp auf eine Kachel und der Zufalls-Knopf. Zwei
+     * Kopien derselben Regel waeren genau die Sorte Fehler, bei der eine
+     * Variante irgendwann anders auszahlt als die andere.
+     */
+    function doReveal(g, tile, ack) {
       g.lastAt = Date.now();
       tile = Math.floor(Number(tile));
       if (!Number.isFinite(tile) || tile < 0 || tile >= TILES) return ack({ ok: false, error: "Ungültiges Feld." });
@@ -140,13 +184,34 @@ function setupMines(io, accounts) {
       g.revealed.push(tile);
       // Cleared the whole board → auto cash-out at the max multiplier.
       if (g.revealed.length >= TILES - g.mines) {
-        const payout = Math.floor(g.bet * multiplier(g.mines, g.revealed.length));
+        const payout = Math.min(MAX_WIN, Math.floor(g.bet * multiplier(g.mines, g.revealed.length)));
         g.over = true;
         const r = accounts.adjustChips(socket.data.account, payout);
         accounts.recordHand(socket.data.account, payout - g.bet, true, "mines", { einsatz: g.bet });
         return ack({ ...view(g, { tile, cleared: true, payout, mineSet: [...g.mineSet] }), account: r.account });
       }
       ack({ ...view(g, { tile }) });
+    }
+
+    socket.on("mines:reveal", ({ tile } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const g = socket.data.account ? games.get(socket.data.account) : null;
+      if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
+      doReveal(g, tile, ack);
+    });
+
+    // Ein zufaelliges noch verdecktes Feld aufdecken. Auf dem iPad trifft man
+    // die kleinen Kacheln schlecht, und beim Aufdecken gibt es ohnehin nichts
+    // zu koennen — jedes verdeckte Feld ist gleich wahrscheinlich.
+    socket.on("mines:revealRandom", (ack) => {
+      if (typeof ack !== "function") return;
+      const g = socket.data.account ? games.get(socket.data.account) : null;
+      if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
+      const frei = [];
+      for (let i = 0; i < TILES; i++) if (!g.revealed.includes(i)) frei.push(i);
+      if (!frei.length) return ack({ ok: false, error: "Nichts mehr übrig." });
+      const tile = frei[crypto.randomInt(frei.length)];
+      doReveal(g, tile, ack);
     });
 
     socket.on("mines:cashout", (ack) => {
@@ -155,7 +220,7 @@ function setupMines(io, accounts) {
       if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
       if (!g.revealed.length) return ack({ ok: false, error: "Erst mind. ein Feld aufdecken." });
       const mult = multiplier(g.mines, g.revealed.length);
-      const payout = Math.floor(g.bet * mult);
+      const payout = Math.min(MAX_WIN, Math.floor(g.bet * mult));
       g.over = true;
       const r = accounts.adjustChips(socket.data.account, payout);
       accounts.recordHand(socket.data.account, payout - g.bet, true, "mines", { einsatz: g.bet });

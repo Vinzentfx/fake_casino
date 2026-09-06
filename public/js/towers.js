@@ -22,8 +22,31 @@
     { key: "master", label: "Meister", w: 4, s: 1 },
   ];
   const ROWS = 9;
+  const VERLAUF_KEY = "casino_towers_verlauf";
   let diffKey = "easy";
   let game = null;
+  let grenzen = { minBet: 50, maxBet: 250000 };
+
+  // Verlauf der letzten Runden. Bewusst lokal: Sitzungsgedaechtnis, kein
+  // Besitz, muss nicht ueber Geraete hinweg stimmen.
+  function verlauf() {
+    try { const v = JSON.parse(localStorage.getItem(VERLAUF_KEY) || "[]"); return Array.isArray(v) ? v : []; }
+    catch { return []; }
+  }
+  function merke(eintrag) {
+    const v = [eintrag, ...verlauf()].slice(0, 12);
+    try { localStorage.setItem(VERLAUF_KEY, JSON.stringify(v)); } catch {}
+    renderVerlauf();
+  }
+  function renderVerlauf() {
+    const box = $("#tw-history");
+    if (!box) return;
+    const v = verlauf();
+    box.innerHTML = v.length
+      ? `<span class="rv-label">Letzte Runden</span>` + v.map((e) =>
+          `<span class="rv-chip ${e.gewonnen ? "up" : "down"}">${e.gewonnen ? e.mult.toFixed(2) + "×" : "💀"}</span>`).join("")
+      : "";
+  }
 
   const cfg = (k) => DIFFS.find((d) => d.key === k);
   function clientLadder(k) {
@@ -136,6 +159,7 @@
         board.classList.add("tw-bust");
         setTimeout(() => board.classList.remove("tw-bust"), 900);
         toast("💀 Falle erwischt! Einsatz weg.");
+        merke({ gewonnen: false, mult: 0 });
       } else if (v.cashedOut || v.cleared) {
         board.classList.add("tw-win");
         const float = document.createElement("div");
@@ -144,6 +168,7 @@
         board.appendChild(float);
         setTimeout(() => { board.classList.remove("tw-win"); float.remove(); }, 1600);
         toast(v.cleared ? `🏆 Turm bezwungen! +${fmt(v.payout)} 🪙` : `💸 +${fmt(v.payout)} 🪙 (${v.mult.toFixed(2)}×)!`);
+        merke({ gewonnen: true, mult: v.mult || v.multiplier || 1 });
       }
     } else setActive(true);
   }
@@ -164,8 +189,10 @@
   $("#tw-start").addEventListener("click", () => {
     const err = $("#tw-error"); err.textContent = "";
     const bet = parseInt($("#tw-amount").value, 10);
-    if (!Number.isFinite(bet) || bet < 50) { err.textContent = "Mindestens 50 🪙."; return; }
-    if (bet > 50000) { err.textContent = "Maximaleinsatz 50.000 🪙."; return; }
+    // Grenzen kommen vom Server. Fest getippt liefen sie auseinander, sobald
+    // dort eine Zahl geaendert wird — genau das war hier passiert.
+    if (!Number.isFinite(bet) || bet < grenzen.minBet) { err.textContent = `Mindestens ${fmt(grenzen.minBet)} 🪙.`; return; }
+    if (bet > grenzen.maxBet) { err.textContent = `Maximaleinsatz ${fmt(grenzen.maxBet)} 🪙.`; return; }
     socket.emit("towers:start", { bet, difficulty: diffKey }, (v) => {
       if (!v || !v.ok) { err.textContent = (v && v.error) || "Fehler."; return; }
       snd.play("chip");
@@ -186,8 +213,15 @@
 
   window.Casino._loadTowers = () => {
     renderDiffs();
+    renderVerlauf();
     // Läuft server-seitig noch ein Spiel (z.B. nach Tab-Reload)? → fortsetzen.
     socket.emit("towers:state", (v) => {
+      if (v && v.minBet) {
+        grenzen = { minBet: v.minBet, maxBet: v.maxBet };
+        const feld = $("#tw-amount");
+        if (feld) { feld.min = v.minBet; feld.max = v.maxBet; }
+        window.Casino.einsatz.leiste(feld, { min: v.minBet, max: v.maxBet, schritt: 50 });
+      }
       if (v && v.ok && !v.none) { diffKey = v.difficulty || diffKey; renderDiffs(); apply(v); return; }
       if (!game || game.over) {
         game = null;

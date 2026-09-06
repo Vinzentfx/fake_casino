@@ -19,6 +19,19 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-06-mines",
+      datum: "6. September 2026",
+      titel: "Mines und Towers überarbeitet",
+      items: [
+        { icon: "📊", titel: "Du siehst vorher, was es bringt", text: "In Mines stand die Minenzahl in einem Zahlenfeld, ohne dass irgendwo gestanden hätte, was zwei Minen gegenüber zwanzig zahlen. Jetzt sind die Minen eine Knopfreihe, und darunter steht die Auszahlung für 1, 2, 3, 5 und 10 Felder." },
+        { icon: "🎲", titel: "Zufälliges Feld und Autoplay", text: "Beim Aufdecken gibt es nichts zu können, jedes verdeckte Feld ist gleich wahrscheinlich. Deshalb ein Knopf, der eins für dich aufdeckt, und einer, der so lange weitermacht, bis dein Ziel-Multiplikator erreicht ist, und dann automatisch auszahlt. Auf dem iPad muss man damit nicht mehr auf winzige Kacheln zielen." },
+        { icon: "💰", titel: "Einsätze passen wieder zu euren Konten", text: "Mines war bei 10.000 gedeckelt, Towers bei 50.000. Diese Zahlen sind aus der Anfangszeit, als das viel war. Beide stehen jetzt bei 250.000. Der Hausvorteil bleibt bei 2 Prozent, es ändert sich nur, wie groß die Schwankung sein darf." },
+        { icon: "🧯", titel: "Deckel bei 50 Millionen pro Runde", text: "Neu dazu, und zwar aus einem Grund: bei 15 Minen zahlt das komplette Leerräumen rund 3,2 Millionen mal den Einsatz. Mit dem neuen Limit wären das 800 Milliarden Chips aus einer einzigen Runde. Das passiert etwa einmal in 3,3 Millionen Versuchen, also praktisch nie, aber es würde die Wirtschaft auf einen Schlag erledigen. Der Deckel steht sichtbar in der Auszahlungstabelle." },
+        { icon: "⚡", titel: "Schnellwahl beim Einsatz", text: "Min, ½, 2× und Max unter dem Einsatzfeld, in Mines und Towers. Max nimmt nie mehr, als du wirklich hast." },
+        { icon: "🕘", titel: "Letzte Runden", text: "Unter beiden Spielen steht jetzt, wie die letzten zwölf Runden ausgegangen sind." },
+      ],
+    },
+    {
       id: "2026-09-06-style",
       datum: "6. September 2026",
       titel: "Endlich mehr als ein Emoji",

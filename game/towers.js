@@ -23,7 +23,10 @@ const crypto = require("crypto");
 
 const ROWS = 9;
 const HOUSE_EDGE = 0.02; // 98% RTP
-const MIN_BET = 50, MAX_BET = 50_000;
+/* Gleicher Grund wie in Mines: die Grenze stammt aus der Anfangszeit und
+ * passte nicht mehr zu Konten mit sieben Stellen. Der Hausvorteil bleibt bei
+ * 2 %, es aendert sich nur die zulaessige Schwankung. */
+const MIN_BET = 50, MAX_BET = 250_000;
 
 const DIFFICULTIES = {
   easy:   { label: "Einfach", width: 4, safe: 3 },
@@ -32,6 +35,20 @@ const DIFFICULTIES = {
   expert: { label: "Experte", width: 3, safe: 1 },
   master: { label: "Meister", width: 4, safe: 1 },
 };
+
+/* Deckel je Runde.
+ *
+ * Der hoehere Einsatz hat ein Problem sichtbar gemacht, das vorher schon da
+ * war: der Meister-Turm auf Ebene 9 zahlt rund
+ * 256.901 mal den Einsatz. Mit 250.000 waeren das 64 Milliarden Chips
+ * — ein einziger Treffer wuerde die ganze Wirtschaft erledigen. Die Chance
+ * liegt bei etwa 1 zu 262.000, das passiert also praktisch nie; aber
+ * "praktisch nie" mal "zerstoert alles" ist trotzdem ein schlechtes Geschaeft.
+ *
+ * Deshalb ein Deckel auf die Auszahlung statt eines kleinen Einsatzlimits.
+ * Er greift ausschliesslich in Zweigen, die ohnehin niemand erreicht, und
+ * steht sichtbar in der Oberflaeche, damit niemand ueberrascht wird. */
+const MAX_WIN = 50_000_000;
 
 /** Cash-out multiplier after climbing `level` rows (0 = not started → 1×). */
 function multiplier(diff, level) {
@@ -105,8 +122,8 @@ function setupTowers(io, accounts) {
         over: g.over,
         multiplier: multiplier(diff, g.level),
         nextMultiplier: g.over || g.level >= ROWS ? null : multiplier(diff, g.level + 1),
-        cashout: g.level > 0 ? Math.floor(g.bet * multiplier(diff, g.level)) : 0,
-        ladder: ladder(diff),
+        cashout: g.level > 0 ? Math.min(MAX_WIN, Math.floor(g.bet * multiplier(diff, g.level))) : 0,
+        ladder: ladder(diff), maxWin: MAX_WIN,
         ...extra,
       };
     }
@@ -115,9 +132,9 @@ function setupTowers(io, accounts) {
     socket.on("towers:state", (ack) => {
       if (typeof ack !== "function") return;
       const g = socket.data.account ? games.get(socket.data.account) : null;
-      if (!g || g.over) return ack({ ok: true, none: true });
+      if (!g || g.over) return ack({ ok: true, none: true, minBet: MIN_BET, maxBet: MAX_BET, maxWin: MAX_WIN });
       g.lastAt = Date.now();
-      ack(view(g));
+      ack({ ...view(g), minBet: MIN_BET, maxBet: MAX_BET });
     });
 
     socket.on("towers:start", ({ bet, difficulty } = {}, ack) => {
@@ -169,7 +186,7 @@ function setupTowers(io, accounts) {
 
       // Ganz oben angekommen → automatischer Cash-out beim Maximal-Multiplikator.
       if (g.level >= ROWS) {
-        const payout = Math.floor(g.bet * multiplier(diff, g.level));
+        const payout = Math.min(MAX_WIN, Math.floor(g.bet * multiplier(diff, g.level)));
         g.over = true;
         const r = accounts.adjustChips(socket.data.account, payout);
         accounts.recordHand(socket.data.account, payout - g.bet, true, "towers", { einsatz: g.bet });
@@ -185,7 +202,7 @@ function setupTowers(io, accounts) {
       if (g.level <= 0) return ack({ ok: false, error: "Erst mind. eine Ebene erklimmen." });
       const diff = DIFFICULTIES[g.diffKey];
       const mult = multiplier(diff, g.level);
-      const payout = Math.floor(g.bet * mult);
+      const payout = Math.min(MAX_WIN, Math.floor(g.bet * mult));
       g.over = true;
       const r = accounts.adjustChips(socket.data.account, payout);
       accounts.recordHand(socket.data.account, payout - g.bet, true, "towers", { einsatz: g.bet });

@@ -2,18 +2,60 @@
 
 /* ============================================================
    Fake Casino – Mines (client).
-   Reveal safe tiles (💎) to climb the multiplier; avoid bombs
-   (💣). Cash out any time. Server-authoritative.
+
+   Server-autoritativ (game/mines.js); hier wird nur gezeichnet.
+
+   Was hier neu ist und warum:
+   • Die Auszahlungstabelle steht VOR dem Einsatz da. Vorher tippte man eine
+     Minenzahl in ein Zahlenfeld, ohne zu wissen, was zwei Minen gegenüber
+     zwanzig überhaupt bringen.
+   • Minen sind eine Knopfreihe statt eines Zahlenfelds. "17" hat nie jemand
+     getippt, und auf dem iPad kostet jedes Zahlenfeld eine Tastatur.
+   • Zufallsfeld und "bis zum Ziel aufdecken": beim Aufdecken gibt es nichts zu
+     können, jedes verdeckte Feld ist gleich wahrscheinlich. Zielen auf kleine
+     Kacheln ist damit reine Fingerarbeit ohne Entscheidung.
+   • Ein Verlauf der letzten Runden, damit eine Sitzung nicht spurlos bleibt.
    ============================================================ */
 
 (function () {
   const { socket, toast, applyAccount } = window.Casino;
+  const Casino = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
+  const snd = Casino.sound;
 
   const TILES = 25;
-  let game = null; // { revealed:[], over } mirror of last server view
+  const MINEN_WAHL = [1, 3, 5, 10, 15, 24];
+  const VERLAUF_KEY = "casino_mines_verlauf";
 
+  let game = null;          // Spiegel der letzten Server-Sicht
+  let minen = 3;
+  let grenzen = { minBet: 50, maxBet: 250000 };
+  let autoLaeuft = false;
+
+  // ── Verlauf ──────────────────────────────────────────────────────────────
+  // Bewusst lokal: das ist Sitzungsgedaechtnis, kein Besitz, und muss nicht
+  // ueber Geraete hinweg stimmen.
+  function verlauf() {
+    try { const v = JSON.parse(localStorage.getItem(VERLAUF_KEY) || "[]"); return Array.isArray(v) ? v : []; }
+    catch { return []; }
+  }
+  function merke(eintrag) {
+    const v = [eintrag, ...verlauf()].slice(0, 12);
+    try { localStorage.setItem(VERLAUF_KEY, JSON.stringify(v)); } catch {}
+    renderVerlauf();
+  }
+  function renderVerlauf() {
+    const box = $("#mines-history");
+    if (!box) return;
+    const v = verlauf();
+    box.innerHTML = v.length
+      ? `<span class="rv-label">Letzte Runden</span>` + v.map((e) =>
+          `<span class="rv-chip ${e.gewonnen ? "up" : "down"}">${e.gewonnen ? e.mult.toFixed(2) + "×" : "💥"}</span>`).join("")
+      : "";
+  }
+
+  // ── Aufbau ───────────────────────────────────────────────────────────────
   function buildGrid() {
     const grid = $("#mines-grid");
     if (grid.childElementCount === TILES) return;
@@ -27,9 +69,42 @@
     }
   }
 
+  function renderMinenWahl() {
+    const box = $("#mines-mine-row");
+    if (!box) return;
+    box.innerHTML = MINEN_WAHL.map((m) =>
+      `<button type="button" class="mines-mine${m === minen ? " active" : ""}" data-minen="${m}">${m}</button>`).join("");
+  }
+
+  function renderPay(tabelle) {
+    const box = $("#mines-pay");
+    if (!box || !tabelle) return;
+    // Der Deckel gehoert sichtbar dazu. Eine Leiter, die 3 Millionen mal
+    // verspricht und dann bei 50 Mio abschneidet, waere eine Luege.
+    const deckel = grenzen.maxWin
+      ? `<span class="mines-pay-step"><b>Deckel</b><small>max. ${fmt(grenzen.maxWin)} 🪙</small></span>` : "";
+    box.innerHTML = `<span class="mines-pay-label">Bei ${minen} ${minen === 1 ? "Mine" : "Minen"} zahlt</span>` +
+      tabelle.map((z) =>
+        `<span class="mines-pay-step"><b>${z.mult.toFixed(2)}×</b><small>${z.safe} ${z.safe === 1 ? "Feld" : "Felder"}</small></span>`).join("") +
+      deckel;
+  }
+
+  function ladeConfig() {
+    socket.emit("mines:config", { mines: minen }, (r) => {
+      if (!r || !r.ok) return;
+      grenzen = { minBet: r.minBet, maxBet: r.maxBet, maxWin: r.maxWin };
+      const feld = $("#mines-amount");
+      if (feld) { feld.min = r.minBet; feld.max = r.maxBet; }
+      Casino.einsatz.leiste(feld, { min: r.minBet, max: r.maxBet, schritt: 50 });
+      renderPay(r.paytable);
+    });
+  }
+
+  // ── Zeichnen ─────────────────────────────────────────────────────────────
   function setActive(active) {
     $("#mines-setup").style.display = active ? "none" : "";
     $("#mines-cashout").style.display = active ? "" : "none";
+    $("#mines-live").classList.toggle("hidden", !active);
   }
 
   function renderTop(v) {
@@ -60,45 +135,102 @@
 
   function apply(v) {
     game = v;
-    // On a bust the "cashout" value is meaningless (you lost) — show 0.
     renderTop(v.bust ? { ...v, multiplier: v.multiplier, cashout: 0, nextMultiplier: null } : v);
     if (v.bust) { $("#mines-cashval").textContent = "verloren"; $("#mines-next").textContent = "—"; }
     paint(v);
     if (v.over) {
+      autoLaeuft = false;
       setActive(false);
       if (v.account) applyAccount(v.account);
-      if (v.bust) toast("💥 Bombe! Einsatz weg.");
-      else if (v.cashedOut) toast(`💸 +${fmt(v.payout)} 🪙 (${v.mult.toFixed(2)}×)!`);
-      else if (v.cleared) toast(`🏆 Feld leergeräumt! +${fmt(v.payout)} 🪙`);
+      if (v.bust) { toast("💥 Bombe! Einsatz weg."); merke({ gewonnen: false, mult: 0 }); }
+      else if (v.cashedOut) { toast(`💸 +${fmt(v.payout)} 🪙 (${v.mult.toFixed(2)}×)!`); merke({ gewonnen: true, mult: v.mult }); }
+      else if (v.cleared) { toast(`🏆 Feld leergeräumt! +${fmt(v.payout)} 🪙`); merke({ gewonnen: true, mult: v.multiplier }); }
     } else setActive(true);
   }
 
-  const snd = window.Casino.sound;
+  // ── Züge ─────────────────────────────────────────────────────────────────
+  function tonFuerAufdecken(v) {
+    if (v.bust) return snd.play("bust");
+    // Jeder sichere Stein klingt eine Stufe hoeher. Das baut die Spannung
+    // hoerbar auf, ohne dass man auf den Multiplikator schauen muss.
+    const stufe = (v.revealed || []).length;
+    snd.tone(420 + Math.min(stufe, 18) * 45, 0.09, "triangle", 0.05);
+  }
 
   function reveal(i) {
-    if (!game || game.over) return;
+    if (!game || game.over || autoLaeuft) return;
     if ((game.revealed || []).includes(i)) return;
     socket.emit("mines:reveal", { tile: i }, (v) => {
       if (!v || !v.ok) { $("#mines-error").textContent = (v && v.error) || "Fehler."; return; }
-      if (v.bust) snd.play("bust");
-      else {
-        // Jeder sichere Stein klingt eine Stufe hoeher. Das baut die Spannung
-        // hoerbar auf, ohne dass man auf den Multiplikator schauen muss.
-        const stufe = (v.revealed || []).length;
-        snd.tone(420 + Math.min(stufe, 18) * 45, 0.09, "triangle", 0.05);
-      }
+      tonFuerAufdecken(v);
       apply(v);
     });
   }
 
+  function revealRandom() {
+    return new Promise((fertig) => {
+      if (!game || game.over) return fertig(null);
+      socket.emit("mines:revealRandom", (v) => {
+        if (!v || !v.ok) { $("#mines-error").textContent = (v && v.error) || "Fehler."; return fertig(null); }
+        tonFuerAufdecken(v);
+        apply(v);
+        fertig(v);
+      });
+    });
+  }
+
+  /**
+   * Zufällig weiter aufdecken, bis der Ziel-Multiplikator erreicht ist, dann
+   * auszahlen. Bricht bei einer Bombe von selbst ab. Die Entscheidung, wann
+   * Schluss ist, trifft man damit vorher einmal statt unter Druck.
+   */
+  async function autoAufdecken() {
+    if (!game || game.over || autoLaeuft) return;
+    const ziel = parseFloat($("#mines-target").value.replace(",", "."));
+    if (!Number.isFinite(ziel) || ziel <= 1) { toast("Ziel muss über 1× liegen."); return; }
+    autoLaeuft = true;
+    $("#mines-auto").disabled = true;
+    try {
+      while (game && !game.over && (game.multiplier || 1) < ziel) {
+        const v = await revealRandom();
+        if (!v || v.over) break;
+        await new Promise((r) => setTimeout(r, 220));
+      }
+      if (game && !game.over && (game.multiplier || 1) >= ziel) cashout();
+    } finally {
+      autoLaeuft = false;
+      $("#mines-auto").disabled = false;
+    }
+  }
+
+  function cashout() {
+    socket.emit("mines:cashout", (v) => {
+      if (!v || !v.ok) { $("#mines-error").textContent = (v && v.error) || "Fehler."; return; }
+      const gewinn = v.payout || 0;
+      // Ab dem Dreifachen des Einsatzes ist es ein Ereignis, darunter reicht
+      // der Muenzwurf. Sonst feiert man sich bei 1,05x zu Tode.
+      if (gewinn > 0 && (v.multiplier || 0) >= 3) Casino.fx.bigWin(gewinn, { label: "Ausgezahlt" });
+      else { snd.play("cash"); Casino.fx.coins($("#mines-cashout")); }
+      apply(v);
+    });
+  }
+
+  // ── Verdrahtung ──────────────────────────────────────────────────────────
+  $("#mines-mine-row").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-minen]");
+    if (!b) return;
+    minen = parseInt(b.dataset.minen, 10);
+    snd.play("tick");
+    renderMinenWahl();
+    ladeConfig();
+  });
+
   $("#mines-start").addEventListener("click", () => {
     const err = $("#mines-error"); err.textContent = "";
     const bet = parseInt($("#mines-amount").value, 10);
-    const mines = parseInt($("#mines-count").value, 10);
-    if (!Number.isFinite(bet) || bet < 50) { err.textContent = "Mindestens 50 🪙."; return; }
-    if (bet > 10000) { err.textContent = "Maximaleinsatz 10.000 🪙."; return; }
-    if (!Number.isFinite(mines) || mines < 1 || mines > 24) { err.textContent = "1–24 Minen."; return; }
-    socket.emit("mines:start", { bet, mines }, (v) => {
+    if (!Number.isFinite(bet) || bet < grenzen.minBet) { err.textContent = `Mindestens ${fmt(grenzen.minBet)} 🪙.`; return; }
+    if (bet > grenzen.maxBet) { err.textContent = `Maximaleinsatz ${fmt(grenzen.maxBet)} 🪙.`; return; }
+    socket.emit("mines:start", { bet, mines: minen }, (v) => {
       if (!v || !v.ok) { err.textContent = (v && v.error) || "Fehler."; return; }
       snd.play("chip");
       if (v.account) applyAccount(v.account);
@@ -106,20 +238,15 @@
     });
   });
 
-  $("#mines-cashout").addEventListener("click", () => {
-    socket.emit("mines:cashout", (v) => {
-      if (!v || !v.ok) { $("#mines-error").textContent = (v && v.error) || "Fehler."; return; }
-      const gewinn = v.payout || 0;
-      // Ab dem Dreifachen des Einsatzes ist es ein Ereignis, darunter reicht
-      // der Muenzwurf. Sonst feiert man sich bei 1,05x zu Tode.
-      if (gewinn > 0 && (v.multiplier || 0) >= 3) window.Casino.fx.bigWin(gewinn, { label: "Ausgezahlt" });
-      else { snd.play("cash"); window.Casino.fx.coins($("#mines-cashout")); }
-      apply(v);
-    });
-  });
+  $("#mines-random").addEventListener("click", () => { if (!autoLaeuft) revealRandom(); });
+  $("#mines-auto").addEventListener("click", autoAufdecken);
+  $("#mines-cashout").addEventListener("click", cashout);
 
-  window.Casino._loadMines = () => {
+  Casino._loadMines = () => {
     buildGrid();
+    renderMinenWahl();
+    renderVerlauf();
+    ladeConfig();
     // Läuft server-seitig noch ein Spiel (z.B. nach Tab-Reload)? → fortsetzen.
     socket.emit("mines:state", (v) => {
       if (v && v.ok && !v.none) { apply(v); return; }

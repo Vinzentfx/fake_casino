@@ -5125,3 +5125,81 @@ html:not(.reduce-motion) .fr-sterne::before { animation: pl-spin 6s linear infin
 .cos-item.locked { opacity: 0.85; border-style: dashed; }
 .cos-item.locked small { color: var(--text-mute); }
 .cos-item .pl-ava { font-size: 1.5rem; }
+
+/* ============================================================
+   Einsatz-Schnellwahl, Mines-Vorwahl und Rundenverlauf
+   ============================================================ */
+.bet-quick { display: flex; gap: var(--sp-1); margin-top: var(--sp-1); }
+.bet-quick button {
+  flex: 1;
+  padding: var(--sp-2) 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-dim);
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* 38px: auf dem iPad noch sicher zu treffen, ohne die Zeile aufzublasen. */
+  min-height: 38px;
+}
+.bet-quick button:active { background: var(--surface-2); color: var(--text); }
+
+/* Minen als Knopfreihe statt Zahlenfeld. */
+.mines-choice { margin-top: var(--sp-3); }
+.mines-choice-label { display: block; font-size: var(--fs-sm); color: var(--text-dim); margin-bottom: var(--sp-1); }
+.mines-mine-row { display: flex; gap: var(--sp-1); flex-wrap: wrap; }
+.mines-mine {
+  flex: 1 0 44px;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-dim);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mines-mine.active { border-color: var(--line-strong); background: var(--accent-soft); color: var(--accent-strong); }
+
+/* Auszahlungstabelle: waagerecht scrollbar, damit sie auf jedem Gerät passt. */
+.mines-pay {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding: var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.mines-pay::-webkit-scrollbar { display: none; }
+.mines-pay-label { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--text-mute); align-self: center; }
+.mines-pay-step { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
+.mines-pay-step b { font-family: var(--font-num); color: var(--accent); font-size: var(--fs-sm); }
+.mines-pay-step small { font-size: var(--fs-xs); color: var(--text-mute); white-space: nowrap; }
+
+.mines-target { display: block; margin-top: var(--sp-3); font-size: var(--fs-sm); color: var(--text-dim); }
+.mines-target input { width: 80px; margin: 0 var(--sp-1); }
+
+.mines-live { display: flex; gap: var(--sp-2); margin: var(--sp-2) 0; }
+.mines-live .chip-btn { flex: 1; min-height: 40px; }
+
+/* Rundenverlauf, gleich in Mines und Towers. */
+.runden-verlauf { display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; margin-top: var(--sp-3); }
+.rv-label { font-size: var(--fs-xs); color: var(--text-mute); margin-right: var(--sp-1); }
+.rv-chip {
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-neutral);
+}
+.rv-chip.up { color: var(--good-text); border-color: rgba(var(--good-rgb), 0.4); }
+.rv-chip.down { color: var(--bad); border-color: rgba(255, 122, 110, 0.35); }
