@@ -600,9 +600,9 @@
 
     <!-- ===================== LEADERBOARD ===================== -->
     <section class="screen" data-screen="leaderboard">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2><i data-icon="bestenliste"></i>Bestenliste</h2>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="bestenliste"></i>Bestenliste</h2>
+      <div class="tafel">
         <div class="lb-tabs" id="lb-tabs"></div>
         <ol class="leaderboard" id="leaderboard-list">
           <li class="muted">Lädt…</li>
@@ -1067,9 +1067,9 @@
 
     <!-- ===================== VORSCHLÄGE ===================== -->
     <section class="screen" data-screen="suggest">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2><i data-icon="vorschlaege"></i>Vorschläge</h2>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="vorschlaege"></i>Vorschläge</h2>
+      <div class="tafel">
         <p class="muted small">Welches Spiel oder Feature wünschst du dir? Schreib es hier rein — es landet direkt beim Casino-Betreiber.</p>
         <div id="suggest-form">
           <textarea id="suggest-text" rows="4" maxlength="500" placeholder="Dein Vorschlag…"></textarea>
@@ -1167,9 +1167,9 @@
 
     <!-- ===================== KOSMETIK ===================== -->
     <section class="screen" data-screen="cosmetics">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2><i data-icon="kosmetik"></i>Kosmetik</h2>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="kosmetik"></i>Kosmetik</h2>
+      <div class="tafel">
         <p class="muted small">Gib Chips für Style aus. Antippen: kaufen oder anlegen. Nichts davon verändert das Spiel, es sieht nur besser aus als bei den anderen.</p>
 
         <!-- Vorschau. Ohne sie kauft man eine Animation, ohne sie je gesehen
@@ -1236,9 +1236,9 @@
 
     <!-- ===================== GLÜCKSRAD ===================== -->
     <section class="screen" data-screen="wheel">
-      <div class="panel" style="text-align:center">
-        <button class="back-btn" data-nav="lobby" style="float:left">‹ Lobby</button>
-        <h2><i data-icon="gluecksrad"></i>Glücksrad</h2>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="gluecksrad"></i>Glücksrad</h2>
+      <div class="tafel tafel-mitte">
         <p class="muted small">Einmal am Tag gratis drehen — Chips gewinnen!</p>
         <div class="wheel-stage">
           <div class="wheel-pointer">▼</div>
@@ -1251,9 +1251,9 @@
 
     <!-- ===================== LOGIN-KALENDER ===================== -->
     <section class="screen" data-screen="calendar">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2><i data-icon="kalender"></i>Login-Kalender</h2>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="kalender"></i>Login-Kalender</h2>
+      <div class="tafel">
         <p class="muted small">Jeden Tag einloggen & abholen — die Belohnung steigt. Ein Tag verpasst = zurück auf Tag 1. (Zusätzlich zum Stunden-Bonus.)</p>
         <div id="calendar-grid" class="calendar-grid"><p class="muted small">Lädt…</p></div>
         <button class="btn-primary" id="calendar-claim-btn" style="margin-top:14px;width:100%">Heutige Belohnung abholen</button>
@@ -1262,9 +1262,9 @@
 
     <!-- ===================== AUFTRÄGE (Quests) ===================== -->
     <section class="screen" data-screen="quests">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2><i data-icon="quests"></i>Aufträge</h2>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="quests"></i>Aufträge</h2>
+      <div class="tafel">
         <p class="muted small">Verdiene Chips durchs Spielen — Belohnung gibt's automatisch beim Abschluss. Alle sehen dieselben Aufträge.</p>
         <p class="hint hidden" id="quest-hinweis"></p>
         <h3 class="section-title">Wiederholbar <span class="muted small">· mehrfach pro Tag</span></h3>
@@ -1278,10 +1278,8 @@
 
     <!-- ===================== CASINO SEASON / PASS ===================== -->
     <section class="screen" data-screen="season">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div id="season-box"><p class="muted small">Lädt…</p></div>
-      </div>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <div id="season-box"><p class="muted small">Lädt…</p></div>
     </section>
 
     <!-- ===================== STATISTIK =====================
@@ -1350,9 +1348,9 @@
 
     <!-- ===================== EINSTELLUNGEN ===================== -->
     <section class="screen" data-screen="settings">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2><i data-icon="einstellungen"></i>Einstellungen</h2>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="einstellungen"></i>Einstellungen</h2>
+      <div class="tafel">
 
         <h3 class="settings-head">Design</h3>
         <p class="hint">Gilt auf allen deinen Geräten.</p>
@@ -1398,9 +1396,9 @@
 
     <!-- ===================== CHIPS SENDEN ===================== -->
     <section class="screen" data-screen="transfer">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2><i data-icon="transfer"></i>Chips senden</h2>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="transfer"></i>Chips senden</h2>
+      <div class="tafel">
         <form id="transfer-form" autocomplete="off">
           <label>Empfänger (Spielername)
             <input id="tr-to" type="text" maxlength="16" placeholder="z. B. Max" required />

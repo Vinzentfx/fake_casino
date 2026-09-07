@@ -7174,3 +7174,35 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 /* Changelog-Punkte mit gezeichnetem statt getipptem Symbol. */
 .update-item .ui-punkt { display: grid; place-items: center; font-size: 0; }
 .update-item .ui-punkt .ui-icon { width: 21px; height: 21px; color: var(--accent); }
+
+/* ============================================================================
+   Tafel — der Nachfolger von .panel
+   ----------------------------------------------------------------------------
+   `.panel` war ein Rahmen um den ganzen Screen: Zurueck-Knopf, Ueberschrift
+   und Inhalt lagen gemeinsam darin. Das kostete auf dem iPad links und rechts
+   22 Pixel Polsterung fuer nichts und liess jeden dieser Screens gleich
+   aussehen — ein Kasten mit Sachen drin.
+
+   Die Tafel umschliesst nur noch den Inhalt. Zurueck-Knopf und Ueberschrift
+   stehen darueber, so wie in den Spielen und im Profil, die den Schritt
+   laengst gemacht haben.
+   ========================================================================== */
+.tafel {
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--e-2);
+}
+.tafel-mitte { text-align: center; }
+.tafel > :first-child { margin-top: 0; }
+.tafel > :last-child { margin-bottom: 0; }
+.tafel p { color: var(--text-dim); line-height: var(--lh); }
+
+/* Die Ueberschrift traegt den Screen jetzt allein, also darf sie groesser
+   sein als die frueheren h2 im Kasten. */
+.screen-title {
+  color: var(--accent-strong);
+  font-size: var(--fs-2xl);
+  margin: var(--sp-1) 0 var(--sp-3);
+}
