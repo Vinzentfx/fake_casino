@@ -400,6 +400,66 @@
       <path d="M2.9 6.8a12.8 12.8 0 0 1 18.2 0" ${S} opacity=".45"/>
       <path d="M12 18.6V21" ${S}/>`,
 
+    // ── Spielhandlungen ────────────────────────────────────
+    // Zwei Koepfe — Lobby, Duell, Mitspieler.
+    gruppe: `<circle cx="8.6" cy="8.4" r="3.4" ${S}/>
+      <path d="M2.6 20c0-3.3 2.7-5.4 6-5.4s6 2.1 6 5.4" ${S}/>
+      <circle cx="16.6" cy="7.6" r="2.6" ${A} opacity=".85"/>
+      <path d="M15 14.9c2.9-.5 6.4 1 6.4 4.4" ${S} opacity=".7"/>`,
+
+    // Weisse Fahne — aufgeben.
+    flagge: `<path d="M6 21V3.4" ${S} stroke-width="2"/>
+      <path d="M6 4.2h11.4l-2.2 3.9 2.2 3.9H6Z" ${A}/>`,
+
+    // Zielflagge — Rennen.
+    ziel: `<path d="M5.4 21V3.4" ${S} stroke-width="2"/>
+      <path d="M5.4 4.2h13.2v8.4H5.4Z" ${S}/>
+      <path d="M5.4 4.2h4.4v2.8h4.4v2.8h4.4M9.8 7v2.8H5.4M14.2 4.2v2.8M14.2 9.8v2.8" ${S} stroke-width="1.3" opacity=".65"/>`,
+
+    // Einkaufswagen — Markt.
+    warenkorb: `<path d="M2.6 3.4h2.6l2.4 11.2h9.8l2-7.6H6.4" ${S}/>
+      <circle cx="9.4" cy="19.4" r="1.7" ${A}/>
+      <circle cx="17" cy="19.4" r="1.7" ${A}/>`,
+
+    // Blitz — Sprint, Tempo.
+    blitz: `<path d="M13.6 2.4 5.6 13.4h5.2l-1.4 8.2 8.2-11.2h-5.2Z" ${A}/>`,
+
+    // Pfeil nach oben in einem Kasten — aufwerten.
+    aufwerten: `<path d="M12 20.4V6.4M6.6 11.8 12 6.4l5.4 5.4" ${S} stroke-width="2"/>
+      <path d="M4.6 3.4h14.8" ${A} stroke="hsl(var(--h,45) 70% 62%)" fill="none" stroke-width="2.4" stroke-linecap="round"/>`,
+
+    // Aufprall — knacken, draufhauen.
+    schlag: `<path d="M12 2.4 14 8l5.8-2.2-3 5.4 5.2 3.2-6.1.7 1.4 5.9-4.9-3.9-4.9 3.9 1.4-5.9-6.1-.7 5.2-3.2-3-5.4L10 8Z" ${A}/>`,
+
+    // Signalleuchte — Heist, Alarm.
+    alarm: `<path d="M6.4 15.4a5.6 5.6 0 0 1 11.2 0Z" ${A}/>
+      <path d="M4 15.4h16M6.6 18.6h10.8" ${S} stroke-width="2"/>
+      <path d="M12 3.4v3M5.6 6.4l2 2M18.4 6.4l-2 2" ${S} opacity=".65"/>`,
+
+    // Fragezeichen im Kreis — Quiz.
+    frage: `<circle cx="12" cy="12" r="9" ${S}/>
+      <path d="M9.4 9.4a2.7 2.7 0 0 1 5.3.6c0 1.8-2.6 2.1-2.6 3.9" ${S}/>
+      <circle cx="12.1" cy="17.2" r="1.15" ${A}/>`,
+
+    // Diskette — sichern.
+    speichern: `<path d="M4.4 3.4h11.8L20.6 7.8v12.8H4.4Z" ${S}/>
+      <path d="M8 3.4v5.2h7.4V3.4" ${S}/>
+      <rect x="7.4" y="12.6" width="9.2" height="8" rx="1" ${A}/>`,
+
+    // Hand mit Muenze — auszahlen, kassieren.
+    auszahlen: `<circle cx="12" cy="6.6" r="3.6" ${A}/>
+      <path d="M3.4 20.6c0-3.4 3-5.8 6.4-5.8h4.4c3.4 0 6.4 2.4 6.4 5.8" ${S}/>
+      <path d="M12 13v3.4M10.4 14.6h3.2" ${S} stroke-width="1.4" opacity=".7"/>`,
+
+    // Wuerfel — Zufall.
+    wuerfel: `<rect x="3.4" y="3.4" width="17.2" height="17.2" rx="3.4" ${S}/>
+      <circle cx="8.4" cy="8.4" r="1.5" ${A}/>
+      <circle cx="15.6" cy="15.6" r="1.5" ${A}/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" opacity=".65"/>`,
+
+    // Doppelpfeil — vorspulen, automatisch weiterlaufen lassen.
+    vor: `<path d="M4 5.4 12 12l-8 6.6ZM12.4 5.4 20.4 12l-8 6.6Z" ${S}/>`,
+
     // ── Rangstufen ─────────────────────────────────────────
     // Sechs Stufen vom Neuling zur Ikone. Vorher 🌱🎲🎯🦈🌟👑 — sechs
     // Bildchen aus sechs verschiedenen Welten, die nebeneinander keine
@@ -447,7 +507,10 @@
    * Kachel-Symbol massschneidern koennen.
    */
   function ui(id, klasse) {
-    const d = UI[id];
+    /* Faellt auf die Spielsymbole zurueck. "Turm starten" will den Turm aus
+       der Spielkachel und kein zweites, aehnliches Bild daneben — dasselbe
+       Spiel soll ueberall dasselbe Zeichen tragen. */
+    const d = UI[id] || ICONS[id];
     if (!d) return "";
     return `<svg class="ui-icon${klasse ? " " + klasse : ""}" viewBox="0 0 24 24" aria-hidden="true"
       stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -536,7 +599,7 @@
     zeichne();
   }
 
-  Casino.icons = { icon, has: (id) => !!ICONS[id], spielSymbol, ui, hatUi: (id) => !!UI[id], marke: () => MARKE, zeichne, rangZeichen };
+  Casino.icons = { icon, has: (id) => !!ICONS[id], spielSymbol, ui, hatUi: (id) => !!(UI[id] || ICONS[id]), marke: () => MARKE, zeichne, rangZeichen };
   Casino.betrag = betrag;
   Casino.betragDelta = betragDelta;
   Casino.betragText = betragText;

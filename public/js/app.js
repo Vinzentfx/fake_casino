@@ -718,11 +718,13 @@ socket.on("presence:update", ({ online } = {}) => {
 const RESCUE_THRESHOLD = 50; // mirror of server; controls when the help button shows
 
 // Active product buffs shown in the topbar.
+/* Die vier laufen dauerhaft oben in der Kopfzeile mit, direkt neben dem
+   gezeichneten Guthaben — vier bunte Emoji fielen dort am meisten auf. */
 const BUFF_META = {
-  fastSpins:  { icon: "⚡", label: "2× Spins" },
-  clickBoost: { icon: "☕", label: "×5 Arbeit" },
-  winBoost:   { icon: "🍀", label: "+Gewinn" },
-  vip:        { icon: "🎟️", label: "VIP" },
+  fastSpins:  { icon: "blitz",  label: "2× Spins" },
+  clickBoost: { icon: "vor",    label: "×5 Arbeit" },
+  winBoost:   { icon: "stern-voll", label: "+Gewinn" },
+  vip:        { icon: "season", label: "VIP" },
 };
 function renderBuffs() {
   const el = $("#buff-strip");
@@ -732,10 +734,12 @@ function renderBuffs() {
   const items = Object.entries(buffs)
     .filter(([, b]) => b.until > now)
     .map(([type, b]) => {
-      const m = BUFF_META[type] || { icon: "✨", label: type };
+      const m = BUFF_META[type] || { icon: "stern-voll", label: type };
       const mins = Math.ceil((b.until - now) / 60000);
       const lbl = type === "winBoost" ? `+${Math.round((b.mult - 1) * 100)}%` : m.label;
-      return `<span class="buff-chip" title="${m.label}">${m.icon} ${lbl} <small>${mins}m</small></span>`;
+      /* Die Beschriftung steht daneben, nicht im title: auf dem iPad gibt es
+         keinen Hover, dort war "2× Spins" bisher nicht zu erfahren. */
+      return `<span class="buff-chip">${window.Casino.icons.ui(m.icon)}${escapeHtml(lbl)} <small>${mins}m</small></span>`;
     });
   el.innerHTML = items.join("");
 }
@@ -856,9 +860,9 @@ function renderProfile() {
       if (d.account && d.account.level) { state.account.level = d.account.level; renderLevel(d.account.level); }
 
       const tags = [];
-      if (d.clan) tags.push(`<span class="pf-tag">🛡️ ${escapeHtml(d.clan)}</span>`);
+      if (d.clan) tags.push(`<span class="pf-tag">${window.Casino.icons.ui("clans")}${escapeHtml(d.clan)}</span>`);
       if (d.ach && d.ach.badge) tags.push(`<span class="pf-tag">${d.ach.badge}</span>`);
-      if (d.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">🎯 Kopfgeld ${Number(d.bounty).toLocaleString("de-DE")} Chips</span>`);
+      if (d.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">${window.Casino.icons.ui("quests")}Kopfgeld ${Number(d.bounty).toLocaleString("de-DE")} Chips</span>`);
       $("#profile-tags").innerHTML = tags.join("");
 
       const c = d.city;
@@ -867,7 +871,7 @@ function renderProfile() {
         if (c && c.houses) {
           const trophaeen = (c.trophies || []).length;
           cityEl.innerHTML =
-            `<h3 class="section-title">🏙️ Dein Imperium</h3><div class="pf-stats">` +
+            `<h3 class="section-title">${window.Casino.icons.ui("businesses")}Dein Imperium</h3><div class="pf-stats">` +
             kachel("Häuser", Number(c.houses).toLocaleString("de-DE")) +
             kachel("Wert", Number(c.value || 0).toLocaleString("de-DE") + "<i class=mk></i>") +
             kachel("Straßen-Monopole", Number(c.streets || 0)) +
@@ -876,7 +880,7 @@ function renderProfile() {
             `</div>`;
         } else {
           cityEl.innerHTML =
-            `<h3 class="section-title">🏙️ Dein Imperium</h3>` +
+            `<h3 class="section-title">${window.Casino.icons.ui("businesses")}Dein Imperium</h3>` +
             `<p class="muted small">Noch kein Besitz. In der <b>Stadt</b> kaufst du dein erstes Haus.</p>`;
         }
       }
@@ -977,10 +981,10 @@ const SOCIAL_GAME_LABELS = {
 // ── Duell-Herausforderung: Spieler wählt ein Spiel + Einsatz, erstellt ein
 // privates Match und lädt den Gegner ein; dieser tritt beim Annehmen bei. ──
 const DUEL_GAMES = [
-  { key: "memory",  label: "🧠 Memory-Duell", screen: "memory",    ev: "memory:create",  extra: { size: "medium" } },
-  { key: "sudoku",  label: "🔢 Sudoku-Race",  screen: "sudoku",    ev: "sudoku:create",  extra: { difficulty: "medium" } },
-  { key: "solrace", label: "🃏 Solitär-Race", screen: "solitaire", ev: "solrace:create", extra: {} },
-  { key: "chess",   label: "♟️ Schach-Duell", screen: "chess",     ev: "chess:create",   extra: { tc: "5+0" } },
+  { key: "memory",  icon: "memory",    label: "Memory-Duell", screen: "memory",    ev: "memory:create",  extra: { size: "medium" } },
+  { key: "sudoku",  icon: "sudoku",    label: "Sudoku-Race",  screen: "sudoku",    ev: "sudoku:create",  extra: { difficulty: "medium" } },
+  { key: "solrace", icon: "solitaire", label: "Solitär-Race", screen: "solitaire", ev: "solrace:create", extra: {} },
+  { key: "chess",   icon: "chess",     label: "Schach-Duell", screen: "chess",     ev: "chess:create",   extra: { tc: "5+0" } },
 ];
 const DUEL_JOIN_HOOK = { memory: "_memoryJoinCode", sudoku: "_sudokuJoinCode", solrace: "_solraceJoinCode", chess: "_chessJoinCode" };
 const DUEL_LABEL = { memory: "Memory-Duell", sudoku: "Sudoku-Race", solrace: "Solitär-Race", chess: "Schach-Duell" };
@@ -990,10 +994,10 @@ function openChallengePicker(name) {
   if (!body || !name) return;
   body.innerHTML = `
     <div class="challenge-picker">
-      <h2>⚔️ ${escapeHtml(name)} herausfordern</h2>
+      <h2>${window.Casino.icons.ui("krieg")}${escapeHtml(name)} herausfordern</h2>
       <p class="muted small">Wähle ein Spiel und den Einsatz. ${escapeHtml(name)} bekommt eine Einladung und muss sie annehmen.</p>
       <div class="challenge-games">
-        ${DUEL_GAMES.map((g) => `<button class="btn-secondary challenge-game" data-game="${g.key}">${g.label}</button>`).join("")}
+        ${DUEL_GAMES.map((g) => `<button class="btn-secondary challenge-game" data-game="${g.key}">${window.Casino.icons.icon(g.icon) || ""}${g.label}</button>`).join("")}
       </div>
       <label class="mem-label" style="margin-top:12px">Einsatz (Buy-in)
         <input id="challenge-stake" type="number" inputmode="numeric" min="50" step="50" value="200" />
@@ -1072,10 +1076,10 @@ async function openPlayerProfile(name) {
     const zahl = (n) => Number(n || 0).toLocaleString("de-DE");
 
     const tags = [];
-    if (data.clan) tags.push(`<span class="pf-tag">🛡️ ${escapeHtml(data.clan)}</span>`);
+    if (data.clan) tags.push(`<span class="pf-tag">${window.Casino.icons.ui("clans")}${escapeHtml(data.clan)}</span>`);
     if (ach.badge) tags.push(`<span class="pf-tag">${ach.badge}</span>`);
-    if (data.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">🎯 Kopfgeld ${zahl(data.bounty)} Chips</span>`);
-    if (acc.lastSeen) tags.push(`<span class="pf-tag">👋 ${wannGrob(acc.lastSeen)}</span>`);
+    if (data.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">${window.Casino.icons.ui("quests")}Kopfgeld ${zahl(data.bounty)} Chips</span>`);
+    if (acc.lastSeen) tags.push(`<span class="pf-tag">${window.Casino.icons.ui("uhr")}${wannGrob(acc.lastSeen)}</span>`);
 
     const badges = (ach.unlocked || []).length
       ? (ach.unlocked || []).map((b) =>
@@ -1112,11 +1116,11 @@ async function openPlayerProfile(name) {
         ${kachel("Mitglied seit", acc.createdAt ? new Date(acc.createdAt).toLocaleDateString("de-DE") : "–")}
       </div>
 
-      <h3 class="section-title">🏙️ Imperium</h3>
+      <h3 class="section-title">${window.Casino.icons.ui("businesses")}Imperium</h3>
       ${imperium}
 
       <div class="pf-ach-head">
-        <h3 class="section-title" style="margin:0">🏆 Achievements</h3>
+        <h3 class="section-title" style="margin:0">${window.Casino.icons.ui("bestenliste")}Achievements</h3>
         <span class="muted small">${(ach.unlocked || []).length} von ${ach.total || 0}</span>
       </div>
       <div class="badge-grid pp-badges">${badges}</div>

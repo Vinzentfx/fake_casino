@@ -284,7 +284,7 @@
           <b class="pvp-pchips" id="pvp-opp-chips">0</b>
           <span class="pvp-pspins" id="pvp-opp-spins">–</span>
         </div>
-        <button class="pvp-quit" id="pvp-quit" title="Duell verlassen">✕</button>
+        <button class="pvp-quit" id="pvp-quit" aria-label="Duell verlassen"><i data-icon="schliessen"></i></button>
       </div>
 
       <!-- Automaten-Auswahl -->
@@ -411,9 +411,9 @@
             <button class="bet-step" id="bet-up">+</button>
           </div>
           <div class="spin-hint">🕹️ Hebel ziehen
-            <button id="buy-bonus" class="auto-roll-btn" style="display:none">🎁 Bonus</button>
-            <button id="force-win-btn" class="auto-roll-btn" style="display:none" title="Admin: nächster Spin = Maximalgewinn">🎯 Max</button>
-            <button id="auto-roll" class="auto-roll-btn">🔄 Auto</button>
+            <button id="buy-bonus" class="auto-roll-btn" style="display:none"><i data-icon="geschenk"></i> Bonus</button>
+            <button id="force-win-btn" class="auto-roll-btn" style="display:none" title="Admin: nächster Spin = Maximalgewinn"><i data-icon="quests"></i> Max</button>
+            <button id="auto-roll" class="auto-roll-btn"><i data-icon="vor"></i> Auto</button>
             <select id="auto-count" class="auto-count-sel" title="Auto-Spins"><option value="0">∞</option><option value="10">10×</option><option value="25">25×</option><option value="50">50×</option><option value="100">100×</option></select>
           </div>
           <div class="win-display"><span class="lbl">Gewinn</span><b id="win-amount">0</b></div>
@@ -422,9 +422,9 @@
         <!-- Risiko / Gamble (Book of Rah): Gewinn auf Kartenfarbe verdoppeln -->
         <div class="gamble-bar hidden" id="gamble-bar">
           <span class="gamble-info">Risiko: <b id="gamble-amount">0</b><i class=mk></i></span>
-          <button id="gamble-red" class="gamble-btn gamble-red">🔴 Rot</button>
-          <button id="gamble-black" class="gamble-btn gamble-black">⚫ Schwarz</button>
-          <button id="gamble-collect" class="gamble-btn gamble-collect">✓ Abholen</button>
+          <button id="gamble-red" class="gamble-btn gamble-red"><i class="farbpunkt"></i> Rot</button>
+          <button id="gamble-black" class="gamble-btn gamble-black"><i class="farbpunkt"></i> Schwarz</button>
+          <button id="gamble-collect" class="gamble-btn gamble-collect"><i data-icon="ja"></i> Abholen</button>
           <span class="gamble-result" id="gamble-result"></span>
         </div>
 
@@ -452,7 +452,7 @@
       <div class="bj-wrap">
         <div class="bj-top-row">
           <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-          <button class="chip-btn" id="bj-lobby-btn">👥 Lobby</button>
+          <button class="chip-btn" id="bj-lobby-btn"><i data-icon="gruppe"></i> Lobby</button>
         </div>
 
         <!-- Geteilte Lobby (jeder gegen Dealer, alle sehen Gewinne/Verluste) -->
@@ -520,9 +520,9 @@
       <div class="roulette-wrap">
         <div class="bj-top-row">
           <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-          <button class="chip-btn" id="rt-lobby-btn">👥 Lobby</button>
+          <button class="chip-btn" id="rt-lobby-btn"><i data-icon="gruppe"></i> Lobby</button>
         </div>
-        <h2 style="text-align:center;margin:4px 0 8px">🎡 Roulette</h2>
+        <h2 style="text-align:center;margin:4px 0 8px"><i data-icon="roulette"></i>Roulette</h2>
 
         <!-- Geteilte Lobby: alle setzen auf denselben Kessel, Anführer dreht einmal -->
         <div id="rt-lobby-panel" class="bj-lobby-panel hidden">
@@ -573,9 +573,9 @@
         <div class="rt-controls">
           <button id="rt-undo" class="rt-side-btn" title="Letzten Chip zurücknehmen">↶ Zurück</button>
           <button id="rt-repeat" class="rt-side-btn" title="Dieselben Wetten wie zuletzt">↻ Wiederholen</button>
-          <button id="rt-clear" class="rt-side-btn rt-clear-btn">✕ Löschen</button>
+          <button id="rt-clear" class="rt-side-btn rt-clear-btn"><i data-icon="schliessen"></i> Löschen</button>
         </div>
-        <button id="rt-spin" class="btn-primary rt-spin-btn">🎡 Drehen</button>
+        <button id="rt-spin" class="btn-primary rt-spin-btn"><i data-icon="roulette"></i> Drehen</button>
         <div class="form-error" id="rt-error"></div>
       </div>
     </section>
@@ -584,16 +584,16 @@
     <section class="screen" data-screen="sports">
       <div class="sb-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2 style="text-align:center;margin:4px 0 2px">⚽ Sportwetten</h2>
+        <h2 style="text-align:center;margin:4px 0 2px"><i data-icon="sports"></i>Sportwetten</h2>
         <p class="muted small" style="text-align:center;margin:0 0 10px">🌍 Echte Spiele aus Bundesliga, Premier League und La Liga (echtes Ergebnis zählt) + simulierte Ligen für sofortige Action · du siehst, worauf andere tippen</p>
         <div id="sb-slip-panel" class="sb-slip-panel hidden"></div>
         <nav id="sb-leagues" class="cat-tabs" aria-label="Ligen"></nav>
         <div id="sb-matches" class="sb-matches"></div>
-        <h3 class="section-title" style="margin-top:14px">🎟️ Meine Kombis</h3>
+        <h3 class="section-title" style="margin-top:14px">Meine Kombis</h3>
         <div id="sb-combos" class="sb-combos"></div>
-        <h3 class="section-title" style="margin-top:14px">🧾 Mein Verlauf</h3>
+        <h3 class="section-title" style="margin-top:14px">Mein Verlauf</h3>
         <div id="sb-history" class="sb-feed"></div>
-        <h3 class="section-title" style="margin-top:14px">📣 Letzte Tipps</h3>
+        <h3 class="section-title" style="margin-top:14px">Letzte Tipps</h3>
         <div id="sb-feed" class="sb-feed"></div>
       </div>
     </section>
@@ -602,7 +602,7 @@
     <section class="screen" data-screen="leaderboard">
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2>🏆 Bestenliste</h2>
+        <h2><i data-icon="bestenliste"></i>Bestenliste</h2>
         <div class="lb-tabs" id="lb-tabs"></div>
         <ol class="leaderboard" id="leaderboard-list">
           <li class="muted">Lädt…</li>
@@ -626,8 +626,8 @@
         <!-- Während der Runde: Zufallsfeld statt zielen. Auf dem iPad sind die
              Kacheln klein, und beim Aufdecken gibt es nichts zu können. -->
         <div class="mines-live hidden" id="mines-live">
-          <button class="chip-btn" id="mines-random" type="button">🎲 Zufälliges Feld</button>
-          <button class="chip-btn" id="mines-auto" type="button">⏩ Bis zum Ziel aufdecken</button>
+          <button class="chip-btn" id="mines-random" type="button"><i data-icon="wuerfel"></i> Zufälliges Feld</button>
+          <button class="chip-btn" id="mines-auto" type="button"><i data-icon="vor"></i> Bis zum Ziel aufdecken</button>
         </div>
 
         <div class="mines-setup" id="mines-setup">
@@ -650,9 +650,9 @@
             <input id="mines-target" type="number" inputmode="decimal" min="1.1" step="0.1" value="2" />×
           </label>
 
-          <button class="btn-primary" id="mines-start" style="width:100%;margin-top:10px">💣 Spiel starten</button>
+          <button class="btn-primary" id="mines-start" style="width:100%;margin-top:10px"><i data-icon="mines"></i> Spiel starten</button>
         </div>
-        <button class="btn-primary crash-cashbtn" id="mines-cashout" style="width:100%;display:none">💸 Auszahlen</button>
+        <button class="btn-primary crash-cashbtn" id="mines-cashout" style="width:100%;display:none"><i data-icon="auszahlen"></i> Auszahlen</button>
         <div class="form-error" id="mines-error"></div>
         <div class="runden-verlauf" id="mines-history"></div>
       </div>
@@ -674,9 +674,9 @@
           <div class="crash-betrow">
             <label>Einsatz<input id="tw-amount" type="number" inputmode="numeric" min="50" step="50" value="100" /></label>
           </div>
-          <button class="btn-primary" id="tw-start" style="width:100%;margin-top:10px">🗼 Turm starten</button>
+          <button class="btn-primary" id="tw-start" style="width:100%;margin-top:10px"><i data-icon="towers"></i> Turm starten</button>
         </div>
-        <button class="btn-primary crash-cashbtn" id="tw-cashout" style="width:100%;display:none">💸 Auszahlen</button>
+        <button class="btn-primary crash-cashbtn" id="tw-cashout" style="width:100%;display:none"><i data-icon="auszahlen"></i> Auszahlen</button>
         <div class="form-error" id="tw-error"></div>
         <div class="runden-verlauf" id="tw-history"></div>
       </div>
@@ -707,8 +707,8 @@
             <label>Modus<input id="pinco-mode-readout" type="text" value="Mittel" readonly /></label>
           </div>
           <div class="pinco-actions">
-            <button class="chip-btn" id="pinco-create">👥 Lobby eröffnen</button>
-            <button class="btn-primary" id="pinco-drop">🟢 Ball droppen</button>
+            <button class="chip-btn" id="pinco-create"><i data-icon="gruppe"></i> Lobby eröffnen</button>
+            <button class="btn-primary" id="pinco-drop"><i data-icon="pinco"></i> Ball droppen</button>
           </div>
           <div class="form-error" id="pinco-error"></div>
         </div>
@@ -750,7 +750,7 @@
               <label class="mem-radio"><input type="radio" name="mem-vis" value="public" checked /> 🌐 Öffentlich <span class="muted small">(in Lobby sichtbar)</span></label>
               <label class="mem-radio"><input type="radio" name="mem-vis" value="private" /> 🔒 Privat <span class="muted small">(nur per Code)</span></label>
             </div>
-            <button class="btn-primary" id="mem-create" style="width:100%;margin-top:8px">🧠 Duell erstellen</button>
+            <button class="btn-primary" id="mem-create" style="width:100%;margin-top:8px"><i data-icon="memory"></i> Duell erstellen</button>
           </div>
           <div class="mem-panel">
             <label class="mem-label">Code eines Freundes
@@ -786,7 +786,7 @@
           <div class="mem-result-emoji" id="mem-result-emoji">🏆</div>
           <h3 id="mem-result-title">—</h3>
           <p class="muted small" id="mem-result-sub"></p>
-          <div class="rematch-row"><button class="btn-primary" id="mem-rematch" style="margin-top:10px">🔁 Revanche</button>
+          <div class="rematch-row"><button class="btn-primary" id="mem-rematch" style="margin-top:10px"><i data-icon="aktualisieren"></i> Revanche</button>
           <button class="btn-secondary" id="mem-again" style="margin-top:10px">Zurück</button></div>
           <div class="muted small" id="mem-rematch-status"></div>
         </div>
@@ -816,7 +816,7 @@
               <label class="mem-radio"><input type="radio" name="chs-vis" value="public" checked /> 🌐 Öffentlich</label>
               <label class="mem-radio"><input type="radio" name="chs-vis" value="private" /> 🔒 Privat (nur per Code)</label>
             </div>
-            <button class="btn-primary" id="chs-create" style="width:100%;margin-top:8px">♟️ Duell erstellen</button>
+            <button class="btn-primary" id="chs-create" style="width:100%;margin-top:8px"><i data-icon="chess"></i> Duell erstellen</button>
           </div>
           <div class="mem-panel">
             <label class="mem-label">Code eines Freundes
@@ -824,7 +824,7 @@
             </label>
             <button class="btn-secondary" id="chs-join" style="width:100%;margin-top:8px">Beitreten</button>
           </div>
-          <button class="btn-secondary" id="chs-league-btn" style="width:100%">🏆 Schach-Liga ansehen</button>
+          <button class="btn-secondary" id="chs-league-btn" style="width:100%"><i data-icon="bestenliste"></i> Schach-Liga ansehen</button>
           <div class="form-error" id="chs-error"></div>
         </div>
 
@@ -845,7 +845,7 @@
           <div class="chs-playerbar" id="chs-you-bar"><span class="chs-pname">Du</span><span class="chs-clock" id="chs-you-clock">5:00</span></div>
           <div class="chs-status" id="chs-status"></div>
           <div class="chs-moves" id="chs-moves"></div>
-          <div class="sol-actions"><button class="btn-secondary" id="chs-resign">🏳️ Aufgeben</button></div>
+          <div class="sol-actions"><button class="btn-secondary" id="chs-resign"><i data-icon="flagge"></i> Aufgeben</button></div>
         </div>
 
         <!-- Result -->
@@ -853,7 +853,7 @@
           <div class="mem-result-emoji" id="chs-result-emoji">🏆</div>
           <h3 id="chs-result-title">—</h3>
           <p class="muted small" id="chs-result-sub"></p>
-          <div class="rematch-row"><button class="btn-primary" id="chs-rematch" style="margin-top:10px">🔁 Revanche</button>
+          <div class="rematch-row"><button class="btn-primary" id="chs-rematch" style="margin-top:10px"><i data-icon="aktualisieren"></i> Revanche</button>
           <button class="btn-secondary" id="chs-again" style="margin-top:10px">Zurück</button></div>
           <div class="muted small" id="chs-rematch-status"></div>
         </div>
@@ -862,9 +862,9 @@
         <div id="chs-league" style="display:none">
           <button class="btn-secondary" id="chs-league-back" style="margin-bottom:10px">‹ Zurück</button>
           <div class="chs-me-card" id="chs-me-card"></div>
-          <h3 class="section-title">🏅 Spieler-Wertung</h3>
+          <h3 class="section-title">Spieler-Wertung</h3>
           <div id="chs-lb-players"></div>
-          <h3 class="section-title" style="margin-top:14px">🛡️ Clan-Liga</h3>
+          <h3 class="section-title" style="margin-top:14px"><i data-icon="clans"></i>Clan-Liga</h3>
           <p class="muted small">Rangliste nach Schach-Siegen aller Clan-Mitglieder.</p>
           <div id="chs-lb-clans"></div>
         </div>
@@ -880,14 +880,14 @@
         <!-- Setup: choose a mode -->
         <div id="sol-setup">
           <div class="sol-mode-tabs">
-            <button class="sol-mode-tab active" data-mode="free">🎯 Solo (frei)</button>
-            <button class="sol-mode-tab" data-mode="solo">🏠 Gegen das Haus</button>
-            <button class="sol-mode-tab" data-mode="race">⚔️ PvP</button>
+            <button class="sol-mode-tab active" data-mode="free"><i data-icon="profi"></i> Solo (frei)</button>
+            <button class="sol-mode-tab" data-mode="solo"><i data-icon="marke"></i> Gegen das Haus</button>
+            <button class="sol-mode-tab" data-mode="race"><i data-icon="krieg"></i> PvP</button>
           </div>
 
           <div id="sol-free-panel" class="mem-panel">
             <p class="muted small">Ganz entspannt spielen — <b>kein Einsatz</b>, <b>unbegrenzte Neuauflagen</b> (Draw-1). Zählt trotzdem für Achievements & Statistik.</p>
-            <button class="btn-primary" id="sol-free-start" style="width:100%">🎯 Solo starten</button>
+            <button class="btn-primary" id="sol-free-start" style="width:100%"><i data-icon="profi"></i> Solo starten</button>
           </div>
 
           <div id="sol-solo-panel" class="mem-panel" style="display:none">
@@ -908,7 +908,7 @@
                 <label class="mem-radio"><input type="radio" name="sol-vis" value="public" checked /> 🌐 Öffentlich</label>
                 <label class="mem-radio"><input type="radio" name="sol-vis" value="private" /> 🔒 Privat (nur per Code)</label>
               </div>
-              <button class="btn-primary" id="sol-race-create" style="width:100%;margin-top:8px">⚔️ Race erstellen</button>
+              <button class="btn-primary" id="sol-race-create" style="width:100%;margin-top:8px"><i data-icon="krieg"></i> Race erstellen</button>
             </div>
             <div class="mem-panel">
               <label class="mem-label">Code eines Freundes
@@ -945,7 +945,7 @@
           <div class="mem-result-emoji" id="sol-result-emoji">🏆</div>
           <h3 id="sol-result-title">—</h3>
           <p class="muted small" id="sol-result-sub"></p>
-          <div class="rematch-row"><button class="btn-primary" id="sol-rematch" style="margin-top:10px;display:none">🔁 Revanche</button>
+          <div class="rematch-row"><button class="btn-primary" id="sol-rematch" style="margin-top:10px;display:none"><i data-icon="aktualisieren"></i> Revanche</button>
           <button class="btn-primary" id="sol-again" style="margin-top:10px">Nochmal</button></div>
           <div class="muted small" id="sol-rematch-status"></div>
         </div>
@@ -967,14 +967,14 @@
             <button type="button" class="mem-size-btn" data-diff="hard">Schwer<span>28 Zahlen</span></button>
           </div>
           <div class="sol-mode-tabs" style="margin-top:12px">
-            <button class="sol-mode-tab active" data-smode="solo">🎯 Solo</button>
+            <button class="sol-mode-tab active" data-smode="solo"><i data-icon="profi"></i> Solo</button>
             <button class="sol-mode-tab" data-smode="duell">⏳ Duell</button>
-            <button class="sol-mode-tab" data-smode="race">⚔️ Live-Race</button>
+            <button class="sol-mode-tab" data-smode="race"><i data-icon="krieg"></i> Live-Race</button>
           </div>
 
           <div id="sdk-solo-panel" class="mem-panel">
             <p class="muted small">Ganz in Ruhe lösen — <b>kein Zeitlimit</b>, <b>kein Einsatz</b>. Zählt trotzdem für Achievements & Statistik.</p>
-            <button class="btn-primary" id="sdk-solo-start" style="width:100%">🎯 Solo starten</button>
+            <button class="btn-primary" id="sdk-solo-start" style="width:100%"><i data-icon="profi"></i> Solo starten</button>
           </div>
 
           <!-- Duell ohne Gleichzeitigkeit. Du spielst sofort, dein Ergebnis
@@ -1008,7 +1008,7 @@
                 <label class="mem-radio"><input type="radio" name="sdk-vis" value="public" checked /> 🌐 Öffentlich <span class="muted small">(in Lobby sichtbar)</span></label>
                 <label class="mem-radio"><input type="radio" name="sdk-vis" value="private" /> 🔒 Privat <span class="muted small">(nur per Code)</span></label>
               </div>
-              <button class="btn-primary" id="sdk-create" style="width:100%;margin-top:8px">🔢 Race erstellen</button>
+              <button class="btn-primary" id="sdk-create" style="width:100%;margin-top:8px"><i data-icon="sudoku"></i> Race erstellen</button>
             </div>
             <div class="mem-panel">
               <label class="mem-label">Code eines Freundes
@@ -1049,7 +1049,7 @@
             <button class="sdk-key" data-n="7">7</button><button class="sdk-key" data-n="8">8</button><button class="sdk-key" data-n="9">9</button>
             <button class="sdk-key sdk-erase" data-n="0">⌫</button>
           </div>
-          <button class="btn-primary" id="sdk-duell-submit" style="width:100%;margin-top:10px;display:none">✅ Ergebnis abgeben</button>
+          <button class="btn-primary" id="sdk-duell-submit" style="width:100%;margin-top:10px;display:none"><i data-icon="ja"></i> Ergebnis abgeben</button>
           <button class="btn-secondary" id="sdk-giveup" style="width:100%;margin-top:10px">Spiel beenden</button>
         </div>
 
@@ -1058,7 +1058,7 @@
           <div class="mem-result-emoji" id="sdk-result-emoji">🏆</div>
           <h3 id="sdk-result-title">—</h3>
           <p class="muted small" id="sdk-result-sub"></p>
-          <div class="rematch-row"><button class="btn-primary" id="sdk-rematch" style="margin-top:10px">🔁 Revanche</button>
+          <div class="rematch-row"><button class="btn-primary" id="sdk-rematch" style="margin-top:10px"><i data-icon="aktualisieren"></i> Revanche</button>
           <button class="btn-secondary" id="sdk-again" style="margin-top:10px">Zurück</button></div>
           <div class="muted small" id="sdk-rematch-status"></div>
         </div>
@@ -1069,7 +1069,7 @@
     <section class="screen" data-screen="suggest">
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2>💡 Vorschläge</h2>
+        <h2><i data-icon="vorschlaege"></i>Vorschläge</h2>
         <p class="muted small">Welches Spiel oder Feature wünschst du dir? Schreib es hier rein — es landet direkt beim Casino-Betreiber.</p>
         <div id="suggest-form">
           <textarea id="suggest-text" rows="4" maxlength="500" placeholder="Dein Vorschlag…"></textarea>
@@ -1082,7 +1082,7 @@
         </div>
         <!-- Owner-only inbox -->
         <div id="suggest-inbox" style="display:none">
-          <h3 class="section-title" style="margin-top:16px">📥 Eingegangene Vorschläge</h3>
+          <h3 class="section-title" style="margin-top:16px">Eingegangene Vorschläge</h3>
           <div id="suggest-list"></div>
         </div>
       </div>
@@ -1117,9 +1117,9 @@
       <div class="horses-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <div class="horses-tabs">
-          <button class="horses-tab active" data-htab="race">🏁 Rennen</button>
-          <button class="horses-tab" data-htab="stable">🐴 Stall</button>
-          <button class="horses-tab" data-htab="market">🛒 Markt</button>
+          <button class="horses-tab active" data-htab="race"><i data-icon="ziel"></i> Rennen</button>
+          <button class="horses-tab" data-htab="stable"><i data-icon="horses"></i> Stall</button>
+          <button class="horses-tab" data-htab="market"><i data-icon="warenkorb"></i> Markt</button>
         </div>
 
         <div class="horses-view" id="hv-race">
@@ -1129,7 +1129,7 @@
             <canvas id="race-canvas"></canvas>
             <div class="race-status" id="race-status">Verbinde…</div>
             <div class="race-podium hidden" id="race-podium"></div>
-            <button id="sprint-btn" class="sprint-btn hidden">⚡ SPRINT!</button>
+            <button id="sprint-btn" class="sprint-btn hidden"><i data-icon="blitz"></i> SPRINT!</button>
           </div>
           <div class="race-ticker" id="race-ticker"></div>
           <div class="race-field" id="race-field"></div>
@@ -1150,7 +1150,7 @@
         <!-- Wettschein (Bottom-Sheet, per JS eingeblendet) -->
         <div class="bet-slip" id="bet-slip" aria-hidden="true">
           <div class="bet-slip-card">
-            <button class="bet-slip-x" id="bet-slip-x">✕</button>
+            <button class="bet-slip-x" id="bet-slip-x" aria-label="Wettschein schließen"><i data-icon="schliessen"></i></button>
             <div class="bet-slip-head" id="bet-slip-head"></div>
             <div class="bet-slip-types" id="bet-slip-types"></div>
             <div class="bet-slip-chips" id="bet-slip-chips"></div>
@@ -1159,7 +1159,7 @@
               <input id="bet-slip-input" type="number" inputmode="numeric" />
             </div>
             <div class="bet-slip-payout" id="bet-slip-payout"></div>
-            <button class="btn-primary bet-slip-go" id="bet-slip-go">🏇 Wetten</button>
+            <button class="btn-primary bet-slip-go" id="bet-slip-go"><i data-icon="horses"></i> Wetten</button>
           </div>
         </div>
       </div>
@@ -1169,33 +1169,33 @@
     <section class="screen" data-screen="cosmetics">
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2>🎨 Kosmetik</h2>
+        <h2><i data-icon="kosmetik"></i>Kosmetik</h2>
         <p class="muted small">Gib Chips für Style aus. Antippen: kaufen oder anlegen. Nichts davon verändert das Spiel, es sieht nur besser aus als bei den anderen.</p>
 
         <!-- Vorschau. Ohne sie kauft man eine Animation, ohne sie je gesehen
              zu haben, und merkt erst hinterher, dass sie einem nicht gefällt. -->
         <div class="cos-preview" id="cos-preview"></div>
 
-        <h3 class="section-title">✨ Namensstile</h3>
+        <h3 class="section-title">Namensstile</h3>
         <p class="hint" style="margin-top:-4px">Ersetzt die flache Farbe. Die bewegten stehen still, wenn du in den Einstellungen „Bewegung reduzieren“ anhast.</p>
         <div class="cos-grid cos-grid-wide" id="cos-styles"></div>
 
-        <h3 class="section-title" style="margin-top:14px">🏷️ Titel</h3>
+        <h3 class="section-title" style="margin-top:14px">Titel</h3>
         <p class="hint" style="margin-top:-4px">Eine Zeile unter deinem Namen, überall wo du auftauchst.</p>
         <div class="cos-grid cos-grid-wide" id="cos-titles"></div>
 
-        <h3 class="section-title" style="margin-top:14px">⭕ Rahmen</h3>
+        <h3 class="section-title" style="margin-top:14px">Rahmen</h3>
         <div class="cos-grid" id="cos-frames"></div>
 
-        <h3 class="section-title" style="margin-top:14px">🎆 Gewinn-Effekt</h3>
+        <h3 class="section-title" style="margin-top:14px">Gewinn-Effekt</h3>
         <p class="hint" style="margin-top:-4px">Was passiert, wenn du groß gewinnst. Antippen spielt ihn einmal ab.</p>
         <div class="cos-grid cos-grid-wide" id="cos-effects"></div>
 
-        <h3 class="section-title" style="margin-top:14px">🪧 Namensschild</h3>
+        <h3 class="section-title" style="margin-top:14px">Namensschild</h3>
         <p class="hint" style="margin-top:-4px">Färbt deine ganze Zeile in der Online-Liste und der Bestenliste, nicht nur den Ring ums Bild.</p>
         <div class="cos-grid cos-grid-wide" id="cos-schilder"></div>
 
-        <h3 class="section-title" style="margin-top:14px">👋 Eintritts-Spruch</h3>
+        <h3 class="section-title" style="margin-top:14px">Eintritts-Spruch</h3>
         <p class="hint" style="margin-top:-4px">Eine Zeile im Chat, wenn du reinkommst. Höchstens einmal pro Stunde, damit ein Verbindungsabbruch keine Ansage wird.</p>
         <div class="cos-grid cos-grid-wide" id="cos-sprueche"></div>
         <div class="cos-eigen hidden" id="cos-spruch-eigen">
@@ -1206,13 +1206,13 @@
           <button class="btn-primary" id="cos-spruch-save" type="button">Satz speichern</button>
         </div>
 
-        <h3 class="section-title" style="margin-top:14px">🖼️ Profil-Banner</h3>
+        <h3 class="section-title" style="margin-top:14px">Profil-Banner</h3>
         <div class="cos-grid cos-grid-wide" id="cos-banner"></div>
 
-        <h3 class="section-title" style="margin-top:14px">🙂 Avatare</h3>
+        <h3 class="section-title" style="margin-top:14px">Avatare</h3>
         <div class="cos-grid" id="cos-avatars"></div>
 
-        <h3 class="section-title" style="margin-top:14px">🎨 Namensfarben</h3>
+        <h3 class="section-title" style="margin-top:14px">Namensfarben</h3>
         <p class="hint" style="margin-top:-4px">Wirkt nur, solange kein Namensstil angelegt ist.</p>
         <div class="cos-grid" id="cos-colors"></div>
       </div>
@@ -1238,13 +1238,13 @@
     <section class="screen" data-screen="wheel">
       <div class="panel" style="text-align:center">
         <button class="back-btn" data-nav="lobby" style="float:left">‹ Lobby</button>
-        <h2>🎡 Glücksrad</h2>
+        <h2><i data-icon="gluecksrad"></i>Glücksrad</h2>
         <p class="muted small">Einmal am Tag gratis drehen — Chips gewinnen!</p>
         <div class="wheel-stage">
           <div class="wheel-pointer">▼</div>
           <svg id="wheel-svg" viewBox="0 0 200 200"></svg>
         </div>
-        <button class="btn-primary" id="wheel-spin" style="width:100%;margin-top:8px">🎡 Drehen</button>
+        <button class="btn-primary" id="wheel-spin" style="width:100%;margin-top:8px"><i data-icon="gluecksrad"></i> Drehen</button>
         <div class="form-error" id="wheel-error"></div>
       </div>
     </section>
@@ -1253,7 +1253,7 @@
     <section class="screen" data-screen="calendar">
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2>📅 Login-Kalender</h2>
+        <h2><i data-icon="kalender"></i>Login-Kalender</h2>
         <p class="muted small">Jeden Tag einloggen & abholen — die Belohnung steigt. Ein Tag verpasst = zurück auf Tag 1. (Zusätzlich zum Stunden-Bonus.)</p>
         <div id="calendar-grid" class="calendar-grid"><p class="muted small">Lädt…</p></div>
         <button class="btn-primary" id="calendar-claim-btn" style="margin-top:14px;width:100%">Heutige Belohnung abholen</button>
@@ -1264,10 +1264,10 @@
     <section class="screen" data-screen="quests">
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2>🎯 Aufträge</h2>
+        <h2><i data-icon="quests"></i>Aufträge</h2>
         <p class="muted small">Verdiene Chips durchs Spielen — Belohnung gibt's automatisch beim Abschluss. Alle sehen dieselben Aufträge.</p>
         <p class="hint hidden" id="quest-hinweis"></p>
-        <h3 class="section-title">🔁 Wiederholbar <span class="muted small">· mehrfach pro Tag</span></h3>
+        <h3 class="section-title">Wiederholbar <span class="muted small">· mehrfach pro Tag</span></h3>
         <div id="quest-repeat"><p class="muted small">Lädt…</p></div>
         <h3 class="section-title" style="margin-top:14px">Heute <span class="muted small" id="quest-day-timer"></span></h3>
         <div id="quest-dailies"><p class="muted small">Lädt…</p></div>
@@ -1330,7 +1330,7 @@
       <div id="profile-city"></div>
 
       <div class="pf-ach-head">
-        <h3 class="section-title" style="margin:0">🏆 Achievements</h3>
+        <h3 class="section-title" style="margin:0"><i data-icon="bestenliste"></i>Achievements</h3>
         <span class="muted small" id="profile-ach-count"></span>
       </div>
       <p class="hint" style="margin:0 0 8px">Tippe ein freigeschaltetes Achievement an, um sein Emoji in der Bestenliste zu tragen.</p>
@@ -1343,7 +1343,7 @@
     <!-- ===================== UPDATES ===================== -->
     <section class="screen" data-screen="updates">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-      <h2 class="screen-title">📜 Updates</h2>
+      <h2 class="screen-title"><i data-icon="updates"></i>Updates</h2>
       <p class="muted small" style="margin-top:-6px">Was sich im Casino geändert hat, neueste zuerst. Tippe einen Eintrag an, um ihn aufzuklappen.</p>
       <div id="updates-list" class="cl-list"></div>
     </section>
@@ -1352,13 +1352,13 @@
     <section class="screen" data-screen="settings">
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2>⚙️ Einstellungen</h2>
+        <h2><i data-icon="einstellungen"></i>Einstellungen</h2>
 
-        <h3 class="settings-head">🎨 Design</h3>
+        <h3 class="settings-head">Design</h3>
         <p class="hint">Gilt auf allen deinen Geräten.</p>
         <div class="theme-picker" id="theme-picker" role="radiogroup" aria-label="Design"></div>
 
-        <h3 class="settings-head">🔊 Ton &amp; Bewegung</h3>
+        <h3 class="settings-head">Ton &amp; Bewegung</h3>
         <label class="toggle-row">
           <span>Soundeffekte</span>
           <input type="checkbox" id="set-sound" checked />
@@ -1373,12 +1373,12 @@
         </label>
 
         <hr class="settings-rule" />
-        <h3 class="settings-head">🔔 Benachrichtigungen</h3>
+        <h3 class="settings-head">Benachrichtigungen</h3>
         <p class="hint" id="push-hint">Prüfe…</p>
         <div id="push-box"></div>
 
         <hr class="settings-rule" />
-        <h3>🔑 Passwort ändern</h3>
+        <h3>Passwort ändern</h3>
         <p class="hint" style="margin-top:-4px">Tipp: Dein Name steht öffentlich in der Bestenliste — eine 4-stellige PIN ist leicht zu erraten. Nimm ein richtiges Passwort (6–24 Zeichen).</p>
         <form id="change-pin-form" autocomplete="off">
           <label>Altes Passwort / alte PIN
@@ -1400,7 +1400,7 @@
     <section class="screen" data-screen="transfer">
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2>💸 Chips senden</h2>
+        <h2><i data-icon="transfer"></i>Chips senden</h2>
         <form id="transfer-form" autocomplete="off">
           <label>Empfänger (Spielername)
             <input id="tr-to" type="text" maxlength="16" placeholder="z. B. Max" required />
@@ -1461,12 +1461,12 @@
             <small>Wenn du wirklich blank bist: +<span id="clicker-power">1</span><i class=mk></i> pro Klick</small>
           </summary>
           <div class="wk-clicker-body">
-            <button class="clicker-btn" id="clicker-btn">💼</button>
+            <button class="clicker-btn" id="clicker-btn"><i data-icon="work"></i></button>
             <div id="work-hustle"></div>
             <div class="wk-upgrade">
               <div><span class="wk-label">Klick-Stärke</span><b id="work-power">1 Chips</b></div>
               <div><span class="wk-label">Nächstes Upgrade</span><b id="work-upgrade-cost">50 Chips</b></div>
-              <button class="btn-primary" id="work-upgrade-btn">⬆️ Upgrade kaufen</button>
+              <button class="btn-primary" id="work-upgrade-btn"><i data-icon="aufwerten"></i> Upgrade kaufen</button>
             </div>
             <div class="form-error" id="work-error"></div>
           </div>
@@ -1525,7 +1525,7 @@
           <p class="muted small" id="bank-owner-line">Park Chips sicher auf dem Sparkonto. Geld kommt weiterhin aus den Spielen.</p>
         </div>
 
-        <h3 class="section-title" style="margin-top:4px">💰 Sparkonto</h3>
+        <h3 class="section-title" style="margin-top:4px">Sparkonto</h3>
         <div class="panel" id="bank-savings-panel">
           <p class="muted small" style="text-align:center;padding:14px">Lädt…</p>
         </div>
@@ -1547,7 +1547,7 @@
 
         <div class="stk-trade hidden" id="stk-trade"></div>
 
-        <h3 style="margin:16px 0 6px">📂 Dein Portfolio</h3>
+        <h3 style="margin:16px 0 6px">Dein Portfolio</h3>
         <div class="stk-portfolio" id="stk-portfolio">
           <p class="muted small">Keine offenen Positionen.</p>
         </div>
@@ -1564,10 +1564,10 @@
           <p class="muted small">Produkte aus deinen Unternehmen: selbst benutzen (Buff) oder teurer an andere verkaufen.</p>
         </div>
 
-        <h3 style="margin:14px 0 6px">🎒 Dein Inventar</h3>
+        <h3 style="margin:14px 0 6px">Dein Inventar</h3>
         <div class="mkt-inventory" id="mkt-inventory"><p class="muted small">Lädt…</p></div>
 
-        <h3 style="margin:16px 0 6px">🏷️ Angebote anderer Spieler</h3>
+        <h3 style="margin:16px 0 6px">Angebote anderer Spieler</h3>
         <div class="mkt-offers" id="mkt-offers"><p class="muted small">Lädt…</p></div>
       </div>
     </section>
@@ -1576,14 +1576,14 @@
     <section class="screen" data-screen="admin">
       <div class="panel">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2>🛠️ Admin</h2>
+        <h2><i data-icon="admin"></i>Admin</h2>
 
         <div id="admin-dashboard" style="display:grid;gap:.75rem;margin:.75rem 0 1rem">
           <div class="muted small">Dashboard lädt…</div>
         </div>
 
         <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
-        <h3>📣 Global Announcement</h3>
+        <h3>Global Announcement</h3>
         <div style="display:grid;gap:.5rem;margin-bottom:.25rem">
           <textarea id="admin-announcement-text" maxlength="220" rows="3" placeholder="Nachricht an alle Spieler…" style="width:100%;resize:vertical"></textarea>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
@@ -1616,14 +1616,14 @@
           <button class="btn-primary" id="admin-unban-btn">Entsperren</button>
         </div>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
-          <button class="btn-danger" id="admin-shadow-on-btn">🌑 Pechvogel AN</button>
-          <button class="btn-primary" id="admin-shadow-off-btn">🌞 Pechvogel AUS</button>
+          <button class="btn-danger" id="admin-shadow-on-btn">Pechvogel AN</button>
+          <button class="btn-primary" id="admin-shadow-off-btn">Pechvogel AUS</button>
         </div>
         <p class="muted small" style="margin:.4rem 0 0">🌑 Pechvogel: verliert still jeden Slot-Spin & jede Solo-Roulette-Runde (sieht aus wie Pech).</p>
         <div class="form-error" id="admin-ban-error"></div>
 
         <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
-        <h3>🚫 IP-Bann</h3>
+        <h3>IP-Bann</h3>
         <p class="muted small" style="margin:0 0 .5rem">Sperrt die IP-Adresse (unabhängig vom Account). Per Spielername (letzte bekannte IP) oder direkt eine IP.</p>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap">
           <input id="admin-ipban-input" type="text" maxlength="45" placeholder="Spielername oder IP" style="flex:1;min-width:140px" />
@@ -1633,11 +1633,11 @@
         <ol class="leaderboard" id="admin-ipban-list" style="margin-top:.5rem"><li class="muted">—</li></ol>
 
         <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
-        <h3>🧪 Test-Tools</h3>
+        <h3>Test-Tools</h3>
         <div style="display:flex;flex-direction:column;gap:.5rem">
-          <button class="btn-primary" id="admin-force-win-btn">🎰 Nächster Slot-Spin = MAXIMALGEWINN (für dich)</button>
-          <button class="btn-primary" id="admin-city-event-btn">📰 Zufälliges Orts-Event auslösen</button>
-          <button class="btn-primary" id="admin-new-week-btn">🗓️ Wochen-Rollover jetzt (Pokal + neue Goldene Straße)</button>
+          <button class="btn-primary" id="admin-force-win-btn">Nächster Slot-Spin = MAXIMALGEWINN (für dich)</button>
+          <button class="btn-primary" id="admin-city-event-btn">Zufälliges Orts-Event auslösen</button>
+          <button class="btn-primary" id="admin-new-week-btn">Wochen-Rollover jetzt (Pokal + neue Goldene Straße)</button>
           <!-- Wiedereröffnung: schaltet das Willkommens-Paket frei und startet
                die Gala. Einmal drücken, dann läuft alles. -->
           <div class="admin-comeback">
@@ -1646,67 +1646,67 @@
             <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
               <input id="admin-comeback-mins" type="number" min="15" max="480" value="120" style="width:70px" title="Gala-Minuten" />
               <input id="admin-comeback-pot" type="number" min="1000" step="25000" value="250000" style="width:120px" title="Verlosungs-Topf" />
-              <button class="btn-primary" id="admin-comeback-on-btn">🎊 Wiedereröffnung ausrufen</button>
+              <button class="btn-primary" id="admin-comeback-on-btn">Wiedereröffnung ausrufen</button>
               <button class="btn-danger" id="admin-comeback-off-btn">Gala jetzt abrechnen</button>
             </div>
           </div>
 
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
             <input id="admin-happy-mins" type="number" min="1" max="240" value="60" style="width:70px" title="Minuten" />
-            <button class="btn-primary" id="admin-happy-on-btn">🍹 Happy Hour AN</button>
+            <button class="btn-primary" id="admin-happy-on-btn">Happy Hour AN</button>
             <button class="btn-danger" id="admin-happy-off-btn">Happy Hour AUS</button>
           </div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
             <input id="admin-tourney-mins" type="number" min="1" max="120" value="10" style="width:60px" title="Minuten" />
             <input id="admin-tourney-prize" type="number" min="0" step="10000" value="100000" style="width:110px" title="Preis" />
-            <button class="btn-primary" id="admin-tourney-on-btn">🏁 Turnier starten</button>
+            <button class="btn-primary" id="admin-tourney-on-btn">Turnier starten</button>
             <button class="btn-danger" id="admin-tourney-off-btn">Beenden</button>
           </div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
             <input id="admin-heist-secs" type="number" min="15" max="300" value="60" style="width:60px" title="Sekunden" />
             <input id="admin-heist-loot" type="number" min="1000" step="50000" value="500000" style="width:110px" title="Beute" />
-            <button class="btn-primary" id="admin-heist-on-btn">🚨 Heist starten</button>
+            <button class="btn-primary" id="admin-heist-on-btn">Heist starten</button>
             <button class="btn-danger" id="admin-heist-off-btn">Abbrechen</button>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <input id="admin-rain-secs" type="number" min="10" max="180" value="30" style="width:60px" title="Sekunden" />
             <input id="admin-rain-pot" type="number" min="1000" step="50000" value="250000" style="width:110px" title="Pot" />
-            <button class="btn-primary" id="admin-rain-on-btn">💸 Chip-Regen starten</button>
+            <button class="btn-primary" id="admin-rain-on-btn">Chip-Regen starten</button>
             <button class="btn-danger" id="admin-rain-off-btn">Stopp</button>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <input id="admin-quiz-rounds" type="number" min="1" max="15" value="5" style="width:60px" title="Fragen" />
             <input id="admin-quiz-prize" type="number" min="500" step="5000" value="20000" style="width:110px" title="Preis pro Frage" />
-            <button class="btn-primary" id="admin-quiz-on-btn">❓ Blitz-Quiz starten</button>
+            <button class="btn-primary" id="admin-quiz-on-btn">Blitz-Quiz starten</button>
             <button class="btn-danger" id="admin-quiz-off-btn">Abbrechen</button>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <input id="admin-vault-secs" type="number" min="20" max="300" value="90" style="width:60px" title="Sekunden" />
             <input id="admin-vault-pot" type="number" min="1000" step="50000" value="500000" style="width:110px" title="Pot" />
-            <button class="btn-primary" id="admin-vault-on-btn">⚔️ Tresorkampf starten</button>
+            <button class="btn-primary" id="admin-vault-on-btn">Tresorkampf starten</button>
             <button class="btn-danger" id="admin-vault-off-btn">Abbrechen</button>
           </div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
             <input id="admin-target-test" type="text" maxlength="16" placeholder="Spielername" style="flex:1;min-width:120px" />
-            <button class="btn-primary" id="admin-reset-bonus-btn">🎁 Bonus-Cooldown resetten</button>
-            <button class="btn-danger" id="admin-reset-ach-btn">🏆 Achievements resetten</button>
+            <button class="btn-primary" id="admin-reset-bonus-btn">Bonus-Cooldown resetten</button>
+            <button class="btn-danger" id="admin-reset-ach-btn"><i data-icon="bestenliste"></i>Achievements resetten</button>
           </div>
           <div class="form-error" id="admin-test-error"></div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.1);padding-top:10px;margin-top:6px">
             <span style="flex-basis:100%" class="muted small">💾 <b>Daten-Backup</b> — lädt ALLE Spieldaten (Accounts, Pferde, Stadt, Clans …) als eine Datei. Vor Trial-Ende/Hosting-Wechsel machen! Wiederherstellen überschreibt alles und startet den Server neu.</span>
-            <button class="btn-primary" id="admin-backup-btn">💾 Backup herunterladen</button>
+            <button class="btn-primary" id="admin-backup-btn">Backup herunterladen</button>
             <label class="btn-danger" style="cursor:pointer;display:inline-flex;align-items:center">📂 Backup wiederherstellen<input id="admin-restore-input" type="file" accept=".json,application/json" style="display:none" /></label>
           </div>
           <div class="form-error" id="admin-backup-error"></div>
         </div>
 
         <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
-        <h3>🏙️ Stadt-Gebäude freigeben</h3>
+        <h3>Stadt-Gebäude freigeben</h3>
         <p class="muted small">Entfernt Grundstück + Unternehmen aus dem Besitz (zurück an NPC).</p>
         <ol class="leaderboard" id="admin-lot-list">
           <li class="muted">Lädt…</li>
         </ol>
-        <button class="btn-danger" id="admin-reset-city-btn" style="margin-top:8px;width:100%">🔄 Ganze Stadt zurücksetzen (alles an NPC)</button>
+        <button class="btn-danger" id="admin-reset-city-btn" style="margin-top:8px;width:100%">Ganze Stadt zurücksetzen (alles an NPC)</button>
       </div>
     </section>
 
@@ -1719,9 +1719,9 @@
     <div class="chat-log" data-chat-log></div>
     <form class="chat-input" data-chat-form>
       <input type="text" data-chat-text maxlength="280" placeholder="Nachricht…" autocomplete="off" />
-      <button type="submit" class="chat-send" title="Senden">➤</button>
+      <button type="submit" class="chat-send" aria-label="Senden"><i data-icon="senden"></i></button>
     </form>
-    <button type="button" class="chat-fab" data-chat-toggle title="Chat">💬<span class="chat-room-tag" data-chat-tag></span></button>
+    <button type="button" class="chat-fab" data-chat-toggle aria-label="Chat öffnen"><i data-icon="chat"></i><span class="chat-room-tag" data-chat-tag></span></button>
   </div>
 
   <!-- Toast für Hinweise (z. B. Bonus erhalten) -->
@@ -1740,14 +1740,14 @@
   <!-- Casino-Heist-Overlay (erscheint bei einem Heist-Event) -->
   <div id="heist-overlay" class="heist-overlay hidden">
     <div class="heist-card">
-      <button class="ev-min" id="heist-min" title="Minimieren — Event läuft weiter">✕</button>
+      <button class="ev-min" id="heist-min" aria-label="Minimieren, Event läuft weiter"><i data-icon="schliessen"></i></button>
       <div class="heist-emoji">🚨</div>
       <h2 id="heist-title">CASINO-HEIST!</h2>
       <p class="muted small" id="heist-sub">Knackt gemeinsam den Tresor!</p>
       <div class="heist-loot" id="heist-loot"></div>
       <div class="heist-vault"><div class="heist-vault-fill" id="heist-vault-fill"></div><span id="heist-vault-txt"></span></div>
       <div class="heist-timer" id="heist-timer"></div>
-      <button class="heist-crack" id="heist-crack">💥 KNACKEN!</button>
+      <button class="heist-crack" id="heist-crack"><i data-icon="schlag"></i> KNACKEN!</button>
       <div class="heist-result" id="heist-result"></div>
     </div>
   </div>
@@ -1758,15 +1758,15 @@
 
   <!-- Minimierte Event-Overlays: Pills unten rechts, Antippen öffnet wieder -->
   <div id="ev-pills">
-    <button id="heist-pill" class="ev-pill hidden">🚨 Heist läuft!</button>
-    <button id="quiz-pill" class="ev-pill hidden">❓ Quiz läuft!</button>
-    <button id="vault-pill" class="ev-pill hidden">⚔️ Tresorkampf läuft!</button>
+    <button id="heist-pill" class="ev-pill hidden"><i data-icon="alarm"></i> Heist läuft!</button>
+    <button id="quiz-pill" class="ev-pill hidden"><i data-icon="frage"></i> Quiz läuft!</button>
+    <button id="vault-pill" class="ev-pill hidden"><i data-icon="krieg"></i> Tresorkampf läuft!</button>
   </div>
 
   <!-- Blitz-Quiz-Overlay -->
   <div id="quiz-overlay" class="heist-overlay hidden">
     <div class="heist-card quiz-card">
-      <button class="ev-min" id="quiz-min" title="Minimieren — Quiz läuft weiter">✕</button>
+      <button class="ev-min" id="quiz-min" aria-label="Minimieren, Quiz läuft weiter"><i data-icon="schliessen"></i></button>
       <div class="heist-emoji">❓</div>
       <h2 id="quiz-head">BLITZ-QUIZ</h2>
       <div class="quiz-bar"><div class="quiz-bar-fill" id="quiz-bar-fill"></div></div>
@@ -1779,7 +1779,7 @@
   <!-- Team-Tresorkampf-Overlay -->
   <div id="vault-overlay" class="heist-overlay hidden">
     <div class="heist-card vault-card">
-      <button class="ev-min" id="vault-min" title="Minimieren — Kampf läuft weiter">✕</button>
+      <button class="ev-min" id="vault-min" aria-label="Minimieren, Kampf läuft weiter"><i data-icon="schliessen"></i></button>
       <div class="heist-emoji">⚔️</div>
       <h2>TEAM-TRESORKAMPF!</h2>
       <div class="heist-loot" id="vault-pot"></div>
@@ -1793,7 +1793,7 @@
       </div>
       <div class="vault-my-team" id="vault-my-team"></div>
       <div class="heist-timer" id="vault-timer"></div>
-      <button class="vault-hit" id="vault-hit">💥 DRAUF!</button>
+      <button class="vault-hit" id="vault-hit"><i data-icon="schlag"></i> DRAUF!</button>
       <div class="heist-result" id="vault-result"></div>
     </div>
   </div>

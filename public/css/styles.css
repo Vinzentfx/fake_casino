@@ -6523,14 +6523,20 @@ html:not(.reduce-motion) .gs-item {
 }
 
 /* Ueberschriften mit Symbol. Ohne Symbol bleibt alles, wie es war. */
+h2:has(> i[data-icon]),
+h3:has(> i[data-icon]),
 .section-title:has(> .ui-icon),
 .section-title:has(> i[data-icon]) {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.section-title > i[data-icon] { display: grid; place-items: center; }
-.section-title .ui-icon { width: 19px; height: 19px; opacity: 0.85; }
+h2 > i[data-icon],
+h3 > i[data-icon],
+.section-title > i[data-icon] { display: grid; place-items: center; flex: 0 0 auto; }
+.section-title .ui-icon,
+h3 > i[data-icon] .ui-icon { width: 19px; height: 19px; opacity: 0.85; }
+h2 > i[data-icon] .ui-icon { width: 23px; height: 23px; opacity: 0.9; }
 
 /* --- Rangstufen -------------------------------------------------------------
    Das Zeichen erbt die Rangfarbe, die der Server mitschickt: Neuling grau,
@@ -7091,3 +7097,60 @@ html:not(.reduce-motion) .gs-item {
 .hero-balance .mk, .sk-wert .mk { opacity: 0.85; }
 .kos-preis { display: inline-flex; align-items: center; gap: 4px; }
 .kos-preis .ui-icon { width: 13px; height: 13px; opacity: 0.8; }
+
+/* --- Symbole in den Spiel-Knoepfen -----------------------------------------
+   Die Knoepfe trugen ihr Emoji als Textzeichen und richteten sich danach von
+   selbst aus. Eine Zeichnung ist ein Kasten, also braucht der Knopf Flex,
+   sonst faellt der Text darunter. */
+.btn-primary:has(> i[data-icon]),
+.btn-secondary:has(> i[data-icon]),
+.btn-danger:has(> i[data-icon]),
+.auto-roll-btn:has(> i[data-icon]),
+.gamble-btn:has(> i[data-icon]),
+.rt-side-btn:has(> i[data-icon]),
+.sol-mode-tab:has(> i[data-icon]),
+.horses-tab:has(> i[data-icon]),
+.ev-pill:has(> i[data-icon]),
+.sprint-btn:has(> i[data-icon]),
+.bet-slip-go:has(> i[data-icon]),
+.heist-crack:has(> i[data-icon]),
+.vault-hit:has(> i[data-icon]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+button > i[data-icon] { display: grid; place-items: center; flex: 0 0 auto; }
+button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
+.btn-primary > i[data-icon] .ui-icon,
+.btn-danger > i[data-icon] .ui-icon { width: 19px; height: 19px; }
+.auto-roll-btn > i[data-icon] .ui-icon,
+.rt-side-btn > i[data-icon] .ui-icon,
+.ev-pill > i[data-icon] .ui-icon { width: 16px; height: 16px; }
+
+/* Knoepfe, die nur aus einem Zeichen bestehen: Kreuz, Pfeil, Sprechblase. */
+.chat-send, .chat-fab, .ev-min, .pvp-quit, .bet-slip-x, .clicker-btn {
+  display: inline-grid;
+  place-items: center;
+}
+.chat-send .ui-icon, .ev-min .ui-icon, .pvp-quit .ui-icon, .bet-slip-x .ui-icon { width: 17px; height: 17px; }
+.chat-fab .ui-icon { width: 22px; height: 22px; }
+.clicker-btn .ui-icon { width: 34px; height: 34px; }
+
+/* Rot und Schwarz beim Gamble: ein Punkt in der Farbe, um die es geht.
+   Die Emoji 🔴 und ⚫ hatten auf jedem Geraet einen anderen Ton und
+   passten zu keinem der drei Designs. */
+.farbpunkt {
+  display: inline-block;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+.gamble-red .farbpunkt { background: #d33a2c; }
+.gamble-black .farbpunkt { background: #14161c; }
+
+/* Duell-Auswahl: das Spielsymbol steht neben dem Namen, dasselbe wie in
+   der Lobby-Kachel. */
+.challenge-game { display: inline-flex; align-items: center; gap: 8px; }
+.challenge-game .g-icon { width: 19px; height: 19px; flex: 0 0 auto; }
