@@ -252,7 +252,7 @@ function setupPush(io, accounts) {
   _io = io;
   _accounts = accounts;
   keys = ladeKeys();
-  webpush.setVapidDetails("mailto:casino@fake-casino.duckdns.org", keys.publicKey, keys.privateKey);
+  webpush.setVapidDetails("mailto:casino@chipstadt.de", keys.publicKey, keys.privateKey);
 
   io.on("connection", (socket) => {
     const key = () => (socket.data.account ? String(socket.data.account).toLowerCase() : null);

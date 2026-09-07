@@ -7,21 +7,37 @@ auf einem eigenen Server.
 
 | | |
 |---|---|
-| **Öffentliche Adresse** | https://fake-casino.duckdns.org |
-| **Weitere Namen** | www.fake-casino.duckdns.org · 206-189-60-121.sslip.io (alt, bleibt aktiv) |
+| **Öffentliche Adresse** | https://chipstadt.de |
+| **Weitere Namen** | www.chipstadt.de · fake-casino.duckdns.org · www.fake-casino.duckdns.org · cas-porta.duckdns.org · 206-189-60-121.sslip.io (alle bleiben aktiv) |
 | **Server** | DigitalOcean Droplet, Ubuntu 24.04 LTS, 1 GB RAM / 1 vCPU / 25 GB, Frankfurt |
 | **IP** | 206.189.60.121 |
 | **Kosten** | ca. 6 $/Monat, bezahlt per PayPal-Guthaben (kein Abo, keine Karte hinterlegt) |
 | **Repo** | https://github.com/Vinzentfx/fake_casino |
 
-Seit 6.9.2026 läuft das Casino unter **fake-casino.duckdns.org**. Die
-Subdomain ist kostenlos bei [duckdns.org](https://www.duckdns.org) angelegt und
-zeigt per A-Record auf 206.189.60.121; DuckDNS beantwortet auch alles darunter
-(`www.` funktioniert deshalb mit).
+Seit 7.9.2026 ist **chipstadt.de** die Hauptadresse, registriert bei INWX für
+rund 6 €/Jahr, bezahlt aus PayPal-Guthaben (Prepaid, keine Karte hinterlegt).
+Drei A-Records (`@`, `www`, `*`) zeigen auf 206.189.60.121, die Nameserver
+bleiben bei INWX.
 
-Die alte `sslip.io`-Adresse steht weiterhin im Caddyfile, damit vorhandene
-Lesezeichen nicht kaputtgehen. `sslip.io` löst einen Hostnamen einfach auf die
-darin enthaltene IP auf, das war die Zwischenlösung ohne eigene Domain.
+**Warum eine eigene Domain, obwohl DuckDNS technisch reichte:** Schulnetze und
+andere gefilterte Netze sperren `duckdns.org` als Dynamic DNS und `sslip.io`
+als Proxy-Werkzeug, beides sind Standardkategorien in Web-Filtern. Die Seite
+war dort entweder gar nicht erreichbar (Verbindung läuft ins Leere) oder warf
+eine Zertifikatswarnung, weil der Filter sich in die TLS-Verbindung klinkt.
+Eine normale Domain fällt in keine dieser Kategorien. Aus demselben Grund
+steht bewusst **kein** "casino" im Namen: Filter kategorisieren auch nach dem
+Domainnamen, und das wäre als Glücksspiel eingestuft worden.
+
+Alle alten Namen bleiben im Caddyfile stehen, damit verschickte Links und
+Lesezeichen nicht kaputtgehen. Solange nicht bestätigt ist, dass `chipstadt.de`
+in den gefilterten Netzen wirklich durchkommt, bleiben sie auch **direkt**
+erreichbar statt umgeleitet: sie sind der Rückfall, falls die neue Domain
+ebenfalls gesperrt wird.
+
+**Achtung bei einem Domainwechsel:** `localStorage` gehört zur Herkunft
+(Origin). Wer über einen neuen Namen kommt, hat kein Sitzungstoken und muss
+sich einmal neu anmelden. Push-Anmeldungen hängen ebenfalls an der Herkunft;
+wer auf beiden Namen zustimmt, bekommt jede Nachricht doppelt.
 
 Ein weiterer Name kommt so dazu: DNS auf die IP zeigen lassen, den Namen in
 `/etc/caddy/Caddyfile` in die Zeile vor der `{` aufnehmen (kommagetrennt),
