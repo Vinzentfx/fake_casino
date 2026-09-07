@@ -460,6 +460,26 @@
     // Doppelpfeil — vorspulen, automatisch weiterlaufen lassen.
     vor: `<path d="M4 5.4 12 12l-8 6.6ZM12.4 5.4 20.4 12l-8 6.6Z" ${S}/>`,
 
+    // ── Werte eines Rennpferds ─────────────────────────────
+    // Herzschlag — Ausdauer.
+    ausdauer: `<path d="M2.6 12.6h4l1.8-4.4 3 9.6 2.6-7 1.6 3.4h5.8" ${S} stroke-width="2"/>
+      <circle cx="20.4" cy="14.2" r="1.4" ${A}/>`,
+
+    // Hantel — Kondition und Training.
+    kondition: `<path d="M3.4 9.4v5.2M6.4 7.4v9.2M17.6 7.4v9.2M20.6 9.4v5.2" ${S} stroke-width="2"/>
+      <path d="M6.4 12h11.2" ${A} stroke="hsl(var(--h,45) 70% 62%)" fill="none" stroke-width="2.6" stroke-linecap="round"/>`,
+
+    // Waage — gleichmaessige Taktik.
+    waage: `<path d="M12 3.4v17.2M7.4 20.6h9.2" ${S}/>
+      <path d="M4 8.2h16" ${S}/>
+      <path d="M4 8.2 1.8 14h4.4ZM20 8.2 17.8 14h4.4Z" ${A}/>
+      <circle cx="12" cy="8.2" r="1.4" ${S}/>`,
+
+    // Laufende Figur — Frontrunner.
+    laeufer: `<circle cx="14.6" cy="4.6" r="2.1" ${A}/>
+      <path d="M8.4 20.6l2.6-4.6-2-3.4 1.6-4 3.4-1 3 2.4 2.6 1" ${S}/>
+      <path d="M11 12.6 7 11.4l-2.6 2.4M13 16l2.4 1.4 1 3.2" ${S}/>`,
+
     // ── Rangstufen ─────────────────────────────────────────
     // Sechs Stufen vom Neuling zur Ikone. Vorher 🌱🎲🎯🦈🌟👑 — sechs
     // Bildchen aus sechs verschiedenen Welten, die nebeneinander keine
@@ -573,6 +593,32 @@
   }
 
   /**
+   * Ein Symbol als SVG-Gruppe, zum Einsetzen in eine bestehende Zeichnung.
+   *
+   * Die Stadtkarte ist ein einziges grosses SVG. Ihre Marker standen bisher
+   * als Emoji in `<text>`-Elementen — dort geht kein HTML, also half weder
+   * `ui()` noch die Marken-Klasse. Diese Fassung liefert stattdessen eine
+   * verschobene und skalierte `<g>`, die sich wie jedes andere Kartenteil
+   * einfuegt.
+   *
+   * @param {string} id     Kennung aus UI oder ICONS.
+   * @param {number} x      Mittelpunkt in Karten-Koordinaten.
+   * @param {number} y      Mittelpunkt in Karten-Koordinaten.
+   * @param {number} groesse Kantenlaenge; das Raster ist 24x24.
+   * @param {string} [farbe] currentColor greift im fremden SVG nicht, also
+   *                         wird die Farbe hier gesetzt.
+   */
+  function svgGruppe(id, x, y, groesse, farbe) {
+    const d = UI[id] || ICONS[id];
+    if (!d) return "";
+    const f = groesse / 24;
+    const inhalt = farbe ? d.replace(/currentColor/g, farbe) : d;
+    return `<g transform="translate(${x - groesse / 2} ${y - groesse / 2}) scale(${f})"
+      stroke-width="${1.75 / f > 3 ? 2.4 : 1.75}" stroke-linecap="round" stroke-linejoin="round"
+      style="pointer-events:none">${inhalt}</g>`;
+  }
+
+  /**
    * Platzziffer fuer Ranglisten.
    *
    * Vorher stand an drei Stellen dieselbe Zeile `["🥇","🥈","🥉"]` und ab
@@ -614,7 +660,7 @@
     zeichne();
   }
 
-  Casino.icons = { icon, has: (id) => !!ICONS[id], spielSymbol, ui, hatUi: (id) => !!(UI[id] || ICONS[id]), marke: () => MARKE, zeichne, rangZeichen, platz };
+  Casino.icons = { icon, has: (id) => !!ICONS[id], spielSymbol, ui, hatUi: (id) => !!(UI[id] || ICONS[id]), marke: () => MARKE, zeichne, rangZeichen, platz, svgGruppe };
   Casino.betrag = betrag;
   Casino.betragDelta = betragDelta;
   Casino.betragText = betragText;

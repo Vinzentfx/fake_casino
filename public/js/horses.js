@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – 🐎 Porta-Rennbahn (Client).
+   Fake Casino – Porta-Rennbahn (Client).
    Geteiltes Live-Rennen: Canvas-Seitenansicht mit animierten
    Pferde-Silhouetten, Wetten mit Live-Quoten, Stall & Markt.
    Server ist autoritativ (game/horses.js); hier nur Darstellung.
@@ -13,7 +13,7 @@
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
 
   const SILKS = ["#e74c3c", "#3498db", "#f1c40f", "#2ecc71", "#9b59b6", "#e67e22", "#1abc9c", "#ec8ecf"];
-  const TACTICS = { front: "🏃 Frontrunner", closer: "🎯 Verfolger", stayer: "⚖️ Gleichmäßig" };
+  const TACTICS = { front: "Frontrunner", closer: "Verfolger", stayer: "Gleichmäßig" };
 
   let st = null;          // letzter Server-State
   let ticks = null;       // letzte Tick-Positionen [{lane,p,fin,spr}]
@@ -186,7 +186,7 @@
       ctx.fillRect(fx + 1, trackTop + ry, 4, Math.min(7, trackH - ry));
     }
     ctx.font = "bold 11px sans-serif"; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
-    ctx.fillText("🏁 ZIEL", fx, trackTop - 8);
+    ctx.fillText("ZIEL", fx, trackTop - 8);
 
     if (st && st.field.length) {
       const running = st.phase === "running";
@@ -238,7 +238,7 @@
           ctx.fillStyle = r === 1 ? "#ffd76a" : "rgba(255,255,255,0.85)";
           ctx.font = `bold ${r === 1 ? 11 : 9}px sans-serif`;
           ctx.textAlign = "center";
-          ctx.fillText(r === 1 ? "👑" : r + ".", x, y - laneH * 0.55);
+          ctx.fillText(r + ".", x, y - laneH * 0.55);
         }
         // Bahn-Label: Nummer im Trikotkästchen + Name
         const ly = trackTop + f.lane * laneH;
@@ -270,7 +270,7 @@
     const el = $("#race-head");
     if (!el || !st) return;
     const s = Math.ceil(Math.max(0, st.msLeft - (Date.now() - st._at)) / 1000);
-    const phase = st.phase === "betting" ? `Wetten offen · Start in ${s}s` : st.phase === "running" ? "🏇 Rennen läuft!" : "Zieleinlauf";
+    const phase = st.phase === "betting" ? `Wetten offen · Start in ${s}s` : st.phase === "running" ? "Rennen läuft!" : "Zieleinlauf";
     el.innerHTML = `<b>Rennen #${st.no}</b> · ${st.distance}m · Boden: ${st.going} <span class="rh-phase">${phase}</span>`;
     const status = $("#race-status");
     if (status) status.textContent = st.phase === "betting" ? `Start in ${s}s` : "";
@@ -290,10 +290,10 @@
       return `<div class="rp-row rp-${i}">
         <span class="rp-medal">${medals[i]}</span>
         <span class="hf-silk" style="background:${silk}"></span>
-        <span class="rp-name">${escapeHtml(r.name)}${r.photo ? " 📸" : ""}</span>
+        <span class="rp-name">${escapeHtml(r.name)}${r.photo ? " (Fotofinish)" : ""}</span>
       </div>`;
     }).join("");
-    el.innerHTML = `<div class="rp-card"><div class="rp-title">🏆 Zieleinlauf</div>${rows}</div>`;
+    el.innerHTML = `<div class="rp-card"><div class="rp-title">${window.Casino.icons.ui("ziel")}Zieleinlauf</div>${rows}</div>`;
     el.classList.remove("hidden");
   }
 
@@ -307,8 +307,8 @@
       const h = f.horse;
       const me = window.Casino.getAccount && window.Casino.getAccount();
       const mine = me && h.owner && h.owner === me.name.toLowerCase();
-      const ownerTag = h.npc ? '<span class="hf-npc">Stall Porta</span>' : `<span class="hf-owner">${mine ? "⭐ dein Pferd" : "👤 " + escapeHtml(h.ownerName || h.owner)}</span>`;
-      const form = (h.formHint === "up" ? "📈" : h.formHint === "down" ? "📉" : "➖") + (h.handicap ? " 🏋️" : "");
+      const ownerTag = h.npc ? '<span class="hf-npc">Stall Porta</span>' : `<span class="hf-owner">${mine ? window.Casino.icons.ui("stern-voll") + "dein Pferd" : window.Casino.icons.ui("profil") + escapeHtml(h.ownerName || h.owner)}</span>`;
+      const form = (h.formHint === "up" ? "▲" : h.formHint === "down" ? "▼" : "–") + (h.handicap ? " (Handicap)" : "");
       const myTags = (myByLane[f.lane] || []).map((b) => `<span class="hf-mybet">${b.type === "win" ? "Sieg" : "Platz"} ${fmt(b.amount)}</span>`).join("");
       const pos = st.phase === "done" && st.result ? `<b class="hf-pos">${st.result.find((r) => r.lane === f.lane).pos}.</b>` : "";
       return `<div class="hf-row">
@@ -332,7 +332,7 @@
     $("#race-bets-head").textContent = bets.length ? `Wetten (${bets.length})` : "Wetten — noch keine";
     el.innerHTML = bets.slice(-14).reverse().map((b) => {
       const horse = st.field[b.lane] ? st.field[b.lane].horse.name : "?";
-      const res = b.won === true ? ` <b class="pos">+${fmt(Math.round(b.amount * b.odds))}</b>` : b.won === false ? ' <b class="neg">✗</b>' : "";
+      const res = b.won === true ? ` <b class="pos">+${fmt(Math.round(b.amount * b.odds))}</b>` : b.won === false ? ' <b class="neg">verloren</b>' : "";
       return `<div class="rb-row">${escapeHtml(b.name)}: ${b.type === "win" ? "Sieg" : "Platz"} ${escapeHtml(horse)} · ${fmt(b.amount)} @ ${b.odds}${res}</div>`;
     }).join("");
   }
@@ -362,32 +362,32 @@
     $("#stable-hint").textContent = stable.length ? `Startgeld ${fmt(config.entryFee || 2000)} Chips · Training dauert ~20 Min (Pferd solange gesperrt) · Kondition unter ${config.enterMinCondition || 50} = Zwangspause` : "Noch keine Pferde — schau im Markt vorbei!";
     el.innerHTML = stable.map((h) => {
       const career = Math.round(h.career * 100);
-      const form = h.formHint === "up" ? "📈 gute Form" : h.formHint === "down" ? "📉 außer Form" : "➖ normale Form";
-      if (h.retired) return `<div class="horse-card retired"><div class="hc-name">🏅 ${escapeHtml(h.name)} <span class="muted small">in Rente</span></div>
+      const form = h.formHint === "up" ? "▲ gute Form" : h.formHint === "down" ? "▼ außer Form" : "– normale Form";
+      if (h.retired) return `<div class="horse-card retired"><div class="hc-name">${window.Casino.icons.ui("bestenliste")}${escapeHtml(h.name)} <span class="muted small">in Rente</span></div>
         <div class="hc-sub">${h.races} Rennen · ${h.wins} Siege · ${fmt(h.earnings)}<i class=mk></i> verdient</div></div>`;
       const evBadge = h.event ? `<div class="hc-event">${escapeHtml(h.event.label)} — noch ~${h.event.hoursLeft}h${h.event.block ? " · kann nicht antreten" : ""}</div>` : "";
       const busy = !!h.training;
-      const trainBadge = busy ? `<div class="hc-event">🏋️ Im Training — noch ~${h.training.minsLeft} Min · nicht startbereit</div>` : "";
-      const hcap = h.handicap ? " 🏋️" : "";
+      const trainBadge = busy ? `<div class="hc-event">${window.Casino.icons.ui("kondition")}Im Training — noch ~${h.training.minsLeft} Min · nicht startbereit</div>` : "";
+      const hcap = h.handicap ? " (Handicap)" : "";
       const dis = busy ? "disabled" : "";
       const condClass = h.condition >= 70 ? "" : h.condition >= 50 ? "sb-warn" : "sb-low";
       return `<div class="horse-card${busy ? " busy" : ""}">
         <div class="hc-head">
-          <div class="hc-name">🐴 ${escapeHtml(h.name)}${hcap} <button class="hc-rename" data-id="${h.id}" data-name="${escapeHtml(h.name)}" title="Umbenennen">✏️</button></div>
+          <div class="hc-name">${window.Casino.icons.ui("horses")}${escapeHtml(h.name)}${hcap} <button class="hc-rename" data-id="${h.id}" data-name="${escapeHtml(h.name)}" aria-label="Pferd umbenennen">${window.Casino.icons.ui("bearbeiten")}</button></div>
           <span class="hc-form">${form}</span>
         </div>
         ${trainBadge}${evBadge}
         <div class="hc-stats">
-          <div class="hc-stat"><span>⚡ Tempo</span> ${statBar(h.speed)} <b>${h.speed}</b> <button class="hc-train" data-id="${h.id}" data-stat="speed" ${dis}>+ Training</button></div>
-          <div class="hc-stat"><span>🫀 Ausdauer</span> ${statBar(h.stamina)} <b>${h.stamina}</b> <button class="hc-train" data-id="${h.id}" data-stat="stamina" ${dis}>+ Training</button></div>
-          <div class="hc-stat"><span>💪 Kondition</span> <span class="sb ${condClass}"><i style="width:${h.condition}%"></i></span> <b>${h.condition}</b></div>
-          <div class="hc-record">🏁 ${h.races} · 🏆 ${h.wins} · 🥉 ${h.podiums} · 💰 ${fmt(h.earnings)} · Karriere ${career}%</div>
+          <div class="hc-stat"><span>${window.Casino.icons.ui("blitz")}Tempo</span> ${statBar(h.speed)} <b>${h.speed}</b> <button class="hc-train" data-id="${h.id}" data-stat="speed" ${dis}>+ Training</button></div>
+          <div class="hc-stat"><span>${window.Casino.icons.ui("ausdauer")}Ausdauer</span> ${statBar(h.stamina)} <b>${h.stamina}</b> <button class="hc-train" data-id="${h.id}" data-stat="stamina" ${dis}>+ Training</button></div>
+          <div class="hc-stat"><span>${window.Casino.icons.ui("kondition")}Kondition</span> <span class="sb ${condClass}"><i style="width:${h.condition}%"></i></span> <b>${h.condition}</b></div>
+          <div class="hc-record">${h.races} Rennen · ${h.wins} Siege · ${h.podiums} Podeste · ${fmt(h.earnings)} · Karriere ${career}%</div>
         </div>
         <div class="hc-actions">
           <select class="hc-tactic" data-id="${h.id}">
-            <option value="stayer">⚖️ Gleichmäßig</option><option value="front">🏃 Frontrunner</option><option value="closer">🎯 Schlussspurt</option>
+            <option value="stayer">Gleichmäßig</option><option value="front">Frontrunner</option><option value="closer">Schlussspurt</option>
           </select>
-          <button class="hc-enter btn-primary" data-id="${h.id}" ${dis}>🏁 Anmelden (${fmt(config.entryFee || 2000)})</button>
+          <button class="hc-enter btn-primary" data-id="${h.id}" ${dis}>${window.Casino.icons.ui("ziel")} Anmelden (${fmt(config.entryFee || 2000)})</button>
           <button class="hc-sell" data-id="${h.id}">Verkaufen</button>
         </div>
       </div>`;
@@ -396,7 +396,7 @@
       socket.emit("horses:train", { horseId: b.dataset.id, stat: b.dataset.stat }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Training fehlgeschlagen.");
         applyAccount(r.account);
-        toast(`💪 +${r.gain} ${r.stat === "speed" ? "Tempo" : "Ausdauer"} (${r.value}) · −${fmt(r.cost)} Chips · 🏋️ ~${r.trainingMins} Min gesperrt`);
+        toast(`+${r.gain} ${r.stat === "speed" ? "Tempo" : "Ausdauer"} (${r.value}) · −${fmt(r.cost)} Chips · Training ~${r.trainingMins} Min gesperrt`);
         load();
       });
     }));
@@ -405,7 +405,7 @@
       socket.emit("horses:enter", { horseId: b.dataset.id, tactic }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Anmeldung fehlgeschlagen.");
         applyAccount(r.account);
-        toast(`🏁 Angemeldet fürs nächste Rennen (Startplatz ${r.position})`);
+        toast(`Angemeldet fürs nächste Rennen (Startplatz ${r.position})`);
       });
     }));
     el.querySelectorAll(".hc-sell").forEach((b) => b.addEventListener("click", async () => {
@@ -414,7 +414,7 @@
       socket.emit("horses:sell", { horseId: b.dataset.id }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Verkauf fehlgeschlagen.");
         if (r.account) applyAccount(r.account);
-        toast(r.refund ? `Verkauft: +${fmt(r.refund)} Chips` : "Verabschiedet. 🐴👋");
+        toast(r.refund ? `Verkauft: +${fmt(r.refund)} Chips` : "Verabschiedet.");
         load();
       });
     }));
@@ -424,7 +424,7 @@
       if (name == null || name.trim() === cur) return;
       socket.emit("horses:rename", { horseId: b.dataset.id, name }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Umbenennen fehlgeschlagen.");
-        toast(`✏️ Umbenannt in ${r.horse.name}!`);
+        toast(`Umbenannt in ${r.horse.name}!`);
         load();
       });
     }));
@@ -436,25 +436,29 @@
     el.innerHTML = market.map((h) => {
       const power = h.speed + h.stamina;
       const tier = power >= 165 ? { t: "Elite", c: "t-elite" } : power >= 140 ? { t: "Stark", c: "t-strong" } : power >= 120 ? { t: "Solide", c: "t-mid" } : { t: "Anfänger", c: "t-low" };
-      const temp = "🌶️".repeat(Math.max(1, Math.round(h.temperament / 2)));
+      /* Temperament stand als Reihe von Chilischoten da. Eine Skala mit
+         gefuellten und leeren Punkten sagt dasselbe, laesst sich zaehlen
+         und traegt keine Fremdfarbe in die Karte. */
+      const stufen = Math.max(1, Math.round(h.temperament / 2));
+      const temp = "●".repeat(stufen) + "○".repeat(Math.max(0, 5 - stufen));
       return `<div class="horse-card">
         <div class="hc-head">
-          <div class="hc-name">🐴 ${escapeHtml(h.name)}</div>
+          <div class="hc-name">${window.Casino.icons.ui("horses")}${escapeHtml(h.name)}</div>
           <span class="hc-tier ${tier.c}">${tier.t}</span>
         </div>
         <div class="hc-stats">
-          <div class="hc-stat"><span>⚡ Tempo</span> ${statBar(h.speed)} <b>${h.speed}</b></div>
-          <div class="hc-stat"><span>🫀 Ausdauer</span> ${statBar(h.stamina)} <b>${h.stamina}</b></div>
-          <div class="muted small">Temperament ${temp} (${h.temperament}/10) — je mehr, desto unberechenbarer</div>
+          <div class="hc-stat"><span>${window.Casino.icons.ui("blitz")}Tempo</span> ${statBar(h.speed)} <b>${h.speed}</b></div>
+          <div class="hc-stat"><span>${window.Casino.icons.ui("ausdauer")}Ausdauer</span> ${statBar(h.stamina)} <b>${h.stamina}</b></div>
+          <div class="muted small">Temperament <span class="hc-temp">${temp}</span> (${h.temperament}/10) — je mehr, desto unberechenbarer</div>
         </div>
-        <div class="hc-actions"><button class="hc-buy btn-primary" data-id="${h.id}">🛒 Kaufen · ${fmt(h.price)}<i class=mk></i></button></div>
+        <div class="hc-actions"><button class="hc-buy btn-primary" data-id="${h.id}">${window.Casino.icons.ui("warenkorb")} Kaufen · ${fmt(h.price)}<i class=mk></i></button></div>
       </div>`;
     }).join("");
     el.querySelectorAll(".hc-buy").forEach((b) => b.addEventListener("click", () => {
       socket.emit("horses:buy", { horseId: b.dataset.id }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Kauf fehlgeschlagen.");
         applyAccount(r.account);
-        toast(`🐎 ${r.horse.name} gehört jetzt dir!`);
+        toast(`${r.horse.name} gehört jetzt dir!`);
         load();
       });
     }));

@@ -32,7 +32,7 @@
     const factor = s.hustle && s.hustle.factor ? s.hustle.factor : 1;
     const power = Math.max(1, Math.round(s.clickPower * (s.schulleiter ? 3 : 1) * factor));
     $("#clicker-power").textContent = power;
-    $("#work-power").textContent = power + " Chips" + (s.schulleiter ? " (🏫 Schulleiter ×3)" : "");
+    $("#work-power").textContent = power + " Chips" + (s.schulleiter ? " (Schulleiter ×3)" : "");
     renderHustle(s.hustle);
     renderJobs(s.jobs);
     const btn = $("#work-upgrade-btn");
@@ -40,11 +40,11 @@
     if (s.maxed) {
       costEl.textContent = "max. ausgebaut";
       btn.disabled = true;
-      btn.textContent = "✓ Voll ausgebaut";
+      btn.textContent = "Voll ausgebaut";
     } else {
       costEl.textContent = fmt(s.upgradeCost) + " Chips";
       btn.disabled = false;
-      btn.textContent = "⬆️ Upgrade kaufen";
+      btn.innerHTML = `${window.Casino.icons.ui("aufwerten")} Upgrade kaufen`;
     }
   }
 
@@ -205,7 +205,7 @@
         toast(`Daneben. Richtig wäre: ${res.loesung || "?"} · Trostlohn +${fmt(res.earned || 0)} Chips`);
       } else {
         window.Casino.sound.play("cash");
-        toast(`✓ +${fmt(res.earned || 0)} Chips${res.xp ? ` · +${fmt(res.xp)} XP` : ""}${extra}${res.capped ? " · Cap erreicht" : ""}`);
+        toast(`+${fmt(res.earned || 0)} Chips${res.xp ? ` · +${fmt(res.xp)} XP` : ""}${extra}${res.capped ? " · Cap erreicht" : ""}`);
       }
     });
   }
@@ -346,7 +346,9 @@
     residential: "#3e5748", civic: "#4a4f6e", kiosk: "#5e5636", cafe: "#5d4a33",
     shop: "#33565e", hotel: "#59335e", factory: "#5a4a3a", casino: "#5a2a6e", bank: "#6e5a2a",
   };
-  const LM_EMOJI = { school: "🏫", station: "🚉", park: "🏞️", sport: "🏟️" };
+  /* Wahrzeichen auf der Karte. Kennungen statt Emoji: die Karte ist ein
+     einziges SVG, dort setzt svgGruppe() die Zeichnung ein. */
+  const LM_ICON = { school: "quests", station: "transfer", park: "neuling", sport: "sports" };
 
   function loadCity() {
     socket.emit("city:state", (res) => {
@@ -384,15 +386,15 @@
       return;
     }
     const chips = [];
-    chips.push(`<span class="buff-chip" style="border-color:${me.color};color:${me.color}">🏠 ${me.houses} ${me.houses === 1 ? "Haus" : "Häuser"}</span>`);
-    chips.push(`<span class="buff-chip">💎 ${fmt(me.value)} Chips Wert</span>`);
-    if (me.streets) chips.push(`<span class="buff-chip">👑 ${me.streets} ${me.streets === 1 ? "Straße" : "Straßen"} komplett</span>`);
-    if (me.hasGolden) chips.push(`<span class="buff-chip" style="border-color:#ffd700;color:#ffd700">✨ Goldene Straße (2× Tribut)</span>`);
+    chips.push(`<span class="buff-chip" style="border-color:${me.color};color:${me.color}">${window.Casino.icons.ui("businesses")}${me.houses} ${me.houses === 1 ? "Haus" : "Häuser"}</span>`);
+    chips.push(`<span class="buff-chip">${fmt(me.value)} Chips Wert</span>`);
+    if (me.streets) chips.push(`<span class="buff-chip">${window.Casino.icons.ui("krone")}${me.streets} ${me.streets === 1 ? "Straße" : "Straßen"} komplett</span>`);
+    if (me.hasGolden) chips.push(`<span class="buff-chip" style="border-color:#ffd700;color:#ffd700">${window.Casino.icons.ui("stern-voll")}Goldene Straße (2× Tribut)</span>`);
     for (const s of me.sets || []) chips.push(`<span class="buff-chip">${s.emoji} ${escapeHtml(s.label)} (+${s.tribute.toLocaleString("de-DE")}/Std)</span>`);
     for (const t of me.trophies) chips.push(`<span class="buff-chip">${t.emoji} ${escapeHtml(t.title)}</span>`);
-    for (const d of me.bossOf) chips.push(`<span class="buff-chip">🥇 Boss von ${escapeHtml(d)}</span>`);
+    for (const d of me.bossOf) chips.push(`<span class="buff-chip">${window.Casino.icons.ui("krone")}Boss von ${escapeHtml(d)}</span>`);
     // "Meine Immobilien" — tap to jump to the building on the map.
-    let list = `<details class="empire-list"><summary>📋 Meine Immobilien (${me.houses})</summary><div class="empire-items">`;
+    let list = `<details class="empire-list"><summary>Meine Immobilien (${me.houses})</summary><div class="empire-items">`;
     for (const p of me.properties || []) {
       list += `<button class="empire-item" data-goto-d="${p.did}" data-goto-b="${p.id}">${p.emoji} ${escapeHtml(p.label)}<small>${escapeHtml(p.districtName)} · ${fmt(p.price)}<i class=mk></i></small></button>`;
     }
@@ -437,14 +439,14 @@
     box.innerHTML = b.liste.map((z) => {
       const offen = offenerBesitzer === z.key;
       const marken = [];
-      if (z.streets) marken.push(`👑 ${z.streets}`);
-      if (z.trophies) marken.push(`🏆 ${z.trophies}`);
+      if (z.streets) marken.push(`${window.Casino.icons.ui("krone")}${z.streets}`);
+      if (z.trophies) marken.push(`${window.Casino.icons.ui("bestenliste")}${z.trophies}`);
       return `<div class="cb-block${offen ? " open" : ""}">
           <button class="cb-row${z.isMe ? " mine" : ""}" data-owner="${escapeHtml(z.key)}" type="button">
             <span class="cb-rank">${z.rang}</span>
             <span class="cb-dot" style="background:${z.color}"></span>
             <span class="cb-name">${escapeHtml(z.name)}${z.isMe ? " (du)" : ""}</span>
-            <span class="cb-num">🏠 ${fmt(z.houses)}</span>
+            <span class="cb-num">${window.Casino.icons.ui("businesses")}${fmt(z.houses)}</span>
             <span class="cb-num cb-value">${fmt(z.value)}<i class=mk></i></span>
             ${marken.length ? `<span class="cb-tags">${marken.join(" ")}</span>` : ""}
             <span class="cb-caret">${offen ? "▾" : "▸"}</span>
@@ -538,8 +540,8 @@
     $("#city-subtitle").innerHTML = `Erobere die echte Stadt: Häuser kaufen, Straßen-Monopole sichern, Stadtteil-Boss werden. Chips kommen aus dem Casino — hier zeigst du sie her.`;
     const lp = $("#land-price");
     if (lp) {
-      lp.innerHTML = (overview.casinoOwnerName ? `🎰 ${escapeHtml(overview.casinoOwnerName)}` : "🎰 frei")
-        + (overview.bankOwnerName ? ` · 🏦 ${escapeHtml(overview.bankOwnerName)}` : " · 🏦 frei");
+      lp.innerHTML = (overview.casinoOwnerName ? `${window.Casino.icons.ui("marke")}${escapeHtml(overview.casinoOwnerName)}` : `${window.Casino.icons.ui("marke")}frei`)
+        + (overview.bankOwnerName ? ` · ${window.Casino.icons.ui("bank")}${escapeHtml(overview.bankOwnerName)}` : ` · ${window.Casino.icons.ui("bank")}frei`);
     }
 
     const rings = overview.districts.filter((d) => d.ring && d.ring.length > 2);
@@ -555,13 +557,21 @@
       parts.push(`<g class="dist" data-d="${d.id}" style="cursor:pointer">`);
       parts.push(`<path d="${pathOf(d.ring)}" fill="${fill}" stroke="${stroke}" stroke-width="${d.boss ? fs / 5 : fs / 8}" />`);
       const [cx, cy] = ringCentroid(d.ring);
-      const marks = (d.hasCasino ? "🎰" : "") + (d.hasBank ? "🏦" : "");
+      /* Die Marken sassen als Emoji im Namenstext. Jetzt sind es eigene
+         Gruppen daneben, damit sie dieselbe Zeichnung tragen wie ueberall. */
+      const markZahl = (d.hasCasino ? 1 : 0) + (d.hasBank ? 1 : 0);
       const trendPct = Math.round((d.idx - 1) * 100);
-      const trend = `${d.idx >= 1 ? "📈" : "📉"} ${trendPct >= 0 ? "+" : ""}${trendPct}%`;
-      parts.push(`<text x="${cx}" y="${cy - fs * 0.9}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#fff" stroke="#20291f" stroke-width="${fs / 9}" paint-order="stroke">${escapeHtml(d.name)}${marks ? " " + marks : ""}</text>`);
-      parts.push(`<text x="${cx}" y="${cy + fs * 0.3}" text-anchor="middle" font-size="${fs * 0.62}" fill="rgba(255,255,255,0.85)" stroke="#20291f" stroke-width="${fs / 12}" paint-order="stroke">${d.total} Häuser · ${trend}${d.monos ? ` · ${d.monos}👑` : ""}</text>`);
+      const trend = `${d.idx >= 1 ? "▲" : "▼"} ${trendPct >= 0 ? "+" : ""}${trendPct}%`;
+      parts.push(`<text x="${cx}" y="${cy - fs * 0.9}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#fff" stroke="#20291f" stroke-width="${fs / 9}" paint-order="stroke">${escapeHtml(d.name)}</text>`);
+      if (markZahl) {
+        const nb = d.name.length * fs * 0.29;
+        let mx = cx + nb + fs * 0.55;
+        if (d.hasCasino) { parts.push(window.Casino.icons.svgGruppe("marke", mx, cy - fs * 1.2, fs * 0.9, "#fff")); mx += fs * 1.05; }
+        if (d.hasBank) parts.push(window.Casino.icons.svgGruppe("bank", mx, cy - fs * 1.2, fs * 0.9, "#fff"));
+      }
+      parts.push(`<text x="${cx}" y="${cy + fs * 0.3}" text-anchor="middle" font-size="${fs * 0.62}" fill="rgba(255,255,255,0.85)" stroke="#20291f" stroke-width="${fs / 12}" paint-order="stroke">${d.total} Häuser · ${trend}${d.monos ? ` · ${d.monos} Str.` : ""}</text>`);
       if (d.boss)
-        parts.push(`<text x="${cx}" y="${cy + fs * 1.4}" text-anchor="middle" font-size="${fs * 0.68}" font-weight="800" fill="${d.boss.color}" stroke="#20291f" stroke-width="${fs / 12}" paint-order="stroke">🥇 ${escapeHtml(d.boss.name)}${d.boss.isMe ? " (Du)" : ""}</text>`);
+        parts.push(`<text x="${cx}" y="${cy + fs * 1.4}" text-anchor="middle" font-size="${fs * 0.68}" font-weight="800" fill="${d.boss.color}" stroke="#20291f" stroke-width="${fs / 12}" paint-order="stroke">${escapeHtml(d.boss.name)}${d.boss.isMe ? " (Du)" : ""}</text>`);
       parts.push(`</g>`);
     }
     svg.innerHTML = parts.join("");
@@ -576,14 +586,14 @@
     $("#city-title").textContent = district.name;
     const mine = district.buildings.filter((b) => b.mine).length;
     const monoStr = district.monopolies.length
-      ? ` · 👑 ${district.monopolies.map((m) => escapeHtml(m.st)).slice(0, 3).join(", ")}${district.monopolies.length > 3 ? "…" : ""}`
+      ? ` · ${window.Casino.icons.ui("krone")}${district.monopolies.map((m) => escapeHtml(m.st)).slice(0, 3).join(", ")}${district.monopolies.length > 3 ? "…" : ""}`
       : "";
     $("#city-subtitle").innerHTML = `${district.buildings.length} echte Häuser${mine ? ` — <b>${mine}</b> deins` : ""}${monoStr}`;
     const lp = $("#land-price");
     if (lp) {
       const pct = Math.round((district.idx - 1) * 100);
-      lp.innerHTML = `${district.idx >= 1 ? "📈" : "📉"} ${escapeHtml(district.name)}-Index <b>${idxStr(district.idx)}</b> (${pct >= 0 ? "+" : ""}${pct}% zum Normalpreis)`
-        + (district.boss ? ` · 🥇 <b style="color:${district.boss.color}">${escapeHtml(district.boss.name)}</b>` : "");
+      lp.innerHTML = `${window.Casino.icons.ui(district.idx >= 1 ? "statistik" : "auszahlen")}${escapeHtml(district.name)}-Index <b>${idxStr(district.idx)}</b> (${pct >= 0 ? "+" : ""}${pct}% zum Normalpreis)`
+        + (district.boss ? ` · ${window.Casino.icons.ui("krone")}<b style="color:${district.boss.color}">${escapeHtml(district.boss.name)}</b>` : "");
     }
 
     const bb = bboxOf([district.ring.length > 2 ? district.ring : district.buildings.flatMap((b) => b.pts)]);
@@ -643,22 +653,22 @@
       const special = b.cls === "casino" || b.cls === "bank" || b.trophy;
       parts.push(`<path class="bld" data-b="${b.id}" d="${pathOf(b.pts)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${special ? 'filter="url(#glow)"' : ""} style="cursor:pointer"/>`);
       if (b.cls === "casino" || b.cls === "bank")
-        parts.push(`<text x="${b.c[0]}" y="${b.c[1]}" text-anchor="middle" dominant-baseline="central" font-size="${Math.max(14, Math.sqrt(b.a))}" style="pointer-events:none">${b.cls === "casino" ? "🎰" : "🏦"}</text>`);
+        parts.push(window.Casino.icons.svgGruppe(b.cls === "casino" ? "marke" : "bank", b.c[0], b.c[1], Math.max(15, Math.sqrt(b.a) * 1.1), "#fff"));
       else if (b.trophy)
         parts.push(`<text x="${b.c[0]}" y="${b.c[1]}" text-anchor="middle" dominant-baseline="central" font-size="${Math.max(11, Math.sqrt(b.a) * 0.9)}" style="pointer-events:none">${district.trophies[b.trophy].emoji}</text>`);
     }
 
     for (const l of district.landmarks) {
-      parts.push(`<text x="${l.x}" y="${l.y}" text-anchor="middle" dominant-baseline="central" font-size="26" opacity="0.95" style="pointer-events:none">${LM_EMOJI[l.type] || "📍"}</text>`);
+      parts.push(window.Casino.icons.svgGruppe(LM_ICON[l.type] || "marke", l.x, l.y, 26, "#fff"));
     }
 
     // Monopoly street labels on top.
     for (const [st, info] of Object.entries(monoLabelAt)) {
       const m = monoBySt[st];
-      parts.push(`<text x="${info.p[0]}" y="${info.p[1] - 8}" text-anchor="middle" font-size="13" font-weight="800" fill="${m.color}" stroke="#1c231b" stroke-width="2.5" paint-order="stroke" style="pointer-events:none">👑 ${escapeHtml(m.ownerName)}s ${escapeHtml(st)}</text>`);
+      parts.push(`<text x="${info.p[0]}" y="${info.p[1] - 8}" text-anchor="middle" font-size="13" font-weight="800" fill="${m.color}" stroke="#1c231b" stroke-width="2.5" paint-order="stroke" style="pointer-events:none">${escapeHtml(m.ownerName)}s ${escapeHtml(st)}</text>`);
     }
     if (goldenLabelAt && district.golden)
-      parts.push(`<text x="${goldenLabelAt.p[0]}" y="${goldenLabelAt.p[1] + 18}" text-anchor="middle" font-size="13" font-weight="800" fill="#ffd700" stroke="#1c231b" stroke-width="2.5" paint-order="stroke" style="pointer-events:none">✨ Goldene Straße: ${escapeHtml(district.golden)} (2× Tribut)</text>`);
+      parts.push(`<text x="${goldenLabelAt.p[0]}" y="${goldenLabelAt.p[1] + 18}" text-anchor="middle" font-size="13" font-weight="800" fill="#ffd700" stroke="#1c231b" stroke-width="2.5" paint-order="stroke" style="pointer-events:none">Goldene Straße: ${escapeHtml(district.golden)} (2× Tribut)</text>`);
 
     svg.innerHTML = `<defs><filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#f4d782" flood-opacity="0.85"/></filter></defs>` + parts.join("");
   }
@@ -786,11 +796,11 @@
    */
   function staffelHinweis(bossRabatt) {
     let out = "";
-    if (bossRabatt) out += `<div class="cd-row muted small">🥇 Boss-Rabatt: −10 % in deinem Ortsteil.</div>`;
+    if (bossRabatt) out += `<div class="cd-row muted small">${window.Casino.icons.ui("krone")}Boss-Rabatt: −10 % in deinem Ortsteil.</div>`;
     const st = district && district.ownerScale;
     if (st && st > 1.01) {
       const max = district.ownerScaleMax || 3;
-      out += `<div class="cd-row muted small">🏠 Besitzer-Staffel: du hast ${fmt(district.ownerHouses)} Gebäude, deshalb ×${st.toLocaleString("de-DE")} auf jeden Kauf (höchstens ×${max}). Verkaufen und Entschädigungen bleiben beim Marktwert.</div>`;
+      out += `<div class="cd-row muted small">${window.Casino.icons.ui("businesses")}Besitzer-Staffel: du hast ${fmt(district.ownerHouses)} Gebäude, deshalb ×${st.toLocaleString("de-DE")} auf jeden Kauf (höchstens ×${max}). Verkaufen und Entschädigungen bleiben beim Marktwert.</div>`;
     }
     return out;
   }

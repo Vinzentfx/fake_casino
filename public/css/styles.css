@@ -7206,3 +7206,34 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
   font-size: var(--fs-2xl);
   margin: var(--sp-1) 0 var(--sp-3);
 }
+
+/* --- Stadt --------------------------------------------------------------- */
+/* Die Besitzer-Zeile unter der Karte reiht Symbole und Namen. Ohne Flex
+   faellt die Zeichnung als Block auf eine eigene Zeile. */
+#land-price {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+#land-price .ui-icon { width: 16px; height: 16px; opacity: 0.85; }
+.empire-list summary { cursor: pointer; }
+/* Das grosse Symbol ueber einem Spiel-Titel. Vorher ein Emoji auf 3,4rem —
+   auf jedem Geraet ein anderes Bild und in keinem der drei Designs richtig. */
+.ph-icon[data-icon] { display: grid; place-items: center; font-size: 0; margin: var(--sp-2) 0; }
+.ph-icon[data-icon] .ui-icon { width: 54px; height: 54px; color: var(--accent); opacity: 0.9; }
+
+/* --- Rennbahn ------------------------------------------------------------- */
+.hc-stat span, .hc-name, .hc-event, .rp-title, .hf-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hc-stat .ui-icon, .hf-owner .ui-icon { width: 14px; height: 14px; opacity: 0.85; }
+.hc-name .ui-icon, .hc-event .ui-icon { width: 17px; height: 17px; }
+.rp-title .ui-icon { width: 18px; height: 18px; }
+.hc-rename { display: inline-grid; place-items: center; }
+.hc-rename .ui-icon { width: 14px; height: 14px; }
+.hc-temp { letter-spacing: 1px; color: var(--accent); }
+.hc-buy { display: inline-flex; align-items: center; gap: 7px; }

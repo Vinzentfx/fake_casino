@@ -223,7 +223,7 @@
       <!-- Sub-Ansicht: Tisch erstellen oder beitreten -->
       <div id="poker-lobby">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div style="text-align:center"><div class="ph-icon">🃏</div><h2>Texas Hold'em</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="poker"></div><h2>Texas Hold'em</h2></div>
         <p class="muted small" style="text-align:center;margin:0 0 8px">Spiele gegen echte Spieler — erstelle einen Tisch oder tritt einem über die Lobby bei.</p>
         <div class="poker-actions">
           <div class="panel">
@@ -290,7 +290,7 @@
       <!-- Automaten-Auswahl -->
       <div id="slots-select">
         <button class="back-btn" data-nav="lobby" id="slots-lobby-back">‹ Lobby</button>
-        <div style="text-align:center"><div class="ph-icon">🎰</div><h2>Slots</h2>
+        <div style="text-align:center"><div class="ph-icon" data-icon="slots"></div><h2>Slots</h2>
           <p class="jackpot-line" id="jackpot-line">💰 Gemeinschafts-Jackpot: <b>…</b></p>
         </div>
         <button class="pvp-entry" id="pvp-entry"><span>🆚 PvP-Duell</span><small>Gegeneinander — größerer Gewinn gewinnt den Pot</small></button>
@@ -300,7 +300,7 @@
       <!-- PvP: Modus-Auswahl -->
       <div id="pvp-lobby" class="hidden">
         <button class="back-btn" id="pvp-lobby-back">‹ Slots</button>
-        <div style="text-align:center"><div class="ph-icon">🆚</div><h2>Slots-Duell</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="krieg"></div><h2>Slots-Duell</h2></div>
         <div class="pvp-mode-grid">
           <button class="pvp-mode-card" id="pvp-choose-bot">
             <span class="pvp-mode-icon">🤖</span>
@@ -318,7 +318,7 @@
       <!-- PvP: Bot-Setup -->
       <div id="pvp-bot-setup" class="hidden">
         <button class="back-btn" id="pvp-bot-back">‹ Zurück</button>
-        <div style="text-align:center"><div class="ph-icon">🤖</div><h2>Gegen Bot spielen</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="wuerfel"></div><h2>Gegen Bot spielen</h2></div>
         <div class="panel">
           <p class="muted small" style="margin-top:0">Wähle deinen Einsatz. Du und der Bot spielen je 20 Spins auf derselben zufälligen Maschine — wer am Ende mehr Match-Chips hat, gewinnt den Pot.</p>
           <label>Buy-in
@@ -332,7 +332,7 @@
       <!-- PvP: Freunde-Setup (erstellen / beitreten) -->
       <div id="pvp-friends-setup" class="hidden">
         <button class="back-btn" id="pvp-friends-back">‹ Zurück</button>
-        <div style="text-align:center"><div class="ph-icon">👥</div><h2>Gegen Freunde</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="gruppe"></div><h2>Gegen Freunde</h2></div>
         <div class="poker-actions">
           <div class="panel">
             <h3>Duell erstellen</h3>
@@ -615,7 +615,7 @@
     <section class="screen" data-screen="mines">
       <div class="mines-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div style="text-align:center"><div class="ph-icon">💣</div><h2>Mines</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="mines"></div><h2>Mines</h2></div>
         <div class="mines-topbar">
           <div class="mines-stat"><span>Multiplikator</span><b id="mines-mult">1.00×</b></div>
           <div class="mines-stat"><span>Auszahlung</span><b id="mines-cashval">—</b></div>
@@ -662,7 +662,7 @@
     <section class="screen" data-screen="towers">
       <div class="towers-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div style="text-align:center"><div class="ph-icon">🗼</div><h2>Towers</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="towers"></div><h2>Towers</h2></div>
         <div class="mines-topbar">
           <div class="mines-stat"><span>Multiplikator</span><b id="tw-mult">1.00×</b></div>
           <div class="mines-stat"><span>Auszahlung</span><b id="tw-cashval">—</b></div>
@@ -687,7 +687,7 @@
       <div class="pinco-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <div class="pinco-head">
-          <div class="ph-icon">🟢</div>
+          <div class="ph-icon" data-icon="pinco"></div>
           <h2>Pinco Ball</h2>
           <p class="muted small">Droppe Bälle durch Stäbe. Die Mitte ist kalt, außen wird es heiß.</p>
         </div>
@@ -731,7 +731,7 @@
     <section class="screen" data-screen="memory">
       <div class="mem-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div style="text-align:center"><div class="ph-icon">🧠</div><h2>Memory-Duell</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="memory"></div><h2>Memory-Duell</h2></div>
 
         <!-- Setup: create or join -->
         <div id="mem-setup">
@@ -797,7 +797,7 @@
     <section class="screen" data-screen="chess">
       <div class="chs-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div style="text-align:center"><div class="ph-icon">♟️</div><h2>Schach-Duell</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="chess"></div><h2>Schach-Duell</h2></div>
 
         <!-- Setup -->
         <div id="chs-setup">
@@ -875,7 +875,7 @@
     <section class="screen" data-screen="solitaire">
       <div class="sol-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div style="text-align:center"><div class="ph-icon">🃏</div><h2>Solitär</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="solitaire"></div><h2>Solitär</h2></div>
 
         <!-- Setup: choose a mode -->
         <div id="sol-setup">
@@ -956,7 +956,7 @@
     <section class="screen" data-screen="sudoku">
       <div class="sdk-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div style="text-align:center"><div class="ph-icon">🔢</div><h2>Sudoku-Race</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="sudoku"></div><h2>Sudoku-Race</h2></div>
 
         <!-- Setup -->
         <div id="sdk-setup">
@@ -1092,7 +1092,7 @@
     <section class="screen" data-screen="crash">
       <div class="crash-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div style="text-align:center"><div class="ph-icon">🚀</div><h2>Crash</h2></div>
+        <div style="text-align:center"><div class="ph-icon" data-icon="crash"></div><h2>Crash</h2></div>
         <div class="crash-history" id="crash-history"></div>
         <div class="crash-stage" id="crash-stage">
           <canvas id="crash-canvas"></canvas>
@@ -1477,7 +1477,7 @@
       <div class="city-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <div style="text-align:center">
-          <div class="ph-icon">🏙️</div>
+          <div class="ph-icon" data-icon="businesses"></div>
           <h2 id="city-title">Porta Westfalica</h2>
           <p class="muted small" id="city-subtitle">Die echte Stadt: tippe einen Stadtteil an und kauf echte Häuser. Jedes Haus zahlt beim Stunden-Bonus etwas Tribut, komplette Straßen färben die Karte in deiner Farbe, und dem Casino gehört der Rake aller Hausspiele. Alles hier gehört jemandem nur so lange, bis es ihm einer abkauft.</p>
         </div>
@@ -1518,7 +1518,7 @@
       <div class="biz-wrap" style="max-width:520px;margin:0 auto;padding:12px">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <div style="text-align:center">
-          <div class="ph-icon">🏦</div>
+          <div class="ph-icon" data-icon="bank"></div>
           <h2>Bank</h2>
           <p class="muted small" id="bank-owner-line">Park Chips sicher auf dem Sparkonto. Geld kommt weiterhin aus den Spielen.</p>
         </div>
@@ -1535,7 +1535,7 @@
       <div class="biz-wrap" style="max-width:620px;margin:0 auto;padding:12px">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <div style="text-align:center">
-          <div class="ph-icon">📈</div>
+          <div class="ph-icon" data-icon="stocks"></div>
           <h2>Börse</h2>
           <p class="muted small">Long oder Short mit Hebel. Vorsicht: Aktien können insolvent gehen — dann ist alles weg.</p>
         </div>
@@ -1557,7 +1557,7 @@
       <div class="biz-wrap" style="max-width:620px;margin:0 auto;padding:12px">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <div style="text-align:center">
-          <div class="ph-icon">🛒</div>
+          <div class="ph-icon" data-icon="warenkorb"></div>
           <h2>Markt</h2>
           <p class="muted small">Produkte aus deinen Unternehmen: selbst benutzen (Buff) oder teurer an andere verkaufen.</p>
         </div>
