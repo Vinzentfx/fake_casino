@@ -19,6 +19,17 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-13",
+      datum: "13. September 2026",
+      titel: "Clan-Wappen und ein Filter für die Sprache",
+      items: [
+        { icon: "clans", titel: "Euer Clan bekommt ein Gesicht",
+          text: "Gründer und Offiziere können ein eigenes Bild hochladen. Es steht im Clan-Bildschirm und neben eurem Tag in der Rangliste. Das Bild wird auf deinem Gerät zurechtgeschnitten und verkleinert, bevor überhaupt etwas losgeschickt wird — die Originaldatei verlässt dein Handy nicht. Passt ein fremdes Wappen nicht, gibt es daneben einen Melde-Knopf." },
+        { icon: "sperre", titel: "Grobe Wörter werden gefiltert",
+          text: "Im Chat werden sie mit Sternchen ersetzt, die Nachricht kommt trotzdem an. Bei Namen — Account, Clan, Pferd, Motto, Tischname, Eintritts-Spruch — wird die Eingabe abgelehnt, denn die stehen dauerhaft irgendwo. Wer schon einen Namen hat, behält ihn." },
+      ],
+    },
+    {
       id: "2026-09-12",
       datum: "12. September 2026",
       titel: "Events kündigen sich jetzt an",

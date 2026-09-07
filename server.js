@@ -291,19 +291,61 @@ function requireOwner(req, res) {
   return true;
 }
 
+/*
+ * Hochgeladene Bilder ausliefern.
+ *
+ * Eigene Route statt express.static: der Ordner liegt in data/, und dort
+ * soll niemand stoebern koennen. Hier kommt nur heraus, was genau dem
+ * erwarteten Namensschema entspricht.
+ */
+app.get("/bilder/:datei", (req, res) => {
+  const datei = String(req.params.datei || "");
+  if (!/^[a-z0-9_-]+-[a-z0-9_-]+\.(webp|png|jpg)$/.test(datei)) return res.status(404).end();
+  const p = path.join(DATA_DIR, "bilder", datei);
+  // Doppelt genaeht: der Name ist geprueft, der aufgeloeste Pfad muss
+  // trotzdem im Bilderordner liegen.
+  const wurzel = path.join(DATA_DIR, "bilder");
+  if (!path.resolve(p).startsWith(path.resolve(wurzel))) return res.status(404).end();
+  if (!fs.existsSync(p)) return res.status(404).end();
+  const typ = datei.endsWith(".png") ? "image/png" : datei.endsWith(".jpg") ? "image/jpeg" : "image/webp";
+  res.setHeader("Content-Type", typ);
+  /* Ein Jahr, aber nur weil jede Adresse einen Stand-Anhang traegt: wird
+     ein Wappen ersetzt, aendert sich die Adresse und der Browser holt neu. */
+  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.sendFile(path.resolve(p));
+});
+
 app.post("/api/admin/backup", (req, res) => {
   if (!requireOwner(req, res)) return;
-  const files = {};
+  const files = {};   // Textdateien, wie bisher
+  const binaer = {};  // Bilder, base64 — seit es hochgeladene Wappen gibt
   try {
     for (const name of fs.readdirSync(DATA_DIR)) {
       const p = path.join(DATA_DIR, name);
-      if (!fs.statSync(p).isFile()) continue;
-      files[name] = fs.readFileSync(p, "utf8"); // JSON-Dateien + .secret (Token-Schlüssel)
+      const st = fs.statSync(p);
+      if (st.isFile()) {
+        files[name] = fs.readFileSync(p, "utf8"); // JSON-Dateien + .secret (Token-Schlüssel)
+        continue;
+      }
+      /* Ein Unterordner. Bis hierher las das Backup nur flache Dateien und
+         nur als UTF-8 — hochgeladene Bilder waeren also gar nicht erst
+         mitgekommen, und nach dem ersten Wiederherstellen haetten alle
+         Clans ihr Wappen verloren. Genau ein Ordner ist vorgesehen, und
+         die Dateinamen darin sind vom Server selbst vergeben. */
+      if (!st.isDirectory() || name !== "bilder") continue;
+      for (const datei of fs.readdirSync(p)) {
+        const dp = path.join(p, datei);
+        try {
+          if (!fs.statSync(dp).isFile()) continue;
+          binaer[`bilder/${datei}`] = fs.readFileSync(dp).toString("base64");
+        } catch {}
+      }
     }
   } catch (e) {
     return res.status(500).json({ error: "Backup fehlgeschlagen: " + e.message });
   }
-  res.json({ ok: true, kind: "fakecasino-backup", createdAt: new Date().toISOString(), version: appVersion(), files });
+  res.json({ ok: true, kind: "fakecasino-backup", createdAt: new Date().toISOString(), version: appVersion(), files, binaer });
 });
 
 app.post("/api/admin/restore", (req, res) => {
@@ -321,6 +363,23 @@ app.post("/api/admin/restore", (req, res) => {
       if (typeof content !== "string") continue;
       fs.writeFileSync(path.join(DATA_DIR, name), content);
       written += 1;
+    }
+    /* Bilder aus aelteren Backups fehlen einfach — dann bleibt der Ordner
+       leer und die Clans stehen ohne Wappen da, statt dass das Einspielen
+       scheitert. */
+    const binaer = req.body.binaer;
+    if (binaer && typeof binaer === "object") {
+      const bilderDir = path.join(DATA_DIR, "bilder");
+      fs.mkdirSync(bilderDir, { recursive: true });
+      for (const [pfad, b64] of Object.entries(binaer)) {
+        // Genau ein Ordner, ein flacher Dateiname darin, nichts sonst.
+        const m = /^bilder\/([\w.\-]+)$/.exec(String(pfad));
+        if (!m || m[1].includes("..") || typeof b64 !== "string") continue;
+        try {
+          fs.writeFileSync(path.join(bilderDir, m[1]), Buffer.from(b64, "base64"));
+          written += 1;
+        } catch {}
+      }
     }
     res.json({ ok: true, written, restarting: true });
   } catch (e) {

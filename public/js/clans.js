@@ -35,6 +35,18 @@
   const rolleName = (r) => (r === "founder" ? "Gründer" : r === "officer" ? "Offizier" : "Mitglied");
   const rolleZeichen = (r) => (r === "founder" ? sym("krone") : r === "officer" ? sym("stern-voll") : "");
 
+  /*
+   * Wappen oder Ersatz. Ohne Bild steht der Tag in der Clanfarbe da — das
+   * sieht nach Absicht aus, ein leeres Kaestchen nach Fehler.
+   */
+  function wappenHtml(c, groesse) {
+    const kl = "cl-wappen" + (groesse === "gross" ? " cl-wappen-gross" : "");
+    if (c.wappen) {
+      return `<span class="${kl}"><img src="${escapeHtml(c.wappen)}" alt="Wappen ${escapeHtml(c.name)}" loading="lazy" /></span>`;
+    }
+    return `<span class="${kl} cl-wappen-leer" style="color:${c.color};border-color:${c.color}">${escapeHtml((c.tag || "?").slice(0, 3))}</span>`;
+  }
+
   /* Restzeit als Text. Unter einer Stunde in Minuten, darueber in Stunden —
      "noch 71h 04min" liest niemand als "knapp drei Tage". */
   function restText(ms) {
@@ -382,9 +394,14 @@
           else if (canWar && c.id !== data.clan.id) {
             action = `<button class="icon-btn clan-war-btn" data-id="${escapeHtml(c.id)}" data-tag="${escapeHtml(c.tag)}">${sym("krieg")}<span>Krieg</span></button>`;
           }
-          return `<li>${platz(i)}<span><b style="color:${c.color}">[${escapeHtml(c.tag)}]</b> ${escapeHtml(c.name)}
-            <small class="muted">${c.size} ${c.size === 1 ? "Mitglied" : "Mitglieder"}</small></span>
-            <span>${betrag(c.value)} ${action}</span></li>`;
+          const meldeKnopf = c.wappen && (!data.clan || c.id !== data.clan.id)
+            ? `<button class="cl-melden" data-melde="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name)}"
+                 aria-label="Wappen melden" title="Wappen melden">${sym("alarm")}</button>`
+            : "";
+          return `<li>${platz(i)}<span class="cl-liste-name">${wappenHtml(c)}
+            <span><b style="color:${c.color}">[${escapeHtml(c.tag)}]</b> ${escapeHtml(c.name)}
+            <small class="muted">${c.size} ${c.size === 1 ? "Mitglied" : "Mitglieder"}</small></span></span>
+            <span>${betrag(c.value)} ${meldeKnopf} ${action}</span></li>`;
         }).join("") + `</ol>`
       : `<p class="muted small">Noch keine Clans — gründe den ersten.</p>`;
     return html;
@@ -413,12 +430,17 @@
 
     box.innerHTML = `
       <div class="cl-kopf" style="border-color:${c.color}">
+        ${wappenHtml(c, "gross")}
         <div class="cl-kopf-name">
           <b style="color:${c.color}">[${escapeHtml(c.tag)}] ${escapeHtml(c.name)}</b>
           <small>Level ${(c.level || {}).level || 1} · ${c.size} ${c.size === 1 ? "Mitglied" : "Mitglieder"} · du bist ${rolleName(data.myRole)}</small>
         </div>
         <div class="cl-kopf-kasse"><small>Kasse</small>${betrag(c.treasury)}</div>
       </div>
+      ${canManage() ? `<div class="cl-wappen-knoepfe">
+        <button class="icon-btn" id="cl-wappen-neu">${sym("bearbeiten")}<span>${c.wappen ? "Wappen ändern" : "Wappen hochladen"}</span></button>
+        ${c.wappen ? `<button class="icon-btn icon-btn-gefahr" id="cl-wappen-weg">${sym("nein")}<span>Entfernen</span></button>` : ""}
+      </div>` : ""}
 
       <div class="cl-motto">${c.motto
         ? `„${escapeHtml(c.motto)}”`
@@ -459,6 +481,18 @@
   }
 
   function verdrahteRanglisten() {
+    /* Bilder kann kein Filter pruefen — nur Menschen. Der Knopf schickt die
+       Meldung an den Hausherrn, entschieden wird dort. */
+    document.querySelectorAll(".cl-melden").forEach((b) => b.addEventListener("click", async () => {
+      const grund = await window.Casino.dialog.eingabe(
+        `Was stimmt mit dem Wappen von „${b.dataset.name}“ nicht?`,
+        { titel: "Wappen melden", platzhalter: "kurz in eigenen Worten", okText: "Melden" });
+      if (grund == null) return;
+      socket.emit("clan:meldeWappen", { clanId: b.dataset.melde, grund }, (r) => {
+        if (!r || !r.ok) return toast(r?.error || "Fehler.");
+        toast(r.schon ? "Hattest du schon gemeldet." : "Danke — ist beim Hausherrn gemeldet.");
+      });
+    }));
     document.querySelectorAll(".clan-join").forEach((b) => b.addEventListener("click", () => {
       socket.emit("clan:join", { id: b.dataset.id }, (r) => {
         if (r && r.ok) { toast(r.requested ? "Beitritts-Anfrage gesendet." : "Clan beigetreten."); load(); }
@@ -478,6 +512,35 @@
     $("#clan-leave")?.addEventListener("click", async () => {
       if (!await window.Casino.dialog.frage("Clan wirklich verlassen?", { okText: "Verlassen", gefahr: true })) return;
       socket.emit("clan:leave", (r) => { if (r && r.ok) { toast("Clan verlassen."); load(); } else toast(r?.error || "Fehler."); });
+    });
+
+    /*
+     * Wappen hochladen. Das Bild wird im Browser auf 256x256 gebracht und
+     * neu kodiert (core/bildwahl.js) — was hier rausgeht, ist ein frisch
+     * gezeichnetes Rasterbild, kein weitergereichter Dateiinhalt.
+     */
+    $("#cl-wappen-neu")?.addEventListener("click", async () => {
+      const knopf = $("#cl-wappen-neu");
+      const r = await window.Casino.bildwahl.waehle({ kante: 256 });
+      if (!r) return;                       // abgebrochen
+      if (!r.ok) return toast(r.error);
+      if (knopf) { knopf.disabled = true; }
+      socket.emit("clan:setWappen", { bild: r.datenUrl }, (a) => {
+        if (knopf) knopf.disabled = false;
+        if (!a || !a.ok) return toast(a?.error || "Fehler.");
+        toast("Wappen gesetzt.");
+        load();
+      });
+    });
+
+    $("#cl-wappen-weg")?.addEventListener("click", async () => {
+      if (!await window.Casino.dialog.frage("Wappen wirklich entfernen?",
+        { okText: "Entfernen", gefahr: true })) return;
+      socket.emit("clan:loescheWappen", (a) => {
+        if (!a || !a.ok) return toast(a?.error || "Fehler.");
+        toast("Wappen entfernt.");
+        load();
+      });
     });
 
     $("#clan-motto-btn")?.addEventListener("click", async () => {

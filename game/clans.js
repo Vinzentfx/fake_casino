@@ -28,6 +28,7 @@
 const path = require("path");
 const fs = require("fs");
 const chat = require("./chat");
+const bilder = require("./bilder");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "clans.json");
@@ -299,14 +300,21 @@ function load() {
   try {
     const raw = JSON.parse(fs.readFileSync(FILE, "utf8"));
     if (raw && typeof raw === "object") {
-      if (raw.clans) return { clans: raw.clans, wars: Array.isArray(raw.wars) ? raw.wars : [] };
+      if (raw.clans) return {
+        clans: raw.clans,
+        wars: Array.isArray(raw.wars) ? raw.wars : [],
+        meldungen: Array.isArray(raw.meldungen) ? raw.meldungen : [],
+      };
       return { clans: raw, wars: [] }; // migrate old format (file WAS the clans object)
     }
   } catch {}
-  return { clans: {}, wars: [] };
+  return { clans: {}, wars: [], meldungen: [] };
 }
 function save() {
-  try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(FILE, JSON.stringify({ clans, wars })); } catch {}
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(FILE, JSON.stringify({ clans, wars, meldungen: store.meldungen || [] }));
+  } catch {}
 }
 
 const slug = (s) => String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -501,6 +509,7 @@ function clanPublic(id) {
   }).sort((a, b) => b.value - a.value);
   return {
     id: c.id, name: c.name, tag: c.tag, color: c.color, founder: c.founder,
+    wappen: bilder.url("clan", c.id),
     motto: c.motto || "", closed: !!c.closed,
     treasury: c.treasury || 0, weeklyWins: c.weeklyWins || 0, totalWins: c.totalWins || 0,
     level: clanLevel(c), quests: clanQuestPublic(c),
@@ -521,7 +530,7 @@ function leaderboard(limit = 15) {
   return Object.keys(clans).map((id) => {
     const c = ensureClan(clans[id]);
     const value = c.members.reduce((s, k) => s + memberValue(k), 0);
-    return { id: c.id, name: c.name, tag: c.tag, color: c.color, size: c.members.length, value };
+    return { id: c.id, name: c.name, tag: c.tag, color: c.color, size: c.members.length, value, wappen: bilder.url("clan", c.id) };
   }).sort((a, b) => b.value - a.value).slice(0, limit);
 }
 
@@ -835,6 +844,67 @@ function setupClans(io, accounts) {
       clans[id].motto = m; save(); notifyClan(id);
       ack({ ok: true, clan: clanPublic(id) });
     });
+    /*
+     * Clan-Wappen.
+     *
+     * Das Bild kommt fertig verkleinert aus dem Browser (Canvas, 256x256,
+     * WebP) — siehe game/bilder.js dazu, warum das der sichere Weg ist.
+     * Hier wird nur noch geprueft, wer darf und ob wirklich ein Bild ankam.
+     */
+    socket.on("clan:setWappen", ({ bild } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const id = myClan(socket);
+      if (!id || !canManage(id, socket.data.account)) {
+        return ack({ ok: false, error: "Nur Gründer und Offiziere können das Wappen ändern." });
+      }
+      const r = bilder.speichere("clan", id, bild);
+      if (!r.ok) return ack(r);
+      const acc = accounts.get(socket.data.account);
+      logClan(clans[id], `${acc ? acc.name : "Jemand"} setzt ein neues Wappen`);
+      save();
+      notifyClan(id);
+      ack({ ok: true, clan: clanPublic(id) });
+    });
+
+    socket.on("clan:loescheWappen", (ack) => {
+      if (typeof ack !== "function") return;
+      const id = myClan(socket);
+      if (!id || !canManage(id, socket.data.account)) {
+        return ack({ ok: false, error: "Nur Gründer und Offiziere können das Wappen ändern." });
+      }
+      bilder.loesche("clan", id);
+      notifyClan(id);
+      ack({ ok: true, clan: clanPublic(id) });
+    });
+
+    /*
+     * Ein Wappen melden. Bilder kann kein Filter pruefen — nur Menschen.
+     * Die Meldung landet im Admin-Bereich; entschieden wird dort.
+     */
+    socket.on("clan:meldeWappen", ({ clanId, grund } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = socket.data.account && accounts.get(socket.data.account);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const ziel = clans[String(clanId || "")];
+      if (!ziel) return ack({ ok: false, error: "Clan gibt es nicht." });
+      if (!bilder.url("clan", ziel.id)) return ack({ ok: false, error: "Dieser Clan hat gar kein Wappen." });
+
+      store.meldungen = Array.isArray(store.meldungen) ? store.meldungen : [];
+      // Zweimal dasselbe von derselben Person bringt nichts.
+      const schonGemeldet = store.meldungen.some(
+        (m) => m.clanId === ziel.id && m.von === socket.data.account && !m.erledigt);
+      if (schonGemeldet) return ack({ ok: true, schon: true });
+
+      store.meldungen.unshift({
+        clanId: ziel.id, clanName: ziel.name, tag: ziel.tag,
+        von: acc.name, grund: String(grund || "").trim().slice(0, 200),
+        at: Date.now(), erledigt: false,
+      });
+      if (store.meldungen.length > 50) store.meldungen.length = 50;
+      save();
+      ack({ ok: true });
+    });
+
     socket.on("clan:setClosed", ({ closed } = {}, ack) => {
       if (typeof ack !== "function") return;
       const id = myClan(socket);
@@ -955,13 +1025,30 @@ function setupClans(io, accounts) {
   });
 }
 
+/** Offene Wappen-Meldungen — fuer den Admin-Bereich. */
+function meldungen() {
+  return (store.meldungen || []).filter((m) => !m.erledigt)
+    .map((m) => ({ ...m, wappen: bilder.url("clan", m.clanId) }));
+}
+
+/** Eine Meldung abhaken. `entfernen` nimmt das Wappen gleich mit weg. */
+function meldungErledigen(clanId, entfernen) {
+  let n = 0;
+  for (const m of store.meldungen || []) {
+    if (m.clanId === clanId && !m.erledigt) { m.erledigt = true; n++; }
+  }
+  if (entfernen) bilder.loesche("clan", clanId);
+  save();
+  return { ok: true, erledigt: n, entfernt: !!entfernen };
+}
+
 /** Name, Tag und Motto aller Clans — fuer die Filter-Pruefung im Admin. */
 function alleNamen() {
   return Object.values(clans).map((c) => ({ id: c.id, name: c.name, tag: c.tag, motto: c.motto || "" }));
 }
 
 module.exports = {
-  setupClans, tagOf, clanColorOf, alleNamen,
+  setupClans, tagOf, clanColorOf, alleNamen, meldungen, meldungErledigen,
   recordPvpWin, tickWars, weeklyRollover,
   adminRemoveMember,
   addSeasonXp, seasonBonusFor, clanSeasonState,

@@ -2182,6 +2182,54 @@ $("#wf-add-aus")?.addEventListener("click", () => {
 });
 $("#wf-probe-text")?.addEventListener("input", wfProbe);
 
+/* Hochgeladene Bilder im Admin. Gemeldete zuerst — sie sind der Grund,
+   warum es diese Ansicht gibt. */
+function blLade() {
+  const aus = $("#bl-aus");
+  if (aus) aus.innerHTML = '<p class="muted small">Lädt…</p>';
+  socket.emit("admin:bilder", (r) => {
+    if (!r || !r.ok) { if (aus) aus.innerHTML = '<p class="muted small">Fehler.</p>'; return; }
+    const gemeldet = new Map((r.meldungen || []).map((m) => [m.clanId, m]));
+    const liste = (r.bilder || []).slice().sort((a, b) =>
+      (gemeldet.has(b.id) ? 1 : 0) - (gemeldet.has(a.id) ? 1 : 0));
+    if (!liste.length) {
+      if (aus) aus.innerHTML = '<p class="muted small">Noch keine Bilder hochgeladen.</p>';
+      return;
+    }
+    if (!aus) return;
+    aus.innerHTML = `<div class="bl-raster">` + liste.map((b) => {
+      const m = gemeldet.get(b.id);
+      return `<div class="bl-karte${m ? " gemeldet" : ""}">
+        <img src="${escapeHtml(b.url)}" alt="" loading="lazy" />
+        <div class="bl-info">
+          <b>${escapeHtml(b.id)}</b>
+          <small>${Math.round(b.bytes / 1024)} KB · ${new Date(b.at).toLocaleDateString("de-DE")}</small>
+          ${m ? `<small class="bl-grund">Gemeldet von ${escapeHtml(m.von)}${m.grund ? `: „${escapeHtml(m.grund)}“` : ""}</small>` : ""}
+        </div>
+        <div class="bl-knoepfe">
+          <button class="icon-btn icon-btn-gefahr bl-weg" data-art="${escapeHtml(b.art)}" data-id="${escapeHtml(b.id)}">Entfernen</button>
+          ${m ? `<button class="icon-btn bl-ok" data-id="${escapeHtml(b.id)}">Passt schon</button>` : ""}
+        </div>
+      </div>`;
+    }).join("") + `</div>`;
+
+    aus.querySelectorAll(".bl-weg").forEach((btn) => btn.addEventListener("click", async () => {
+      if (!await window.Casino.dialog.frage("Dieses Bild entfernen?", { okText: "Entfernen", gefahr: true })) return;
+      socket.emit("admin:bildWeg", { art: btn.dataset.art, id: btn.dataset.id, meldungErledigen: true }, (x) => {
+        toast(x?.ok ? "Bild entfernt." : (x?.error || "Fehler."));
+        blLade();
+      });
+    }));
+    aus.querySelectorAll(".bl-ok").forEach((btn) => btn.addEventListener("click", () => {
+      socket.emit("admin:meldungOk", { clanId: btn.dataset.id }, (x) => {
+        toast(x?.ok ? "Meldung abgehakt." : (x?.error || "Fehler."));
+        blLade();
+      });
+    }));
+  });
+}
+$("#bl-laden")?.addEventListener("click", blLade);
+
 $("#wf-bestand-btn")?.addEventListener("click", () => {
   const aus = $("#wf-bestand-aus");
   if (aus) aus.innerHTML = '<p class="muted small">Prüfe…</p>';

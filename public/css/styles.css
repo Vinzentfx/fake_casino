@@ -7628,3 +7628,64 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .wf-bz small { color: var(--text-mute); font-size: var(--fs-xs); text-align: right; }
 .wf-sauber { display: flex; align-items: center; gap: 7px; color: var(--good-text); font-size: var(--fs-sm); }
 .wf-sauber .ui-icon { width: 16px; height: 16px; }
+
+/* --- Clan-Wappen ------------------------------------------------------------
+   Ohne Bild steht der Tag in der Clanfarbe da. Das sieht nach Absicht aus,
+   ein leeres Kästchen nach Fehler. */
+.cl-wappen {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-neutral);
+}
+.cl-wappen img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cl-wappen-leer {
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  border-width: 1px;
+  border-style: solid;
+  background: transparent;
+}
+.cl-wappen-gross { width: 54px; height: 54px; border-radius: var(--r-md); }
+.cl-wappen-gross.cl-wappen-leer { font-size: 1rem; }
+
+.cl-kopf { gap: var(--sp-3); }
+.cl-kopf .cl-kopf-name { flex: 1; min-width: 0; }
+.cl-wappen-knoepfe { display: flex; gap: 6px; margin: var(--sp-2) 2px 0; flex-wrap: wrap; }
+.cl-liste-name { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+
+.cl-melden {
+  display: inline-grid;
+  place-items: center;
+  width: 26px; height: 26px;
+  border: 1px solid var(--line-neutral);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-mute);
+  flex: 0 0 auto;
+}
+.cl-melden:hover { color: var(--bad-text); border-color: rgba(var(--bad-rgb), 0.5); background: var(--bad-soft); }
+.cl-melden .ui-icon { width: 13px; height: 13px; }
+
+/* --- Hochgeladene Bilder im Admin ------------------------------------------ */
+.bl-raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--sp-3); margin-top: var(--sp-2); }
+.bl-karte {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.bl-karte.gemeldet { border-color: rgba(var(--bad-rgb), 0.55); background: linear-gradient(rgba(var(--bad-rgb),.07),rgba(var(--bad-rgb),.07)), var(--surface); }
+.bl-karte img { width: 84px; height: 84px; object-fit: cover; border-radius: var(--r-sm); border: 1px solid var(--line-neutral); }
+.bl-info b { display: block; font-size: var(--fs-sm); }
+.bl-info small { display: block; font-size: var(--fs-xs); color: var(--text-dim); }
+.bl-grund { color: var(--bad-text) !important; margin-top: 3px; }
+.bl-knoepfe { display: flex; gap: 6px; flex-wrap: wrap; }

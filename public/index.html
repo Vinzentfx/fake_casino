@@ -1582,7 +1582,7 @@
         <button class="ad-reiter-knopf" data-ad="ansage" role="tab" aria-selected="false">Ansage</button>
         <button class="ad-reiter-knopf" data-ad="events" role="tab" aria-selected="false">Events</button>
         <button class="ad-reiter-knopf" data-ad="spieler" role="tab" aria-selected="false">Spieler</button>
-        <button class="ad-reiter-knopf" data-ad="filter" role="tab" aria-selected="false">Wortfilter</button>
+        <button class="ad-reiter-knopf" data-ad="filter" role="tab" aria-selected="false">Inhalte</button>
         <button class="ad-reiter-knopf" data-ad="werkzeug" role="tab" aria-selected="false">Werkzeuge</button>
       </nav>
 
@@ -1755,6 +1755,15 @@
           <p class="hint">Tippe etwas ein und sieh, was der Filter daraus macht — ohne dass jemand es zu sehen bekommt.</p>
           <input id="wf-probe-text" type="text" maxlength="120" placeholder="z. B. eine Nachricht oder ein Name" />
           <div class="wf-probe-aus" id="wf-probe-aus">—</div>
+        </div>
+
+        <!-- Hochgeladene Bilder. Ein Wortfilter hilft hier nicht: was auf
+             einem Bild zu sehen ist, kann nur ein Mensch beurteilen. -->
+        <div class="wf-bestand">
+          <div class="cd-sub">Hochgeladene Bilder</div>
+          <p class="hint">Clan-Wappen. Gemeldete stehen oben und sind markiert.</p>
+          <button class="btn-secondary" id="bl-laden">Bilder ansehen</button>
+          <div id="bl-aus"></div>
         </div>
 
         <div class="wf-bestand">
@@ -1980,6 +1989,7 @@
   <script defer src="/js/core/bet.js"></script>
   <script defer src="/js/core/dialog.js"></script>
   <script defer src="/js/core/icons.js"></script>
+  <script defer src="/js/core/bildwahl.js"></script>
   <script defer src="/js/changelog.js"></script>
   <script defer src="/js/app.js"></script>
   <script defer src="/js/home.js"></script>

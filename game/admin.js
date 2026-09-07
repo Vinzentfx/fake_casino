@@ -7,6 +7,7 @@ const liveops = require("./liveops");
 const ipbans = require("./ipbans");
 const chat = require("./chat");
 const wortfilter = require("./wortfilter");
+const bilder = require("./bilder");
 let _heist = null;
 function setHeist(h) { _heist = h; }
 let _events = {}; // { rain, quiz, vault } — admin events wired in server.js
@@ -195,6 +196,36 @@ function setupAdmin(io, accounts) {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       ack(art === "ausnahme" ? wortfilter.entferneAusnahme(wort) : wortfilter.entferne(wort));
+    });
+
+    /* ── Bilder ────────────────────────────────────────────────────────
+       Ein Wortfilter hilft hier nicht: was auf einem Bild zu sehen ist,
+       kann nur ein Mensch beurteilen. Der Admin sieht alle hochgeladenen
+       Wappen und die Meldungen dazu. */
+    socket.on("admin:bilder", (ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      let meldungen = [];
+      try { meldungen = require("./clans").meldungen(); } catch {}
+      ack({ ok: true, bilder: bilder.alle(), meldungen });
+    });
+
+    socket.on("admin:bildWeg", ({ art, id, meldungErledigen } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const weg = bilder.loesche(String(art || ""), String(id || ""));
+      if (meldungErledigen && art === "clan") {
+        try { require("./clans").meldungErledigen(String(id), false); } catch {}
+      }
+      ack({ ok: weg, error: weg ? undefined : "Bild gibt es nicht (mehr)." });
+    });
+
+    /* Meldung abhaken, ohne das Bild zu entfernen — wenn sie unbegruendet war. */
+    socket.on("admin:meldungOk", ({ clanId } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      try { ack(require("./clans").meldungErledigen(String(clanId || ""), false)); }
+      catch { ack({ ok: false, error: "Fehler." }); }
     });
 
     /* Ausprobieren, ohne dass jemand es sieht. Laeuft bewusst im Server:
