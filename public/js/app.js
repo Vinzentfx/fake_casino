@@ -521,6 +521,26 @@ $("#updates-list")?.addEventListener("click", (e) => {
  * aufmacht. Die Marke am Menue-Knopf sagt, dass da etwas liegt, und die
  * Menue-Eintraege sagen, was.
  */
+/**
+ * Dieselbe Zahl noch einmal an dem Eintrag, aus dem sie kommt.
+ *
+ * Die Marke am Menue-Knopf sagt nur DASS etwas wartet. Wer dann aufmacht,
+ * stand vor zwoelf gleich aussehenden Zeilen und musste raten, welche
+ * gemeint ist.
+ */
+function setzeSheetMarke(sel, anzahl) {
+  const el = $(sel);
+  if (!el) return;
+  let marke = el.querySelector(".sheet-count");
+  if (!anzahl) { if (marke) marke.remove(); return; }
+  if (!marke) {
+    marke = document.createElement("i");
+    marke.className = "sheet-count";
+    el.appendChild(marke);
+  }
+  marke.textContent = String(anzahl);
+}
+
 function renderAbholBadge() {
   const btn = $("#menu-btn");
   if (!btn || !state.account) return;
@@ -543,10 +563,14 @@ function renderAbholBadge() {
     season = r && r.ok ? (r.rewards || []).filter((x) => x.unlocked && !x.claimed).length : 0;
     const sub = $("#menu-season-sub");
     if (sub) sub.textContent = season ? `${season} ${season === 1 ? "Stufe wartet" : "Stufen warten"}` : "Fortschritt und Belohnungen";
+    setzeSheetMarke('[data-nav="season"]', season);
     zeichne();
   });
   socket.emit("comeback:state", (r) => {
     geschenk = r && r.ok && r.geschenkOffen && !r.geholt ? 1 : 0;
+    const eintrag = $("#menu-geschenk");
+    if (eintrag) eintrag.hidden = !geschenk;
+    setzeSheetMarke("#menu-geschenk", geschenk);
     zeichne();
   });
 }
@@ -559,6 +583,8 @@ function renderUpdateBadge() {
   if (!cl || !btn) return;
   const neu = cl.neuSeit(gesehenerStand());
   btn.classList.toggle("has-news", neu.length > 0);
+  // Auch der Punkt am Knopf soll im Menue eine Adresse haben.
+  setzeSheetMarke('[data-nav="updates"]', neu.length);
   if (sub) {
     sub.textContent = neu.length
       ? `${neu.length} ${neu.length === 1 ? "neues Update" : "neue Updates"}`

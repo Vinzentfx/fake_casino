@@ -108,6 +108,24 @@ function speichereBald() {
   if (sparTimer.unref) sparTimer.unref();
 }
 
+/*
+ * Was im Paket steckt, an EINER Stelle.
+ *
+ * Zweimal gebraucht: die Lobby-Karte nennt es vor dem Abholen (sonst kauft
+ * niemand eine Katze im Sack), die Auspack-Animation zeigt jedes Stueck
+ * danach als eigene Karte. Dafuer reicht ein Name nicht, es braucht Icon
+ * und einen Satz dazu, wo das Stueck hingehoert.
+ */
+function paketStuecke() {
+  const cos = require("./cosmetics");
+  return [
+    { art: "title", id: "rueckkehrer", icon: "🏷️", label: cos.label("title", "rueckkehrer"),
+      text: "Titel unter deinem Namen, überall wo du auftauchst." },
+    { art: "effect", id: "salut", icon: "🎆", label: cos.label("effect", "salut"),
+      text: "Gewinn-Effekt: Konfettikanonen von beiden Seiten." },
+  ];
+}
+
 /** Das Paket fuer einen Spieler abholen. */
 function holeGeschenk(key) {
   if (!geschenkOffen()) return { ok: false, error: "Das Fenster ist zu." };
@@ -121,9 +139,9 @@ function holeGeschenk(key) {
   _accounts.adjustChips(key, chips);
 
   const cos = require("./cosmetics");
-  const stuecke = [];
-  if (cos.grant(acc, "title", "rueckkehrer")) stuecke.push(cos.label("title", "rueckkehrer"));
-  if (cos.grant(acc, "effect", "salut")) stuecke.push(cos.label("effect", "salut"));
+  cos.grant(acc, "title", "rueckkehrer");
+  cos.grant(acc, "effect", "salut");
+  const stuecke = paketStuecke();
 
   let xp = 0;
   try { xp = require("./season").addXp(key, GESCHENK_XP, "quest") || GESCHENK_XP; } catch {}
@@ -145,6 +163,7 @@ function publicState(key) {
     geholt: !!(acc && acc.comebackGeholt),
     chips: acc ? Math.round(GESCHENK_CHIPS * _accounts.faucetFactor(acc.name)) : GESCHENK_CHIPS,
     xp: GESCHENK_XP,
+    paket: paketStuecke(),
     gala: galaLaeuft()
       ? {
           endsAt: state.gala.endsAt,

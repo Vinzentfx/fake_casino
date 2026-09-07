@@ -64,6 +64,9 @@
 
     <div class="sheet-group">
       <span class="sheet-label">Fortschritt</span>
+      <!-- Nur sichtbar, solange das Paket wirklich abzuholen ist. Ein Eintrag,
+           der immer dasteht und meist ins Leere fuehrt, wird ignoriert. -->
+      <button class="sheet-item" id="menu-geschenk" type="button" hidden><span>🎁</span><b>Willkommens-Paket</b><small>Wartet auf dich</small></button>
       <button class="sheet-item" data-nav="quests"><span>🎯</span><b>Aufträge</b><small>Tages- und Wochenziele</small></button>
       <button class="sheet-item" data-nav="season"><span>🎟️</span><b>Season-Pass</b><small id="menu-season-sub">Fortschritt und Belohnungen</small></button>
       <button class="sheet-item" data-nav="calendar"><span>📅</span><b>Kalender</b><small>Täglich einmal abholen</small></button>
@@ -1797,6 +1800,27 @@
       <div class="update-actions">
         <button class="btn-primary" id="update-close">Zeig mir, was neu ist 🧭</button>
         <button class="chip-btn" id="update-all" data-nav="updates">Alle Updates ansehen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wiedereröffnungs-Paket zum Auspacken. Ablauf in js/comeback.js. -->
+  <div id="geschenk-modal" class="update-modal hidden">
+    <div class="gs-karte">
+      <div class="gs-buehne" id="gs-buehne">
+        <button class="gs-paket" id="gs-paket" type="button" aria-label="Paket öffnen">
+          <span class="gs-deckel"></span>
+          <span class="gs-korpus"></span>
+          <span class="gs-band"></span>
+          <span class="gs-schleife">🎀</span>
+        </button>
+        <p class="gs-tipp" id="gs-tipp">Antippen zum Auspacken</p>
+      </div>
+      <div class="gs-inhalt hidden" id="gs-inhalt">
+        <h2>Willkommen zurück!</h2>
+        <div class="gs-karten" id="gs-karten"></div>
+        <div class="gs-fuss" id="gs-fuss"></div>
+        <button class="btn-primary" id="gs-fertig" type="button">Los geht&rsquo;s</button>
       </div>
     </div>
   </div>

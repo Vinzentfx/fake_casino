@@ -6208,3 +6208,168 @@ html:not(.reduce-motion) .nm-glitch::after { animation: nm-glitch-c 1.9s steps(1
 html:not(.reduce-motion) .cos-marke-jetzt { animation: se-pulsen 1.8s ease-in-out infinite; }
 .cos-marke-vorbei { background: var(--surface-sunken); color: var(--text-mute); border: 1px solid var(--line-neutral); }
 .cos-marke-verdienen { background: rgba(var(--good-rgb), 0.2); color: var(--good-text); border: 1px solid rgba(var(--good-rgb), 0.45); }
+
+/* --- Zaehler an den Menue-Eintraegen ----------------------------------------
+   Die Marke am Menue-Knopf sagt nur, DASS etwas wartet. Erst dieselbe Zahl
+   am Eintrag sagt, wo. */
+.sheet-item { grid-template-columns: 34px 1fr auto; }
+.sheet-count {
+  grid-row: 1 / 3;
+  grid-column: 3;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.7rem;
+  font-weight: 900;
+  font-style: normal;
+  line-height: 20px;
+  text-align: center;
+  justify-self: end;
+}
+html:not(.reduce-motion) .sheet-count { animation: se-pulsen 1.8s ease-in-out infinite; }
+#menu-geschenk .sheet-count { background: var(--good); color: #06210f; }
+
+/* --- Wiedereroeffnungs-Paket auspacken --------------------------------------
+   Das Paket ist der Moment, nicht die Zahl. Deshalb wird erst gar nichts
+   verraten: ein verschnuertes Paket, das man antippt. Erst danach kommen
+   die Belohnungen, jede einzeln, damit die zwei Kosmetik-Stuecke nicht
+   wieder in einer Zeile untergehen. */
+.gs-karte {
+  max-width: 440px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 26px 22px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1c2432, #141a24);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  text-align: center;
+}
+.gs-buehne { padding: 10px 0 4px; }
+.gs-buehne.hidden { display: none; }
+
+.gs-paket {
+  position: relative;
+  width: 132px;
+  height: 118px;
+  margin: 0 auto;
+  display: block;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+html:not(.reduce-motion) .gs-paket { animation: gs-wippen 2.4s ease-in-out infinite; }
+.gs-paket:disabled { cursor: default; }
+
+/* Korpus und Deckel getrennt, damit der Deckel gleich allein wegfliegen kann. */
+.gs-korpus, .gs-deckel {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  border-radius: 6px;
+  background: linear-gradient(160deg, #d64a4a, #a32b2b);
+  box-shadow: inset 0 -8px 14px rgba(0, 0, 0, 0.28);
+}
+.gs-korpus { bottom: 0; height: 82px; }
+.gs-deckel { top: 6px; height: 26px; left: 0; right: 0; background: linear-gradient(160deg, #e85c5c, #b83232); }
+/* Senkrechtes Band ueber den Korpus. */
+.gs-band {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 20px;
+  height: 82px;
+  margin-left: -10px;
+  background: linear-gradient(180deg, #f7dc8c, #d8b451);
+  border-radius: 2px;
+}
+.gs-schleife {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2rem;
+  line-height: 1;
+}
+.gs-tipp { color: var(--text-dim); font-size: var(--fs-sm); margin: 14px 0 0; }
+
+/* Aufgehen: Deckel und Schleife fliegen hoch und weg, der Korpus sackt kurz. */
+/* Zwei Keyframes statt einem: die Schleife ist mit translateX(-50%) zentriert,
+   der Deckel nicht. Dieselbe Animation haette ihn nach links versetzt. */
+.gs-auf .gs-deckel { animation: gs-deckel-weg 0.55s cubic-bezier(0.3, -0.4, 0.6, 1) forwards; }
+.gs-auf .gs-schleife { animation: gs-schleife-weg 0.55s cubic-bezier(0.3, -0.4, 0.6, 1) forwards; }
+.gs-auf .gs-korpus, .gs-auf .gs-band { animation: gs-stauchen 0.55s ease-out forwards; }
+.gs-auf { animation: none !important; }
+html.reduce-motion .gs-auf .gs-deckel,
+html.reduce-motion .gs-auf .gs-schleife,
+html.reduce-motion .gs-auf .gs-korpus,
+html.reduce-motion .gs-auf .gs-band { animation: none; opacity: 0; }
+
+@keyframes gs-wippen {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50% { transform: translateY(-7px) rotate(1.5deg); }
+}
+@keyframes gs-deckel-weg {
+  to { transform: translate(30px, -170px) rotate(32deg); opacity: 0; }
+}
+@keyframes gs-schleife-weg {
+  to { transform: translate(calc(-50% + 46px), -190px) rotate(-38deg); opacity: 0; }
+}
+@keyframes gs-stauchen {
+  40% { transform: scaleY(0.88) scaleX(1.06); }
+  100% { transform: scaleY(1) scaleX(1); opacity: 0; }
+}
+
+.gs-inhalt.hidden { display: none; }
+.gs-inhalt h2 { margin: 0 0 14px; }
+.gs-karten { display: flex; flex-direction: column; gap: 9px; margin-bottom: 18px; text-align: left; }
+.gs-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+/* `backwards` statt `opacity:0` im Grundzustand: waehrend der Verzoegerung
+   gilt der Anfang der Animation, danach wieder der Grundzustand. Laeuft die
+   Animation aus irgendeinem Grund nicht (Tab im Hintergrund, gedrosselte
+   Darstellung), steht die Karte trotzdem da statt unsichtbar zu bleiben. */
+html:not(.reduce-motion) .gs-item {
+  animation: gs-rein 0.45s cubic-bezier(0.2, 1.4, 0.5, 1) backwards;
+}
+.gs-item-icon { font-size: 1.6rem; text-align: center; }
+.gs-item b { display: block; font-size: 0.95rem; }
+.gs-item small { color: var(--text-dim); font-size: 0.76rem; line-height: 1.35; }
+/* Die zwei Kosmetik-Stuecke sind der Grund fuer das ganze Paket. */
+.gs-neu { border-color: rgba(247, 220, 140, 0.5); background: rgba(247, 220, 140, 0.09); }
+.gs-nurjetzt {
+  position: absolute;
+  top: -8px;
+  right: 8px;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 122, 110, 0.9);
+  color: #2a0d0a;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.gs-fuss { display: flex; flex-direction: column; align-items: center; gap: 9px; margin: -6px 0 16px; }
+.gs-fuss small { color: var(--text-dim); font-size: 0.78rem; line-height: 1.35; }
+.gs-fuss:empty { display: none; }
+
+@keyframes gs-rein {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}

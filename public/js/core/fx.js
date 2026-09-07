@@ -343,7 +343,20 @@
   function spieleGewinnEffekt(opts = {}) {
     if (reduziert()) return;
     const w = Math.max(1, Math.min(4, opts.stufe || wucht(opts.betrag || 0, opts.faktor || 0)));
-    switch (gewinnEffekt()) {
+    spieleEffekt(gewinnEffekt(), w);
+  }
+
+  /**
+   * Einen BESTIMMTEN Effekt abspielen, unabhaengig davon, was jemand angelegt
+   * hat. Gebraucht, wo der Effekt selbst das Thema ist: das Auspacken des
+   * Wiedereroeffnungs-Pakets zeigt den Salut, den es damit gerade gibt.
+   * @param {string|null} id
+   * @param {number} [stufe] 1 bis 4
+   */
+  function spieleEffekt(id, stufe = 3) {
+    if (reduziert()) return;
+    const w = Math.max(1, Math.min(4, stufe));
+    switch (id) {
       case "muenzen": return muenzflut(w);
       case "gold": return goldregen(w);
       case "feuerwerk": return feuerwerk(w);
@@ -398,5 +411,5 @@
   }
 
   window.Casino = window.Casino || {};
-  window.Casino.fx = { confetti, coins, countUp, bigWin, skeleton, spieleGewinnEffekt };
+  window.Casino.fx = { confetti, coins, countUp, bigWin, skeleton, spieleGewinnEffekt, spieleEffekt };
 })();

@@ -51,6 +51,15 @@
       ],
     },
     {
+      id: "2026-09-08-g",
+      datum: "8. September 2026",
+      titel: "Das Willkommens-Paket wird ausgepackt",
+      items: [
+        { icon: "🎁", titel: "Erst antippen, dann auspacken", text: "Vorher lief das Abholen still ab: eine Zahl flog hoch, ein Hinweis blitzte auf, weg. Die beiden Kosmetik-Stücke standen als Nebensatz darin und waren nach vier Sekunden fort — man hat also nie gesehen, dass man sie hat, dabei sind genau die das Besondere am Paket. Jetzt steht ein verschnürtes Paket da, das du antippst: der Deckel fliegt weg, der Salut geht los, und jede Belohnung kommt als eigene Karte. Die beiden Stücke sind als „Nur jetzt“ markiert, und ein Knopf bringt dich direkt zur Kosmetik, um sie anzulegen." },
+        { icon: "1️⃣", titel: "Die Zahl oben rechts sagt jetzt auch, woher sie kommt", text: "Am Menü-Knopf stand nur eine Zahl. Wer aufmachte, stand vor zwölf gleich aussehenden Zeilen und musste raten, welche gemeint war. Jetzt trägt der Eintrag dieselbe Zahl: beim Season-Pass, bei den Updates, und das Willkommens-Paket taucht als eigener Eintrag ganz oben auf, solange es abzuholen ist." },
+      ],
+    },
+    {
       id: "2026-09-08-f",
       datum: "8. September 2026",
       titel: "Man sieht jetzt, was nur kurz zu haben ist",
