@@ -192,16 +192,104 @@ function seasonBonusFor(key) {
  * fuehrt der Hauptauftrag ueber normales Spielen, Duelle sind ein Bonus
  * daneben statt die Voraussetzung.
  */
-const CLAN_QUESTS = [
-  { id: "aktiv_2500", label: "Sammelt zusammen 2.500 Season-XP", type: "aktiv", target: 2500, xp: 220,
-    hinweis: "Jede Runde zählt, egal welches Spiel" },
-  { id: "aktiv_8000", label: "Sammelt zusammen 8.000 Season-XP", type: "aktiv", target: 8000, xp: 560,
-    hinweis: "Der große Wochenauftrag — dafür braucht ihr einander" },
-  { id: "duels_5", label: "Gewinnt 5 Duelle gegeneinander", type: "pvp", target: 5, xp: 180,
-    hinweis: "Versetzte Duelle zählen auch, niemand muss warten" },
-  { id: "donate_250k", label: "Spendet 250.000 in die Schatzkammer", type: "donate", target: 250000, xp: 240,
-    hinweis: "Aus der Kasse zahlen Gründer und Offiziere wieder aus" },
-];
+/* ---------------------------------------------------------------------------
+   CLAN-AUFTRAEGE
+
+   Es waren jahrelang dieselben vier, Woche fuer Woche. Als Herzstueck des
+   Clans — und das sind sie, weil sie das Einzige sind, was ohne zwei
+   gleichzeitig anwesende Leute funktioniert — ist das zu wenig: wer sie
+   einmal kennt, liest sie nie wieder.
+
+   Jetzt ein Vorrat, aus dem woechentlich gezogen wird. Die Ziehung haengt
+   am Wochenschluessel, nicht am Zufall: alle Clans haben in derselben Woche
+   dieselben Auftraege, und ein Neustart des Servers mitten in der Woche
+   wirft niemanden zurueck.
+
+   Zusammensetzung je Woche: ein kleiner Aktivitaets-Auftrag, ein grosser,
+   dazu zwei aus dem Rest. Der grosse ist immer dabei, weil er der ist, fuer
+   den man einander braucht.
+
+   BALANCING — die XP-Werte sind an den bisherigen vier ausgerichtet (220
+   bis 560 fuer eine Woche). Clan-XP zahlt keine Chips aus, sie ist reines
+   Prestige; ein zu hoher Wert kostet also nichts ausser Bedeutung. */
+const QUEST_VORRAT = {
+  // Immer dabei: der grosse gemeinsame Auftrag.
+  gross: [
+    { id: "aktiv_8000", label: "Sammelt zusammen 8.000 Season-XP", type: "aktiv", target: 8000, xp: 560,
+      hinweis: "Der große Wochenauftrag — dafür braucht ihr einander" },
+    { id: "aktiv_12000", label: "Sammelt zusammen 12.000 Season-XP", type: "aktiv", target: 12000, xp: 780,
+      hinweis: "Die harte Woche — das schafft ihr nur zusammen" },
+    { id: "aktiv_6000", label: "Sammelt zusammen 6.000 Season-XP", type: "aktiv", target: 6000, xp: 440,
+      hinweis: "Die ruhige Woche — gut machbar, auch zu dritt" },
+  ],
+  // Der kleine Einstieg, damit in der ersten Stunde schon etwas passiert.
+  klein: [
+    { id: "aktiv_2500", label: "Sammelt zusammen 2.500 Season-XP", type: "aktiv", target: 2500, xp: 220,
+      hinweis: "Jede Runde zählt, egal welches Spiel" },
+    { id: "aktiv_1500", label: "Sammelt zusammen 1.500 Season-XP", type: "aktiv", target: 1500, xp: 150,
+      hinweis: "Der Aufwärmer — meist am ersten Abend erledigt" },
+    { id: "aktiv_4000", label: "Sammelt zusammen 4.000 Season-XP", type: "aktiv", target: 4000, xp: 320,
+      hinweis: "Ein paar Abende Spielen, mehr braucht es nicht" },
+  ],
+  // Alles Uebrige. Zwei davon kommen pro Woche dazu.
+  rest: [
+    { id: "duels_5", label: "Gewinnt 5 Duelle gegeneinander", type: "pvp", target: 5, xp: 180,
+      hinweis: "Versetzte Duelle zählen auch, niemand muss warten" },
+    { id: "duels_10", label: "Gewinnt 10 Duelle gegeneinander", type: "pvp", target: 10, xp: 340,
+      hinweis: "Doppelt so viele — verteilt sie auf mehrere Schultern" },
+    { id: "duels_3", label: "Gewinnt 3 Duelle gegeneinander", type: "pvp", target: 3, xp: 120,
+      hinweis: "Reicht schon, wenn zwei von euch einmal antreten" },
+    { id: "donate_250k", label: "Spendet 250.000 in die Schatzkammer", type: "donate", target: 250000, xp: 240,
+      hinweis: "Aus der Kasse zahlen Gründer und Offiziere wieder aus" },
+    { id: "donate_500k", label: "Spendet 500.000 in die Schatzkammer", type: "donate", target: 500000, xp: 460,
+      hinweis: "Die volle Kasse — lohnt sich vor einem Krieg" },
+    { id: "donate_100k", label: "Spendet 100.000 in die Schatzkammer", type: "donate", target: 100000, xp: 110,
+      hinweis: "Der Grundstock, auch für kleine Clans zu schaffen" },
+  ],
+};
+
+/* Aus dem Wochenschluessel eine Zahl machen. Immer dieselbe Woche, immer
+   dieselbe Zahl — kein Math.random, sonst zoege jeder Serverstart neu. */
+function wochenZahl(wk) {
+  let h = 2166136261;
+  for (let i = 0; i < wk.length; i++) {
+    h ^= wk.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  /* Nachmischen. Zwei aufeinanderfolgende Wochenschluessel unterscheiden
+     sich nur im letzten Zeichen, und eine einfache Summe traegt das nur in
+     die niedrigen Bits. Die Auswahl liest aber gerade die hohen — ohne
+     diesen Schritt zog jede Woche dieselben zwei Auftraege aus dem Rest. */
+  h ^= h >>> 15; h = Math.imul(h, 2246822507);
+  h ^= h >>> 13; h = Math.imul(h, 3266489909);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+/** Die vier Auftraege dieser Woche. */
+function questsDerWoche(wk) {
+  const z = wochenZahl(wk || weekKey());
+  /* Vorzeichenlos schieben. `>>` rechnet in JS mit int32: sobald die
+     Wochenzahl ueber 2^31 liegt — was oft genug vorkommt — wird daraus eine
+     negative Zahl, der Rest davon ist negativ, und der Index zeigt ins
+     Leere. Genau das ist beim Bauen passiert. */
+  const gross = QUEST_VORRAT.gross[z % QUEST_VORRAT.gross.length];
+  const klein = QUEST_VORRAT.klein[(z >>> 3) % QUEST_VORRAT.klein.length];
+  const rest = QUEST_VORRAT.rest;
+  const a = (z >>> 6) % rest.length;
+  /* Der zweite hat immer eine andere Art als der erste.
+     Sonst gibt es Wochen mit zwei Duell-Auftraegen und keinem zum Spenden —
+     ein Clan, in dem gerade niemand duelliert, koennte dann die Haelfte der
+     Woche nicht anfassen. Mindestens einer der beiden ist so immer etwas,
+     das man allein erledigen kann. */
+  const andere = rest.filter((q) => q.type !== rest[a].type);
+  const b = andere[(z >>> 9) % andere.length];
+  return [klein, gross, rest[a], b];
+}
+
+// Was gerade gilt. ensureClanQuests zieht bei jedem Wochenwechsel neu.
+let CLAN_QUESTS_WOCHE = weekKey();
+let CLAN_QUESTS = questsDerWoche(CLAN_QUESTS_WOCHE);
 
 let store = load();
 let clans = store.clans;
@@ -259,6 +347,12 @@ function weekKey() {
 function ensureClanQuests(c) {
   if (!c) return;
   const wk = weekKey();
+  /* Die Woche kann gewechselt haben, waehrend der Server lief — er laeuft
+     Wochen am Stueck. Also hier nachziehen und nicht nur beim Start. */
+  if (wk !== CLAN_QUESTS_WOCHE) {
+    CLAN_QUESTS = questsDerWoche(wk);
+    CLAN_QUESTS_WOCHE = wk;
+  }
   if (c.questWeek !== wk || !Array.isArray(c.quests)) {
     c.questWeek = wk;
     c.quests = CLAN_QUESTS.map((q) => ({ id: q.id, progress: 0, done: false }));
@@ -856,4 +950,6 @@ module.exports = {
   recordPvpWin, tickWars, weeklyRollover,
   adminRemoveMember,
   addSeasonXp, seasonBonusFor, clanSeasonState,
+  // Nur zum Nachsehen, welche Auftraege eine Woche zieht.
+  questsDerWoche,
 };

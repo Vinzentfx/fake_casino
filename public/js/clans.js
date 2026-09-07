@@ -109,7 +109,7 @@
     return `
       <div class="cl-auftrag-kopf">
         <span>${offen ? `${offen} von ${qs.length} offen` : "Alle erledigt"}</span>
-        <small class="muted">Setzt sich Montag zurück</small>
+        <small class="muted">Montag gibt es neue</small>
       </div>
       ${qs.map((q) => {
         const pct = q.target ? Math.min(100, Math.round((100 * q.progress) / q.target)) : 0;
