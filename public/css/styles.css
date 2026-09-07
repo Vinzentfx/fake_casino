@@ -7237,3 +7237,9 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .hc-rename .ui-icon { width: 14px; height: 14px; }
 .hc-temp { letter-spacing: 1px; color: var(--accent); }
 .hc-buy { display: inline-flex; align-items: center; gap: 7px; }
+
+/* Das Logo auf dem Anmeldebildschirm — die erste Flaeche, die jemand vom
+   Haus sieht. Dort stand ein 🎰 auf 3rem: auf dem iPad ein anderes Bild als
+   auf dem Mac, und in Mitternacht und Neon fehl am Platz. */
+.login-card .logo[data-icon] { display: grid; place-items: center; font-size: 0; margin-bottom: var(--sp-2); }
+.login-card .logo[data-icon] .ui-icon { width: 56px; height: 56px; color: var(--accent); }
