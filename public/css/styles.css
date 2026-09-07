@@ -7517,3 +7517,22 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .ad-tafel.hidden { display: none; }
 .ad-tafel > :first-child { margin-top: 0; }
 .ad-tafel > h3:first-child { margin-top: 0; }
+
+/* Angekündigtes Event: es steht noch nicht, aber es ist schon versprochen. */
+.ev-karte.geplant { border-color: rgba(var(--accent-rgb), 0.5); }
+.ev-plan {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.ev-plan .ui-icon { width: 14px; height: 14px; }
+.ev-plan b { font-size: var(--fs-xs); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.ev-karte.geplant .ev-sym { color: var(--accent); border-color: var(--line-strong); background: var(--accent-soft); }
+.ev-feld-vorlauf select { width: 100%; }

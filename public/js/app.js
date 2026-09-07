@@ -702,6 +702,12 @@ socket.on("app:version", ({ version } = {}) => handleAppVersion(version));
 checkAppVersion();
 setInterval(checkAppVersion, 30000);
 
+/* Der Vorlauf laeuft im Server, nicht im Browser: wenn er ablaeuft oder
+   jemand anders absagt, muss der Admin-Bildschirm das mitbekommen. */
+socket.on("admin:planUpdate", () => {
+  if (window.Casino.screens.current() === "admin") loadAdminDashboard();
+});
+
 socket.on("announcement:state", ({ announcement, toast: shouldToast } = {}) => {
   renderAnnouncement(announcement);
   if (shouldToast && announcement && announcement.text) toast(announcement.text);
@@ -1697,6 +1703,7 @@ function loadAdminDashboard() {
        kommen aus liveops, die vier kurzen aus ihren eigenen Modulen. */
     const ev = d.events || {};
     evOnline = d.online?.accounts || 0;
+    evGeplant = ev.geplant || {};
     evZustand = {
       happy: live.happyActive ? { active: true, endsAt: live.happyUntil } : { active: false },
       tourney: tourney ? { active: true, endsAt: tourney.endsAt, prize: tourney.prize } : { active: false },
@@ -2123,7 +2130,7 @@ const EVENTS = [
   {
     id: "heist", name: "Casino-Heist", icon: "alarm", ev: "admin:heist",
     was: "Alle knacken gemeinsam einen Tresor. Der Tresor wird härter, je mehr online sind.",
-    chips: true, braucht: 2,
+    chips: true, braucht: 2, vorlauf: true,
     felder: [
       { k: "seconds", label: "Sekunden", wert: 60, min: 15, max: 300 },
       { k: "loot", label: "Beute", wert: 500000, min: 1000, schritt: 50000, geld: true },
@@ -2132,7 +2139,7 @@ const EVENTS = [
   {
     id: "rain", name: "Chip-Regen", icon: "chip", ev: "admin:rain",
     was: "Chips fallen über den Bildschirm, wer zuerst tippt, bekommt sie.",
-    chips: true,
+    chips: true, vorlauf: true,
     felder: [
       { k: "seconds", label: "Sekunden", wert: 30, min: 10, max: 180 },
       { k: "pot", label: "Topf", wert: 250000, min: 1000, schritt: 50000, geld: true },
@@ -2141,7 +2148,7 @@ const EVENTS = [
   {
     id: "quiz", name: "Blitz-Quiz", icon: "frage", ev: "admin:quiz",
     was: "Ein paar schnelle Fragen, wer zuerst richtig antwortet, kassiert.",
-    chips: true,
+    chips: true, vorlauf: true,
     felder: [
       { k: "rounds", label: "Fragen", wert: 5, min: 1, max: 15 },
       { k: "prize", label: "Preis je Frage", wert: 20000, min: 500, schritt: 5000, geld: true },
@@ -2150,7 +2157,7 @@ const EVENTS = [
   {
     id: "vault", name: "Tresorkampf", icon: "krieg", ev: "admin:teamvault",
     was: "Zwei Mannschaften hauen um die Wette. Braucht Leute auf beiden Seiten.",
-    chips: true, braucht: 2,
+    chips: true, braucht: 2, vorlauf: true,
     felder: [
       { k: "seconds", label: "Sekunden", wert: 90, min: 20, max: 300 },
       { k: "pot", label: "Topf", wert: 500000, min: 1000, schritt: 50000, geld: true },
@@ -2173,8 +2180,14 @@ function evRest(bis) {
   return m < 60 ? `noch ${m}:${String(s % 60).padStart(2, "0")} min` : `noch ${Math.round(m / 60)} h`;
 }
 
-/** Kurze Events (unter zwei Minuten) loesen bewusst keinen Push aus. */
+/*
+ * Kurze Events loesen bewusst keinen Push aus — die Nachricht kaeme spaeter
+ * als das Ende. Genau deshalb koennen sie stattdessen einen Vorlauf haben:
+ * angekuendigt wird sofort, gestartet wird spaeter. Dann ist die Nachricht
+ * alt genug, dass jemand sie gelesen und die Seite geoeffnet haben kann.
+ */
 const EV_KURZ = new Set(["rain", "heist", "vault", "quiz"]);
+let evGeplant = {};
 
 function renderAdminEvents() {
   const box = $("#admin-events");
@@ -2201,24 +2214,42 @@ function renderAdminEvents() {
       (z.prize ? `<span>${evGeld(z.prize)} Preis</span>` : "") +
       `</div>`;
     const zuWenig = e.braucht && evOnline < e.braucht;
-    return `<div class="ev-karte${laeuft ? " an" : ""}" data-ev="${e.id}">
+    const plan = evGeplant[e.id];
+    const angekuendigt = !!(plan && plan.geplant);
+    const planZeile = !angekuendigt ? "" :
+      `<div class="ev-plan">${window.Casino.icons.ui("uhr")}<b>Angekündigt</b>` +
+      `<span data-plan-bis="${plan.startetUm}">startet ${evRest(plan.startetUm)}</span></div>`;
+
+    return `<div class="ev-karte${laeuft ? " an" : ""}${angekuendigt ? " geplant" : ""}" data-ev="${e.id}">
       <div class="ev-kopf">
         <span class="ev-sym">${window.Casino.icons.ui(e.icon)}</span>
         <div><b>${escapeHtml(e.name)}</b><small>${escapeHtml(e.was)}</small></div>
       </div>
-      ${zeile}
-      ${zuWenig && !laeuft ? `<p class="ev-hinweis">Braucht mindestens ${e.braucht} Leute — gerade ${evOnline} online.</p>` : ""}
-      ${EV_KURZ.has(e.id) ? `<p class="ev-hinweis ev-leise">Zu kurz für eine Benachrichtigung — es erreicht nur, wer gerade da ist.</p>` : ""}
+      ${zeile}${planZeile}
+      ${zuWenig && !laeuft && !angekuendigt ? `<p class="ev-hinweis">Braucht mindestens ${e.braucht} Leute — gerade ${evOnline} online.${e.vorlauf ? " Mit Vorlauf ankündigen, dann können welche dazukommen." : ""}</p>` : ""}
       <div class="ev-felder">
         ${e.felder.map((f) => `<label class="ev-feld">
           <span>${escapeHtml(f.label)}</span>
           <input type="number" inputmode="numeric" data-ev-feld="${f.k}"
                  value="${f.wert}"${f.min != null ? ` min="${f.min}"` : ""}${f.max != null ? ` max="${f.max}"` : ""}${f.schritt ? ` step="${f.schritt}"` : ""} />
         </label>`).join("")}
+        ${e.vorlauf ? `<label class="ev-feld ev-feld-vorlauf">
+          <span>Vorlauf</span>
+          <select data-ev-vorlauf>
+            <option value="0">sofort</option>
+            <option value="3">in 3 min</option>
+            <option value="5" selected>in 5 min</option>
+            <option value="10">in 10 min</option>
+            <option value="15">in 15 min</option>
+            <option value="30">in 30 min</option>
+          </select>
+        </label>` : ""}
       </div>
+      ${e.vorlauf ? `<p class="ev-hinweis ev-leise">Mit Vorlauf wird es sofort angekündigt — im Chat und als Benachrichtigung — und startet erst danach. Ohne Vorlauf erreicht es nur, wer gerade da ist: für eine Benachrichtigung wäre es zu kurz.</p>` : ""}
       <div class="ev-knoepfe">
-        <button class="btn-primary ev-start"${laeuft ? " disabled" : ""}>${laeuft ? "Läuft bereits" : "Starten"}</button>
-        <button class="btn-danger ev-stop"${laeuft ? "" : " disabled"}>Abbrechen</button>
+        <button class="btn-primary ev-start"${laeuft || angekuendigt ? " disabled" : ""}>${
+          laeuft ? "Läuft bereits" : angekuendigt ? "Angekündigt" : "Starten"}</button>
+        <button class="btn-danger ev-stop"${laeuft || angekuendigt ? "" : " disabled"}>${angekuendigt ? "Absagen" : "Abbrechen"}</button>
       </div>
     </div>`;
   }).join("");
@@ -2232,6 +2263,8 @@ function renderAdminEvents() {
         const n = parseInt(i.value, 10);
         out[i.dataset.evFeld] = Number.isFinite(n) ? n : f.wert;
       });
+      const v = karte.querySelector("[data-ev-vorlauf]");
+      if (v) out.vorlauf = parseInt(v.value, 10) || 0;
       return out;
     };
 
@@ -2244,23 +2277,33 @@ function renderAdminEvents() {
       if (e.chips) {
         const geld = e.felder.find((f) => f.geld);
         const betrag = geld ? w[geld.k] : 0;
+        const gleich = !w.vorlauf;
         const ok = await window.Casino.dialog.frage(
-          `${e.name} starten und ${evGeld(betrag)} Chips ausschütten?` +
-          (evOnline < 2 ? `\n\nGerade ${evOnline === 0 ? "ist niemand" : "ist nur einer"} online.` : ""),
-          { titel: e.name, okText: "Starten" });
+          (gleich
+            ? `${e.name} sofort starten und ${evGeld(betrag)} Chips ausschütten?`
+            : `${e.name} für in ${w.vorlauf} Minuten ankündigen? ${evGeld(betrag)} Chips gehen dann raus.\n\nDie Ankündigung geht sofort in den Chat und als Benachrichtigung an alle, die nicht da sind.`) +
+          (gleich && evOnline < 2
+            ? `\n\nGerade ${evOnline === 0 ? "ist niemand" : "ist nur einer"} online.` +
+              (e.vorlauf ? " Mit Vorlauf könnten noch welche dazukommen." : "")
+            : ""),
+          { titel: e.name, okText: gleich ? "Jetzt starten" : "Ankündigen" });
         if (!ok) return;
       }
       socket.emit(e.ev, w, (r) => {
-        toast(r?.ok ? `${e.name} gestartet.` : (r?.error || "Fehler."));
+        toast(r?.ok
+          ? (w.vorlauf ? `${e.name} für in ${w.vorlauf} Minuten angekündigt.` : `${e.name} gestartet.`)
+          : (r?.error || "Fehler."));
         loadAdminDashboard();
       });
     });
 
     karte.querySelector(".ev-stop")?.addEventListener("click", async () => {
-      if (!await window.Casino.dialog.frage(`${e.name} jetzt abbrechen?`,
-        { okText: "Abbrechen", abbruchText: "Weiterlaufen lassen", gefahr: true })) return;
+      const war = (evGeplant[e.id] || {}).geplant;
+      if (!await window.Casino.dialog.frage(
+        war ? `${e.name} wieder absagen? Die Ankündigung steht schon im Chat.` : `${e.name} jetzt abbrechen?`,
+        { okText: war ? "Absagen" : "Abbrechen", abbruchText: "Doch nicht", gefahr: true })) return;
       socket.emit(e.ev, { on: false }, (r) => {
-        toast(r?.ok ? `${e.name} beendet.` : (r?.error || "Fehler."));
+        toast(r?.ok ? (r.abgesagt ? `${e.name} abgesagt.` : `${e.name} beendet.`) : (r?.error || "Fehler."));
         loadAdminDashboard();
       });
     });
@@ -2270,19 +2313,25 @@ function renderAdminEvents() {
      stand dort eine Zahl, die beim Laden stimmte und danach nicht mehr. */
   clearInterval(evUhr);
   evUhr = null;
-  if (EVENTS.some((e) => (evZustand[e.id] || {}).active)) {
+  const laeuftWas = EVENTS.some((e) => (evZustand[e.id] || {}).active || (evGeplant[e.id] || {}).geplant);
+  if (laeuftWas) {
     evUhr = setInterval(() => {
       if (window.Casino.screens.current() !== "admin") { clearInterval(evUhr); evUhr = null; return; }
-      let nochAktiv = false;
+      let offen = false;
       box.querySelectorAll(".ev-karte.an").forEach((k) => {
         const z = evZustand[k.dataset.ev] || {};
-        if (!z.endsAt) return;
+        if (!z.endsAt) { offen = true; return; }
         const span = k.querySelector(".ev-laeuft span");
         if (span) span.textContent = evRest(z.endsAt);
-        if (z.endsAt > Date.now()) nochAktiv = true;
+        if (z.endsAt > Date.now()) offen = true;
       });
-      // Abgelaufen? Dann den echten Stand holen statt zu raten.
-      if (!nochAktiv) loadAdminDashboard();
+      box.querySelectorAll("[data-plan-bis]").forEach((el) => {
+        const bis = Number(el.dataset.planBis) || 0;
+        el.textContent = "startet " + evRest(bis);
+        if (bis > Date.now()) offen = true;
+      });
+      // Abgelaufen oder losgegangen? Dann den echten Stand holen statt zu raten.
+      if (!offen) loadAdminDashboard();
     }, 1000);
   }
 }

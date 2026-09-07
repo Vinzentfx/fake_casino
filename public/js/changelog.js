@@ -19,6 +19,17 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-12",
+      datum: "12. September 2026",
+      titel: "Events kündigen sich jetzt an",
+      items: [
+        { icon: "uhr", titel: "Ein Event kommt nicht mehr aus dem Nichts",
+          text: "Chip-Regen, Heist, Tresorkampf und Blitz-Quiz dauern unter zwei Minuten. Genau deshalb konnten sie dich nie per Benachrichtigung erreichen — die wäre später angekommen als das Ende. Also erwischten sie nur, wer zufällig gerade offen hatte. Jetzt lassen sie sich ankündigen: die Nachricht geht sofort raus („in fünf Minuten geht es los“), losgelegt wird erst danach. Damit hast du Zeit, dazuzukommen." },
+        { icon: "ansage", titel: "Ansagen haben einen Ton",
+          text: "Eine Wartungsansage sah bisher aus wie eine Einladung zum Turnier — beides dieselbe goldene Zeile. Jetzt sind sie unterscheidbar, und eine Ansage kann von selbst wieder verschwinden statt tagelang stehenzubleiben. Bei wichtigen kommt außerdem eine Benachrichtigung, wenn du gerade nicht da bist; abschalten kannst du das in den Einstellungen." },
+      ],
+    },
+    {
       id: "2026-09-11",
       datum: "11. September 2026",
       titel: "Alles trägt dieselbe Handschrift",

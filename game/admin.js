@@ -5,10 +5,93 @@ const city = require("./city");
 const slots = require("./slots");
 const liveops = require("./liveops");
 const ipbans = require("./ipbans");
+const chat = require("./chat");
 let _heist = null;
 function setHeist(h) { _heist = h; }
 let _events = {}; // { rain, quiz, vault } — admin events wired in server.js
 function setEvents(e) { _events = e || {}; }
+
+/* ---------------------------------------------------------------------------
+   ANGEKUENDIGTE EVENTS
+
+   Heist, Chip-Regen, Tresorkampf und Quiz dauern unter zwei Minuten. Genau
+   deshalb loesen sie bewusst keine Benachrichtigung aus: die Nachricht kaeme
+   spaeter als das Ende. Umgekehrt heisst das aber, dass sie nur die
+   erreichen, die zufaellig gerade offen haben — bei einem Haus, in dem sich
+   ein paar Freunde abends verabreden, sind das meistens null.
+
+   Ein Vorlauf loest beides: das Event wird angekuendigt, die Benachrichtigung
+   geht sofort raus ("in fuenf Minuten"), und gestartet wird erst, wenn die
+   Zeit um ist. Dann ist die Nachricht alt genug, dass jemand sie gelesen und
+   die Seite geoeffnet haben kann — und kurz genug, dass niemand vergisst,
+   worauf er wartet.
+
+   Gespeichert wird nichts: ein Serverneustart im Vorlauf laesst die
+   Ankuendigung fallen, und das ist richtig so — niemand soll nach einem
+   Neustart von einem Event ueberrascht werden, das jemand vor Stunden
+   angesetzt hat.
+--------------------------------------------------------------------------- */
+const geplant = new Map();   // id -> { startetUm, timer, name, starte, beschreibung }
+
+function planPublic() {
+  const out = {};
+  for (const [id, g] of geplant) out[id] = { geplant: true, startetUm: g.startetUm };
+  return out;
+}
+
+function planAbbrechen(id) {
+  const g = geplant.get(id);
+  if (!g) return false;
+  clearTimeout(g.timer);
+  geplant.delete(id);
+  return true;
+}
+
+/**
+ * Ein Event ankuendigen und nach `minuten` starten.
+ *
+ * @param {object} o
+ * @param {string} o.id         "heist", "rain", …
+ * @param {string} o.name       Wie es im Chat heisst.
+ * @param {number} o.minuten    Vorlauf, 1 bis 60.
+ * @param {string} o.text       Was in Chat und Benachrichtigung steht.
+ * @param {function} o.starte   Wird nach dem Vorlauf gerufen.
+ */
+function planeEvent(io, { id, name, minuten, text, starte }) {
+  if (geplant.has(id)) return { ok: false, error: `${name} ist schon angekündigt.` };
+  const min = Math.max(1, Math.min(60, Math.floor(Number(minuten) || 5)));
+  const startetUm = Date.now() + min * 60 * 1000;
+
+  try {
+    chat.announce(io, `${text} — es geht in ${min} ${min === 1 ? "Minute" : "Minuten"} los!`);
+  } catch {}
+
+  /* Die Benachrichtigung geht ueber "live": es IST ein Live-Event, nur eben
+     eins mit Vorlauf. Wer Live-Events abgeschaltet hat, will auch hierueber
+     nicht geweckt werden. */
+  (async () => {
+    try {
+      const push = require("./push");
+      await push.anAlle("live", {
+        title: "Gleich geht's los",
+        body: `${text} — in ${min} ${min === 1 ? "Minute" : "Minuten"}.`,
+        url: "/",
+      });
+    } catch {}
+  })();
+
+  const timer = setTimeout(() => {
+    geplant.delete(id);
+    try { starte(); } catch {}
+    try { io.emit("admin:planUpdate", planPublic()); } catch {}
+  }, min * 60 * 1000);
+  // Der Vorlauf darf den Server nicht am Beenden hindern.
+  if (typeof timer.unref === "function") timer.unref();
+
+  geplant.set(id, { startetUm, timer, name });
+  io.emit("admin:planUpdate", planPublic());
+  return { ok: true, startetUm };
+}
 
 /** Zustand eines Event-Moduls, oder { active: false }, wenn es ihn nicht gibt. */
 function eventZustand(mod) {
@@ -73,6 +156,7 @@ function setupAdmin(io, accounts) {
              als Rueckfall, falls ein Modul es einmal nicht kann. */
           events: {
             liveops: typeof liveops.publicState === "function" ? liveops.publicState() : null,
+            geplant: planPublic(),
             heist: eventZustand(_heist),
             rain: eventZustand(_events.rain),
             quiz: eventZustand(_events.quiz),
@@ -292,38 +376,78 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
-    socket.on("admin:heist", ({ on, loot, seconds } = {}, ack) => {
+    socket.on("admin:heist", ({ on, loot, seconds, vorlauf } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       if (!_heist) return ack({ ok: false, error: "Heist nicht bereit." });
-      if (on) return ack(_heist.start(loot || 500000, seconds || 60));
+      if (on) {
+        if (vorlauf > 0) {
+          return ack(planeEvent(io, {
+            id: "heist", name: "Casino-Heist", minuten: vorlauf,
+            text: `Gleich wird der Tresor geknackt — ${Number(loot || 500000).toLocaleString("de-DE")} Chips Beute`,
+            starte: () => _heist.start(loot || 500000, seconds || 60),
+          }));
+        }
+        return ack(_heist.start(loot || 500000, seconds || 60));
+      }
+      if (planAbbrechen("heist")) { io.emit("admin:planUpdate", planPublic()); return ack({ ok: true, abgesagt: true }); }
       _heist.stop();
       ack({ ok: true });
     });
 
-    socket.on("admin:rain", ({ on, pot, seconds } = {}, ack) => {
+    socket.on("admin:rain", ({ on, pot, seconds, vorlauf } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       if (!_events.rain) return ack({ ok: false, error: "Chip-Regen nicht bereit." });
-      if (on) return ack(_events.rain.start(pot || 250000, seconds || 30));
+      if (on) {
+        if (vorlauf > 0) {
+          return ack(planeEvent(io, {
+            id: "rain", name: "Chip-Regen", minuten: vorlauf,
+            text: `Gleich regnet es Chips — ${Number(pot || 250000).toLocaleString("de-DE")} im Topf`,
+            starte: () => _events.rain.start(pot || 250000, seconds || 30),
+          }));
+        }
+        return ack(_events.rain.start(pot || 250000, seconds || 30));
+      }
+      if (planAbbrechen("rain")) { io.emit("admin:planUpdate", planPublic()); return ack({ ok: true, abgesagt: true }); }
       _events.rain.stop();
       ack({ ok: true });
     });
 
-    socket.on("admin:quiz", ({ on, rounds, prize } = {}, ack) => {
+    socket.on("admin:quiz", ({ on, rounds, prize, vorlauf } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       if (!_events.quiz) return ack({ ok: false, error: "Quiz nicht bereit." });
-      if (on) return ack(_events.quiz.start(rounds || 5, prize || 20000));
+      if (on) {
+        if (vorlauf > 0) {
+          return ack(planeEvent(io, {
+            id: "quiz", name: "Blitz-Quiz", minuten: vorlauf,
+            text: `Gleich läuft ein Blitz-Quiz — ${Number(prize || 20000).toLocaleString("de-DE")} Chips je Frage`,
+            starte: () => _events.quiz.start(rounds || 5, prize || 20000),
+          }));
+        }
+        return ack(_events.quiz.start(rounds || 5, prize || 20000));
+      }
+      if (planAbbrechen("quiz")) { io.emit("admin:planUpdate", planPublic()); return ack({ ok: true, abgesagt: true }); }
       _events.quiz.stop();
       ack({ ok: true });
     });
 
-    socket.on("admin:teamvault", ({ on, pot, seconds } = {}, ack) => {
+    socket.on("admin:teamvault", ({ on, pot, seconds, vorlauf } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       if (!_events.vault) return ack({ ok: false, error: "Tresorkampf nicht bereit." });
-      if (on) return ack(_events.vault.start(pot || 500000, seconds || 90));
+      if (on) {
+        if (vorlauf > 0) {
+          return ack(planeEvent(io, {
+            id: "vault", name: "Tresorkampf", minuten: vorlauf,
+            text: `Gleich wird um den Tresor gekämpft — ${Number(pot || 500000).toLocaleString("de-DE")} im Topf`,
+            starte: () => _events.vault.start(pot || 500000, seconds || 90),
+          }));
+        }
+        return ack(_events.vault.start(pot || 500000, seconds || 90));
+      }
+      if (planAbbrechen("vault")) { io.emit("admin:planUpdate", planPublic()); return ack({ ok: true, abgesagt: true }); }
       _events.vault.stop();
       ack({ ok: true });
     });
