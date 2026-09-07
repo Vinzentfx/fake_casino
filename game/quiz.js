@@ -154,7 +154,9 @@ function setupQuiz(io, accounts) {
     });
   });
 
-  return { start, stop, active };
+  // `zustand` gibt Runden, Preis und die laufende Frage nach aussen — der Admin-Bildschirm
+  // zeigt damit einen Countdown statt nur "laeuft".
+  return { start, stop, active, zustand: snapshot };
 }
 
 module.exports = { setupQuiz };

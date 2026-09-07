@@ -35,6 +35,11 @@ const KEY_FILE = path.join(DATA_DIR, "vapid.json");
 
 // Anlaesse. `standard` ist, was ein frisch angemeldeter Spieler bekommt.
 const TYPEN = {
+  /* Ansagen des Hauses. Eigener Anlass, nicht unter "live" mitgefuehrt:
+     eine Wartungsansage ist etwas anderes als ein Turnier, und wer Events
+     abgeschaltet hat, will trotzdem erfahren, wenn der Server abends weg
+     ist. Kommt selten, deshalb standardmaessig an. */
+  ansage: { label: "Ansagen", hint: "Wenn der Hausherr etwas mitzuteilen hat", standard: true },
   live:   { label: "Live-Events", hint: "Turnier und Happy Hour, solange sie laufen", standard: true },
   rekord: { label: "Wochenrekorde", hint: "Wenn jemand deinen Rekord schlägt", standard: true },
   tisch:  { label: "Offene Tische", hint: "Wenn jemand auf Mitspieler wartet", standard: true },
@@ -44,6 +49,10 @@ const TYPEN = {
 // Ein Geraet bekommt denselben Anlass hoechstens so oft. Ohne die Sperre wuerde
 // ein Abend mit drei Events zur Belaestigung.
 const MIN_ABSTAND = {
+  /* Ansagen kommen von Hand und selten. Eine halbe Stunde reicht, um ein
+     versehentliches doppeltes Absenden abzufangen, ohne die zweite, wirklich
+     wichtige Ansage eines Abends zu verschlucken. */
+  ansage: 30 * 60 * 1000,
   live: 45 * 60 * 1000,
   rekord: 10 * 60 * 1000,
   tisch: 60 * 60 * 1000,

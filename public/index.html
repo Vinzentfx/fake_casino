@@ -1572,26 +1572,90 @@
 
     <!-- ===================== ADMIN (nur Vincent) ===================== -->
     <section class="screen" data-screen="admin">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2><i data-icon="admin"></i>Admin</h2>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="admin"></i>Admin</h2>
 
-        <div id="admin-dashboard" style="display:grid;gap:.75rem;margin:.75rem 0 1rem">
+      <!-- Reiter. Der Bildschirm war ueber 3000 Pixel lang; bis zu den
+           Events scrollte man an der kompletten Accountliste vorbei. -->
+      <nav class="ad-reiter" id="ad-reiter" role="tablist">
+        <button class="ad-reiter-knopf active" data-ad="uebersicht" role="tab" aria-selected="true">Übersicht</button>
+        <button class="ad-reiter-knopf" data-ad="ansage" role="tab" aria-selected="false">Ansage</button>
+        <button class="ad-reiter-knopf" data-ad="events" role="tab" aria-selected="false">Events</button>
+        <button class="ad-reiter-knopf" data-ad="spieler" role="tab" aria-selected="false">Spieler</button>
+        <button class="ad-reiter-knopf" data-ad="werkzeug" role="tab" aria-selected="false">Werkzeuge</button>
+      </nav>
+
+      <section class="ad-tafel" data-ad-tafel="uebersicht">
+        <div id="admin-dashboard" style="display:grid;gap:.75rem">
           <div class="muted small">Dashboard lädt…</div>
         </div>
+      </section>
 
-        <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
-        <h3>Global Announcement</h3>
-        <div style="display:grid;gap:.5rem;margin-bottom:.25rem">
-          <textarea id="admin-announcement-text" maxlength="220" rows="3" placeholder="Nachricht an alle Spieler…" style="width:100%;resize:vertical"></textarea>
-          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-            <button class="btn-primary" id="admin-announcement-send">An alle senden</button>
-            <button class="btn-secondary" id="admin-announcement-clear">Ausblenden</button>
+      <section class="ad-tafel hidden" data-ad-tafel="ansage">
+
+        <!-- ===== Ansage an alle =====
+             Hiess "Global Announcement" — englisch in einem Haus, das sonst
+             durchweg deutsch spricht. Und sie konnte genau eines: dastehen.
+             Kein Ton, kein Ablauf, kein Verlauf, kein Push, und man sah
+             nicht einmal, ob gerade eine steht. -->
+        <h3 class="admin-h"><i data-icon="ansage"></i>Ansage an alle</h3>
+        <div class="an-box">
+          <div id="an-steht" class="an-steht hidden"></div>
+
+          <label class="an-feld">
+            <span>Text</span>
+            <textarea id="admin-announcement-text" maxlength="220" rows="3"
+                      placeholder="z. B. Heute Abend ab 20 Uhr Turnier — seid dabei!"></textarea>
+            <small class="an-zaehler" id="an-zaehler">0 / 220</small>
+          </label>
+
+          <div class="an-reihe">
+            <div class="an-feld">
+              <span>Ton</span>
+              <div class="an-arten" id="an-arten" role="radiogroup"></div>
+            </div>
+            <label class="an-feld an-feld-schmal">
+              <span>Verschwindet nach</span>
+              <select id="an-dauer">
+                <option value="0">bleibt stehen</option>
+                <option value="60">1 Stunde</option>
+                <option value="240">4 Stunden</option>
+                <option value="720">12 Stunden</option>
+                <option value="1440">1 Tag</option>
+                <option value="4320">3 Tage</option>
+              </select>
+            </label>
           </div>
-        </div>
-        <p class="muted small" style="margin:.25rem 0 0">Wird live unten als Meldung gezeigt und bleibt danach dezent gespeichert sichtbar.</p>
-        <div class="form-error" id="admin-announcement-error"></div>
 
+          <label class="an-push">
+            <input type="checkbox" id="an-push" />
+            <span><b>Auch als Benachrichtigung schicken</b>
+            <small>Erreicht die, die gerade nicht da sind. Wer verbunden ist, bekommt keine — der sieht die Zeile ohnehin.</small></span>
+          </label>
+
+          <div class="an-vorschau-wrap">
+            <span class="an-label">So sehen es die Spieler</span>
+            <div class="an-vorschau" id="an-vorschau" data-art="info">
+              <span class="an-v-sym"><i data-icon="ansage"></i></span>
+              <div><b id="an-v-text">…</b><small id="an-v-meta">Ansage</small></div>
+            </div>
+          </div>
+
+          <div class="an-knoepfe">
+            <button class="btn-primary" id="admin-announcement-send">Ansage stellen</button>
+            <button class="btn-secondary" id="admin-announcement-clear">Wegnehmen</button>
+          </div>
+          <div class="form-error" id="admin-announcement-error"></div>
+
+          <details class="an-verlauf" id="an-verlauf-box">
+            <summary>Zuletzt gesagt</summary>
+            <div id="an-verlauf"></div>
+          </details>
+        </div>
+
+      </section>
+
+      <section class="ad-tafel hidden" data-ad-tafel="spieler">
         <h3>Alle Accounts</h3>
         <ol class="leaderboard" id="admin-account-list">
           <li class="muted">Lädt…</li>
@@ -1630,7 +1694,26 @@
         <div class="form-error" id="admin-ipban-error"></div>
         <ol class="leaderboard" id="admin-ipban-list" style="margin-top:.5rem"><li class="muted">—</li></ol>
 
-        <hr style="border-color:rgba(255,255,255,.1);margin:1rem 0" />
+        <!-- ===== Events =====
+             Vorher an zwei Orten: oben im Dashboard sieben Knoepfe, die
+             sofort und ohne Rueckfrage mit fest eingebauten Werten feuerten
+             (ein Fehlklick auf "Regen" schuettete 250.000 Chips aus), und
+             unten sechs Zeilen mit nackten Zahlenfeldern, deren Bedeutung
+             nur im title stand — auf dem iPad also nirgends. Und die Werte
+             an beiden Orten waren verschieden.
+
+             Jetzt: ein Ort, je eine Karte, beschriftete Felder, der Zustand
+             mit Restzeit auf der Karte selbst. -->
+      </section>
+
+      <section class="ad-tafel hidden" data-ad-tafel="events">
+        <h3 class="admin-h"><i data-icon="blitz"></i>Events</h3>
+        <p class="muted small" style="margin:-4px 0 10px" id="ev-online">…</p>
+        <div class="ev-raster" id="admin-events"></div>
+
+      </section>
+
+      <section class="ad-tafel hidden" data-ad-tafel="werkzeug">
         <h3>Test-Tools</h3>
         <div style="display:flex;flex-direction:column;gap:.5rem">
           <button class="btn-primary" id="admin-force-win-btn">Nächster Slot-Spin = MAXIMALGEWINN (für dich)</button>
@@ -1649,41 +1732,6 @@
             </div>
           </div>
 
-          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-            <input id="admin-happy-mins" type="number" min="1" max="240" value="60" style="width:70px" title="Minuten" />
-            <button class="btn-primary" id="admin-happy-on-btn">Happy Hour AN</button>
-            <button class="btn-danger" id="admin-happy-off-btn">Happy Hour AUS</button>
-          </div>
-          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-            <input id="admin-tourney-mins" type="number" min="1" max="120" value="10" style="width:60px" title="Minuten" />
-            <input id="admin-tourney-prize" type="number" min="0" step="10000" value="100000" style="width:110px" title="Preis" />
-            <button class="btn-primary" id="admin-tourney-on-btn">Turnier starten</button>
-            <button class="btn-danger" id="admin-tourney-off-btn">Beenden</button>
-          </div>
-          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-            <input id="admin-heist-secs" type="number" min="15" max="300" value="60" style="width:60px" title="Sekunden" />
-            <input id="admin-heist-loot" type="number" min="1000" step="50000" value="500000" style="width:110px" title="Beute" />
-            <button class="btn-primary" id="admin-heist-on-btn">Heist starten</button>
-            <button class="btn-danger" id="admin-heist-off-btn">Abbrechen</button>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <input id="admin-rain-secs" type="number" min="10" max="180" value="30" style="width:60px" title="Sekunden" />
-            <input id="admin-rain-pot" type="number" min="1000" step="50000" value="250000" style="width:110px" title="Pot" />
-            <button class="btn-primary" id="admin-rain-on-btn">Chip-Regen starten</button>
-            <button class="btn-danger" id="admin-rain-off-btn">Stopp</button>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <input id="admin-quiz-rounds" type="number" min="1" max="15" value="5" style="width:60px" title="Fragen" />
-            <input id="admin-quiz-prize" type="number" min="500" step="5000" value="20000" style="width:110px" title="Preis pro Frage" />
-            <button class="btn-primary" id="admin-quiz-on-btn">Blitz-Quiz starten</button>
-            <button class="btn-danger" id="admin-quiz-off-btn">Abbrechen</button>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <input id="admin-vault-secs" type="number" min="20" max="300" value="90" style="width:60px" title="Sekunden" />
-            <input id="admin-vault-pot" type="number" min="1000" step="50000" value="500000" style="width:110px" title="Pot" />
-            <button class="btn-primary" id="admin-vault-on-btn">Tresorkampf starten</button>
-            <button class="btn-danger" id="admin-vault-off-btn">Abbrechen</button>
-          </div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
             <input id="admin-target-test" type="text" maxlength="16" placeholder="Spielername" style="flex:1;min-width:120px" />
             <button class="btn-primary" id="admin-reset-bonus-btn">Bonus-Cooldown resetten</button>
@@ -1705,7 +1753,7 @@
           <li class="muted">Lädt…</li>
         </ol>
         <button class="btn-danger" id="admin-reset-city-btn" style="margin-top:8px;width:100%">Ganze Stadt zurücksetzen (alles an NPC)</button>
-      </div>
+      </section>
     </section>
 
   </main>

@@ -10,6 +10,16 @@ function setHeist(h) { _heist = h; }
 let _events = {}; // { rain, quiz, vault } — admin events wired in server.js
 function setEvents(e) { _events = e || {}; }
 
+/** Zustand eines Event-Moduls, oder { active: false }, wenn es ihn nicht gibt. */
+function eventZustand(mod) {
+  if (!mod) return { active: false };
+  try {
+    if (typeof mod.zustand === "function") return mod.zustand();
+    if (typeof mod.active === "function") return { active: !!mod.active() };
+  } catch {}
+  return { active: false };
+}
+
 function setupAdmin(io, accounts) {
   io.on("connection", (socket) => {
     function isOwner() {
@@ -55,8 +65,19 @@ function setupAdmin(io, accounts) {
             chips: all.reduce((sum, a) => sum + (a.chips || 0), 0),
             bank: all.reduce((sum, a) => sum + (a.savings || 0), 0),
           },
+          /* Der Zustand jedes Events, nicht nur ein Ja/Nein. Vorher stand
+             im Bildschirm "Heist: aktiv" — ohne zu sagen, wie lange noch
+             und um wie viel. Wer nachsehen wollte, musste selbst mitspielen.
+
+             `zustand` liefert jedes Modul seit dieser Runde; `active` bleibt
+             als Rueckfall, falls ein Modul es einmal nicht kann. */
           events: {
             liveops: typeof liveops.publicState === "function" ? liveops.publicState() : null,
+            heist: eventZustand(_heist),
+            rain: eventZustand(_events.rain),
+            quiz: eventZustand(_events.quiz),
+            vault: eventZustand(_events.vault),
+            // Die alten Felder bleiben, damit nichts bricht, was sie liest.
             heistActive: !!(_heist && typeof _heist.active === "function" && _heist.active()),
             rainActive: !!(_events.rain && _events.rain.active()),
             quizActive: !!(_events.quiz && _events.quiz.active()),

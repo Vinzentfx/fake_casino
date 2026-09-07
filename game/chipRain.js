@@ -103,7 +103,9 @@ function setupChipRain(io, accounts) {
     });
   });
 
-  return { start, stop, active };
+  // `zustand` gibt Restzeit und Topf nach aussen — der Admin-Bildschirm
+  // zeigt damit einen Countdown statt nur "laeuft".
+  return { start, stop, active, zustand: snapshot };
 }
 
 module.exports = { setupChipRain };

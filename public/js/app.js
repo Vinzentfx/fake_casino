@@ -60,7 +60,42 @@ window.Casino.screens.setGuard((name) => {
 // Casino._load<Name>.
 window.Casino.screens.register("leaderboard", { onEnter: () => loadLeaderboard() });
 window.Casino.screens.register("profile", { onEnter: () => renderProfile() });
-window.Casino.screens.register("admin", { onEnter: () => loadAdminAccounts() });
+window.Casino.screens.register("admin", {
+  onEnter: () => { loadAdminAccounts(); ladeAnsage(); anVorschau(); adminReiter(); },
+  // Die Uhr der Event-Karten muss nicht weiterlaufen, wenn niemand hinsieht.
+  onLeave: () => { if (typeof evUhr !== "undefined" && evUhr) { clearInterval(evUhr); evUhr = null; } },
+});
+
+/*
+ * Reiter im Admin-Bildschirm.
+ *
+ * Er war ueber dreitausend Pixel lang — Dashboard, Ansage, saemtliche
+ * Accounts, Chips, Sperren, IP-Bann, Events, Test-Tools, Backup, Stadt,
+ * alles hintereinander. Wer ein Event starten wollte, scrollte an der
+ * kompletten Accountliste vorbei. Auf dem iPad war das eine Reise.
+ */
+function adminReiter() {
+  const leiste = document.querySelector("#ad-reiter");
+  if (!leiste || leiste.dataset.fertig) return;
+  leiste.dataset.fertig = "1";
+  leiste.querySelectorAll(".ad-reiter-knopf").forEach((b) => {
+    b.addEventListener("click", () => {
+      const ziel = b.dataset.ad;
+      leiste.querySelectorAll(".ad-reiter-knopf").forEach((x) => {
+        const an = x.dataset.ad === ziel;
+        x.classList.toggle("active", an);
+        x.setAttribute("aria-selected", an ? "true" : "false");
+      });
+      document.querySelectorAll("[data-ad-tafel]").forEach((t) => {
+        t.classList.toggle("hidden", t.dataset.adTafel !== ziel);
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      // Die Karten holen ihren Zustand frisch, wenn man zu ihnen wechselt.
+      if (ziel === "events") loadAdminDashboard();
+      if (ziel === "ansage") ladeAnsage();
+    });
+  });
+}
 window.Casino.screens.register("settings", { onEnter: () => { renderThemePicker(); if (window.Casino._loadPush) window.Casino._loadPush(); } });
 window.Casino.screens.register("updates", { onEnter: () => renderUpdates() });
 window.Casino.screens.register("calendar", { onEnter: () => loadCalendar() });
@@ -239,10 +274,18 @@ function renderAnnouncement(announcement) {
     return;
   }
   textEl.textContent = announcement.text;
+  /* Der Ton faerbt die Zeile: eine Wartungsansage soll anders aussehen als
+     eine Einladung zum Turnier. Unbekannte Werte fallen auf "info" zurueck,
+     damit eine alte gespeicherte Ansage keine fremde Klasse ins Dokument
+     schreibt. */
+  const art = ["info", "warnung", "fest"].includes(announcement.art) ? announcement.art : "info";
+  strip.dataset.art = art;
+  const symEl = strip.querySelector(".announcement-icon");
+  if (symEl) symEl.innerHTML = window.Casino.icons.ui({ info: "ansage", warnung: "alarm", fest: "geschenk" }[art]);
   const at = Number(announcement.at) || 0;
   metaEl.textContent = at
-    ? `Ankündigung · ${new Date(at).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`
-    : "Ankündigung";
+    ? `Ansage · ${new Date(at).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`
+    : "Ansage";
   strip.classList.remove("hidden");
 }
 
@@ -661,7 +704,7 @@ setInterval(checkAppVersion, 30000);
 
 socket.on("announcement:state", ({ announcement, toast: shouldToast } = {}) => {
   renderAnnouncement(announcement);
-  if (shouldToast && announcement && announcement.text) toast(`📣 ${announcement.text}`);
+  if (shouldToast && announcement && announcement.text) toast(announcement.text);
 });
 
 // Server can push an updated bank balance (e.g. after a poker buy-in/cash-out).
@@ -1650,14 +1693,19 @@ function loadAdminDashboard() {
     const winners = d.topWinners || [];
     const losers = d.topLosers || [];
     const alerts = d.alerts || [];
-    const eventLines = [
-      live.happyActive ? `Happy Hour: aktiv (${adminTimeLeft(live.happyUntil)})` : "Happy Hour: aus",
-      tourney ? `Turnier: ${adminMoney(tourney.prize)} (${adminTimeLeft(tourney.endsAt)})` : "Turnier: aus",
-      d.events && d.events.heistActive ? "Heist: aktiv" : "Heist: aus",
-      d.events && d.events.rainActive ? "Chip-Regen: aktiv" : "Chip-Regen: aus",
-      d.events && d.events.quizActive ? "Quiz: aktiv" : "Quiz: aus",
-      d.events && d.events.vaultActive ? "Tresorkampf: aktiv" : "Tresorkampf: aus",
-    ];
+    /* Den Event-Zustand an die Karten weiterreichen. Happy Hour und Turnier
+       kommen aus liveops, die vier kurzen aus ihren eigenen Modulen. */
+    const ev = d.events || {};
+    evOnline = d.online?.accounts || 0;
+    evZustand = {
+      happy: live.happyActive ? { active: true, endsAt: live.happyUntil } : { active: false },
+      tourney: tourney ? { active: true, endsAt: tourney.endsAt, prize: tourney.prize } : { active: false },
+      heist: ev.heist || { active: !!ev.heistActive },
+      rain: ev.rain || { active: !!ev.rainActive },
+      quiz: ev.quiz || { active: !!ev.quizActive },
+      vault: ev.vault || { active: !!ev.vaultActive },
+    };
+    const laufen = Object.entries(evZustand).filter(([, z]) => z.active).length;
     const miniList = (items, valFn, empty) => items.length
       ? items.map((p) => `<li><span>${escapeHtml(p.name)}</span><b>${valFn(p)}</b></li>`).join("")
       : `<li class="muted">${empty}</li>`;
@@ -1674,16 +1722,12 @@ function loadAdminDashboard() {
         </div>
         <div style="border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.75rem;background:rgba(0,0,0,.16)">
           <div class="muted small">Events</div>
-          <div class="small">${eventLines.map(escapeHtml).join("<br>")}</div>
-          <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.5rem">
-            <button class="chip-btn" data-admin-dash="happy">Happy</button>
-            <button class="chip-btn" data-admin-dash="tourney">Turnier</button>
-            <button class="chip-btn" data-admin-dash="heist">Heist</button>
-            <button class="chip-btn" data-admin-dash="rain">Regen</button>
-            <button class="chip-btn" data-admin-dash="quiz">Quiz</button>
-            <button class="chip-btn" data-admin-dash="vault">Tresorkampf</button>
-            <button class="chip-btn" data-admin-dash="city">City</button>
-          </div>
+          <b>${laufen ? `${laufen} ${laufen === 1 ? "läuft" : "laufen"}` : "Keins aktiv"}</b>
+          <div class="small muted" style="margin-top:.35rem">${
+            laufen
+              ? escapeHtml(EVENTS.filter((e) => (evZustand[e.id] || {}).active).map((e) => e.name).join(", "))
+              : "Starten und stoppen im Reiter „Events“."}</div>
+          <button class="chip-btn" id="admin-zu-events" style="margin-top:.5rem">Zu den Events</button>
         </div>
         <div style="border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.75rem;background:rgba(0,0,0,.16)">
           <div class="muted small">Casino gesamt</div>
@@ -1696,16 +1740,17 @@ function loadAdminDashboard() {
         <div><div class="muted small" style="margin-bottom:.25rem">Große Ausschläge</div><ol class="leaderboard" style="margin:0">${miniList(alerts, (p) => `W ${adminMoney(p.biggestWin)} / L ${adminMoney(p.biggestLoss)}`, "Keine großen Ausschläge.")}</ol></div>
       </div>`;
     $("#admin-dash-refresh")?.addEventListener("click", loadAdminDashboard);
-    box.querySelectorAll("[data-admin-dash]").forEach((btn) => btn.addEventListener("click", () => {
-      const kind = btn.dataset.adminDash;
-      if (kind === "happy") socket.emit("admin:happyHour", { on: true, minutes: 60 }, (r) => { toast(r?.ok ? "Happy Hour gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
-      if (kind === "tourney") socket.emit("admin:tourney", { on: true, minutes: 10, prize: 100000 }, (r) => { toast(r?.ok ? "Turnier gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
-      if (kind === "heist") socket.emit("admin:heist", { on: true, seconds: 60, loot: 500000 }, (r) => { toast(r?.ok ? "Heist gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
-      if (kind === "rain") socket.emit("admin:rain", { on: true, seconds: 30, pot: 250000 }, (r) => { toast(r?.ok ? "Chip-Regen gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
-      if (kind === "quiz") socket.emit("admin:quiz", { on: true, rounds: 5, prize: 20000 }, (r) => { toast(r?.ok ? "Quiz gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
-      if (kind === "vault") socket.emit("admin:teamvault", { on: true, seconds: 90, pot: 500000 }, (r) => { toast(r?.ok ? "Tresorkampf gestartet." : (r?.error || "Fehler.")); loadAdminDashboard(); });
-      if (kind === "city") socket.emit("admin:cityEvent", {}, (r) => { toast(r?.ok ? `Ausgelöst: ${r.event.txt}` : (r?.error || "Fehler.")); loadAdminDashboard(); });
-    }));
+    /* Die sieben Sofort-Knoepfe sind weg. Sie feuerten ohne Rueckfrage mit
+       fest eingebauten Werten, die ausserdem von den Feldern weiter unten
+       abwichen — zwei Wahrheiten fuer dieselbe Sache, und ein Fehlklick auf
+       "Regen" schuettete 250.000 Chips aus. Der Knopf fuehrt jetzt dorthin,
+       wo man sieht, was man tut. */
+    /* Der Knopf muss den Reiter wechseln, nicht scrollen: die Karten liegen
+       in einer ausgeblendeten Tafel, dorthin zu scrollen fuehrt ins Leere. */
+    $("#admin-zu-events")?.addEventListener("click", () => {
+      document.querySelector('.ad-reiter-knopf[data-ad="events"]')?.click();
+    });
+    renderAdminEvents();
   });
 }
 
@@ -1756,7 +1801,130 @@ $("#admin-set-chips-btn").addEventListener("click", () => {
   });
 });
 
-$("#admin-announcement-send")?.addEventListener("click", () => {
+/* ===========================================================================
+   Ansage an alle (Admin)
+   ---------------------------------------------------------------------------
+   Vorher: ein Textfeld, zwei Knoepfe, fertig. Man sah nicht, ob gerade eine
+   Ansage steht, nicht wie sie beim Spieler aussieht, nicht was man zuletzt
+   gesagt hat, und sie blieb stehen, bis jemand daran dachte, sie
+   wegzunehmen — bei "heute ab 20 Uhr" ist das der Normalfall.
+   ========================================================================= */
+
+let anArt = "info";
+let anArten = [{ id: "info", label: "Info" }, { id: "warnung", label: "Achtung" }, { id: "fest", label: "Fest" }];
+
+const AN_SYMBOL = { info: "ansage", warnung: "alarm", fest: "geschenk" };
+
+/** Wie lange eine Ansage noch steht, grob. */
+function anRestText(bis) {
+  const ms = bis - Date.now();
+  if (ms <= 0) return "läuft ab";
+  const min = Math.round(ms / 60000);
+  if (min < 60) return `noch ${min} min`;
+  const std = Math.round(min / 60);
+  return std < 48 ? `noch ${std} h` : `noch ${Math.round(std / 24)} Tage`;
+}
+
+/** Die Vorschau zeigt dieselbe Zeile, die die Spieler oben sehen. */
+function anVorschau() {
+  const txt = ($("#admin-announcement-text")?.value || "").trim();
+  const v = $("#an-vorschau");
+  const t = $("#an-v-text");
+  const m = $("#an-v-meta");
+  const z = $("#an-zaehler");
+  if (z) {
+    const n = ($("#admin-announcement-text")?.value || "").length;
+    z.textContent = `${n} / 220`;
+    z.classList.toggle("knapp", n > 195);
+  }
+  if (!v || !t || !m) return;
+  v.dataset.art = anArt;
+  const sym = v.querySelector(".an-v-sym");
+  if (sym) sym.innerHTML = window.Casino.icons.ui(AN_SYMBOL[anArt] || "ansage");
+  t.textContent = txt || "…";
+  const min = parseInt($("#an-dauer")?.value || "0", 10);
+  const label = (anArten.find((a) => a.id === anArt) || {}).label || "Ansage";
+  m.textContent = min
+    ? `${label} · verschwindet nach ${$("#an-dauer").selectedOptions[0].textContent}`
+    : `${label} · bleibt stehen`;
+}
+
+/** Ton-Auswahl aufbauen. */
+function anArtenBauen() {
+  const box = $("#an-arten");
+  if (!box) return;
+  box.innerHTML = anArten.map((a) =>
+    `<button type="button" class="an-art${a.id === anArt ? " active" : ""}" data-art="${escapeHtml(a.id)}"
+       role="radio" aria-checked="${a.id === anArt}">
+       ${window.Casino.icons.ui(AN_SYMBOL[a.id] || "ansage")}${escapeHtml(a.label)}</button>`).join("");
+  box.querySelectorAll(".an-art").forEach((b) => b.addEventListener("click", () => {
+    anArt = b.dataset.art;
+    anArtenBauen();
+    anVorschau();
+  }));
+}
+
+/** Stand und Verlauf vom Server holen. */
+function ladeAnsage() {
+  socket.emit("admin:announcementState", (res) => {
+    if (!res || !res.ok) return;
+    if (Array.isArray(res.arten) && res.arten.length) anArten = res.arten;
+    anArtenBauen();
+
+    // Steht gerade eine?
+    const steht = $("#an-steht");
+    if (steht) {
+      const a = res.announcement;
+      if (!a) {
+        steht.classList.add("hidden");
+        steht.innerHTML = "";
+      } else {
+        steht.classList.remove("hidden");
+        steht.dataset.art = a.art || "info";
+        const wann = new Date(a.at).toLocaleString("de-DE",
+          { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+        steht.innerHTML =
+          `<span class="an-steht-sym">${window.Casino.icons.ui(AN_SYMBOL[a.art] || "ansage")}</span>` +
+          `<div><b>Steht gerade oben</b><small>„${escapeHtml(a.text)}“</small>` +
+          `<small class="muted">seit ${wann}${a.bis ? ` · ${anRestText(a.bis)}` : " · bleibt stehen"}</small></div>`;
+      }
+    }
+
+    // Verlauf. Vorher gab es keinen — man wusste nicht, was man vor drei
+    // Tagen geschrieben hatte, und schrieb es sinngemaess noch einmal.
+    const vBox = $("#an-verlauf");
+    const vWrap = $("#an-verlauf-box");
+    const v = res.verlauf || [];
+    if (vBox && vWrap) {
+      if (!v.length) {
+        vWrap.classList.add("hidden");
+      } else {
+        vWrap.classList.remove("hidden");
+        vBox.innerHTML = v.map((e) => {
+          const wann = new Date(e.at).toLocaleString("de-DE",
+            { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+          return `<button type="button" class="an-v-zeile" data-text="${escapeHtml(e.text)}" data-art="${escapeHtml(e.art || "info")}">
+            <span>${escapeHtml(e.text)}</span><small>${wann}</small></button>`;
+        }).join("");
+        // Antippen uebernimmt den Text — eine wiederkehrende Ansage
+        // ("gleich Neustart") tippt man sonst jedes Mal neu.
+        vBox.querySelectorAll(".an-v-zeile").forEach((b) => b.addEventListener("click", () => {
+          const ta = $("#admin-announcement-text");
+          if (ta) ta.value = b.dataset.text;
+          anArt = b.dataset.art || "info";
+          anArtenBauen();
+          anVorschau();
+          ta?.focus();
+        }));
+      }
+    }
+  });
+}
+
+$("#admin-announcement-text")?.addEventListener("input", anVorschau);
+$("#an-dauer")?.addEventListener("change", anVorschau);
+
+$("#admin-announcement-send")?.addEventListener("click", async () => {
   const errEl = $("#admin-announcement-error");
   const input = $("#admin-announcement-text");
   if (errEl) errEl.textContent = "";
@@ -1765,13 +1933,31 @@ $("#admin-announcement-send")?.addEventListener("click", () => {
     if (errEl) errEl.textContent = "Text eingeben.";
     return;
   }
-  socket.emit("admin:announcement", { text }, (res) => {
+  const push = !!$("#an-push")?.checked;
+  const minuten = parseInt($("#an-dauer")?.value || "0", 10);
+
+  /* Ein Push geht an alle, die gerade nicht da sind, und laesst sich nicht
+     zurueckholen. Dafuer lohnt die eine Rueckfrage — der Knopf sitzt direkt
+     neben dem fuer die stille Ansage. */
+  if (push) {
+    const ok = await window.Casino.dialog.frage(
+      `Diese Ansage geht als Benachrichtigung an alle, die gerade nicht online sind:\n\n„${text}“\n\nDas lässt sich nicht zurücknehmen.`,
+      { titel: "Wirklich benachrichtigen?", okText: "Senden" });
+    if (!ok) return;
+  }
+
+  socket.emit("admin:announcement", { text, art: anArt, minuten, push }, (res) => {
     if (!res || !res.ok) {
       if (errEl) errEl.textContent = res?.error || "Fehler.";
       return;
     }
     renderAnnouncement(res.announcement);
-    toast("Ankündigung gesendet.");
+    toast(push
+      ? `Ansage steht — ${res.pushErreicht || 0} ${res.pushErreicht === 1 ? "Gerät" : "Geräte"} benachrichtigt.`
+      : "Ansage steht.");
+    if (input) input.value = "";
+    anVorschau();
+    ladeAnsage();
   });
 });
 
@@ -1783,10 +1969,9 @@ $("#admin-announcement-clear")?.addEventListener("click", () => {
       if (errEl) errEl.textContent = res?.error || "Fehler.";
       return;
     }
-    const input = $("#admin-announcement-text");
-    if (input) input.value = "";
     renderAnnouncement(null);
-    toast("Ankündigung ausgeblendet.");
+    toast("Ansage weggenommen.");
+    ladeAnsage();
   });
 });
 
@@ -1907,53 +2092,200 @@ $("#admin-comeback-off-btn")?.addEventListener("click", () => {
   socket.emit("admin:comeback", { on: false }, (r) => toast(r?.ok ? "Gala abgerechnet." : (r?.error || "Fehler.")));
 });
 
-$("#admin-happy-on-btn")?.addEventListener("click", () => {
-  const minutes = parseInt($("#admin-happy-mins").value, 10) || 60;
-  socket.emit("admin:happyHour", { on: true, minutes }, (r) => toast(r?.ok ? `🍹 Happy Hour für ${minutes} Min gestartet.` : (r?.error || "Fehler.")));
-});
-$("#admin-happy-off-btn")?.addEventListener("click", () => {
-  socket.emit("admin:happyHour", { on: false }, (r) => toast(r?.ok ? "Happy Hour beendet." : (r?.error || "Fehler.")));
-});
-$("#admin-tourney-on-btn")?.addEventListener("click", () => {
-  const minutes = parseInt($("#admin-tourney-mins").value, 10) || 10;
-  const prize = parseInt($("#admin-tourney-prize").value, 10) || 100000;
-  socket.emit("admin:tourney", { on: true, minutes, prize }, (r) => toast(r?.ok ? `🏁 Turnier gestartet (${minutes} Min, ${prize.toLocaleString("de-DE")} Chips).` : (r?.error || "Fehler.")));
-});
-$("#admin-tourney-off-btn")?.addEventListener("click", () => {
-  socket.emit("admin:tourney", { on: false }, (r) => toast(r?.ok ? "Turnier beendet." : (r?.error || "Fehler.")));
-});
-$("#admin-heist-on-btn")?.addEventListener("click", () => {
-  const seconds = parseInt($("#admin-heist-secs").value, 10) || 60;
-  const loot = parseInt($("#admin-heist-loot").value, 10) || 500000;
-  socket.emit("admin:heist", { on: true, seconds, loot }, (r) => toast(r?.ok ? "🚨 Heist gestartet!" : (r?.error || "Fehler.")));
-});
-$("#admin-heist-off-btn")?.addEventListener("click", () => {
-  socket.emit("admin:heist", { on: false }, (r) => toast(r?.ok ? "Heist abgebrochen." : (r?.error || "Fehler.")));
-});
-$("#admin-rain-on-btn")?.addEventListener("click", () => {
-  const seconds = parseInt($("#admin-rain-secs").value, 10) || 30;
-  const pot = parseInt($("#admin-rain-pot").value, 10) || 250000;
-  socket.emit("admin:rain", { on: true, seconds, pot }, (r) => toast(r?.ok ? "💸 Chip-Regen gestartet!" : (r?.error || "Fehler.")));
-});
-$("#admin-rain-off-btn")?.addEventListener("click", () => {
-  socket.emit("admin:rain", { on: false }, (r) => toast(r?.ok ? "Chip-Regen gestoppt." : (r?.error || "Fehler.")));
-});
-$("#admin-quiz-on-btn")?.addEventListener("click", () => {
-  const rounds = parseInt($("#admin-quiz-rounds").value, 10) || 5;
-  const prize = parseInt($("#admin-quiz-prize").value, 10) || 20000;
-  socket.emit("admin:quiz", { on: true, rounds, prize }, (r) => toast(r?.ok ? "❓ Blitz-Quiz gestartet!" : (r?.error || "Fehler.")));
-});
-$("#admin-quiz-off-btn")?.addEventListener("click", () => {
-  socket.emit("admin:quiz", { on: false }, (r) => toast(r?.ok ? "Quiz abgebrochen." : (r?.error || "Fehler.")));
-});
-$("#admin-vault-on-btn")?.addEventListener("click", () => {
-  const seconds = parseInt($("#admin-vault-secs").value, 10) || 90;
-  const pot = parseInt($("#admin-vault-pot").value, 10) || 500000;
-  socket.emit("admin:teamvault", { on: true, seconds, pot }, (r) => toast(r?.ok ? "⚔️ Tresorkampf gestartet!" : (r?.error || "Fehler.")));
-});
-$("#admin-vault-off-btn")?.addEventListener("click", () => {
-  socket.emit("admin:teamvault", { on: false }, (r) => toast(r?.ok ? "Tresorkampf abgebrochen." : (r?.error || "Fehler.")));
-});
+/* ===========================================================================
+   Events (Admin)
+   ---------------------------------------------------------------------------
+   Vorher an zwei Orten mit zwei verschiedenen Wahrheiten: oben im Dashboard
+   sieben Knoepfe, die sofort und ohne Rueckfrage mit fest eingebauten Werten
+   feuerten, und unten sechs Zeilen mit nackten Zahlenfeldern, deren
+   Bedeutung nur im title-Attribut stand — auf dem iPad also nirgends. Ein
+   Fehlklick auf "Regen" schuettete 250.000 Chips aus.
+
+   Jetzt: eine Karte je Event, beschriftete Felder, der Zustand mit Restzeit
+   auf der Karte, und eine Rueckfrage vor allem, was Chips ausschuettet.
+   ========================================================================= */
+
+const EVENTS = [
+  {
+    id: "happy", name: "Happy Hour", icon: "geschenk", ev: "admin:happyHour",
+    was: "Doppelte Belohnung für alle Aufträge, solange sie läuft.",
+    felder: [{ k: "minutes", label: "Minuten", wert: 60, min: 1, max: 240 }],
+  },
+  {
+    id: "tourney", name: "Slot-Turnier", icon: "bestenliste", ev: "admin:tourney",
+    was: "Wer den größten Slot-Gewinn landet, nimmt den Topf. Live-Tabelle für alle.",
+    chips: true,
+    felder: [
+      { k: "minutes", label: "Minuten", wert: 10, min: 1, max: 120 },
+      { k: "prize", label: "Preis", wert: 100000, min: 0, schritt: 10000, geld: true },
+    ],
+  },
+  {
+    id: "heist", name: "Casino-Heist", icon: "alarm", ev: "admin:heist",
+    was: "Alle knacken gemeinsam einen Tresor. Der Tresor wird härter, je mehr online sind.",
+    chips: true, braucht: 2,
+    felder: [
+      { k: "seconds", label: "Sekunden", wert: 60, min: 15, max: 300 },
+      { k: "loot", label: "Beute", wert: 500000, min: 1000, schritt: 50000, geld: true },
+    ],
+  },
+  {
+    id: "rain", name: "Chip-Regen", icon: "chip", ev: "admin:rain",
+    was: "Chips fallen über den Bildschirm, wer zuerst tippt, bekommt sie.",
+    chips: true,
+    felder: [
+      { k: "seconds", label: "Sekunden", wert: 30, min: 10, max: 180 },
+      { k: "pot", label: "Topf", wert: 250000, min: 1000, schritt: 50000, geld: true },
+    ],
+  },
+  {
+    id: "quiz", name: "Blitz-Quiz", icon: "frage", ev: "admin:quiz",
+    was: "Ein paar schnelle Fragen, wer zuerst richtig antwortet, kassiert.",
+    chips: true,
+    felder: [
+      { k: "rounds", label: "Fragen", wert: 5, min: 1, max: 15 },
+      { k: "prize", label: "Preis je Frage", wert: 20000, min: 500, schritt: 5000, geld: true },
+    ],
+  },
+  {
+    id: "vault", name: "Tresorkampf", icon: "krieg", ev: "admin:teamvault",
+    was: "Zwei Mannschaften hauen um die Wette. Braucht Leute auf beiden Seiten.",
+    chips: true, braucht: 2,
+    felder: [
+      { k: "seconds", label: "Sekunden", wert: 90, min: 20, max: 300 },
+      { k: "pot", label: "Topf", wert: 500000, min: 1000, schritt: 50000, geld: true },
+    ],
+  },
+];
+
+let evZustand = {};       // id -> Zustand vom Server
+let evOnline = 0;
+let evUhr = null;
+
+const evGeld = (n) => Math.round(Number(n) || 0).toLocaleString("de-DE");
+
+function evRest(bis) {
+  const ms = (Number(bis) || 0) - Date.now();
+  if (ms <= 0) return "gleich vorbei";
+  const s = Math.round(ms / 1000);
+  if (s < 90) return `noch ${s} s`;
+  const m = Math.floor(s / 60);
+  return m < 60 ? `noch ${m}:${String(s % 60).padStart(2, "0")} min` : `noch ${Math.round(m / 60)} h`;
+}
+
+/** Kurze Events (unter zwei Minuten) loesen bewusst keinen Push aus. */
+const EV_KURZ = new Set(["rain", "heist", "vault", "quiz"]);
+
+function renderAdminEvents() {
+  const box = $("#admin-events");
+  if (!box) return;
+
+  const onlineEl = $("#ev-online");
+  if (onlineEl) {
+    onlineEl.textContent = evOnline === 0
+      ? "Gerade ist niemand online — ein Event liefe ins Leere."
+      : evOnline === 1
+        ? "1 Spieler online. Heist und Tresorkampf brauchen mehr als einen."
+        : `${evOnline} Spieler online.`;
+    onlineEl.classList.toggle("ev-warn", evOnline < 2);
+  }
+
+  box.innerHTML = EVENTS.map((e) => {
+    const z = evZustand[e.id] || {};
+    const laeuft = !!z.active;
+    const zeile = !laeuft ? "" :
+      `<div class="ev-laeuft">${window.Casino.icons.ui("uhr")}<b>Läuft</b>` +
+      (z.endsAt ? `<span>${evRest(z.endsAt)}</span>` : "") +
+      (z.pot ? `<span>${evGeld(z.pot)} im Topf</span>` : "") +
+      (z.loot ? `<span>${evGeld(z.loot)} Beute</span>` : "") +
+      (z.prize ? `<span>${evGeld(z.prize)} Preis</span>` : "") +
+      `</div>`;
+    const zuWenig = e.braucht && evOnline < e.braucht;
+    return `<div class="ev-karte${laeuft ? " an" : ""}" data-ev="${e.id}">
+      <div class="ev-kopf">
+        <span class="ev-sym">${window.Casino.icons.ui(e.icon)}</span>
+        <div><b>${escapeHtml(e.name)}</b><small>${escapeHtml(e.was)}</small></div>
+      </div>
+      ${zeile}
+      ${zuWenig && !laeuft ? `<p class="ev-hinweis">Braucht mindestens ${e.braucht} Leute — gerade ${evOnline} online.</p>` : ""}
+      ${EV_KURZ.has(e.id) ? `<p class="ev-hinweis ev-leise">Zu kurz für eine Benachrichtigung — es erreicht nur, wer gerade da ist.</p>` : ""}
+      <div class="ev-felder">
+        ${e.felder.map((f) => `<label class="ev-feld">
+          <span>${escapeHtml(f.label)}</span>
+          <input type="number" inputmode="numeric" data-ev-feld="${f.k}"
+                 value="${f.wert}"${f.min != null ? ` min="${f.min}"` : ""}${f.max != null ? ` max="${f.max}"` : ""}${f.schritt ? ` step="${f.schritt}"` : ""} />
+        </label>`).join("")}
+      </div>
+      <div class="ev-knoepfe">
+        <button class="btn-primary ev-start"${laeuft ? " disabled" : ""}>${laeuft ? "Läuft bereits" : "Starten"}</button>
+        <button class="btn-danger ev-stop"${laeuft ? "" : " disabled"}>Abbrechen</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  box.querySelectorAll(".ev-karte").forEach((karte) => {
+    const e = EVENTS.find((x) => x.id === karte.dataset.ev);
+    const werte = () => {
+      const out = { on: true };
+      karte.querySelectorAll("[data-ev-feld]").forEach((i) => {
+        const f = e.felder.find((x) => x.k === i.dataset.evFeld);
+        const n = parseInt(i.value, 10);
+        out[i.dataset.evFeld] = Number.isFinite(n) ? n : f.wert;
+      });
+      return out;
+    };
+
+    karte.querySelector(".ev-start")?.addEventListener("click", async () => {
+      const w = werte();
+
+      /* Rueckfrage vor allem, was Chips ins Spiel bringt. Das war der
+         eigentliche Mangel: die Schnellknoepfe im Dashboard feuerten sofort,
+         und ein Topf ist mit einem Klick draussen und nicht zurueckzuholen. */
+      if (e.chips) {
+        const geld = e.felder.find((f) => f.geld);
+        const betrag = geld ? w[geld.k] : 0;
+        const ok = await window.Casino.dialog.frage(
+          `${e.name} starten und ${evGeld(betrag)} Chips ausschütten?` +
+          (evOnline < 2 ? `\n\nGerade ${evOnline === 0 ? "ist niemand" : "ist nur einer"} online.` : ""),
+          { titel: e.name, okText: "Starten" });
+        if (!ok) return;
+      }
+      socket.emit(e.ev, w, (r) => {
+        toast(r?.ok ? `${e.name} gestartet.` : (r?.error || "Fehler."));
+        loadAdminDashboard();
+      });
+    });
+
+    karte.querySelector(".ev-stop")?.addEventListener("click", async () => {
+      if (!await window.Casino.dialog.frage(`${e.name} jetzt abbrechen?`,
+        { okText: "Abbrechen", abbruchText: "Weiterlaufen lassen", gefahr: true })) return;
+      socket.emit(e.ev, { on: false }, (r) => {
+        toast(r?.ok ? `${e.name} beendet.` : (r?.error || "Fehler."));
+        loadAdminDashboard();
+      });
+    });
+  });
+
+  /* Die Restzeiten laufen mit, solange der Bildschirm offen ist. Vorher
+     stand dort eine Zahl, die beim Laden stimmte und danach nicht mehr. */
+  clearInterval(evUhr);
+  evUhr = null;
+  if (EVENTS.some((e) => (evZustand[e.id] || {}).active)) {
+    evUhr = setInterval(() => {
+      if (window.Casino.screens.current() !== "admin") { clearInterval(evUhr); evUhr = null; return; }
+      let nochAktiv = false;
+      box.querySelectorAll(".ev-karte.an").forEach((k) => {
+        const z = evZustand[k.dataset.ev] || {};
+        if (!z.endsAt) return;
+        const span = k.querySelector(".ev-laeuft span");
+        if (span) span.textContent = evRest(z.endsAt);
+        if (z.endsAt > Date.now()) nochAktiv = true;
+      });
+      // Abgelaufen? Dann den echten Stand holen statt zu raten.
+      if (!nochAktiv) loadAdminDashboard();
+    }, 1000);
+  }
+}
 
 // ---- 💾 Daten-Backup (Owner): kompletten data/-Ordner laden / zurückspielen ----
 $("#admin-backup-btn")?.addEventListener("click", async () => {

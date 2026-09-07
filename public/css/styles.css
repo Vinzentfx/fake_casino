@@ -7246,3 +7246,274 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 /* Die Punkte im Willkommens-Fenster stehen fest im HTML, nicht aus
    changelog.js — dieselbe Darstellung, andere Herkunft. */
 .update-item .ui-punkt[data-icon] { display: grid; place-items: center; font-size: 0; }
+
+/* ============================================================================
+   Ansage an alle — die Zeile beim Spieler
+   ----------------------------------------------------------------------------
+   Sie hatte einen Ton: Gold, immer. Eine Wartungsansage sah damit aus wie
+   eine Einladung zum Turnier.
+   ========================================================================== */
+.announcement-strip[data-art="warnung"] {
+  border-color: rgba(var(--bad-rgb), 0.5);
+  background: linear-gradient(var(--bad-soft), var(--bad-soft)), var(--overlay);
+}
+.announcement-strip[data-art="warnung"] .announcement-icon { color: var(--bad); }
+.announcement-strip[data-art="fest"] {
+  border-color: rgba(var(--good-rgb), 0.5);
+  background: linear-gradient(var(--good-soft), var(--good-soft)), var(--overlay);
+}
+.announcement-strip[data-art="fest"] .announcement-icon { color: var(--good); }
+.announcement-strip[data-art="info"] .announcement-icon { color: var(--accent); }
+
+/* ============================================================================
+   Ansage an alle — der Admin-Bereich
+   ========================================================================== */
+.admin-h { display: flex; align-items: center; gap: 8px; }
+.admin-h .ui-icon { width: 18px; height: 18px; opacity: 0.85; }
+
+.an-box {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+/* Was gerade oben steht. Vorher wusste man das nicht — der Wegnehmen-Knopf
+   war auch dann aktiv, wenn gar nichts stand. */
+.an-steht {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+  background: var(--accent-soft);
+}
+.an-steht.hidden { display: none; }
+.an-steht b { display: block; font-size: var(--fs-sm); }
+.an-steht small { display: block; font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.45; }
+.an-steht-sym { flex: 0 0 auto; display: grid; place-items: center; color: var(--accent); }
+.an-steht-sym .ui-icon { width: 19px; height: 19px; }
+.an-steht[data-art="warnung"] { border-color: rgba(var(--bad-rgb), 0.5); background: var(--bad-soft); }
+.an-steht[data-art="warnung"] .an-steht-sym { color: var(--bad); }
+.an-steht[data-art="fest"] { border-color: rgba(var(--good-rgb), 0.5); background: var(--good-soft); }
+.an-steht[data-art="fest"] .an-steht-sym { color: var(--good); }
+
+.an-feld { display: grid; gap: 5px; }
+.an-feld > span {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+.an-feld textarea { width: 100%; resize: vertical; }
+.an-zaehler { justify-self: end; font-size: var(--fs-xs); color: var(--text-mute); font-variant-numeric: tabular-nums; }
+.an-zaehler.knapp { color: var(--warn); }
+
+.an-reihe { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: flex-start; }
+.an-reihe > .an-feld { flex: 1; min-width: 200px; }
+.an-feld-schmal { flex: 0 0 auto !important; min-width: 160px !important; }
+
+/* Ton-Auswahl */
+.an-arten { display: flex; gap: 6px; flex-wrap: wrap; }
+.an-art {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.an-art .ui-icon { width: 15px; height: 15px; }
+.an-art.active { border-color: var(--line-strong); background: var(--accent-soft); color: var(--accent); }
+.an-art[data-art="warnung"].active { border-color: var(--bad); background: var(--bad-soft); color: var(--bad-text); }
+.an-art[data-art="fest"].active { border-color: var(--good); background: var(--good-soft); color: var(--good-text); }
+
+.an-push {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+  padding: var(--sp-3);
+  border: 1px solid var(--line-neutral);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.an-push b { display: block; font-size: var(--fs-sm); }
+.an-push small { display: block; font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.45; }
+
+/* Vorschau — zeigt dieselbe Zeile, die die Spieler bekommen. Vorher schrieb
+   man blind und sah das Ergebnis erst, nachdem es alle gesehen hatten. */
+.an-vorschau-wrap { display: grid; gap: 5px; }
+.an-label {
+  font-size: var(--fs-xs); font-weight: 800; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-mute);
+}
+.an-vorschau {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(var(--accent-rgb), 0.32);
+  background: var(--surface-sunken);
+}
+.an-vorschau b { display: block; font-size: var(--fs-sm); word-break: break-word; }
+.an-vorschau small { display: block; font-size: var(--fs-xs); color: var(--text-dim); }
+.an-v-sym { flex: 0 0 auto; display: grid; place-items: center; color: var(--accent); margin-top: 1px; }
+.an-v-sym .ui-icon { width: 17px; height: 17px; }
+.an-vorschau[data-art="warnung"] { border-color: rgba(var(--bad-rgb), 0.5); }
+.an-vorschau[data-art="warnung"] .an-v-sym { color: var(--bad); }
+.an-vorschau[data-art="fest"] { border-color: rgba(var(--good-rgb), 0.5); }
+.an-vorschau[data-art="fest"] .an-v-sym { color: var(--good); }
+
+.an-knoepfe { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+
+/* Verlauf. Antippen uebernimmt den Text — wiederkehrende Ansagen
+   ("gleich Neustart") tippt man sonst jedes Mal neu. */
+.an-verlauf summary { cursor: pointer; font-size: var(--fs-sm); color: var(--text-dim); }
+.an-verlauf.hidden { display: none; }
+.an-v-zeile {
+  display: flex;
+  width: 100%;
+  gap: var(--sp-3);
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px var(--sp-2);
+  border: none;
+  border-bottom: 1px solid var(--line-neutral);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+.an-v-zeile:last-child { border-bottom: none; }
+.an-v-zeile:hover { color: var(--text); background: var(--surface-sunken); }
+.an-v-zeile small { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--text-mute); white-space: nowrap; }
+
+/* ============================================================================
+   Events (Admin)
+   ----------------------------------------------------------------------------
+   Vorher sechs Zeilen aus nackten Zahlenfeldern, deren Bedeutung nur im
+   title-Attribut stand. Auf dem iPad — dem Geraet, auf dem gespielt wird —
+   war damit nicht zu erfahren, ob die 60 Sekunden oder Minuten meint.
+   ========================================================================== */
+.ev-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  gap: var(--sp-3);
+}
+.ev-karte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.ev-karte.an {
+  border-color: rgba(var(--good-rgb), 0.5);
+  background: linear-gradient(rgba(var(--good-rgb), 0.06), rgba(var(--good-rgb), 0.06)), var(--surface);
+}
+.ev-kopf { display: flex; gap: var(--sp-2); align-items: flex-start; }
+.ev-kopf b { display: block; font-size: var(--fs-md); }
+.ev-kopf small { display: block; font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.45; }
+.ev-sym {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  color: var(--text-dim);
+}
+.ev-sym .ui-icon { width: 18px; height: 18px; }
+.ev-karte.an .ev-sym { color: var(--good); border-color: rgba(var(--good-rgb), 0.45); background: var(--good-soft); }
+
+/* Der Zustand mit laufender Restzeit. Vorher stand dort eine Zahl, die
+   beim Laden stimmte und danach nicht mehr. */
+.ev-laeuft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  background: var(--good-soft);
+  color: var(--good-text);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.ev-laeuft .ui-icon { width: 14px; height: 14px; }
+.ev-laeuft b { font-size: var(--fs-xs); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+
+.ev-hinweis {
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: var(--r-xs);
+  background: rgba(var(--bad-rgb), 0.12);
+  color: var(--bad-text);
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+}
+.ev-leise { background: var(--surface-sunken); color: var(--text-mute); }
+
+.ev-felder { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.ev-feld { display: grid; gap: 3px; flex: 1; min-width: 96px; }
+.ev-feld > span {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+.ev-feld input { width: 100%; }
+
+.ev-knoepfe { display: flex; gap: var(--sp-2); margin-top: auto; }
+.ev-knoepfe button { flex: 1; }
+.ev-knoepfe button[disabled] { opacity: 0.4; pointer-events: none; }
+
+#ev-online.ev-warn { color: var(--warn); }
+
+/* --- Reiter im Admin-Bildschirm -------------------------------------------- */
+.ad-reiter {
+  display: flex;
+  gap: var(--sp-1);
+  margin: var(--sp-3) 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ad-reiter::-webkit-scrollbar { display: none; }
+.ad-reiter-knopf {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-neutral);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.ad-reiter-knopf.active {
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.ad-tafel {
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.ad-tafel.hidden { display: none; }
+.ad-tafel > :first-child { margin-top: 0; }
+.ad-tafel > h3:first-child { margin-top: 0; }

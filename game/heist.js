@@ -82,7 +82,9 @@ function setupHeist(io, accounts) {
     });
   });
 
-  return { start, stop, active };
+  // `zustand` gibt Restzeit, Beute und der Zustand des Tresors nach aussen — der Admin-Bildschirm
+  // zeigt damit einen Countdown statt nur "laeuft".
+  return { start, stop, active, zustand: snapshot };
 }
 
 module.exports = { setupHeist };
