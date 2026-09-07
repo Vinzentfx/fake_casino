@@ -7025,7 +7025,7 @@ h2 > i[data-icon] .ui-icon { width: 23px; height: 23px; opacity: 0.9; }
 /* --- Platzziffern in den Ranglisten ----------------------------------------
    Vorher 🥇🥈🥉 und ab Platz vier eine nackte "4." — drei Bildchen und dann
    Text, in drei verschiedenen Groessen. */
-.cl-platz {
+.platz, .cl-platz {
   display: inline-grid; place-items: center;
   width: 22px; height: 22px; margin-right: 8px;
   border-radius: var(--r-pill);
@@ -7035,9 +7035,9 @@ h2 > i[data-icon] .ui-icon { width: 23px; height: 23px; opacity: 0.9; }
   color: var(--text-dim);
   flex: 0 0 auto;
 }
-.cl-platz.p1 { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.cl-platz.p2 { background: rgba(255, 255, 255, 0.28); color: var(--text); border-color: rgba(255, 255, 255, 0.4); }
-.cl-platz.p3 { background: rgba(196, 128, 74, 0.5); color: #fff; border-color: rgba(196, 128, 74, 0.7); }
+.platz.p1, .cl-platz.p1 { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.platz.p2, .cl-platz.p2 { background: rgba(255, 255, 255, 0.28); color: var(--text); border-color: rgba(255, 255, 255, 0.4); }
+.platz.p3, .cl-platz.p3 { background: rgba(196, 128, 74, 0.5); color: #fff; border-color: rgba(196, 128, 74, 0.7); }
 
 #clan-mine .btn-danger { width: 100%; margin-top: var(--sp-5); }
 
@@ -7154,3 +7154,23 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
    der Lobby-Kachel. */
 .challenge-game { display: inline-flex; align-items: center; gap: 8px; }
 .challenge-game .g-icon { width: 19px; height: 19px; flex: 0 0 auto; }
+
+/* Die Platzziffer ersetzt 🥇🥈🥉 auch in Rennbahn und Bestenliste. Die
+   dortigen Huellen hatten Schriftgroessen fuer Emoji gesetzt. */
+.rp-medal, .cb-medal, .lb-rank { font-size: 0; }
+.rp-medal .platz, .cb-medal .platz, .lb-rank .platz { font-size: 0.7rem; }
+.lb-champ { display: inline-flex; align-items: center; gap: 4px; }
+.lb-champ .ui-icon { width: 13px; height: 13px; }
+.lb-champ i { font-style: normal; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; }
+
+/* Der Kopf des Comeback-Fensters trug ein grosses 👋 bzw. 🎉. */
+.update-emoji { display: grid; place-items: center; font-size: 0; }
+.update-emoji .ui-icon { width: 40px; height: 40px; color: var(--accent); }
+
+/* Kategorie-Reiter der Bestenliste: Symbol vom Server, Zeichnung von hier. */
+.lb-tab { display: inline-flex; align-items: center; gap: 6px; }
+.lb-tab .ui-icon { width: 15px; height: 15px; opacity: 0.8; flex: 0 0 auto; }
+.lb-tab.active .ui-icon { opacity: 1; }
+/* Changelog-Punkte mit gezeichnetem statt getipptem Symbol. */
+.update-item .ui-punkt { display: grid; place-items: center; font-size: 0; }
+.update-item .ui-punkt .ui-icon { width: 21px; height: 21px; color: var(--accent); }

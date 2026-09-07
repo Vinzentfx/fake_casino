@@ -19,6 +19,28 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-11",
+      datum: "11. September 2026",
+      titel: "Alles trägt dieselbe Handschrift",
+      gross: true,
+      items: [
+        { icon: "menue", titel: "Das Menü sieht aus wie das Casino",
+          text: "Hinter den drei Strichen standen sechzehn bunte Emoji — jedes aus einer anderen Ecke, jedes mit eigener Farbe, die zu höchstens einem der drei Designs passte. Direkt daneben trugen die Spielkacheln längst gezeichnete Symbole. Jetzt ist alles gezeichnet und nimmt die Farbe des Designs an: in Neon türkis, in Klassik gold. Dasselbe gilt für die Kopfzeile, die Überschriften und die Knöpfe in den Spielen." },
+        { icon: "chip", titel: "Chips sehen überall gleich aus",
+          text: "Hinter jeder Zahl im Haus stand ein Münz-Emoji, das auf jedem Gerät ein anderes Bild war und immer gelb blieb — auch wenn die rote Zahl davor einen Verlust meinte. Jetzt ist die Spielmarke gezeichnet und nimmt die Farbe der Zahl an: bei einem Gewinn grün, bei einem Verlust rot." },
+        { icon: "statistik", titel: "Statistik zeigt, wohin die Chips gehen",
+          text: "Vorher sieben gleich aussehende Zeilen untereinander, inklusive „Größter Einzelgewinn +0“, wenn man noch nie gespielt hatte. Jetzt stehen die Zahlen, die etwas sagen, als eigene Kacheln da, und die Bilanz je Spiel hat einen Balken: du siehst auf einen Blick, welches Spiel deine Kasse trägt und welches sie leert." },
+        { icon: "clans", titel: "Clans: die Aufträge stehen jetzt vorn",
+          text: "Der Clan war eine endlose Rolle aus neun Abschnitten — auf dem iPad anderthalb Meter wischen, um zu sehen, wer überhaupt dabei ist. Jetzt stehen oben die Wochenaufträge und ein laufender Krieg, alles Übrige liegt hinter Reitern. Neu ist, wer was beigetragen hat: bei jedem Auftrag und bei jedem Mitglied steht, wie viel diese Woche von wem kam." },
+        { icon: "krieg", titel: "Der Clan-Krieg sagt endlich die Wahrheit",
+          text: "Er wirkte tot, war es aber nie: gezählt wird längst die Season-XP, die beide Clans über mehrere Tage zusammen sammeln — dafür muss niemand gleichzeitig online sein. Die Anzeige sprach trotzdem von Duell-Siegen, zeigte zwei nackte Zahlen und eine Restzeit, die stillstand. Jetzt: ein Balken, der zeigt wie knapp es ist, eine laufende Uhr, und die Liste, wer gerade trägt. Duell-Siege zählen jetzt spürbar mit statt mit einem einzigen Punkt." },
+        { icon: "kicken", titel: "Knöpfe, die man auf dem iPad auch versteht",
+          text: "Im Clan standen ein Pfeil nach unten und ein Verbotsschild nebeneinander, und einer der beiden warf jemanden raus — was welcher war, stand nur in einem Tooltip, den es auf dem iPad gar nicht gibt. Dasselbe galt für ein gutes Dutzend weiterer Knöpfe. Jetzt steht das Wort daneben." },
+        { icon: "aktualisieren", titel: "Was sonst noch klemmte",
+          text: "Wer die Seite auf einem Unterbildschirm neu lud oder einen geteilten Link öffnete, landete manchmal auf einem Bildschirm, der für immer „Lädt…“ anzeigte. Das Comeback-Fenster ließ sich nur über seinen einen Knopf schließen, nicht mit Escape oder einem Tipp daneben. Und beim Clan-Krieg konnte man eine Dauer eintippen, die es gar nicht gibt — 5 Tage wurden stillschweigend zu 3." },
+      ],
+    },
+    {
       /*
        * Der Sammel-Eintrag zum Comeback.
        *

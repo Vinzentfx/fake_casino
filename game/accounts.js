@@ -606,15 +606,15 @@ function recordHand(name, winnings, house = true, game = null, meta = null) {
 }
 
 const LEADERBOARD_CATS = {
-  rich:    { sort: (a) => a.chips,                    label: "💰 Reichste" },
-  level:   { sort: (a) => levelFromXp(a.xp || 0),      label: "⭐ Höchstes Level" },
+  rich:    { sort: (a) => a.chips,                    label: "Reichste", icon: "chip" },
+  level:   { sort: (a) => levelFromXp(a.xp || 0),      label: "Höchstes Level", icon: "level" },
   week:    { sort: (a) => a.weeklyNet || 0,           label: "🔥 Spieler der Woche" },
-  estate:  { sort: (a) => city.ownerValue(normalizeName(a.name)), label: "🏘️ Immobilien-Mogul" },
-  streets: { sort: (a) => city.streetCount(normalizeName(a.name)), label: "👑 Straßenkönig" },
-  bigwin:  { sort: (a) => (a.stats && a.stats.biggestWin) || 0,  label: "🎰 Größter Einzelgewinn" },
-  bigloss: { sort: (a) => (a.stats && a.stats.biggestLoss) || 0, label: "💸 Größter Einzelverlust" },
-  games:   { sort: (a) => (a.stats && a.stats.gamesPlayed) || 0, label: "🎲 Aktivste" },
-  horses:  { sort: (a) => a.horseWins || 0,           label: "🐎 Renn-Champion" },
+  estate:  { sort: (a) => city.ownerValue(normalizeName(a.name)), label: "Immobilien-Mogul", icon: "businesses" },
+  streets: { sort: (a) => city.streetCount(normalizeName(a.name)), label: "Straßenkönig", icon: "krone" },
+  bigwin:  { sort: (a) => (a.stats && a.stats.biggestWin) || 0,  label: "Größter Einzelgewinn", icon: "slots" },
+  bigloss: { sort: (a) => (a.stats && a.stats.biggestLoss) || 0, label: "Größter Einzelverlust", icon: "auszahlen" },
+  games:   { sort: (a) => (a.stats && a.stats.gamesPlayed) || 0, label: "Aktivste", icon: "wuerfel" },
+  horses:  { sort: (a) => a.horseWins || 0,           label: "Renn-Champion", icon: "horses" },
 };
 
 /** Renn-Ergebnis eines eigenen Pferds verbuchen (Gesamt- + Wochen-Zähler). */
@@ -660,7 +660,13 @@ function rawAll() {
 function leaderboard(limit = 10) {
   const out = {};
   for (const cat of Object.keys(LEADERBOARD_CATS)) {
-    out[cat] = { label: LEADERBOARD_CATS[cat].label, entries: leaderboardBy(cat, limit) };
+    // `icon` ist eine Kennung, keine Zeichnung: der Client holt sich das
+    // Symbol aus core/icons.js. So schleppen alte Antworten keine Bilder mit.
+    out[cat] = {
+      label: LEADERBOARD_CATS[cat].label,
+      icon: LEADERBOARD_CATS[cat].icon || null,
+      entries: leaderboardBy(cat, limit),
+    };
   }
   return out;
 }

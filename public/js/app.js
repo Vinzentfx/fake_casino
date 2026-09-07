@@ -397,7 +397,15 @@ function merkeStand(id) {
 
 /** Ein einzelner Punkt eines Updates. */
 function punktHTML(item) {
-  return `<div class="update-item"><span>${item.icon}</span><div>` +
+  /* `icon` darf beides sein: eine Kennung aus core/icons.js (dann wird
+     gezeichnet) oder ein Emoji, wie es die alten Eintraege tragen. Die
+     Historie soll nicht rueckwirkend umgeschrieben werden — was 2026 mit
+     einem Emoji ausgeliefert wurde, steht auch weiter so da. */
+  const gezeichnet = item.icon && window.Casino.icons.hatUi(item.icon)
+    ? window.Casino.icons.ui(item.icon)
+    : null;
+  return `<div class="update-item"><span${gezeichnet ? ' class="ui-punkt"' : ""}>` +
+    `${gezeichnet || escapeHtml(item.icon || "")}</span><div>` +
     `<b>${escapeHtml(item.titel)}</b><small>${escapeHtml(item.text)}</small>` +
     `</div></div>`;
 }
@@ -432,7 +440,7 @@ function maybeShowUpdate() {
   // oder eines, das als grosses markiert ist. Bei einer kleinen Aenderung
   // waere die Begruessung uebertrieben.
   const comeback = alleNeu.length > 1 || alleNeu.some((r) => r.gross);
-  $("#update-emoji").textContent = comeback ? "👋" : "🎉";
+  $("#update-emoji").innerHTML = window.Casino.icons.ui(comeback ? "rundgang" : "geschenk");
   $("#update-title").textContent = comeback ? "Comeback!" : "Neu im Casino";
   // Beim Sammel-Eintrag waere "18 Updates" verwirrend: sichtbar ist ja nur
   // einer. Dort zaehlt die Zeit, nicht die Zahl der Eintraege.
@@ -458,18 +466,42 @@ function maybeShowUpdate() {
   modal.classList.remove("hidden");
 }
 
-$("#update-close")?.addEventListener("click", () => {
-  $("#update-modal")?.classList.add("hidden");
+/*
+ * Das Fenster schliessen.
+ *
+ * Es liess sich vorher ausschliesslich ueber seinen einen Knopf schliessen:
+ * kein Escape, kein Tipp neben die Karte. Beides erwartet man von einem
+ * Fenster, das sich beim Reinkommen ungefragt vor alles legt, und beides
+ * kann der Dialog-Baustein laengst — nur dieses Fenster ist aelter.
+ *
+ * @param {boolean} mitRundgang Ob danach der Rundgang angeboten wird. Nur
+ *   beim ausdruecklichen "Zeig mir, was neu ist"; wer wegtippt, will das
+ *   Gegenteil.
+ */
+function updateFensterSchliessen(mitRundgang) {
+  const modal = $("#update-modal");
+  if (!modal || modal.classList.contains("hidden")) return;
+  modal.classList.add("hidden");
   if (window.Casino.changelog) merkeStand(window.Casino.changelog.neueste);
   renderUpdateBadge();
   // Das Fenster sagt, WAS neu ist. Der Rundgang zeigt, WO es ist. Direkt
   // danach ist der einzige Moment, in dem beides zusammengehoert.
-  if (window.Casino.tour) window.Casino.tour.vielleicht();
+  if (mitRundgang && window.Casino.tour) window.Casino.tour.vielleicht();
+}
+
+$("#update-close")?.addEventListener("click", () => updateFensterSchliessen(true));
+$("#update-all")?.addEventListener("click", () => updateFensterSchliessen(false));
+$("#update-modal")?.addEventListener("click", (e) => {
+  // Nur der Rand, nicht die Karte darin.
+  if (e.target.id === "update-modal") updateFensterSchliessen(false);
 });
-$("#update-all")?.addEventListener("click", () => {
-  $("#update-modal")?.classList.add("hidden");
-  if (window.Casino.changelog) merkeStand(window.Casino.changelog.neueste);
-  renderUpdateBadge();
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const modal = $("#update-modal");
+  if (modal && !modal.classList.contains("hidden")) {
+    e.preventDefault();
+    updateFensterSchliessen(false);
+  }
 });
 
 /** Der Updates-Tab: die ganze Historie, das neueste aufgeklappt. */
@@ -1382,7 +1414,7 @@ $("#rescue-btn").addEventListener("click", claimRescue);
 // ---- Leaderboard (multi-category, tabbed) ----
 const LB_ORDER = ["rich", "level", "horses", "estate", "streets", "bigwin", "bigloss", "games"];
 // How a category's value is displayed (default: chips).
-const LB_UNIT = { level: (v) => `Level ${v}`, streets: (v) => `${v} 👑`, games: (v) => `${v.toLocaleString("de-DE")} Spiele`, horses: (v) => `${v} 🏆` };
+const LB_UNIT = { level: (v) => `Level ${v}`, streets: (v) => `${v} ${v === 1 ? "Straße" : "Straßen"}`, games: (v) => `${v.toLocaleString("de-DE")} Spiele`, horses: (v) => `${v} ${v === 1 ? "Sieg" : "Siege"}` };
 let lbData = null;
 let lbActiveCat = "rich";
 
@@ -1407,7 +1439,9 @@ function renderLbTabs() {
     if (!lbData[cat]) return;
     const b = document.createElement("button");
     b.className = "lb-tab" + (cat === lbActiveCat ? " active" : "");
-    b.textContent = lbData[cat].label;
+    // Das Symbol kommt als Kennung vom Server, gezeichnet wird hier.
+    b.innerHTML = (lbData[cat].icon ? window.Casino.icons.ui(lbData[cat].icon) : "") +
+      `<span>${escapeHtml(lbData[cat].label)}</span>`;
     b.addEventListener("click", () => {
       lbActiveCat = cat;
       renderLbTabs();
@@ -1426,15 +1460,14 @@ function renderLbList() {
     list.innerHTML = '<li class="muted">Noch keine Einträge.</li>';
     return;
   }
-  const medals = ["🥇", "🥈", "🥉"];
   list.innerHTML = "";
   entries.forEach((p, i) => {
     const li = document.createElement("li");
     const me = state.account && p.name === state.account.name;
-    const rank = medals[i] || `${i + 1}.`;
+    const rank = window.Casino.icons.platz(i);
     const unit = LB_UNIT[lbActiveCat];
     const badge = p.badge ? ` <span class="lb-badge" title="Achievement">${p.badge}</span>` : "";
-    const champ = p.champ ? ` <span class="lb-badge" title="Spieler der Woche">🏆</span>` : "";
+    const champ = p.champ ? ` <span class="lb-badge lb-champ">${window.Casino.icons.ui("krone")}<i>Woche</i></span>` : "";
     const lvl = p.level ? ` <span class="lb-level" title="Level ${p.level}">Lv ${p.level}</span>` : "";
     const clan = p.clan ? ` <span class="lb-clan">[${escapeHtml(p.clan)}]</span>` : "";
     const ava = window.Casino.spieler.avatar(p);

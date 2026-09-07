@@ -572,6 +572,21 @@
     return ui((lvl && lvl.rang) || "neuling");
   }
 
+  /**
+   * Platzziffer fuer Ranglisten.
+   *
+   * Vorher stand an drei Stellen dieselbe Zeile `["🥇","🥈","🥉"]` und ab
+   * Platz vier eine nackte "4." — drei Bildchen, dann Text, in drei
+   * verschiedenen Groessen, und die Medaillen brachten ihre eigenen Gold-,
+   * Silber- und Bronzetoene mit, die in Neon und Mitternacht falsch lagen.
+   *
+   * @param {number} i Nullbasierter Rang.
+   */
+  function platz(i) {
+    const n = Number(i) || 0;
+    return `<span class="platz${n < 3 ? " p" + (n + 1) : ""}">${n + 1}</span>`;
+  }
+
   /** Betrag als reiner Text — fuer Toasts, Chat und textContent. */
   function betragText(n) {
     return `${zahl(n)} Chips`;
@@ -599,7 +614,7 @@
     zeichne();
   }
 
-  Casino.icons = { icon, has: (id) => !!ICONS[id], spielSymbol, ui, hatUi: (id) => !!(UI[id] || ICONS[id]), marke: () => MARKE, zeichne, rangZeichen };
+  Casino.icons = { icon, has: (id) => !!ICONS[id], spielSymbol, ui, hatUi: (id) => !!(UI[id] || ICONS[id]), marke: () => MARKE, zeichne, rangZeichen, platz };
   Casino.betrag = betrag;
   Casino.betragDelta = betragDelta;
   Casino.betragText = betragText;

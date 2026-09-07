@@ -282,7 +282,8 @@
     const el = $("#race-podium");
     if (!el || !st) return;
     if (st.phase !== "done" || !st.result) { el.classList.add("hidden"); return; }
-    const medals = ["🥇", "🥈", "🥉"];
+    // Platzziffern wie ueberall sonst im Haus, siehe core/icons.js.
+    const medals = [0, 1, 2].map((i) => window.Casino.icons.platz(i));
     const rows = st.result.slice(0, 3).map((r, i) => {
       const f = st.field.find((x) => x.lane === r.lane);
       const silk = f ? SILKS[f.silk % SILKS.length] : "#888";
@@ -470,7 +471,8 @@
     const yest = st.champYesterday;
     const prizes = st.dailyPrizes || [500000, 250000, 100000];
     const meName = (window.Casino.getAccount && window.Casino.getAccount() || {}).name;
-    const medals = ["🥇", "🥈", "🥉"];
+    // Platzziffern wie ueberall sonst im Haus, siehe core/icons.js.
+    const medals = [0, 1, 2].map((i) => window.Casino.icons.platz(i));
 
     let head = `<div class="cb-title"><span class="cb-crown">👑</span> Renn-Champion des Tages</div>`;
     let rows = "";
