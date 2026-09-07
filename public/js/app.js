@@ -1654,10 +1654,14 @@ function loadAdminAccounts() {
         `<div class="admin-acc-lb">Bank: <b>${savings.toLocaleString("de-DE")}<i class=mk></i></b>` +
         ` <button class="chip-btn" data-admin-clear-bank="${escapeHtml(p.name)}">Bank leeren</button>` +
         ` <button class="btn-danger" data-admin-delete="${escapeHtml(p.name)}">Löschen</button></div>` +
-        `<div class="admin-acc-lb">Leaderboard löschen:` +
-        ` <button class="chip-btn" data-stat="bigwin" title="Größter Gewinn">🎰✖</button>` +
-        ` <button class="chip-btn" data-stat="bigloss" title="Größter Verlust">💸✖</button>` +
-        ` <button class="chip-btn" data-stat="games" title="Aktivste">🎲✖</button></div>`;
+        /* Vorher standen hier 🎰✖ 💸✖ 🎲✖ nebeneinander und trugen ihre
+           Bedeutung im title — auf dem iPad, wo es kein Hover gibt, also
+           nirgends. Drei fast gleich aussehende Knoepfe, von denen jeder
+           einen anderen Wert aus der Bestenliste loescht. */
+        `<div class="admin-acc-lb"><span class="muted small">Aus Bestenliste entfernen:</span>` +
+        ` <button class="icon-btn" data-stat="bigwin">${window.Casino.icons.ui("nein")}<span>Größter Gewinn</span></button>` +
+        ` <button class="icon-btn" data-stat="bigloss">${window.Casino.icons.ui("nein")}<span>Größter Verlust</span></button>` +
+        ` <button class="icon-btn" data-stat="games">${window.Casino.icons.ui("nein")}<span>Aktivste</span></button></div>`;
       li.querySelector("[data-admin-clear-bank]")?.addEventListener("click", async () => {
         if (!await window.Casino.dialog.frage(`${p.name}: Bank wirklich leeren?`, { okText: "Leeren", gefahr: true })) return;
         socket.emit("admin:clearBank", { target: p.name }, (r) => {
@@ -1676,9 +1680,15 @@ function loadAdminAccounts() {
         });
       });
       li.querySelectorAll("[data-stat]").forEach((b) =>
-        b.addEventListener("click", () => {
+        b.addEventListener("click", async () => {
+          // Der Wert kommt nicht zurueck, und die drei Knoepfe sitzen dicht
+          // beieinander — eine Rueckfrage ist hier billiger als ein Versehen.
+          const was = b.querySelector("span")?.textContent || "diesen Wert";
+          if (!await window.Casino.dialog.frage(
+            `„${was}“ von ${p.name} aus der Bestenliste entfernen?`,
+            { okText: "Entfernen", gefahr: true })) return;
           socket.emit("admin:resetStat", { target: p.name, stat: b.dataset.stat }, (r) => {
-            if (r && r.ok) toast(`${p.name}: aus Leaderboard entfernt.`);
+            if (r && r.ok) { toast(`${p.name}: „${was}“ entfernt.`); loadAdminAccounts(); }
             else toast((r && r.error) || "Fehler.");
           });
         }));

@@ -7689,3 +7689,7 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .bl-info small { display: block; font-size: var(--fs-xs); color: var(--text-dim); }
 .bl-grund { color: var(--bad-text) !important; margin-top: 3px; }
 .bl-knoepfe { display: flex; gap: 6px; flex-wrap: wrap; }
+/* Die Bestenlisten-Knöpfe in der Accountliste tragen jetzt ihr Wort. */
+.admin-acc-lb { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.admin-acc-lb .icon-btn { font-size: 0.7rem; padding: 4px 9px; }
+.admin-acc-lb .icon-btn .ui-icon { width: 12px; height: 12px; }
