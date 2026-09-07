@@ -6373,3 +6373,319 @@ html:not(.reduce-motion) .gs-item {
   from { opacity: 0; transform: translateY(14px) scale(0.96); }
   to { opacity: 1; transform: none; }
 }
+
+/* ============================================================================
+   Gezeichnete Symbole in der Oberflaeche
+   ----------------------------------------------------------------------------
+   Die Spielkacheln hatten ihre Strichzeichnungen laengst, das Menue und die
+   Kopfzeile daneben standen weiter auf Emoji. Nebeneinander sah man den Bruch
+   sofort: links eine Zeichnung im Spielton, rechts ein buntes Bildchen, das
+   sich um keines der drei Designs schert.
+   ========================================================================== */
+.ui-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  display: block;
+  color: inherit;
+  overflow: visible;
+}
+
+/* --- Chip-Betraege ---------------------------------------------------------
+   Die Spielmarke sitzt in der Zeile statt daneben und erbt die Textfarbe:
+   ein Gewinn zieht sie mit ins Gruene, ein Verlust ins Rote. Das 🪙 davor
+   blieb immer gelb, egal was die Zahl sagte. */
+.betrag {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.28em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.chip-mark {
+  width: 0.82em;
+  height: 0.82em;
+  flex: 0 0 auto;
+  align-self: center;
+  opacity: 0.72;
+  color: inherit;
+}
+/* In grossen Zahlen (Guthaben, Gewinnanzeige) darf die Marke kraeftiger sein. */
+.balance .chip-mark,
+.hero-chips .chip-mark { opacity: 0.9; }
+
+/* --- Menue -----------------------------------------------------------------
+   Das Symbol bekommt eine eigene Flaeche statt frei in der Zeile zu haengen.
+   Damit stehen alle sechzehn Eintraege auf derselben Kante, auch die mit
+   langem Namen. */
+.sheet-item .si-icon {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  color: var(--text-dim);
+  transition: color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease),
+    background var(--dur-1) var(--ease);
+}
+.sheet-item:hover .si-icon,
+.sheet-item:active .si-icon {
+  color: var(--accent);
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+}
+/* Was abzuholen ist, leuchtet — der Eintrag traegt ja auch die Zahl. */
+.sheet-item:has(.sheet-count) .si-icon {
+  color: var(--accent);
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+}
+#menu-geschenk .si-icon {
+  color: var(--good);
+  border-color: rgba(var(--good-rgb), 0.45);
+  background: rgba(var(--good-rgb), 0.14);
+}
+
+/* --- Kopfzeile ------------------------------------------------------------- */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand .ui-icon { width: 24px; height: 24px; color: var(--accent); }
+.announcement-icon { display: grid; place-items: center; }
+.announcement-icon .ui-icon { width: 20px; height: 20px; }
+.sheet-close { display: grid; place-items: center; }
+.sheet-close .ui-icon { width: 17px; height: 17px; }
+/* Die Marke sitzt jetzt HINTER der Zahl, wie eine Waehrungsangabe. */
+.balance .ui-icon { width: 15px; height: 15px; opacity: 0.75; }
+.menu-btn .ui-icon { width: 20px; height: 20px; }
+.chip-btn:has(.ui-icon) { display: inline-flex; align-items: center; gap: 6px; }
+.chip-btn .ui-icon { width: 17px; height: 17px; }
+.profile-chip .ui-icon { width: 19px; height: 19px; }
+
+/* Knoepfe, die nur aus einem Symbol bestehen, brauchen die Symbolmitte —
+   sonst sitzt die Zeichnung auf der Grundlinie des leeren Textes. */
+.chip-btn:has(> .ui-icon:only-child) { display: inline-grid; place-items: center; }
+
+/* --- Symbol-Knopf mit Beschriftung -----------------------------------------
+   Auf dem iPad gibt es kein Hover, also auch kein title. Wo ein Symbol allein
+   nicht traegt — Kicken, Degradieren, Befoerdern — steht das Wort daneben.
+   Auf schmalen Schirmen bleibt nur das Symbol, aber dann mit aria-label und
+   in einer Reihe, in der die Bedeutung aus dem Zusammenhang kommt. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1;
+}
+.icon-btn .ui-icon { width: 16px; height: 16px; }
+.icon-btn:hover { color: var(--text); border-color: var(--line-strong); }
+.icon-btn-gefahr { color: var(--bad-text); border-color: rgba(var(--bad-rgb), 0.35); }
+.icon-btn-gefahr:hover { color: var(--bad-text); border-color: var(--bad); background: var(--bad-soft); }
+.icon-btn-gut { color: var(--good-text); border-color: rgba(var(--good-rgb), 0.35); }
+.icon-btn-gut:hover { color: var(--good-text); border-color: var(--good); background: var(--good-soft); }
+
+/* --- Hero und Abschnitts-Ueberschriften ------------------------------------
+   Die Emoji dort waren ueber font-size skaliert. Eine Zeichnung hat eine
+   Groesse, keine Schriftgroesse. */
+.hero-coin { display: inline-block; width: 20px; height: 20px; margin-left: 7px; opacity: 0.7; vertical-align: -2px; }
+.hero-coin .ui-icon { width: 100%; height: 100%; }
+.hero-balance { display: flex; align-items: baseline; }
+
+.hero-btn-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  color: var(--text-dim);
+  font-size: 0;
+}
+.hero-btn-icon .ui-icon { width: 21px; height: 21px; }
+.hero-btn.ready .hero-btn-icon,
+.hero-btn:hover .hero-btn-icon {
+  color: var(--accent);
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+}
+
+/* Ueberschriften mit Symbol. Ohne Symbol bleibt alles, wie es war. */
+.section-title:has(> .ui-icon),
+.section-title:has(> i[data-icon]) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title > i[data-icon] { display: grid; place-items: center; }
+.section-title .ui-icon { width: 19px; height: 19px; opacity: 0.85; }
+
+/* --- Rangstufen -------------------------------------------------------------
+   Das Zeichen erbt die Rangfarbe, die der Server mitschickt: Neuling grau,
+   Ikone gold. Vorher trug das Emoji seine eigene Farbe und die Farbe daneben
+   lief ins Leere. */
+.rang-mini,
+.hero-level-badge,
+.level-chip,
+.pf-tag { display: inline-flex; align-items: center; gap: 5px; }
+.rang-mini .ui-icon,
+.level-chip .ui-icon { width: 14px; height: 14px; }
+.hero-level-badge .ui-icon,
+.pf-tag .ui-icon { width: 15px; height: 15px; }
+
+/* ============================================================================
+   Statistik
+   ----------------------------------------------------------------------------
+   Vorher: eine Visitenkarte, darunter sieben gleich aussehende Zeilen
+   "Label — Wert". Alles gleich laut, nichts hervorgehoben, und bei einem
+   frischen Konto sechs Nullen untereinander.
+   ========================================================================== */
+.sk-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.sk-kachel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sk-label {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+.sk-wert {
+  font-family: var(--font-num);
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.15;
+}
+.sk-einheit { font-size: 0.6em; font-weight: 700; color: var(--text-dim); margin-left: 1px; }
+.sk-extra { font-size: var(--fs-xs); color: var(--text-dim); }
+.sk-kachel.sk-gut .sk-wert { color: var(--good-text); }
+.sk-kachel .betrag.pos { color: var(--good-text); }
+.sk-kachel .betrag.neg { color: var(--bad-text); }
+
+.sk-leer,
+.sk-fuss {
+  margin: 0 2px;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  line-height: var(--lh);
+}
+.sk-leer {
+  padding: var(--sp-4);
+  border: 1px dashed var(--line-neutral);
+  border-radius: var(--r-md);
+  text-align: center;
+}
+
+/* --- Achievement-Fortschritt --- */
+.sk-ach-kopf { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-2); }
+.sk-ach-kopf b { font-family: var(--font-num); font-size: var(--fs-md); white-space: nowrap; }
+.sk-balken {
+  flex: 1;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.sk-balken i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  transition: width var(--dur-3) var(--ease-out);
+}
+
+/* --- Bilanz je Spiel -------------------------------------------------------
+   Der Balken misst sich am groessten Betrag der Liste. Damit sieht man in
+   einem Blick, welches Spiel die Kasse traegt und welches sie leert — das
+   ging aus einer Spalte gleich langer Zahlen nicht hervor. */
+.sk-spiele {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+.sk-spiel {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 0 var(--sp-3);
+  padding: var(--sp-3);
+  border-bottom: 1px solid var(--line-neutral);
+}
+.sk-spiel:last-child { border-bottom: none; }
+.sk-spiel-sym {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  color: var(--text-dim);
+}
+.sk-spiel-sym .g-icon,
+.sk-spiel-sym .ui-icon { width: 20px; height: 20px; }
+.sk-spiel-name { display: flex; flex-direction: column; font-weight: 700; font-size: var(--fs-md); }
+.sk-spiel-name small { font-weight: 500; font-size: var(--fs-xs); color: var(--text-dim); }
+.sk-spiel-wert { font-family: var(--font-num); font-weight: 800; font-size: var(--fs-md); }
+.sk-spiel-wert.pos { color: var(--good-text); }
+.sk-spiel-wert.neg { color: var(--bad-text); }
+.sk-spiel-balken {
+  grid-column: 2 / 4;
+  height: 5px;
+  margin-top: 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.sk-spiel-balken i { display: block; height: 100%; border-radius: inherit; }
+.sk-spiel-balken.gut i { background: var(--good); }
+.sk-spiel-balken.schlecht i { background: var(--bad); }
+
+.sk-summe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface-sunken);
+  font-weight: 700;
+}
+.sk-summe b { font-family: var(--font-num); font-size: var(--fs-lg); }
+.sk-summe.gut b { color: var(--good-text); }
+.sk-summe.schlecht b { color: var(--bad-text); }
+
+/* Symbole in den Chips der Visitenkarte und den Buffs. */
+.buff-chip { display: inline-flex; align-items: center; gap: 6px; }
+.buff-chip .ui-icon { width: 15px; height: 15px; opacity: 0.8; }
+.cd-buff { display: flex; align-items: center; gap: 8px; }
+.cd-buff .ui-icon { width: 17px; height: 17px; flex: 0 0 auto; }
+.cd-btn:has(.ui-icon) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }

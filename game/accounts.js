@@ -264,13 +264,18 @@ const XP_PER_WIN = 4;    // … plus this on a win
 const levelFromXp = (xp) => Math.floor(Math.sqrt(Math.max(0, xp) / 100)) + 1;
 const xpForLevel = (L) => 100 * (L - 1) * (L - 1);
 
+/*
+ * Rangstufen. `rang` ist die Kennung, aus der der Client seine gezeichnete
+ * Stufe holt; `emoji` bleibt fuer die Stellen, an denen nur Text durchgeht
+ * (Push-Nachricht, Chat-Ansage). Farben und Titel wie gehabt.
+ */
 const LEVEL_TIERS = [
-  { min: 50, title: "Casino-Ikone", emoji: "👑", color: "#f4d782" },
-  { min: 35, title: "Legende",      emoji: "🌟", color: "#c86bd6" },
-  { min: 20, title: "Hai",          emoji: "🦈", color: "#5ea8e0" },
-  { min: 10, title: "Profi",        emoji: "🎯", color: "#66c07a" },
-  { min: 5,  title: "Stammgast",    emoji: "🎲", color: "#d1a35e" },
-  { min: 1,  title: "Neuling",      emoji: "🌱", color: "#8ea0a8" },
+  { min: 50, title: "Casino-Ikone", rang: "ikone",     emoji: "👑", color: "#f4d782" },
+  { min: 35, title: "Legende",      rang: "legende",   emoji: "🌟", color: "#c86bd6" },
+  { min: 20, title: "Hai",          rang: "hai",       emoji: "🦈", color: "#5ea8e0" },
+  { min: 10, title: "Profi",        rang: "profi",     emoji: "🎯", color: "#66c07a" },
+  { min: 5,  title: "Stammgast",    rang: "stammgast", emoji: "🎲", color: "#d1a35e" },
+  { min: 1,  title: "Neuling",      rang: "neuling",   emoji: "🌱", color: "#8ea0a8" },
 ];
 const tierFor = (lvl) => LEVEL_TIERS.find((t) => lvl >= t.min) || LEVEL_TIERS[LEVEL_TIERS.length - 1];
 
@@ -280,7 +285,7 @@ function levelInfo(acc) {
   const cur = xpForLevel(level), next = xpForLevel(level + 1);
   const t = tierFor(level);
   return {
-    level, xp, title: t.title, emoji: t.emoji, color: t.color,
+    level, xp, title: t.title, rang: t.rang, emoji: t.emoji, color: t.color,
     xpInLevel: xp - cur, xpForNext: next - cur,
   };
 }

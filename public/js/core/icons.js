@@ -184,6 +184,270 @@
     return d ? `<svg class="sp-icon" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>` : "";
   }
 
+
+  /*
+   * Symbole fuer die Oberflaeche selbst: Menue, Kopfzeile, Bedienknoepfe.
+   *
+   * Die Spielkacheln hatten ihre gezeichneten Symbole schon, das Menue
+   * daneben stand weiter auf Emoji. Das faellt genau da auf, wo beides
+   * nebeneinander liegt: in der Lobby zeigt die Kachel eine Strichzeichnung
+   * im Spielton, der Knopf oben rechts ein buntes 🎁. Emoji bringen ihre
+   * eigene Farbe mit, also stimmen sie hoechstens in einem der drei Designs.
+   *
+   * Gleiches Raster wie die Spielsymbole: 24x24, Strichstaerke 1,75, Farbe
+   * ueber currentColor. Wer eine Akzentflaeche will, nimmt A.
+   */
+  const UI = {
+    // ── Menue: Fortschritt ──────────────────────────────────
+    // Paket mit Schleife.
+    geschenk: `<rect x="3" y="8.5" width="18" height="12.5" rx="1.8" ${S}/>
+      <path d="M3 12.5h18" ${S}/>
+      <path d="M12 8.5V21" ${S}/>
+      <path d="M12 8.5C10.4 8.5 7.6 8.2 7.6 6.1A2.1 2.1 0 0 1 12 5.4a2.1 2.1 0 0 1 4.4.7c0 2.1-2.8 2.4-4.4 2.4Z" ${A}/>`,
+
+    // Zielscheibe mit Pfeil in der Mitte.
+    quests: `<circle cx="11" cy="13" r="8.2" ${S}/>
+      <circle cx="11" cy="13" r="4.6" ${S} opacity=".55"/>
+      <circle cx="11" cy="13" r="1.5" ${A}/>
+      <path d="m14.4 9.6 5.4-5.4M17.4 4.2h2.4v2.4" ${S}/>`,
+
+    // Eintrittskarte mit abgerissener Kante.
+    season: `<path d="M3 7.4a1.4 1.4 0 0 1 1.4-1.4h15.2A1.4 1.4 0 0 1 21 7.4v2.4a2.2 2.2 0 0 0 0 4.4v2.4a1.4 1.4 0 0 1-1.4 1.4H4.4A1.4 1.4 0 0 1 3 16.6v-2.4a2.2 2.2 0 0 0 0-4.4Z" ${S}/>
+      <path d="M14.2 6v2M14.2 11v2M14.2 16v2" ${S} opacity=".6"/>
+      <circle cx="8.6" cy="12" r="1.6" ${A}/>`,
+
+    // Kalenderblatt mit markiertem Tag.
+    kalender: `<rect x="3" y="5" width="18" height="16" rx="2.2" ${S}/>
+      <path d="M3 9.6h18" ${S}/>
+      <path d="M8 3v4M16 3v4" ${S}/>
+      <rect x="6.4" y="12.4" width="3.4" height="3.2" rx=".8" ${A}/>
+      <path d="M12.8 13.8h4.8M12.8 17.4h4.8M6.6 17.4h2.6" ${S} opacity=".5"/>`,
+
+    // Gluecksrad: Kranz, Speichen, Zeiger.
+    gluecksrad: `<circle cx="12" cy="13" r="8.2" ${S}/>
+      <path d="M12 4.8v16.4M3.8 13h16.4M6.2 7.2l11.6 11.6M17.8 7.2 6.2 18.8" ${S} opacity=".45"/>
+      <circle cx="12" cy="13" r="1.6" ${A}/>
+      <path d="M12 1.8 10.2 5h3.6Z" ${A}/>`,
+
+    // Siegertreppchen — sagt "Rangliste", nicht nur "Preis".
+    bestenliste: `<path d="M2.5 21h19" ${S}/>
+      <rect x="9" y="7.5" width="6" height="13.5" rx=".9" ${A}/>
+      <rect x="2.8" y="12" width="6.2" height="9" rx=".9" ${S}/>
+      <rect x="15" y="10" width="6.2" height="11" rx=".9" ${S}/>
+      <path d="M12 3 12.9 5l2.1.3-1.5 1.5.4 2.1-1.9-1-1.9 1 .4-2.1L9 5.3 11.1 5Z" ${S}/>`,
+
+    // Balken mit Trendlinie.
+    statistik: `<path d="M3.5 20.5h17" ${S}/>
+      <rect x="4.6" y="13" width="3.4" height="7.5" rx=".8" ${S}/>
+      <rect x="10.3" y="9" width="3.4" height="11.5" rx=".8" ${A}/>
+      <rect x="16" y="5" width="3.4" height="15.5" rx=".8" ${S}/>
+      <path d="M4.8 10.4 9.4 6.6l3.6 2.2 5.4-4.6" ${S} stroke-width="1.4" opacity=".55"/>`,
+
+    // ── Menue: Miteinander ──────────────────────────────────
+    // Wappenschild mit Zeichen.
+    clans: `<path d="M12 2.6 20 5.4v6.1c0 4.6-3.2 8.2-8 9.9-4.8-1.7-8-5.3-8-9.9V5.4Z" ${S}/>
+      <path d="M12 7.4 13.4 10.5l3.2.3-2.4 2.2.7 3.2-2.9-1.7-2.9 1.7.7-3.2-2.4-2.2 3.2-.3Z" ${A}/>`,
+
+    // Muenze wandert von einer Hand zur anderen.
+    transfer: `<circle cx="7" cy="8" r="3.6" ${S}/>
+      <path d="M5.6 8h2.8M7 6.6v2.8" ${S} stroke-width="1.4"/>
+      <circle cx="17" cy="8" r="3.6" ${A} opacity=".85"/>
+      <path d="M4.4 20.4c0-2.4 2.1-4 4.6-4M14.6 20.4c0-2.4 2.1-4 4.6-4" ${S}/>
+      <path d="M9.4 14.4h5.2m-1.6-1.8 1.8 1.8-1.8 1.8" ${S}/>`,
+
+    // ── Menue: Das Casino ───────────────────────────────────
+    // Aufgerollte Urkunde.
+    updates: `<path d="M6.4 3h11.2a1.8 1.8 0 0 1 1.8 1.8v14.4a1.8 1.8 0 0 1-1.8 1.8H6.4a1.8 1.8 0 0 1-1.8-1.8V4.8A1.8 1.8 0 0 1 6.4 3Z" ${S}/>
+      <path d="M8 7.6h8M8 11.2h8M8 14.8h5" ${S} opacity=".55"/>
+      <circle cx="16.4" cy="16.4" r="1.5" ${A}/>`,
+
+    // Kompassrose mit Nadel.
+    rundgang: `<circle cx="12" cy="12" r="9" ${S}/>
+      <path d="m15.4 8.6-2 5.4-5.4 2 2-5.4Z" ${A}/>
+      <path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21" ${S} opacity=".5"/>`,
+
+    // Gluehbirne mit Sockel.
+    vorschlaege: `<path d="M12 2.8a6.4 6.4 0 0 1 3.9 11.5c-.6.5-.9 1-.9 1.7v.4H9v-.4c0-.7-.3-1.2-.9-1.7A6.4 6.4 0 0 1 12 2.8Z" ${S}/>
+      <path d="M9.6 18.6h4.8M10.4 21h3.2" ${S}/>
+      <path d="M10.4 9.4a2.4 2.4 0 0 1 3.2 0" ${A} stroke="hsl(var(--h,45) 70% 62%)" fill="none" stroke-width="1.6" stroke-linecap="round"/>`,
+
+    // ── Menue: Du ───────────────────────────────────────────
+    // Kopf und Schultern.
+    profil: `<circle cx="12" cy="8.4" r="4.1" ${S}/>
+      <path d="M4.4 21c0-4 3.4-6.6 7.6-6.6s7.6 2.6 7.6 6.6" ${S}/>`,
+
+    // Palette mit Farbklecksen — Kosmetik ist Aussehen.
+    kosmetik: `<path d="M12 3.2c5 0 8.8 3.4 8.8 7.8 0 2.6-2 3.6-3.8 3.6h-1.6c-1.2 0-2 .8-2 1.8 0 .5.2.9.4 1.3.3.4.4.8.4 1.2 0 1-.8 1.9-2.2 1.9-4.9 0-8.8-3.9-8.8-8.8S7.1 3.2 12 3.2Z" ${S}/>
+      <circle cx="8.2" cy="9.4" r="1.25" ${A}/>
+      <circle cx="12.6" cy="7.4" r="1.25" fill="currentColor" opacity=".55"/>
+      <circle cx="16.4" cy="10" r="1.25" ${A}/>`,
+
+    // Zahnrad.
+    einstellungen: `<circle cx="12" cy="12" r="3.2" ${A}/>
+      <path d="M12 2.6l1.5 2.3 2.7-.6.5 2.7 2.6 1-1.2 2.5 1.8 2.1-2.2 1.7.5 2.7-2.7.2-1.2 2.5-2.3-1.5-2.3 1.5-1.2-2.5-2.7-.2.5-2.7-2.2-1.7 1.8-2.1L4.7 8l2.6-1 .5-2.7 2.7.6Z" ${S}/>`,
+
+    // Schieberegler — Verwaltung, nicht Schraubenschluessel.
+    admin: `<path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h9M17 17h3" ${S}/>
+      <circle cx="15" cy="7" r="2.1" ${A}/>
+      <circle cx="9" cy="12" r="2.1" ${S}/>
+      <circle cx="15" cy="17" r="2.1" ${S}/>`,
+
+    // ── Kopfzeile ───────────────────────────────────────────
+    // Spielmarke von oben: Rand mit Kerben, Ring, Mitte.
+    chip: `<circle cx="12" cy="12" r="9" ${S}/>
+      <circle cx="12" cy="12" r="5.4" ${S} opacity=".6"/>
+      <circle cx="12" cy="12" r="2.4" ${A}/>
+      <path d="M12 3v2.6M12 18.4V21M3 12h2.6M18.4 12H21M5.6 5.6l1.9 1.9M16.5 16.5l1.9 1.9M18.4 5.6l-1.9 1.9M7.5 16.5l-1.9 1.9" ${S} stroke-width="2"/>`,
+
+    // Marke des Hauses: Torbogen mit Spielmarke.
+    marke: `<path d="M3.2 20.4h17.6" ${S}/>
+      <path d="M5 20.4V10.4a7 7 0 0 1 14 0v10" ${S}/>
+      <circle cx="12" cy="10.6" r="2.9" ${A}/>
+      <path d="M8.4 20.4v-4.2M15.6 20.4v-4.2" ${S} opacity=".5"/>`,
+
+    // Drei Striche. Als Zeichnung statt als Schriftzeichen, damit sie in
+    // jeder Schrift gleich dick und gleich breit sind.
+    menue: `<path d="M4 7h16M4 12h16M4 17h16" ${S} stroke-width="2"/>`,
+
+    // ── Bedienknoepfe ───────────────────────────────────────
+    schliessen: `<path d="M6.4 6.4l11.2 11.2M17.6 6.4 6.4 17.6" ${S} stroke-width="2"/>`,
+
+    aktualisieren: `<path d="M20 12a8 8 0 1 1-2.6-5.9" ${S}/>
+      <path d="M20.4 3.6v4.2h-4.2" ${S}/>`,
+
+    senden: `<path d="M3.4 11.6 20.6 4l-7.6 17.2-2-7.4Z" ${S}/>
+      <path d="m11 14 3.4-3.4" ${S}/>`,
+
+    chat: `<path d="M4.2 4.6h15.6a1.6 1.6 0 0 1 1.6 1.6v9.2a1.6 1.6 0 0 1-1.6 1.6H9.4L5 21v-4H4.2a1.6 1.6 0 0 1-1.6-1.6V6.2a1.6 1.6 0 0 1 1.6-1.6Z" ${S}/>
+      <path d="M7.4 9.4h9.2M7.4 12.8h5.8" ${S} opacity=".55"/>`,
+
+    // Megafon — Mitspieler rufen.
+    rufen: `<path d="M4 9.4h3.2L14.6 5v14l-7.4-4.4H4a1.4 1.4 0 0 1-1.4-1.4v-2.4A1.4 1.4 0 0 1 4 9.4Z" ${S}/>
+      <path d="M17.6 9.2a4.2 4.2 0 0 1 0 5.6" ${S}/>
+      <path d="M6.6 14.6V19h3" ${S} opacity=".6"/>`,
+
+    // Stift.
+    bearbeiten: `<path d="M4 20h4.2l10-10a2.4 2.4 0 0 0-3.4-3.4l-10 10Z" ${S}/>
+      <path d="m13.6 7.4 3.4 3.4" ${S}/>`,
+
+    // Haken und Kreuz — Anfragen annehmen/ablehnen.
+    ja: `<path d="M4.6 12.6 9.8 17.8 19.4 6.8" ${S} stroke-width="2.2"/>`,
+    nein: `<path d="M6.4 6.4l11.2 11.2M17.6 6.4 6.4 17.6" ${S} stroke-width="2.2"/>`,
+
+    // Krone — Gruender.
+    krone: `<path d="M3.4 8.2 7 12.4l5-7.4 5 7.4 3.6-4.2-1.6 10.6H5Z" ${A}/>
+      <path d="M5 19.6h14" ${S}/>`,
+
+    // Stern — Offizier. Voll und leer, fuer Rang und fuer Favoriten.
+    stern: `<path d="M12 3.4 14.7 9l6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.9 9.3 9Z" ${S}/>`,
+    "stern-voll": `<path d="M12 3.4 14.7 9l6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.9 9.3 9Z" ${A} stroke="hsl(var(--h,45) 70% 62%)" stroke-width="1.4" stroke-linejoin="round"/>`,
+
+    // Person mit Pfeil hoch / runter — befoerdern und degradieren.
+    // Beide brauchten bisher einen Tooltip, um verstanden zu werden; auf dem
+    // iPad gibt es keinen.
+    befoerdern: `<circle cx="9.4" cy="8" r="3.6" ${S}/>
+      <path d="M2.8 20.4c0-3.5 2.9-5.8 6.6-5.8 1 0 1.9.2 2.8.5" ${S}/>
+      <path d="M18 20.2v-7.4M15 15.6l3-3 3 3" ${A} stroke="hsl(var(--h,45) 70% 62%)" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
+    degradieren: `<circle cx="9.4" cy="8" r="3.6" ${S}/>
+      <path d="M2.8 20.4c0-3.5 2.9-5.8 6.6-5.8 1 0 1.9.2 2.8.5" ${S}/>
+      <path d="M18 12.8v7.4M15 17.4l3 3 3-3" ${S} stroke-width="1.9"/>`,
+
+    // Person mit Kreuz — rauswerfen. Die gefaehrlichste Schaltflaeche im
+    // Clan stand vorher als nacktes 🚫 neben einem nackten ⬇️.
+    kicken: `<circle cx="9.4" cy="8" r="3.6" ${S}/>
+      <path d="M2.8 20.4c0-3.5 2.9-5.8 6.6-5.8 1 0 1.9.2 2.8.5" ${S}/>
+      <path d="M15.6 14.4 21 19.8M21 14.4l-5.4 5.4" ${S} stroke-width="1.9"/>`,
+
+    // Schloss — geschlossener Clan.
+    sperre: `<rect x="4.6" y="10.4" width="14.8" height="10.4" rx="2.2" ${S}/>
+      <path d="M8 10.4V7.6a4 4 0 0 1 8 0v2.8" ${S}/>
+      <circle cx="12" cy="15.6" r="1.6" ${A}/>`,
+
+    // Schatzkammer: Truhe mit Beschlag.
+    schatzkammer: `<path d="M3.4 10.6a3 3 0 0 1 3-3h11.2a3 3 0 0 1 3 3v8.2a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6Z" ${S}/>
+      <path d="M3.4 13.4h17.2" ${S}/>
+      <rect x="10.4" y="11.4" width="3.2" height="4.4" rx="1" ${A}/>`,
+
+    // Gekreuzte Klingen — Clan-Krieg.
+    krieg: `<path d="M4 4.4 14.6 15M19.6 4.4 9 15" ${S} stroke-width="2"/>
+      <path d="M3.2 18.6 6.6 15l2.4 2.4-3.4 3.6ZM20.4 18.6 17 15l-2.4 2.4 3.4 3.6Z" ${A}/>`,
+
+    // Lautsprecher — Ansage des Hauses.
+    ansage: `<path d="M3.4 9.6h3.4l6.4-4.2v13.2l-6.4-4.2H3.4a1.2 1.2 0 0 1-1.2-1.2v-2.4a1.2 1.2 0 0 1 1.2-1.2Z" ${A}/>
+      <path d="M16.6 8.6a5 5 0 0 1 0 6.8M19.4 6a8.4 8.4 0 0 1 0 12" ${S}/>`,
+
+    // Sprossen mit Pfeil — Level und Aufstieg.
+    level: `<path d="M3.4 20.6h17.2" ${S}/>
+      <rect x="4.4" y="14" width="4.2" height="6.6" rx=".9" ${S}/>
+      <rect x="9.9" y="10" width="4.2" height="10.6" rx=".9" ${S}/>
+      <rect x="15.4" y="5.6" width="4.2" height="15" rx=".9" ${A}/>`,
+
+    // Spieltisch mit zwei Plaetzen — offene Lobbys warten auf Mitspieler.
+    "poker-tisch": `<ellipse cx="12" cy="12" rx="9.2" ry="6.2" ${S}/>
+      <ellipse cx="12" cy="12" rx="5.4" ry="3.2" ${S} opacity=".45"/>
+      <circle cx="4.2" cy="7.4" r="1.8" ${A}/>
+      <circle cx="19.8" cy="16.6" r="1.8" ${S}/>`,
+
+    // Sendemast — was gerade im Haus passiert.
+    feed: `<circle cx="12" cy="16.4" r="2.2" ${A}/>
+      <path d="M8.4 12.8a5 5 0 0 1 7.2 0" ${S}/>
+      <path d="M5.6 9.8a9 9 0 0 1 12.8 0" ${S} opacity=".7"/>
+      <path d="M2.9 6.8a12.8 12.8 0 0 1 18.2 0" ${S} opacity=".45"/>
+      <path d="M12 18.6V21" ${S}/>`,
+
+    // ── Rangstufen ─────────────────────────────────────────
+    // Sechs Stufen vom Neuling zur Ikone. Vorher 🌱🎲🎯🦈🌟👑 — sechs
+    // Bildchen aus sechs verschiedenen Welten, die nebeneinander keine
+    // Reihe ergaben. Gezeichnet steigern sie sich sichtbar.
+    neuling: `<path d="M12 20.6v-7.2" ${S}/>
+      <path d="M12 13.4C12 9.8 9.2 7 5.6 7c0 3.6 2.8 6.4 6.4 6.4Z" ${A}/>
+      <path d="M12 11.8c0-3 2.4-5.4 5.4-5.4 0 3-2.4 5.4-5.4 5.4Z" ${S}/>`,
+
+    stammgast: `<rect x="3.4" y="3.4" width="17.2" height="17.2" rx="3.4" ${S}/>
+      <circle cx="8.4" cy="8.4" r="1.5" ${A}/>
+      <circle cx="15.6" cy="15.6" r="1.5" ${A}/>
+      <circle cx="8.4" cy="15.6" r="1.5" fill="currentColor" opacity=".6"/>
+      <circle cx="15.6" cy="8.4" r="1.5" fill="currentColor" opacity=".6"/>`,
+
+    profi: `<circle cx="12" cy="12" r="8.6" ${S}/>
+      <circle cx="12" cy="12" r="5" ${S} opacity=".6"/>
+      <circle cx="12" cy="12" r="1.8" ${A}/>`,
+
+    // Rueckenflosse ueber der Wasserlinie — mehr braucht ein Hai nicht.
+    hai: `<path d="M12 3.4c3.4 2.6 5.6 6.6 6.4 11.6h-9.6c.4-4.4 1.4-8.2 3.2-11.6Z" ${A}/>
+      <path d="M2.6 17.6c1.6 0 1.6 1.6 3.2 1.6s1.6-1.6 3.2-1.6 1.6 1.6 3.2 1.6 1.6-1.6 3.2-1.6 1.6 1.6 3.2 1.6 1.6-1.6 3.2-1.6" ${S}/>`,
+
+    legende: `<path d="M12 2.4 14.9 8.4l6.6.9-4.8 4.6 1.2 6.5L12 17.3l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9Z" ${A}/>
+      <path d="M18.8 3.4v2.8M20.2 4.8h-2.8M5.2 17.8v2.4M6.4 19h-2.4" ${S} stroke-width="1.4" opacity=".7"/>`,
+
+    ikone: `<path d="M3.4 8.2 7 12.4l5-7.4 5 7.4 3.6-4.2-1.6 10.6H5Z" ${A}/>
+      <path d="M5 19.6h14" ${S}/>
+      <circle cx="12" cy="3.2" r="1.2" ${S}/>`,
+
+    // Sanduhr — laufende Wartezeit. Das ⏳ davor war auf jedem Geraet
+    // ein anderes Bild und in halben Zeilenhoehen mal oben, mal unten.
+    uhr: `<path d="M6.4 3h11.2M6.4 21h11.2" ${S} stroke-width="2"/>
+      <path d="M7.6 3v3.4c0 2 1.5 3.6 3.2 4.6v1.8c-1.7 1-3.2 2.6-3.2 4.6V21M16.4 3v3.4c0 2-1.5 3.6-3.2 4.6v1.8c1.7 1 3.2 2.6 3.2 4.6V21" ${S}/>
+      <path d="M9.6 18.4c0-1.4 1-2.4 2.4-2.4s2.4 1 2.4 2.4Z" ${A}/>`,
+
+    // Notfall-Ring — Soforthilfe bei Pleite.
+    hilfe: `<circle cx="12" cy="12" r="8.6" ${S}/>
+      <circle cx="12" cy="12" r="3.8" ${S} opacity=".55"/>
+      <path d="M12 3.4v4.8M12 15.8v4.8M3.4 12h4.8M15.8 12h4.8" ${A} stroke="hsl(var(--h,45) 70% 62%)" fill="none" stroke-width="2"/>`,
+  };
+
+  /**
+   * Symbol fuer die Oberflaeche. Gleiche Groesse wie die Spielsymbole,
+   * aber eigene Klasse, damit Menue und Kopfzeile sie getrennt vom
+   * Kachel-Symbol massschneidern koennen.
+   */
+  function ui(id, klasse) {
+    const d = UI[id];
+    if (!d) return "";
+    return `<svg class="ui-icon${klasse ? " " + klasse : ""}" viewBox="0 0 24 24" aria-hidden="true"
+      stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  }
+
   /** Fertiges SVG fuer eine Spielkennung, oder null. */
   function icon(id) {
     const d = ICONS[id];
@@ -192,5 +456,83 @@
       stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   }
 
-  Casino.icons = { icon, has: (id) => !!ICONS[id], spielSymbol };
+  /*
+   * Chip-Betraege.
+   *
+   * Hinter jeder Zahl im Haus stand ein 🪙 — an ueber dreihundert Stellen.
+   * Das Emoji ist auf jedem Geraet ein anderes Bild, meistens ein gelber
+   * Kreis mit Praegung, und es sitzt zu tief in der Zeile. Neben einer
+   * Zahl in der Rundschrift sah es aus wie ein Tippfehler.
+   *
+   * `betrag(n)` schreibt die Zahl deutsch und haengt die gezeichnete
+   * Spielmarke an. Sie erbt die Textfarbe, laeuft also in Gruen mit, wenn
+   * der Betrag ein Gewinn ist, und in Rot, wenn er einer abgeht.
+   *
+   * Wichtig: das Ergebnis ist HTML. Wo nur Text hingehoert — Toast,
+   * Chat-Ansage, `textContent` — nimmt man `betragText`, das die Marke
+   * durch das Wort "Chips" ersetzt.
+   */
+  const MARKE = `<svg class="chip-mark" viewBox="0 0 24 24" aria-hidden="true"
+    stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round">
+    <circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="3.4" opacity=".65"/>
+    <path d="M12 3.6v2.4M12 18v2.4M3.6 12H6M18 12h2.4"/></svg>`;
+
+  const zahl = (n) => Math.round(Number(n) || 0).toLocaleString("de-DE");
+
+  /** Betrag mit gezeichneter Spielmarke. Ergibt HTML. */
+  function betrag(n) {
+    return `<span class="betrag">${zahl(n)}${MARKE}</span>`;
+  }
+
+  /** Betrag mit Vorzeichen: Gewinne gruen, Verluste rot. Ergibt HTML. */
+  function betragDelta(n) {
+    const v = Number(n) || 0;
+    const kl = v > 0 ? "pos" : v < 0 ? "neg" : "";
+    const vz = v > 0 ? "+" : v < 0 ? "\u2212" : "";
+    return `<span class="betrag ${kl}">${vz}${zahl(Math.abs(v))}${MARKE}</span>`;
+  }
+
+  /**
+   * Rangzeichen zu einer Level-Info des Servers.
+   *
+   * Der Server schickt `rang` ("neuling" … "ikone"). Aeltere Spielstaende
+   * und Nachrichten, die vor dieser Umstellung entstanden sind, haben nur
+   * `emoji`; dann faellt es auf die unterste Stufe zurueck, statt eine
+   * Luecke zu lassen.
+   */
+  function rangZeichen(lvl) {
+    return ui((lvl && lvl.rang) || "neuling");
+  }
+
+  /** Betrag als reiner Text — fuer Toasts, Chat und textContent. */
+  function betragText(n) {
+    return `${zahl(n)} Chips`;
+  }
+
+  /*
+   * Platzhalter im festen HTML fuellen.
+   *
+   * In index.html steht nur `<i data-icon="clans">`. Die Zeichnung kommt von
+   * hier, damit die Pfade an einer Stelle liegen und nicht sechzehnmal im
+   * Dokument. Wer Inhalte selbst zusammenbaut, ruft `ui()` direkt im
+   * Template auf und braucht das hier nicht.
+   */
+  function zeichne(wurzel) {
+    const ziel = wurzel || document;
+    ziel.querySelectorAll("[data-icon]").forEach((el) => {
+      const svg = ui(el.dataset.icon);
+      if (svg && el.innerHTML !== svg) el.innerHTML = svg;
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => zeichne());
+  } else {
+    zeichne();
+  }
+
+  Casino.icons = { icon, has: (id) => !!ICONS[id], spielSymbol, ui, hatUi: (id) => !!UI[id], marke: () => MARKE, zeichne, rangZeichen };
+  Casino.betrag = betrag;
+  Casino.betragDelta = betragDelta;
+  Casino.betragText = betragText;
 })();

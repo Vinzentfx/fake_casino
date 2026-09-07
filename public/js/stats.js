@@ -11,12 +11,25 @@
   const { escapeHtml, showScreen } = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
+  /*
+   * Die Kennungen sind dieselben, die `core/icons.js` fuer die Spielkacheln
+   * fuehrt — deshalb steht hier nur noch der Name und, wo die Kennung des
+   * Spielstands von der des Symbols abweicht, die Uebersetzung. Vorher lag
+   * hier eine zweite Emoji-Tabelle fuer genau die Spiele, die in der Lobby
+   * laengst gezeichnete Symbole hatten: dasselbe Spiel, zwei Bildsprachen,
+   * einen Bildschirm auseinander.
+   */
   const GAME_META = {
-    slots: { e: "🎰", n: "Slots" }, blackjack: { e: "♠️", n: "Blackjack" },
-    roulette: { e: "🎡", n: "Roulette" }, sportwetten: { e: "⚽", n: "Sportwetten" },
-    poker: { e: "🃏", n: "Poker" }, crash: { e: "🚀", n: "Crash" }, mines: { e: "💣", n: "Mines" },
-    pinco: { e: "🟡", n: "Pinco" }, solitaire: { e: "🃏", n: "Solitär" },
-    memory: { e: "🧠", n: "Memory" }, sudoku: { e: "🔢", n: "Sudoku" }, chess: { e: "♟️", n: "Schach" },
+    slots: { n: "Slots" }, blackjack: { n: "Blackjack" },
+    roulette: { n: "Roulette" }, sportwetten: { n: "Sportwetten", i: "sports" },
+    poker: { n: "Poker" }, crash: { n: "Crash" }, mines: { n: "Mines" },
+    pinco: { n: "Pinco Ball" }, solitaire: { n: "Solitär" },
+    memory: { n: "Memory" }, sudoku: { n: "Sudoku" }, chess: { n: "Schach" },
+    towers: { n: "Towers" }, horses: { n: "Rennbahn" },
+  };
+  const spielSymbol = (k) => {
+    const m = GAME_META[k] || {};
+    return window.Casino.icons.icon(m.i || k) || window.Casino.icons.ui("poker-tisch");
   };
 
   // When set, the next load shows this player instead of yourself.
@@ -39,7 +52,7 @@
     const acc = (d && d.account) || {};
     const badge = d && d.ach && d.ach.badge ? ` ${d.ach.badge}` : "";
     // Der Name steht jetzt in der Visitenkarte darunter, also nicht zweimal.
-    $("#stats-title").textContent = isMe ? "📊 Deine Statistik" : "📊 Statistik";
+    $("#stats-title").textContent = isMe ? "Deine Statistik" : "Statistik";
 
     // Social profile header + Rivalen/Kopfgeld panel.
     const rivalBox = $("#stats-rival");
@@ -50,7 +63,7 @@
       const bounty = (d && d.bounty) || 0;
       const achCount = ach ? `${(ach.unlocked || []).length}/${ach.total || 0}` : "0/0";
       const cityLine = city && city.houses
-        ? `🏠 ${fmt(city.houses)} · 👑 ${fmt(city.streets || 0)} · 💎 ${fmt(city.value || 0)} 🪙`
+        ? `${city.houses} ${city.houses === 1 ? "Haus" : "Häuser"} · ${fmt(city.streets || 0)} Straßen · ${window.Casino.betrag(city.value || 0)}`
         : "Noch kein Stadt-Imperium";
       /*
        * Dieselbe Visitenkarte wie im eigenen Profil und im Profil-Fenster.
@@ -71,86 +84,177 @@
             ${acc.title ? `<div class="pl-title">${escapeHtml(acc.title)}</div>` : ""}
             <div class="pf-tags">
               ${badge ? `<span class="pf-tag">${badge.trim()}</span>` : ""}
-              <span class="pf-tag">${lvl.emoji || "🌱"} Level ${lvl.level || 1} · ${escapeHtml(lvl.title || "Neuling")}</span>
-              <span class="pf-tag">🏆 ${achCount}</span>
-              ${bounty ? `<span class="pf-tag pf-tag-bounty">🎯 ${fmt(bounty)} 🪙</span>` : ""}
+              <span class="pf-tag">${window.Casino.icons.rangZeichen(lvl)}Level ${lvl.level || 1} · ${escapeHtml(lvl.title || "Neuling")}</span>
+              <span class="pf-tag">${window.Casino.icons.ui("bestenliste")}${achCount}</span>
+              ${bounty ? `<span class="pf-tag pf-tag-bounty">${window.Casino.icons.ui("quests")}${window.Casino.betrag(bounty)} Kopfgeld</span>` : ""}
             </div>
           </div>
         </div>
-        <div class="biz-buffs" style="margin-bottom:.75rem">
-          <span class="buff-chip">💰 ${fmt(acc.chips || 0)} 🪙</span>
-          <span class="buff-chip">📈 ${fmt(acc.netWorth || acc.chips || 0)} 🪙 Wert</span>
-          <span class="buff-chip">${cityLine}</span>
-        </div>`;
+        ${city && city.houses
+          ? `<div class="biz-buffs" style="margin-bottom:.75rem"><span class="buff-chip">${cityLine}</span></div>`
+          : ""}`;
+      /* Chips und Netto-Vermoegen standen hier als Pillen und gleich darunter
+         noch einmal als Kachel — dieselbe Zahl zweimal, zwei Zentimeter
+         auseinander. Die Kacheln sagen es besser, also bleibt hier nur, was
+         sie nicht zeigen: das Stadt-Imperium, und auch das nur, wenn es
+         eines gibt. */
       if (isMe) {
         rivalBox.innerHTML = social + (bounty
-          ? `<div class="cd-buff on">🎯 Auf deinen Kopf sind <b>${bounty.toLocaleString("de-DE")} 🪙</b> Kopfgeld ausgesetzt!</div>` : "");
+          ? `<div class="cd-buff on">${window.Casino.icons.ui("quests")}Auf deinen Kopf sind <b>${window.Casino.betrag(bounty)}</b> Kopfgeld ausgesetzt!</div>` : "");
       } else {
         rivalBox.innerHTML = social +
-          (bounty ? `<div class="cd-buff">🎯 Aktuelles Kopfgeld: <b>${bounty.toLocaleString("de-DE")} 🪙</b></div>` : "") +
-          `<button class="btn-primary cd-btn" id="bounty-btn" data-target="${escapeHtml(acc.name || name)}">🎯 Kopfgeld aussetzen</button>` +
+          (bounty ? `<div class="cd-buff">${window.Casino.icons.ui("quests")}Aktuelles Kopfgeld: <b>${window.Casino.betrag(bounty)}</b></div>` : "") +
+          `<button class="btn-primary cd-btn" id="bounty-btn" data-target="${escapeHtml(acc.name || name)}">${window.Casino.icons.ui("quests")} Kopfgeld aussetzen</button>` +
           `<p class="muted small" style="margin:4px 0 0">Wer ${escapeHtml(acc.name || name)} ein Gebäude abnimmt, kassiert das Kopfgeld.</p>`;
       }
     }
 
+    /*
+     * Kennzahlen.
+     *
+     * Vorher standen hier sieben Zeilen "Label — Wert" untereinander, alle
+     * gleich gewichtet, und "Größter Einzelgewinn +0" auch bei jemandem, der
+     * noch keine Runde gespielt hat. Eine Null, die nie etwas anderes war,
+     * ist keine Information; sie sieht nur aus wie eine.
+     *
+     * Jetzt: die Zahlen, die etwas sagen, als Kacheln. Was noch leer ist,
+     * bleibt weg, und statt der leeren Kacheln steht ein Satz, der sagt,
+     * was zu tun ist.
+     */
     const s = acc.stats || {};
     const played = s.gamesPlayed || 0, won = s.handsWon || 0;
     const rate = played ? Math.round((100 * won) / played) : 0;
     const ov = $("#stats-overview");
-    if (ov) ov.innerHTML = `
-      <div class="stat-row"><span>Chips</span><b>${fmt(acc.chips || 0)} 🪙</b></div>
-      <div class="stat-row"><span>Netto-Vermögen</span><b>${fmt(acc.netWorth || acc.chips || 0)} 🪙</b></div>
-      <div class="stat-row"><span>Spiele gespielt</span><b>${fmt(played)}</b></div>
-      <div class="stat-row"><span>Gewonnen · Quote</span><b>${fmt(won)} · ${rate}%</b></div>
-      <div class="stat-row"><span>Größter Einzelgewinn</span><b class="pos">+${fmt(s.biggestWin || 0)} 🪙</b></div>
-      <div class="stat-row"><span>Größter Einzelverlust</span><b class="neg">−${fmt(s.biggestLoss || 0)} 🪙</b></div>
-      <div class="stat-row" style="border:none"><span>Dabei seit</span><b>${acc.createdAt ? new Date(acc.createdAt).toLocaleDateString("de-DE") : "–"}</b></div>`;
+    const seit = acc.createdAt ? new Date(acc.createdAt) : null;
+    const tage = seit ? Math.max(1, Math.round((Date.now() - seit.getTime()) / 86400000)) : 0;
 
-    // ── City empire ──
+    const kachel = (label, wert, extra, klasse) =>
+      `<div class="sk-kachel${klasse ? " " + klasse : ""}">` +
+      `<span class="sk-label">${label}</span>` +
+      `<b class="sk-wert">${wert}</b>` +
+      (extra ? `<small class="sk-extra">${extra}</small>` : "") +
+      `</div>`;
+
+    if (ov) {
+      if (!played) {
+        ov.innerHTML =
+          `<div class="sk-raster">` +
+          kachel("Chips", window.Casino.betrag(acc.chips || 0)) +
+          kachel("Netto-Vermögen", window.Casino.betrag(acc.netWorth || acc.chips || 0),
+            "Chips plus Immobilien und Aktien") +
+          `</div>` +
+          `<p class="sk-leer">${isMe
+            ? "Noch keine Runde gespielt. Sobald du anfängst, steht hier, wie du dich schlägst — je Spiel und über alles."
+            : "Hat noch keine Runde gespielt."}</p>`;
+      } else {
+        const netto = (s.biggestWin || 0) - (s.biggestLoss || 0);
+        ov.innerHTML = `<div class="sk-raster">` +
+          kachel("Chips", window.Casino.betrag(acc.chips || 0)) +
+          kachel("Netto-Vermögen", window.Casino.betrag(acc.netWorth || acc.chips || 0),
+            "mit Immobilien und Aktien") +
+          kachel("Runden gespielt", fmt(played),
+            tage ? `${(played / tage).toFixed(played / tage < 10 ? 1 : 0)} am Tag` : "") +
+          kachel("Gewonnen", `${rate}<span class="sk-einheit">%</span>`,
+            `${fmt(won)} von ${fmt(played)}`,
+            rate >= 50 ? "sk-gut" : "") +
+          kachel("Bester Treffer", window.Casino.betragDelta(s.biggestWin || 0), "größter Einzelgewinn") +
+          kachel("Härtester Schlag", window.Casino.betragDelta(-(s.biggestLoss || 0)), "größter Einzelverlust") +
+          `</div>` +
+          (seit ? `<p class="sk-fuss">Dabei seit ${seit.toLocaleDateString("de-DE")}` +
+            (tage > 1 ? ` · ${fmt(tage)} Tage` : "") + `</p>` : "");
+      }
+    }
+
+    /* ── Imperium ──
+       Der Abschnitt stand bisher auch dann da, wenn nichts drin war, mit
+       "Noch kein Immobilien-Besitz." als einzigem Inhalt. Eine Ueberschrift
+       ueber einer Absage ist verschenkte Hoehe; jetzt bleibt der ganze
+       Abschnitt weg, solange es nichts zu zeigen gibt. */
     const cityBox = $("#stats-city");
+    const cityWrap = $("#stats-city-wrap");
     if (cityBox) {
       const c = d && d.city;
       if (!c || !c.houses) {
-        cityBox.innerHTML = '<p class="muted small">Noch kein Immobilien-Besitz.</p>';
+        cityWrap && cityWrap.classList.add("hidden");
+        cityBox.innerHTML = "";
       } else {
+        cityWrap && cityWrap.classList.remove("hidden");
         const chips = [];
-        chips.push(`<span class="buff-chip" style="border-color:${c.color};color:${c.color}">🏠 ${c.houses} ${c.houses === 1 ? "Haus" : "Häuser"}</span>`);
-        chips.push(`<span class="buff-chip">💎 ${fmt(c.value)} 🪙 Wert</span>`);
-        if (c.streets) chips.push(`<span class="buff-chip">👑 ${c.streets} ${c.streets === 1 ? "Straße" : "Straßen"} komplett</span>`);
+        chips.push(`<span class="buff-chip" style="border-color:${c.color};color:${c.color}">${window.Casino.icons.ui("businesses")}${c.houses} ${c.houses === 1 ? "Haus" : "Häuser"}</span>`);
+        chips.push(`<span class="buff-chip">${window.Casino.betrag(c.value)} Wert</span>`);
+        if (c.streets) chips.push(`<span class="buff-chip">${window.Casino.icons.ui("krone")}${c.streets} ${c.streets === 1 ? "Straße" : "Straßen"} komplett</span>`);
         for (const t of c.trophies || []) chips.push(`<span class="buff-chip">${t.emoji} ${escapeHtml(t.title)}</span>`);
-        for (const b of c.bossOf || []) chips.push(`<span class="buff-chip">🥇 Boss von ${escapeHtml(b)}</span>`);
+        for (const b of c.bossOf || []) chips.push(`<span class="buff-chip">${window.Casino.icons.ui("krone")}Boss von ${escapeHtml(b)}</span>`);
         cityBox.innerHTML = `<div class="biz-buffs">${chips.join("")}</div>`;
       }
     }
 
-    // ── Achievements ──
+    /* ── Achievements ──
+       Mit Fortschrittsbalken: "3 von 29" sagt allein wenig, der Balken
+       daneben zeigt sofort, wie weit noch zu gehen ist. Die Emoji bleiben —
+       sie sind hier nicht Beiwerk, sondern das Sammelstueck selbst, das man
+       sich in der Bestenliste an den Namen heftet. */
     const achBox = $("#stats-ach");
     if (achBox) {
       const a = d && d.ach;
+      const offen = a ? (a.total || 0) - (a.unlocked || []).length : 0;
       if (!a || !a.unlocked || !a.unlocked.length) {
-        achBox.innerHTML = '<p class="muted small">Noch keine Achievements.</p>';
+        achBox.innerHTML = `<div class="sk-ach-kopf"><b>0 von ${a ? a.total || 0 : 0}</b>` +
+          `<div class="sk-balken"><i style="width:0%"></i></div></div>` +
+          `<p class="muted small">${isMe
+            ? "Noch keins freigeschaltet. Sie kommen beim Spielen von selbst — der erste Gewinn reicht schon."
+            : "Noch keine Achievements."}</p>`;
       } else {
+        const pct = a.total ? Math.round((100 * a.unlocked.length) / a.total) : 0;
         achBox.innerHTML =
-          `<p class="muted small" style="margin:0 0 6px">${a.unlocked.length}/${a.total} freigeschaltet` +
-          (isMe ? ' · <span class="muted">Emoji fürs Leaderboard wählst du im 👤 Profil</span>' : "") + `</p>` +
+          `<div class="sk-ach-kopf"><b>${a.unlocked.length} von ${a.total}</b>` +
+          `<div class="sk-balken"><i style="width:${pct}%"></i></div>` +
+          `<span class="muted small">${offen > 0 ? `noch ${offen}` : "alle"}</span></div>` +
+          (isMe ? `<p class="hint">Welches du in der Bestenliste trägst, wählst du im Profil.</p>` : "") +
           `<div class="biz-buffs">` +
-          a.unlocked.map((u) => `<span class="buff-chip" title="${escapeHtml(u.label)}">${u.emoji} ${escapeHtml(u.label)}</span>`).join("") +
+          a.unlocked.map((u) => `<span class="buff-chip">${u.emoji} ${escapeHtml(u.label)}</span>`).join("") +
           `</div>`;
       }
     }
 
-    // ── Per game ──
+    /* ── Bilanz je Spiel ──
+       Vorher eine Zeile je Spiel: Emoji, Name, Anzahl, Prozent, Betrag —
+       alles gleich gross, alles gleich wichtig. Man sah nicht, wo das Geld
+       hinging. Jetzt traegt jede Zeile einen Balken, dessen Laenge sich am
+       groessten Betrag der Liste misst: das Spiel, das am meisten kostet,
+       faellt sofort auf, und die Farbe sagt, in welche Richtung. */
     const bg = $("#stats-by-game");
     if (!bg) return;
     const pg = s.perGame || {};
-    const keys = Object.keys(pg).sort((a, b) => pg[b].plays - pg[a].plays);
-    if (!keys.length) { bg.innerHTML = '<p class="muted small">Noch keine Spiele gespielt.</p>'; return; }
-    bg.innerHTML = keys.map((k) => {
-      const g = pg[k], m = GAME_META[k] || { e: "🎮", n: k };
-      const r = g.plays ? Math.round((100 * g.wins) / g.plays) : 0;
-      const cls = g.net >= 0 ? "pos" : "neg";
-      return `<div class="stat-row"><span>${m.e} ${escapeHtml(m.n)} <span class="muted small">(${fmt(g.plays)}×, ${r}%)</span></span><b class="${cls}">${g.net >= 0 ? "+" : "−"}${fmt(Math.abs(g.net))} 🪙</b></div>`;
-    }).join("");
+    const keys = Object.keys(pg).sort((a, b) => Math.abs(pg[b].net) - Math.abs(pg[a].net));
+    if (!keys.length) {
+      bg.innerHTML = `<p class="muted small">${isMe
+        ? "Noch nichts gespielt. Jede Runde landet hier — mit Einsatz, Trefferquote und dem, was unterm Strich blieb."
+        : "Noch keine Spiele gespielt."}</p>`;
+      return;
+    }
+    const groesste = Math.max(1, ...keys.map((k) => Math.abs(pg[k].net || 0)));
+    const gesamt = keys.reduce((sum, k) => sum + (pg[k].net || 0), 0);
+
+    bg.innerHTML =
+      `<div class="sk-spiele">` +
+      keys.map((k) => {
+        const g = pg[k], m = GAME_META[k] || { n: k };
+        const r = g.plays ? Math.round((100 * g.wins) / g.plays) : 0;
+        const gut = (g.net || 0) >= 0;
+        const breite = Math.round((100 * Math.abs(g.net || 0)) / groesste);
+        return `<div class="sk-spiel">` +
+          `<span class="sk-spiel-sym">${spielSymbol(k)}</span>` +
+          `<span class="sk-spiel-name">${escapeHtml(m.n)}` +
+          `<small>${fmt(g.plays)} Runden · ${r}% gewonnen</small></span>` +
+          `<span class="sk-spiel-wert ${gut ? "pos" : "neg"}">${window.Casino.betragDelta(g.net || 0)}</span>` +
+          `<span class="sk-spiel-balken ${gut ? "gut" : "schlecht"}">` +
+          `<i style="width:${breite}%"></i></span>` +
+          `</div>`;
+      }).join("") +
+      `</div>` +
+      `<div class="sk-summe ${gesamt >= 0 ? "gut" : "schlecht"}">` +
+      `<span>Über alle Spiele</span><b>${window.Casino.betragDelta(gesamt)}</b></div>`;
   }
 
   // Place a bounty on the viewed player.
@@ -159,15 +263,15 @@
     if (!btn) return;
     const target = btn.dataset.target;
     const raw = await window.Casino.dialog.eingabe(
-      `Wie viel Kopfgeld auf ${target} aussetzen? Mindestens 1.000 🪙.`,
-      { titel: "🎯 Kopfgeld", wert: "5000", okText: "Aussetzen" });
+      `Wie viel Kopfgeld auf ${target} aussetzen? Mindestens 1.000 Chips.`,
+      { titel: "Kopfgeld aussetzen", wert: "5000", okText: "Aussetzen" });
     if (raw == null) return;
     const amount = parseInt(raw, 10);
-    if (!Number.isFinite(amount) || amount < 1000) return window.Casino.toast("Mindestens 1.000 🪙.");
+    if (!Number.isFinite(amount) || amount < 1000) return window.Casino.toast("Mindestens 1.000 Chips.");
     window.Casino.socket.emit("bounty:place", { target, amount }, (r) => {
       if (!r || !r.ok) return window.Casino.toast(r?.error || "Fehler.");
       window.Casino.applyAccount(r.account);
-      window.Casino.toast(`🎯 ${amount.toLocaleString("de-DE")} 🪙 Kopfgeld auf ${target} ausgesetzt!`);
+      window.Casino.toast(`${window.Casino.betragText(amount)} Kopfgeld auf ${target} ausgesetzt!`);
       load();
     });
   });

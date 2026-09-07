@@ -655,7 +655,7 @@ function renderOnlinePlayers(players = []) {
     return;
   }
   listEl.innerHTML = players.map((p) => {
-    const level = p.level ? `<small style="color:${p.level.color || ""}">${escapeHtml(p.level.emoji || "🌱")} ${p.level.level}</small>` : "";
+    const level = p.level ? `<small class="rang-mini" style="color:${p.level.color || ""}">${window.Casino.icons.rangZeichen(p.level)}${p.level.level}</small>` : "";
     const clan = p.clan ? `<small class="online-clan">[${escapeHtml(p.clan)}]</small>` : "";
     const status = p.status && p.status.label ? escapeHtml(p.status.label) : "online";
     return `<button class="online-player${schildKlasse(p)}" type="button" data-player-profile="${escapeHtml(p.name || "")}" title="${escapeHtml(p.name || "?")} ansehen">` +
@@ -789,7 +789,7 @@ function renderTopbar() {
   const lc = $("#level-chip");
   if (lc && acc.level) {
     lc.style.display = "";
-    lc.textContent = `${acc.level.emoji} ${acc.level.level}`;
+    lc.innerHTML = `${window.Casino.icons.rangZeichen(acc.level)}<span>${acc.level.level}</span>`;
     lc.style.color = acc.level.color;
     lc.title = `Level ${acc.level.level} · ${acc.level.title}`;
   }
@@ -1283,7 +1283,7 @@ function updateBonusUI() {
 
   btn.disabled = !ready;
   if (ready) {
-    btn.textContent = "🎁 Bonus";
+    btn.innerHTML = `${window.Casino.icons.ui("geschenk")} Bonus`;
     if (heroSub) heroSub.textContent = "Jetzt abholen";
     heroBtn?.classList.add("ready");
     heroBtn && (heroBtn.disabled = false);
@@ -1291,7 +1291,7 @@ function updateBonusUI() {
     const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
     const t = (left >= 3600000 ? Math.floor(left / 3600000) + ":" : "") +
       String(m % 60).padStart(2, "0") + ":" + String(s).padStart(2, "0");
-    btn.textContent = `⏳ ${t}`;
+    btn.innerHTML = `${window.Casino.icons.ui("uhr")} ${t}`;
     if (heroSub) heroSub.textContent = `Wieder in ${t}`;
     heroBtn?.classList.remove("ready");
     heroBtn && (heroBtn.disabled = true);
@@ -1332,7 +1332,7 @@ function renderHero() {
         : 100;
       lvl.innerHTML = `
         <div class="hero-level-row">
-          <span class="hero-level-badge" style="color:${l.color || "inherit"}">${escapeHtml(l.emoji || "🌱")} Level ${l.level}</span>
+          <span class="hero-level-badge" style="color:${l.color || "inherit"}">${window.Casino.icons.rangZeichen(l)}Level ${l.level}</span>
           <small>${escapeHtml(l.title || "")}</small>
         </div>
         <div class="hero-level-bar" title="${l.xpInLevel} von ${l.xpForNext} XP"><i style="width:${anteil}%"></i></div>`;
@@ -2064,6 +2064,32 @@ $("#set-motion")?.addEventListener("change", (e) => {
   try { token = localStorage.getItem(TOKEN_KEY); } catch {}
   if (!token) return showScreen("login", { history: "replace" });
 
+  /*
+   * Warten, bis wirklich alle Spielmodule ausgefuehrt sind.
+   *
+   * Die rund vierzig Dateien haengen als `defer` im Dokument: sie laden
+   * parallel und laufen dann der Reihe nach, alle vor DOMContentLoaded.
+   * Diese Datei ist die dritte davon — die Sitzungsabfrage startet also,
+   * waehrend stats.js, clans.js und der Rest noch unterwegs sind.
+   *
+   * Kam die Antwort zurueck, bevor das Modul zum Zielscreen dran war, rief
+   * der Router dessen Ladefunktion auf, als es sie noch nicht gab. Der
+   * Router versucht es kein zweites Mal, also blieb der Screen fuer immer
+   * auf "Lädt…". Zu sehen bekam das, wer die Seite auf einem Unterscreen
+   * neu lud oder einen geteilten Link oeffnete — auf dem iPad, wo jede
+   * Datei einzeln ueber die Leitung muss, deutlich haeufiger als hier.
+   *
+   * Drei Module (records, comeback, home) hatten sich das mit einem eigenen
+   * Nachzieher gefangen. Die anderen sechsundzwanzig nicht. Deshalb steht
+   * die Loesung hier an der Wurzel und nicht sechsundzwanzigmal verteilt.
+   */
+  // Achtung bei der Abfrage: waehrend ein `defer`-Skript laeuft, steht
+  // readyState schon auf "interactive" — das Dokument ist geparst, die
+  // Skripte sind es nicht. Erst "complete" heisst, dass alle durch sind.
+  const modulenBereit = document.readyState === "complete"
+    ? Promise.resolve()
+    : new Promise((fertig) => document.addEventListener("DOMContentLoaded", fertig, { once: true }));
+
   try {
     const data = await api("/api/session", { token });
     if (data.config?.bonusCooldownMs) state.bonusCooldownMs = data.config.bonusCooldownMs;
@@ -2071,6 +2097,7 @@ $("#set-motion")?.addEventListener("change", (e) => {
     // Geteilter Link? Dann dorthin, sonst in die Lobby. In beiden Faellen
     // ersetzen statt anhaengen, damit die Zurueck-Geste nicht auf einem
     // leeren Eintrag vor dem Start landet.
+    await modulenBereit;
     const deep = window.Casino.screens.fromHash();
     const target = deep && deep !== "login" && window.Casino.screens.exists(deep) ? deep : "lobby";
     if (!showScreen(target, { history: "replace" })) showScreen("lobby", { history: "replace" });

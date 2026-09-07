@@ -32,13 +32,13 @@
 <body>
   <!-- ===================== TOP BAR (in der Lobby sichtbar) ===================== -->
   <header id="topbar" class="topbar hidden">
-    <div class="brand" data-nav="lobby">🎰 <span>Fake Casino</span></div>
+    <div class="brand" data-nav="lobby"><i data-icon="marke"></i><span>Fake Casino</span></div>
     <div class="buff-strip" id="buff-strip"></div>
     <div class="topbar-right">
-      <button id="rescue-btn" class="chip-btn" title="Soforthilfe bei Pleite" style="display:none">🆘 Hilfe</button>
-      <button id="bonus-btn" class="chip-btn" title="Stunden-Bonus — jede Stunde abholbar">🎁 Bonus</button>
+      <button id="rescue-btn" class="chip-btn" style="display:none"><i data-icon="hilfe"></i> Hilfe</button>
+      <button id="bonus-btn" class="chip-btn"><i data-icon="geschenk"></i> Bonus</button>
       <div class="balance" id="balance">
-        <span class="coin">🪙</span><span id="balance-amount">0</span>
+        <span id="balance-amount">0</span><i data-icon="chip" class="coin"></i>
       </div>
       <div class="profile-chip" id="profile-chip" data-nav="profile">
         <span class="avatar" id="avatar">🙂</span>
@@ -46,7 +46,7 @@
         <span class="level-chip" id="level-chip" style="display:none"></span>
       </div>
       <button class="menu-btn" id="menu-btn" type="button" aria-label="Menü öffnen"
-              aria-haspopup="true" aria-expanded="false">☰</button>
+              aria-haspopup="true" aria-expanded="false"><i data-icon="menue"></i></button>
     </div>
   </header>
 
@@ -59,45 +59,45 @@
     <div class="sheet-grip" aria-hidden="true"></div>
     <div class="sheet-head">
       <b>Menü</b>
-      <button class="sheet-close" id="menu-close" type="button" aria-label="Schließen">✕</button>
+      <button class="sheet-close" id="menu-close" type="button" aria-label="Schließen"><i data-icon="schliessen"></i></button>
     </div>
 
     <div class="sheet-group">
       <span class="sheet-label">Fortschritt</span>
       <!-- Nur sichtbar, solange das Paket wirklich abzuholen ist. Ein Eintrag,
            der immer dasteht und meist ins Leere fuehrt, wird ignoriert. -->
-      <button class="sheet-item" id="menu-geschenk" type="button" hidden><span>🎁</span><b>Willkommens-Paket</b><small>Wartet auf dich</small></button>
-      <button class="sheet-item" data-nav="quests"><span>🎯</span><b>Aufträge</b><small>Tages- und Wochenziele</small></button>
-      <button class="sheet-item" data-nav="season"><span>🎟️</span><b>Season-Pass</b><small id="menu-season-sub">Fortschritt und Belohnungen</small></button>
-      <button class="sheet-item" data-nav="calendar"><span>📅</span><b>Kalender</b><small>Täglich einmal abholen</small></button>
-      <button class="sheet-item" data-nav="wheel"><span>🎡</span><b>Glücksrad</b><small>Einmal am Tag drehen</small></button>
-      <button class="sheet-item" data-nav="leaderboard"><span>🏆</span><b>Bestenliste</b><small>Wer liegt vorn</small></button>
-      <button class="sheet-item" data-nav="stats"><span>📊</span><b>Statistik</b><small>Deine Bilanz je Spiel</small></button>
+      <button class="sheet-item" id="menu-geschenk" type="button" hidden><i class="si-icon" data-icon="geschenk"></i><b>Willkommens-Paket</b><small>Wartet auf dich</small></button>
+      <button class="sheet-item" data-nav="quests"><i class="si-icon" data-icon="quests"></i><b>Aufträge</b><small>Tages- und Wochenziele</small></button>
+      <button class="sheet-item" data-nav="season"><i class="si-icon" data-icon="season"></i><b>Season-Pass</b><small id="menu-season-sub">Fortschritt und Belohnungen</small></button>
+      <button class="sheet-item" data-nav="calendar"><i class="si-icon" data-icon="kalender"></i><b>Kalender</b><small>Täglich einmal abholen</small></button>
+      <button class="sheet-item" data-nav="wheel"><i class="si-icon" data-icon="gluecksrad"></i><b>Glücksrad</b><small>Einmal am Tag drehen</small></button>
+      <button class="sheet-item" data-nav="leaderboard"><i class="si-icon" data-icon="bestenliste"></i><b>Bestenliste</b><small>Wer liegt vorn</small></button>
+      <button class="sheet-item" data-nav="stats"><i class="si-icon" data-icon="statistik"></i><b>Statistik</b><small>Deine Bilanz je Spiel</small></button>
     </div>
 
     <div class="sheet-group">
       <span class="sheet-label">Miteinander</span>
-      <button class="sheet-item" data-nav="clans"><span>🛡️</span><b>Clans</b><small>Gemeinsam spielen und kämpfen</small></button>
-      <button class="sheet-item" data-nav="transfer"><span>💸</span><b>Chips senden</b><small>Jemandem aushelfen</small></button>
+      <button class="sheet-item" data-nav="clans"><i class="si-icon" data-icon="clans"></i><b>Clans</b><small>Gemeinsam spielen und kämpfen</small></button>
+      <button class="sheet-item" data-nav="transfer"><i class="si-icon" data-icon="transfer"></i><b>Chips senden</b><small>Jemandem aushelfen</small></button>
     </div>
 
     <div class="sheet-group">
       <span class="sheet-label">Das Casino</span>
-      <button class="sheet-item" data-nav="updates"><span>📜</span><b>Updates</b><small id="menu-updates-sub">Was sich zuletzt geändert hat</small></button>
-      <button class="sheet-item" id="menu-tour"><span>🧭</span><b>Rundgang</b><small>Die Neuerungen in sieben Schritten</small></button>
-      <button class="sheet-item" data-nav="suggest"><span>💡</span><b>Vorschläge</b><small>Was fehlt dir hier?</small></button>
+      <button class="sheet-item" data-nav="updates"><i class="si-icon" data-icon="updates"></i><b>Updates</b><small id="menu-updates-sub">Was sich zuletzt geändert hat</small></button>
+      <button class="sheet-item" id="menu-tour"><i class="si-icon" data-icon="rundgang"></i><b>Rundgang</b><small>Die Neuerungen in sieben Schritten</small></button>
+      <button class="sheet-item" data-nav="suggest"><i class="si-icon" data-icon="vorschlaege"></i><b>Vorschläge</b><small>Was fehlt dir hier?</small></button>
     </div>
 
     <div class="sheet-group">
       <span class="sheet-label">Du</span>
-      <button class="sheet-item" data-nav="profile"><span>👤</span><b>Profil</b><small>Guthaben, Erfolge, Abmelden</small></button>
-      <button class="sheet-item" data-nav="cosmetics"><span>🎨</span><b>Kosmetik</b><small>Avatar und Namensfarbe</small></button>
-      <button class="sheet-item" data-nav="settings"><span>⚙️</span><b>Einstellungen</b><small>Design, Ton, Passwort</small></button>
-      <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><span>🛠️</span><b>Admin</b><small>Verwaltung</small></button>
+      <button class="sheet-item" data-nav="profile"><i class="si-icon" data-icon="profil"></i><b>Profil</b><small>Guthaben, Erfolge, Abmelden</small></button>
+      <button class="sheet-item" data-nav="cosmetics"><i class="si-icon" data-icon="kosmetik"></i><b>Kosmetik</b><small>Avatar und Namensfarbe</small></button>
+      <button class="sheet-item" data-nav="settings"><i class="si-icon" data-icon="einstellungen"></i><b>Einstellungen</b><small>Design, Ton, Passwort</small></button>
+      <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><i class="si-icon" data-icon="admin"></i><b>Admin</b><small>Verwaltung</small></button>
     </div>
   </nav>
   <div id="announcement-strip" class="announcement-strip hidden" aria-live="polite">
-    <span class="announcement-icon">📣</span>
+    <span class="announcement-icon"><i data-icon="ansage"></i></span>
     <div>
       <b id="announcement-text"></b>
       <small id="announcement-meta"></small>
@@ -146,16 +146,16 @@
         <section class="hero">
           <div class="hero-main">
             <span class="hero-label">Dein Guthaben</span>
-            <div class="hero-balance"><b id="hero-chips">0</b> <span class="hero-coin">🪙</span></div>
+            <div class="hero-balance"><b id="hero-chips">0</b><i class="hero-coin" data-icon="chip"></i></div>
             <div class="hero-level" id="hero-level"></div>
           </div>
           <div class="hero-actions">
             <button class="hero-btn hero-btn-bonus" id="hero-bonus" type="button">
-              <span class="hero-btn-icon">🎁</span>
+              <span class="hero-btn-icon" data-icon="geschenk"></span>
               <span class="hero-btn-text"><b>Stunden-Bonus</b><small id="hero-bonus-sub">Prüfe…</small></span>
             </button>
             <button class="hero-btn" data-nav="quests" type="button">
-              <span class="hero-btn-icon">🎯</span>
+              <span class="hero-btn-icon" data-icon="quests"></span>
               <span class="hero-btn-text"><b>Aufträge</b><small id="hero-quests-sub">Tages- und Wochenziele</small></span>
             </button>
           </div>
@@ -176,7 +176,7 @@
              gleichzeitig online sein muss. Inhalt kommt aus js/records.js. -->
         <section class="recs hidden" id="lobby-records">
           <div class="recs-head">
-            <h2 class="section-title">🏅 Wochenrekorde</h2>
+            <h2 class="section-title"><i data-icon="bestenliste"></i>Wochenrekorde</h2>
             <small class="muted" id="recs-hint"></small>
           </div>
           <div class="recs-grid" id="recs-grid"></div>
@@ -190,16 +190,16 @@
           <button class="duell-banner hidden" id="lobby-duelle" type="button" data-nav="sudoku"></button>
 
           <div class="open-lobbies-head">
-            <h2 class="section-title">🎮 Offene Lobbys</h2>
-            <button class="chip-btn" id="lobby-refresh" title="Aktualisieren">↻</button>
+            <h2 class="section-title"><i data-icon="poker-tisch"></i>Offene Lobbys</h2>
+            <button class="chip-btn" id="lobby-refresh" type="button" aria-label="Liste aktualisieren"><i data-icon="aktualisieren"></i></button>
           </div>
           <div class="lobby-list" id="lobby-list">
             <p class="muted small">Lädt…</p>
           </div>
 
           <div class="open-lobbies-head" style="margin-top:14px">
-            <h2 class="section-title">📡 Live-Feed</h2>
-            <button class="chip-btn" data-nav="leaderboard" title="Bestenliste ansehen">🏆</button>
+            <h2 class="section-title"><i data-icon="feed"></i>Live-Feed</h2>
+            <button class="chip-btn" data-nav="leaderboard" aria-label="Bestenliste ansehen"><i data-icon="bestenliste"></i></button>
           </div>
           <div id="global-feed-list" class="feed-box">
             <div class="muted small">Lädt…</div>
@@ -211,8 +211,7 @@
             <div class="online-list" id="online-list">
               <span class="muted small">Lädt…</span>
             </div>
-            <button class="chip-btn" id="ruf-btn" type="button" hidden
-                    title="Alle anpingen, die Benachrichtigungen an haben">📣 Mitspieler rufen</button>
+            <button class="chip-btn" id="ruf-btn" type="button" hidden><i data-icon="rufen"></i> Mitspieler rufen</button>
             <div class="online-last hidden" id="online-last"></div>
           </div>
         </section>
@@ -1283,19 +1282,29 @@
       </div>
     </section>
 
+    <!-- ===================== STATISTIK =====================
+         Vorher: eine Visitenkarte und darunter sieben Zeilen "Label — Wert",
+         inklusive "Größter Einzelgewinn +0" bei jemandem, der noch nie
+         gespielt hat. Jetzt tragen die Zahlen, die etwas bedeuten, eine
+         eigene Kachel, und die Bilanz je Spiel zeigt, wohin die Chips
+         wirklich gegangen sind. -->
     <section class="screen" data-screen="stats">
-      <div class="panel">
-        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2 id="stats-title">📊 Deine Statistik</h2>
-        <div id="stats-rival"></div>
-        <div id="stats-overview"></div>
-        <h3 class="section-title" style="margin-top:14px">🏙️ Imperium</h3>
-        <div id="stats-city"><p class="muted small">Lädt…</p></div>
-        <h3 class="section-title" style="margin-top:14px">🏆 Achievements</h3>
-        <div id="stats-ach"><p class="muted small">Lädt…</p></div>
-        <h3 class="section-title" style="margin-top:14px">🎮 Nach Spiel</h3>
-        <div id="stats-by-game"><p class="muted small">Lädt…</p></div>
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title" id="stats-title">Deine Statistik</h2>
+
+      <div id="stats-rival"></div>
+      <div id="stats-overview"></div>
+
+      <div id="stats-city-wrap" class="hidden">
+        <h3 class="section-title"><i data-icon="businesses"></i>Imperium</h3>
+        <div id="stats-city"></div>
       </div>
+
+      <h3 class="section-title"><i data-icon="bestenliste"></i>Achievements</h3>
+      <div id="stats-ach"><p class="muted small">Lädt…</p></div>
+
+      <h3 class="section-title"><i data-icon="statistik"></i>Bilanz je Spiel</h3>
+      <div id="stats-by-game"><p class="muted small">Lädt…</p></div>
     </section>
 
     <!-- ===================== PROFIL ===================== -->
