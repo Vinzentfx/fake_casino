@@ -125,7 +125,7 @@ const TITLES = [
    * er sagt nichts ueber Koennen oder Kontostand, sondern nur, dass man dabei
    * war, als das Casino wieder aufmachte.
    */
-  { id: "rueckkehrer",    text: "Rückkehrer", cost: null, via: "Zur Wiedereröffnung dabei gewesen" },
+  { id: "rueckkehrer",    text: "Rückkehrer", cost: null, via: "Zur Wiedereröffnung dabei gewesen", limitiert: "comeback" },
 ];
 
 /* ── Gewinn-Effekt ────────────────────────────────────────────────────────
@@ -146,7 +146,7 @@ const EFFEKTE = [
    * ist kein besonderes Geschenk. Der Salut ist ausschliesslich darueber zu
    * bekommen und danach nie wieder.
    */
-  { id: "salut",    label: "Salut",       cost: null, via: "Zur Wiedereröffnung dabei gewesen", motion: true },
+  { id: "salut",    label: "Salut",       cost: null, via: "Zur Wiedereröffnung dabei gewesen", limitiert: "comeback", motion: true },
 ];
 
 /* ── Eintritts-Spruch ─────────────────────────────────────────────────────
@@ -239,8 +239,24 @@ function setupCosmetics(io, accounts) {
       // nicht in denselben Topf, sonst gehoerte alles jedem.
       const hat = (art, id) => KATALOG[art][id].cost === 0 || owned[TOPF[art]].includes(id);
       const eqAva = acc.avatar || "🙂", eqCol = acc.nameColor || null;
+      /*
+       * Es gibt drei Sorten von "nicht kaeuflich", und sie bedeuten voellig
+       * Verschiedenes:
+       *   season    laeuft mit der Season ab und kommt nie wieder
+       *   comeback  gibt es nur, solange das Wiedereroeffnungs-Fenster offen
+       *             ist, danach nie wieder
+       *   verdienbar (weder noch) bleibt fuer immer erreichbar, man muss es
+       *             sich nur holen (Ortsteil-Boss, komplette Strasse)
+       *
+       * Ohne diese Unterscheidung stand ueberall nur ein Schloss, und niemand
+       * konnte sehen, wo es eilt.
+       */
+      let seasonEnde = 0, comebackEnde = 0;
+      try { seasonEnde = require("./season").SEASON.endsAt || 0; } catch {}
+      try { const cb = require("./comeback").publicState(null); comebackEnde = cb.geschenkOffen ? cb.geschenkBis : 0; } catch {}
       return {
         chips: acc.chips,
+        fristen: { season: seasonEnde, comeback: comebackEnde },
         avatars: AVATARS.map((a) => ({ ...a, owned: hat("avatar", a.id), equipped: a.emoji === eqAva })),
         colors: COLORS.map((c) => ({ ...c, owned: hat("color", c.id), equipped: (c.color || null) === eqCol })),
         styles: STYLES.map((x) => ({ ...x, owned: hat("style", x.id), equipped: (acc.nameStyle || "standard") === x.id })),

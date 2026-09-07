@@ -51,6 +51,14 @@
       ],
     },
     {
+      id: "2026-09-08-f",
+      datum: "8. September 2026",
+      titel: "Man sieht jetzt, was nur kurz zu haben ist",
+      items: [
+        { icon: "⏳", titel: "Marke auf zeitlich begrenzter Kosmetik", text: "Im Shop stand an allem, was man nicht kaufen kann, dasselbe Schloss: an Season-Stücken, an den Comeback-Stücken und an denen, die man sich in der Stadt verdient. Man konnte nicht sehen, wo es eilt. Jetzt trägt jedes eine Marke mit Restzeit: „Season 2, noch 54 Tage“, „Nur jetzt, noch 13 Tage“ für die Wiedereröffnung, „Zu verdienen“ für alles, was dauerhaft erreichbar bleibt. Ist ein Fenster zu, steht „Vorbei“ da statt eines Schlosses, das nach einem Fehler aussieht." },
+      ],
+    },
+    {
       id: "2026-09-08-e",
       datum: "8. September 2026",
       titel: "Pinco und Crash nachgezogen",

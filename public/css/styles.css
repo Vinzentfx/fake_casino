@@ -6167,3 +6167,44 @@ html:not(.reduce-motion) .nm-glitch::after { animation: nm-glitch-c 1.9s steps(1
   90% { transform: translate(3px, 1px); opacity: 0.9; }
   95% { transform: translate(-2px, -1px); opacity: 0.7; }
 }
+
+/* --- Marke auf zeitlich begrenzten Kosmetiks --------------------------------
+   Ein Schloss allein sagt nur "geht nicht". Die Marke sagt, WARUM und
+   ob es eilt. */
+.cos-item:has(.cos-marke) { padding-top: 22px; }
+.cos-item:has(.cos-marke i) { padding-top: 34px; }
+.cos-marke {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  padding: 2px 3px;
+  border-radius: var(--r-xs);
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Der Countdown darunter, kleiner und ohne Versalien, damit er nicht mit
+   der Kopfzeile um Aufmerksamkeit streitet. */
+.cos-marke i {
+  display: block;
+  font-size: 0.52rem;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cos-marke-season { background: rgba(166, 107, 255, 0.28); color: #d9c2ff; border: 1px solid rgba(166, 107, 255, 0.5); }
+/* "Nur jetzt" ist die dringendste Stufe und darf als Einzige pulsieren. */
+.cos-marke-jetzt { background: rgba(255, 122, 110, 0.26); color: #ffc9c2; border: 1px solid rgba(255, 122, 110, 0.6); }
+html:not(.reduce-motion) .cos-marke-jetzt { animation: se-pulsen 1.8s ease-in-out infinite; }
+.cos-marke-vorbei { background: var(--surface-sunken); color: var(--text-mute); border: 1px solid var(--line-neutral); }
+.cos-marke-verdienen { background: rgba(var(--good-rgb), 0.2); color: var(--good-text); border: 1px solid rgba(var(--good-rgb), 0.45); }

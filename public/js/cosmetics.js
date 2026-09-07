@@ -27,10 +27,44 @@
         : x.cost === null ? (x.via ? "🔒 " + x.via : "🔒 Season")
           : x.cost ? fmt(x.cost) + " 🪙" : "Gratis";
 
+  /** Grob genug: bei sieben Wochen interessiert niemanden die Stunde. */
+  function restText(bis) {
+    const ms = bis - Date.now();
+    if (ms <= 0) return "läuft aus";
+    const tage = Math.floor(ms / 86400000);
+    if (tage >= 2) return `noch ${tage} Tage`;
+    const std = Math.max(1, Math.round(ms / 3600000));
+    return `noch ${std} Std`;
+  }
+
+  /*
+   * Drei Sorten von "nicht kaeuflich", und sie bedeuten Verschiedenes:
+   * Season-Stuecke sind mit der Season weg, Comeback-Stuecke mit dem
+   * Wiedereroeffnungs-Fenster, und die Stadt-Stuecke bleiben fuer immer
+   * erreichbar. Vorher stand ueberall nur ein Schloss, und man konnte nicht
+   * sehen, wo es eilt.
+   */
+  function marke(x) {
+    if (x.owned || x.cost !== null) return "";
+    const f = (stand && stand.fristen) || {};
+    // Zwei Zeilen: oben WAS es ist, darunter WIE LANGE noch. In einer Zeile
+    // passt der Countdown nicht in die schmale Kachel und wird abgeschnitten.
+    const bau = (art, kopf, frist) =>
+      `<span class="cos-marke cos-marke-${art}">${kopf}${frist ? `<i>${frist}</i>` : ""}</span>`;
+    if (x.season) return bau("season", "Season 2", f.season ? restText(f.season) : "");
+    if (x.limitiert === "comeback") {
+      return f.comeback
+        ? bau("jetzt", "Nur jetzt", restText(f.comeback))
+        : bau("vorbei", "Vorbei", "nicht mehr zu haben");
+    }
+    return bau("verdienen", "Zu verdienen", "");
+  }
+
   function knopf(type, x, inhalt, klasse = "") {
     const gesperrt = !x.owned && x.cost === null;
     return `<button class="cos-item ${x.equipped ? "equipped" : ""}${gesperrt ? " locked" : ""} ${klasse}"
         data-type="${type}" data-id="${x.id}" data-owned="${x.owned ? 1 : 0}" data-locked="${gesperrt ? 1 : 0}">
+        ${marke(x)}
         ${inhalt}
         <small>${escapeHtml(preisText(x))}</small>
       </button>`;
