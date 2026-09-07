@@ -399,6 +399,45 @@ function accountsPublicNetWorth(acc) {
 
 let _accountsRef = null;
 
+/**
+ * Zwei Kosmetik-Stuecke gibt es nicht zu kaufen, sondern nur ueber die Stadt:
+ * der Titel "Straßenherr" fuer die erste komplette Strasse, der Namensstil
+ * "Krone" dafuer, Boss eines Ortsteils zu sein.
+ *
+ * Die Pruefung lief erst nur nach einem Kauf, dann zusaetzlich beim Oeffnen
+ * der Stadt — und haing damit immer noch daran, dass jemand den richtigen
+ * Bildschirm antippt. Wer seinen Ortsteil laengst erobert hatte und die Karte
+ * einfach nicht mehr aufmachte, wartete weiter vergeblich. Deshalb laeuft sie
+ * jetzt zusaetzlich in einem Durchgang ueber ALLE Konten.
+ */
+function stadtKosmetik(io, accounts, key, acc) {
+  if (!acc) return null;
+  const cos = require("./cosmetics");
+  let neu = null;
+  if (city.streetCount(key) > 0 && cos.grant(acc, "title", "strassenkoenig")) neu = "Titel „Straßenherr“";
+  if (city.istBossIrgendwo(key) && cos.grant(acc, "style", "krone")) neu = "Namensstil „Krone“";
+  if (!neu) return null;
+  accounts.save();
+  if (io) {
+    for (const s2 of io.of("/").sockets.values()) {
+      if (s2.data && s2.data.account === key) {
+        s2.emit("notice", { text: `🎨 Freigeschaltet: ${neu} — anlegen in der Kosmetik.` });
+        break;
+      }
+    }
+  }
+  return neu;
+}
+
+/** Einmal ueber alle Konten. Billig: die Boss-Tabelle ist ohnehin gecacht. */
+function stadtKosmetikFuerAlle(io, accounts) {
+  for (const acc of accounts.rawAll()) {
+    const key = String(acc.name || "").trim().toLowerCase();
+    if (!key) continue;
+    try { stadtKosmetik(io, accounts, key, acc); } catch {}
+  }
+}
+
 function setupEconomy(io, accounts) {
   _accountsRef = accounts;
   const acct = (s) => (s.data.account ? accounts.get(s.data.account) : null);
@@ -412,6 +451,14 @@ function setupEconomy(io, accounts) {
   // opening extra tabs/sockets can't multiply the click faucet.
   const clickTimes = new Map();
   const CLICK_MAX = 20, CLICK_WINDOW = 1000;
+
+  /*
+   * Einmal beim Start und danach stuendlich. Wer seinen Ortsteil erobert hat,
+   * bekommt seine Kosmetik damit spaetestens eine Stunde spaeter, ohne
+   * irgendetwas anklicken zu muessen.
+   */
+  stadtKosmetikFuerAlle(io, accounts);
+  setInterval(() => stadtKosmetikFuerAlle(io, accounts), 60 * 60 * 1000).unref();
 
   io.on("connection", (socket) => {
     // ── Work clicker ────────────────────────────────────────────────────────
@@ -631,7 +678,7 @@ function setupEconomy(io, accounts) {
       // Auch beim blossen Oeffnen pruefen. Vorher lief das nur nach einem
       // Kauf, weshalb alle, die ihren Ortsteil laengst erobert hatten, ewig
       // auf ihre Kosmetik warteten.
-      if (key) { try { pruefeStadtKosmetik(key, accounts.get(key)); } catch {} }
+      if (key) { try { stadtKosmetik(io, accounts, key, accounts.get(key)); } catch {} }
       ack({ ok: true, overview: city.publicOverview(key) });
     });
 
@@ -701,33 +748,8 @@ function setupEconomy(io, accounts) {
       // Buys & takeovers count for quests, but each building only once/day.
       if (r.cost) quests.track(key, "buy_house", 1, buildingId);
       achievements.check(key);
-      pruefeStadtKosmetik(key, acc);
+      stadtKosmetik(io, accounts, key, acc);
       broadcastCity();
-    }
-
-    /**
-     * Zwei Kosmetik-Stuecke gibt es nicht zu kaufen, sondern nur ueber die
-     * Stadt: der Titel "Straßenkönig" fuer die erste komplette Strasse, der
-     * Namensstil "Krone" dafuer, Boss eines Ortsteils zu sein.
-     *
-     * Damit haengt zum ersten Mal etwas Sichtbares daran, ob man in der Stadt
-     * wirklich etwas erreicht hat, statt nur genug Chips zu haben.
-     */
-    function pruefeStadtKosmetik(key, acc) {
-      if (!acc) return;
-      const cos = require("./cosmetics");
-      let neu = null;
-      if (city.streetCount(key) > 0 && cos.grant(acc, "title", "strassenkoenig")) neu = "Titel „Straßenherr“";
-      const istBoss = city.publicOverview(key).districts.some((d) => d.boss && d.boss.isMe);
-      if (istBoss && cos.grant(acc, "style", "krone")) neu = "Namensstil „Krone“";
-      if (!neu) return;
-      accounts.save();
-      for (const s2 of io.of("/").sockets.values()) {
-        if (s2.data && s2.data.account === key) {
-          s2.emit("notice", { text: `🎨 Freigeschaltet: ${neu} — anlegen in der Kosmetik.` });
-          break;
-        }
-      }
     }
 
     const A = (fn) => ({ buildingId, districtId } = {}, ack) => {

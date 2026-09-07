@@ -266,6 +266,14 @@ function getDerived() {
   return derived;
 }
 
+/** Ist `key` irgendwo Boss? Billiger als publicOverview, das die ganze
+ *  Immobilienliste mitbaut, nur um eine Ja/Nein-Frage zu beantworten. */
+function istBossIrgendwo(key) {
+  const b = getDerived().bossByDistrict;
+  for (const eintrag of Object.values(b)) if (eintrag && eintrag.owner === key) return true;
+  return false;
+}
+
 /** Complete streets a player owns (Straßenkönig leaderboard). */
 const streetCount = (key) => getDerived().streetsByOwner[key] || 0;
 
@@ -679,7 +687,7 @@ function err(error) { return { ok: false, error }; }
 module.exports = {
   CLASSES, TROPHIES, colorFor,
   publicOverview, publicDistrict, ownerValue, casinoOwner, bankOwner, tickMarket, fireEvent,
-  streetCount, trophiesOf, hasTrophy, bldExists, bldInfo, isBoss,
+  streetCount, trophiesOf, hasTrophy, bldExists, bldInfo, isBoss, istBossIrgendwo,
   houseCount, rollGoldenStreet, goldenStreet, ownsGolden, setsOf,
   territorySnapshot, territoryDiff,
   ownerBoard, ownerProperties, ownerScale,

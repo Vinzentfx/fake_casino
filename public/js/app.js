@@ -513,6 +513,45 @@ $("#updates-list")?.addEventListener("click", (e) => {
 });
 
 /** Punkt am Menue-Knopf, solange es Ungelesenes gibt. */
+/**
+ * Zaehler oben rechts fuer alles, was abzuholen ist.
+ *
+ * Eine freigeschaltete Season-Stufe lag vorher still im Menue und wurde
+ * schlicht vergessen — man sieht sie nur, wenn man den Bildschirm ohnehin
+ * aufmacht. Die Marke am Menue-Knopf sagt, dass da etwas liegt, und die
+ * Menue-Eintraege sagen, was.
+ */
+function renderAbholBadge() {
+  const btn = $("#menu-btn");
+  if (!btn || !state.account) return;
+  let season = 0, geschenk = 0;
+
+  const zeichne = () => {
+    const gesamt = season + geschenk;
+    let marke = btn.querySelector(".menu-count");
+    if (!gesamt) { if (marke) marke.remove(); return; }
+    if (!marke) {
+      marke = document.createElement("span");
+      marke.className = "menu-count";
+      btn.appendChild(marke);
+    }
+    marke.textContent = String(gesamt);
+    marke.title = `${gesamt} ${gesamt === 1 ? "Belohnung wartet" : "Belohnungen warten"}`;
+  };
+
+  socket.emit("season:state", (r) => {
+    season = r && r.ok ? (r.rewards || []).filter((x) => x.unlocked && !x.claimed).length : 0;
+    const sub = $("#menu-season-sub");
+    if (sub) sub.textContent = season ? `${season} ${season === 1 ? "Stufe wartet" : "Stufen warten"}` : "Fortschritt und Belohnungen";
+    zeichne();
+  });
+  socket.emit("comeback:state", (r) => {
+    geschenk = r && r.ok && r.geschenkOffen && !r.geholt ? 1 : 0;
+    zeichne();
+  });
+}
+window.Casino.renderAbholBadge = renderAbholBadge;
+
 function renderUpdateBadge() {
   const cl = window.Casino.changelog;
   const btn = $("#menu-btn");
@@ -684,12 +723,13 @@ setInterval(renderBuffs, 5000); // keep countdowns fresh
  * ausgetauscht statt alles neu zu schreiben.
  */
 const NAMENS_KLASSEN = ["nm-sonne", "nm-eis", "nm-gift", "nm-beere", "nm-puls", "nm-schimmer",
-  "nm-neon", "nm-regenbogen", "nm-feuer", "nm-glitch", "nm-krone", "nm-s2_bernstein", "nm-s2_phoenix"];
+  "nm-neon", "nm-regenbogen", "nm-feuer", "nm-glitch", "nm-vanta", "nm-splitter", "nm-krone", "nm-s2_bernstein", "nm-s2_phoenix"];
 const RAHMEN_KLASSEN = ["fr-silber", "fr-gold", "fr-neon", "fr-rotierend", "fr-flamme", "fr-sterne", "fr-s2_wolf"];
 
 function setzeNamensStil(el, acc) {
   if (!el) return;
   el.textContent = acc.name;
+  el.dataset.name = acc.name;   // fuer die versetzten Kopien in Glitch/Splitter
   el.classList.remove(...NAMENS_KLASSEN);
   const stil = acc.nameStyle && NAMENS_KLASSEN.includes("nm-" + acc.nameStyle) ? "nm-" + acc.nameStyle : null;
   if (stil) { el.classList.add(stil); el.style.color = ""; }

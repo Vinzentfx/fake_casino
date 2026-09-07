@@ -76,6 +76,7 @@
       const dazu = (r.stuecke || []).length ? ` Dazu: ${r.stuecke.join(" und ")}.` : "";
       toast(`🎁 ${fmt(r.chips)} 🪙 und ${fmt(r.xp)} Season-XP.${dazu}`);
       laden();
+      if (Casino.renderAbholBadge) Casino.renderAbholBadge();
     });
   });
 

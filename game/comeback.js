@@ -123,7 +123,7 @@ function holeGeschenk(key) {
   const cos = require("./cosmetics");
   const stuecke = [];
   if (cos.grant(acc, "title", "rueckkehrer")) stuecke.push(cos.label("title", "rueckkehrer"));
-  if (cos.grant(acc, "effect", "feuerwerk")) stuecke.push(cos.label("effect", "feuerwerk"));
+  if (cos.grant(acc, "effect", "salut")) stuecke.push(cos.label("effect", "salut"));
 
   let xp = 0;
   try { xp = require("./season").addXp(key, GESCHENK_XP, "quest") || GESCHENK_XP; } catch {}

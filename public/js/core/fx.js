@@ -289,6 +289,39 @@
     }
   }
 
+  /**
+   * Salut: zwei Partykanonen aus den unteren Ecken.
+   *
+   * Bewusst anders als alles andere im Laden — es ist das einzige Stueck aus
+   * dem Wiedereroeffnungs-Paket und soll man auf den ersten Blick erkennen.
+   */
+  function salut(w) {
+    const farben = ["#f7dc8c", "#ffffff", "#ff6b6b", "#4ecdc4", "#a66bff", "#ffd93d"];
+    const proSeite = 26 + w * 14;
+    for (const links of [true, false]) {
+      for (let i = 0; i < proSeite; i++) {
+        // Schraeg nach innen und oben, mit Streuung: eine Kanone schiesst
+        // keinen geraden Strahl.
+        const grund = links ? -60 : -120;
+        const winkel = (grund + zufall(-26, 26)) * (Math.PI / 180);
+        const weite = zufall(220, 460 + w * 90);
+        teil("fx-band", {
+          left: links ? "-10px" : "calc(100vw + 10px)",
+          bottom: "-10px",
+          background: farben[i % farben.length],
+          width: (5 + w) + "px",
+          height: (12 + w * 4) + "px",
+          animationDelay: zufall(0, 90 + w * 40) + "ms",
+          animationDuration: (1300 + w * 260) + "ms",
+          "--dx": Math.cos(winkel) * weite * (links ? -1 : 1) + "px",
+          "--dy": Math.sin(winkel) * weite + "px",
+          "--rot": zufall(-900, 900) + "deg",
+        }, 2600 + w * 300);
+      }
+    }
+    if (w >= 2) schwall("247,220,140", w);
+  }
+
   function sternenfall(w) {
     const n = 8 * w;
     for (let i = 0; i < n; i++) {
@@ -316,6 +349,7 @@
       case "feuerwerk": return feuerwerk(w);
       case "blitz": return blitz(w);
       case "sterne": return sternenfall(w);
+      case "salut": return salut(w);
       default: {
         // Konfetti: mehr, groesser, laenger — und ab Stufe 3 eine zweite Welle.
         confetti({ count: 60 * w, wucht: w });

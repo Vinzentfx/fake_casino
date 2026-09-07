@@ -70,6 +70,11 @@ const STYLES = [
   { id: "regenbogen", label: "Regenbogen",  cost: 500000,  preview: ["#ff6b6b", "#4ecdc4"], motion: true },
   { id: "feuer",    label: "Feuer",         cost: 750000,  preview: ["#ffdd55", "#ff4d1c"], motion: true },
   { id: "glitch",   label: "Glitch",        cost: 1200000, preview: ["#ff2e88", "#00e5ff"], motion: true },
+  // Die Spitze des Ladens. Beide sind bewusst keine weiteren Verlaeufe:
+  // Vantablack faerbt gar nicht, sondern nimmt die Farbe weg, und Splitter
+  // zerlegt den Namen in wandernde Scherben.
+  { id: "vanta",    label: "Vantablack",    cost: 1500000, preview: ["#0a0a0c", "#e8e8ef"], motion: true },
+  { id: "splitter", label: "Splitter",      cost: 1800000, preview: ["#9be7ff", "#ffffff"], motion: true },
   // Nicht kaeuflich: kommt, wenn man in der Stadt Boss eines Ortsteils wird.
   { id: "krone",    label: "Krone",         cost: null, via: "Boss eines Ortsteils werden", preview: ["#fff1b8", "#d4a017"], motion: true },
   // Season 2. Die alte Belohnung auf Stufe 10 war eine flache orange Farbe —
@@ -135,6 +140,13 @@ const EFFEKTE = [
   { id: "feuerwerk", label: "Feuerwerk", cost: 350000 },
   { id: "blitz",    label: "Blitzschlag", cost: 550000 },
   { id: "sterne",   label: "Sternenfall", cost: 800000 },
+  /*
+   * Nur aus dem Wiedereroeffnungs-Paket. Vorher lag dort das Feuerwerk, das
+   * man sich auch fuer 350.000 kaufen kann — ein Geschenk, das im Laden steht,
+   * ist kein besonderes Geschenk. Der Salut ist ausschliesslich darueber zu
+   * bekommen und danach nie wieder.
+   */
+  { id: "salut",    label: "Salut",       cost: null, via: "Zur Wiedereröffnung dabei gewesen", motion: true },
 ];
 
 /* ── Eintritts-Spruch ─────────────────────────────────────────────────────

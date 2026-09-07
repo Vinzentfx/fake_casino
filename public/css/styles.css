@@ -5929,3 +5929,241 @@ html:not(.reduce-motion) .cb-geschenk .cb-icon { animation: cb-wippen 1.8s ease-
   .cb-karte { flex-wrap: wrap; }
   .cb-karte .btn-primary { flex: 1 0 100%; }
 }
+
+/* ============================================================
+   Season
+   Vorher eine senkrechte Liste aus zwanzig gleich aussehenden
+   Zeilen: runterscrollen, abholen, fertig. Man sah weder, wo man
+   steht, noch wohin es geht. Jetzt Kopf, Schiene und Bahn.
+   ============================================================ */
+.se-hero {
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(120% 150% at 100% 0%, rgba(var(--accent-rgb), 0.16), transparent 60%),
+    var(--surface);
+  margin-bottom: var(--sp-4);
+}
+.se-hero-kopf { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); }
+.se-hero-kopf h2 { margin: 0; font-size: var(--fs-xl); }
+.se-timer {
+  flex: 0 0 auto;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.se-stand { display: flex; align-items: center; gap: var(--sp-4); margin-top: var(--sp-4); }
+/* Die Stufe als grosse Zahl: das ist die eine Angabe, die man wirklich sucht. */
+.se-stufe {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  min-width: 86px;
+  padding: var(--sp-2);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-strong);
+}
+.se-stufe small { font-size: var(--fs-xs); color: var(--text-mute); line-height: 1; }
+.se-stufe b { font-family: var(--font-num); font-size: 2.2rem; line-height: 1.05; color: var(--accent); }
+.se-stand-bar { flex: 1; min-width: 0; }
+.se-stand-top { display: flex; justify-content: space-between; gap: var(--sp-2); font-size: var(--fs-sm); margin-bottom: var(--sp-1); }
+.se-naechste { margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--text-dim); }
+
+/* Alle Stufen auf einen Blick. */
+.se-schiene { display: flex; gap: 3px; margin-top: var(--sp-4); }
+.se-knoten {
+  flex: 1;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--line-neutral);
+}
+.se-knoten.se-claimed { background: var(--good-deep); }
+.se-knoten.se-ready { background: var(--accent); }
+.se-k-special { height: 11px; margin-top: -2px; box-shadow: 0 0 0 1px var(--line-strong) inset; }
+.se-k-hier { background: var(--accent-strong); box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.8); }
+html:not(.reduce-motion) .se-knoten.se-ready { animation: se-pulsen 1.6s ease-in-out infinite; }
+@keyframes se-pulsen { 50% { box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.9); } }
+
+.se-alle { width: 100%; margin-top: var(--sp-4); min-height: 46px; }
+
+/* Die Belohnungen als waagerechte Bahn statt als endlose Liste. */
+.se-bahn {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--sp-2);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.se-bahn::-webkit-scrollbar { display: none; }
+.se-karte {
+  flex: 0 0 158px;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.se-karte-kopf { display: flex; align-items: center; justify-content: space-between; }
+.se-karte-num {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  font-family: var(--font-num);
+  font-weight: 800;
+  font-size: var(--fs-sm);
+}
+.se-karte-tag {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.se-karte-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.se-karte-body b { font-size: var(--fs-sm); line-height: 1.25; }
+.se-karte-body small { font-size: var(--fs-xs); color: var(--text-mute); }
+.se-karte-btn {
+  min-height: 38px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-sunken);
+  color: var(--text-dim);
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.se-karte-btn:disabled { cursor: default; opacity: 0.65; }
+/* Abholbares leuchtet, damit man es quer über den Bildschirm sieht. */
+.se-karte.se-ready { border-color: var(--line-strong); background: var(--accent-soft); }
+.se-karte.se-ready .se-karte-btn { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); opacity: 1; }
+html:not(.reduce-motion) .se-karte.se-ready { animation: se-karte-pulsen 2s ease-in-out infinite; }
+@keyframes se-karte-pulsen {
+  50% { box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.35), 0 0 18px rgba(var(--accent-rgb), 0.25); }
+}
+.se-karte.se-claimed { opacity: 0.6; }
+.se-karte.se-claimed .se-karte-num { border-color: rgba(var(--good-rgb), 0.5); color: var(--good-text); }
+/* Die vier einzigartigen Stufen sind höher und tragen einen eigenen Verlauf. */
+.se-karte.se-special {
+  flex-basis: 186px;
+  background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.2), rgba(166, 107, 255, 0.16)), var(--surface);
+  border-color: var(--line-strong);
+}
+
+.se-details { margin-top: var(--sp-4); }
+.se-details summary { cursor: pointer; font-weight: 700; font-size: var(--fs-sm); color: var(--text-dim); }
+
+/* Zähler am Menü-Knopf: hier liegt etwas zum Abholen. */
+.menu-btn { position: relative; }
+.menu-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 19px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--bar);
+  pointer-events: none;
+}
+html:not(.reduce-motion) .menu-count { animation: se-pulsen 1.8s ease-in-out infinite; }
+
+/* --- Die zwei teuersten Namensstile ---------------------------------------
+   Bewusst keine weiteren Verläufe: der Laden hat schon acht davon. Vantablack
+   nimmt Farbe weg statt welche zu geben, Splitter zerlegt den Namen. */
+
+/* Tiefschwarz mit einer Kante, die um den Text wandert. Auf dunklem Grund
+   liest man ihn nur an der Kante — das ist der Reiz. */
+.nm-vanta {
+  background-image: linear-gradient(100deg, #0a0a0c, #16161a 45%, #0a0a0c);
+  filter:
+    drop-shadow(0 0 1px rgba(232, 232, 239, 0.95))
+    drop-shadow(0 0 6px rgba(155, 231, 255, 0.35));
+}
+html:not(.reduce-motion) .nm-vanta { animation: pl-sweep 5s linear infinite; }
+
+/* Splitter: der Name liegt dreifach übereinander, jede Lage in einem anderen
+   waagerechten Streifen, und die Streifen wandern gegeneinander. */
+.nm-splitter {
+  background-image: linear-gradient(100deg, #ffffff, #9be7ff 50%, #ffffff);
+  position: relative;
+}
+html:not(.reduce-motion) .nm-splitter { animation: pl-sweep 3s linear infinite; }
+.nm-splitter::before,
+.nm-splitter::after {
+  content: attr(data-name);
+  position: absolute;
+  inset: 0;
+  background-image: inherit;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  pointer-events: none;
+}
+.nm-splitter::before { clip-path: inset(0 0 62% 0); }
+.nm-splitter::after { clip-path: inset(58% 0 0 0); }
+html:not(.reduce-motion) .nm-splitter::before { animation: nm-splitter-o 2.4s steps(1, end) infinite; }
+html:not(.reduce-motion) .nm-splitter::after { animation: nm-splitter-u 2.4s steps(1, end) infinite; }
+@keyframes nm-splitter-o {
+  0%, 82%, 100% { transform: translateX(0); }
+  86% { transform: translateX(-5px); }
+  92% { transform: translateX(3px); }
+}
+@keyframes nm-splitter-u {
+  0%, 82%, 100% { transform: translateX(0); }
+  86% { transform: translateX(5px); }
+  92% { transform: translateX(-4px); }
+}
+
+/* Glitch war nur ein Verlauf mit Zittern. Jetzt echte Farbtrennung: zwei
+   versetzte Kopien in Rot und Cyan, die kurz auseinanderreißen. */
+.nm-glitch { position: relative; }
+.nm-glitch::before,
+.nm-glitch::after {
+  content: attr(data-name);
+  position: absolute;
+  inset: 0;
+  -webkit-text-fill-color: currentColor;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.nm-glitch::before { color: #ff2e88; }
+.nm-glitch::after { color: #00e5ff; }
+html:not(.reduce-motion) .nm-glitch::before { animation: nm-glitch-r 1.9s steps(1, end) infinite; }
+html:not(.reduce-motion) .nm-glitch::after { animation: nm-glitch-c 1.9s steps(1, end) infinite; }
+@keyframes nm-glitch-r {
+  0%, 88%, 100% { transform: translate(0, 0); opacity: 0; }
+  90% { transform: translate(-3px, -1px); opacity: 0.9; }
+  95% { transform: translate(2px, 1px); opacity: 0.7; }
+}
+@keyframes nm-glitch-c {
+  0%, 88%, 100% { transform: translate(0, 0); opacity: 0; }
+  90% { transform: translate(3px, 1px); opacity: 0.9; }
+  95% { transform: translate(-2px, -1px); opacity: 0.7; }
+}

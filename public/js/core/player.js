@@ -25,7 +25,7 @@
   // Nur was der Server auch kennt. Ein unbekannter Wert aus einer alten
   // Nachricht darf keine fremde Klasse ins Dokument schreiben.
   const STILE = new Set(["sonne", "eis", "gift", "beere", "puls", "schimmer",
-    "neon", "regenbogen", "feuer", "glitch", "krone", "s2_bernstein", "s2_phoenix"]);
+    "neon", "regenbogen", "feuer", "glitch", "vanta", "splitter", "krone", "s2_bernstein", "s2_phoenix"]);
   const RAHMEN = new Set(["silber", "gold", "neon", "rotierend", "flamme", "sterne", "s2_wolf"]);
 
   /**
@@ -41,7 +41,10 @@
     if (opts.extra) klassen.push(opts.extra);
     // Ein Stil faerbt ueber einen Verlauf und ueberschreibt die flache Farbe.
     const style = !stil && p && p.nameColor ? ` style="color:${esc(p.nameColor)}"` : "";
-    return `<${tag} class="${klassen.join(" ")}"${style}>${esc(p && p.name)}</${tag}>`;
+    // data-name traegt den Text noch einmal: die Stile Glitch und Splitter
+    // legen darueber versetzte Kopien aus ::before/::after, und die kommen
+    // nur ueber attr() an den Namen.
+    return `<${tag} class="${klassen.join(" ")}"${style} data-name="${esc(p && p.name)}">${esc(p && p.name)}</${tag}>`;
   }
 
   /** Das Bild mit Rahmen. */

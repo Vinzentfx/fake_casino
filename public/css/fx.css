@@ -264,3 +264,17 @@ html.reduce-motion .fx-skeleton { animation: none; }
 }
 .fx-beben { animation: fx-beben-an 0.6s ease-out; }
 html.reduce-motion .fx-beben { animation: none; }
+
+/* Salut: Bänder aus den unteren Ecken. Nur aus dem Wiedereröffnungs-Paket. */
+.fx-band {
+  position: absolute;
+  border-radius: 2px;
+  opacity: 0;
+  animation: fx-band-flug cubic-bezier(0.15, 0.75, 0.35, 1) forwards;
+}
+@keyframes fx-band-flug {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  8% { opacity: 1; }
+  /* Am Ende weit unten: Bänder fliegen hoch und fallen dann. */
+  100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 70vh)) rotate(var(--rot)); }
+}
