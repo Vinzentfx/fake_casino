@@ -6689,3 +6689,378 @@ html:not(.reduce-motion) .gs-item {
 .cd-buff { display: flex; align-items: center; gap: 8px; }
 .cd-buff .ui-icon { width: 17px; height: 17px; flex: 0 0 auto; }
 .cd-btn:has(.ui-icon) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* ============================================================================
+   Clans
+   ----------------------------------------------------------------------------
+   Der Bildschirm war eine einzige Rolle aus neun Abschnitten. Jetzt steht
+   oben, was gerade zu tun ist, und der Rest liegt hinter Reitern.
+   ========================================================================== */
+
+/* --- Werbung im leeren Zustand ---------------------------------------------
+   Vorher stand da nur "Clan gründen (100.000)". Wofuer man hunderttausend
+   Chips ausgibt, sagte niemand. */
+.cl-werbung {
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  margin-bottom: var(--sp-3);
+}
+.cl-werbung-kopf { display: flex; gap: var(--sp-3); align-items: flex-start; margin-bottom: var(--sp-3); }
+.cl-werbung-kopf b { display: block; font-size: var(--fs-lg); margin-bottom: 3px; }
+.cl-werbung-kopf small { color: var(--text-dim); font-size: var(--fs-sm); line-height: var(--lh); }
+.cl-werbung-sym {
+  display: grid;
+  place-items: center;
+  width: 42px; height: 42px;
+  flex: 0 0 auto;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.cl-werbung-sym .ui-icon { width: 24px; height: 24px; }
+.cl-vorteile { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+.cl-vorteile li {
+  display: flex; gap: var(--sp-3); align-items: flex-start;
+  font-size: var(--fs-sm); color: var(--text-dim); line-height: var(--lh);
+}
+.cl-vorteile li b { color: var(--text); }
+.cl-vorteile .ui-icon { width: 18px; height: 18px; flex: 0 0 auto; margin-top: 2px; color: var(--accent); opacity: 0.85; }
+
+.cl-gruenden {
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-sunken);
+}
+.cl-gruenden-felder { display: flex; gap: var(--sp-3); margin: var(--sp-2) 0 var(--sp-3); }
+.cl-gruenden-felder label { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-xs); font-weight: 700; color: var(--text-mute); }
+.cl-gruenden-felder label:first-child { flex: 1; }
+.cl-gruenden-felder label:last-child { width: 90px; }
+.cl-gruenden .btn-primary { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* --- Kopf des eigenen Clans --- */
+.cl-kopf {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.cl-kopf-name b { display: block; font-size: var(--fs-lg); }
+.cl-kopf-name small { color: var(--text-dim); font-size: var(--fs-xs); }
+.cl-kopf-kasse { text-align: right; font-family: var(--font-num); font-weight: 800; white-space: nowrap; }
+.cl-kopf-kasse small { display: block; font-family: var(--font); font-size: var(--fs-xs); font-weight: 700; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.cl-motto {
+  display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
+  margin: var(--sp-2) 2px var(--sp-3);
+  font-style: italic; color: var(--text-dim); font-size: var(--fs-sm);
+}
+.cl-motto .icon-btn { font-style: normal; }
+
+/* --- Reiter ---------------------------------------------------------------- */
+.cl-reiter {
+  display: flex; gap: var(--sp-1);
+  margin: var(--sp-4) 0 var(--sp-3);
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cl-reiter::-webkit-scrollbar { display: none; }
+.cl-reiter-knopf {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  flex: 0 0 auto;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-neutral);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.cl-reiter-knopf.active {
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.cl-reiter-zahl {
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  color: var(--text-dim);
+  font-size: 0.66rem; font-weight: 900; line-height: 18px; text-align: center;
+}
+.cl-reiter-knopf.active .cl-reiter-zahl { background: var(--accent); color: var(--accent-ink); }
+
+/* --- Auftraege: das Herzstueck --------------------------------------------- */
+.cl-auftrag-kopf {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: var(--sp-2); font-weight: 700; font-size: var(--fs-sm);
+}
+.cl-auftrag {
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.cl-auftrag.done { border-color: rgba(var(--good-rgb), 0.4); background: rgba(var(--good-rgb), 0.07); }
+.cl-auftrag-zeile { display: flex; align-items: flex-start; gap: var(--sp-2); }
+.cl-auftrag-haken { flex: 0 0 auto; color: var(--good); }
+.cl-auftrag-haken:empty { display: none; }
+.cl-auftrag-haken .ui-icon { width: 17px; height: 17px; }
+.cl-auftrag-text { flex: 1; min-width: 0; }
+.cl-auftrag-text b { display: block; font-size: var(--fs-md); }
+.cl-auftrag-text small { display: block; color: var(--text-dim); font-size: var(--fs-xs); margin-top: 1px; }
+.cl-auftrag-xp { flex: 0 0 auto; font-family: var(--font-num); font-weight: 800; font-size: var(--fs-sm); color: var(--accent); }
+.cl-auftrag-balken {
+  height: 6px; margin: var(--sp-2) 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.cl-auftrag-balken i {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  transition: width var(--dur-3) var(--ease-out);
+}
+.cl-auftrag.done .cl-auftrag-balken i { background: var(--good); }
+.cl-auftrag-fuss {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);
+  font-size: var(--fs-xs); color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.cl-wer { text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-wer em { font-style: normal; font-weight: 700; color: var(--text); }
+
+/* --- Krieg ----------------------------------------------------------------- */
+.cl-kein-krieg {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  margin-top: var(--sp-3);
+  border: 1px dashed var(--line-neutral);
+  border-radius: var(--r-md);
+  color: var(--text-dim);
+}
+.cl-kein-krieg b { display: block; color: var(--text); font-size: var(--fs-md); }
+.cl-kein-krieg small { font-size: var(--fs-xs); }
+.cl-kein-krieg .ui-icon { width: 22px; height: 22px; opacity: 0.6; }
+
+.cl-krieg {
+  padding: var(--sp-4);
+  margin-top: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.cl-krieg.vorn { border-color: rgba(var(--good-rgb), 0.45); }
+.cl-krieg.hinten { border-color: rgba(var(--bad-rgb), 0.4); }
+.cl-krieg-kopf { display: flex; align-items: center; gap: 8px; margin-bottom: var(--sp-2); }
+.cl-krieg-kopf b { font-size: var(--fs-lg); }
+.cl-krieg-kopf .ui-icon { width: 20px; height: 20px; color: var(--accent); }
+.cl-krieg-zeit {
+  margin-left: auto;
+  font-size: var(--fs-xs); font-weight: 700; color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.cl-krieg-zeit.knapp { color: var(--bad-text); }
+
+.cl-krieg-stand {
+  display: flex; align-items: baseline; justify-content: space-between;
+  font-family: var(--font-num); font-size: var(--fs-2xl); font-weight: 800;
+}
+.cl-seite { display: flex; align-items: baseline; gap: 8px; }
+.cl-seite b { font-size: var(--fs-sm); font-weight: 800; opacity: 0.75; }
+.cl-krieg.vorn .cl-seite.mein { color: var(--good-text); }
+.cl-krieg.hinten .cl-seite.gegner { color: var(--bad-text); }
+.cl-krieg-balken {
+  height: 8px; margin: var(--sp-2) 0;
+  border-radius: var(--r-pill);
+  background: rgba(var(--bad-rgb), 0.3);
+  overflow: hidden;
+}
+.cl-krieg-balken i {
+  display: block; height: 100%;
+  border-radius: var(--r-pill) 0 0 var(--r-pill);
+  background: var(--good);
+  transition: width var(--dur-3) var(--ease-out);
+}
+.cl-krieg-lage { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); color: var(--text-dim); }
+.cl-krieg-lage b { color: var(--text); }
+.cl-krieg-knoepfe { display: flex; gap: var(--sp-2); margin-top: var(--sp-2); }
+
+.cl-krieg-wer { margin-top: var(--sp-3); }
+.cl-wer-zeile {
+  display: grid;
+  grid-template-columns: minmax(70px, auto) 1fr auto;
+  align-items: center; gap: var(--sp-2);
+  padding: 4px 0;
+  font-size: var(--fs-sm);
+}
+.cl-wer-zeile i {
+  display: block; height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  opacity: 0.7;
+}
+.cl-wer-zeile b { font-family: var(--font-num); font-size: var(--fs-xs); color: var(--text-dim); }
+
+/* --- Mitglieder ------------------------------------------------------------ */
+.cl-roster { display: grid; gap: var(--sp-2); }
+.cl-mitglied {
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.cl-m-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+.cl-m-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.cl-m-name .ui-icon { width: 15px; height: 15px; color: var(--accent); flex: 0 0 auto; }
+.cl-m-name b { font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; }
+.cl-m-name small { color: var(--text-mute); font-size: var(--fs-xs); white-space: nowrap; }
+.cl-m-wert { font-family: var(--font-num); font-weight: 700; font-size: var(--fs-sm); white-space: nowrap; }
+.cl-m-balken { height: 4px; margin: 7px 0 5px; border-radius: var(--r-pill); background: var(--surface-sunken); overflow: hidden; }
+.cl-m-balken i { display: block; height: 100%; border-radius: inherit; background: var(--accent); opacity: 0.65; }
+.cl-m-fuss {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap;
+  font-size: var(--fs-xs); color: var(--text-dim);
+}
+.cl-m-knoepfe { display: flex; gap: 6px; }
+
+.cl-anfrage {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line-neutral);
+  border-radius: var(--r-sm);
+  margin-bottom: 6px;
+}
+.cl-anfrage > span:last-child { display: flex; gap: 6px; }
+
+.cl-geschlossen {
+  display: flex; align-items: center; gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--line-neutral);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.cl-geschlossen .ui-icon { width: 18px; height: 18px; color: var(--text-dim); }
+.cl-geschlossen b { display: block; font-size: var(--fs-sm); }
+.cl-geschlossen small { color: var(--text-dim); font-size: var(--fs-xs); }
+
+/* --- Kasse ----------------------------------------------------------------- */
+.cl-kasse {
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.cl-kasse-kopf { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.cl-kasse-kopf .ui-icon { width: 26px; height: 26px; color: var(--accent); }
+.cl-kasse-kopf small { display: block; font-size: var(--fs-xs); font-weight: 700; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.08em; }
+.cl-kasse-kopf b { font-family: var(--font-num); font-size: var(--fs-xl); }
+.cl-kasse-zeile { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.cl-kasse-zeile input, .cl-kasse-zeile select { flex: 1; min-width: 0; }
+.cl-kasse-zeile button { flex: 0 0 auto; }
+
+.cl-log { display: grid; gap: 1px; }
+.cl-log-zeile {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);
+  padding: 7px var(--sp-2);
+  border-bottom: 1px solid var(--line-neutral);
+  font-size: var(--fs-sm);
+}
+.cl-log-zeile:last-child { border-bottom: none; }
+.cl-log-zeile small { color: var(--text-mute); font-size: var(--fs-xs); white-space: nowrap; }
+
+/* --- Fortschritt ----------------------------------------------------------- */
+.cl-stufe {
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.cl-stufe-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.cl-balken { height: 8px; border-radius: var(--r-pill); background: var(--surface-sunken); overflow: hidden; margin-bottom: var(--sp-2); }
+.cl-balken i { display: block; height: 100%; border-radius: inherit; transition: width var(--dur-3) var(--ease-out); }
+.cl-bonus {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--good-soft);
+  color: var(--good-text);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--sp-2);
+}
+.cl-season-bahn { display: grid; gap: 4px; margin: var(--sp-3) 0; }
+.cl-season-schritt {
+  display: grid; grid-template-columns: 26px 1fr auto;
+  align-items: center; gap: var(--sp-2);
+  padding: 5px var(--sp-2);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+.cl-season-schritt.done { background: var(--accent-soft); color: var(--text); }
+.cs-num {
+  display: grid; place-items: center;
+  width: 22px; height: 22px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-neutral);
+  font-size: 0.7rem; font-weight: 800;
+}
+.cl-season-schritt.done .cs-num { border-color: var(--accent); color: var(--accent); }
+.cs-xp { font-family: var(--font-num); font-size: var(--fs-xs); color: var(--text-mute); }
+
+/* --- Platzziffern in den Ranglisten ----------------------------------------
+   Vorher 🥇🥈🥉 und ab Platz vier eine nackte "4." — drei Bildchen und dann
+   Text, in drei verschiedenen Groessen. */
+.cl-platz {
+  display: inline-grid; place-items: center;
+  width: 22px; height: 22px; margin-right: 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  font-size: 0.7rem; font-weight: 900;
+  color: var(--text-dim);
+  flex: 0 0 auto;
+}
+.cl-platz.p1 { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.cl-platz.p2 { background: rgba(255, 255, 255, 0.28); color: var(--text); border-color: rgba(255, 255, 255, 0.4); }
+.cl-platz.p3 { background: rgba(196, 128, 74, 0.5); color: #fff; border-color: rgba(196, 128, 74, 0.7); }
+
+#clan-mine .btn-danger { width: 100%; margin-top: var(--sp-5); }
+
+/* --- Auswahl-Dialog -------------------------------------------------------- */
+.dlg-wahl { display: grid; gap: var(--sp-2); margin: var(--sp-3) 0; }
+.dlg-option {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--sp-3);
+  border: 1px solid var(--line-neutral);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  color: var(--text);
+  text-align: left;
+}
+.dlg-option b { font-size: var(--fs-md); }
+.dlg-option small { color: var(--text-dim); font-size: var(--fs-xs); }
+.dlg-option:hover, .dlg-option:focus-visible {
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+}
+
+/* Die Clan-Listen bringen ihre Platzziffer selbst mit (als Kreis, damit
+   Platz 1 bis 3 sich abheben). Ohne das steht die Zahl doppelt da: einmal
+   aus dem CSS-Zaehler, einmal aus dem Markup. */
+.leaderboard.cl-liste li::before { content: none; }
+.leaderboard.cl-liste li { gap: var(--sp-2); }
+/* Die Ziffer ist selbst ein span und stand deshalb als erstes im Zugriff —
+   sie bekam das flex:1 und wuchs zu einem goldenen Balken quer durch die
+   Zeile. Gemeint war der Name daneben. */
+.leaderboard.cl-liste li > span:not(.cl-platz):first-of-type { flex: 1; min-width: 0; }
+.leaderboard.cl-liste li > .cl-platz + span { flex: 1; min-width: 0; }
+.leaderboard.cl-liste li > span:last-child { display: flex; align-items: center; gap: var(--sp-2); white-space: nowrap; }

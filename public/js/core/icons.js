@@ -368,9 +368,14 @@
       <path d="M3.4 13.4h17.2" ${S}/>
       <rect x="10.4" y="11.4" width="3.2" height="4.4" rx="1" ${A}/>`,
 
-    // Gekreuzte Klingen — Clan-Krieg.
-    krieg: `<path d="M4 4.4 14.6 15M19.6 4.4 9 15" ${S} stroke-width="2"/>
-      <path d="M3.2 18.6 6.6 15l2.4 2.4-3.4 3.6ZM20.4 18.6 17 15l-2.4 2.4 3.4 3.6Z" ${A}/>`,
+    /* Gekreuzte Klingen — Clan-Krieg. Zwei blosse Striche ergaben bei
+       zwanzig Pixeln ein X und sonst nichts; erst Spitze, Parierstange und
+       Griff machen daraus ein Schwert. */
+    krieg: `<path d="M3.4 3.2h3.2l9 9-3.2 3.2-9-9Z" ${S}/>
+      <path d="M20.6 3.2h-3.2l-9 9 3.2 3.2 9-9Z" ${S}/>
+      <path d="m6.6 15.4 2 2-3 3-2-2Z" ${A}/>
+      <path d="m17.4 15.4-2 2 3 3 2-2Z" ${A}/>
+      <path d="M13.8 13.2 17 16.4M10.2 13.2 7 16.4" ${S} stroke-width="1.5" opacity=".6"/>`,
 
     // Lautsprecher — Ansage des Hauses.
     ansage: `<path d="M3.4 9.6h3.4l6.4-4.2v13.2l-6.4-4.2H3.4a1.2 1.2 0 0 1-1.2-1.2v-2.4a1.2 1.2 0 0 1 1.2-1.2Z" ${A}/>

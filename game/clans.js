@@ -43,6 +43,22 @@ const WAR_DAYS = { 1: 1, 3: 3, 7: 7 };   // allowed durations (days)
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEKLY_TOP_PRIZE = 250000;         // "Clan der Woche" treasury prize
 const CLAN_XP_PER_PVP_WIN = 25;
+
+/* BALANCING — vor dem Hochladen gegen den echten Spielstand pruefen.
+ *
+ * Was ein Duellsieg im laufenden Krieg wert ist.
+ *
+ * Bisher: genau ein Punkt. Auf derselben Anzeige stand daneben die
+ * gesammelte Season-XP beider Clans, und die waechst je Mitglied und Tag um
+ * bis zu 980 (700 aus Spielen, 280 aus Auftraegen). Ein Duellsieg war damit
+ * ein Tausendstel eines einzigen Spielertags — die Oberflaeche versprach
+ * "jeder Duell-Sieg zaehlt!", und gemeint war ein Rundungsfehler.
+ *
+ * 150 ist knapp ein Sechstel eines Spielertags: Duelle sind ein spuerbarer
+ * Hebel, aber ein Clan, der nur duelliert, gewinnt keinen Krieg gegen einen,
+ * der spielt. Chips entstehen dabei keine — der Kriegstopf kommt aus den
+ * Schatzkammern, der Rake ist die Senke. */
+const WAR_POINTS_PER_PVP_WIN = 150;
 const CLAN_LEVEL_STEP = 500;
 
 /* ---------------------------------------------------------------------------
@@ -118,11 +134,26 @@ function addSeasonXp(key, amount) {
      fuenf Leute, die normal spielen, schon. Genau so soll ein Clan sich
      anfuehlen. */
   c.weeklyXp = Math.max(0, Math.floor(c.weeklyXp || 0) + gain);
+
+  /* Wer traegt die Woche? Bisher wusste das niemand. Der Clan sammelte eine
+     Zahl, aber sie gehoerte allen und keinem: man konnte weder sehen, dass
+     man selbst etwas beigetragen hat, noch dass jemand anderes es tut. Fuer
+     eine Gruppe, in der ohnehin selten zwei gleichzeitig da sind, ist das
+     der Unterschied zwischen "wir spielen zusammen" und "ich spiele allein
+     und irgendwo steht eine Zahl".
+
+     Gezaehlt wird je Woche und je Krieg getrennt; beides wird beim
+     Wochenwechsel bzw. am Kriegsende zurueckgesetzt. */
+  if (!c.beitrag || c.beitragWeek !== weekKey()) { c.beitrag = {}; c.beitragWeek = weekKey(); }
+  c.beitrag[key] = Math.floor(c.beitrag[key] || 0) + gain;
+
   const krieg = activeWarOf(c.id);
   if (krieg && krieg.state === "active") {
     if (krieg.aId === c.id) krieg.aScore += gain; else krieg.bScore += gain;
+    const topf = krieg.aId === c.id ? (krieg.aBeitrag = krieg.aBeitrag || {}) : (krieg.bBeitrag = krieg.bBeitrag || {});
+    topf[key] = Math.floor(topf[key] || 0) + gain;
   }
-  trackClanQuest(c, "aktiv", gain);
+  trackClanQuest(c, "aktiv", gain, key);
 
   const vorher = clanSeasonState(c).level;
   c.seasonXp = Math.max(0, Math.floor(c.seasonXp || 0) + gain);
@@ -162,10 +193,14 @@ function seasonBonusFor(key) {
  * daneben statt die Voraussetzung.
  */
 const CLAN_QUESTS = [
-  { id: "aktiv_2500", label: "Sammelt zusammen 2.500 Season-XP", type: "aktiv", target: 2500, xp: 220 },
-  { id: "aktiv_8000", label: "Sammelt zusammen 8.000 Season-XP", type: "aktiv", target: 8000, xp: 560 },
-  { id: "duels_5", label: "Gewinnt 5 Duelle gegeneinander", type: "pvp", target: 5, xp: 180 },
-  { id: "donate_250k", label: "Spendet 250.000 in die Schatzkammer", type: "donate", target: 250000, xp: 240 },
+  { id: "aktiv_2500", label: "Sammelt zusammen 2.500 Season-XP", type: "aktiv", target: 2500, xp: 220,
+    hinweis: "Jede Runde zählt, egal welches Spiel" },
+  { id: "aktiv_8000", label: "Sammelt zusammen 8.000 Season-XP", type: "aktiv", target: 8000, xp: 560,
+    hinweis: "Der große Wochenauftrag — dafür braucht ihr einander" },
+  { id: "duels_5", label: "Gewinnt 5 Duelle gegeneinander", type: "pvp", target: 5, xp: 180,
+    hinweis: "Versetzte Duelle zählen auch, niemand muss warten" },
+  { id: "donate_250k", label: "Spendet 250.000 in die Schatzkammer", type: "donate", target: 250000, xp: 240,
+    hinweis: "Aus der Kasse zahlen Gründer und Offiziere wieder aus" },
 ];
 
 let store = load();
@@ -277,22 +312,34 @@ function clanQuestPublic(c) {
     return {
       id: meta.id,
       label: meta.label,
+      hinweis: meta.hinweis || "",
       target: meta.target,
       progress: Math.min(meta.target, Math.floor(q.progress || 0)),
       done: !!q.done,
       xp: meta.xp,
+      wer: q.wer || {},
     };
   });
 }
 
-function trackClanQuest(c, type, amount) {
+function trackClanQuest(c, type, amount, key) {
   ensureClanQuests(c);
   let gained = 0;
+  const zuwachs = Math.max(1, Math.floor(amount || 1));
   for (const meta of CLAN_QUESTS) {
     if (meta.type !== type) continue;
     const q = c.quests.find((x) => x.id === meta.id);
     if (!q || q.done) continue;
-    q.progress = Math.min(meta.target, Math.floor(q.progress || 0) + Math.max(1, Math.floor(amount || 1)));
+    const vorher = Math.floor(q.progress || 0);
+    q.progress = Math.min(meta.target, vorher + zuwachs);
+    /* Wer wieviel zu diesem Auftrag beigetragen hat. Nur was den Balken
+       wirklich bewegt hat wird gezaehlt — nicht der Ueberschuss der letzten
+       Runde, die das Ziel reisst. Sonst faellt der Beitrag desjenigen, der
+       den Auftrag abschliesst, unverdient gross aus. */
+    if (key) {
+      q.wer = q.wer || {};
+      q.wer[key] = Math.floor(q.wer[key] || 0) + (q.progress - vorher);
+    }
     if (q.progress >= meta.target) {
       q.done = true;
       gained += meta.xp;
@@ -336,11 +383,18 @@ function activeWarOf(clanId) {
 function warPublic(w) {
   if (!w) return null;
   const a = clans[w.aId], b = clans[w.bId];
+  /* Namen zu den Beitraegen, damit der Client keine zweite Abfrage braucht.
+     Nur die eigene Seite ist interessant — wer im gegnerischen Clan wieviel
+     beitraegt, geht niemanden etwas an. */
+  const namen = (topf) => Object.entries(topf || {})
+    .map(([k, xp]) => ({ key: k, name: (_accounts && _accounts.get(k) || {}).name || k, xp }))
+    .sort((x, y) => y.xp - x.xp);
   return {
     id: w.id, state: w.state, stake: w.stake, days: w.days,
     aId: w.aId, aTag: a ? a.tag : "?", aName: a ? a.name : "?", aScore: w.aScore,
     bId: w.bId, bTag: b ? b.tag : "?", bName: b ? b.name : "?", bScore: w.bScore,
-    endsAt: w.endsAt || null,
+    aBeitrag: namen(w.aBeitrag), bBeitrag: namen(w.bBeitrag),
+    endsAt: w.endsAt || null, startedAt: w.startedAt || null,
   };
 }
 
@@ -358,6 +412,10 @@ function clanPublic(id) {
     level: clanLevel(c), quests: clanQuestPublic(c),
     saison: clanSeasonState(c),
     weeklyXp: c.weeklyXp || 0,
+    // Wer hat diese Woche wieviel beigetragen — absteigend, Namen dabei.
+    beitrag: Object.entries((c.beitragWeek === weekKey() && c.beitrag) || {})
+      .map(([k, xp]) => ({ key: k, xp }))
+      .sort((x, y) => y.xp - x.xp),
     log: (c.log || []).slice(0, LOG_MAX),
     members, size: c.members.length, value: members.reduce((s, m) => s + m.value, 0),
     requests: (c.requests || []).map((k) => { const a = _accounts && _accounts.get(k); return { key: k, name: a ? a.name : k }; }),
@@ -438,10 +496,13 @@ function recordPvpWin(winnerKey, game) {
     c.weeklyWins = (c.weeklyWins || 0) + 1;
     c.totalWins = (c.totalWins || 0) + 1;
     addClanXp(c, CLAN_XP_PER_PVP_WIN);
-    trackClanQuest(c, "pvp", 1);
+    trackClanQuest(c, "pvp", 1, key);
     const w = activeWarOf(clanId);
     if (w && w.state === "active") {
-      if (w.aId === clanId) w.aScore++; else w.bScore++;
+      if (w.aId === clanId) w.aScore += WAR_POINTS_PER_PVP_WIN;
+      else w.bScore += WAR_POINTS_PER_PVP_WIN;
+      const topf = w.aId === clanId ? (w.aBeitrag = w.aBeitrag || {}) : (w.bBeitrag = w.bBeitrag || {});
+      topf[key] = Math.floor(topf[key] || 0) + WAR_POINTS_PER_PVP_WIN;
     }
   }
   if (_accounts) _accounts.save();
@@ -615,7 +676,7 @@ function setupClans(io, accounts) {
       if (acc.chips < amount) return ack({ ok: false, error: "Nicht genug Chips." });
       accounts.adjustChips(socket.data.account, -amount);
       const c = ensureClan(clans[id]); c.treasury += amount;
-      trackClanQuest(c, "donate", amount);
+      trackClanQuest(c, "donate", amount, socket.data.account);
       logClan(c, `${acc.name} spendet ${amount.toLocaleString("de-DE")} 🪙`);
       save();
       notifyClan(id);
@@ -763,7 +824,7 @@ function setupClans(io, accounts) {
       const c = ensureClan(clans[id]);
       if (c.treasury < w.stake) return ack({ ok: false, error: "Nicht genug in der Schatzkammer für den Einsatz." });
       c.treasury -= w.stake; // escrow
-      w.state = "active"; w.endsAt = Date.now() + w.days * DAY_MS; save();
+      w.state = "active"; w.startedAt = Date.now(); w.endsAt = Date.now() + w.days * DAY_MS; save();
       notifyClan(w.aId); notifyClan(w.bId);
       const a = clans[w.aId];
       chat.announce(io, `⚔️ CLAN-KRIEG LÄUFT: [${a.tag}] vs [${c.tag}] um ${(w.stake * 2).toLocaleString("de-DE")} 🪙 — jeder Duell-Sieg zählt!`);
