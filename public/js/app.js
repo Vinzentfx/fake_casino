@@ -865,7 +865,19 @@ function setzeRahmen(el, acc) {
 function renderTopbar() {
   const acc = state.account;
   if (!acc) return;
-  $("#balance-amount").textContent = acc.chips.toLocaleString("de-DE");
+  /* Auf schmalen Geraeten wird der Betrag gekuerzt: "1,7 Mio" statt
+     "1.700.000". Fuenf Dinge nebeneinander — Marke, Bonus, Guthaben,
+     Spieler, Menue — passen auf ein iPad, auf ein Telefon nicht mehr, sobald
+     das Guthaben siebenstellig wird. Das groesste Konto im Haus liegt bei
+     1,7 Millionen, das passiert also. In der Lobby steht der volle Betrag
+     ohnehin gross unter "Dein Guthaben". */
+  const eng = window.matchMedia("(max-width: 430px)").matches;
+  const c = acc.chips;
+  $("#balance-amount").textContent = eng && c >= 1000000
+    ? (c / 1000000).toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " Mio"
+    : eng && c >= 100000
+      ? Math.round(c / 1000).toLocaleString("de-DE") + "k"
+      : c.toLocaleString("de-DE");
   // Stil statt fester Farbe: die Klasse setzt den Verlauf, deshalb wird die
   // Farbe zurueckgesetzt, sonst kaempfen beide gegeneinander.
   setzeNamensStil($("#player-name"), acc);

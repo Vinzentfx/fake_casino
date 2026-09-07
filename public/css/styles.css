@@ -6463,13 +6463,26 @@ html:not(.reduce-motion) .gs-item {
 /* Die Marke sitzt jetzt HINTER der Zahl, wie eine Waehrungsangabe. */
 .balance .ui-icon { width: 15px; height: 15px; opacity: 0.75; }
 .menu-btn .ui-icon { width: 20px; height: 20px; }
-.chip-btn:has(.ui-icon) { display: inline-flex; align-items: center; gap: 6px; }
+/* Symbol und Wort in einer Zeile. `justify-content` zentriert dabei auch
+   den Fall, in dem gar kein Wort dabei ist — dafuer braucht es keine eigene
+   Regel. */
+.chip-btn:has(.ui-icon) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
 .chip-btn .ui-icon { width: 17px; height: 17px; }
 .profile-chip .ui-icon { width: 19px; height: 19px; }
 
-/* Knoepfe, die nur aus einem Symbol bestehen, brauchen die Symbolmitte —
-   sonst sitzt die Zeichnung auf der Grundlinie des leeren Textes. */
-.chip-btn:has(> .ui-icon:only-child) { display: inline-grid; place-items: center; }
+/* Diese Regel gab es hier einmal:
+     .chip-btn:has(> .ui-icon:only-child) { display: inline-grid; ... }
+   Sie war falsch. `:only-child` zaehlt Elemente, nicht Textknoten — bei
+   `<button><svg></svg> Bonus</button>` ist das SVG sehr wohl das einzige
+   Element-Kind, und das Wort daneben landete als zweite Rasterzelle unter
+   dem Symbol. Der Bonus-Knopf in der Kopfzeile war dadurch zweizeilig.
+   Die Zentrierung erledigt jetzt das justify-content oben. */
 
 /* --- Symbol-Knopf mit Beschriftung -----------------------------------------
    Auf dem iPad gibt es kein Hover, also auch kein title. Wo ein Symbol allein
@@ -7536,3 +7549,21 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .ev-plan b { font-size: var(--fs-xs); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .ev-karte.geplant .ev-sym { color: var(--accent); border-color: var(--line-strong); background: var(--accent-soft); }
 .ev-feld-vorlauf select { width: 100%; }
+
+/* --- Kopfzeile auf schmalen Schirmen ---------------------------------------
+   Fünf Dinge nebeneinander — Marke, Bonus, Guthaben, Spieler, Menü — passen
+   auf ein iPad, auf ein Telefon nicht mehr, sobald das Guthaben siebenstellig
+   wird. Das größte Konto im Haus liegt bei 1,7 Millionen, das passiert also.
+   Weggelassen wird, was doppelt da ist: der eigene Name steht im Profil, und
+   das Bild daneben zeigt ohnehin, wer man ist. */
+@media (max-width: 430px) {
+  .topbar { gap: 6px; }
+  .topbar-right { gap: 6px; }
+  .profile-chip #player-name { display: none; }
+  #bonus-btn { padding-left: 9px; padding-right: 9px; }
+  .balance { padding-left: 9px; padding-right: 9px; font-size: var(--fs-sm); }
+}
+/* Ganz schmal: auch die Wortmarke geht, das Zeichen allein trägt. */
+@media (max-width: 360px) {
+  .brand span { display: none; }
+}
