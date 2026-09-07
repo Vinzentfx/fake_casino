@@ -166,7 +166,7 @@ function addSeasonXp(key, amount) {
         if (_io) {
           chat.announce(_io, `🏅 [${c.tag}] ${c.name} erreicht Clan-Stufe ${l}: ${
             stufe && stufe.chips
-              ? `${stufe.chips.toLocaleString("de-DE")} 🪙 in die Schatzkammer`
+              ? `${stufe.chips.toLocaleString("de-DE")} Chips in die Schatzkammer`
               : `+${Math.round((stufe.bonus || 0) * 100)} % Season-XP für alle Mitglieder`
           }!`);
         }
@@ -530,7 +530,7 @@ function settleWar(io, w, reason) {
     const rake = Math.floor(pot * WAR_RAKE);
     wc.treasury += pot - rake;
     w.result = "win"; w.winnerId = winId; w.rake = rake;
-    if (io) chat.announce(io, `⚔️ CLAN-KRIEG entschieden: [${wc.tag}] ${wc.name} schlägt [${(winId === w.aId ? b : a) ? (winId === w.aId ? b.tag : a.tag) : "?"}] ${w.aScore}:${w.bScore} und holt ${(pot - rake).toLocaleString("de-DE")} 🪙 in die Schatzkammer!`);
+    if (io) chat.announce(io, `⚔️ CLAN-KRIEG entschieden: [${wc.tag}] ${wc.name} schlägt [${(winId === w.aId ? b : a) ? (winId === w.aId ? b.tag : a.tag) : "?"}] ${w.aScore}:${w.bScore} und holt ${(pot - rake).toLocaleString("de-DE")} Chips in die Schatzkammer!`);
   } else {
     // Tie → refund both.
     if (a) { ensureClan(a); a.treasury += w.stake; }
@@ -565,7 +565,7 @@ function weeklyRollover(io) {
   if (board.length && board[0].xp > 0) {
     const top = clans[board[0].id];
     if (top) { ensureClan(top); top.treasury += WEEKLY_TOP_PRIZE; }
-    if (io) chat.announce(io, `🛡️ CLAN DER WOCHE: [${board[0].tag}] ${board[0].name} mit ${board[0].xp.toLocaleString("de-DE")} XP! ${WEEKLY_TOP_PRIZE.toLocaleString("de-DE")} 🪙 in die Schatzkammer.`);
+    if (io) chat.announce(io, `🛡️ CLAN DER WOCHE: [${board[0].tag}] ${board[0].name} mit ${board[0].xp.toLocaleString("de-DE")} XP! ${WEEKLY_TOP_PRIZE.toLocaleString("de-DE")} Chips in die Schatzkammer.`);
   }
   for (const id of Object.keys(clans)) {
     const c = ensureClan(clans[id]);
@@ -618,7 +618,7 @@ function setupClans(io, accounts) {
       const id = slug(name);
       if (!id || clans[id]) return ack({ ok: false, error: "Name schon vergeben." });
       if (Object.values(clans).some((c) => c.tag === tag)) return ack({ ok: false, error: "Tag schon vergeben." });
-      if (acc.chips < CREATE_COST) return ack({ ok: false, error: `Gründung kostet ${CREATE_COST.toLocaleString("de-DE")} 🪙.` });
+      if (acc.chips < CREATE_COST) return ack({ ok: false, error: `Gründung kostet ${CREATE_COST.toLocaleString("de-DE")} Chips.` });
       const key = socket.data.account;
       accounts.adjustChips(key, -CREATE_COST);
       const color = COLORS[Object.keys(clans).length % COLORS.length];
@@ -677,7 +677,7 @@ function setupClans(io, accounts) {
       accounts.adjustChips(socket.data.account, -amount);
       const c = ensureClan(clans[id]); c.treasury += amount;
       trackClanQuest(c, "donate", amount, socket.data.account);
-      logClan(c, `${acc.name} spendet ${amount.toLocaleString("de-DE")} 🪙`);
+      logClan(c, `${acc.name} spendet ${amount.toLocaleString("de-DE")} Chips`);
       save();
       notifyClan(id);
       ack({ ok: true, clan: clanPublic(id), account: accounts.publicAccount(acc) });
@@ -715,7 +715,7 @@ function setupClans(io, accounts) {
 
       c.treasury -= amount;
       accounts.adjustChips(zielKey, amount);
-      const text = `${acc.name} zahlt ${amount.toLocaleString("de-DE")} 🪙 an ${ziel.name} aus`;
+      const text = `${acc.name} zahlt ${amount.toLocaleString("de-DE")} Chips an ${ziel.name} aus`;
       logClan(c, text);
       try { if (_io) chat.announce(_io, `🛡️ [${c.tag}] ${text}.`); } catch {}
       save();
@@ -805,14 +805,14 @@ function setupClans(io, accounts) {
       if (activeWarOf(id)) return ack({ ok: false, error: "Dein Clan ist schon im Krieg." });
       if (activeWarOf(targetId)) return ack({ ok: false, error: "Der Gegner ist schon im Krieg." });
       stake = Math.floor(Number(stake));
-      if (!Number.isFinite(stake) || stake < WAR_MIN_STAKE) return ack({ ok: false, error: `Mindesteinsatz ${WAR_MIN_STAKE.toLocaleString("de-DE")} 🪙.` });
+      if (!Number.isFinite(stake) || stake < WAR_MIN_STAKE) return ack({ ok: false, error: `Mindesteinsatz ${WAR_MIN_STAKE.toLocaleString("de-DE")} Chips.` });
       if (c.treasury < stake) return ack({ ok: false, error: "Nicht genug in der Schatzkammer." });
       days = WAR_DAYS[days] || 3;
       c.treasury -= stake; // escrow
       const w = { id: newWarId(), aId: id, bId: targetId, stake, days, aScore: 0, bScore: 0, state: "pending", createdAt: Date.now(), expiresAt: Date.now() + DAY_MS };
       wars.push(w); store.wars = wars; save();
       notifyClan(id); notifyClan(targetId);
-      chat.announce(io, `⚔️ [${c.tag}] ${c.name} fordert [${target.tag}] ${target.name} zum CLAN-KRIEG (${stake.toLocaleString("de-DE")} 🪙, ${days} Tage)!`);
+      chat.announce(io, `⚔️ [${c.tag}] ${c.name} fordert [${target.tag}] ${target.name} zum CLAN-KRIEG (${stake.toLocaleString("de-DE")} Chips, ${days} Tage)!`);
       ack({ ok: true, clan: clanPublic(id) });
     });
     socket.on("clan:acceptWar", (ack) => {
@@ -827,7 +827,7 @@ function setupClans(io, accounts) {
       w.state = "active"; w.startedAt = Date.now(); w.endsAt = Date.now() + w.days * DAY_MS; save();
       notifyClan(w.aId); notifyClan(w.bId);
       const a = clans[w.aId];
-      chat.announce(io, `⚔️ CLAN-KRIEG LÄUFT: [${a.tag}] vs [${c.tag}] um ${(w.stake * 2).toLocaleString("de-DE")} 🪙 — jeder Duell-Sieg zählt!`);
+      chat.announce(io, `⚔️ CLAN-KRIEG LÄUFT: [${a.tag}] vs [${c.tag}] um ${(w.stake * 2).toLocaleString("de-DE")} Chips — jeder Duell-Sieg zählt!`);
       ack({ ok: true, clan: clanPublic(id) });
     });
     socket.on("clan:declineWar", (ack) => {

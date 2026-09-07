@@ -37,7 +37,7 @@ function setupHeist(io, accounts) {
       if (share > 0) { accounts.adjustChips(key, share); const a = accounts.get(key); results.push({ name: a ? a.name : key, share, hits: h }); }
     }
     results.sort((a, b) => b.share - a.share);
-    chat.announce(io, `💰 TRESOR GEKNACKT! ${results.length} Ganoven teilen sich ${state.loot.toLocaleString("de-DE")} 🪙!`);
+    chat.announce(io, `💰 TRESOR GEKNACKT! ${results.length} Ganoven teilen sich ${state.loot.toLocaleString("de-DE")} Chips!`);
     io.emit("heist:end", { success: true, loot: state.loot, results });
     cleanup();
   }
@@ -54,7 +54,7 @@ function setupHeist(io, accounts) {
     const hp = Math.max(MIN_HP, HP_PER_PLAYER * online());
     state = { endsAt: Date.now() + seconds * 1000, vaultMax: hp, vaultHp: hp, hits: {}, loot };
     const prefix = opts.auto ? "ZUFÄLLIGER " : "";
-    chat.announce(io, `🚨 ${prefix}CASINO-HEIST! Knackt gemeinsam den Tresor — ${loot.toLocaleString("de-DE")} 🪙 Beute wartet. Alle ran an den Button!`);
+    chat.announce(io, `🚨 ${prefix}CASINO-HEIST! Knackt gemeinsam den Tresor — ${loot.toLocaleString("de-DE")} Chips Beute wartet. Alle ran an den Button!`);
     io.emit("heist:start", snapshot());
     ticker = setInterval(() => {
       if (!state) return;

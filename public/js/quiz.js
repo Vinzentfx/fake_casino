@@ -43,7 +43,7 @@
 
   function begin(d) {
     active = true; show();
-    head.textContent = `❓ BLITZ-QUIZ · ${d.rounds} Fragen · ${fmt(d.prize)} 🪙 pro Runde`;
+    head.textContent = `❓ BLITZ-QUIZ · ${d.rounds} Fragen · ${fmt(d.prize)} Chips pro Runde`;
     qEl.textContent = "Mach dich bereit …";
     optsEl.innerHTML = "";
     infoEl.innerHTML = "";
@@ -54,7 +54,7 @@
     if (!q) return;
     active = true; show();
     endsAt = q.endsAt; myChoice = null;
-    head.textContent = `❓ Frage ${q.round}/${q.rounds} · ${fmt(q.prize)} 🪙`;
+    head.textContent = `❓ Frage ${q.round}/${q.rounds} · ${fmt(q.prize)} Chips`;
     qEl.textContent = q.text;
     infoEl.innerHTML = "";
     optsEl.innerHTML = "";
@@ -88,7 +88,7 @@
     const me = window.Casino.getAccount && window.Casino.getAccount();
     const iWon = r.winner && me && r.winner.name.toLowerCase() === me.name.toLowerCase();
     infoEl.innerHTML = r.winner
-      ? `<b class="${iWon ? "quiz-me" : ""}">🏆 ${escapeHtml(r.winner.name)}</b> war am schnellsten (+${fmt(r.prize)} 🪙)` +
+      ? `<b class="${iWon ? "quiz-me" : ""}">🏆 ${escapeHtml(r.winner.name)}</b> war am schnellsten (+${fmt(r.prize)}<i class=mk></i>)` +
         (iWon ? " — das bist DU! 🎉" : "")
       : '<span class="muted">Niemand wusste es … 🤷</span>';
     barEl.style.width = "0%";

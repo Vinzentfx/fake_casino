@@ -191,16 +191,16 @@ function starte({ galaMinuten, topf } = {}) {
 
   if (_io) {
     try {
-      chat.announce(_io, `🎊 WIEDERERÖFFNUNG! Das Casino ist zurück. Holt euch euer Willkommens-Paket, und für die nächsten ${min} Minuten läuft die Eröffnungsgala: doppelte Season-XP und am Ende werden ${pot.toLocaleString("de-DE")} 🪙 unter allen verlost, die mitgespielt haben.`);
+      chat.announce(_io, `🎊 WIEDERERÖFFNUNG! Das Casino ist zurück. Holt euch euer Willkommens-Paket, und für die nächsten ${min} Minuten läuft die Eröffnungsgala: doppelte Season-XP und am Ende werden ${pot.toLocaleString("de-DE")} Chips unter allen verlost, die mitgespielt haben.`);
     } catch {}
     try {
       require("./push").anAlle("live", {
         title: "🎊 Das Casino hat wieder auf",
-        body: `Wiedereröffnung: Willkommens-Paket abholen, ${min} Minuten Gala mit doppelter Season-XP und ${pot.toLocaleString("de-DE")} 🪙 im Topf.`,
+        body: `Wiedereröffnung: Willkommens-Paket abholen, ${min} Minuten Gala mit doppelter Season-XP und ${pot.toLocaleString("de-DE")} Chips im Topf.`,
         url: "/",
       });
     } catch {}
-    try { require("./feed").add("event", `Wiedereröffnung! Gala läuft ${min} Minuten, ${pot.toLocaleString("de-DE")} 🪙 im Topf.`); } catch {}
+    try { require("./feed").add("event", `Wiedereröffnung! Gala läuft ${min} Minuten, ${pot.toLocaleString("de-DE")} Chips im Topf.`); } catch {}
   }
   sende();
   return { ok: true, minuten: min, topf: pot };
@@ -241,13 +241,13 @@ function rechneGalaAb() {
   const teilnehmer = Object.keys(g.runden).length;
   if (_io) {
     try {
-      chat.announce(_io, `🎊 Eröffnungsgala vorbei! ${teilnehmer} ${teilnehmer === 1 ? "Spieler war" : "Spieler waren"} dabei, gewonnen hat ${acc ? acc.name : gewinner} und nimmt ${g.topf.toLocaleString("de-DE")} 🪙 mit.`);
+      chat.announce(_io, `🎊 Eröffnungsgala vorbei! ${teilnehmer} ${teilnehmer === 1 ? "Spieler war" : "Spieler waren"} dabei, gewonnen hat ${acc ? acc.name : gewinner} und nimmt ${g.topf.toLocaleString("de-DE")} Chips mit.`);
     } catch {}
-    try { require("./feed").add("event", `${acc ? acc.name : gewinner} gewinnt die Eröffnungs-Verlosung: ${g.topf.toLocaleString("de-DE")} 🪙.`); } catch {}
+    try { require("./feed").add("event", `${acc ? acc.name : gewinner} gewinnt die Eröffnungs-Verlosung: ${g.topf.toLocaleString("de-DE")} Chips.`); } catch {}
     try {
       require("./push").an(gewinner, "live", {
         title: "🎊 Du hast die Eröffnungs-Verlosung gewonnen",
-        body: `${g.topf.toLocaleString("de-DE")} 🪙 sind auf deinem Konto.`,
+        body: `${g.topf.toLocaleString("de-DE")} Chips sind auf deinem Konto.`,
         url: "/",
       });
     } catch {}

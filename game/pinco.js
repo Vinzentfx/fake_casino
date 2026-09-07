@@ -199,8 +199,8 @@ function setupPinco(io, accounts) {
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       size = normalizeSize(size);
       bet = Math.floor(Number(bet));
-      if (!Number.isFinite(bet) || bet < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
-      if (bet > MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} 🪙.` });
+      if (!Number.isFinite(bet) || bet < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
+      if (bet > MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
 

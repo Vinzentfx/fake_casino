@@ -211,7 +211,7 @@
     }
     if (chips > 0 || stuecke.length) {
       window.Casino.fx.bigWin(chips, { label: stuecke.length ? stuecke.join(" · ") : "Season-Belohnungen" });
-      toast(`🎟️ ${offen.length} ${offen.length === 1 ? "Stufe" : "Stufen"} abgeholt: +${fmt(chips)} 🪙${stuecke.length ? " und " + stuecke.join(", ") : ""}`);
+      toast(`🎟️ ${offen.length} ${offen.length === 1 ? "Stufe" : "Stufen"} abgeholt: +${fmt(chips)} Chips${stuecke.length ? " und " + stuecke.join(", ") : ""}`);
     }
     load();
     if (window.Casino.renderAbholBadge) window.Casino.renderAbholBadge();
@@ -224,7 +224,7 @@
       if (!r || !r.ok) { toast(r?.error || "Fehler."); return; }
       if (r.account) applyAccount(r.account);
       const teile = [];
-      if (r.chips > 0) teile.push(`+${fmt(r.chips)} 🪙`);
+      if (r.chips > 0) teile.push(`+${fmt(r.chips)} Chips`);
       if (r.kosmetik) teile.push(`${r.kosmetik} freigeschaltet`);
       toast(`🎟️ Stufe ${btn.dataset.seasonClaim}: ${teile.join(" · ") || "abgeholt"}`);
       // Kosmetik ist selten und darf gefeiert werden.

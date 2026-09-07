@@ -66,7 +66,7 @@ const WORK_STOPS = ["Depot", "Bank", "Markt", "Park", "Kiosk", "Hotel"];
 const WORK_SYMBOLS = ["◆", "●", "▲", "■", "★", "✚"];
 const WORK_CRATES = ["Rot", "Blau", "Gelb"];
 const WORK_WIRES = ["Rot", "Blau", "Gelb", "Grün"];
-const WORK_SCAN = ["💎", "🎟️", "🍀", "⭐", "🔑", "🪙"];
+const WORK_SCAN = ["💎", "🎟️", "🍀", "⭐", "🔑", "Chips"];
 
 function shuffle(xs) {
   const arr = [...xs];
@@ -154,7 +154,7 @@ function makeWorkTask(id, job, now = Date.now()) {
       loesung: chips.map((c) => fmtChips(c)).join(" + "),
       public: {
         id, type, title: "Wechseln",
-        prompt: `Ein Gast will ${fmtChips(betrag)} 🪙 in Chips. Gib sie mit möglichst wenigen Chips aus.`,
+        prompt: `Ein Gast will ${fmtChips(betrag)} Chips in Chips. Gib sie mit möglichst wenigen Chips aus.`,
         chips: CHIP_WERTE,
       },
     };
@@ -169,23 +169,23 @@ function makeWorkTask(id, job, now = Date.now()) {
     if (art === "zahl") {
       const n = 1 + zufall(36);
       faktor = payoutFactor("number", n, n);
-      frage = `Jemand setzt ${fmtChips(einsatz)} 🪙 auf die ${n}. Die ${n} kommt. Was zahlst du aus?`;
+      frage = `Jemand setzt ${fmtChips(einsatz)} Chips auf die ${n}. Die ${n} kommt. Was zahlst du aus?`;
     } else if (art === "einfach") {
       faktor = payoutFactor("red", null, 3); // 3 ist rot -> einfache Chance
-      frage = `${fmtChips(einsatz)} 🪙 auf Rot, es kommt Rot. Was zahlst du aus?`;
+      frage = `${fmtChips(einsatz)} Chips auf Rot, es kommt Rot. Was zahlst du aus?`;
     } else {
       faktor = payoutFactor("dozen", 1, 5); // 5 liegt im ersten Dutzend
-      frage = `${fmtChips(einsatz)} 🪙 auf das erste Dutzend, es kommt die 5. Was zahlst du aus?`;
+      frage = `${fmtChips(einsatz)} Chips auf das erste Dutzend, es kommt die 5. Was zahlst du aus?`;
     }
     const richtig = Math.floor(einsatz * faktor);
     return {
       id, type, expiresAt: ende,
       answer: String(richtig),
-      loesung: `${fmtChips(einsatz)} × ${String(faktor).replace(".", ",")} = ${fmtChips(richtig)} 🪙`,
+      loesung: `${fmtChips(einsatz)} × ${String(faktor).replace(".", ",")} = ${fmtChips(richtig)} Chips`,
       public: {
         id, type, title: "Auszahlung am Tisch", prompt: frage,
         options: auswahl(richtig, [einsatz * faktor + einsatz, einsatz, richtig * 2, Math.floor(richtig / 2)]),
-        suffix: "🪙",
+        suffix: "Chips",
       },
     };
   }
@@ -198,12 +198,12 @@ function makeWorkTask(id, job, now = Date.now()) {
     return {
       id, type, expiresAt: ende,
       answer: String(richtig),
-      loesung: `${fmtChips(einsatz)} × ${String(quote).replace(".", ",")} = ${fmtChips(richtig)} 🪙`,
+      loesung: `${fmtChips(einsatz)} × ${String(quote).replace(".", ",")} = ${fmtChips(richtig)} Chips`,
       public: {
         id, type, title: "Wettschein auszahlen",
-        prompt: `Sportwette gewonnen: ${fmtChips(einsatz)} 🪙 bei Quote ${String(quote).replace(".", ",")}. Was kommt zurück?`,
+        prompt: `Sportwette gewonnen: ${fmtChips(einsatz)} Chips bei Quote ${String(quote).replace(".", ",")}. Was kommt zurück?`,
         options: auswahl(richtig, [einsatz * quote + einsatz, einsatz, richtig - einsatz, richtig * 2]),
-        suffix: "🪙",
+        suffix: "Chips",
       },
     };
   }
@@ -237,7 +237,7 @@ function makeWorkTask(id, job, now = Date.now()) {
         : korrekt;
       scheine.push({
         id: `S${i + 1}`,
-        text: `S${i + 1}: ${fmtChips(einsatz)} 🪙 × ${String(quote).replace(".", ",")} = ${fmtChips(gezeigt)} 🪙`,
+        text: `S${i + 1}: ${fmtChips(einsatz)} Chips × ${String(quote).replace(".", ",")} = ${fmtChips(gezeigt)} Chips`,
       });
     }
     return {
@@ -736,7 +736,7 @@ function setupEconomy(io, accounts) {
         const victim = accounts.get(r.payout.to);
         const bounty = accounts.claimBounty(r.payout.to, key);
         if (bounty > 0) {
-          chat.announce(io, `🎯 KOPFGELD! ${acc.name} hat ${victim ? victim.name : "einem Rivalen"} ein Gebäude abgenommen und ${bounty.toLocaleString("de-DE")} 🪙 Kopfgeld kassiert!`);
+          chat.announce(io, `🎯 KOPFGELD! ${acc.name} hat ${victim ? victim.name : "einem Rivalen"} ein Gebäude abgenommen und ${bounty.toLocaleString("de-DE")} Chips Kopfgeld kassiert!`);
           achievements.check(key);
         }
       }
@@ -782,7 +782,7 @@ function setupEconomy(io, accounts) {
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
       const r = accounts.placeBounty(socket.data.account, target, amount);
       if (!r.ok) return ack(r);
-      chat.announce(io, `🎯 KOPFGELD ausgesetzt: ${(accounts.get(socket.data.account) || {}).name || "?"} setzt ${Math.floor(amount).toLocaleString("de-DE")} 🪙 auf ${r.targetName} — übernimm ein Gebäude von ${r.targetName}, um es zu kassieren!`);
+      chat.announce(io, `🎯 KOPFGELD ausgesetzt: ${(accounts.get(socket.data.account) || {}).name || "?"} setzt ${Math.floor(amount).toLocaleString("de-DE")} Chips auf ${r.targetName} — übernimm ein Gebäude von ${r.targetName}, um es zu kassieren!`);
       ack(r);
     });
 

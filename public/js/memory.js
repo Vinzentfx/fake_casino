@@ -75,7 +75,7 @@
     $("#mem-opp").querySelector(".mem-pairs").textContent = opp.pairs;
     $("#mem-turn").textContent = s.yourTurn ? "▶ Du bist dran" : `Wartet auf ${s.turnName || "Gegner"}…`;
     $("#mem-turn").classList.toggle("me", !!s.yourTurn);
-    $("#mem-pot").textContent = `Pot: ${fmt(s.pot)} 🪙 · Einsatz ${fmt(s.buyIn)} 🪙`;
+    $("#mem-pot").textContent = `Pot: ${fmt(s.pot)} Chips · Einsatz ${fmt(s.buyIn)} Chips`;
   }
 
   function renderResult(s) {
@@ -85,13 +85,13 @@
     const emoji = $("#mem-result-emoji"), title = $("#mem-result-title"), sub = $("#mem-result-sub");
     if (r.tie) {
       emoji.textContent = "🤝"; title.textContent = "Unentschieden!";
-      sub.textContent = `Einsatz zurück (${fmt(s.buyIn)} 🪙 je Spieler).`;
+      sub.textContent = `Einsatz zurück (${fmt(s.buyIn)} Chips je Spieler).`;
     } else {
       const iWon = myName && r.winner && r.winner.toLowerCase() === myName.toLowerCase();
       emoji.textContent = iWon ? "🏆" : "😔";
       title.textContent = iWon ? "Gewonnen!" : `${escapeHtml(r.winner)} gewinnt`;
       const scoreline = r.players.map((p) => `${escapeHtml(p.name)} ${p.pairs}`).join(" · ");
-      sub.innerHTML = (iWon ? `+${fmt(r.payout)} 🪙 (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)} 🪙 an ${escapeHtml(r.winner)}`) +
+      sub.innerHTML = (iWon ? `+${fmt(r.payout)}<i class=mk></i> (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)}<i class=mk></i> an ${escapeHtml(r.winner)}`) +
         `<br>${scoreline}` + (r.walkover ? "<br><span class='muted'>Gegner hat aufgegeben.</span>" : "");
     }
   }
@@ -118,7 +118,7 @@
       // no longer on this screen (money is already credited via account:update).
       const r = s.result, me = getAccount(), myName = me && me.name;
       if (r && r.walkover && r.winner && myName && r.winner.toLowerCase() === myName.toLowerCase()) {
-        toast(`🏆 Gegner hat das Duell verlassen — du gewinnst ${fmt(r.payout)} 🪙!`);
+        toast(`🏆 Gegner hat das Duell verlassen — du gewinnst ${fmt(r.payout)} Chips!`);
       }
     }
   }
@@ -137,7 +137,7 @@
   $("#mem-create").addEventListener("click", () => {
     const err = $("#mem-error"); err.textContent = "";
     const buyIn = parseInt($("#mem-buyin").value, 10);
-    if (!Number.isFinite(buyIn) || buyIn < 50) { err.textContent = "Mindest-Buy-in 50 🪙."; return; }
+    if (!Number.isFinite(buyIn) || buyIn < 50) { err.textContent = "Mindest-Buy-in 50 Chips."; return; }
     const visEl = document.querySelector('input[name="mem-vis"]:checked');
     const isPublic = !visEl || visEl.value === "public";
     socket.emit("memory:create", { buyIn, isPublic, size: chosenSize }, (r) => {

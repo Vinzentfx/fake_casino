@@ -123,7 +123,7 @@
                    maxlength="24" placeholder="••••••" required />
           </label>
           <p class="hint">Neuer Name? Der Account wird automatisch angelegt, mit
-            <b id="login-start-chips">5.000</b> 🪙 Startguthaben.<br>
+            <b id="login-start-chips">5.000</b><i class=mk></i> Startguthaben.<br>
             Passwort: mindestens 6 Zeichen. Alte 4-stellige PINs funktionieren weiter,
             umstellen kannst du jederzeit in den Einstellungen.</p>
           <div class="form-error" id="login-error"></div>
@@ -421,7 +421,7 @@
 
         <!-- Risiko / Gamble (Book of Rah): Gewinn auf Kartenfarbe verdoppeln -->
         <div class="gamble-bar hidden" id="gamble-bar">
-          <span class="gamble-info">🃏 Risiko: <b id="gamble-amount">0</b> 🪙</span>
+          <span class="gamble-info">Risiko: <b id="gamble-amount">0</b><i class=mk></i></span>
           <button id="gamble-red" class="gamble-btn gamble-red">🔴 Rot</button>
           <button id="gamble-black" class="gamble-btn gamble-black">⚫ Schwarz</button>
           <button id="gamble-collect" class="gamble-btn gamble-collect">✓ Abholen</button>
@@ -444,7 +444,7 @@
       <div id="win-celebration" class="win-celebration">
         <div class="wc-tier" id="wc-tier"></div>
         <div class="wc-amount" id="wc-amount">0</div>
-        <div class="wc-coins" id="wc-coins">🪙</div>
+        <div class="wc-coins" id="wc-coins"><i class=mk></i></div>
       </div>
     </section>
 
@@ -503,7 +503,7 @@
               <div class="bj-bet-display-wrap">
                 <span class="lbl">Einsatz</span>
                 <b id="bj-bet-display">100</b>
-                <span class="lbl">🪙</span>
+                <span class="lbl"><i class=mk></i></span>
               </div>
               <button class="bet-step" id="bj-bet-up">+</button>
             </div>
@@ -892,7 +892,7 @@
 
           <div id="sol-solo-panel" class="mem-panel" style="display:none">
             <p class="muted small">Draw-1, begrenzte Neuauflagen. Räum das ganze Brett ab → <b>Einsatz × 2</b>. Gibst du auf, ist der Einsatz weg. Max-Einsatz bewusst niedrig.</p>
-            <label class="mem-label">Einsatz (20–500 🪙)
+            <label class="mem-label">Einsatz (20–500 Chips)
               <input id="sol-bet" type="number" inputmode="numeric" min="20" max="500" step="10" value="50" />
             </label>
             <button class="btn-primary" id="sol-solo-start" style="width:100%;margin-top:8px">🃏 Spiel starten</button>
@@ -1425,14 +1425,14 @@
         <section class="wk-head">
           <div class="wk-head-main">
             <span class="wk-label">Heute verdient</span>
-            <div class="wk-amount"><b id="work-job-day-earned">0</b> <span>🪙</span></div>
+            <div class="wk-amount"><b id="work-job-day-earned">0</b><i class=mk></i></div>
             <div class="wk-bar" id="work-day-bar"><i></i></div>
-            <small class="wk-sub" id="work-job-day">0 / 0 🪙</small>
+            <small class="wk-sub" id="work-job-day">0 / 0 Chips</small>
           </div>
           <div class="wk-head-side">
             <div class="wk-mini">
               <span class="wk-label">Diese Stunde</span>
-              <b id="work-job-hour">0 / 0 🪙</b>
+              <b id="work-job-hour">0 / 0 Chips</b>
             </div>
             <div class="wk-mini" id="work-factor-box">
               <span class="wk-label">Dein Lohnfaktor</span>
@@ -1458,14 +1458,14 @@
         <details class="wk-clicker" id="work-clicker-wrap">
           <summary>
             <span>🖐️ Trinkgeld sammeln</span>
-            <small>Wenn du wirklich blank bist: +<span id="clicker-power">1</span> 🪙 pro Klick</small>
+            <small>Wenn du wirklich blank bist: +<span id="clicker-power">1</span><i class=mk></i> pro Klick</small>
           </summary>
           <div class="wk-clicker-body">
             <button class="clicker-btn" id="clicker-btn">💼</button>
             <div id="work-hustle"></div>
             <div class="wk-upgrade">
-              <div><span class="wk-label">Klick-Stärke</span><b id="work-power">1 🪙</b></div>
-              <div><span class="wk-label">Nächstes Upgrade</span><b id="work-upgrade-cost">50 🪙</b></div>
+              <div><span class="wk-label">Klick-Stärke</span><b id="work-power">1 Chips</b></div>
+              <div><span class="wk-label">Nächstes Upgrade</span><b id="work-upgrade-cost">50 Chips</b></div>
               <button class="btn-primary" id="work-upgrade-btn">⬆️ Upgrade kaufen</button>
             </div>
             <div class="form-error" id="work-error"></div>

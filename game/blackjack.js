@@ -341,7 +341,7 @@ function resolveHand(session, accounts, outcome) {
     session.lastNet = Math.floor(bet * BJ_PAYOUT);
     accounts.recordHand(session.name, session.lastNet, true, "blackjack", { einsatz: bet });
     session.playerHands[0].result = "blackjack";
-    session.message = `🃏 Blackjack! +${Math.floor(bet * BJ_PAYOUT).toLocaleString("de-DE")} 🪙`;
+    session.message = `🃏 Blackjack! +${Math.floor(bet * BJ_PAYOUT).toLocaleString("de-DE")} Chips`;
   } else if (outcome === "push") {
     accounts.adjustChips(session.name, session.playerHands[0].bet);
     session.lastNet = 0;

@@ -198,13 +198,13 @@
   function renderResult(s) {
     const r = s.result, me = getAccount(), myName = me && me.name;
     const emoji = $("#sdk-result-emoji"), title = $("#sdk-result-title"), sub = $("#sdk-result-sub");
-    if (r.tie) { emoji.textContent = "🤝"; title.textContent = "Unentschieden!"; sub.textContent = `Einsatz zurück (${fmt(s.buyIn)} 🪙 je Spieler).`; }
+    if (r.tie) { emoji.textContent = "🤝"; title.textContent = "Unentschieden!"; sub.textContent = `Einsatz zurück (${fmt(s.buyIn)} Chips je Spieler).`; }
     else {
       const iWon = myName && r.winner && r.winner.toLowerCase() === myName.toLowerCase();
       emoji.textContent = iWon ? "🏆" : "😔";
       title.textContent = iWon ? "Gewonnen!" : `${escapeHtml(r.winner)} gewinnt`;
       const line = r.players.map((p) => `${escapeHtml(p.name)}: ${p.correct} richtig${p.finished ? " ✅" : ""}`).join(" · ");
-      sub.innerHTML = (iWon ? `+${fmt(r.payout)} 🪙 (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)} 🪙 an ${escapeHtml(r.winner)}`) +
+      sub.innerHTML = (iWon ? `+${fmt(r.payout)}<i class=mk></i> (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)}<i class=mk></i> an ${escapeHtml(r.winner)}`) +
         `<br>${line}` + (r.walkover ? "<br><span class='muted'>Gegner hat aufgegeben.</span>" : "");
     }
   }
@@ -242,7 +242,7 @@
       // Walkover: opponent left mid-race → notify the winner (money already credited).
       const r = s.result, me = getAccount(), myName = me && me.name;
       if (r && r.walkover && r.winner && myName && r.winner.toLowerCase() === myName.toLowerCase()) {
-        toast(`🏆 Gegner hat das Race verlassen — du gewinnst ${fmt(r.payout)} 🪙!`);
+        toast(`🏆 Gegner hat das Race verlassen — du gewinnst ${fmt(r.payout)} Chips!`);
       }
     }
   }
@@ -254,7 +254,7 @@
   $("#sdk-create").addEventListener("click", () => {
     const err = $("#sdk-error"); err.textContent = "";
     const buyIn = parseInt($("#sdk-buyin").value, 10);
-    if (!Number.isFinite(buyIn) || buyIn < 50) { err.textContent = "Mindest-Buy-in 50 🪙."; return; }
+    if (!Number.isFinite(buyIn) || buyIn < 50) { err.textContent = "Mindest-Buy-in 50 Chips."; return; }
     const visEl = document.querySelector('input[name="sdk-vis"]:checked');
     const isPublic = !visEl || visEl.value === "public";
     socket.emit("sudoku:create", { buyIn, isPublic, difficulty: chosenDiff }, (r) => {
@@ -338,7 +338,7 @@
             <small>${escapeHtml(d.label)} · ${escapeHtml((d.erstellerErgebnis && d.erstellerErgebnis.text) || "")}</small>
             <small class="muted">${restText(d.laeuftBisAt)}</small>
           </div>
-          <button class="btn-primary duell-btn" data-duell-accept="${d.id}">Annehmen<span>${fmt(d.einsatz)} 🪙</span></button>
+          <button class="btn-primary duell-btn" data-duell-accept="${d.id}">Annehmen<span>${fmt(d.einsatz)}<i class=mk></i></span></button>
         </div>`).join("")
         : '<p class="muted small" style="margin:0">Gerade nichts offen. Mach selbst eine auf, dann kann jemand anders annehmen, wenn er Zeit hat.</p>';
 
@@ -346,7 +346,7 @@
       $("#sdk-duell-meine").innerHTML = meine.length ? meine.map((d) => `
         <div class="duell-zeile">
           <div class="duell-info">
-            <b>${escapeHtml(d.label)} · ${fmt(d.einsatz)} 🪙</b>
+            <b>${escapeHtml(d.label)} · ${fmt(d.einsatz)}<i class=mk></i></b>
             <small>${escapeHtml((d.erstellerErgebnis && d.erstellerErgebnis.text) || "noch nicht gespielt")}</small>
             <small class="muted">${d.gegnerName ? escapeHtml(d.gegnerName) + " spielt gerade" : restText(d.laeuftBisAt)}</small>
           </div>
@@ -365,7 +365,7 @@
             <span>${kopf}</span>
             <small class="muted">${escapeHtml((d.erstellerErgebnis && d.erstellerErgebnis.text) || "—")} · ${escapeHtml((d.gegnerErgebnis && d.gegnerErgebnis.text) || "—")}</small>
           </div>
-          ${d.auszahlung ? `<b class="duell-pot">${fmt(d.auszahlung)} 🪙</b>` : ""}
+          ${d.auszahlung ? `<b class="duell-pot">${fmt(d.auszahlung)}<i class=mk></i></b>` : ""}
         </div>`;
       }).join("")
         : '<p class="muted small" style="margin:0">Noch nichts entschieden.</p>';
@@ -383,7 +383,7 @@
       <div class="duell-zeile duell-eigen">
         <div class="duell-info">
           <b>Du bist dran</b>
-          <small>${escapeHtml(d.label)} · ${fmt(d.einsatz)} 🪙 · noch ${zeitText(d.bisAt - Date.now())}</small>
+          <small>${escapeHtml(d.label)} · ${fmt(d.einsatz)}<i class=mk></i> · noch ${zeitText(d.bisAt - Date.now())}</small>
         </div>
         <button class="btn-primary duell-btn" data-duell-weiter="${d.id}">Weiterspielen</button>
       </div>`);
@@ -461,7 +461,7 @@
         const e = r.eintrag || {};
         $("#sdk-result-sub").textContent =
           `${e.erstellerName}: ${(e.erstellerErgebnis || {}).text || "—"} · ${e.gegnerName}: ${(e.gegnerErgebnis || {}).text || "—"}`
-          + (gewonnen ? ` — +${fmt(r.auszahlung)} 🪙` : "");
+          + (gewonnen ? ` — +${fmt(r.auszahlung)}<i class=mk></i>` : "");
         if (gewonnen) window.Casino.fx.bigWin(r.auszahlung, { label: "Duell gewonnen" });
       }
       ladeDuelle();
@@ -470,7 +470,7 @@
 
   $("#sdk-duell-create").addEventListener("click", () => {
     const einsatz = parseInt($("#sdk-duell-einsatz").value, 10);
-    if (!Number.isFinite(einsatz) || einsatz < 50) { toast("Mindestens 50 🪙."); return; }
+    if (!Number.isFinite(einsatz) || einsatz < 50) { toast("Mindestens 50 Chips."); return; }
     socket.emit("duell:create", { spiel: "sudoku", einsatz, optionen: { difficulty: chosenDiff } }, (r) => {
       if (!r || !r.ok) { toast((r && r.error) || "Fehler."); return; }
       if (r.account) applyAccount(r.account);

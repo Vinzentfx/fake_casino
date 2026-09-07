@@ -415,8 +415,8 @@ function setupSportsbook(io, accounts) {
       const mk = m.markets[market];
       if (!mk || !(selection in mk.sels)) return ack && ack({ ok: false, error: "Ungültiger Markt." });
       amount = Math.floor(Number(amount));
-      if (!Number.isFinite(amount) || amount < MIN_BET) return ack && ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
-      if (amount > MAX_BET) return ack && ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} 🪙.` });
+      if (!Number.isFinite(amount) || amount < MIN_BET) return ack && ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
+      if (amount > MAX_BET) return ack && ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < amount) return ack && ack({ ok: false, error: "Nicht genug Chips." });
 
@@ -453,8 +453,8 @@ function setupSportsbook(io, accounts) {
       if (!Array.isArray(legs) || legs.length < 2) return ack && ack({ ok: false, error: "Kombi braucht mind. 2 Tipps." });
       if (legs.length > MAX_LEGS) return ack && ack({ ok: false, error: `Max. ${MAX_LEGS} Tipps pro Kombi.` });
       amount = Math.floor(Number(amount));
-      if (!Number.isFinite(amount) || amount < MIN_BET) return ack && ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
-      if (amount > MAX_BET) return ack && ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} 🪙.` });
+      if (!Number.isFinite(amount) || amount < MIN_BET) return ack && ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
+      if (amount > MAX_BET) return ack && ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
 
       const seen = new Set();
       const clean = [];

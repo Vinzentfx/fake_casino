@@ -159,8 +159,8 @@ function setupCrash(io, accounts) {
       const key = socket.data.account;
       if (state.bets[key]) return ack({ ok: false, error: "Du hast diese Runde schon gesetzt." });
       amount = Math.floor(Number(amount));
-      if (!Number.isFinite(amount) || amount < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
-      if (amount > MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} 🪙.` });
+      if (!Number.isFinite(amount) || amount < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
+      if (amount > MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
       if (a.chips < amount) return ack({ ok: false, error: "Nicht genug Chips." });
       let tgt = target != null ? Math.floor(Number(target) * 100) / 100 : null;
       if (tgt != null && (!Number.isFinite(tgt) || tgt < 1.01)) tgt = null;

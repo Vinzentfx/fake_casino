@@ -173,8 +173,8 @@ function setupSolitaire(io, accounts) {
         return ack({ ...soloView(socket.data.solitaire) });
       }
       bet = Math.floor(Number(bet));
-      if (!Number.isFinite(bet) || bet < SOLO_MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${SOLO_MIN_BET} 🪙.` });
-      if (bet > SOLO_MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${SOLO_MAX_BET} 🪙 (schwer!).` });
+      if (!Number.isFinite(bet) || bet < SOLO_MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${SOLO_MIN_BET} Chips.` });
+      if (bet > SOLO_MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${SOLO_MAX_BET} Chips (schwer!).` });
       if (a.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
       const r = accounts.adjustChips(socket.data.account, -bet);
       if (!r.ok) return ack({ ok: false, error: r.error });
@@ -217,7 +217,7 @@ function setupSolitaire(io, accounts) {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < RACE_MIN_BUYIN || buyIn > RACE_MAX_BUYIN)
-        return ack && ack({ ok: false, error: `Buy-in ${RACE_MIN_BUYIN}–${RACE_MAX_BUYIN.toLocaleString("de-DE")} 🪙.` });
+        return ack && ack({ ok: false, error: `Buy-in ${RACE_MIN_BUYIN}–${RACE_MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       const a = acc(socket);
       if (!a || a.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
       raceLeave(socket);

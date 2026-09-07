@@ -44,7 +44,7 @@
 
   /**
    * Einsatz als Chipstapel. Ein Stapel sagt auf einen Blick, ob viel oder
-   * wenig im Spiel ist; "Einsatz: 250.000 🪙" muss man erst lesen.
+   * wenig im Spiel ist; "Einsatz: 250.000 Chips" muss man erst lesen.
    * Die Farben sind die ueblichen Casino-Werte.
    */
   const CHIP_WERTE = [
@@ -104,7 +104,7 @@
             ${hand.doubled ? '<span class="bj-badge">×2</span>' : ""}
           </div>
           <div class="bj-cards">${hand.cards.map(c => cardHTML(c)).join("")}</div>
-          <div class="bj-hand-bet">${chipStackHTML(hand.bet)}<b>${hand.bet.toLocaleString("de-DE")} 🪙</b></div>
+          <div class="bj-hand-bet">${chipStackHTML(hand.bet)}<b>${hand.bet.toLocaleString("de-DE")}<i class=mk></i></b></div>
           ${res}
         </div>`;
       }).join("");

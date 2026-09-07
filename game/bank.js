@@ -63,7 +63,7 @@ function setupBank(io, accounts) {
       acc.savings = acc.savings || { amount: 0, since: Date.now() };
       accrueSavings(acc);
       if (acc.savings.amount + amount > SAVINGS_CAP)
-        return ack({ ok: false, error: `Max. ${SAVINGS_CAP.toLocaleString("de-DE")} 🪙 auf dem Sparkonto.` });
+        return ack({ ok: false, error: `Max. ${SAVINGS_CAP.toLocaleString("de-DE")} Chips auf dem Sparkonto.` });
       const res = accounts.adjustChips(socket.data.account, -amount); // saves
       acc.savings.amount += amount;
       acc.savings.since = Date.now();

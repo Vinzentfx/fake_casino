@@ -32,7 +32,7 @@
     const factor = s.hustle && s.hustle.factor ? s.hustle.factor : 1;
     const power = Math.max(1, Math.round(s.clickPower * (s.schulleiter ? 3 : 1) * factor));
     $("#clicker-power").textContent = power;
-    $("#work-power").textContent = power + " 🪙" + (s.schulleiter ? " (🏫 Schulleiter ×3)" : "");
+    $("#work-power").textContent = power + " Chips" + (s.schulleiter ? " (🏫 Schulleiter ×3)" : "");
     renderHustle(s.hustle);
     renderJobs(s.jobs);
     const btn = $("#work-upgrade-btn");
@@ -42,7 +42,7 @@
       btn.disabled = true;
       btn.textContent = "✓ Voll ausgebaut";
     } else {
-      costEl.textContent = fmt(s.upgradeCost) + " 🪙";
+      costEl.textContent = fmt(s.upgradeCost) + " Chips";
       btn.disabled = false;
       btn.textContent = "⬆️ Upgrade kaufen";
     }
@@ -68,10 +68,10 @@
     workState = jobs;
     const tag = jobs.dayEarned || 0, tagMax = jobs.dayCap || 1;
     $("#work-job-day-earned").textContent = fmt(tag);
-    $("#work-job-day").textContent = `${fmt(tag)} / ${fmt(tagMax)} 🪙 Tagesgrenze`;
+    $("#work-job-day").textContent = `${fmt(tag)} / ${fmt(tagMax)} Chips Tagesgrenze`;
     const bar = $("#work-day-bar")?.firstElementChild;
     if (bar) bar.style.width = Math.min(100, Math.round((100 * tag) / tagMax)) + "%";
-    $("#work-job-hour").textContent = `${fmt(jobs.hourEarned || 0)} / ${fmt(jobs.hourCap || 0)} 🪙`;
+    $("#work-job-hour").textContent = `${fmt(jobs.hourEarned || 0)} / ${fmt(jobs.hourCap || 0)} Chips`;
 
     const f = jobs.factor || {};
     const faktor = f.factor || 1;
@@ -80,7 +80,7 @@
     $("#work-job-factor").textContent = faktor >= 2.5
       ? "Je weniger du besitzt, desto mehr zahlt die Schicht."
       : faktor >= 1
-        ? `Bei ${fmt(f.smoothedNetWorth || f.netWorth || 0)} 🪙 Vermögen.`
+        ? `Bei ${fmt(f.smoothedNetWorth || f.netWorth || 0)}<i class=mk></i> Vermögen.`
         : "Du bist längst reich — hier gibt es nur noch wenig.";
     renderTask(jobs.activeTask);
     box.innerHTML = (jobs.jobs || []).map((j) => {
@@ -105,7 +105,7 @@
           <span class="work-job-hint">${escapeHtml(m.text)}</span>
         </span>
         <span class="work-job-right">
-          <span class="work-job-pay">${fmt(j.payout)} 🪙</span>
+          <span class="work-job-pay">${fmt(j.payout)}<i class=mk></i></span>
           ${j.xp ? `<span class="work-job-xp">${fmt(j.xp)} XP</span>` : ""}
           <span class="work-job-cta">${label}</span>
         </span>
@@ -160,7 +160,7 @@
       inner += `<div class="work-chip-row">${(task.chips || []).map((c) =>
         `<button class="work-chip" data-pick="${c}">${fmt(c)}</button>`).join("")}</div>`;
       inner += `<div class="work-input-line">Gelegt: <b id="work-route-current">${
-        routeAnswer.length ? routeAnswer.map((c) => fmt(c)).join(" + ") + " = " + fmt(summe) + " 🪙" : "–"
+        routeAnswer.length ? routeAnswer.map((c) => fmt(c)).join(" + ") + " = " + fmt(summe) + "<i class=mk></i>" : "–"
       }</b></div>`;
       inner += `<div class="work-task-actions"><button class="btn-secondary" id="work-task-reset">Zurück</button><button class="btn-primary" id="work-task-submit">Auszahlen</button></div>`;
     } else if (task.type === "bestellung") {
@@ -202,10 +202,10 @@
         // Kein Totalausfall: sagen, was richtig gewesen waere, damit man es
         // beim naechsten Mal weiss.
         window.Casino.sound.play("error");
-        toast(`Daneben. Richtig wäre: ${res.loesung || "?"} · Trostlohn +${fmt(res.earned || 0)} 🪙`);
+        toast(`Daneben. Richtig wäre: ${res.loesung || "?"} · Trostlohn +${fmt(res.earned || 0)} Chips`);
       } else {
         window.Casino.sound.play("cash");
-        toast(`✓ +${fmt(res.earned || 0)} 🪙${res.xp ? ` · +${fmt(res.xp)} XP` : ""}${extra}${res.capped ? " · Cap erreicht" : ""}`);
+        toast(`✓ +${fmt(res.earned || 0)} Chips${res.xp ? ` · +${fmt(res.xp)} XP` : ""}${extra}${res.capped ? " · Cap erreicht" : ""}`);
       }
     });
   }
@@ -217,7 +217,7 @@
     box.innerHTML = `
       <div class="stat-row"><span>Hustle-Bonus</span><b>${fmt(h.clicks || 0)}/${fmt(h.target || 25)}</b></div>
       <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
-      <p class="muted small" style="margin:.35rem 0 0">Faktor: ${(h.factor || 1).toLocaleString("de-DE")}× bei ${fmt(h.smoothedNetWorth || h.netWorth || 0)} 🪙 Wert · Bonus-Cap: ${fmt(h.hourEarned || 0)}/${fmt(h.hourCap || 0)} 🪙 pro Stunde · ${fmt(h.dayEarned || 0)}/${fmt(h.dayCap || 0)} 🪙 heute</p>`;
+      <p class="muted small" style="margin:.35rem 0 0">Faktor: ${(h.factor || 1).toLocaleString("de-DE")}× bei ${fmt(h.smoothedNetWorth || h.netWorth || 0)}<i class=mk></i> Wert · Bonus-Cap: ${fmt(h.hourEarned || 0)}/${fmt(h.hourCap || 0)}<i class=mk></i> pro Stunde · ${fmt(h.dayEarned || 0)}/${fmt(h.dayCap || 0)}<i class=mk></i> heute</p>`;
   }
 
   function loadWork() {
@@ -318,7 +318,7 @@
       if (!res || !res.ok) { err.textContent = (res && res.error) || "Fehler."; return; }
       applyAccount(res.account);
       loadWork();
-      toast(`Klick-Stärke: +${res.clickPower} 🪙`);
+      toast(`Klick-Stärke: +${res.clickPower} Chips`);
     });
   });
 
@@ -328,7 +328,7 @@
     const b = btn.getBoundingClientRect();
     const el = document.createElement("div");
     el.className = "click-float";
-    el.textContent = text + " 🪙";
+    el.textContent = text + " Chips";
     el.style.left = b.left + b.width / 2 + (Math.random() - 0.5) * 40 + "px";
     el.style.top = b.top + "px";
     document.body.appendChild(el);
@@ -385,7 +385,7 @@
     }
     const chips = [];
     chips.push(`<span class="buff-chip" style="border-color:${me.color};color:${me.color}">🏠 ${me.houses} ${me.houses === 1 ? "Haus" : "Häuser"}</span>`);
-    chips.push(`<span class="buff-chip">💎 ${fmt(me.value)} 🪙 Wert</span>`);
+    chips.push(`<span class="buff-chip">💎 ${fmt(me.value)} Chips Wert</span>`);
     if (me.streets) chips.push(`<span class="buff-chip">👑 ${me.streets} ${me.streets === 1 ? "Straße" : "Straßen"} komplett</span>`);
     if (me.hasGolden) chips.push(`<span class="buff-chip" style="border-color:#ffd700;color:#ffd700">✨ Goldene Straße (2× Tribut)</span>`);
     for (const s of me.sets || []) chips.push(`<span class="buff-chip">${s.emoji} ${escapeHtml(s.label)} (+${s.tribute.toLocaleString("de-DE")}/Std)</span>`);
@@ -394,7 +394,7 @@
     // "Meine Immobilien" — tap to jump to the building on the map.
     let list = `<details class="empire-list"><summary>📋 Meine Immobilien (${me.houses})</summary><div class="empire-items">`;
     for (const p of me.properties || []) {
-      list += `<button class="empire-item" data-goto-d="${p.did}" data-goto-b="${p.id}">${p.emoji} ${escapeHtml(p.label)}<small>${escapeHtml(p.districtName)} · ${fmt(p.price)} 🪙</small></button>`;
+      list += `<button class="empire-item" data-goto-d="${p.did}" data-goto-b="${p.id}">${p.emoji} ${escapeHtml(p.label)}<small>${escapeHtml(p.districtName)} · ${fmt(p.price)}<i class=mk></i></small></button>`;
     }
     list += `</div></details>`;
     box.innerHTML = chips.join("") + list;
@@ -445,7 +445,7 @@
             <span class="cb-dot" style="background:${z.color}"></span>
             <span class="cb-name">${escapeHtml(z.name)}${z.isMe ? " (du)" : ""}</span>
             <span class="cb-num">🏠 ${fmt(z.houses)}</span>
-            <span class="cb-num cb-value">${fmt(z.value)} 🪙</span>
+            <span class="cb-num cb-value">${fmt(z.value)}<i class=mk></i></span>
             ${marken.length ? `<span class="cb-tags">${marken.join(" ")}</span>` : ""}
             <span class="cb-caret">${offen ? "▾" : "▸"}</span>
           </button>
@@ -464,7 +464,7 @@
     return kopf + liste.map((p) => `
         <button class="cb-item" data-goto-d="${p.did}" data-goto-b="${p.id}" type="button">
           <span class="cb-item-main">${p.emoji} ${escapeHtml(p.label)}<small>${escapeHtml(p.districtName)}${p.st ? " · " + escapeHtml(p.st) : ""}</small></span>
-          <b>${p.mine ? fmt(p.price) + " 🪙 Wert" : "Übernehmen " + fmt(p.takeoverCost) + " 🪙"}</b>
+          <b>${p.mine ? fmt(p.price) + "<i class=mk></i> Wert" : "Übernehmen " + fmt(p.takeoverCost) + "<i class=mk></i>"}</b>
         </button>`).join("");
   }
 
@@ -857,10 +857,10 @@
          liegen, deshalb beide Richtungen zeigen statt nur den Rabatt. */
       const meiner = b.myPrice != null ? b.myPrice : b.price;
       const abweichung = meiner !== b.price;
-      body += `<button class="btn-primary cd-btn" data-act="buy">Kaufen — ${fmt(meiner)} 🪙${abweichung ? ` <s class="muted small">${fmt(b.price)}</s>` : ""}</button>`;
+      body += `<button class="btn-primary cd-btn" data-act="buy">Kaufen — ${fmt(meiner)}<i class=mk></i>${abweichung ? ` <s class="muted small">${fmt(b.price)}</s>` : ""}</button>`;
       body += staffelHinweis(meiner < b.price);
     } else if (b.mine) {
-      body += `<button class="btn-primary cd-btn" data-act="sell">Verkaufen — ${fmt(b.sellPrice)} 🪙</button>`;
+      body += `<button class="btn-primary cd-btn" data-act="sell">Verkaufen — ${fmt(b.sellPrice)}<i class=mk></i></button>`;
       if (/^(kiosk|cafe|shop|hotel|factory)$/.test(b.cls)) {
         body += b.listed
           ? `<div class="cd-row" style="color:#7ec8ff">📈 Börsennotiert</div>`
@@ -870,8 +870,8 @@
       /* Preis kommt vom Server: der Client rechnete hier frueher price × 1,5
          nach und haette mit der Besitzer-Staffel eine falsche Zahl gezeigt. */
       const kosten = b.takeoverCost != null ? b.takeoverCost : Math.ceil(b.price * 1.5);
-      body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen — ${fmt(kosten)} 🪙</button>`;
-      body += `<div class="cd-row muted small">50 % Aufschlag auf den Marktwert von ${fmt(b.price)} 🪙. Der Vorbesitzer bekommt den vollen Marktwert, der Rest verfällt.</div>`;
+      body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen — ${fmt(kosten)}<i class=mk></i></button>`;
+      body += `<div class="cd-row muted small">50 % Aufschlag auf den Marktwert von ${fmt(b.price)}<i class=mk></i>. Der Vorbesitzer bekommt den vollen Marktwert, der Rest verfällt.</div>`;
       body += staffelHinweis(false);
     }
     // Wohnsitz: free flavour on any building.
@@ -909,9 +909,9 @@
       renderDistrict();
       renderDetail();
       socket.emit("city:state", (r2) => { if (r2 && r2.ok) { overview = r2.overview; renderEmpire(overview.me); } });
-      if (res.raised) toast(`🚀 Börsengang! +${fmt(res.raised)} 🪙 Kapital (${res.sym}).`);
-      else if (res.gain) toast(`✓ +${fmt(res.gain)} 🪙`);
-      else if (res.cost) toast(`✓ −${fmt(res.cost)} 🪙`);
+      if (res.raised) toast(`🚀 Börsengang! +${fmt(res.raised)} Chips Kapital (${res.sym}).`);
+      else if (res.gain) toast(`✓ +${fmt(res.gain)} Chips`);
+      else if (res.cost) toast(`✓ −${fmt(res.cost)} Chips`);
       else toast("✓ Erledigt");
     });
   });
@@ -928,7 +928,7 @@
   socket.on("ach:unlocked", (a) => {
     const acc = window.Casino.getAccount && window.Casino.getAccount();
     if (!a || !acc || !a.user || a.user.toLowerCase() !== acc.name.toLowerCase()) return;
-    toast(`🏆 Achievement: ${a.emoji} ${a.label} — +${fmt(a.reward)} 🪙!`);
+    toast(`🏆 Achievement: ${a.emoji} ${a.label} — +${fmt(a.reward)} Chips!`);
   });
 
   // ── Screen-entry hooks (called by app.js's showScreen) ───────────────────

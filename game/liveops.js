@@ -113,8 +113,8 @@ function startTourney(minutes, prize, opts = {}) {
   autoState().tourneyCooldownUntil = state.tourney.endsAt + randInt(90, 180) * 60000;
   save();
   const prefix = opts.auto ? "🎲 Zufälliges " : "";
-  if (_io) { chat.announce(_io, `🏁 ${prefix}SLOT-TURNIER gestartet! ${mins} Min — der größte Einzelgewinn holt ${pr.toLocaleString("de-DE")} 🪙. Los!`); broadcast(); }
-  meldePush("🏁 Slot-Turnier läuft", `${mins} Minuten, ${pr.toLocaleString("de-DE")} 🪙 für das beste Vielfache.`);
+  if (_io) { chat.announce(_io, `🏁 ${prefix}SLOT-TURNIER gestartet! ${mins} Min — der größte Einzelgewinn holt ${pr.toLocaleString("de-DE")} Chips. Los!`); broadcast(); }
+  meldePush("🏁 Slot-Turnier läuft", `${mins} Minuten, ${pr.toLocaleString("de-DE")} Chips für das beste Vielfache.`);
   return { ok: true };
 }
 
@@ -146,7 +146,7 @@ function settleTourney() {
     const acc = _accounts.get(winner.key);
     if (acc) { acc.tourneyWins = (acc.tourneyWins || 0) + 1; _accounts.save(); }
     try { require("./achievements").check(winner.key); } catch {}
-    if (_io) chat.announce(_io, `🏆 TURNIER-SIEG: ${winner.name} mit ${winner.mult}× Einsatz — Preis: ${t.prize.toLocaleString("de-DE")} 🪙!`);
+    if (_io) chat.announce(_io, `🏆 TURNIER-SIEG: ${winner.name} mit ${winner.mult}× Einsatz — Preis: ${t.prize.toLocaleString("de-DE")} Chips!`);
     if (_io) _io.emit("liveops:tourneyWin", { name: winner.name, mult: winner.mult, prize: t.prize });
   } else if (_io) {
     chat.announce(_io, "🏁 Turnier vorbei — niemand hat gespielt, kein Sieger.");

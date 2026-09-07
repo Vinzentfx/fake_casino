@@ -177,7 +177,7 @@
     const potEl = $("#pot");
     if (state.pot > 0) {
       potEl.classList.add("has-pot");
-      potEl.innerHTML = `${potChipsHTML(state.pot)}<b>${state.pot.toLocaleString("de-DE")} 🪙</b>`;
+      potEl.innerHTML = `${potChipsHTML(state.pot)}<b>${state.pot.toLocaleString("de-DE")}<i class=mk></i></b>`;
     } else {
       potEl.classList.remove("has-pot");
       potEl.innerHTML = "";
@@ -242,7 +242,7 @@
         cardsHtml +
         `<div class="seat-plate">
            <div class="seat-name">${escapeHtml(seat.name)}${seat.index === me ? " (du)" : ""} ${seat.isButton ? '<span class="btn-chip">D</span>' : ""}</div>
-           <div class="seat-chips">${seat.chips.toLocaleString("de-DE")} 🪙${seat.allIn ? " · All-In" : ""}</div>
+           <div class="seat-chips">${seat.chips.toLocaleString("de-DE")}<i class=mk></i>${seat.allIn ? " · All-In" : ""}</div>
          </div>` +
         handName +
         (seat.bet > 0 ? `<div class="seat-bet">${seat.bet.toLocaleString("de-DE")}</div>` : "");
@@ -284,7 +284,7 @@
           <input id="buyin-input" type="number" min="${state.bigBlind}" max="${max}" value="${def}" />
           <button class="btn-primary" id="sit-btn">Setzen</button>
         </div>
-        <div class="muted small">Dein Bank-Guthaben: ${max.toLocaleString("de-DE")} 🪙</div>`;
+        <div class="muted small">Dein Bank-Guthaben: ${max.toLocaleString("de-DE")}<i class=mk></i></div>`;
       $("#sit-btn").addEventListener("click", () => {
         const buyIn = parseInt($("#buyin-input").value, 10);
         socket.emit("poker:sit", { buyIn }, (res) => {

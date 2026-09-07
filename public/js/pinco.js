@@ -339,7 +339,7 @@
     if (!drops.length) { box.innerHTML = '<p class="muted small">Noch keine Drops.</p>'; return; }
     box.innerHTML = drops.slice(0, 18).map((d) => {
       const cls = d.net >= 0 ? "pos" : "neg", sign = d.net >= 0 ? "+" : "-", color = d.color || DEFAULT_BALL;
-      return `<div class="pinco-feed-row"><span><i class="pinco-dot" style="background:${escapeHtml(color)};color:${escapeHtml(color)}"></i><b>${escapeHtml(d.name)}</b> · ${fmt(d.bet)} 🪙 · ${d.multiplier}×</span><span class="${cls}">${sign}${fmt(Math.abs(d.net))} 🪙</span></div>`;
+      return `<div class="pinco-feed-row"><span><i class="pinco-dot" style="background:${escapeHtml(color)};color:${escapeHtml(color)}"></i><b>${escapeHtml(d.name)}</b> · ${fmt(d.bet)}<i class=mk></i> · ${d.multiplier}×</span><span class="${cls}">${sign}${fmt(Math.abs(d.net))}<i class=mk></i></span></div>`;
     }).join("");
   }
   function renderRoom(state) {
@@ -367,7 +367,7 @@
   }
   function dropStatus(drop) {
     const cls = drop.net >= 0 ? "pos" : "neg", sign = drop.net >= 0 ? "+" : "-";
-    return `${escapeHtml(drop.name)} landet auf <b>${drop.multiplier}×</b> · <span class="${cls}">${sign}${fmt(Math.abs(drop.net))} 🪙</span>`;
+    return `${escapeHtml(drop.name)} landet auf <b>${drop.multiplier}×</b> · <span class="${cls}">${sign}${fmt(Math.abs(drop.net))}<i class=mk></i></span>`;
   }
 
   function dropBall() {

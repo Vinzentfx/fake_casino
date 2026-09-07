@@ -64,7 +64,7 @@
       const mine = o.seller === me;
       return `<div class="mkt-offer">
         <div>${o.emoji} <b>${escapeHtml(o.name)}</b> <span class="muted small">von ${escapeHtml(o.seller)}</span></div>
-        <div class="mkt-offer-buy"><b>${fmt(o.price)} 🪙</b>
+        <div class="mkt-offer-buy"><b>${fmt(o.price)}<i class=mk></i></b>
           ${mine ? `<button class="mkt-unlist" data-id="${o.id}">Zurücknehmen</button>`
                  : `<button class="btn-primary mkt-buy" data-id="${o.id}">Kaufen</button>`}</div>
       </div>`;

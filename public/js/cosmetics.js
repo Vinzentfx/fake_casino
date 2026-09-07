@@ -21,11 +21,20 @@
   let stand = null;
   let vorschau = null;   // { type, id } — nur angesehen, nicht gekauft
 
-  const preisText = (x) =>
-    x.equipped ? "✓ Aktiv"
-      : x.owned ? "Anlegen"
-        : x.cost === null ? (x.via ? "🔒 " + x.via : "🔒 Season")
-          : x.cost ? fmt(x.cost) + " 🪙" : "Gratis";
+  /*
+   * Preis oder Zustand eines Stuecks. Gibt HTML zurueck, nicht Text — die
+   * Spielmarke und das Schloss sind gezeichnet. Was von aussen kommt (`via`
+   * aus dem Katalog) wird hier einzeln escaped; frueher lief der ganze
+   * Rueckgabewert durch escapeHtml, was jetzt die Marke als Zeichenkette
+   * sichtbar machen wuerde.
+   */
+  const preisHtml = (x) => {
+    const sperre = window.Casino.icons.ui("sperre");
+    if (x.equipped) return `${window.Casino.icons.ui("ja")} Aktiv`;
+    if (x.owned) return "Anlegen";
+    if (x.cost === null) return `${sperre} ${escapeHtml(x.via || "Season")}`;
+    return x.cost ? window.Casino.betrag(x.cost) : "Gratis";
+  };
 
   /** Grob genug: bei sieben Wochen interessiert niemanden die Stunde. */
   function restText(bis) {
@@ -66,7 +75,7 @@
         data-type="${type}" data-id="${x.id}" data-owned="${x.owned ? 1 : 0}" data-locked="${gesperrt ? 1 : 0}">
         ${marke(x)}
         ${inhalt}
-        <small>${escapeHtml(preisText(x))}</small>
+        <small class="kos-preis">${preisHtml(x)}</small>
       </button>`;
   }
 

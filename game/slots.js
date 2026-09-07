@@ -128,7 +128,7 @@ const MACHINES = [
   //   wild: "W", scatter: "S", unlockCost: 50000,
   //   bets: [500, 1000, 5000, 25000, 100000, 250000], payScale: 1.03,
   //   freeSpins: { trigger: 3, count: 8, multiplier: 3 }, buyBonus: 14,
-  //   symbols: { coin: { emoji: "🪙", weight: 28 }, sword: { emoji: "🗡️", weight: 24 },
+  //   symbols: { coin: { emoji: "Chips", weight: 28 }, sword: { emoji: "🗡️", weight: 24 },
   //     shield: { emoji: "🛡️", weight: 20 }, ring: { emoji: "💍", weight: 16 },
   //     chest: { emoji: "💰", weight: 12 }, dragon: { emoji: "🐲", weight: 8 },
   //     W: { emoji: "🐉", weight: 5 }, S: { emoji: "🔥", weight: 5 } },
@@ -977,7 +977,7 @@ function setupSlots(io, accounts) {
           result.totalWin = totalWin;
           result.jackpot = jackpotWin;
           const acc = accounts.get(socket.data.account);
-          require("./chat").announce(io, `💰💥 JACKPOT! ${acc ? acc.name : "?"} knackt den Gemeinschafts-Jackpot: +${jackpotWin.toLocaleString("de-DE")} 🪙!`);
+          require("./chat").announce(io, `💰💥 JACKPOT! ${acc ? acc.name : "?"} knackt den Gemeinschafts-Jackpot: +${jackpotWin.toLocaleString("de-DE")} Chips!`);
         }
       }
 

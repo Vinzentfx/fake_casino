@@ -75,7 +75,7 @@
       setTimeout(() => {
         spinning = false;
         if (r.account) applyAccount(r.account);
-        toast(r.prize >= 50000 ? `🎉 JACKPOT! +${r.prize.toLocaleString("de-DE")} 🪙!` : `🎡 +${r.prize.toLocaleString("de-DE")} 🪙!`);
+        toast(r.prize >= 50000 ? `🎉 JACKPOT! +${r.prize.toLocaleString("de-DE")} Chips!` : `🎡 +${r.prize.toLocaleString("de-DE")} Chips!`);
         load();
       }, 4700);
     });

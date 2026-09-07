@@ -66,7 +66,7 @@
       return `<button class="stk-row ${selected === s.sym ? "sel" : ""}" data-sym="${s.sym}">
           <div class="stk-id"><b>${s.sym}</b><span>${escapeHtml(s.name)}</span></div>
           ${sparkline(s.history)}
-          <div class="stk-px"><b>${fmt(s.price)} 🪙</b><span class="${cls}">${arrow} ${fmt(Math.abs(s.changePct))}%</span></div>
+          <div class="stk-px"><b>${fmt(s.price)}<i class=mk></i></b><span class="${cls}">${arrow} ${fmt(Math.abs(s.changePct))}%</span></div>
         </button>`;
     }).join("");
     el.querySelectorAll(".stk-row").forEach((b) =>
@@ -89,14 +89,14 @@
     const posHtml = mine.map((p) => `
       <div class="stk-detpos">
         <span>${p.dir > 0 ? "📈 Long" : "📉 Short"} ${p.lev}× <span class="muted small">@${fmt(p.entry)}</span></span>
-        <b class="${p.pnl >= 0 ? "up" : "down"}">${p.pnl >= 0 ? "+" : ""}${fmt(p.pnl)} 🪙</b>
-        <button class="stk-close" data-id="${p.id}">Verkaufen<small>${fmt(p.equity)} 🪙</small></button>
+        <b class="${p.pnl >= 0 ? "up" : "down"}">${p.pnl >= 0 ? "+" : ""}${fmt(p.pnl)}<i class=mk></i></b>
+        <button class="stk-close" data-id="${p.id}">Verkaufen<small>${fmt(p.equity)}<i class=mk></i></small></button>
       </div>`).join("");
 
     el.innerHTML = `
       <button class="stk-detclose" id="stk-detclose">✕ Schließen</button>
       <div class="stk-trade-head">${escapeHtml(s.name)} <b>(${s.sym})</b></div>
-      <div class="stk-detprice"><b>${fmt(s.price)} 🪙</b> <span class="${cls}">${arrow} ${fmt(Math.abs(s.changePct))}%</span></div>
+      <div class="stk-detprice"><b>${fmt(s.price)}<i class=mk></i></b> <span class="${cls}">${arrow} ${fmt(Math.abs(s.changePct))}%</span></div>
       ${bigChart(s.history)}
       ${mine.length ? `<div class="stk-detpos-wrap"><div class="muted small">Deine Positionen:</div>${posHtml}</div>` : ""}
       <label class="bank-input-row"><span>Einsatz (Margin)</span><input id="stk-margin" type="number" min="1000" value="5000"/></label>
@@ -141,7 +141,7 @@
       applyAccount(res.account);
       data = res;
       render();
-      toast(`${dir > 0 ? "📈 Long" : "📉 Short"} ${selected} eröffnet (${fmt(margin)} 🪙 · ${lev}×).`);
+      toast(`${dir > 0 ? "📈 Long" : "📉 Short"} ${selected} eröffnet (${fmt(margin)} Chips · ${lev}×).`);
     });
   }
 
@@ -154,8 +154,8 @@
       const cls = p.pnl >= 0 ? "up" : "down";
       return `<div class="stk-pos">
           <div class="stk-pos-id">${p.dir > 0 ? "📈" : "📉"} <b>${p.sym}</b> ${p.lev}× <span class="muted small">@${fmt(p.entry)}</span></div>
-          <div class="stk-pos-pnl ${cls}">${p.pnl >= 0 ? "+" : ""}${fmt(p.pnl)} 🪙</div>
-          <button class="stk-close" data-id="${p.id}">Schließen<small>${fmt(p.equity)} 🪙</small></button>
+          <div class="stk-pos-pnl ${cls}">${p.pnl >= 0 ? "+" : ""}${fmt(p.pnl)}<i class=mk></i></div>
+          <button class="stk-close" data-id="${p.id}">Schließen<small>${fmt(p.equity)}<i class=mk></i></small></button>
         </div>`;
     }).join("");
     el.querySelectorAll(".stk-close").forEach((b) =>
@@ -168,7 +168,7 @@
       applyAccount(res.account);
       data = res;
       render();
-      toast(`Position geschlossen: +${fmt(res.payout)} 🪙.`);
+      toast(`Position geschlossen: +${fmt(res.payout)} Chips.`);
     });
   }
 
@@ -176,8 +176,8 @@
   socket.on("stocks:update", () => { if (onScreen()) load(); });
   socket.on("stocks:liquidated", ({ lost, won, account }) => {
     if (account) applyAccount(account);
-    if (won > 0) toast(`💥 Insolvenz! Dein Short zahlte +${fmt(won)} 🪙.`);
-    if (lost > 0) toast(`💥 Liquidiert! −${fmt(lost)} 🪙 verloren.`);
+    if (won > 0) toast(`💥 Insolvenz! Dein Short zahlte +${fmt(won)} Chips.`);
+    if (lost > 0) toast(`💥 Liquidiert! −${fmt(lost)} Chips verloren.`);
     if (onScreen()) load();
   });
 

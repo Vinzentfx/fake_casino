@@ -36,7 +36,7 @@ function setupChipRain(io, accounts) {
       .sort((a, b) => b.sum - a.sum);
     const total = rows.reduce((s, r) => s + r.sum, 0);
     if (rows.length) {
-      chat.announce(io, `💸 Chip-Regen vorbei — ${rows.length} Sammler haben zusammen ${total.toLocaleString("de-DE")} 🪙 aufgelesen. Fleißigster: ${rows[0].name} (+${rows[0].sum.toLocaleString("de-DE")})!`);
+      chat.announce(io, `💸 Chip-Regen vorbei — ${rows.length} Sammler haben zusammen ${total.toLocaleString("de-DE")} Chips aufgelesen. Fleißigster: ${rows[0].name} (+${rows[0].sum.toLocaleString("de-DE")})!`);
     } else {
       chat.announce(io, "💸 Chip-Regen vorbei — und niemand hat sich gebückt?!");
     }
@@ -58,7 +58,7 @@ function setupChipRain(io, accounts) {
 
     state = { endsAt: Date.now() + seconds * 1000, pot, chips: new Map(), collected: {} };
     const prefix = opts.auto ? "ZUFÄLLIGER " : "";
-    chat.announce(io, `💸 ${prefix}CHIP-REGEN! ${seconds} Sekunden lang fallen ${pot.toLocaleString("de-DE")} 🪙 vom Himmel — schnell auftippen!`);
+    chat.announce(io, `💸 ${prefix}CHIP-REGEN! ${seconds} Sekunden lang fallen ${pot.toLocaleString("de-DE")} Chips vom Himmel — schnell auftippen!`);
     io.emit("rain:start", snapshot());
 
     let spawned = 0;

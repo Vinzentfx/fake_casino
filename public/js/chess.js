@@ -171,14 +171,14 @@
     const reasonTxt = { checkmate: "Schachmatt", timeout: "Zeit abgelaufen", resign: "Aufgabe", walkover: "Gegner hat verlassen", stalemate: "Patt", draw: "Remis" }[r.reason] || r.reason;
     if (r.draw) {
       emoji.textContent = "🤝"; title.textContent = "Remis!";
-      sub.innerHTML = `${reasonTxt} — Einsatz zurück (${fmt(st.buyIn)} 🪙).<br>` + r.players.map((p) => `${escapeHtml(p.name)}: ${p.rating}`).join(" · ");
+      sub.innerHTML = `${reasonTxt} — Einsatz zurück (${fmt(st.buyIn)}<i class=mk></i>).<br>` + r.players.map((p) => `${escapeHtml(p.name)}: ${p.rating}`).join(" · ");
     } else {
       const iWon = myName && r.winner && r.winner.toLowerCase() === myName.toLowerCase();
       emoji.textContent = iWon ? "🏆" : "😔";
       title.textContent = iWon ? "Gewonnen!" : `${escapeHtml(r.winner)} gewinnt`;
-      sub.innerHTML = `${reasonTxt} · ` + (iWon ? `+${fmt(r.payout)} 🪙 (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)} 🪙 an ${escapeHtml(r.winner)}`) +
+      sub.innerHTML = `${reasonTxt} · ` + (iWon ? `+${fmt(r.payout)}<i class=mk></i> (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)}<i class=mk></i> an ${escapeHtml(r.winner)}`) +
         `<br>` + r.players.map((p) => `${escapeHtml(p.name)}: ${p.rating}`).join(" · ");
-      if (r.walkover && iWon) toast(`🏆 Gegner hat das Duell verlassen — du gewinnst ${fmt(r.payout)} 🪙!`);
+      if (r.walkover && iWon) toast(`🏆 Gegner hat das Duell verlassen — du gewinnst ${fmt(r.payout)} Chips!`);
     }
   }
 
@@ -219,7 +219,7 @@
   $("#chs-create").addEventListener("click", () => {
     const err = $("#chs-error"); err.textContent = "";
     const buyIn = parseInt($("#chs-buyin").value, 10);
-    if (!Number.isFinite(buyIn) || buyIn < 50) { err.textContent = "Mindest-Buy-in 50 🪙."; return; }
+    if (!Number.isFinite(buyIn) || buyIn < 50) { err.textContent = "Mindest-Buy-in 50 Chips."; return; }
     const visEl = document.querySelector('input[name="chs-vis"]:checked');
     const isPublic = !visEl || visEl.value === "public";
     socket.emit("chess:create", { buyIn, isPublic, tc: chosenTc }, (r) => { if (!r || !r.ok) err.textContent = (r && r.error) || "Fehler."; });

@@ -63,7 +63,7 @@
     const wer = b.meiner ? "Dein Rekord" : escapeHtml(b.name);
     const detail = z.art === "serie"
       ? `${escapeHtml(z.regel)} · ${wannKurz(b.at)}`
-      : `${fmt(b.einsatz)} → ${fmt(b.gewinn)} 🪙 · ${wannKurz(b.at)}`;
+      : `${fmt(b.einsatz)} → ${fmt(b.gewinn)}<i class=mk></i> · ${wannKurz(b.at)}`;
     return `<button class="rec${b.meiner ? " rec-mein" : ""}" data-rec="${screen}" style="--h:${ton}" type="button">
         <span class="rec-icon" aria-hidden="true">${symbol}</span>
         <span class="rec-game">${escapeHtml(z.label)}</span>
@@ -83,7 +83,7 @@
     letzterStand = res;
     wrap.classList.remove("hidden");
     if (hint) {
-      hint.textContent = `Ab ${fmt(res.minEinsatz)} 🪙 Einsatz. Was zählt, steht auf jeder Karte. Setzt sich jeden Montag zurück.`;
+      hint.textContent = `Ab ${fmt(res.minEinsatz)} Chips Einsatz. Was zählt, steht auf jeder Karte. Setzt sich jeden Montag zurück.`;
     }
     host.innerHTML = res.zeilen.map(karte).join("");
   }

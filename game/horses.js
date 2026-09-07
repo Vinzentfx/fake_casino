@@ -442,10 +442,10 @@ function checkDailyChamp() {
     const parts = racers.map((a, i) => {
       const prize = DAILY_PRIZES[i] + Math.floor(pot * POT_SPLIT[i]);
       accounts.adjustChips(String(a.name).trim().toLowerCase(), prize);
-      return `${medals[i]} ${a.name} (${a.dailyHorseWins} Siege · +${prize.toLocaleString("de-DE")} 🪙)`;
+      return `${medals[i]} ${a.name} (${a.dailyHorseWins} Siege · +${prize.toLocaleString("de-DE")} Chips)`;
     });
     store.lastChamp = { name: racers[0].name, wins: racers[0].dailyHorseWins, prize: DAILY_PRIZES[0] + Math.floor(pot * POT_SPLIT[0]) };
-    const potNote = pot > 0 ? ` (inkl. Wett-Topf ${pot.toLocaleString("de-DE")} 🪙)` : "";
+    const potNote = pot > 0 ? ` (inkl. Wett-Topf ${pot.toLocaleString("de-DE")} Chips)` : "";
     try { require("./chat").announce(io, `🐎🏆 RENN-CHAMPION DES TAGES: ${parts.join(" · ")}${potNote}`); } catch {}
   } else {
     store.lastChamp = null;
@@ -720,12 +720,12 @@ function setupHorses(_io, _accounts) {
       amount = Math.floor(Number(amount));
       if (!race.field[lane]) return ack({ ok: false, error: "Unbekanntes Pferd." });
       if (type !== "win" && type !== "place") return ack({ ok: false, error: "Wettart?" });
-      if (!Number.isFinite(amount) || amount < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
+      if (!Number.isFinite(amount) || amount < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
       const mine = race.bets.filter((b) => b.key === key());
       const onHorse = mine.filter((b) => b.lane === lane).reduce((s, b) => s + b.amount, 0);
-      if (onHorse + amount > MAX_PER_HORSE) return ack({ ok: false, error: `Max. ${MAX_PER_HORSE.toLocaleString("de-DE")} 🪙 auf ein Pferd.` });
+      if (onHorse + amount > MAX_PER_HORSE) return ack({ ok: false, error: `Max. ${MAX_PER_HORSE.toLocaleString("de-DE")} Chips auf ein Pferd.` });
       const staked = mine.reduce((s, b) => s + b.amount, 0);
-      if (staked + amount > MAX_PER_RACE) return ack({ ok: false, error: `Max. ${MAX_PER_RACE.toLocaleString("de-DE")} 🪙 Gesamteinsatz pro Rennen.` });
+      if (staked + amount > MAX_PER_RACE) return ack({ ok: false, error: `Max. ${MAX_PER_RACE.toLocaleString("de-DE")} Chips Gesamteinsatz pro Rennen.` });
       const deduct = accounts.adjustChips(key(), -amount);
       if (!deduct.ok) return ack({ ok: false, error: "Nicht genug Chips." });
       const odds = type === "win" ? race.odds[lane].win : race.odds[lane].place;
@@ -761,7 +761,7 @@ function setupHorses(_io, _accounts) {
       if (race.entries.length >= FIELD_SIZE) return ack({ ok: false, error: "Nächstes Rennen ist voll." });
       if (!["front", "closer", "stayer"].includes(tactic)) tactic = "stayer";
       const deduct = accounts.adjustChips(key(), -ENTRY_FEE);
-      if (!deduct.ok) return ack({ ok: false, error: `Startgeld ${ENTRY_FEE.toLocaleString("de-DE")} 🪙 fehlt.` });
+      if (!deduct.ok) return ack({ ok: false, error: `Startgeld ${ENTRY_FEE.toLocaleString("de-DE")} Chips fehlt.` });
       accounts.recordHand(key(), -ENTRY_FEE, true, "horses");
       race.entries.push({ horseId, tactic });
       ack({ ok: true, account: deduct.account, position: race.entries.length });
@@ -796,12 +796,12 @@ function setupHorses(_io, _accounts) {
       if (owned >= MAX_OWNED) return ack({ ok: false, error: `Max. ${MAX_OWNED} aktive Pferde im Stall.` });
       const price = horsePrice(h);
       const deduct = accounts.adjustChips(key(), -price);
-      if (!deduct.ok) return ack({ ok: false, error: `${price.toLocaleString("de-DE")} 🪙 fehlen.` });
+      if (!deduct.ok) return ack({ ok: false, error: `${price.toLocaleString("de-DE")} Chips fehlen.` });
       h.owner = key();
       store.market = store.market.filter((id) => id !== horseId);
       save();
       const acc = accounts.get(key());
-      try { require("./feed").add("horses", `🐎 ${acc.name} kauft ${h.name} für ${price.toLocaleString("de-DE")} 🪙.`, { user: acc.name }); } catch {}
+      try { require("./feed").add("horses", `🐎 ${acc.name} kauft ${h.name} für ${price.toLocaleString("de-DE")} Chips.`, { user: acc.name }); } catch {}
       ack({ ok: true, account: deduct.account, horse: publicHorse(h, { own: true }) });
     });
 
@@ -853,7 +853,7 @@ function setupHorses(_io, _accounts) {
       // Kosten steigen mit dem Stat-Level (Sink), Zuwachs wird knapper am Limit.
       const cost = Math.round(TRAIN_BASE_COST * Math.pow(h[stat] / 45, 2) / 100) * 100;
       const deduct = accounts.adjustChips(key(), -cost);
-      if (!deduct.ok) return ack({ ok: false, error: `${cost.toLocaleString("de-DE")} 🪙 fehlen.` });
+      if (!deduct.ok) return ack({ ok: false, error: `${cost.toLocaleString("de-DE")} Chips fehlen.` });
       const gain = h[stat] >= h.potential - 4 ? 1 : 1 + crypto.randomInt(2);
       h[stat] = Math.min(h.potential, h[stat] + gain);
       h.trainedCount += 1;

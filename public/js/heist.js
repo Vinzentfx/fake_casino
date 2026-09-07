@@ -33,7 +33,7 @@
     $("#heist-result").innerHTML = "";
     $("#heist-crack").style.display = "";
     $("#heist-crack").disabled = false;
-    $("#heist-loot").innerHTML = `Beute: <b>${fmt(s.loot)} 🪙</b>`;
+    $("#heist-loot").innerHTML = `Beute: <b>${fmt(s.loot)}<i class=mk></i></b>`;
     update(s);
   }
   function update(s) {
@@ -61,7 +61,7 @@
         return me && r.name.toLowerCase() === me.name.toLowerCase();
       });
       box.innerHTML = `<div class="heist-win">💰 TRESOR GEKNACKT!</div>` +
-        (mine ? `<div>Dein Anteil: <b>+${fmt(mine.share)} 🪙</b> (${mine.hits} Treffer)</div>` : `<div class="muted small">Du warst nicht dabei.</div>`) +
+        (mine ? `<div>Dein Anteil: <b>+${fmt(mine.share)}<i class=mk></i></b> (${mine.hits} Treffer)</div>` : `<div class="muted small">Du warst nicht dabei.</div>`) +
         `<div class="heist-crooks">${(d.results || []).slice(0, 6).map((r) => `${escapeHtml(r.name)}: +${fmt(r.share)}`).join(" · ")}</div>`;
     } else {
       box.innerHTML = `<div class="heist-fail">🔒 Tresor gehalten — Heist gescheitert!</div>`;

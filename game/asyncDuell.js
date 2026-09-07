@@ -127,8 +127,8 @@ function erstelle(key, { spiel, einsatz, optionen = {} } = {}) {
   const acc = _accounts.get(key);
   if (!acc) return { ok: false, error: "Nicht eingeloggt." };
   einsatz = Math.floor(Number(einsatz) || 0);
-  if (einsatz < MIN_EINSATZ) return { ok: false, error: `Mindesteinsatz ${MIN_EINSATZ} 🪙.` };
-  if (einsatz > MAX_EINSATZ) return { ok: false, error: `Maximaleinsatz ${MAX_EINSATZ.toLocaleString("de-DE")} 🪙.` };
+  if (einsatz < MIN_EINSATZ) return { ok: false, error: `Mindesteinsatz ${MIN_EINSATZ} Chips.` };
+  if (einsatz > MAX_EINSATZ) return { ok: false, error: `Maximaleinsatz ${MAX_EINSATZ.toLocaleString("de-DE")} Chips.` };
   if (acc.chips < einsatz) return { ok: false, error: "Nicht genug Chips." };
 
   const meine = Object.values(state.offen).filter((d) => d.ersteller === key && !d.gegner).length;
@@ -255,7 +255,7 @@ function entscheide(id, opts = {}) {
       const adapter = ADAPTER[d.spiel];
       const spielName = adapter ? adapter.label : d.spiel;
       chat.announce(_io, siegerName
-        ? `⚔️ ${spielName}-Duell: ${siegerName} gewinnt gegen ${siegerName === d.erstellerName ? d.gegnerName : d.erstellerName} und holt ${auszahlung.toLocaleString("de-DE")} 🪙.`
+        ? `⚔️ ${spielName}-Duell: ${siegerName} gewinnt gegen ${siegerName === d.erstellerName ? d.gegnerName : d.erstellerName} und holt ${auszahlung.toLocaleString("de-DE")} Chips.`
         : `⚔️ ${spielName}-Duell zwischen ${d.erstellerName} und ${d.gegnerName} endet unentschieden.`);
     } catch {}
     // Der Verlierer ist fast immer der, der NICHT gerade davorsitzt.

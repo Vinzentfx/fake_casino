@@ -339,7 +339,7 @@
     if (!bets.length) { el.innerHTML = '<p class="muted small" style="margin:0">Noch keine Einsätze.</p>'; return; }
     el.innerHTML = bets.slice().sort((a, b) => (b.won || 0) - (a.won || 0)).map((b) => {
       const state = b.cashedAt ? `<b class="pos">${b.cashedAt.toFixed(2)}× · +${fmt(b.won)}</b>`
-        : phase === "crashed" ? `<b class="neg">−${fmt(b.amount)}</b>` : `<span class="muted">${fmt(b.amount)} 🪙 drin</span>`;
+        : phase === "crashed" ? `<b class="neg">−${fmt(b.amount)}</b>` : `<span class="muted">${fmt(b.amount)}<i class=mk></i> drin</span>`;
       return `<div class="crash-prow"><span>${escapeHtml(b.name)}</span>${state}</div>`;
     }).join("");
   }
@@ -350,7 +350,7 @@
     if (phase === "flying" && mine && !mine.cashedAt) {
       const win = Math.round(mine.amount * dispMult);
       btn.disabled = false; btn.className = "btn-primary crash-cashbtn";
-      btn.textContent = `💸 Auszahlen — ${fmt(win)} 🪙 (${dispMult.toFixed(2)}×)`;
+      btn.textContent = `💸 Auszahlen — ${fmt(win)} Chips (${dispMult.toFixed(2)}×)`;
     } else if (phase === "betting" && !mine) {
       btn.disabled = false; btn.className = "btn-primary";
       btn.textContent = "🚀 Einsatz setzen";
@@ -423,7 +423,7 @@
     if (!d) return;
     if (d.account) applyAccount(d.account);
     feiereAusstieg(d.mult, d.payout);
-    if (d.auto) toast(`🚀 Auto-Cashout bei ${d.mult.toFixed(2)}× — +${fmt(d.payout)} 🪙!`);
+    if (d.auto) toast(`🚀 Auto-Cashout bei ${d.mult.toFixed(2)}× — +${fmt(d.payout)} Chips!`);
   });
 
   // ── Actions ──────────────────────────────────────────────────────────────
@@ -434,7 +434,7 @@
         if (!r || !r.ok) { err.textContent = (r && r.error) || "Zu spät."; return; }
         applyAccount(r.account); myBet.cashedAt = r.mult;
         feiereAusstieg(r.mult, r.payout);
-        toast(`💸 Ausgezahlt bei ${r.mult.toFixed(2)}× — +${fmt(r.payout)} 🪙!`);
+        toast(`💸 Ausgezahlt bei ${r.mult.toFixed(2)}× — +${fmt(r.payout)} Chips!`);
         renderAll();
       });
       return;
@@ -443,7 +443,7 @@
     const amount = parseInt($("#crash-amount").value, 10);
     const autoRaw = parseFloat($("#crash-auto").value);
     const target = Number.isFinite(autoRaw) && autoRaw >= 1.01 ? autoRaw : null;
-    if (!Number.isFinite(amount) || amount < 50) { err.textContent = "Mindestens 50 🪙."; return; }
+    if (!Number.isFinite(amount) || amount < 50) { err.textContent = "Mindestens 50 Chips."; return; }
     socket.emit("crash:bet", { amount, target }, (r) => {
       if (!r || !r.ok) { err.textContent = (r && r.error) || "Fehler."; return; }
       applyAccount(r.account);

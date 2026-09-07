@@ -69,7 +69,7 @@ function setupTeamVault(io, accounts) {
       return;
     }
     const results = payout(winner);
-    chat.announce(io, `⚔️ ${LABEL[winner]} gewinnt den Tresorkampf und teilt sich ${state.pot.toLocaleString("de-DE")} 🪙!` + (results[0] ? ` MVP: ${results[0].name} (+${results[0].share.toLocaleString("de-DE")})` : ""));
+    chat.announce(io, `⚔️ ${LABEL[winner]} gewinnt den Tresorkampf und teilt sich ${state.pot.toLocaleString("de-DE")} Chips!` + (results[0] ? ` MVP: ${results[0].name} (+${results[0].share.toLocaleString("de-DE")})` : ""));
     io.emit("vault:end", { winner, pot: state.pot, results });
     cleanup();
   }
@@ -94,7 +94,7 @@ function setupTeamVault(io, accounts) {
 
     state = { endsAt: Date.now() + seconds * 1000, pot, teams, assign };
     const prefix = opts.auto ? "ZUFÄLLIGER " : "";
-    chat.announce(io, `⚔️ ${prefix}TEAM-TRESORKAMPF! Rot gegen Blau — wer seinen Tresor zuerst knackt, teilt sich ${pot.toLocaleString("de-DE")} 🪙. ${seconds} Sekunden, los!`);
+    chat.announce(io, `⚔️ ${prefix}TEAM-TRESORKAMPF! Rot gegen Blau — wer seinen Tresor zuerst knackt, teilt sich ${pot.toLocaleString("de-DE")} Chips. ${seconds} Sekunden, los!`);
     io.emit("vault:start", snapshot());
     ticker = setInterval(() => {
       if (!state) return;

@@ -103,7 +103,7 @@
           `<small>${z.safe} ${z.safe === 1 ? "Feld" : "Felder"}</small></span>`).join("") +
       `</div>` +
       (grenzen.maxWin
-        ? `<div class="mines-pay-cap">Höchstgewinn ${fmt(grenzen.maxWin)} 🪙 pro Runde</div>` : "");
+        ? `<div class="mines-pay-cap">Höchstgewinn ${fmt(grenzen.maxWin)}<i class=mk></i> pro Runde</div>` : "");
   }
 
   function ladeConfig() {
@@ -126,9 +126,9 @@
 
   function renderTop(v) {
     $("#mines-mult").textContent = (v.multiplier || 1).toFixed(2) + "×";
-    $("#mines-cashval").textContent = v.cashout ? fmt(v.cashout) + " 🪙" : "—";
+    $("#mines-cashval").textContent = v.cashout ? fmt(v.cashout) + " Chips" : "—";
     $("#mines-next").textContent = v.nextMultiplier ? v.nextMultiplier.toFixed(2) + "×" : "—";
-    if (v.cashout) $("#mines-cashout").textContent = `💸 Auszahlen — ${fmt(v.cashout)} 🪙 (${(v.multiplier).toFixed(2)}×)`;
+    if (v.cashout) $("#mines-cashout").textContent = `💸 Auszahlen — ${fmt(v.cashout)} Chips (${(v.multiplier).toFixed(2)}×)`;
     else $("#mines-cashout").textContent = "💸 Auszahlen";
     $("#mines-cashout").disabled = !v.cashout;
   }
@@ -167,8 +167,8 @@
       setActive(false);
       if (v.account) applyAccount(v.account);
       if (v.bust) { toast("💥 Bombe! Einsatz weg."); merke({ gewonnen: false, mult: 0 }); }
-      else if (v.cashedOut) { toast(`💸 +${fmt(v.payout)} 🪙 (${v.mult.toFixed(2)}×)!`); merke({ gewonnen: true, mult: v.mult }); }
-      else if (v.cleared) { toast(`🏆 Feld leergeräumt! +${fmt(v.payout)} 🪙`); merke({ gewonnen: true, mult: v.multiplier }); }
+      else if (v.cashedOut) { toast(`💸 +${fmt(v.payout)} Chips (${v.mult.toFixed(2)}×)!`); merke({ gewonnen: true, mult: v.mult }); }
+      else if (v.cleared) { toast(`🏆 Feld leergeräumt! +${fmt(v.payout)} Chips`); merke({ gewonnen: true, mult: v.multiplier }); }
     } else setActive(true);
   }
 
@@ -252,8 +252,8 @@
   $("#mines-start").addEventListener("click", () => {
     const err = $("#mines-error"); err.textContent = "";
     const bet = parseInt($("#mines-amount").value, 10);
-    if (!Number.isFinite(bet) || bet < grenzen.minBet) { err.textContent = `Mindestens ${fmt(grenzen.minBet)} 🪙.`; return; }
-    if (bet > grenzen.maxBet) { err.textContent = `Maximaleinsatz ${fmt(grenzen.maxBet)} 🪙.`; return; }
+    if (!Number.isFinite(bet) || bet < grenzen.minBet) { err.textContent = `Mindestens ${fmt(grenzen.minBet)} Chips.`; return; }
+    if (bet > grenzen.maxBet) { err.textContent = `Maximaleinsatz ${fmt(grenzen.maxBet)} Chips.`; return; }
     socket.emit("mines:start", { bet, mines: minen }, (v) => {
       if (!v || !v.ok) { err.textContent = (v && v.error) || "Fehler."; return; }
       snd.play("chip");

@@ -155,8 +155,8 @@ function setupMines(io, accounts) {
       if (running && !running.over) return ack({ ok: false, error: "Beende erst dein laufendes Spiel." });
       bet = Math.floor(Number(bet));
       mines = Math.floor(Number(mines));
-      if (!Number.isFinite(bet) || bet < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
-      if (bet > MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} 🪙.` });
+      if (!Number.isFinite(bet) || bet < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
+      if (bet > MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
       if (!Number.isFinite(mines) || mines < 1 || mines > 24) return ack({ ok: false, error: "1–24 Minen." });
       if (a.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
       const res = accounts.adjustChips(socket.data.account, -bet);

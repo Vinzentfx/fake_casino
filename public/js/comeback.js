@@ -38,7 +38,7 @@
           <span class="cb-icon">🎁</span>
           <div class="cb-text">
             <b>Willkommen zurück!</b>
-            <small>Dein Wiedereröffnungs-Paket wartet: ${fmt(stand.chips)} 🪙, ${fmt(stand.xp)} Season-XP${stuecke ? `, dazu ${stuecke} — beides gibt es nach der Wiedereröffnung nie wieder` : ""}.</small>
+            <small>Dein Wiedereröffnungs-Paket wartet: ${fmt(stand.chips)}<i class=mk></i>, ${fmt(stand.xp)} Season-XP${stuecke ? `, dazu ${stuecke} — beides gibt es nach der Wiedereröffnung nie wieder` : ""}.</small>
           </div>
           <button class="btn-primary" id="cb-claim" type="button">Auspacken</button>
         </div>`);
@@ -50,7 +50,7 @@
           <span class="cb-icon">🎊</span>
           <div class="cb-text">
             <b>Eröffnungsgala läuft · noch ${rest(g.endsAt)}</b>
-            <small>${g.xpFaktor}× Season-XP auf jede Runde. Am Ende werden ${fmt(g.topf)} 🪙 unter allen verlost, die mitgespielt haben — je mehr Runden, desto mehr Lose. Du: ${fmt(g.meineRunden)} ${g.meineRunden === 1 ? "Runde" : "Runden"}, ${fmt(g.spieler)} dabei.</small>
+            <small>${g.xpFaktor}× Season-XP auf jede Runde. Am Ende werden ${fmt(g.topf)}<i class=mk></i> unter allen verlost, die mitgespielt haben — je mehr Runden, desto mehr Lose. Du: ${fmt(g.meineRunden)} ${g.meineRunden === 1 ? "Runde" : "Runden"}, ${fmt(g.spieler)} dabei.</small>
           </div>
         </div>`);
     }
@@ -103,7 +103,7 @@
   /** Die Belohnungen als Karten einblenden, eine nach der anderen. */
   function zeigeInhalt(r) {
     const karten = [
-      { icon: "🪙", label: fmt(r.chips) + " Chips", text: "Direkt auf dein Guthaben." },
+      { icon: "<i class=mk></i>", label: fmt(r.chips) + " Chips", text: "Direkt auf dein Guthaben." },
       { icon: "⭐", label: fmt(r.xp) + " Season-XP", text: "Bringt dich im Season-Pass voran." },
       ...(r.stuecke || []).map((x) => ({ icon: x.icon, label: x.label, text: x.text, neu: true })),
     ];

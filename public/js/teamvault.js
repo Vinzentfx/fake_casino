@@ -52,7 +52,7 @@
     else overlay.classList.remove("hidden");
     $("#vault-result").innerHTML = "";
     btn.style.display = "";
-    $("#vault-pot").innerHTML = `Pot: <b>${fmt(s.pot)} 🪙</b>`;
+    $("#vault-pot").innerHTML = `Pot: <b>${fmt(s.pot)}<i class=mk></i></b>`;
     setTeamUi();
     update(s);
   }
@@ -80,7 +80,7 @@
       const won = myTeam === d.winner;
       box.innerHTML =
         `<div class="${won ? "heist-win" : "heist-fail"}">${d.winner === "red" ? "🔴 TEAM ROT" : "🔵 TEAM BLAU"} GEWINNT!</div>` +
-        (mine ? `<div>Dein Anteil: <b>+${fmt(mine.share)} 🪙</b> (${mine.hits} Treffer)</div>` : won ? "" : `<div class="muted small">Knapp daneben — nächstes Mal!</div>`) +
+        (mine ? `<div>Dein Anteil: <b>+${fmt(mine.share)}<i class=mk></i></b> (${mine.hits} Treffer)</div>` : won ? "" : `<div class="muted small">Knapp daneben — nächstes Mal!</div>`) +
         `<div class="heist-crooks">${(d.results || []).slice(0, 6).map((r) => `${escapeHtml(r.name)}: +${fmt(r.share)}`).join(" · ")}</div>`;
     } else if (d && d.draw) {
       box.innerHTML = '<div class="heist-fail">🤝 Unentschieden — der Pot bleibt im Tresor!</div>';

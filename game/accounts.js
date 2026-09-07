@@ -743,7 +743,7 @@ function transfer(fromName, toName, amount) {
   if (from.transferDay !== day) { from.transferDay = day; from.transferSent = 0; }
   const left = TRANSFER_DAILY_CAP - (from.transferSent || 0);
   if (amount > left)
-    return { ok: false, error: `Tageslimit ${TRANSFER_DAILY_CAP.toLocaleString("de-DE")} 🪙 — heute kannst du noch ${Math.max(0, left).toLocaleString("de-DE")} senden.` };
+    return { ok: false, error: `Tageslimit ${TRANSFER_DAILY_CAP.toLocaleString("de-DE")} Chips — heute kannst du noch ${Math.max(0, left).toLocaleString("de-DE")} senden.` };
   if (from.chips < amount) return { ok: false, error: "Nicht genug Chips." };
   from.chips -= amount;
   to.chips = Math.min(MAX_CHIPS, to.chips + amount);
@@ -851,7 +851,7 @@ function placeBounty(fromName, targetName, amount) {
   if (!from) return { ok: false, error: "Absender fehlt." };
   if (!target) return { ok: false, error: `Spieler "${targetName}" nicht gefunden.` };
   amount = Math.floor(Number(amount));
-  if (!Number.isFinite(amount) || amount < MIN_BOUNTY) return { ok: false, error: `Mindest-Kopfgeld ${MIN_BOUNTY.toLocaleString("de-DE")} 🪙.` };
+  if (!Number.isFinite(amount) || amount < MIN_BOUNTY) return { ok: false, error: `Mindest-Kopfgeld ${MIN_BOUNTY.toLocaleString("de-DE")} Chips.` };
   if (from.chips < amount) return { ok: false, error: "Nicht genug Chips." };
   from.chips -= amount;
   target.bounty = (target.bounty || 0) + amount;

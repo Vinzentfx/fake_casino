@@ -34,7 +34,7 @@
   function netStr(n) {
     const cls = n > 0 ? "pos" : n < 0 ? "neg" : "";
     const sign = n > 0 ? "+" : n < 0 ? "−" : "±";
-    return `<b class="${cls}">${sign}${fmt(n)} 🪙</b>`;
+    return `<b class="${cls}">${sign}${fmt(n)}<i class=mk></i></b>`;
   }
 
   const SUIT = { h: "♥", d: "♦", s: "♠", c: "♣" };
@@ -62,7 +62,7 @@
     }).join("");
     const feed = state.feed.slice().reverse().map((f) => {
       const cls = f.net > 0 ? "pos" : f.net < 0 ? "neg" : "";
-      const verb = f.net > 0 ? `gewann +${fmt(f.net)} 🪙` : f.net < 0 ? `verlor −${fmt(f.net)} 🪙` : "Push";
+      const verb = f.net > 0 ? `gewann +${fmt(f.net)}<i class=mk></i>` : f.net < 0 ? `verlor −${fmt(f.net)}<i class=mk></i>` : "Push";
       return `<div class="bj-feed-row"><span>${escapeHtml(f.name)}</span> <span class="${cls}">${verb}</span></div>`;
     }).join("");
     $("bj-lobby-feed").innerHTML = feed || '<div class="muted small">Noch keine Runde gespielt — gib Karten!</div>';

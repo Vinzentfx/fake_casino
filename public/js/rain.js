@@ -18,7 +18,7 @@
   const hud = $("#rain-hud");
 
   function setHud() {
-    hud.innerHTML = `💸 Chip-Regen! <b>+${fmt(mySum)} 🪙</b>`;
+    hud.innerHTML = `💸 Chip-Regen! <b>+${fmt(mySum)}<i class=mk></i></b>`;
     hud.classList.toggle("hidden", !active);
   }
 
@@ -31,7 +31,7 @@
     if (!layer) return;
     const el = document.createElement("button");
     el.className = "rain-chip" + (c.gold ? " gold" : "");
-    el.textContent = c.gold ? "💰" : "🪙";
+    el.textContent = c.gold ? "💰" : "Chips";
     el.style.left = (c.x * 100) + "%";
     el.style.animationDuration = c.dur + "ms";
     let claimed = false;
@@ -73,7 +73,7 @@
     setHud();
     if (!d) return;
     const top = d.results && d.results[0];
-    if (mySum > 0) toast(`💸 Regen vorbei — du hast ${fmt(mySum)} 🪙 gesammelt!`);
+    if (mySum > 0) toast(`💸 Regen vorbei — du hast ${fmt(mySum)} Chips gesammelt!`);
     else if (top) toast(`💸 Regen vorbei — ${escapeHtml(top.name)} war am fleißigsten (+${fmt(top.sum)}).`);
     mySum = 0;
   }

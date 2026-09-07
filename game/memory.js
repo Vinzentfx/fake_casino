@@ -222,7 +222,7 @@ function setupMemory(io, accounts) {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN)
-        return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} 🪙.` });
+        return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       if (!SIZES[size]) size = DEFAULT_SIZE;
       const a = acc(socket);
       if (!a || a.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });

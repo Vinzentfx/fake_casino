@@ -358,12 +358,12 @@
   function renderStable() {
     const el = $("#stable-list");
     if (!el) return;
-    $("#stable-hint").textContent = stable.length ? `Startgeld ${fmt(config.entryFee || 2000)} 🪙 · Training dauert ~20 Min (Pferd solange gesperrt) · Kondition unter ${config.enterMinCondition || 50} = Zwangspause` : "Noch keine Pferde — schau im Markt vorbei!";
+    $("#stable-hint").textContent = stable.length ? `Startgeld ${fmt(config.entryFee || 2000)} Chips · Training dauert ~20 Min (Pferd solange gesperrt) · Kondition unter ${config.enterMinCondition || 50} = Zwangspause` : "Noch keine Pferde — schau im Markt vorbei!";
     el.innerHTML = stable.map((h) => {
       const career = Math.round(h.career * 100);
       const form = h.formHint === "up" ? "📈 gute Form" : h.formHint === "down" ? "📉 außer Form" : "➖ normale Form";
       if (h.retired) return `<div class="horse-card retired"><div class="hc-name">🏅 ${escapeHtml(h.name)} <span class="muted small">in Rente</span></div>
-        <div class="hc-sub">${h.races} Rennen · ${h.wins} Siege · ${fmt(h.earnings)} 🪙 verdient</div></div>`;
+        <div class="hc-sub">${h.races} Rennen · ${h.wins} Siege · ${fmt(h.earnings)}<i class=mk></i> verdient</div></div>`;
       const evBadge = h.event ? `<div class="hc-event">${escapeHtml(h.event.label)} — noch ~${h.event.hoursLeft}h${h.event.block ? " · kann nicht antreten" : ""}</div>` : "";
       const busy = !!h.training;
       const trainBadge = busy ? `<div class="hc-event">🏋️ Im Training — noch ~${h.training.minsLeft} Min · nicht startbereit</div>` : "";
@@ -395,7 +395,7 @@
       socket.emit("horses:train", { horseId: b.dataset.id, stat: b.dataset.stat }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Training fehlgeschlagen.");
         applyAccount(r.account);
-        toast(`💪 +${r.gain} ${r.stat === "speed" ? "Tempo" : "Ausdauer"} (${r.value}) · −${fmt(r.cost)} 🪙 · 🏋️ ~${r.trainingMins} Min gesperrt`);
+        toast(`💪 +${r.gain} ${r.stat === "speed" ? "Tempo" : "Ausdauer"} (${r.value}) · −${fmt(r.cost)} Chips · 🏋️ ~${r.trainingMins} Min gesperrt`);
         load();
       });
     }));
@@ -413,7 +413,7 @@
       socket.emit("horses:sell", { horseId: b.dataset.id }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Verkauf fehlgeschlagen.");
         if (r.account) applyAccount(r.account);
-        toast(r.refund ? `Verkauft: +${fmt(r.refund)} 🪙` : "Verabschiedet. 🐴👋");
+        toast(r.refund ? `Verkauft: +${fmt(r.refund)} Chips` : "Verabschiedet. 🐴👋");
         load();
       });
     }));
@@ -446,7 +446,7 @@
           <div class="hc-stat"><span>🫀 Ausdauer</span> ${statBar(h.stamina)} <b>${h.stamina}</b></div>
           <div class="muted small">Temperament ${temp} (${h.temperament}/10) — je mehr, desto unberechenbarer</div>
         </div>
-        <div class="hc-actions"><button class="hc-buy btn-primary" data-id="${h.id}">🛒 Kaufen · ${fmt(h.price)} 🪙</button></div>
+        <div class="hc-actions"><button class="hc-buy btn-primary" data-id="${h.id}">🛒 Kaufen · ${fmt(h.price)}<i class=mk></i></button></div>
       </div>`;
     }).join("");
     el.querySelectorAll(".hc-buy").forEach((b) => b.addEventListener("click", () => {
@@ -475,7 +475,7 @@
     let head = `<div class="cb-title"><span class="cb-crown">👑</span> Renn-Champion des Tages</div>`;
     let rows = "";
     if (!top.length) {
-      rows = `<div class="cb-row cb-empty">Noch kein Sieg heute — der Thron ist frei! Melde ein Pferd an und hol dir ${fmt(prizes[0])} 🪙.</div>`;
+      rows = `<div class="cb-row cb-empty">Noch kein Sieg heute — der Thron ist frei! Melde ein Pferd an und hol dir ${fmt(prizes[0])}<i class=mk></i>.</div>`;
     } else {
       rows = top.map((r, i) => {
         const isMe = meName && r.name.toLowerCase() === meName.toLowerCase();
@@ -488,7 +488,7 @@
         rows += `<div class="cb-row cb-outside"><span class="cb-medal">–</span><span class="cb-name">Du: noch kein Sieg heute</span><span class="cb-wins"></span><span class="cb-cash"></span></div>`;
       }
     }
-    const potLine = st.betPot > 0 ? `<div class="cb-foot">💰 Heutiger Wett-Topf: <b>${fmt(st.betPot)} 🪙</b> — 50/30/20 % on top für Platz 1–3</div>` : "";
+    const potLine = st.betPot > 0 ? `<div class="cb-foot">💰 Heutiger Wett-Topf: <b>${fmt(st.betPot)}<i class=mk></i></b> — 50/30/20 % on top für Platz 1–3</div>` : "";
     const foot = yest ? `<div class="cb-foot">Gestern: 🏆 <b>${escapeHtml(yest.name)}</b> (${yest.wins} ${yest.wins === 1 ? "Sieg" : "Siege"})</div>` : "";
     el.innerHTML = head + `<div class="cb-list">${rows}</div>` + potLine + foot;
   }
@@ -527,7 +527,7 @@
     const inp = $("#bet-slip-input");
     inp.value = slip.amount;
     const payout = Math.round(slip.amount * odds);
-    $("#bet-slip-payout").innerHTML = `Möglicher Gewinn <b>${fmt(payout)} 🪙</b>`;
+    $("#bet-slip-payout").innerHTML = `Möglicher Gewinn <b>${fmt(payout)}<i class=mk></i></b>`;
     // Listener (frisch, da innerHTML neu)
     $("#bet-slip-types").querySelectorAll(".bs-type").forEach((b) => b.addEventListener("click", () => { slip.type = b.dataset.type; renderSlip(); }));
     $("#bet-slip-chips").querySelectorAll(".bs-chip").forEach((b) => b.addEventListener("click", () => {
@@ -536,14 +536,14 @@
       renderSlip();
     }));
   }
-  $("#bet-slip-input").addEventListener("input", (e) => { if (slip) slip.amount = parseInt(e.target.value, 10) || 0; const f = st.field[slip.lane]; const odds = slip.type === "win" ? f.odds.win : f.odds.place; $("#bet-slip-payout").innerHTML = `Möglicher Gewinn <b>${fmt(Math.round((slip.amount || 0) * odds))} 🪙</b>`; });
+  $("#bet-slip-input").addEventListener("input", (e) => { if (slip) slip.amount = parseInt(e.target.value, 10) || 0; const f = st.field[slip.lane]; const odds = slip.type === "win" ? f.odds.win : f.odds.place; $("#bet-slip-payout").innerHTML = `Möglicher Gewinn <b>${fmt(Math.round((slip.amount || 0) * odds))}<i class=mk></i></b>`; });
   $("#bet-slip-x").addEventListener("click", closeBetSlip);
   $("#bet-slip").addEventListener("click", (e) => { if (e.target.id === "bet-slip") closeBetSlip(); });
   $("#bet-slip-go").addEventListener("click", () => {
     if (!slip) return;
     const { lane, type, amount } = slip;
     const horse = st.field[lane] ? st.field[lane].horse.name : "?";
-    if (!Number.isFinite(amount) || amount < (config.minBet || 50)) return toast(`Mindestens ${config.minBet || 50} 🪙.`);
+    if (!Number.isFinite(amount) || amount < (config.minBet || 50)) return toast(`Mindestens ${config.minBet || 50} Chips.`);
     socket.emit("horses:bet", { lane, type, amount }, (r) => {
       if (!r || !r.ok) return toast((r && r.error) || "Wette fehlgeschlagen.");
       applyAccount(r.account);

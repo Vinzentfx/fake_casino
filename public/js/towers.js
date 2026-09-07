@@ -82,10 +82,10 @@
 
   function renderTop(v) {
     $("#tw-mult").textContent = (v.multiplier || 1).toFixed(2) + "×";
-    $("#tw-cashval").textContent = v.cashout ? fmt(v.cashout) + " 🪙" : "—";
+    $("#tw-cashval").textContent = v.cashout ? fmt(v.cashout) + " Chips" : "—";
     $("#tw-next").textContent = v.nextMultiplier ? v.nextMultiplier.toFixed(2) + "×" : "—";
     const btn = $("#tw-cashout");
-    btn.textContent = v.cashout ? `💸 Auszahlen — ${fmt(v.cashout)} 🪙 (${v.multiplier.toFixed(2)}×)` : "💸 Auszahlen";
+    btn.textContent = v.cashout ? `💸 Auszahlen — ${fmt(v.cashout)} Chips (${v.multiplier.toFixed(2)}×)` : "💸 Auszahlen";
     btn.disabled = !v.cashout;
   }
 
@@ -174,10 +174,10 @@
         board.classList.add("tw-win");
         const float = document.createElement("div");
         float.className = "tw-float";
-        float.textContent = `+${fmt(v.payout)} 🪙`;
+        float.textContent = `+${fmt(v.payout)} Chips`;
         board.appendChild(float);
         setTimeout(() => { board.classList.remove("tw-win"); float.remove(); }, 1600);
-        toast(v.cleared ? `🏆 Turm bezwungen! +${fmt(v.payout)} 🪙` : `💸 +${fmt(v.payout)} 🪙 (${v.mult.toFixed(2)}×)!`);
+        toast(v.cleared ? `🏆 Turm bezwungen! +${fmt(v.payout)} Chips` : `💸 +${fmt(v.payout)} Chips (${v.mult.toFixed(2)}×)!`);
         merke({ gewonnen: true, mult: v.mult || v.multiplier || 1 });
       }
     } else setActive(true);
@@ -201,8 +201,8 @@
     const bet = parseInt($("#tw-amount").value, 10);
     // Grenzen kommen vom Server. Fest getippt liefen sie auseinander, sobald
     // dort eine Zahl geaendert wird — genau das war hier passiert.
-    if (!Number.isFinite(bet) || bet < grenzen.minBet) { err.textContent = `Mindestens ${fmt(grenzen.minBet)} 🪙.`; return; }
-    if (bet > grenzen.maxBet) { err.textContent = `Maximaleinsatz ${fmt(grenzen.maxBet)} 🪙.`; return; }
+    if (!Number.isFinite(bet) || bet < grenzen.minBet) { err.textContent = `Mindestens ${fmt(grenzen.minBet)} Chips.`; return; }
+    if (bet > grenzen.maxBet) { err.textContent = `Maximaleinsatz ${fmt(grenzen.maxBet)} Chips.`; return; }
     socket.emit("towers:start", { bet, difficulty: diffKey }, (v) => {
       if (!v || !v.ok) { err.textContent = (v && v.error) || "Fehler."; return; }
       snd.play("chip");

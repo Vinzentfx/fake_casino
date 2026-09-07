@@ -22,7 +22,7 @@
     return `<div class="quest ${q.done ? "done" : ""}">
       <div class="quest-top">
         <span class="quest-label">${escapeHtml(q.label)}</span>
-        <b class="quest-reward">${q.done ? "✓ kassiert" : "+" + fmt(q.reward) + " 🪙"}</b>
+        <b class="quest-reward">${q.done ? "✓ kassiert" : "+" + fmt(q.reward) + "<i class=mk></i>"}</b>
       </div>
       <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
       <div class="quest-prog">${q.prog}/${q.target}</div>
@@ -34,7 +34,7 @@
     return `<div class="quest ${q.maxed ? "done" : ""}">
       <div class="quest-top">
         <span class="quest-label">${escapeHtml(q.label)}</span>
-        <b class="quest-reward">${q.maxed ? "🔒 morgen wieder" : "+" + fmt(q.reward) + " 🪙"}</b>
+        <b class="quest-reward">${q.maxed ? "🔒 morgen wieder" : "+" + fmt(q.reward) + "<i class=mk></i>"}</b>
       </div>
       <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
       <div class="quest-prog">${q.prog}/${q.target} · heute ${q.done}/${q.cap}× geschafft</div>
@@ -73,7 +73,7 @@
   socket.on("quest:done", (q) => {
     const acc = window.Casino.getAccount && window.Casino.getAccount();
     if (!q || !acc || !q.user || q.user.toLowerCase() !== acc.name.toLowerCase()) return;
-    toast(`🎯 Auftrag erledigt: ${q.label} — +${fmt(q.reward)} 🪙!`);
+    toast(`🎯 Auftrag erledigt: ${q.label} — +${fmt(q.reward)} Chips!`);
     // refresh if the board is open
     const screen = document.querySelector('[data-screen="quests"]');
     if (screen && screen.classList.contains("active")) load();

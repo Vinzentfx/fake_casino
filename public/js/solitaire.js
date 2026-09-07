@@ -214,8 +214,8 @@
         <div class="sol-hud-item"><span>Neuauflagen</span><b>∞</b></div>
         <div class="sol-hud-item"><span>Basis</span><b>${board.foundationTotal || 0}/52</b></div>`;
     } else {
-      $("#sol-hud").innerHTML = `<div class="sol-hud-item"><span>Einsatz</span><b>${fmt(board.bet || 0)} 🪙</b></div>
-        <div class="sol-hud-item"><span>Bei Sieg</span><b>${fmt((board.bet || 0) * (board.winMult || 3))} 🪙</b></div>
+      $("#sol-hud").innerHTML = `<div class="sol-hud-item"><span>Einsatz</span><b>${fmt(board.bet || 0)}<i class=mk></i></b></div>
+        <div class="sol-hud-item"><span>Bei Sieg</span><b>${fmt((board.bet || 0) * (board.winMult || 3))}<i class=mk></i></b></div>
         <div class="sol-hud-item"><span>Basis</span><b>${board.foundationTotal || 0}/52</b></div>`;
     }
     $("#sol-auto").style.display = "";
@@ -230,7 +230,7 @@
     const free = board && board.free;
     $("#sol-result-emoji").textContent = won ? "🏆" : "🙈";
     $("#sol-result-title").textContent = won ? "Abgeräumt!" : (free ? "Beendet" : "Aufgegeben");
-    if (won) $("#sol-result-sub").innerHTML = free ? "🎉 Geschafft! Zählt für deine Achievements." : `+${fmt(payout)} 🪙 (Einsatz ×${board.winMult || 3})!`;
+    if (won) $("#sol-result-sub").innerHTML = free ? "🎉 Geschafft! Zählt für deine Achievements." : `+${fmt(payout)}<i class=mk></i> (Einsatz ×${board.winMult || 3})!`;
     else $("#sol-result-sub").innerHTML = free ? "Kein Verlust — jederzeit neu starten." : "Einsatz weg. Nächstes Mal!";
   }
 
@@ -258,15 +258,15 @@
   function renderRaceResult(s) {
     const r = s.result, me = getAccount(), myName = me && me.name;
     const emoji = $("#sol-result-emoji"), title = $("#sol-result-title"), sub = $("#sol-result-sub");
-    if (r.tie) { emoji.textContent = "🤝"; title.textContent = "Unentschieden!"; sub.textContent = `Einsatz zurück (${fmt(s.buyIn)} 🪙 je Spieler).`; }
+    if (r.tie) { emoji.textContent = "🤝"; title.textContent = "Unentschieden!"; sub.textContent = `Einsatz zurück (${fmt(s.buyIn)} Chips je Spieler).`; }
     else {
       const iWon = myName && r.winner && r.winner.toLowerCase() === myName.toLowerCase();
       emoji.textContent = iWon ? "🏆" : "😔";
       title.textContent = iWon ? "Gewonnen!" : `${escapeHtml(r.winner)} gewinnt`;
       const line = r.players.map((p) => `${escapeHtml(p.name)}: ${p.foundations}/52`).join(" · ");
-      sub.innerHTML = (iWon ? `+${fmt(r.payout)} 🪙 (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)} 🪙 an ${escapeHtml(r.winner)}`) +
+      sub.innerHTML = (iWon ? `+${fmt(r.payout)}<i class=mk></i> (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)}<i class=mk></i> an ${escapeHtml(r.winner)}`) +
         `<br>${line}` + (r.walkover ? "<br><span class='muted'>Gegner hat aufgegeben.</span>" : "");
-      if (r.walkover && iWon) toast(`🏆 Gegner hat das Race verlassen — du gewinnst ${fmt(r.payout)} 🪙!`);
+      if (r.walkover && iWon) toast(`🏆 Gegner hat das Race verlassen — du gewinnst ${fmt(r.payout)} Chips!`);
     }
   }
 
@@ -306,8 +306,8 @@
   $("#sol-solo-start").addEventListener("click", () => {
     const err = $("#sol-error"); err.textContent = "";
     const bet = parseInt($("#sol-bet").value, 10);
-    if (!Number.isFinite(bet) || bet < 20) { err.textContent = "Mindesteinsatz 20 🪙."; return; }
-    if (bet > 500) { err.textContent = "Maximaleinsatz 500 🪙."; return; }
+    if (!Number.isFinite(bet) || bet < 20) { err.textContent = "Mindesteinsatz 20 Chips."; return; }
+    if (bet > 500) { err.textContent = "Maximaleinsatz 500 Chips."; return; }
     mode = "solo"; over = false; clearSel();
     socket.emit("sol:start", { bet }, (res) => {
       if (!res || !res.ok) { err.textContent = (res && res.error) || "Fehler."; return; }
@@ -325,7 +325,7 @@
   $("#sol-race-create").addEventListener("click", () => {
     const err = $("#sol-error"); err.textContent = "";
     const buyIn = parseInt($("#sol-buyin").value, 10);
-    if (!Number.isFinite(buyIn) || buyIn < 50) { err.textContent = "Mindest-Buy-in 50 🪙."; return; }
+    if (!Number.isFinite(buyIn) || buyIn < 50) { err.textContent = "Mindest-Buy-in 50 Chips."; return; }
     const visEl = document.querySelector('input[name="sol-vis"]:checked');
     const isPublic = !visEl || visEl.value === "public";
     socket.emit("solrace:create", { buyIn, isPublic }, (r) => { if (!r || !r.ok) err.textContent = (r && r.error) || "Fehler."; });

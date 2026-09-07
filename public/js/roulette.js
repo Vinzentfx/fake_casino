@@ -288,9 +288,9 @@
       Object.entries(bets).map(([k, v]) => {
         const [type, val] = k.split(":");
         const lbl = BET_LABELS[type] || (type === "number" ? "Zahl " + val : type === "dozen" ? val + ". Dutzend" : val + ". Reihe");
-        return `<span class="rt-bet-tag">${lbl}: ${v.toLocaleString("de-DE")} 🪙</span>`;
+        return `<span class="rt-bet-tag">${lbl}: ${v.toLocaleString("de-DE")}<i class=mk></i></span>`;
       }).join("") +
-      `<span class="rt-bet-total">= ${tot.toLocaleString("de-DE")} 🪙</span>`;
+      `<span class="rt-bet-total">= ${tot.toLocaleString("de-DE")}<i class=mk></i></span>`;
   }
 
   // ── History ────────────────────────────────────────────────────
@@ -337,16 +337,16 @@
     $("#rt-result-color").textContent = { red: "ROT", black: "SCHWARZ", green: "GRÜN" }[color];
     const netEl = $("#rt-net-win");
     if (netWin > 0) {
-      netEl.textContent = "+" + netWin.toLocaleString("de-DE") + " 🪙";
+      netEl.textContent = "+" + netWin.toLocaleString("de-DE") + " Chips";
       netEl.className = "rt-net-win rt-win";
     } else if (netWin < 0) {
-      netEl.textContent = netWin.toLocaleString("de-DE") + " 🪙";
+      netEl.textContent = netWin.toLocaleString("de-DE") + " Chips";
       netEl.className = "rt-net-win rt-lose";
     } else {
-      netEl.textContent = "±0 🪙"; netEl.className = "rt-net-win";
+      netEl.textContent = "±0 Chips"; netEl.className = "rt-net-win";
     }
     $("#rt-result").style.display = "";
-    if (netWin > 0) { sndWin(); toast("🎉 +" + netWin.toLocaleString("de-DE") + " 🪙!"); }
+    if (netWin > 0) { sndWin(); toast("🎉 +" + netWin.toLocaleString("de-DE") + " Chips!"); }
     else if (netWin < 0) sndLose();
   }
 
@@ -533,11 +533,11 @@
       const mine = me && p.name && me.name && p.name.toLowerCase() === me.name.toLowerCase();
       const cls = p.net > 0 ? "pos" : p.net < 0 ? "neg" : "";
       const sign = p.net > 0 ? "+" : p.net < 0 ? "−" : "±";
-      return `<div class="bj-lp${mine ? " mine" : ""}"><span>${esc(p.name)} <span class="muted small">(${p.staked.toLocaleString("de-DE")} 🪙)</span></span><b class="${cls}">${sign}${Math.abs(p.net).toLocaleString("de-DE")} 🪙</b></div>`;
+      return `<div class="bj-lp${mine ? " mine" : ""}"><span>${esc(p.name)} <span class="muted small">(${p.staked.toLocaleString("de-DE")}<i class=mk></i>)</span></span><b class="${cls}">${sign}${Math.abs(p.net).toLocaleString("de-DE")}<i class=mk></i></b></div>`;
     }).join("");
     const bEl = $("#rt-lobby-bets");
     if (bEl) bEl.innerHTML = state.bets.length
-      ? state.bets.map((b) => `<span class="rt-bet-tag">${esc(b.name)}: ${esc(b.label)} ${b.amount.toLocaleString("de-DE")} 🪙</span>`).join("")
+      ? state.bets.map((b) => `<span class="rt-bet-tag">${esc(b.name)}: ${esc(b.label)} ${b.amount.toLocaleString("de-DE")}<i class=mk></i></span>`).join("")
       : '<span class="muted small">Noch keine Wetten — tippt auf den Tisch.</span>';
   }
   function esc(s) { return window.Casino.escapeHtml(String(s == null ? "" : s)); }

@@ -147,8 +147,8 @@ function setupTowers(io, accounts) {
       const diff = DIFFICULTIES[diffKey];
       if (!diff) return ack({ ok: false, error: "Unbekannte Schwierigkeit." });
       bet = Math.floor(Number(bet));
-      if (!Number.isFinite(bet) || bet < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} 🪙.` });
-      if (bet > MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} 🪙.` });
+      if (!Number.isFinite(bet) || bet < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
+      if (bet > MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
       if (a.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
       const res = accounts.adjustChips(socket.data.account, -bet);
       if (!res.ok) return ack({ ok: false, error: res.error });

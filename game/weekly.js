@@ -63,7 +63,7 @@ function rollover(io, accounts) {
     const key = String(winner.name).trim().toLowerCase();
     state.lastWinner = { key, name: winner.name, net: Math.round(winner.weeklyNet) };
     accounts.adjustChips(key, PRIZE);
-    chat.announce(io, `🏆 SPIELER DER WOCHE: ${winner.name} mit +${Math.round(winner.weeklyNet).toLocaleString("de-DE")} 🪙 Netto — Preis: ${PRIZE.toLocaleString("de-DE")} 🪙! Die Krone glänzt eine Woche im Leaderboard.`);
+    chat.announce(io, `🏆 SPIELER DER WOCHE: ${winner.name} mit +${Math.round(winner.weeklyNet).toLocaleString("de-DE")} Chips Netto — Preis: ${PRIZE.toLocaleString("de-DE")} Chips! Die Krone glänzt eine Woche im Leaderboard.`);
   } else {
     state.lastWinner = null;
   }

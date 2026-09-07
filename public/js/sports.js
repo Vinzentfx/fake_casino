@@ -129,12 +129,12 @@
       <div class="sb-legs">${legs}</div>
       <div class="sb-amount-row">
         <input type="number" class="sb-amount" min="50" step="50" value="${betAmount}" inputmode="numeric" />
-        <span class="muted small">🪙 → Gewinn <b class="sb-payout">${fmt(betAmount * o)} 🪙</b></span>
+        <span class="muted small"><i class=mk></i> → Gewinn <b class="sb-payout">${fmt(betAmount * o)}<i class=mk></i></b></span>
       </div>
       <div class="sb-chips">${[100, 1000, 10000, 100000, 1000000].map((v) => `<button class="sb-chip${v === betAmount ? " on" : ""}" data-amt="${v}">${v >= 1e6 ? v / 1e6 + "M" : v >= 1000 ? v / 1000 + "k" : v}</button>`).join("")}</div>
       <div class="sb-slip-actions">
         <button class="sb-slip-clear" data-act="clear">Leeren</button>
-        <button class="btn-primary sb-slip-place" data-act="place">${slip.length === 1 ? "Wetten" : "Kombi setzen"} ${fmt(betAmount)} 🪙</button>
+        <button class="btn-primary sb-slip-place" data-act="place">${slip.length === 1 ? "Wetten" : "Kombi setzen"} ${fmt(betAmount)}<i class=mk></i></button>
       </div>`;
     el.querySelectorAll(".sb-leg-x").forEach((b) => b.addEventListener("click", () => { slip.splice(+b.dataset.i, 1); render(); }));
     el.querySelectorAll(".sb-chip").forEach((b) => b.addEventListener("click", () => { betAmount = +b.dataset.amt; render(); }));
@@ -143,14 +143,14 @@
     const inp = el.querySelector(".sb-amount");
     inp.addEventListener("input", () => {
       betAmount = Math.max(0, Math.floor(Number(inp.value) || 0));
-      el.querySelector(".sb-payout").textContent = `${fmt(betAmount * o)} 🪙`;
-      el.querySelector(".sb-slip-place").textContent = `${slip.length === 1 ? "Wetten" : "Kombi setzen"} ${fmt(betAmount)} 🪙`;
+      el.querySelector(".sb-payout").textContent = `${fmt(betAmount * o)} Chips`;
+      el.querySelector(".sb-slip-place").textContent = `${slip.length === 1 ? "Wetten" : "Kombi setzen"} ${fmt(betAmount)} Chips`;
       el.querySelectorAll(".sb-chip").forEach((c) => c.classList.toggle("on", +c.dataset.amt === betAmount));
     });
   }
 
   function place() {
-    if (!slip.length || betAmount < 50) { toast("Mindesteinsatz 50 🪙."); return; }
+    if (!slip.length || betAmount < 50) { toast("Mindesteinsatz 50 Chips."); return; }
     if (slip.length === 1) {
       const l = slip[0];
       socket.emit("sports:bet", { matchId: l.matchId, market: l.market, selection: l.selection, amount: betAmount }, done);
@@ -160,7 +160,7 @@
     function done(res) {
       if (!res || !res.ok) { toast((res && res.error) || "Fehler."); return; }
       if (res.account) applyAccount(res.account);
-      toast(slip.length === 1 ? `Wette platziert: ${fmt(betAmount)} 🪙` : `Kombi platziert @${res.comboOdds} 🪙`);
+      toast(slip.length === 1 ? `Wette platziert: ${fmt(betAmount)} Chips` : `Kombi platziert @${res.comboOdds} Chips`);
       slip = [];
       load();
     }
@@ -175,8 +175,8 @@
     const log = data.myBetLog || [];
     if (!log.length) { el.innerHTML = '<p class="muted small">Noch keine abgeschlossenen Wetten.</p>'; return; }
     el.innerHTML = log.map((b) => {
-      const res = b.won ? `<span class="pos">✓ +${fmt(b.payout)} 🪙</span>` : `<span class="neg">✗ −${fmt(b.amount)} 🪙</span>`;
-      return `<div class="sb-feed-row"><span class="sb-feed-sel">${escapeHtml(b.sel)}</span> <span class="muted">(${escapeHtml(b.match)})</span> @${b.odds.toFixed(2)} · ${fmt(b.amount)} 🪙 → ${res}</div>`;
+      const res = b.won ? `<span class="pos">✓ +${fmt(b.payout)}<i class=mk></i></span>` : `<span class="neg">✗ −${fmt(b.amount)}<i class=mk></i></span>`;
+      return `<div class="sb-feed-row"><span class="sb-feed-sel">${escapeHtml(b.sel)}</span> <span class="muted">(${escapeHtml(b.match)})</span> @${b.odds.toFixed(2)} · ${fmt(b.amount)}<i class=mk></i> → ${res}</div>`;
     }).join("");
   }
 
@@ -231,8 +231,8 @@
       }
       const myb = (m.myBets || []).map((b) => {
         const st = m.state === "done" ? (b.won ? `<span class="pos">✓ +${fmt(b.payout)}</span>` : `<span class="neg">✗</span>`) : m.state === "live" ? `<span class="sb-live">live</span>` : `<span class="muted">offen</span>`;
-        const cashout = (b.cashout != null && b.id) ? `<button class="sb-cashout" data-id="${m.id}" data-bet="${b.id}">Cash-out ${fmt(b.cashout)} 🪙</button>` : "";
-        return `<div class="sb-myb-row">${escapeHtml(selLabel(m, b.market, b.selection))} @${b.odds.toFixed(2)} · ${fmt(b.amount)} 🪙 ${st} ${cashout}</div>`;
+        const cashout = (b.cashout != null && b.id) ? `<button class="sb-cashout" data-id="${m.id}" data-bet="${b.id}">Cash-out ${fmt(b.cashout)}<i class=mk></i></button>` : "";
+        return `<div class="sb-myb-row">${escapeHtml(selLabel(m, b.market, b.selection))} @${b.odds.toFixed(2)} · ${fmt(b.amount)}<i class=mk></i> ${st} ${cashout}</div>`;
       }).join("");
       return `<div class="sb-match${m.real ? " sb-real-match" : ""}" data-id="${m.id}">
         <div class="sb-head"><span>${m.leagueEmoji} ${escapeHtml(m.league)}${m.real ? ' <span class="sb-real">ECHT</span>' : ""}</span>${statusHtml(m)}</div>
@@ -273,7 +273,7 @@
       socket.emit("sports:cashout", { matchId: +b.dataset.id, betId: b.dataset.bet }, (res) => {
         if (!res || !res.ok) { toast((res && res.error) || "Cash-out fehlgeschlagen."); return; }
         if (res.account) applyAccount(res.account);
-        toast(`💸 Cash-out: +${fmt(res.refund)} 🪙`);
+        toast(`💸 Cash-out: +${fmt(res.refund)} Chips`);
         load();
       });
     }));
@@ -301,15 +301,15 @@
     if (!cs.length) { el.innerHTML = '<p class="muted small">Noch keine Kombi. Tippe mehrere Spiele an → Wettschein.</p>'; return; }
     el.innerHTML = cs.map((c) => {
       const status = !c.settled ? '<span class="muted">offen</span>'
-        : c.voided ? `<span class="muted">↩ Erstattet (Spiel abgesagt) ${fmt(c.payout)} 🪙</span>`
-        : c.won ? `<span class="pos">✓ Gewonnen +${fmt(c.payout)} 🪙</span>` : '<span class="neg">✗ Verloren</span>';
+        : c.voided ? `<span class="muted">↩ Erstattet (Spiel abgesagt) ${fmt(c.payout)}<i class=mk></i></span>`
+        : c.won ? `<span class="pos">✓ Gewonnen +${fmt(c.payout)}<i class=mk></i></span>` : '<span class="neg">✗ Verloren</span>';
       const legs = c.legs.map((l) => {
         const ic = l.result === "win" ? "✓" : l.result === "lose" ? "✗" : l.result === "void" ? "↩" : "•";
         const cl = l.result === "win" ? "pos" : l.result === "lose" ? "neg" : "muted";
         return `<div class="sb-combo-leg"><span class="${cl}">${ic}</span> ${escapeHtml(l.label)} <b>@${l.odds.toFixed(2)}</b></div>`;
       }).join("");
       return `<div class="sb-combo">
-        <div class="sb-combo-head"><b>${c.legs.length}er-Kombi @${c.comboOdds.toFixed(2)}</b> · ${fmt(c.amount)} 🪙 ${status}</div>
+        <div class="sb-combo-head"><b>${c.legs.length}er-Kombi @${c.comboOdds.toFixed(2)}</b> · ${fmt(c.amount)}<i class=mk></i> ${status}</div>
         ${legs}</div>`;
     }).join("");
   }
@@ -319,7 +319,7 @@
     if (!el) return;
     if (!data.feed.length) { el.innerHTML = '<p class="muted small">Noch keine Tipps. Sei der Erste!</p>'; return; }
     el.innerHTML = data.feed.map((f) =>
-      `<div class="sb-feed-row"><b>${escapeHtml(f.name)}</b> tippt <span class="sb-feed-sel">${escapeHtml(f.sel)}</span> <span class="muted">(${escapeHtml(f.match)})</span> · ${fmt(f.amount)} 🪙 @${f.odds.toFixed(2)}</div>`
+      `<div class="sb-feed-row"><b>${escapeHtml(f.name)}</b> tippt <span class="sb-feed-sel">${escapeHtml(f.sel)}</span> <span class="muted">(${escapeHtml(f.match)})</span> · ${fmt(f.amount)}<i class=mk></i> @${f.odds.toFixed(2)}</div>`
     ).join("");
   }
 

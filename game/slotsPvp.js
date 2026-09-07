@@ -164,7 +164,7 @@ function setupPvp(io, accounts) {
     socket.on("pvp:create", ({ buyIn } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
-      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} 🪙.` });
+      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
@@ -197,7 +197,7 @@ function setupPvp(io, accounts) {
     socket.on("pvp:createBot", ({ buyIn } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
-      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} 🪙.` });
+      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 

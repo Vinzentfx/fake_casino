@@ -841,10 +841,10 @@ function renderProfile() {
   const gespielt = stats.gamesPlayed || 0;
   const groesster = stats.biggestWin || 0;
   $("#profile-stats").innerHTML =
-    kachel("Guthaben", chips.toLocaleString("de-DE") + " 🪙") +
-    kachel("Netto-Vermögen", (acc.netWorth ?? chips).toLocaleString("de-DE") + " 🪙") +
+    kachel("Guthaben", chips.toLocaleString("de-DE") + "<i class=mk></i>") +
+    kachel("Netto-Vermögen", (acc.netWorth ?? chips).toLocaleString("de-DE") + "<i class=mk></i>") +
     kachel("Gespielte Runden", gespielt.toLocaleString("de-DE")) +
-    kachel("Größter Gewinn", groesster.toLocaleString("de-DE") + " 🪙") +
+    kachel("Größter Gewinn", groesster.toLocaleString("de-DE") + "<i class=mk></i>") +
     kachel("Mitglied seit", acc.createdAt ? new Date(acc.createdAt).toLocaleDateString("de-DE") : "–");
 
   /* Der Rest (Stadt-Imperium, Clan, Achievements) kommt vom Server. Vorher
@@ -858,7 +858,7 @@ function renderProfile() {
       const tags = [];
       if (d.clan) tags.push(`<span class="pf-tag">🛡️ ${escapeHtml(d.clan)}</span>`);
       if (d.ach && d.ach.badge) tags.push(`<span class="pf-tag">${d.ach.badge}</span>`);
-      if (d.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">🎯 Kopfgeld ${Number(d.bounty).toLocaleString("de-DE")} 🪙</span>`);
+      if (d.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">🎯 Kopfgeld ${Number(d.bounty).toLocaleString("de-DE")} Chips</span>`);
       $("#profile-tags").innerHTML = tags.join("");
 
       const c = d.city;
@@ -869,7 +869,7 @@ function renderProfile() {
           cityEl.innerHTML =
             `<h3 class="section-title">🏙️ Dein Imperium</h3><div class="pf-stats">` +
             kachel("Häuser", Number(c.houses).toLocaleString("de-DE")) +
-            kachel("Wert", Number(c.value || 0).toLocaleString("de-DE") + " 🪙") +
+            kachel("Wert", Number(c.value || 0).toLocaleString("de-DE") + "<i class=mk></i>") +
             kachel("Straßen-Monopole", Number(c.streets || 0)) +
             (trophaeen ? kachel("Trophäen", trophaeen) : "") +
             ((c.bossOf || []).length ? kachel("Stadtteil-Boss", (c.bossOf || []).join(", ")) : "") +
@@ -920,7 +920,7 @@ function renderAchievements() {
         ? "★ Wird in der Bestenliste getragen"
         : a.unlocked
           ? `✓ Geschafft${wann ? " am " + wann : ""}`
-          : `+${a.reward.toLocaleString("de-DE")} 🪙`;
+          : `+${a.reward.toLocaleString("de-DE")}<i class=mk></i>`;
       return `<div class="badge ${a.unlocked ? "on" : ""}${sel ? " selected" : ""}" data-ach="${a.id}" data-unlocked="${a.unlocked ? 1 : 0}">` +
         `<span class="badge-emoji">${a.unlocked ? a.emoji : "🔒"}</span>` +
         `<span class="badge-label">${escapeHtml(a.label)}</span>` +
@@ -1011,7 +1011,7 @@ function startChallenge(game, name) {
   const errEl = $("#challenge-error");
   if (!g) return;
   const stake = parseInt($("#challenge-stake")?.value, 10);
-  if (!Number.isFinite(stake) || stake < 50) { if (errEl) errEl.textContent = "Mindest-Einsatz 50 🪙."; return; }
+  if (!Number.isFinite(stake) || stake < 50) { if (errEl) errEl.textContent = "Mindest-Einsatz 50 Chips."; return; }
   if (state.account && state.account.chips < stake) { if (errEl) errEl.textContent = "Nicht genug Chips für den Einsatz."; return; }
   closePlayerProfile();
   // Create a PRIVATE match for the chosen game → get the code → send the invite.
@@ -1030,7 +1030,7 @@ function startChallenge(game, name) {
 socket.on("social:challengeIncoming", ({ from, game, code, stake, label } = {}) => {
   if (!from || !game || !code) return;
   const hook = DUEL_JOIN_HOOK[game];
-  const txt = `⚔️ ${from} fordert dich zu ${label || DUEL_LABEL[game] || "einem Duell"} heraus\nEinsatz: ${Number(stake || 0).toLocaleString("de-DE")} 🪙\n\nAnnehmen?`;
+  const txt = `⚔️ ${from} fordert dich zu ${label || DUEL_LABEL[game] || "einem Duell"} heraus\nEinsatz: ${Number(stake || 0).toLocaleString("de-DE")}<i class=mk></i>\n\nAnnehmen?`;
   (async () => {
     const ja = hook && window.Casino[hook]
       && await window.Casino.dialog.frage(txt, { titel: "Herausforderung", okText: "Annehmen", abbruchText: "Ablehnen" });
@@ -1074,7 +1074,7 @@ async function openPlayerProfile(name) {
     const tags = [];
     if (data.clan) tags.push(`<span class="pf-tag">🛡️ ${escapeHtml(data.clan)}</span>`);
     if (ach.badge) tags.push(`<span class="pf-tag">${ach.badge}</span>`);
-    if (data.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">🎯 Kopfgeld ${zahl(data.bounty)} 🪙</span>`);
+    if (data.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">🎯 Kopfgeld ${zahl(data.bounty)} Chips</span>`);
     if (acc.lastSeen) tags.push(`<span class="pf-tag">👋 ${wannGrob(acc.lastSeen)}</span>`);
 
     const badges = (ach.unlocked || []).length
@@ -1086,7 +1086,7 @@ async function openPlayerProfile(name) {
     const imperium = c && c.houses
       ? `<div class="pf-stats">` +
           kachel("Häuser", zahl(c.houses)) +
-          kachel("Wert", zahl(c.value) + " 🪙") +
+          kachel("Wert", zahl(c.value) + "<i class=mk></i>") +
           kachel("Straßen-Monopole", zahl(c.streets)) +
           ((c.trophies || []).length ? kachel("Trophäen", (c.trophies || []).length) : "") +
           ((c.bossOf || []).length ? kachel("Stadtteil-Boss", escapeHtml((c.bossOf || []).join(", "))) : "") +
@@ -1105,10 +1105,10 @@ async function openPlayerProfile(name) {
       </div>
 
       <div class="pf-stats">
-        ${kachel("Guthaben", zahl(acc.chips) + " 🪙")}
-        ${kachel("Netto-Vermögen", zahl(acc.netWorth ?? acc.chips) + " 🪙")}
+        ${kachel("Guthaben", zahl(acc.chips) + "<i class=mk></i>")}
+        ${kachel("Netto-Vermögen", zahl(acc.netWorth ?? acc.chips) + "<i class=mk></i>")}
         ${kachel("Gespielte Runden", zahl(stats.gamesPlayed))}
-        ${kachel("Größter Gewinn", zahl(stats.biggestWin) + " 🪙")}
+        ${kachel("Größter Gewinn", zahl(stats.biggestWin) + "<i class=mk></i>")}
         ${kachel("Mitglied seit", acc.createdAt ? new Date(acc.createdAt).toLocaleDateString("de-DE") : "–")}
       </div>
 
@@ -1195,7 +1195,7 @@ $("#login-form").addEventListener("submit", async (e) => {
     setAccount(data.account, data.token);
     showScreen("lobby");
     if (data.created) maybeShowOnboarding();
-    if (data.created) toast(`Willkommen, ${data.account.name}! ${(data.account.chips || 0).toLocaleString("de-DE")} 🪙 geschenkt.`);
+    if (data.created) toast(`Willkommen, ${data.account.name}! ${(data.account.chips || 0).toLocaleString("de-DE")} Chips geschenkt.`);
     else toast(`Willkommen zurück, ${data.account.name}!`);
     // Einbruchs-Warnung: fehlgeschlagene Login-Versuche seit dem letzten Besuch.
     if (!data.created && data.warnFails >= 3) {
@@ -1216,13 +1216,13 @@ function renderCalendar(s) {
     const isNext = i === s.current && s.canClaim;
     return `<div class="cal-day ${claimed ? "claimed" : ""} ${isNext ? "next" : ""}">
       <div class="cal-daynum">Tag ${i + 1}</div>
-      <div class="cal-reward">${r.toLocaleString("de-DE")} 🪙</div>
+      <div class="cal-reward">${r.toLocaleString("de-DE")}<i class=mk></i></div>
       <div class="cal-mark">${claimed ? "✓" : isNext ? "★" : ""}</div>
     </div>`;
   }).join("");
   if (btn) {
     btn.disabled = !s.canClaim;
-    btn.textContent = s.canClaim ? `Tag ${s.current + 1} abholen — ${s.rewards[s.current].toLocaleString("de-DE")} 🪙` : "✓ Heute schon abgeholt — morgen wieder!";
+    btn.textContent = s.canClaim ? `Tag ${s.current + 1} abholen — ${s.rewards[s.current].toLocaleString("de-DE")} Chips` : "✓ Heute schon abgeholt — morgen wieder!";
   }
 }
 function loadCalendar() {
@@ -1232,7 +1232,7 @@ $("#calendar-claim-btn")?.addEventListener("click", () => {
   socket.emit("calendar:claim", (r) => {
     if (!r || !r.ok) { toast(r?.error || "Fehler."); return; }
     setAccount(r.account);
-    toast(`📅 Tag ${r.day} — +${r.reward.toLocaleString("de-DE")} 🪙!`);
+    toast(`📅 Tag ${r.day} — +${r.reward.toLocaleString("de-DE")} Chips!`);
     loadCalendar();
   });
 });
@@ -1251,14 +1251,14 @@ function renderLiveops() {
   if (s && s.tourney) {
     const min = Math.max(0, Math.ceil((s.tourney.endsAt - Date.now()) / 60000));
     const lead = s.tourney.board && s.tourney.board[0];
-    parts.push(`<span class="lo-chip tourney">🏁 Slot-Turnier · ${s.tourney.prize.toLocaleString("de-DE")} 🪙 · noch ${min} Min${lead ? ` · 👑 ${escapeHtml(lead.name)} (${lead.mult}×)` : ""}</span>`);
+    parts.push(`<span class="lo-chip tourney">🏁 Slot-Turnier · ${s.tourney.prize.toLocaleString("de-DE")} Chips · noch ${min} Min${lead ? ` · 👑 ${escapeHtml(lead.name)} (${lead.mult}×)` : ""}</span>`);
   }
   el.innerHTML = parts.join("");
   el.classList.toggle("hidden", parts.length === 0);
 }
 socket.on("liveops:state", (s) => { liveopsState = s; renderLiveops(); });
 socket.on("connect", () => socket.emit("liveops:state", (r) => { if (r && r.ok) { liveopsState = r; renderLiveops(); } }));
-socket.on("liveops:tourneyWin", (w) => { if (w) toast(`🏆 Turnier gewonnen: ${w.name} mit ${w.mult}× (+${w.prize.toLocaleString("de-DE")} 🪙)!`); });
+socket.on("liveops:tourneyWin", (w) => { if (w) toast(`🏆 Turnier gewonnen: ${w.name} mit ${w.mult}× (+${w.prize.toLocaleString("de-DE")} Chips)!`); });
 // Kurze Server-Meldung an genau einen Spieler. Wird bisher nur genutzt, wenn
 // die Stadt eine Kosmetik freischaltet.
 socket.on("notice", ({ text } = {}) => { if (text) toast(String(text)); });
@@ -1354,7 +1354,7 @@ async function claimBonus() {
     if (data.sets) extras.push(`🧩 +${data.sets.toLocaleString("de-DE")} Sammel-Sets`);
     if (data.cashback) extras.push(`💸 +${data.cashback.toLocaleString("de-DE")} Cashback`);
     const streakNote = data.streak > 1 ? ` 🔥 ${data.streak}er-Serie!` : "";
-    toast(`+${data.amount.toLocaleString("de-DE")} 🪙 Bonus!${streakNote}${extras.length ? " · " + extras.join(" · ") : ""}`);
+    toast(`+${data.amount.toLocaleString("de-DE")} Chips Bonus!${streakNote}${extras.length ? " · " + extras.join(" · ") : ""}`);
   } catch (err) {
     toast(err.message || "Bonus nicht verfügbar.");
   }
@@ -1368,7 +1368,7 @@ async function claimRescue() {
   try {
     const data = await api("/api/rescue", { name: state.account.name, token: state.token });
     setAccount(data.account);
-    toast(`🆘 +${data.amount.toLocaleString("de-DE")} 🪙 Soforthilfe!`);
+    toast(`🆘 +${data.amount.toLocaleString("de-DE")} Chips Soforthilfe!`);
   } catch (err) {
     toast(err.message || "Soforthilfe nicht verfügbar.");
   }
@@ -1439,7 +1439,7 @@ function renderLbList() {
     if (p.schild && SCHILDER.has(p.schild)) li.classList.add("sch-" + p.schild);
     li.innerHTML =
       `<span>${rank}${clan} ${ava} ${nm}${titel ? " " + titel : ""}${lvl}${champ}${badge}${me ? " (du)" : ""}</span>` +
-      `<b>${unit ? unit(p.value) : p.value.toLocaleString("de-DE") + " 🪙"}</b>`;
+      `<b>${unit ? unit(p.value) : p.value.toLocaleString("de-DE") + "<i class=mk></i>"}</b>`;
     // Tap a row to inspect that player's stats.
     li.classList.add("lb-clickable");
     li.addEventListener("click", () => window.Casino.openStats && window.Casino.openStats(p.name));
@@ -1513,13 +1513,13 @@ $("#transfer-form").addEventListener("submit", (e) => {
     state.account = { ...state.account, ...res.account };
     renderTopbar();
     $("#tr-to").value = ""; $("#tr-amount").value = "";
-    toast(`${amount.toLocaleString("de-DE")} 🪙 an ${to} gesendet!`);
+    toast(`${amount.toLocaleString("de-DE")} Chips an ${to} gesendet!`);
   });
 });
 
 // Benachrichtigung wenn jemand Chips schickt
 socket.on("account:received", ({ from, amount }) => {
-  toast(`+${amount.toLocaleString("de-DE")} 🪙 von ${from} erhalten!`);
+  toast(`+${amount.toLocaleString("de-DE")} Chips von ${from} erhalten!`);
 });
 
 // Admin-Panel (nur für Vincent)
@@ -1551,8 +1551,8 @@ function loadAdminAccounts() {
       const li = document.createElement("li");
       li.className = "admin-acc";
       li.innerHTML =
-        `<div class="admin-acc-top"><span>${escapeHtml(p.name)}${p.banned ? " 🚫" : ""}${p.shadowban ? " 🌑" : ""}</span><b>${p.chips.toLocaleString("de-DE")} 🪙</b></div>` +
-        `<div class="admin-acc-lb">Bank: <b>${savings.toLocaleString("de-DE")} 🪙</b>` +
+        `<div class="admin-acc-top"><span>${escapeHtml(p.name)}${p.banned ? " 🚫" : ""}${p.shadowban ? " 🌑" : ""}</span><b>${p.chips.toLocaleString("de-DE")}<i class=mk></i></b></div>` +
+        `<div class="admin-acc-lb">Bank: <b>${savings.toLocaleString("de-DE")}<i class=mk></i></b>` +
         ` <button class="chip-btn" data-admin-clear-bank="${escapeHtml(p.name)}">Bank leeren</button>` +
         ` <button class="btn-danger" data-admin-delete="${escapeHtml(p.name)}">Löschen</button></div>` +
         `<div class="admin-acc-lb">Leaderboard löschen:` +
@@ -1563,7 +1563,7 @@ function loadAdminAccounts() {
         if (!await window.Casino.dialog.frage(`${p.name}: Bank wirklich leeren?`, { okText: "Leeren", gefahr: true })) return;
         socket.emit("admin:clearBank", { target: p.name }, (r) => {
           if (r && r.ok) {
-            toast(`${p.name}: Bank geleert (${(r.cleared || 0).toLocaleString("de-DE")} 🪙).`);
+            toast(`${p.name}: Bank geleert (${(r.cleared || 0).toLocaleString("de-DE")} Chips).`);
             loadAdminAccounts();
           } else toast((r && r.error) || "Fehler.");
         });
@@ -1590,7 +1590,7 @@ function loadAdminAccounts() {
 }
 
 function adminMoney(n) {
-  return `${Math.floor(Number(n) || 0).toLocaleString("de-DE")} 🪙`;
+  return `${Math.floor(Number(n) || 0).toLocaleString("de-DE")}<i class=mk></i>`;
 }
 
 function adminTimeLeft(ts) {
@@ -1714,7 +1714,7 @@ $("#admin-set-chips-btn").addEventListener("click", () => {
   if (!target || !Number.isFinite(amount) || amount < 0) { errEl.textContent = "Ungültige Eingabe."; return; }
   socket.emit("admin:setChips", { target, amount }, (res) => {
     if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
-    toast(`${target}: Chips auf ${amount.toLocaleString("de-DE")} 🪙 gesetzt.`);
+    toast(`${target}: Chips auf ${amount.toLocaleString("de-DE")} Chips gesetzt.`);
     loadAdminAccounts();
   });
 });
@@ -1860,11 +1860,11 @@ $("#admin-comeback-on-btn")?.addEventListener("click", async () => {
   // Einmal nachfragen: das laesst sich nicht zurueckdrehen, und alle
   // einundsiebzig Konten bekommen sofort eine Nachricht.
   const ja = await window.Casino.dialog.frage(
-    `Wiedereröffnung jetzt ausrufen?\n\nAlle bekommen 14 Tage lang ihr Willkommens-Paket, die Gala läuft ${minutes} Minuten mit ${pot.toLocaleString("de-DE")} 🪙 im Topf. Es geht eine Ansage in den Chat und eine Benachrichtigung an alle, die welche anhaben.`,
+    `Wiedereröffnung jetzt ausrufen?\n\nAlle bekommen 14 Tage lang ihr Willkommens-Paket, die Gala läuft ${minutes} Minuten mit ${pot.toLocaleString("de-DE")}<i class=mk></i> im Topf. Es geht eine Ansage in den Chat und eine Benachrichtigung an alle, die welche anhaben.`,
     { titel: "🎊 Wiedereröffnung", okText: "Ausrufen" });
   if (!ja) return;
   socket.emit("admin:comeback", { on: true, minutes, pot }, (r) =>
-    toast(r?.ok ? `🎊 Wiedereröffnung läuft — Gala ${r.minuten} Min, ${Number(r.topf).toLocaleString("de-DE")} 🪙 im Topf.` : (r?.error || "Fehler.")));
+    toast(r?.ok ? `🎊 Wiedereröffnung läuft — Gala ${r.minuten} Min, ${Number(r.topf).toLocaleString("de-DE")} Chips im Topf.` : (r?.error || "Fehler.")));
 });
 $("#admin-comeback-off-btn")?.addEventListener("click", () => {
   socket.emit("admin:comeback", { on: false }, (r) => toast(r?.ok ? "Gala abgerechnet." : (r?.error || "Fehler.")));
@@ -1880,7 +1880,7 @@ $("#admin-happy-off-btn")?.addEventListener("click", () => {
 $("#admin-tourney-on-btn")?.addEventListener("click", () => {
   const minutes = parseInt($("#admin-tourney-mins").value, 10) || 10;
   const prize = parseInt($("#admin-tourney-prize").value, 10) || 100000;
-  socket.emit("admin:tourney", { on: true, minutes, prize }, (r) => toast(r?.ok ? `🏁 Turnier gestartet (${minutes} Min, ${prize.toLocaleString("de-DE")} 🪙).` : (r?.error || "Fehler.")));
+  socket.emit("admin:tourney", { on: true, minutes, prize }, (r) => toast(r?.ok ? `🏁 Turnier gestartet (${minutes} Min, ${prize.toLocaleString("de-DE")} Chips).` : (r?.error || "Fehler.")));
 });
 $("#admin-tourney-off-btn")?.addEventListener("click", () => {
   socket.emit("admin:tourney", { on: false }, (r) => toast(r?.ok ? "Turnier beendet." : (r?.error || "Fehler.")));

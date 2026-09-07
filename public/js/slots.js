@@ -101,7 +101,7 @@
   }
   function updateJackpotLine(pot) {
     const el = document.getElementById("jackpot-line");
-    if (el && pot != null) el.innerHTML = `💰 Gemeinschafts-Jackpot: <b>${pot.toLocaleString("de-DE")} 🪙</b> <span class="muted small">— 0,5 % jedes Einsatzes, kann bei jedem Spin knallen</span>`;
+    if (el && pot != null) el.innerHTML = `💰 Gemeinschafts-Jackpot: <b>${pot.toLocaleString("de-DE")}<i class=mk></i></b> <span class="muted small">— 0,5 % jedes Einsatzes, kann bei jedem Spin knallen</span>`;
   }
   function isMachineUnlocked(m) {
     if (!m || m.unlockCost === 0) return true;
@@ -122,10 +122,10 @@
         <div class="mc-syms"><span>${sampleSyms}</span></div>
         <div class="mc-name">${m.name}</div>
         <div class="mc-tag">${m.tagline}</div>
-        <div class="mc-bets">Einsatz ${m.bets[0].toLocaleString("de-DE")}–${m.bets[m.bets.length - 1].toLocaleString("de-DE")} 🪙</div>
+        <div class="mc-bets">Einsatz ${m.bets[0].toLocaleString("de-DE")}–${m.bets[m.bets.length - 1].toLocaleString("de-DE")}<i class=mk></i></div>
         ${unlocked
           ? `<div class="mc-feature">${feature}</div>`
-          : `<div class="mc-lock">🔒 ${m.unlockCost.toLocaleString("de-DE")} 🪙</div>`}`;
+          : `<div class="mc-lock">🔒 ${m.unlockCost.toLocaleString("de-DE")}<i class=mk></i></div>`}`;
       card.addEventListener("click", () => (unlocked ? openMachine(m.id) : tryUnlock(m)));
       grid.appendChild(card);
     });
@@ -134,8 +134,8 @@
     if (pvpMode) return toast("Im Duell kannst du nichts freischalten.");
     const acc = window.Casino.getAccount();
     if (!acc) return;
-    if (acc.chips < m.unlockCost) return toast(`Du brauchst ${m.unlockCost.toLocaleString("de-DE")} 🪙 für ${m.name}.`);
-    if (!await window.Casino.dialog.frage(`${m.name} für ${m.unlockCost.toLocaleString("de-DE")} 🪙 freischalten?`, { okText: "Freischalten" })) return;
+    if (acc.chips < m.unlockCost) return toast(`Du brauchst ${m.unlockCost.toLocaleString("de-DE")} Chips für ${m.name}.`);
+    if (!await window.Casino.dialog.frage(`${m.name} für ${m.unlockCost.toLocaleString("de-DE")} Chips freischalten?`, { okText: "Freischalten" })) return;
     socket.emit("slots:unlock", { machineId: m.id }, (res) => {
       if (res && res.ok) {
         window.Casino.applyAccount(res.account);
@@ -406,7 +406,7 @@
     } else {
       window.Casino.setChips(res.balance);
       if (!wasFree) recordSession(res.totalWin, bet); // track streak on base spins
-      if (res.jackpot) window.Casino.toast(`💰💥 JACKPOT GEKNACKT: +${res.jackpot.toLocaleString("de-DE")} 🪙!`);
+      if (res.jackpot) window.Casino.toast(`💰💥 JACKPOT GEKNACKT: +${res.jackpot.toLocaleString("de-DE")} Chips!`);
       updateJackpotLine(res.jackpotPot);
       // Risiko anbieten (nur Basisspiel-Gewinne, nicht im Auto-Roll).
       if (res.canGamble && res.totalWin > 0 && !autoRoll) showGamble(res.totalWin);
@@ -424,7 +424,7 @@
         freeActive = false;
         $("#free-badge").classList.remove("show");
         $("#mult-badge").classList.remove("show");
-        if (freeWinTotal > 0) bigBanner(`Freispiele vorbei!\n+${freeWinTotal.toLocaleString("de-DE")} 🪙`, "t-big");
+        if (freeWinTotal > 0) bigBanner(`Freispiele vorbei!\n+${freeWinTotal.toLocaleString("de-DE")}<i class=mk></i>`, "t-big");
         freeWinTotal = 0;
       }
       if (pvpMode && pvp.done) {
@@ -531,9 +531,9 @@
         confettiBurst(70);
         $("#gamble-amount").textContent = r.amount.toLocaleString("de-DE");
         if (r.canContinue) {
-          toast(`🃏 Richtig! ${r.amount.toLocaleString("de-DE")} 🪙 — nochmal?`);
+          toast(`🃏 Richtig! ${r.amount.toLocaleString("de-DE")} Chips — nochmal?`);
         } else {
-          toast(`🃏 Maximum erreicht — ${r.amount.toLocaleString("de-DE")} 🪙 sind sicher!`);
+          toast(`🃏 Maximum erreicht — ${r.amount.toLocaleString("de-DE")} Chips sind sicher!`);
           setTimeout(hideGamble, 1400);
         }
       } else {
@@ -1031,7 +1031,10 @@
     cellShockwave(center);
     // Burst the winning symbol out of the hit cells — bigger win, bigger burst.
     const firstCell = positions[0] && cellEl(positions[0][0], positions[0][1]);
-    const emoji = firstCell ? firstCell.textContent.trim() : "🪙";
+    // Ohne Zelle gibt es kein Symbol zum Zerstaeuben — dann eben keine
+    // Explosion. (Hier stand ein Muenz-Emoji als Rueckfall; es ging als
+    // Textinhalt in die Partikel, wo eine Marke aus HTML nichts verloren hat.)
+    const emoji = firstCell ? firstCell.textContent.trim() : "";
     if (emoji) emojiExplosion(emoji, center, Math.min(36, 10 + Math.floor(delta / Math.max(wcBet, 1)) * 3));
     dopamineKick(center, delta);
     await flyPlus(center, delta);
@@ -1279,7 +1282,7 @@
     for (let i = 0; i < count; i++) {
       const el = document.createElement("div");
       el.className = "coin-pop";
-      el.textContent = Math.random() < 0.78 ? "🪙" : "💎";
+      el.textContent = Math.random() < 0.78 ? "Chips" : "💎";
       el.style.left = from.x + "px";
       el.style.top = from.y + "px";
       el.style.setProperty("--dx", ((Math.random() - 0.5) * 360).toFixed(0) + "px");
@@ -1608,7 +1611,7 @@
     $("#pvp-room-players").innerHTML =
       `<div class="pvp-room-player">👤 ${esc(you)} <span class="muted">(du)</span></div>` +
       `<div class="pvp-room-player">🆚 ${esc(opp)}</div>` +
-      `<div class="muted small">Buy-in ${st.buyIn} 🪙 · Pot ${st.buyIn * 2} 🪙 · ${st.startChips} Match-Chips · ${st.spins} Spins</div>`;
+      `<div class="muted small">Buy-in ${st.buyIn}<i class=mk></i> · Pot ${st.buyIn * 2}<i class=mk></i> · ${st.startChips} Match-Chips · ${st.spins} Spins</div>`;
     const startBtn = $("#pvp-start");
     startBtn.disabled = !(st.isHost && st.opponent);
     startBtn.textContent = st.isHost ? "Duell starten" : "Warten auf Host…";
@@ -1642,16 +1645,16 @@
       ? `${result.winner} gewinnt (Gegner weg)`
       : `${result.winner} gewinnt!`;
     let detail = result.players
-      .map((p) => `${esc(p.name)}: <b>${p.chips.toLocaleString("de-DE")}</b> Match-🪙`)
+      .map((p) => `${esc(p.name)}: <b>${p.chips.toLocaleString("de-DE")}</b> Match-<i class=mk></i>`)
       .join("<br>");
-    detail += `<br>Pot: <b>${result.pot.toLocaleString("de-DE")} 🪙</b>`;
+    detail += `<br>Pot: <b>${result.pot.toLocaleString("de-DE")}<i class=mk></i></b>`;
     if (result.tie) {
       detail += `<br><span class="muted">Unentschieden — Buy-ins zurückerstattet.</span>`;
     } else {
       if (result.rake > 0)
-        detail += `<br><span class="muted">−15% Gebühr (${result.rake.toLocaleString("de-DE")} 🪙)</span>`;
+        detail += `<br><span class="muted">−15% Gebühr (${result.rake.toLocaleString("de-DE")}<i class=mk></i>)</span>`;
       detail += youWon
-        ? `<div class="pvp-win-msg">🎉 +${result.payout.toLocaleString("de-DE")} 🪙 gewonnen!</div>`
+        ? `<div class="pvp-win-msg">🎉 +${result.payout.toLocaleString("de-DE")}<i class=mk></i> gewonnen!</div>`
         : `<div class="pvp-lose-msg">Diesmal verloren.</div>`;
     }
     $("#pvp-result-detail").innerHTML = detail;
@@ -1752,7 +1755,7 @@
     const rows = [];
 
     if (machine.mode === "cluster") {
-      rows.push(`<p class="pt-note">Auszahlung in 🪙 bei Einsatz <b>${bet}</b> — bei 5+ verbundenen Symbolen (Cluster).</p>`);
+      rows.push(`<p class="pt-note">Auszahlung in Chips bei Einsatz <b>${bet}</b> — bei 5+ verbundenen Symbolen (Cluster).</p>`);
       const syms = Object.keys(machine.clusterPays).sort(
         (a, b) => coins(topVal(machine.clusterPays[b])) - coins(topVal(machine.clusterPays[a]))
       );
@@ -1768,7 +1771,7 @@
       const wildNote = machine.bookPays
         ? `Das Buch ${symbolHtml(symbolAsset(machine, machine.wild) || machine.emojis[machine.wild], "pt-symbol-img")} ist Wild UND Scatter zugleich.`
         : `Wild ${symbolHtml(symbolAsset(machine, machine.wild) || machine.emojis[machine.wild], "pt-symbol-img")} ersetzt alle außer Scatter.`;
-      rows.push(`<p class="pt-note">Auszahlung in 🪙 bei Einsatz <b>${bet}</b> (${label}). ${wildNote}</p>`);
+      rows.push(`<p class="pt-note">Auszahlung in Chips bei Einsatz <b>${bet}</b> (${label}). ${wildNote}</p>`);
       const syms = Object.keys(machine.pays).sort(
         (a, b) => coins(topVal(machine.pays[b])) - coins(topVal(machine.pays[a]))
       );

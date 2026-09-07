@@ -77,7 +77,7 @@
     for (let i = 0; i < count; i++) {
       const c = document.createElement("i");
       c.className = "fx-coin";
-      c.textContent = "🪙";
+      c.textContent = "Chips";
       c.style.left = box.left + box.width / 2 + "px";
       c.style.top = box.top + box.height / 2 + "px";
       c.style.setProperty("--dx", (Math.random() * 240 - 120) + "px");
@@ -387,7 +387,7 @@
     host.appendChild(karte);
     requestAnimationFrame(() => karte.classList.add("show"));
 
-    countUp(karte.querySelector("b"), 0, betrag, { format: (n) => fmt(n) + " 🪙", sound: false });
+    countUp(karte.querySelector("b"), 0, betrag, { format: (n) => fmt(n) + "<i class=mk></i>", sound: false });
     if (sound && window.Casino.sound) window.Casino.sound.play(betrag > 0 ? "bigwin" : "win");
     spieleGewinnEffekt({ betrag, faktor });
 
