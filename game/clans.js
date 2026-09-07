@@ -709,6 +709,13 @@ function setupClans(io, accounts) {
       tag = String(tag || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
       if (name.length < 3) return ack({ ok: false, error: "Name mind. 3 Zeichen." });
       if (tag.length < 2) return ack({ ok: false, error: "Tag 2–4 Buchstaben/Zahlen." });
+      {
+        const wf = require("./wortfilter");
+        const p1 = wf.pruefe(name, "Der Clan-Name");
+        if (!p1.ok) return ack({ ok: false, error: p1.error });
+        const p2 = wf.pruefe(tag, "Der Tag");
+        if (!p2.ok) return ack({ ok: false, error: p2.error });
+      }
       const id = slug(name);
       if (!id || clans[id]) return ack({ ok: false, error: "Name schon vergeben." });
       if (Object.values(clans).some((c) => c.tag === tag)) return ack({ ok: false, error: "Tag schon vergeben." });
@@ -822,7 +829,10 @@ function setupClans(io, accounts) {
       if (typeof ack !== "function") return;
       const id = myClan(socket);
       if (!id || !canManage(id, socket.data.account)) return ack({ ok: false, error: "Keine Berechtigung." });
-      clans[id].motto = String(motto || "").trim().slice(0, 120); save(); notifyClan(id);
+      const m = String(motto || "").trim().slice(0, 120);
+      const wf = require("./wortfilter").pruefe(m, "Das Motto");
+      if (!wf.ok) return ack({ ok: false, error: wf.error });
+      clans[id].motto = m; save(); notifyClan(id);
       ack({ ok: true, clan: clanPublic(id) });
     });
     socket.on("clan:setClosed", ({ closed } = {}, ack) => {
@@ -945,8 +955,13 @@ function setupClans(io, accounts) {
   });
 }
 
+/** Name, Tag und Motto aller Clans — fuer die Filter-Pruefung im Admin. */
+function alleNamen() {
+  return Object.values(clans).map((c) => ({ id: c.id, name: c.name, tag: c.tag, motto: c.motto || "" }));
+}
+
 module.exports = {
-  setupClans, tagOf, clanColorOf,
+  setupClans, tagOf, clanColorOf, alleNamen,
   recordPvpWin, tickWars, weeklyRollover,
   adminRemoveMember,
   addSeasonXp, seasonBonusFor, clanSeasonState,

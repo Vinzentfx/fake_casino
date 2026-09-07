@@ -13,6 +13,8 @@
  * Text is stored raw (trimmed + length-capped); clients MUST escape on render.
  */
 
+const wortfilter = require("./wortfilter");
+
 const HISTORY = 40;          // messages kept per room
 const MAX_LEN = 280;         // characters per message
 const MIN_INTERVAL_MS = 600; // per-socket flood guard
@@ -55,6 +57,11 @@ function setupChat(io, accounts) {
       room = String(room || "global");
       text = String(text || "").replace(/\s+/g, " ").trim().slice(0, MAX_LEN);
       if (!text) return ack && ack({ ok: false, error: "Leere Nachricht." });
+      /* Im Chat wird maskiert, nicht abgelehnt: eine verschluckte Nachricht
+         erzeugt Nachfragen ("kam das an?"), eine maskierte erklaert sich
+         selbst. Gefiltert wird vor dem Speichern — die Verlaufsliste soll
+         das Wort gar nicht erst enthalten. */
+      text = wortfilter.entschaerfe(text).text;
 
       const now = Date.now();
       if (now - (socket.data.lastChatTs || 0) < MIN_INTERVAL_MS)

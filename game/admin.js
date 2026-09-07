@@ -6,6 +6,7 @@ const slots = require("./slots");
 const liveops = require("./liveops");
 const ipbans = require("./ipbans");
 const chat = require("./chat");
+const wortfilter = require("./wortfilter");
 let _heist = null;
 function setHeist(h) { _heist = h; }
 let _events = {}; // { rain, quiz, vault } — admin events wired in server.js
@@ -172,6 +173,69 @@ function setupAdmin(io, accounts) {
           alerts,
         },
       });
+    });
+
+    /* ── Wortfilter ────────────────────────────────────────────────────
+       Was in einer Runde als schlimm gilt, entscheidet die Runde. Die
+       Basisliste im Modul deckt das Grobe ab, alles Weitere kommt hier
+       dazu — und Ausnahmen fuer Woerter, die zu Unrecht haengenbleiben. */
+    socket.on("admin:filterState", (ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      ack({ ok: true, ...wortfilter.listeState() });
+    });
+
+    socket.on("admin:filterAdd", ({ wort, art } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      ack(art === "ausnahme" ? wortfilter.ergaenzeAusnahme(wort) : wortfilter.ergaenze(wort));
+    });
+
+    socket.on("admin:filterRemove", ({ wort, art } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      ack(art === "ausnahme" ? wortfilter.entferneAusnahme(wort) : wortfilter.entferne(wort));
+    });
+
+    /* Ausprobieren, ohne dass jemand es sieht. Laeuft bewusst im Server:
+       der Filter ist dort, eine zweite Fassung im Browser waere eine zweite
+       Wahrheit — und genau die wuerde man beim Pflegen der Liste nicht
+       merken. */
+    socket.on("admin:filterProbe", ({ text } = {}, ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const roh = String(text || "").slice(0, 200);
+      const t = wortfilter.treffer(roh);
+      ack({
+        ok: true,
+        entschaerft: wortfilter.entschaerfe(roh).text,
+        treffer: [...new Set(t.map((x) => x.wort))],
+      });
+    });
+
+    /* Bestandsnamen. Der Filter greift nur bei neuen Konten — sonst sperrt
+       eine spaeter ergaenzte Wortliste jemanden aus seinem eigenen Account
+       aus. Was schon da ist, listen wir hier auf; umbenennen oder stehen
+       lassen entscheidet der Besitzer je Fall. */
+    socket.on("admin:filterPruefeBestand", (ack) => {
+      if (!ack) return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const treffer = [];
+      for (const a of accounts.listAll()) {
+        const t = wortfilter.treffer(a.name);
+        if (t.length) treffer.push({ name: a.name, woerter: [...new Set(t.map((x) => x.wort))] });
+      }
+      // Clans und Pferde stehen genauso oeffentlich in Listen.
+      let clanTreffer = [];
+      try {
+        const clans = require("./clans");
+        if (typeof clans.alleNamen === "function") {
+          clanTreffer = clans.alleNamen()
+            .map((c) => ({ ...c, woerter: [...new Set(wortfilter.treffer(c.name + " " + (c.motto || "")).map((x) => x.wort))] }))
+            .filter((c) => c.woerter.length);
+        }
+      } catch {}
+      ack({ ok: true, accounts: treffer, clans: clanTreffer, geprueft: accounts.listAll().length });
     });
 
     socket.on("admin:listAccounts", (ack) => {

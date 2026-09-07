@@ -418,6 +418,13 @@ function login(name, pin) {
   if (!key || name.length < 2 || name.length > 16) {
     return { ok: false, error: "Name muss 2–16 Zeichen lang sein." };
   }
+  /* Nur bei NEUEN Konten. Wer schon da ist, behaelt seinen Namen — sonst
+     sperrt eine spaeter ergaenzte Wortliste jemanden aus seinem eigenen
+     Account aus. Bestehende Namen listet der Admin-Bildschirm auf. */
+  if (!accounts[key]) {
+    const wf = require("./wortfilter").pruefe(name, "Der Name");
+    if (!wf.ok) return { ok: false, error: "Dieser Name geht hier nicht. Such dir einen anderen aus." };
+  }
   if (pin.length < 4 || pin.length > PASS_MAX) {
     return { ok: false, error: `Passwort muss 4–${PASS_MAX} Zeichen haben.` };
   }

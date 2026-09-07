@@ -813,6 +813,11 @@ function setupHorses(_io, _accounts) {
       // Bereinigen: Steuerzeichen raus, Whitespace zusammenfassen, Länge 2–18.
       const clean = String(name || "").replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 18);
       if (clean.length < 2) return ack({ ok: false, error: "Name braucht mindestens 2 Zeichen." });
+      {
+        // Pferdenamen stehen im Renn-Protokoll und in der Chat-Ansage.
+        const wf = require("./wortfilter").pruefe(clean, "Der Name");
+        if (!wf.ok) return ack({ ok: false, error: wf.error });
+      }
       if (Object.values(store.horses).some((x) => x.id !== h.id && x.name.toLowerCase() === clean.toLowerCase()))
         return ack({ ok: false, error: "Der Name ist schon vergeben." });
       h.name = clean;

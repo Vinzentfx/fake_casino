@@ -7567,3 +7567,64 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 @media (max-width: 360px) {
   .brand span { display: none; }
 }
+
+/* --- Wortfilter (Admin) ---------------------------------------------------- */
+.wf-spalten { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-4); }
+.wf-spalte { display: grid; gap: var(--sp-2); align-content: start; }
+.wf-zeile { display: flex; gap: var(--sp-2); }
+.wf-zeile input { flex: 1; min-width: 0; }
+.wf-liste { display: flex; flex-wrap: wrap; gap: 6px; }
+.wf-wort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  font-size: var(--fs-xs);
+  font-family: var(--font-num);
+}
+.wf-wort button {
+  display: grid;
+  place-items: center;
+  width: 18px; height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-mute);
+}
+.wf-wort button:hover { color: var(--bad-text); background: var(--bad-soft); }
+.wf-wort .ui-icon { width: 11px; height: 11px; }
+
+.wf-probe, .wf-bestand {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line-neutral);
+}
+.wf-probe input { width: 100%; margin-bottom: var(--sp-2); }
+.wf-probe-aus {
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-neutral);
+  background: var(--surface-sunken);
+  font-size: var(--fs-sm);
+  min-height: 1.2em;
+  word-break: break-word;
+}
+.wf-probe-aus.getroffen { border-color: rgba(var(--bad-rgb), 0.5); color: var(--bad-text); }
+.wf-probe-aus.sauber { border-color: rgba(var(--good-rgb), 0.4); color: var(--good-text); }
+
+.wf-bz {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 7px var(--sp-2);
+  border-bottom: 1px solid var(--line-neutral);
+  font-size: var(--fs-sm);
+}
+.wf-bz:last-child { border-bottom: none; }
+.wf-bz small { color: var(--text-mute); font-size: var(--fs-xs); text-align: right; }
+.wf-sauber { display: flex; align-items: center; gap: 7px; color: var(--good-text); font-size: var(--fs-sm); }
+.wf-sauber .ui-icon { width: 16px; height: 16px; }

@@ -64,6 +64,9 @@ function setupSuggestions(io, accounts) {
       if (!acc) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       text = String(text || "").trim().slice(0, MAX_LEN);
       if (text.length < MIN_LEN) return ack({ ok: false, error: "Vorschlag ist zu kurz." });
+      /* Entschaerfen statt ablehnen: ein Vorschlag ist inhaltlich gemeint,
+         und wer sich im Ton vergreift, soll trotzdem gehoert werden. */
+      text = require("./wortfilter").entschaerfe(text).text;
       const key = socket.data.account;
       const used = recent(key);
       if (used.length >= SUGGEST_PER_HOUR)

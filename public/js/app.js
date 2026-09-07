@@ -93,6 +93,7 @@ function adminReiter() {
       // Die Karten holen ihren Zustand frisch, wenn man zu ihnen wechselt.
       if (ziel === "events") loadAdminDashboard();
       if (ziel === "ansage") ladeAnsage();
+      if (ziel === "filter") wfLade();
     });
   });
 }
@@ -2109,6 +2110,98 @@ $("#admin-comeback-on-btn")?.addEventListener("click", async () => {
 });
 $("#admin-comeback-off-btn")?.addEventListener("click", () => {
   socket.emit("admin:comeback", { on: false }, (r) => toast(r?.ok ? "Gala abgerechnet." : (r?.error || "Fehler.")));
+});
+
+/* ===========================================================================
+   Wortfilter (Admin)
+   ---------------------------------------------------------------------------
+   Die Liste gehoert dem Haus, nicht dem Programm: was in einer Runde als
+   schlimm gilt, entscheidet die Runde. Deshalb laesst sich hier beides
+   pflegen — was gefiltert wird und was ausdruecklich nicht.
+   ========================================================================= */
+function wfZeichne(d) {
+  const basis = $("#wf-basis");
+  if (basis) basis.textContent = `Die Basisliste umfasst ${d.basisAnzahl} Wörter.`;
+
+  const male = (box, woerter, art, leer) => {
+    if (!box) return;
+    if (!woerter.length) { box.innerHTML = `<p class="muted small">${leer}</p>`; return; }
+    box.innerHTML = woerter.map((w) =>
+      `<span class="wf-wort">${escapeHtml(w)}<button type="button" data-wf-weg="${escapeHtml(w)}"
+        data-wf-art="${art}" aria-label="Entfernen">${window.Casino.icons.ui("schliessen")}</button></span>`).join("");
+    box.querySelectorAll("[data-wf-weg]").forEach((b) => b.addEventListener("click", () => {
+      socket.emit("admin:filterRemove", { wort: b.dataset.wfWeg, art: b.dataset.wfArt }, (r) => {
+        if (r && r.ok) { wfZeichne(r); wfProbe(); }
+        else toast(r?.error || "Fehler.");
+      });
+    }));
+  };
+  male($("#wf-liste"), d.eigene || [], "wort", "Noch nichts Eigenes — die Basisliste greift trotzdem.");
+  male($("#wf-liste-aus"), d.ausnahmen || [], "ausnahme", "Keine Ausnahmen.");
+}
+
+function wfLade() {
+  socket.emit("admin:filterState", (r) => { if (r && r.ok) wfZeichne(r); });
+}
+
+/* Die Probe laeuft im Server, nicht im Browser: der Filter ist dort, und
+   eine zweite Fassung im Client waere eine zweite Wahrheit. */
+let wfProbeTimer = null;
+function wfProbe() {
+  const feld = $("#wf-probe-text");
+  const aus = $("#wf-probe-aus");
+  if (!feld || !aus) return;
+  const text = feld.value.trim();
+  if (!text) { aus.textContent = "—"; aus.className = "wf-probe-aus"; return; }
+  clearTimeout(wfProbeTimer);
+  wfProbeTimer = setTimeout(() => {
+    socket.emit("admin:filterProbe", { text }, (r) => {
+      if (!r || !r.ok) return;
+      aus.textContent = r.entschaerft;
+      aus.className = "wf-probe-aus" + (r.treffer.length ? " getroffen" : " sauber");
+      aus.title = r.treffer.length ? "Gefunden: " + r.treffer.join(", ") : "";
+    });
+  }, 220);
+}
+
+$("#wf-add")?.addEventListener("click", () => {
+  const f = $("#wf-neu"); const err = $("#wf-error");
+  if (err) err.textContent = "";
+  socket.emit("admin:filterAdd", { wort: f.value, art: "wort" }, (r) => {
+    if (r && r.ok) { f.value = ""; wfZeichne(r); wfProbe(); }
+    else if (err) err.textContent = r?.error || "Fehler.";
+  });
+});
+$("#wf-add-aus")?.addEventListener("click", () => {
+  const f = $("#wf-neu-aus"); const err = $("#wf-error");
+  if (err) err.textContent = "";
+  socket.emit("admin:filterAdd", { wort: f.value, art: "ausnahme" }, (r) => {
+    if (r && r.ok) { f.value = ""; wfZeichne(r); wfProbe(); }
+    else if (err) err.textContent = r?.error || "Fehler.";
+  });
+});
+$("#wf-probe-text")?.addEventListener("input", wfProbe);
+
+$("#wf-bestand-btn")?.addEventListener("click", () => {
+  const aus = $("#wf-bestand-aus");
+  if (aus) aus.innerHTML = '<p class="muted small">Prüfe…</p>';
+  socket.emit("admin:filterPruefeBestand", (r) => {
+    if (!r || !r.ok) { if (aus) aus.innerHTML = '<p class="muted small">Fehler.</p>'; return; }
+    const zeilen = [];
+    for (const a of r.accounts || []) {
+      zeilen.push(`<div class="wf-bz"><b>${escapeHtml(a.name)}</b>
+        <small>Account · ${escapeHtml(a.woerter.join(", "))}</small></div>`);
+    }
+    for (const c of r.clans || []) {
+      zeilen.push(`<div class="wf-bz"><b>[${escapeHtml(c.tag)}] ${escapeHtml(c.name)}</b>
+        <small>Clan · ${escapeHtml(c.woerter.join(", "))}</small></div>`);
+    }
+    if (aus) {
+      aus.innerHTML = zeilen.length
+        ? `<p class="hint">${zeilen.length} ${zeilen.length === 1 ? "Eintrag" : "Einträge"} von ${r.geprueft} geprüften. Umbenennen kannst du im Reiter „Spieler“.</p>` + zeilen.join("")
+        : `<p class="wf-sauber">${window.Casino.icons.ui("ja")}Nichts zu beanstanden — ${r.geprueft} Namen geprüft.</p>`;
+    }
+  });
 });
 
 /* ===========================================================================

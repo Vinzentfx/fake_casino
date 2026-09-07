@@ -328,6 +328,9 @@ function setupPoker(io, accounts) {
 
     socket.on("presence:screen", ({ screen } = {}) => {
       const name = String(screen || "").trim().slice(0, 32);
+      if (name && !require("./wortfilter").istSauber(name)) {
+        return ack && ack({ ok: false, error: "Der Tischname geht so nicht." });
+      }
       socket.data.screen = SCREEN_LABELS[name] ? name : "lobby";
       broadcastPresence();
     });

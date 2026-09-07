@@ -1582,6 +1582,7 @@
         <button class="ad-reiter-knopf" data-ad="ansage" role="tab" aria-selected="false">Ansage</button>
         <button class="ad-reiter-knopf" data-ad="events" role="tab" aria-selected="false">Events</button>
         <button class="ad-reiter-knopf" data-ad="spieler" role="tab" aria-selected="false">Spieler</button>
+        <button class="ad-reiter-knopf" data-ad="filter" role="tab" aria-selected="false">Wortfilter</button>
         <button class="ad-reiter-knopf" data-ad="werkzeug" role="tab" aria-selected="false">Werkzeuge</button>
       </nav>
 
@@ -1711,6 +1712,59 @@
         <p class="muted small" style="margin:-4px 0 10px" id="ev-online">…</p>
         <div class="ev-raster" id="admin-events"></div>
 
+      </section>
+
+      <!-- ===== Wortfilter =====
+           Was in einer Runde als schlimm gilt, entscheidet die Runde. Die
+           Basisliste im Modul deckt das Grobe ab, hier kommt das Eigene
+           dazu — und Ausnahmen für Wörter, die zu Unrecht hängenbleiben
+           ("Fickmühle" ist ein Brettspiel). -->
+      <section class="ad-tafel hidden" data-ad-tafel="filter">
+        <h3 class="admin-h"><i data-icon="sperre"></i>Wortfilter</h3>
+        <p class="muted small" style="margin:-4px 0 12px">
+          Im Chat werden Treffer mit Sternchen maskiert. Bei Namen, Clans, Pferden,
+          Mottos und Tischnamen wird die Eingabe abgelehnt.
+          <b id="wf-basis"></b>
+        </p>
+
+        <div class="wf-spalten">
+          <div class="wf-spalte">
+            <div class="cd-sub">Eigene Wörter</div>
+            <p class="hint">Zusätzlich zur Basisliste. Was hier steht, wird gefiltert.</p>
+            <div class="wf-zeile">
+              <input id="wf-neu" type="text" maxlength="40" placeholder="Wort hinzufügen" />
+              <button class="btn-secondary" id="wf-add">Hinzufügen</button>
+            </div>
+            <div id="wf-liste" class="wf-liste"></div>
+          </div>
+
+          <div class="wf-spalte">
+            <div class="cd-sub">Ausnahmen</div>
+            <p class="hint">Was hier steht, gilt als harmlos — auch wenn ein gesperrtes Wort darin vorkommt.</p>
+            <div class="wf-zeile">
+              <input id="wf-neu-aus" type="text" maxlength="40" placeholder="Ausnahme hinzufügen" />
+              <button class="btn-secondary" id="wf-add-aus">Hinzufügen</button>
+            </div>
+            <div id="wf-liste-aus" class="wf-liste"></div>
+          </div>
+        </div>
+        <div class="form-error" id="wf-error"></div>
+
+        <div class="wf-probe">
+          <div class="cd-sub">Ausprobieren</div>
+          <p class="hint">Tippe etwas ein und sieh, was der Filter daraus macht — ohne dass jemand es zu sehen bekommt.</p>
+          <input id="wf-probe-text" type="text" maxlength="120" placeholder="z. B. eine Nachricht oder ein Name" />
+          <div class="wf-probe-aus" id="wf-probe-aus">—</div>
+        </div>
+
+        <div class="wf-bestand">
+          <div class="cd-sub">Namen, die es schon gibt</div>
+          <p class="hint">Der Filter greift nur bei neuen Konten — sonst sperrt ein später
+            ergänztes Wort jemanden aus seinem eigenen Account aus. Hier siehst du,
+            was der Filter beanstanden würde.</p>
+          <button class="btn-secondary" id="wf-bestand-btn">Bestand prüfen</button>
+          <div id="wf-bestand-aus"></div>
+        </div>
       </section>
 
       <section class="ad-tafel hidden" data-ad-tafel="werkzeug">

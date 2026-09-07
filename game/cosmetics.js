@@ -299,7 +299,12 @@ function setupCosmetics(io, accounts) {
       const acc = acct(); if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
       const owned = ensureOwned(acc);
       if (!owned.sprueche.includes("eigen")) return ack({ ok: false, error: "Eigenen Spruch zuerst kaufen." });
-      acc.spruchText = saubererSpruch(text);
+      const spruch = saubererSpruch(text);
+      // Der Spruch geht bei jedem Eintritt in den Chat — dort steht er
+      // haeufiger als jeder Name.
+      const wf = require("./wortfilter").pruefe(spruch, "Der Spruch");
+      if (!wf.ok) return ack({ ok: false, error: wf.error });
+      acc.spruchText = spruch;
       accounts.save();
       ack({ ok: true, ...state(acc) });
     });
