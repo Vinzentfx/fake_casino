@@ -7689,3 +7689,11 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .bl-info small { display: block; font-size: var(--fs-xs); color: var(--text-dim); }
 .bl-grund { color: var(--bad-text) !important; margin-top: 3px; }
 .bl-knoepfe { display: flex; gap: 6px; flex-wrap: wrap; }
+/* Datenschutz-Hinweis unter dem Login. Dort entstehen die Accounts, also
+   gehoert der Hinweis dorthin und nicht nur ins Menue. */
+.login-datenschutz { margin: 14px 0 0; text-align: center; font-size: var(--fs-xs); }
+.login-datenschutz a { color: var(--text-mute); text-decoration: none; }
+.login-datenschutz a:hover { color: var(--accent-strong); text-decoration: underline; }
+/* Der Menue-Eintrag ist ein <a>, damit er die Seite wirklich aufruft. Er muss
+   sich trotzdem wie die <button>-Geschwister verhalten. */
+a.sheet-item { text-decoration: none; color: inherit; }

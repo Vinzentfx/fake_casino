@@ -1,0 +1,5 @@
+# Das Casino ist eine private Seite fuer einen festen Freundeskreis.
+# Es gibt nichts zu indexieren: hinter dem Login liegt alles, davor steht
+# nur das Anmeldeformular. Suchmaschinen bleiben deshalb ganz draussen.
+User-agent: *
+Disallow: /
