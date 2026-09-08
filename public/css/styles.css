@@ -7704,3 +7704,28 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 /* Der Menue-Eintrag ist ein <a>, damit er die Seite wirklich aufruft. Er muss
    sich trotzdem wie die <button>-Geschwister verhalten. */
 a.sheet-item { text-decoration: none; color: inherit; }
+
+/* --- Mitspieler einladen ----------------------------------------------------
+   Sitzt ueber dem Chat-Knopf, nicht daneben: das Chat-Dock liegt unten rechts,
+   und auf dem iPad duerfen Overlays keine Spielknoepfe verdecken. Der Knopf
+   erscheint ausserdem nur, wenn man wirklich in einer Lobby sitzt UND jemand
+   da ist, den man holen koennte. */
+.einladen-fab {
+  position: fixed;
+  right: 14px;
+  bottom: 78px;
+  z-index: 60;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--accent-rgb), 0.5);
+  background: var(--surface);
+  color: var(--accent-strong);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+}
+.einladen-fab svg { width: 22px; height: 22px; }
+.einladen-fab:active { transform: scale(0.94); }
+html:not(.reduce-motion) .einladen-fab { animation: se-pulsen 2.4s ease-in-out infinite; }

@@ -19,6 +19,19 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-15",
+      datum: "15. September 2026",
+      titel: "Mitspieler direkt einladen",
+      items: [
+        { icon: "rufen", titel: "Hol dir jemanden an den Tisch",
+          text: "Wenn du in einer Lobby sitzt, taucht unten rechts ein Knopf auf. Ein Tipp darauf zeigt alle, die gerade online sind, samt der Stelle wo sie stecken (in der Lobby, an den Slots, bei Mines). Du wählst jemanden aus, und bei ihm geht mitten auf dem Bildschirm eine Einladung auf: mitmachen oder später. Wer zusagt, landet direkt in deiner Runde, ohne Code abtippen." },
+        { icon: "sperre", titel: "Endlich auch für private Runden",
+          text: "Private Lobbys stehen in keiner Liste, bisher musste man den Code irgendwie durchsagen. Jetzt lädst du einfach ein, und nur wer eingeladen wurde, kommt rein. Der Code steht dabei nirgendwo öffentlich." },
+        { icon: "chat", titel: "Und niemand wird zugespammt",
+          text: "Dieselbe Person kannst du höchstens einmal pro Minute einladen, insgesamt höchstens acht Einladungen pro Minute. Wer schon in deiner Runde sitzt oder gerade gar nicht da ist, taucht in der Liste erst gar nicht auf." },
+      ],
+    },
+    {
       id: "2026-09-14",
       datum: "14. September 2026",
       titel: "Offene Tische sagen jetzt Bescheid",

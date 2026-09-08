@@ -129,4 +129,16 @@ function setupLobby(io) {
   });
 }
 
-module.exports = { setupLobby, add, remove, changed };
+/**
+ * Der Steckbrief zu einem Code, oder null.
+ *
+ * Nur oeffentliche Lobbys stehen hier drin; fuer private gibt es bewusst
+ * keinen Eintrag, und die Einladung faellt dann auf den Spielnamen zurueck.
+ */
+function beschreibe(code) {
+  const p = providers.get(code);
+  if (!p) return null;
+  try { return p(); } catch { return null; }
+}
+
+module.exports = { setupLobby, add, remove, changed, beschreibe };
