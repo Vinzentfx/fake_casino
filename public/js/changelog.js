@@ -24,7 +24,7 @@
       titel: "Offene Tische sagen jetzt Bescheid",
       items: [
         { icon: "ansage", titel: "Wer einen Tisch aufmacht, wird gehört",
-          text: "Bisher konntest du eine Runde Roulette, Blackjack, Poker oder Memory aufmachen, allein davorsitzen und wieder gehen, ohne dass irgendwer davon erfahren hat. Man musste zufällig im selben Moment auf den richtigen Bildschirm schauen. Jetzt geht jede neu geöffnete Lobby einmal in den Chat, mit Spiel, Code, Einsatz und wie viele Plätze noch frei sind. Wer gerade nicht da ist, bekommt eine Benachrichtigung, sofern er sie eingeschaltet hat. Es gilt für alle neun Spiele mit Lobby, vorher hatte nur Poker so etwas. Und keine Sorge wegen Zuspammen: pro Person und Spiel wird höchstens alle zehn Minuten etwas gesagt." },
+          text: "Bisher konntest du eine Runde Roulette, Blackjack, Poker oder Memory aufmachen, allein davorsitzen und wieder gehen, ohne dass irgendwer davon erfahren hat. Man musste zufällig im selben Moment auf den richtigen Bildschirm schauen. Jetzt geht jede neu geöffnete Lobby einmal in den Chat, mit Spiel, Einsatz und wie viele Plätze noch frei sind. Wer gerade nicht da ist, bekommt eine Benachrichtigung, sofern er sie eingeschaltet hat. Es gilt für alle neun Spiele mit Lobby, vorher hatte nur Poker so etwas. Und keine Sorge wegen Zuspammen: pro Person und Spiel wird höchstens alle zehn Minuten etwas gesagt." },
         { icon: "chip", titel: "Bei großen Gewinnen stand Zeichensalat auf dem Bild",
           text: "Nach einer fetten Auszahlung erschien mittig die Gewinnsumme, und direkt dahinter ein Stück Programmcode statt der Chip-Marke. Ist behoben, überall wo eine große Gewinnanzeige aufgeht." },
       ],

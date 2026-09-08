@@ -62,24 +62,41 @@ function melde(beschreibe) {
   if (jetzt - (zuletztGemeldet.get(schluessel) || 0) < MELDE_ABSTAND) return;
   zuletztGemeldet.set(schluessel, jetzt);
 
-  const teile = [`Code ${d.code}`];
+  /*
+   * Kein Code in der Nachricht.
+   *
+   * Gemeldet werden ohnehin nur OEFFENTLICHE Lobbys: die privaten landen
+   * gar nicht erst hier, die Spiele rufen registerLobby() nur bei
+   * `match.public` auf. Oeffentliche stehen in der Liste "Offene Lobbys"
+   * und werden per Antippen betreten. Der Code ist dort also ueberfluessig,
+   * und in einer oeffentlichen Nachricht waere er bei einer privaten Runde
+   * sogar schaedlich.
+   */
+  const teile = [];
   // Manche Spiele liefern einen fertigen Satz ("geteilter Kessel", "Blinds
-  // 50/100"), Memory, Schach und Slots-PvP dagegen eine nackte Zahl. Die
-  // stand sonst kommentarlos im Text: "Code 9EA2, 100, 1 von 2 ...".
+  // 50/100"), Memory, Schach und Slots-PvP dagegen eine nackte Zahl.
   if (typeof d.buyIn === "number" && d.buyIn > 0) {
     teile.push(`Einsatz ${d.buyIn.toLocaleString("de-DE")} Chips`);
   } else if (d.buyIn) {
     teile.push(String(d.buyIn));
   }
-  if (d.max) teile.push(`${d.players} von ${d.max} Plätzen belegt`);
+  // Freie Plaetze statt belegter: das ist die Zahl, die zum Mitmachen einlaedt.
+  if (d.max) {
+    const frei = Math.max(0, d.max - (d.players || 0));
+    if (frei > 0) teile.push(`noch ${frei} ${frei === 1 ? "Platz" : "Plätze"} frei`);
+  }
+  // Der erste Teil beginnt einen neuen Satz ("... aufgemacht. Geteilter
+  // Kessel, ..."), die Spiele liefern ihn aber klein geschrieben.
+  const satz = teile.join(", ");
+  const zusatz = satz ? ` ${satz.charAt(0).toUpperCase()}${satz.slice(1)}.` : "";
 
   try {
-    require("./chat").announce(ioRef, `${d.host} hat ${d.label} aufgemacht. ${teile.join(", ")}.`);
+    require("./chat").announce(ioRef, `${d.host} hat ${d.label} aufgemacht.${zusatz}`);
   } catch {}
   try {
     require("./push").anAlle("tisch", {
       title: `${d.label}: ${d.host} wartet auf Mitspieler`,
-      body: teile.join(", ") + ".",
+      body: (teile.length ? teile.join(", ") + ". " : "") + "Steht unter Offene Lobbys.",
       url: "/",
     });
   } catch {}
