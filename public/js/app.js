@@ -2520,10 +2520,14 @@ $("#admin-restore-input")?.addEventListener("change", async (e) => {
   try {
     const data = JSON.parse(await file.text());
     if (!data || data.kind !== "fakecasino-backup" || !data.files) throw new Error("Das ist kein Fake-Casino-Backup.");
-    const n = Object.keys(data.files).length;
+    const n = Object.keys(data.files).length + Object.keys(data.binaer || {}).length;
     const when = data.createdAt ? new Date(data.createdAt).toLocaleString("de-DE") : "unbekannt";
     if (!await window.Casino.dialog.frage(`Backup vom ${when} (${n} Dateien) einspielen?\n\nÜBERSCHREIBT alle aktuellen Spieldaten. Der Server startet danach neu, alle Spieler fliegen kurz raus.`, { titel: "⚠️ Backup einspielen", okText: "Einspielen", gefahr: true })) return;
-    const res = await fetch("/api/admin/restore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: state.token, files: data.files }) });
+    // `binaer` MUSS mit: der Server erwartet die Clan-Wappen dort, und ohne
+    // sie stehen die Clans nach dem Einspielen ohne Bild da. Beim Sichern
+    // wandern sie ins Backup, beim Einspielen fielen sie bisher still unter
+    // den Tisch — der Fehler faellt erst auf, wenn man das Backup braucht.
+    const res = await fetch("/api/admin/restore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: state.token, files: data.files, binaer: data.binaer || {} }) });
     const out = await res.json();
     if (!out.ok) throw new Error(out.error || "Wiederherstellen fehlgeschlagen.");
     toast(`📂 ${out.written} Dateien eingespielt — Server startet neu, Seite lädt gleich nach …`);
