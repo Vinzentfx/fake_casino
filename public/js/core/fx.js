@@ -382,12 +382,15 @@
     const host = ebene();
     const karte = document.createElement("div");
     karte.className = "fx-bigwin";
-    karte.innerHTML = `<small></small><b>0</b>`;
+    // Die Chip-Marke ist ein eigenes Element NEBEN der Zahl, nicht Teil des
+    // formatierten Textes: countUp schreibt ueber textContent, dort wuerde
+    // `<i class=mk></i>` als Zeichenkette im Bild stehen statt als Symbol.
+    karte.innerHTML = `<small></small><b><span class="bw-zahl">0</span><i class=mk></i></b>`;
     karte.querySelector("small").textContent = label;
     host.appendChild(karte);
     requestAnimationFrame(() => karte.classList.add("show"));
 
-    countUp(karte.querySelector("b"), 0, betrag, { format: (n) => fmt(n) + "<i class=mk></i>", sound: false });
+    countUp(karte.querySelector(".bw-zahl"), 0, betrag, { sound: false });
     if (sound && window.Casino.sound) window.Casino.sound.play(betrag > 0 ? "bigwin" : "win");
     spieleGewinnEffekt({ betrag, faktor });
 

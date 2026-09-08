@@ -278,3 +278,8 @@ html.reduce-motion .fx-beben { animation: none; }
   /* Am Ende weit unten: Bänder fliegen hoch und fallen dann. */
   100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 70vh)) rotate(var(--rot)); }
 }
+
+/* Zahl und Chip-Marke sitzen im selben <b>, die Marke als Geschwister der
+   Zahl. Sonst muesste countUp HTML schreiben, und das schreibt es bewusst
+   nicht (siehe fx.js). */
+.fx-bigwin b { display: inline-flex; align-items: center; gap: 0.22em; }

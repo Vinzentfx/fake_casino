@@ -360,15 +360,8 @@ function setupPoker(io, accounts) {
       registerLobby(code);
       ack && ack({ ok: true, code });
       broadcast(code);
-      // Ein frisch aufgemachter Tisch ist genau der Moment, in dem jemand auf
-      // Mitspieler wartet. Wer nicht da ist, erfaehrt es sonst nie.
-      try {
-        require("./push").anAlle("tisch", {
-          title: `🃏 ${entry.hostName} macht einen Poker-Tisch auf`,
-          body: `Blinds ${sb}/${bb}. Code ${code}.`,
-          url: "/",
-        }, { ausser: [socket.data.account] });
-      } catch {}
+      // Die Benachrichtigung (Chat + Push) macht jetzt lobby.add() fuer ALLE
+      // Spiele. Hier stand sie frueher doppelt, und nur Poker hatte sie.
     });
 
     // Poker bots removed: their stacks were house-funded, so beating them
