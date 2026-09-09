@@ -38,6 +38,9 @@
     { id: "pinco",      name: "Pinco Ball",     sub: "Bälle droppen, gemeinsam zuschauen", icon: "🟢", cat: "casino", h: 96 },
     { id: "horses",     name: "Rennbahn",       sub: "Live-Rennen und eigene Pferde",     icon: "🐎", cat: "casino", h: 32 },
     { id: "sports",     name: "Sportwetten",    sub: "Echte Ligen, echte Ergebnisse",     icon: "⚽", cat: "casino", h: 128 },
+    { id: "hilo",       name: "Higher/Lower",   sub: "Höher oder tiefer, Kette bauen",    icon: "🂡", cat: "casino", h: 285 },
+    { id: "wuerfel",    name: "Würfelpoker",    sub: "Fünf Würfel, einmal nachwerfen",    icon: "🎲", cat: "casino", h: 12 },
+    { id: "lotterie",   name: "Lotterie",       sub: "Vier aus sechzehn, Ziehung um 20 Uhr", icon: "🎟️", cat: "casino", h: 340 },
 
     // --- Gegeneinander: kein Hausvorteil, nur Können ---
     { id: "poker",      name: "Texas Hold'em",  sub: "Gegen Freunde, ohne Hausvorteil",   icon: "🃏", cat: "pvp", h: 214 },

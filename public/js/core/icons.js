@@ -23,6 +23,23 @@
   const S = 'stroke="currentColor" fill="none"';
 
   const ICONS = {
+    // Zwei Karten hintereinander, die obere zeigt Pfeile hoch/tief.
+    hilo: `<rect x="3.2" y="5.6" width="11" height="14.5" rx="2" ${S} opacity=".45" transform="rotate(-9 8.7 12.8)"/>
+      <rect x="9.5" y="4.2" width="11.3" height="15.6" rx="2" ${S}/>
+      <path d="M15.2 8.4v7.6" ${S} opacity=".7"/>
+      <path d="M13.3 10.1l1.9-1.9 1.9 1.9" ${A} stroke="none"/>
+      <path d="M17.1 14.3l-1.9 1.9-1.9-1.9" ${S}/>`,
+    // Ein Wuerfel in Schraegsicht mit fuenf Augen.
+    wuerfel: `<rect x="3.5" y="6" width="12.5" height="12.5" rx="2.5" ${S}/>
+      <circle cx="7" cy="9.5" r="1.05" ${A}/><circle cx="12.5" cy="9.5" r="1.05" ${A}/>
+      <circle cx="9.75" cy="12.25" r="1.05" ${A}/>
+      <circle cx="7" cy="15" r="1.05" ${A}/><circle cx="12.5" cy="15" r="1.05" ${A}/>
+      <path d="M16 6.2l3.9-1.7a1.6 1.6 0 0 1 2.2 1.5v9.4a1.6 1.6 0 0 1-1 1.5L16 18.5" ${S} opacity=".5"/>`,
+    // Los mit gezackter Kante und angekreuzten Zahlen.
+    lotterie: `<path d="M3.5 6.5h17v4a1.7 1.7 0 0 0 0 3.4v3.6h-17v-3.6a1.7 1.7 0 0 0 0-3.4z" ${S}/>
+      <circle cx="8" cy="10" r="1.5" ${A}/><circle cx="12" cy="10" r="1.5" ${S} opacity=".55"/>
+      <circle cx="16" cy="10" r="1.5" ${A}/>
+      <path d="M6.5 14.5h11" ${S} opacity=".45"/>`,
     // Drei Walzen mit Fenster und einer leuchtenden Sieben.
     slots: `<rect x="2.5" y="5" width="19" height="14" rx="2.5" ${S}/>
       <path d="M8 5v14M14.5 5v14" ${S} opacity=".55"/>

@@ -59,6 +59,8 @@ const SPIELE = {
   horses:      { label: "Rennbahn",    icon: "🐎", art: "faktor", min: 3 },
   sportwetten: { label: "Sportwetten", icon: "⚽", art: "faktor", min: 3 },
   blackjack:   { label: "Blackjack",   icon: "♠️", art: "serie",  min: 3 },
+  hilo:        { label: "Higher/Lower", icon: "🂡", art: "faktor", min: 3 },
+  wuerfel:     { label: "Würfelpoker",  icon: "🎲", art: "faktor", min: 2 },
 };
 
 // Unter diesem Einsatz zaehlt nichts: sonst setzt jemand 1 Chip und gewinnt

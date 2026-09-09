@@ -7746,3 +7746,140 @@ html:not(.reduce-motion) .einladen-fab { animation: se-pulsen 2.4s ease-in-out i
 .tw-cap b { color: var(--warn-text, #f0c674); }
 /* Stufen, deren Multiplikator beim aktuellen Einsatz abgeschnitten wird. */
 .tw-mult-lab.tw-gedeckelt { color: var(--text-mute); text-decoration: line-through; opacity: 0.75; }
+
+/* ============================================================
+   Higher/Lower
+   ============================================================ */
+.hilo-wrap { max-width: 560px; margin: 0 auto; padding: 0 var(--sp-3) var(--sp-6); }
+.hilo-topbar { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin: var(--sp-4) 0; }
+.hilo-stat { padding: 8px 6px; border-radius: var(--r-sm); background: var(--surface-sunken);
+  border: 1px solid var(--line-neutral); text-align: center; }
+.hilo-stat span { display: block; font-size: var(--fs-xs); color: var(--text-dim); }
+.hilo-stat b { font-size: var(--fs-md); }
+
+.hilo-tisch { padding: var(--sp-5) var(--sp-3); border-radius: var(--radius);
+  background: radial-gradient(ellipse at 50% 30%, rgba(var(--accent-rgb), 0.14), transparent 70%), var(--surface-sunken);
+  border: 1px solid var(--line-neutral); text-align: center; }
+.hilo-karten { display: flex; justify-content: center; align-items: center; gap: var(--sp-3); min-height: 128px; }
+.hilo-rest { margin: var(--sp-3) 0 0; }
+
+/* Die Karte selbst: heller Grund, damit Rot und Schwarz auch im dunklen
+   Design lesbar sind. Das ist eine bewusste Ausnahme von den Tokens, genau
+   wie bei den Spielkarten in Blackjack und Solitär. */
+.hilo-karte { width: 74px; height: 106px; border-radius: 9px; background: #f4f1ea; color: #1a1a1e;
+  border: 1px solid rgba(0,0,0,.25); box-shadow: 0 4px 14px rgba(0,0,0,.35);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; flex: none; }
+.hilo-karte.rot { color: #c02a34; }
+.hk-rang { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+.hk-farbe { font-size: 1.25rem; line-height: 1; }
+.hilo-alt { transform: scale(0.78); opacity: 0.5; }
+html:not(.reduce-motion) .hilo-rein { animation: hilo-rein 0.4s cubic-bezier(0.2, 1.3, 0.5, 1); }
+@keyframes hilo-rein { from { transform: translateX(26px) rotate(7deg); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.hilo-tipps { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-top: var(--sp-4); }
+.hilo-tipp { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 8px;
+  border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface);
+  color: var(--text); cursor: pointer; }
+.hilo-tipp .hilo-pfeil { font-size: 1.2rem; line-height: 1; }
+.hilo-tipp .hilo-wort { font-weight: 800; }
+.hilo-tipp small { font-size: var(--fs-md); font-weight: 800; color: var(--accent-strong); }
+.hilo-tipp em { font-style: normal; font-size: var(--fs-xs); color: var(--text-dim); }
+.hilo-hoch { border-color: rgba(var(--good-rgb), 0.45); }
+.hilo-tief { border-color: rgba(var(--bad-rgb), 0.45); }
+.hilo-tipp:active { transform: scale(0.97); }
+.hilo-tipp.gesperrt { opacity: 0.4; cursor: not-allowed; }
+.hilo-tipp.gesperrt small { color: var(--text-mute); }
+
+.hilo-erklaerung { margin-top: var(--sp-3); }
+.hilo-cap { margin-top: var(--sp-3); padding: 6px 10px; border-radius: var(--r-sm);
+  background: var(--surface-sunken); border: 1px solid var(--line-neutral);
+  color: var(--text-dim); font-size: var(--fs-xs); text-align: center; }
+
+/* ============================================================
+   Würfelpoker
+   ============================================================ */
+.wp-wrap { max-width: 560px; margin: 0 auto; padding: 0 var(--sp-3) var(--sp-6); }
+.wp-hand { margin: var(--sp-4) 0; padding: var(--sp-4) var(--sp-3); border-radius: var(--radius);
+  background: radial-gradient(ellipse at 50% 20%, rgba(var(--accent-rgb), 0.12), transparent 70%), var(--surface-sunken);
+  border: 1px solid var(--line-neutral); text-align: center; }
+.wp-status { font-size: var(--fs-md); margin-bottom: var(--sp-3); }
+.wp-gewinn { color: var(--good-text); font-weight: 800; }
+.wp-wuerfel { display: flex; justify-content: center; gap: var(--sp-2); flex-wrap: wrap; }
+
+.wp-wuerfel-btn { position: relative; width: 56px; height: 56px; padding: 7px; flex: none;
+  border-radius: 12px; background: #f4f1ea; color: #23232a;
+  border: 2px solid rgba(0,0,0,.2); box-shadow: 0 3px 10px rgba(0,0,0,.3); cursor: pointer; }
+.wp-wuerfel-btn svg { width: 100%; height: 100%; display: block; }
+.wp-wuerfel-btn.gehalten { border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.35), 0 3px 10px rgba(0,0,0,.3); transform: translateY(-4px); }
+/* Vorschlag: gestrichelt, damit er sich klar vom eigenen Halten unterscheidet. */
+.wp-wuerfel-btn.empfohlen { border-style: dashed; border-color: rgba(var(--accent-rgb), 0.75); }
+.wp-wuerfel-btn:disabled { cursor: default; opacity: 0.9; }
+.wp-marke { position: absolute; left: 0; right: 0; bottom: -15px; font-size: 0.58rem;
+  font-weight: 800; color: var(--accent-strong); text-transform: uppercase; letter-spacing: .02em; }
+.wp-hinweis { margin: 22px 0 0; }
+
+.wp-aktionen { display: grid; grid-template-columns: 2fr 1fr; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.wp-tabelle { margin-top: var(--sp-4); padding: var(--sp-3); border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--line-neutral); }
+.wp-tab-titel, .lo-titel { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: .04em; }
+.wp-tab-zeile { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: var(--sp-3);
+  padding: 6px 8px; border-radius: var(--r-sm); }
+.wp-tab-zeile em { font-style: normal; font-size: var(--fs-xs); color: var(--text-mute); }
+.wp-tab-zeile span { font-weight: 800; color: var(--accent-strong); }
+.wp-tab-zeile.aktiv { background: rgba(var(--accent-rgb), 0.16); }
+.wp-tab-fuss { margin: var(--sp-3) 0 0; }
+
+/* ============================================================
+   Lotterie
+   ============================================================ */
+.lo-wrap { max-width: 560px; margin: 0 auto; padding: 0 var(--sp-3) var(--sp-6); }
+.lo-jackpot { margin: var(--sp-4) 0; padding: var(--sp-4); border-radius: var(--radius); text-align: center;
+  background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.22), rgba(var(--accent-rgb), 0.06));
+  border: 1px solid rgba(var(--accent-rgb), 0.45); }
+.lo-jackpot span { display: block; font-size: var(--fs-xs); color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: .06em; }
+.lo-jackpot b { display: block; font-size: 1.75rem; font-weight: 900; color: var(--accent-strong); line-height: 1.2; }
+.lo-jackpot small { color: var(--text-dim); font-size: var(--fs-xs); }
+
+.lo-schein { padding: var(--sp-3); border-radius: var(--radius); background: var(--surface);
+  border: 1px solid var(--line-neutral); }
+.lo-anleitung { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); color: var(--text-dim); }
+.lo-zahlen { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.lo-zahl { aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--surface-sunken); color: var(--text); font-weight: 700; cursor: pointer; }
+.lo-zahl.gewaehlt { background: var(--accent); color: var(--accent-ink);
+  border-color: var(--accent-strong); font-weight: 900; }
+.lo-zahl:active { transform: scale(0.92); }
+.lo-schein-aktionen { display: grid; grid-template-columns: auto auto 1fr; gap: var(--sp-2); margin-top: var(--sp-3); }
+
+.lo-meine, .lo-info, .lo-letzte { margin-top: var(--sp-4); padding: var(--sp-3);
+  border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line-neutral); }
+.lo-los, .lo-gezogen { display: flex; gap: 6px; margin-bottom: 6px; }
+.lo-los span, .lo-gezogen span { width: 30px; height: 30px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--surface-sunken); border: 1px solid var(--line-neutral);
+  font-weight: 800; font-size: var(--fs-sm); }
+.lo-gezogen span { background: var(--accent); color: var(--accent-ink); border-color: var(--accent-strong); }
+.lo-stufe { display: grid; grid-template-columns: 1fr auto auto; gap: var(--sp-3); align-items: baseline;
+  padding: 5px 6px; }
+.lo-stufe em { font-style: normal; font-size: var(--fs-xs); color: var(--text-mute); }
+.lo-stufe span { font-weight: 800; color: var(--accent-strong); }
+
+@media (max-width: 480px) {
+  /* Vier Reihen a vier Zahlen statt acht schmaler Spalten: die Tippflaechen
+     werden dadurch doppelt so gross, und auf dem Telefon wird angekreuzt,
+     nicht gezielt. */
+  .lo-zahlen { grid-template-columns: repeat(4, 1fr); }
+  /* Der Kaufknopf braucht eine eigene Zeile, sonst bricht seine Beschriftung
+     dreizeilig um. */
+  .lo-schein-aktionen { grid-template-columns: 1fr 1fr; }
+  .lo-schein-aktionen .btn-primary { grid-column: 1 / -1; }
+}
+@media (max-width: 380px) {
+  .hilo-karte { width: 64px; height: 92px; }
+  .wp-wuerfel-btn { width: 48px; height: 48px; }
+}
+/* Risikofreie Seite: sichtbar zurueckgenommen, sie bringt nichts. */
+.hilo-tipp.sicher small { color: var(--text-mute); }
+.hilo-tipp.sicher { opacity: 0.75; }

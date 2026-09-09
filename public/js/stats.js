@@ -26,6 +26,7 @@
     pinco: { n: "Pinco Ball" }, solitaire: { n: "Solitär" },
     memory: { n: "Memory" }, sudoku: { n: "Sudoku" }, chess: { n: "Schach" },
     towers: { n: "Towers" }, horses: { n: "Rennbahn" },
+    hilo: { n: "Higher/Lower" }, wuerfel: { n: "Würfelpoker" },
   };
   const spielSymbol = (k) => {
     const m = GAME_META[k] || {};

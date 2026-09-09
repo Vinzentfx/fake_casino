@@ -19,6 +19,21 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-18",
+      datum: "18. September 2026",
+      titel: "Drei neue Spiele",
+      gross: true,
+      intro: "Zwei fürs schnelle Zwischendurch und eins, für das man gar nicht online sein muss.",
+      items: [
+        { icon: "hilo", titel: "Higher/Lower",
+          text: "Eine Karte liegt offen, ist die nächste höher oder tiefer? Jeder Treffer multipliziert, aussteigen kannst du nach jedem. Das Besondere: die Multiplikatoren sind keine feste Tabelle, sondern werden aus dem echten Restdeck gerechnet und stehen auf den Knöpfen. Beim König bringt „höher“ das 11,76-fache, weil nur noch vier Asse darüber liegen. Bei einer Acht steht es fifty-fifty. Gleicher Wert zählt nicht, die Karte fliegt raus und es geht weiter." },
+        { icon: "wuerfel", titel: "Würfelpoker",
+          text: "Fünf Würfel, ein Wurf, dann hältst du was dir gefällt und wirfst den Rest einmal nach. Fünf gleiche zahlen 25×, große Straße 3×, Full House und vier gleiche 2,5×. Neben jeder Zeile steht die echte Chance, und das ist wichtig: wer Würfel halten darf, kommt viel leichter an eine Straße als die Poker-Rangfolge glauben lässt. Wenn du magst, schlägt dir das Spiel vor, welche Würfel sich zu halten lohnen." },
+        { icon: "lotterie", titel: "Lotterie, jeden Abend um 20 Uhr",
+          text: "Vier Zahlen aus sechzehn ankreuzen, Los kaufen, fertig. Gezogen wird abends von selbst, du musst dafür nicht da sein. Zwei Richtige geben den Einsatz zurück, drei Richtige das Zehnfache, vier Richtige den Jackpot. Der wächst mit jedem verkauften Los weiter, solange ihn niemand knackt. Höchstens zehn Lose pro Person und Ziehung, damit die Ziehung nicht dem gehört, der am meisten Chips hat." },
+      ],
+    },
+    {
       id: "2026-09-17",
       datum: "17. September 2026",
       titel: "Towers sagt jetzt die Wahrheit, Poker zählt richtig",

@@ -614,6 +614,119 @@
 
     <!-- ===================== STATISTIK ===================== -->
     <!-- ===================== MINES ===================== -->
+    <!-- ===================== HIGHER / LOWER ===================== -->
+    <section class="screen" data-screen="hilo">
+      <div class="hilo-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon" data-icon="hilo"></div><h2>Higher/Lower</h2></div>
+
+        <div class="hilo-topbar">
+          <div class="hilo-stat"><span>Kette</span><b id="hilo-kette">0</b></div>
+          <div class="hilo-stat"><span>Multiplikator</span><b id="hilo-mult">1,00×</b></div>
+          <div class="hilo-stat"><span>Auszahlung</span><b id="hilo-cashval">—</b></div>
+        </div>
+
+        <div class="hilo-tisch">
+          <div class="hilo-karten" id="hilo-karten"></div>
+          <p class="hilo-rest muted small" id="hilo-rest"></p>
+        </div>
+
+        <!-- Die Knöpfe tragen ihren eigenen Preis: der Multiplikator kommt aus
+             dem echten Restdeck, also lohnt sich mal die eine, mal die andere
+             Seite. Ohne die Zahl darauf wäre das reines Raten. -->
+        <div class="hilo-tipps hidden" id="hilo-tipps">
+          <button class="hilo-tipp hilo-hoch" id="hilo-hoch" type="button">
+            <span class="hilo-pfeil">▲</span><span class="hilo-wort">Höher</span>
+            <small id="hilo-hoch-mult">—</small><em id="hilo-hoch-chance"></em>
+          </button>
+          <button class="hilo-tipp hilo-tief" id="hilo-tief" type="button">
+            <span class="hilo-pfeil">▼</span><span class="hilo-wort">Tiefer</span>
+            <small id="hilo-tief-mult">—</small><em id="hilo-tief-chance"></em>
+          </button>
+        </div>
+
+        <button class="btn-primary crash-cashbtn" id="hilo-cashout" style="width:100%;display:none"><i data-icon="auszahlen"></i> Auszahlen</button>
+
+        <div class="hilo-setup" id="hilo-setup">
+          <div class="crash-betrow">
+            <label>Einsatz<input id="hilo-amount" type="number" inputmode="numeric" min="50" step="50" value="100" /></label>
+          </div>
+          <button class="btn-primary" id="hilo-start" style="width:100%;margin-top:10px"><i data-icon="hilo"></i> Runde starten</button>
+          <p class="hilo-erklaerung muted small">
+            Jeder Treffer multipliziert. Gleicher Wert zählt nicht, die Karte fliegt raus
+            und es geht weiter. Aussteigen kannst du nach jedem Treffer.
+          </p>
+          <div class="hilo-cap" id="hilo-cap"></div>
+        </div>
+
+        <div class="form-error" id="hilo-error"></div>
+        <div class="runden-verlauf" id="hilo-history"></div>
+      </div>
+    </section>
+
+    <!-- ===================== WÜRFELPOKER ===================== -->
+    <section class="screen" data-screen="wuerfel">
+      <div class="wp-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon" data-icon="wuerfel"></div><h2>Würfelpoker</h2></div>
+
+        <div class="wp-hand" id="wp-hand">
+          <div class="wp-status" id="wp-status">Setz einen Einsatz und wirf.</div>
+          <div class="wp-wuerfel" id="wp-wuerfel"></div>
+          <p class="wp-hinweis muted small" id="wp-hinweis"></p>
+        </div>
+
+        <div class="wp-aktionen hidden" id="wp-aktionen">
+          <button class="btn-primary" id="wp-nachwurf" type="button"><i data-icon="wuerfel"></i> Nachwerfen</button>
+          <button class="chip-btn" id="wp-stehen" type="button">Stehen bleiben</button>
+        </div>
+
+        <div class="wp-setup" id="wp-setup">
+          <div class="crash-betrow">
+            <label>Einsatz<input id="wp-amount" type="number" inputmode="numeric" min="50" step="50" value="100" /></label>
+          </div>
+          <button class="btn-primary" id="wp-start" style="width:100%;margin-top:10px"><i data-icon="wuerfel"></i> Würfeln</button>
+        </div>
+
+        <!-- Die Tabelle kommt vom Server, samt Chancen. Wer Würfel halten darf,
+             kommt viel leichter an eine Straße als die Poker-Rangfolge glauben
+             lässt — deshalb steht die echte Chance daneben. -->
+        <div class="wp-tabelle" id="wp-tabelle"></div>
+
+        <div class="form-error" id="wp-error"></div>
+        <div class="runden-verlauf" id="wp-history"></div>
+      </div>
+    </section>
+
+    <!-- ===================== LOTTERIE ===================== -->
+    <section class="screen" data-screen="lotterie">
+      <div class="lo-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon" data-icon="lotterie"></div><h2>Lotterie</h2></div>
+
+        <div class="lo-jackpot">
+          <span>Jackpot</span>
+          <b id="lo-jackpot">—</b>
+          <small id="lo-naechste"></small>
+        </div>
+
+        <div class="lo-schein">
+          <p class="lo-anleitung">Kreuze <b id="lo-anzahl">4</b> Zahlen an.</p>
+          <div class="lo-zahlen" id="lo-zahlen"></div>
+          <div class="lo-schein-aktionen">
+            <button class="chip-btn" id="lo-zufall" type="button"><i data-icon="wuerfel"></i> Zufall</button>
+            <button class="chip-btn" id="lo-leeren" type="button">Leeren</button>
+            <button class="btn-primary" id="lo-kaufen" type="button">Los kaufen</button>
+          </div>
+          <div class="form-error" id="lo-error"></div>
+        </div>
+
+        <div class="lo-meine" id="lo-meine"></div>
+        <div class="lo-info" id="lo-info"></div>
+        <div class="lo-letzte" id="lo-letzte"></div>
+      </div>
+    </section>
+
     <section class="screen" data-screen="mines">
       <div class="mines-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
@@ -1998,6 +2111,9 @@
   <script defer src="/js/chat.js"></script>
   <script defer src="/js/feed.js"></script>
   <script defer src="/js/lobby.js"></script>
+  <script defer src="/js/hilo.js"></script>
+  <script defer src="/js/wuerfel.js"></script>
+  <script defer src="/js/lotterie.js"></script>
   <!-- Braucht Casino.socket und Casino.dialog, laeuft deshalb nach app.js. -->
   <script defer src="/js/core/einladung.js"></script>
   <script defer src="/js/stats.js"></script>
