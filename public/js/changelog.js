@@ -19,6 +19,19 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-17",
+      datum: "17. September 2026",
+      titel: "Towers sagt jetzt die Wahrheit, Poker zählt richtig",
+      items: [
+        { icon: "towers", titel: "Die Leiter versprach mehr, als ausgezahlt wird",
+          text: "Auf „Meister“ steht auf Ebene 9 das 256.901-fache. Ausgezahlt werden aber höchstens 2 Mio pro Runde, und zwar schon beim Mindesteinsatz von 50 Chips. Der Deckel stand nirgends. Jetzt steht er unter der Leiter, und die Stufen, die bei DEINEM Einsatz abgeschnitten werden, sind durchgestrichen. Tippst du einen anderen Betrag, ändert sich das mit." },
+        { icon: "poker", titel: "Poker zählte nur die Gewinner",
+          text: "Wer gepasst hat, tauchte in der Wertung gar nicht auf: kein Eintrag in der Statistik, keine XP für die Hand, und der verlorene Einsatz fehlte im Wochen-Netto. Bei einem Spiel, bei dem Passen der häufigste Ausgang ist, sah Poker dadurch dauerhaft profitabler aus als es ist." },
+        { icon: "mines", titel: "Multiplikatoren deutsch geschrieben",
+          text: "In Mines und Towers stand „×13.05“ mit englischem Punkt, während im Rest des Hauses überall Komma steht. Jetzt „×13,05“." },
+      ],
+    },
+    {
       id: "2026-09-16",
       datum: "16. September 2026",
       titel: "Zwei Fehler behoben",

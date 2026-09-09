@@ -7729,3 +7729,20 @@ a.sheet-item { text-decoration: none; color: inherit; }
 .einladen-fab svg { width: 22px; height: 22px; }
 .einladen-fab:active { transform: scale(0.94); }
 html:not(.reduce-motion) .einladen-fab { animation: se-pulsen 2.4s ease-in-out infinite; }
+
+/* --- Towers: Auszahlungsdeckel sichtbar machen -------------------------------
+   Auf "Meister" verspricht Ebene 9 das 256.901-fache, ausgezahlt werden aber
+   hoechstens 2 Mio je Runde. Die Leiter hat das bisher verschwiegen. */
+.tw-cap {
+  margin-top: var(--sp-3);
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-neutral);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  text-align: center;
+}
+.tw-cap b { color: var(--warn-text, #f0c674); }
+/* Stufen, deren Multiplikator beim aktuellen Einsatz abgeschnitten wird. */
+.tw-mult-lab.tw-gedeckelt { color: var(--text-mute); text-decoration: line-through; opacity: 0.75; }

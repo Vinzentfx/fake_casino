@@ -11,6 +11,9 @@
   const { socket, toast, applyAccount } = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
+  // Multiplikatoren deutsch: "13,05" statt "13.05". toFixed liefert die
+  // englische Schreibweise, die im Rest des Hauses nirgends vorkommt.
+  const mx = (n) => Number(n || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // Client-side difficulty configs (width, safe) — nur für die Vorschau-Leiter;
   // die echten Werte kommen server-seitig identisch mit (Stake-exakt, RTP 98%).
@@ -44,7 +47,7 @@
     const v = verlauf();
     box.innerHTML = v.length
       ? `<span class="rv-label">Letzte Runden</span>` + v.map((e) =>
-          `<span class="rv-chip ${e.gewonnen ? "up" : "down"}">${e.gewonnen ? e.mult.toFixed(2) + "×" : "💀"}</span>`).join("")
+          `<span class="rv-chip ${e.gewonnen ? "up" : "down"}">${e.gewonnen ? mx(e.mult) + "×" : "💀"}</span>`).join("")
       : "";
   }
 
@@ -81,11 +84,11 @@
   }
 
   function renderTop(v) {
-    $("#tw-mult").textContent = (v.multiplier || 1).toFixed(2) + "×";
+    $("#tw-mult").textContent = mx(v.multiplier || 1) + "×";
     $("#tw-cashval").textContent = v.cashout ? fmt(v.cashout) + " Chips" : "—";
-    $("#tw-next").textContent = v.nextMultiplier ? v.nextMultiplier.toFixed(2) + "×" : "—";
+    $("#tw-next").textContent = v.nextMultiplier ? mx(v.nextMultiplier) + "×" : "—";
     const btn = $("#tw-cashout");
-    btn.textContent = v.cashout ? `💸 Auszahlen — ${fmt(v.cashout)} Chips (${v.multiplier.toFixed(2)}×)` : "💸 Auszahlen";
+    btn.textContent = v.cashout ? `💸 Auszahlen — ${fmt(v.cashout)} Chips (${mx(v.multiplier)}×)` : "💸 Auszahlen";
     btn.disabled = !v.cashout;
   }
 
@@ -107,9 +110,24 @@
       if (future) rowEl.classList.add("future");
       if (climbed) rowEl.classList.add("climbed");
 
+      /*
+       * Wo der Deckel greift, muss es dranstehen.
+       *
+       * Auf "Meister" verspricht Ebene 9 das 256.901-fache. Ausgezahlt werden
+       * hoechstens 2 Mio je Runde, also ist die Stufe schon beim
+       * Mindesteinsatz von 50 Chips abgeschnitten. Eine Leiter, die etwas
+       * verspricht und dann kuerzt, ist eine Luege — Mines zeigt seinen
+       * Deckel laengst, Towers hat ihn nur verschwiegen.
+       */
       const mlab = document.createElement("span");
       mlab.className = "tw-mult-lab";
-      mlab.textContent = "×" + (v.ladder[disp] || 1).toFixed(2);
+      const mult = v.ladder[disp] || 1;
+      const einsatz = Number(($("#tw-amount") || {}).value) || (v.bet || 0);
+      const gedeckelt = grenzen.maxWin && einsatz > 0 && mult * einsatz > grenzen.maxWin;
+      // Deutsch formatiert wie ueberall sonst: "×256.901,12" statt
+      // "×256901.12". toFixed liefert englische Schreibweise.
+      mlab.textContent = "×" + mult.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (gedeckelt) mlab.classList.add("tw-gedeckelt");
       rowEl.appendChild(mlab);
 
       const tilesEl = document.createElement("div");
@@ -150,6 +168,20 @@
       }
       board.appendChild(rowEl);
     }
+
+    /*
+     * Der Deckel als sichtbare Zeile, nicht als title-Tooltip: auf dem iPad
+     * gibt es kein Hover, dort waere er gar nicht erreichbar.
+     */
+    if (grenzen.maxWin) {
+      const cap = document.createElement("div");
+      cap.className = "tw-cap";
+      const einsatz2 = Number(($("#tw-amount") || {}).value) || (v.bet || 0);
+      const ab = einsatz2 > 0 && (v.ladder || []).some((m) => m * einsatz2 > grenzen.maxWin);
+      cap.innerHTML = `Höchstgewinn ${fmt(grenzen.maxWin)}<i class=mk></i> pro Runde` +
+        (ab ? ` · <b>bei diesem Einsatz greift der Deckel</b>` : "");
+      board.appendChild(cap);
+    }
   }
 
   function apply(v) {
@@ -177,7 +209,7 @@
         float.textContent = `+${fmt(v.payout)} Chips`;
         board.appendChild(float);
         setTimeout(() => { board.classList.remove("tw-win"); float.remove(); }, 1600);
-        toast(v.cleared ? `🏆 Turm bezwungen! +${fmt(v.payout)} Chips` : `💸 +${fmt(v.payout)} Chips (${v.mult.toFixed(2)}×)!`);
+        toast(v.cleared ? `🏆 Turm bezwungen! +${fmt(v.payout)} Chips` : `💸 +${fmt(v.payout)} Chips (${mx(v.mult)}×)!`);
         merke({ gewonnen: true, mult: v.mult || v.multiplier || 1 });
       }
     } else setActive(true);
@@ -221,13 +253,23 @@
     });
   });
 
+  /*
+   * Der Deckel haengt vom Einsatz ab, also muss die Leiter beim Tippen neu.
+   * Sonst steht die Markierung noch auf dem Betrag von vorhin.
+   */
+  document.addEventListener("input", (e) => {
+    if (e.target && e.target.id === "tw-amount" && (!game || game.over)) renderBoard(previewView());
+  });
+
   window.Casino._loadTowers = () => {
     renderDiffs();
     renderVerlauf();
     // Läuft server-seitig noch ein Spiel (z.B. nach Tab-Reload)? → fortsetzen.
     socket.emit("towers:state", (v) => {
       if (v && v.minBet) {
-        grenzen = { minBet: v.minBet, maxBet: v.maxBet };
+        // maxWin MUSS mit: der Server schickt den Deckel, und ohne ihn
+        // verspricht die Leiter Betraege, die nie ausgezahlt werden.
+        grenzen = { minBet: v.minBet, maxBet: v.maxBet, maxWin: v.maxWin };
         const feld = $("#tw-amount");
         if (feld) { feld.min = v.minBet; feld.max = v.maxBet; }
         window.Casino.einsatz.leiste(feld, { min: v.minBet, max: v.maxBet, schritt: 50 });

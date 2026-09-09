@@ -22,6 +22,9 @@
   const Casino = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
+  // Multiplikatoren deutsch: "13,05" statt "13.05". toFixed liefert die
+  // englische Schreibweise, die im Rest des Hauses nirgends vorkommt.
+  const mx = (n) => Number(n || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const snd = Casino.sound;
 
   const TILES = 25;
@@ -51,7 +54,7 @@
     const v = verlauf();
     box.innerHTML = v.length
       ? `<span class="rv-label">Letzte Runden</span>` + v.map((e) =>
-          `<span class="rv-chip ${e.gewonnen ? "up" : "down"}">${e.gewonnen ? e.mult.toFixed(2) + "×" : "💥"}</span>`).join("")
+          `<span class="rv-chip ${e.gewonnen ? "up" : "down"}">${e.gewonnen ? mx(e.mult) + "×" : "💥"}</span>`).join("")
       : "";
   }
 
@@ -99,7 +102,7 @@
       `<div class="mines-pay-head">Bei ${minen} ${minen === 1 ? "Mine" : "Minen"} zahlt dein Einsatz</div>` +
       `<div class="mines-pay-row">` +
         tabelle.map((z) =>
-          `<span class="mines-pay-step"><b>${z.mult.toFixed(2)}×</b>` +
+          `<span class="mines-pay-step"><b>${mx(z.mult)}×</b>` +
           `<small>${z.safe} ${z.safe === 1 ? "Feld" : "Felder"}</small></span>`).join("") +
       `</div>` +
       (grenzen.maxWin
@@ -125,10 +128,10 @@
   }
 
   function renderTop(v) {
-    $("#mines-mult").textContent = (v.multiplier || 1).toFixed(2) + "×";
+    $("#mines-mult").textContent = mx(v.multiplier || 1) + "×";
     $("#mines-cashval").textContent = v.cashout ? fmt(v.cashout) + " Chips" : "—";
-    $("#mines-next").textContent = v.nextMultiplier ? v.nextMultiplier.toFixed(2) + "×" : "—";
-    if (v.cashout) $("#mines-cashout").textContent = `💸 Auszahlen — ${fmt(v.cashout)} Chips (${(v.multiplier).toFixed(2)}×)`;
+    $("#mines-next").textContent = v.nextMultiplier ? mx(v.nextMultiplier) + "×" : "—";
+    if (v.cashout) $("#mines-cashout").textContent = `💸 Auszahlen — ${fmt(v.cashout)} Chips (${mx(v.multiplier)}×)`;
     else $("#mines-cashout").textContent = "💸 Auszahlen";
     $("#mines-cashout").disabled = !v.cashout;
   }
@@ -167,7 +170,7 @@
       setActive(false);
       if (v.account) applyAccount(v.account);
       if (v.bust) { toast("💥 Bombe! Einsatz weg."); merke({ gewonnen: false, mult: 0 }); }
-      else if (v.cashedOut) { toast(`💸 +${fmt(v.payout)} Chips (${v.mult.toFixed(2)}×)!`); merke({ gewonnen: true, mult: v.mult }); }
+      else if (v.cashedOut) { toast(`💸 +${fmt(v.payout)} Chips (${mx(v.mult)}×)!`); merke({ gewonnen: true, mult: v.mult }); }
       else if (v.cleared) { toast(`🏆 Feld leergeräumt! +${fmt(v.payout)} Chips`); merke({ gewonnen: true, mult: v.multiplier }); }
     } else setActive(true);
   }

@@ -341,7 +341,8 @@ class PokerTable {
       uncontested: true,
     };
     this.pushLog(`${winner.name} gewinnt ${amount} (alle anderen gepasst).`);
-    this.recordResults([{ id: winner.id, amount: amount - winner.committed }]);
+    // Auch die Gepassten melden, siehe alleErgebnisse().
+    this.recordResults(this.alleErgebnisse({ [winner.id]: amount }));
     this.endHand();
   }
 
@@ -435,9 +436,7 @@ class PokerTable {
     const summary = winnersDisplay.map((w) => `${w.name} +${w.amount}`).join(", ");
     this.pushLog(`Showdown — ${summary}.`);
 
-    this.recordResults(
-      contenders.map((s) => ({ id: s.id, amount: (winningsById[s.id] || 0) - s.committed }))
-    );
+    this.recordResults(this.alleErgebnisse(winningsById));
     this.endHand();
   }
 
@@ -451,6 +450,24 @@ class PokerTable {
       if (seat && seatList.includes(seat)) order.push(seat);
     }
     return order;
+  }
+
+  /*
+   * Ergebnis JEDES Spielers, der Chips in der Hand hatte.
+   *
+   * Vorher gingen nur die Spieler in die Wertung, die es bis zum Showdown
+   * geschafft haben (oder als Einziger uebrig blieben). Wer gepasst hat,
+   * verlor seinen Einsatz still: kein Eintrag in der Statistik, kein XP fuer
+   * die Hand, und im Wochen-Netto fehlte der Verlust. Dadurch sah Poker in
+   * der Bilanz dauerhaft profitabler aus, als es ist — bei einem Spiel, bei
+   * dem Passen der haeufigste Ausgang ueberhaupt ist.
+   *
+   * @param {Record<string, number>} gewinne Auszahlung je Spieler-id
+   */
+  alleErgebnisse(gewinne) {
+    return this.seats
+      .filter((s) => s && s.committed > 0)
+      .map((s) => ({ id: s.id, amount: (gewinne[s.id] || 0) - s.committed }));
   }
 
   recordResults(results) {
