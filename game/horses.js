@@ -384,15 +384,65 @@ function fieldForClient() {
 
 // Tages-Rangliste (Top 3 + Rang je Spieler). Wird gecacht und nur neu berechnet,
 // wenn sich die Siege ändern (nach jedem Rennen) — nicht bei jedem Broadcast.
+/**
+ * Preisanteile bei Gleichstand.
+ *
+ * Gleiche Siegzahl heisst gleicher Rang, und die Preise der belegten Plaetze
+ * werden zusammengelegt und gleichmaessig geteilt. Die Summe bleibt dadurch
+ * exakt gleich (durch das Abrunden eher minimal kleiner), es entstehen also
+ * keine Chips aus dem Nichts.
+ *
+ * EIN Helfer fuer beides: die Anzeige im Banner und die echte Auszahlung um
+ * Mitternacht. Zwei Rechnungen waeren zwei Wahrheiten.
+ *
+ * @param {{name: string, wins: number}[]} sortiert absteigend nach wins
+ * @param {number[]} preise
+ * @returns {Map<string, number>} Name -> Betrag
+ */
+function preisAnteile(sortiert, preise) {
+  const out = new Map();
+  let platz = 0;
+  while (platz < preise.length && platz < sortiert.length) {
+    const siege = sortiert[platz].wins;
+    const gruppe = [];
+    for (let i = platz; i < sortiert.length && sortiert[i].wins === siege; i++) gruppe.push(sortiert[i]);
+    const bis = Math.min(platz + gruppe.length, preise.length);
+    let summe = 0;
+    for (let i = platz; i < bis; i++) summe += preise[i];
+    const jeder = Math.floor(summe / gruppe.length);
+    for (const g of gruppe) out.set(g.name, jeder);
+    platz += gruppe.length;
+  }
+  return out;
+}
+
 let dailyCache = { top: [], byKey: {} };
 function rebuildDailyCache() {
   if (!accounts) { dailyCache = { top: [], byKey: {} }; return; }
   const ranked = accounts.rawAll()
     .filter((a) => (a.dailyHorseWins || 0) > 0)
     .sort((a, b) => b.dailyHorseWins - a.dailyHorseWins);
+  /*
+   * Gleichstand heisst gleicher Rang.
+   *
+   * Vorher kam der Rang aus der Array-Position: bei 7/5/3/2/2/1 bekam der
+   * eine Zweisieger Rang 4 und der andere Rang 5, obwohl beide dasselbe
+   * geleistet haben. Auf dem Bildschirm sieht das schlicht kaputt aus.
+   * Jetzt wie im Sport: 1, 2, 2, 4 (der belegte Platz wird uebersprungen).
+   */
   const byKey = {};
-  ranked.forEach((a, i) => { byKey[String(a.name).trim().toLowerCase()] = { name: a.name, wins: a.dailyHorseWins, rank: i + 1 }; });
-  dailyCache = { top: ranked.slice(0, 3).map((a, i) => ({ name: a.name, wins: a.dailyHorseWins, rank: i + 1 })), byKey };
+  let rang = 0, vorige = null;
+  const mitRang = ranked.map((a, i) => {
+    if (a.dailyHorseWins !== vorige) { rang = i + 1; vorige = a.dailyHorseWins; }
+    return { name: a.name, wins: a.dailyHorseWins, rank: rang };
+  });
+  // Was jedem zusteht, rechnet der Server. Der Client hat den Preis vorher aus
+  // der Array-Position gezogen und zeigte bei einem Gleichstand "+0".
+  const anteile = preisAnteile(mitRang, DAILY_PRIZES);
+  mitRang.forEach((r) => { r.prize = anteile.get(r.name) || 0; byKey[String(r.name).trim().toLowerCase()] = r; });
+  // Alle mit Rang 1 bis 3 zeigen, nicht die ersten drei der Liste: bei einem
+  // Gleichstand auf Platz 3 gehoeren beide aufs Treppchen.
+  dailyCache = { top: mitRang.filter((r) => r.rank <= 3), byKey };
 }
 
 function stateFor(key) {
@@ -432,18 +482,38 @@ function checkDailyChamp() {
   if (!store.champDay) { store.champDay = day; save(); return; }
   if (store.champDay === day) return;
   store.champDay = day;
-  const racers = accounts.rawAll()
+  const alle = accounts.rawAll()
     .filter((a) => (a.dailyHorseWins || 0) > 0)
-    .sort((a, b) => b.dailyHorseWins - a.dailyHorseWins)
-    .slice(0, 3);
+    .sort((a, b) => b.dailyHorseWins - a.dailyHorseWins);
   const pot = Math.floor(store.dailyBetPot || 0); // aufgelaufener Wett-Topf
-  if (racers.length) {
+  if (alle.length) {
     const medals = ["🥇", "🥈", "🥉"];
-    const parts = racers.map((a, i) => {
-      const prize = DAILY_PRIZES[i] + Math.floor(pot * POT_SPLIT[i]);
-      accounts.adjustChips(String(a.name).trim().toLowerCase(), prize);
-      return `${medals[i]} ${a.name} (${a.dailyHorseWins} Siege · +${prize.toLocaleString("de-DE")} Chips)`;
+    /*
+     * Gleichstand teilt sich die betroffenen Preise.
+     *
+     * Vorher entschied die Array-Reihenfolge ueber echtes Geld: zwei Leute
+     * mit je drei Siegen, der eine bekam den dritten Platz und der andere
+     * nichts. Jetzt bilden gleiche Siegzahlen eine Gruppe, die Preise der
+     * belegten Plaetze werden zusammengelegt und gleichmaessig geteilt.
+     *
+     * Die Gesamtausschuettung bleibt dabei EXAKT gleich (durch das Abrunden
+     * eher minimal kleiner), es entstehen also keine Chips aus dem Nichts.
+     */
+    // Preise inklusive Wett-Topf, geteilt ueber denselben Helfer wie die Anzeige.
+    const mitTopf = DAILY_PRIZES.map((p, i) => p + Math.floor(pot * POT_SPLIT[i]));
+    const liste = alle.map((a) => ({ name: a.name, wins: a.dailyHorseWins }));
+    const anteile = preisAnteile(liste, mitTopf);
+
+    const parts = [];
+    let rang = 0, vorige = null;
+    liste.forEach((r, i) => {
+      if (r.wins !== vorige) { rang = i + 1; vorige = r.wins; }
+      const betrag = anteile.get(r.name);
+      if (!betrag) return; // ausserhalb der Preisraenge
+      accounts.adjustChips(String(r.name).trim().toLowerCase(), betrag);
+      parts.push(`${medals[rang - 1] || rang + "."} ${r.name} (${r.wins} ${r.wins === 1 ? "Sieg" : "Siege"} · +${betrag.toLocaleString("de-DE")} Chips)`);
     });
+    const racers = alle;
     store.lastChamp = { name: racers[0].name, wins: racers[0].dailyHorseWins, prize: DAILY_PRIZES[0] + Math.floor(pot * POT_SPLIT[0]) };
     const potNote = pot > 0 ? ` (inkl. Wett-Topf ${pot.toLocaleString("de-DE")} Chips)` : "";
     try { require("./chat").announce(io, `🐎🏆 RENN-CHAMPION DES TAGES: ${parts.join(" · ")}${potNote}`); } catch {}

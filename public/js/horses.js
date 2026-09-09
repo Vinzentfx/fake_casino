@@ -483,9 +483,18 @@
     if (!top.length) {
       rows = `<div class="cb-row cb-empty">Noch kein Sieg heute — der Thron ist frei! Melde ein Pferd an und hol dir ${fmt(prizes[0])}<i class=mk></i>.</div>`;
     } else {
-      rows = top.map((r, i) => {
+      /*
+       * Medaille und Preis kommen aus dem RANG, nicht aus der Position in der
+       * Liste. Bei einem Gleichstand auf Platz 3 stehen dort drei Zeilen mit
+       * Rang 3; ueber den Index gelesen ergab das "undefined" als Medaille
+       * und "+0" als Preis. Den Betrag rechnet ohnehin der Server, damit
+       * Anzeige und Auszahlung nicht auseinanderlaufen koennen.
+       */
+      rows = top.map((r) => {
         const isMe = meName && r.name.toLowerCase() === meName.toLowerCase();
-        return `<div class="cb-row${isMe ? " cb-me" : ""}"><span class="cb-medal">${medals[i]}</span><span class="cb-name">${escapeHtml(r.name)}${isMe ? " (du)" : ""}</span><span class="cb-wins">${r.wins} ${r.wins === 1 ? "Sieg" : "Siege"}</span><span class="cb-cash">+${fmt(prizes[i] || 0)}</span></div>`;
+        const platz = medals[(r.rank || 1) - 1] || `${r.rank}.`;
+        const geld = r.prize != null ? r.prize : (prizes[(r.rank || 1) - 1] || 0);
+        return `<div class="cb-row${isMe ? " cb-me" : ""}"><span class="cb-medal">${platz}</span><span class="cb-name">${escapeHtml(r.name)}${isMe ? " (du)" : ""}</span><span class="cb-wins">${r.wins} ${r.wins === 1 ? "Sieg" : "Siege"}</span><span class="cb-cash">+${fmt(geld)}</span></div>`;
       }).join("");
       // Eigener Rang, falls außerhalb der Top 3.
       if (me && me.rank > 3) {

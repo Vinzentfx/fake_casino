@@ -19,6 +19,17 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-16",
+      datum: "16. September 2026",
+      titel: "Zwei Fehler behoben",
+      items: [
+        { icon: "blackjack", titel: "Blackjack zog zwei Karten auf einmal",
+          text: "Ein Tipp auf „Karte“ hat zwei Karten gezogen, was eine Hand natürlich sofort ruinieren konnte. Jeder Knopf am Tisch war doppelt verdrahtet: die Seite hat die Knöpfe zweimal angemeldet, einmal sofort und einmal noch mal, wenn das Dokument fertig geladen war. Betraf auch Geben, Halten, Verdoppeln und Teilen." },
+        { icon: "rennbahn", titel: "Renn-Champion: Gleichstand wurde falsch behandelt",
+          text: "Wer gleich viele Tagessiege hatte, bekam trotzdem verschiedene Plätze, rein danach wie die Konten zufällig sortiert lagen. Und das entschied über echtes Geld: bei drei Siegen gleichauf bekam der eine den Preis und der andere nichts. Jetzt heißt gleich viele Siege gleicher Platz, alle Gleichauf-Stehenden stehen auf dem Treppchen, und sie teilen sich die Preise der belegten Plätze. Ausgeschüttet wird insgesamt genauso viel wie vorher." },
+      ],
+    },
+    {
       id: "2026-09-15",
       datum: "15. September 2026",
       titel: "Mitspieler direkt einladen",

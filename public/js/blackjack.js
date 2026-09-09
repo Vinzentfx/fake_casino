@@ -241,8 +241,20 @@
   // Called by app.js's showScreen when the blackjack screen opens.
   window.Casino._loadBlackjack = onEnterBlackjack;
 
-  // Wire up buttons after DOM is ready
-  document.addEventListener("DOMContentLoaded", () => {
+  /*
+   * Knoepfe genau EINMAL verdrahten.
+   *
+   * Hier stand beides untereinander: ein DOMContentLoaded-Listener und
+   * darunter derselbe Block nochmal, "falls DOMContentLoaded schon durch
+   * ist". Das Skript laedt aber mit `defer`, und dann ist der Zustand
+   * "interactive" (also nicht mehr "loading"), WAEHREND DOMContentLoaded
+   * noch aussteht. Beide Zweige liefen, jeder Knopf war doppelt verdrahtet,
+   * und ein Tipp auf "Karte" zog zwei Karten.
+   *
+   * Dieselbe if/else-Form benutzen blackjackLobby.js, pinco.js und
+   * rouletteLobby.js, dort war es von Anfang an richtig.
+   */
+  function wire() {
     $("bj-btn-deal")   ?.addEventListener("click", doDeal);
     $("bj-btn-hit")    ?.addEventListener("click", () => doAction("hit"));
     $("bj-btn-stand")  ?.addEventListener("click", () => doAction("stand"));
@@ -252,18 +264,9 @@
     $("bj-bet-up")     ?.addEventListener("click", () => stepBet(1));
     $("bj-bet-down")   ?.addEventListener("click", () => stepBet(-1));
     setupChipButtons();
-  });
-
-  // Also handle if DOMContentLoaded already fired
-  if (document.readyState !== "loading") {
-    $("bj-btn-deal")   ?.addEventListener("click", doDeal);
-    $("bj-btn-hit")    ?.addEventListener("click", () => doAction("hit"));
-    $("bj-btn-stand")  ?.addEventListener("click", () => doAction("stand"));
-    $("bj-btn-double") ?.addEventListener("click", () => doAction("double"));
-    $("bj-btn-split")  ?.addEventListener("click", () => doAction("split"));
-    $("bj-btn-again")  ?.addEventListener("click", doDeal);
-    $("bj-bet-up")     ?.addEventListener("click", () => stepBet(1));
-    $("bj-bet-down")   ?.addEventListener("click", () => stepBet(-1));
   }
+
+  if (document.readyState !== "loading") wire();
+  else document.addEventListener("DOMContentLoaded", wire, { once: true });
 
 })();
