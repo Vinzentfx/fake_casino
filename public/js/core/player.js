@@ -26,9 +26,10 @@
   // Nachricht darf keine fremde Klasse ins Dokument schreiben.
   const STILE = new Set(["sonne", "eis", "gift", "beere", "puls", "schimmer",
     "neon", "regenbogen", "feuer", "glitch", "vanta", "splitter", "krone", "s2_bernstein", "s2_phoenix",
-    "rad_fortuna"]);
+    "rad_fortuna", "auk_hologramm"]);
   const RAHMEN = new Set(["silber", "gold", "neon", "rotierend", "flamme", "sterne", "s2_wolf",
     "rad_fortuna"]);
+  const AUREN = new Set(["auk_goldstaub", "auk_leere"]);
 
   /**
    * Der Name mit Farbe oder Stil.
@@ -49,13 +50,22 @@
     return `<${tag} class="${klassen.join(" ")}"${style} data-name="${esc(p && p.name)}">${esc(p && p.name)}</${tag}>`;
   }
 
-  /** Das Bild mit Rahmen. */
+  /**
+   * Das Bild mit Rahmen und Aura.
+   *
+   * Die Aura braucht eine eigene Huelle um das Bild: sie malt ihre Teilchen in
+   * ::before/::after, und das Bild selbst benutzt beide schon fuer den Rahmen.
+   * Ohne Aura kommt auch keine Huelle — dann steht ueberall genau dasselbe
+   * Markup wie vorher.
+   */
   function avatar(p, opts = {}) {
     const r = p && p.frame && RAHMEN.has(p.frame) ? p.frame : null;
+    const a = p && p.aura && AUREN.has(p.aura) ? p.aura : null;
     const klassen = ["pl-ava"];
     if (r) klassen.push("fr-" + r);
     if (opts.extra) klassen.push(opts.extra);
-    return `<span class="${klassen.join(" ")}" aria-hidden="true">${esc((p && p.avatar) || "🙂")}</span>`;
+    const bild = `<span class="${klassen.join(" ")}" aria-hidden="true">${esc((p && p.avatar) || "🙂")}</span>`;
+    return a ? `<span class="pl-aura au-${a}" aria-hidden="true">${bild}</span>` : bild;
   }
 
   /** Der Titel, falls einer angelegt ist. Sonst nichts. */

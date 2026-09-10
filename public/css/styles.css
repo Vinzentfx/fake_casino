@@ -5413,7 +5413,14 @@ html.reduce-motion .tw-flip { transition: none; }
 .hat-rahmen,
 .pl-ava[class*="fr-"] {
   border-radius: 50%;
-  border: 2px solid transparent;
+  /* Die Farbe kommt ueber eine eigene Variable, NICHT ueber border-color.
+     Vorher stand hier `border: 2px solid transparent`, und diese Regel hat
+     zwei Treffer (Klasse + Attribut), `.fr-gold` nur einen. Damit hat das
+     transparente Grundgeruest jedes einfarbige `border-color` ueberstimmt:
+     Silber und Gold waren gekauft, angelegt — und unsichtbar. Aufgefallen ist
+     es nicht, weil Neon zusaetzlich leuchtet und die bewegten Rahmen ihren
+     Ring als eigene Ebene malen. */
+  border: 2px solid var(--rahmen-farbe, transparent);
   box-sizing: border-box;
   position: relative;
 }
@@ -5421,14 +5428,14 @@ html.reduce-motion .tw-flip { transition: none; }
   width: 1.9em;
   height: 1.9em;
 }
-.fr-silber { border-color: #cfd6dd; }
-.fr-gold   { border-color: var(--accent); }
-.fr-neon   { border-color: #22d3ee; box-shadow: 0 0 6px rgba(34, 211, 238, 0.75); }
+.fr-silber { --rahmen-farbe: #cfd6dd; }
+.fr-gold   { --rahmen-farbe: var(--accent); }
+.fr-neon   { --rahmen-farbe: #22d3ee; box-shadow: 0 0 6px rgba(34, 211, 238, 0.75); }
 /* Die bunten Ringe liegen als eigene Ebene ueber dem Bild und werden in der
    Mitte ausgestanzt. Nur so kann sich der Ring drehen, ohne das Emoji
    mitzudrehen — mit einem echten border haette die Figur auf dem Kopf
    gestanden. */
-.fr-rotierend, .fr-flamme, .fr-sterne { border-color: transparent; position: relative; }
+.fr-rotierend, .fr-flamme, .fr-sterne { --rahmen-farbe: transparent; position: relative; }
 .fr-rotierend::before, .fr-flamme::before, .fr-sterne::before {
   content: "";
   position: absolute;
@@ -5724,7 +5731,7 @@ html:not(.reduce-motion) .fr-sterne::before { animation: pl-spin 6s linear infin
 .dlg-knoepfe button:active { transform: scale(0.99); }
 
 /* --- Season-Kosmetik: Wolfsring und Phönix --- */
-.fr-s2_wolf { border-color: transparent; position: relative; }
+.fr-s2_wolf { --rahmen-farbe: transparent; position: relative; }
 .fr-s2_wolf::before {
   content: "";
   position: absolute;
@@ -8119,7 +8126,7 @@ button.tb-zeile:hover { border-color: var(--line-strong); background: var(--surf
 html:not(.reduce-motion) .nm-rad_fortuna { animation: fo-dreh 7s linear infinite; }
 @keyframes fo-dreh { to { --fo-winkel: 360deg; } }
 
-.fr-rad_fortuna { border-color: transparent; position: relative; }
+.fr-rad_fortuna { --rahmen-farbe: transparent; position: relative; }
 .fr-rad_fortuna::before {
   content: "";
   position: absolute;
@@ -8140,3 +8147,234 @@ html:not(.reduce-motion) .nm-rad_fortuna { animation: fo-dreh 7s linear infinite
   pointer-events: none;
 }
 html:not(.reduce-motion) .fr-rad_fortuna::before { animation: pl-spin 7s linear infinite; }
+
+/* ============================================================
+   Auktionsware
+
+   Einzeln versteigert, nicht im Laden zu haben. Jedes Stueck sitzt
+   auf einer Flaeche, auf der bisher nichts war, oder macht etwas,
+   das kein anderes Stueck macht — sonst waere es nur ein weiterer
+   Verlauf mit hoeherem Preis.
+   ============================================================ */
+
+.cos-marke-auktion { background: rgba(var(--accent-rgb), 0.24); color: var(--accent-strong);
+  border: 1px solid rgba(var(--accent-rgb), 0.6); }
+
+/* ── Aura: laeuft dauerhaft ums Bild, ueberall ──────────────────────────── */
+.pl-aura {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+/* Traeger sind zwei: die Huelle aus core/player.js und die Kachel im Laden.
+   Bewusst als Liste und nicht als [class*="au-"] — so ein Teilstueck steckt
+   auch in fremden Klassennamen und wuerde irgendwann etwas Falsches treffen. */
+.pl-aura > .pl-ava,
+.cos-aura-demo > .pl-ava { position: relative; z-index: 1; }
+.au-auk_goldstaub::before, .au-auk_goldstaub::after,
+.au-auk_leere::before, .au-auk_leere::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/*
+ * Goldstaub. Ein einzelnes Pseudo-Element kann nur EINEN Punkt zeichnen —
+ * mehrere Punkte kommen deshalb als box-shadow-Kopien desselben Punkts. Zwei
+ * Ebenen mit verschobener Zeit ergeben zwei Wellen, und das reicht, damit es
+ * nicht nach Blinken aussieht.
+ */
+.au-auk_goldstaub::before,
+.au-auk_goldstaub::after { z-index: 0; }
+.au-auk_goldstaub { background: radial-gradient(circle, rgba(247, 220, 140, 0.3), transparent 66%); }
+.au-auk_goldstaub::before,
+.au-auk_goldstaub::after {
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: #ffe9a8;
+  box-shadow:
+    -14px 4px 0 -0.5px #f7dc8c, 13px 2px 0 -0.5px #fff6d8, -8px -6px 0 -1px #f4d782,
+    9px -8px 0 -0.5px #ffe9a8, 0 9px 0 -1px #f7dc8c, -17px -2px 0 -1px #fff6d8;
+}
+html:not(.reduce-motion) .au-auk_goldstaub::before { animation: au-staub 3.2s ease-in-out infinite; }
+html:not(.reduce-motion) .au-auk_goldstaub::after { animation: au-staub 3.2s ease-in-out infinite 1.6s; }
+@keyframes au-staub {
+  0%   { opacity: 0; transform: translate(0, 8px) scale(0.7); }
+  25%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(0, -16px) scale(1.15); }
+}
+
+/*
+ * Schwarzes Loch. Der Gegenentwurf: kein Leuchten, sondern eine Delle. Innen
+ * frisst ein dunkler Kern das Licht, aussen laeuft ein heller Ring dagegen an.
+ */
+/* Groessen in PROZENT der Huelle, nicht in em: die Huelle ist genau so gross
+   wie das Bild, und das Bild ist mal 1,9em in der Topbar und mal doppelt so
+   gross im Profil. Mit em waere der Ring dort daneben gelegen. */
+.au-auk_leere::before {
+  width: 165%;
+  height: 165%;
+  margin: -82.5% 0 0 -82.5%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.95) 30%, rgba(28, 14, 54, 0.7) 52%, transparent 72%);
+}
+.au-auk_leere::after {
+  width: 148%;
+  height: 148%;
+  margin: -74% 0 0 -74%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    transparent 0deg 18deg, rgba(190, 160, 255, 0.9) 26deg 34deg,
+    transparent 42deg 150deg, rgba(255, 255, 255, 0.85) 158deg 168deg,
+    transparent 176deg 280deg, rgba(150, 200, 255, 0.8) 288deg 298deg, transparent 306deg 360deg);
+  -webkit-mask: radial-gradient(circle, transparent 58%, #000 61%, #000 74%, transparent 77%);
+  mask: radial-gradient(circle, transparent 58%, #000 61%, #000 74%, transparent 77%);
+}
+html:not(.reduce-motion) .au-auk_leere::before { animation: au-sog 3.6s ease-in-out infinite; }
+html:not(.reduce-motion) .au-auk_leere::after { animation: pl-spin 2.4s linear infinite; }
+@keyframes au-sog {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50%      { transform: scale(0.88); opacity: 1; }
+}
+
+/* ── Namensstil Hologramm ───────────────────────────────────────────────── */
+/* Zwei Ebenen: waagerechte Zeilen, die nach unten wandern, darunter der
+   Farbverlauf, der zur Seite wandert. Dazu versetzte Farbkanten wie bei einem
+   schlecht justierten Beamer. */
+.nm-auk_hologramm {
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0 1px, rgba(255, 255, 255, 0.15) 1px 4px),
+    linear-gradient(100deg, #7ef9ff, #ff5ecb 45%, #7ef9ff);
+  background-size: 100% 4px, 220% 100%;
+  background-position: 0 0, 0% 50%;
+  background-blend-mode: overlay, normal;
+  filter: drop-shadow(1.2px 0 0 rgba(255, 94, 203, 0.7)) drop-shadow(-1.2px 0 0 rgba(126, 249, 255, 0.7));
+}
+html:not(.reduce-motion) .nm-auk_hologramm { animation: nm-holo 2.8s linear infinite; }
+@keyframes nm-holo { to { background-position: 0 8px, 200% 50%; } }
+
+/* ── Namensschild Tresortür ─────────────────────────────────────────────── */
+/* Als Einziges kein Farbverlauf, sondern Metall: gebuerstete Flaeche, vier
+   Nieten in den Ecken, und ein Glanz, der darueber wandert. */
+.sch-auk_tresor {
+  background:
+    linear-gradient(110deg, transparent 34%, rgba(255, 255, 255, 0.3) 47%, transparent 60%),
+    radial-gradient(circle at 7px 6px, rgba(255, 255, 255, 0.5) 0 1.6px, transparent 2px),
+    radial-gradient(circle at calc(100% - 7px) 6px, rgba(255, 255, 255, 0.5) 0 1.6px, transparent 2px),
+    radial-gradient(circle at 7px calc(100% - 6px), rgba(255, 255, 255, 0.5) 0 1.6px, transparent 2px),
+    radial-gradient(circle at calc(100% - 7px) calc(100% - 6px), rgba(255, 255, 255, 0.5) 0 1.6px, transparent 2px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #6d7681, #2a2f36);
+  background-size: 240% 100%, auto, auto, auto, auto, auto, auto;
+  background-position: 0% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+  border-color: rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.5);
+}
+html:not(.reduce-motion) .sch-auk_tresor { animation: sch-tresor 5s linear infinite; }
+@keyframes sch-tresor { to { background-position: 200% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; } }
+
+/* ── Profil-Banner Gewitter ─────────────────────────────────────────────── */
+/* Ein Banner braucht vier Eintraege (eigenes Profil, Fremdprofil, Laden-Kachel,
+   Vorschau). Die stehen hier bewusst in EINEM Selektor statt vier Mal
+   untereinander wie bei den aelteren. */
+.pf-card[data-banner="auk_gewitter"]::before,
+.player-profile-head[data-banner="auk_gewitter"]::before,
+.cos-preview[data-banner="auk_gewitter"]::before,
+.cos-banner-demo[data-banner="auk_gewitter"] {
+  background:
+    radial-gradient(120% 90% at 26% -22%, rgba(186, 200, 226, 0.85), transparent 64%),
+    radial-gradient(110% 80% at 76% -12%, rgba(126, 140, 178, 0.8), transparent 66%),
+    radial-gradient(70% 50% at 52% 8%, rgba(226, 236, 255, 0.4), transparent 62%),
+    linear-gradient(180deg, #1a2440, #070a12);
+  background-size: 150% 150%, 150% 150%, 130% 130%, 100% 100%;
+}
+html:not(.reduce-motion) .pf-card[data-banner="auk_gewitter"]::before,
+html:not(.reduce-motion) .player-profile-head[data-banner="auk_gewitter"]::before,
+html:not(.reduce-motion) .cos-preview[data-banner="auk_gewitter"]::before,
+html:not(.reduce-motion) .cos-banner-demo[data-banner="auk_gewitter"] {
+  animation: pf-wolken 14s ease-in-out infinite alternate, pf-blitzen 7s steps(1, end) infinite;
+}
+@keyframes pf-wolken {
+  from { background-position: 0% 100%, 100% 100%, 20% 100%, 0 0; }
+  to   { background-position: 45% 70%, 55% 80%, 70% 60%, 0 0; }
+}
+/* Zwei Schlaege kurz hintereinander, dann lange Ruhe. Ein gleichmaessiges
+   Blinken waere ein Stroboskop, kein Gewitter. */
+@keyframes pf-blitzen {
+  0%, 88%, 100% { filter: brightness(1); }
+  89%  { filter: brightness(2.8) saturate(0.5); }
+  90%  { filter: brightness(1.05); }
+  92%  { filter: brightness(2.2) saturate(0.6); }
+  93.5% { filter: brightness(1); }
+}
+
+/* ── Kartenrücken ───────────────────────────────────────────────────────────
+   Vier Spiele hatten ihre Rueckseite fest eingebaut. Wer hier etwas anlegt,
+   ueberschreibt alle vier — aber nur auf dem EIGENEN Bildschirm. */
+html[data-karte] .card.back,
+html[data-karte] .bj-card.face-down,
+html[data-karte] .sol-card.down,
+html[data-karte] .mem-back {
+  background: var(--rueck-bg);
+  background-size: var(--rueck-groesse, auto);
+  border-color: var(--rueck-rand);
+}
+html[data-karte] .bj-card.face-down .bj-card-inner { background: none; border-color: var(--rueck-rand); }
+html[data-karte] .mem-back::after { border-color: var(--rueck-rand); }
+
+html[data-karte="auk_schwarzeshaus"] {
+  --rueck-bg:
+    repeating-linear-gradient(45deg, rgba(231, 198, 107, 0.16) 0 3px, transparent 3px 9px),
+    repeating-linear-gradient(-45deg, rgba(231, 198, 107, 0.1) 0 3px, transparent 3px 9px),
+    linear-gradient(160deg, #16171d, #06060a);
+  --rueck-rand: rgba(231, 198, 107, 0.8);
+}
+html[data-karte="auk_spiegel"] {
+  --rueck-bg: linear-gradient(115deg, #7f8a99 0%, #eef3f8 26%, #626d7d 42%, #ffffff 54%, #8e99a8 72%, #cbd5e0 100%);
+  --rueck-groesse: 260% 100%;
+  --rueck-rand: rgba(255, 255, 255, 0.92);
+}
+html[data-karte="auk_spiegel"]:not(.reduce-motion) .card.back,
+html[data-karte="auk_spiegel"]:not(.reduce-motion) .bj-card.face-down,
+html[data-karte="auk_spiegel"]:not(.reduce-motion) .sol-card.down,
+html[data-karte="auk_spiegel"]:not(.reduce-motion) .mem-back {
+  animation: pl-sweep 3.4s linear infinite;
+}
+
+/* ── Laden: Kacheln fuer die zwei neuen Arten ───────────────────────────── */
+.cos-aura-demo { display: grid; place-items: center; height: 46px; pointer-events: none; }
+.cos-aura-demo .pl-ava { font-size: 1.15rem; }
+/* In der Kachel steht die Aura ohne die Huelle aus core/player.js, deshalb
+   traegt hier das Demo-Element selbst die Aura-Klasse. */
+.cos-aura-demo.au-auk_goldstaub,
+.cos-aura-demo.au-auk_leere { position: relative; isolation: isolate; }
+
+.cos-karte-demo {
+  display: block;
+  width: 34px;
+  height: 48px;
+  margin: 0 auto;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: repeating-linear-gradient(45deg, #7a1f2b, #7a1f2b 6px, #5e1620 6px, #5e1620 12px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+.cos-karte-demo[data-karte="auk_schwarzeshaus"] {
+  background:
+    repeating-linear-gradient(45deg, rgba(231, 198, 107, 0.16) 0 3px, transparent 3px 9px),
+    repeating-linear-gradient(-45deg, rgba(231, 198, 107, 0.1) 0 3px, transparent 3px 9px),
+    linear-gradient(160deg, #16171d, #06060a);
+  border-color: rgba(231, 198, 107, 0.8);
+}
+.cos-karte-demo[data-karte="auk_spiegel"] {
+  background: linear-gradient(115deg, #7f8a99 0%, #eef3f8 26%, #626d7d 42%, #ffffff 54%, #8e99a8 72%, #cbd5e0 100%);
+  background-size: 260% 100%;
+}
+html:not(.reduce-motion) .cos-karte-demo[data-karte="auk_spiegel"] { animation: pl-sweep 3.4s linear infinite; }

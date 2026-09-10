@@ -314,6 +314,7 @@ window.Casino = Object.assign(window.Casino || {}, {
   applyAccount(account) {
     if (!account) return;
     state.account = { ...state.account, ...account };
+    wendeKartenAn(state.account);
     renderTopbar();
     if (currentScreen === "profile") renderProfile();
   },
@@ -345,6 +346,18 @@ let prefsTimer = null;
  * localStorage, weil er geräteübergreifend gilt: wer auf dem Handy
  * Mitternacht wählt, soll es auf dem iPad auch sehen.
  */
+/*
+ * Der eigene Kartenrücken haengt am Dokument, nicht an jeder einzelnen Karte:
+ * Poker, Blackjack, Solitär und Memory zeichnen ihre Rueckseite jeweils selbst,
+ * und alle vier lesen die Farben von `html[data-karte]`. Nur der eigene
+ * Bildschirm, siehe game/cosmetics.js.
+ */
+const KARTEN_IDS = new Set(["auk_schwarzeshaus", "auk_spiegel"]);
+function wendeKartenAn(acc) {
+  if (acc && acc.karte && KARTEN_IDS.has(acc.karte)) document.documentElement.dataset.karte = acc.karte;
+  else delete document.documentElement.dataset.karte;
+}
+
 function applyPrefs(prefs) {
   if (!prefs) return;
   if (prefs.theme && window.Casino.theme) window.Casino.theme.adoptFromAccount(prefs.theme);
@@ -384,6 +397,7 @@ function setAccount(acc, token) {
   } catch {}
   if (state.token) socket.emit("auth", { token: state.token });
   applyPrefs(acc.prefs);
+  wendeKartenAn(acc);
   renderTopbar();
   requestPresence();
   // Admin-Tile nur für Vincent sichtbar
@@ -731,7 +745,7 @@ socket.on("account:update", ({ account }) => {
 
 // Nur bekannte Schilder durchlassen: ein alter Wert aus einer Nachricht darf
 // keine fremde Klasse ins Dokument schreiben.
-const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma"]);
+const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma", "auk_tresor"]);
 const schildKlasse = (p) => (p && SCHILDER.has(p.schild) ? " sch-" + p.schild : "");
 
 function renderOnlinePlayers(players = []) {

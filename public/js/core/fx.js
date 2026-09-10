@@ -322,6 +322,59 @@
     if (w >= 2) schwall("247,220,140", w);
   }
 
+  /**
+   * Tresorsprengung: eine Druckwelle aus der Mitte, dann fliegt das Geld raus.
+   *
+   * Bewusst als einziger Effekt von INNEN nach aussen. Alles andere im Laden
+   * faellt von oben (Münzflut, Goldregen, Sternenfall) oder knallt oben
+   * (Feuerwerk, Blitz); hier geht in der Bildmitte etwas auf.
+   */
+  function tresor(w) {
+    // Zwei Ringe, der zweite etwas spaeter: eine einzelne Welle sieht aus wie
+    // ein Kreis, zwei sehen aus wie Druck.
+    for (let n = 0; n < 2; n++) {
+      teil("fx-welle", {
+        animationDelay: (n * 130) + "ms",
+        animationDuration: (700 + w * 120) + "ms",
+      }, 1200 + w * 200);
+    }
+    const el = document.getElementById("app");
+    if (el) { el.classList.remove("fx-beben"); void el.offsetWidth; el.classList.add("fx-beben"); setTimeout(() => el.classList.remove("fx-beben"), 700); }
+
+    // Splitter der Tuer: dunkle Scherben, radial nach aussen.
+    const scherben = 10 + w * 6;
+    for (let i = 0; i < scherben; i++) {
+      const winkel = (Math.PI * 2 * i) / scherben + zufall(-0.2, 0.2);
+      const weite = zufall(160 + w * 30, 320 + w * 90);
+      teil("fx-scherbe", {
+        animationDelay: zufall(0, 90) + "ms",
+        animationDuration: (900 + w * 180) + "ms",
+        width: zufall(6, 11 + w * 2) + "px",
+        height: zufall(9, 18 + w * 3) + "px",
+        "--dx": Math.cos(winkel) * weite + "px",
+        "--dy": Math.sin(winkel) * weite + "px",
+        "--rot": zufall(-540, 540) + "deg",
+      }, 1400 + w * 250);
+    }
+
+    // Und das, worum es geht: das Geld quillt heraus.
+    const muenzen = 16 + w * 10;
+    for (let i = 0; i < muenzen; i++) {
+      const winkel = zufall(-Math.PI * 0.92, -Math.PI * 0.08); // nach oben streuend
+      const weite = zufall(140 + w * 30, 300 + w * 80);
+      teil("fx-brocken", {
+        animationDelay: zufall(60, 220) + "ms",
+        animationDuration: (1200 + w * 220) + "ms",
+        width: (15 + w * 3) + "px",
+        height: (15 + w * 3) + "px",
+        "--dx": Math.cos(winkel) * weite + "px",
+        "--dy": Math.sin(winkel) * weite + "px",
+        "--rot": zufall(-420, 420) + "deg",
+      }, 2200 + w * 300);
+    }
+    if (w >= 2) schwall("247,220,140", w);
+  }
+
   function sternenfall(w) {
     const n = 8 * w;
     for (let i = 0; i < n; i++) {
@@ -363,6 +416,7 @@
       case "blitz": return blitz(w);
       case "sterne": return sternenfall(w);
       case "salut": return salut(w);
+      case "auk_tresor": return tresor(w);
       default: {
         // Konfetti: mehr, groesser, laenger — und ab Stufe 3 eine zweite Welle.
         confetti({ count: 60 * w, wucht: w });

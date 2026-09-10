@@ -88,6 +88,10 @@ const STYLES = [
    * zwoelf Goldsegmenten, genau wie das Glueckrad zwoelf Felder hat.
    */
   { id: "rad_fortuna", label: "Fortuna", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad", preview: ["#fff3c4", "#a97c1a"], motion: true },
+  /* Auktionsware. Kein Verlauf, der wandert, sondern ein Bild, das FLIMMERT:
+     die Farbkanten laufen auseinander wie bei einem schlechten Beamer, und
+     waagerechte Zeilen ziehen durch die Schrift. */
+  { id: "auk_hologramm", label: "Hologramm", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", preview: ["#7ef9ff", "#ff5ecb"], motion: true },
 ];
 
 /* ── Rahmen ums Bild ──────────────────────────────────────────────────────
@@ -134,6 +138,10 @@ const TITLES = [
    */
   { id: "rueckkehrer",    text: "Rückkehrer", cost: null, via: "Zur Wiedereröffnung dabei gewesen", limitiert: "comeback" },
   { id: "rad_fortuna",    text: "Fortunas Liebling", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad" },
+  // Zwei Insider aus der Runde. Der Preis ist der Witz.
+  { id: "sechssieben",    text: "67",                        cost: 67000 },
+  { id: "seiten25",       text: "25 pages on november 26th", cost: 26000 },
+  { id: "auk_meistbietend", text: "Meistbietend", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion" },
 ];
 
 /* ── Gewinn-Effekt ────────────────────────────────────────────────────────
@@ -155,6 +163,8 @@ const EFFEKTE = [
    * bekommen und danach nie wieder.
    */
   { id: "salut",    label: "Salut",       cost: null, via: "Zur Wiedereröffnung dabei gewesen", limitiert: "comeback", motion: true },
+  // Auktionsware: kein Regen von oben, sondern eine Druckwelle aus der Mitte.
+  { id: "auk_tresor", label: "Tresorsprengung", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
 /* ── Eintritts-Spruch ─────────────────────────────────────────────────────
@@ -195,6 +205,7 @@ const BANNER = [
   { id: "welle",   label: "Weserwelle",  cost: 200000 },
   { id: "gold",    label: "Blattgold",   cost: 400000 },
   { id: "nordlicht", label: "Nordlicht", cost: 700000, motion: true },
+  { id: "auk_gewitter", label: "Gewitter", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
 /* ── Namensschild ─────────────────────────────────────────────────────────
@@ -211,6 +222,39 @@ const SCHILDER = [
   { id: "neon",    label: "Neonschild", cost: 380000 },
   { id: "puls",    label: "Herzschlag", cost: 650000, motion: true },
   { id: "prisma",  label: "Prisma",     cost: 950000, motion: true },
+  // Auktionsware: als Einziges kein Farbverlauf, sondern Metall.
+  { id: "auk_tresor", label: "Tresortür", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
+];
+
+/* ── Aura ─────────────────────────────────────────────────────────────────
+ *
+ * Neue Art. Der Rahmen ist ein Ring AM Bild, der Gewinn-Effekt passiert einmal
+ * und ist wieder weg — die Aura ist das, was um dich herum IMMER läuft:
+ * in der Online-Liste, in der Bestenliste, am Pokertisch, im Chat. Damit ist
+ * sie die einzige Kosmetik, die man auch dann sieht, wenn gerade nichts
+ * passiert, und deshalb gehört sie ins Auktionshaus und nicht in den Laden.
+ */
+const AUREN = [
+  { id: "keine", label: "Ohne", cost: 0 },
+  { id: "auk_goldstaub", label: "Goldstaub", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
+  { id: "auk_leere",     label: "Schwarzes Loch", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
+];
+
+/* ── Kartenrücken ─────────────────────────────────────────────────────────
+ *
+ * Neue Art. Das Blatt, mit dem DU spielst: die verdeckten Karten in Poker,
+ * Blackjack, Solitär und Memory. Vier Spiele haben dafür bisher vier
+ * verschiedene Rückseiten fest eingebaut gehabt; wer hier etwas anlegt,
+ * überschreibt alle vier auf seinem eigenen Bildschirm.
+ *
+ * Absichtlich nur auf dem eigenen Bildschirm. Das Blatt der anderen mit
+ * fremden Rücken zu zeigen hiesse, in jeder Kartenrunde zu jeder Karte den
+ * Besitzer mitzuschicken — für ein Aussehen ist das zu viel Umbau.
+ */
+const KARTEN = [
+  { id: "haus", label: "Haus-Standard", cost: 0 },
+  { id: "auk_schwarzeshaus", label: "Schwarzes Haus", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion" },
+  { id: "auk_spiegel",       label: "Spiegel", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
 const avaById = Object.fromEntries(AVATARS.map((a) => [a.id, a]));
@@ -222,13 +266,15 @@ const effById = Object.fromEntries(EFFEKTE.map((x) => [x.id, x]));
 const sprById = Object.fromEntries(SPRUECHE.map((x) => [x.id, x]));
 const banById = Object.fromEntries(BANNER.map((x) => [x.id, x]));
 const schById = Object.fromEntries(SCHILDER.map((x) => [x.id, x]));
+const aurById = Object.fromEntries(AUREN.map((x) => [x.id, x]));
+const karById = Object.fromEntries(KARTEN.map((x) => [x.id, x]));
 
 // Ein Topf je Art. Alte Accounts haben nur avatars/colors, der Rest kommt
 // beim ersten Zugriff dazu.
 const TOPF = { avatar: "avatars", color: "colors", style: "styles", frame: "frames", title: "titles",
-  effect: "effects", spruch: "sprueche", banner: "banner", schild: "schilder" };
+  effect: "effects", spruch: "sprueche", banner: "banner", schild: "schilder", aura: "auren", karte: "karten" };
 const KATALOG = { avatar: avaById, color: colById, style: styById, frame: frmById, title: titById,
-  effect: effById, spruch: sprById, banner: banById, schild: schById };
+  effect: effById, spruch: sprById, banner: banById, schild: schById, aura: aurById, karte: karById };
 
 function ensureOwned(acc) {
   const o = acc.cosOwned && typeof acc.cosOwned === "object" ? acc.cosOwned : (acc.cosOwned = {});
@@ -276,6 +322,8 @@ function setupCosmetics(io, accounts) {
         sprueche: SPRUECHE.map((x) => ({ ...x, owned: hat("spruch", x.id), equipped: (acc.spruch || "keiner") === x.id })),
         banner: BANNER.map((x) => ({ ...x, owned: hat("banner", x.id), equipped: (acc.banner || "keiner") === x.id })),
         schilder: SCHILDER.map((x) => ({ ...x, owned: hat("schild", x.id), equipped: (acc.schild || "keins") === x.id })),
+        auren: AUREN.map((x) => ({ ...x, owned: hat("aura", x.id), equipped: (acc.aura || "keine") === x.id })),
+        karten: KARTEN.map((x) => ({ ...x, owned: hat("karte", x.id), equipped: (acc.karte || "haus") === x.id })),
         spruchText: acc.spruchText || "",
         spruchMax: SPRUCH_MAX,
       };
@@ -335,6 +383,8 @@ function setupCosmetics(io, accounts) {
       else if (type === "spruch") acc.spruch = id === "keiner" ? null : id;
       else if (type === "banner") acc.banner = id === "keiner" ? null : id;
       else if (type === "schild") acc.schild = id === "keins" ? null : id;
+      else if (type === "aura") acc.aura = id === "keine" ? null : id;
+      else if (type === "karte") acc.karte = id === "haus" ? null : id;
       accounts.save();
       ack({ ok: true, ...state(acc), account: accounts.publicAccount(acc) });
     });
@@ -377,6 +427,10 @@ function publicLook(acc) {
     title: t && t.text ? t.text : null,
     banner: acc.banner || null,
     schild: acc.schild || null,
+    aura: acc.aura || null,
+    // Der Kartenrücken wirkt nur auf dem eigenen Bildschirm, muss aber
+    // mitkommen: sonst weiss der Client sein EIGENES Blatt nicht.
+    karte: acc.karte || null,
     winEffect: acc.winEffect || null,
   };
 }
@@ -443,4 +497,4 @@ function gibFortuna(acc) {
   return erhalten;
 }
 
-module.exports = { setupCosmetics, grant, label, publicLook, eintrittsSpruch, saubererSpruch, SPRUCH_MAX, AVATARS, COLORS, STYLES, FRAMES, TITLES, EFFEKTE, SPRUECHE, BANNER, SCHILDER, FORTUNA_MAX, FORTUNA_STUECKE, fortunaVergeben, hatFortuna, gibFortuna };
+module.exports = { setupCosmetics, grant, label, publicLook, eintrittsSpruch, saubererSpruch, SPRUCH_MAX, AVATARS, COLORS, STYLES, FRAMES, TITLES, EFFEKTE, SPRUECHE, BANNER, SCHILDER, AUREN, KARTEN, FORTUNA_MAX, FORTUNA_STUECKE, fortunaVergeben, hatFortuna, gibFortuna };

@@ -19,6 +19,21 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-22",
+      datum: "22. September 2026",
+      titel: "Drei Sachen, die nie funktioniert haben, und ein Ausblick",
+      items: [
+        { icon: "kosmetik", titel: "Silber- und Goldrahmen waren unsichtbar",
+          text: "Wer 40.000 oder 80.000 für einen Rahmen gezahlt hat, hat nichts bekommen. Der Ring war da, aber durchsichtig: die Grundregel für alle Rahmen hat die Farbe der einzelnen Rahmen überstimmt. Aufgefallen ist es nicht, weil Neon zusätzlich leuchtet und die bewegten Rahmen ihren Ring anders zeichnen. Beide sehen jetzt aus, wofür ihr bezahlt habt." },
+        { icon: "kosmetik", titel: "Salut hat nie etwas gezeigt",
+          text: "Der Gewinn-Effekt aus dem Wiedereröffnungs-Paket hat gefeuert, nur unterhalb des Bildschirmrands: die Bänder starteten unter der Kante und flogen von dort nach unten weg. Jetzt fliegen sie hoch, drehen sich am höchsten Punkt und fallen wieder." },
+        { icon: "kosmetik", titel: "Zwei neue Titel",
+          text: "„67“ für 67.000 und „25 pages on november 26th“ für 26.000. Ihr wisst schon." },
+        { icon: "kosmetik", titel: "Neun Stücke, die es später zu ersteigern gibt",
+          text: "Im Laden stehen ab jetzt neun Stücke mit der Marke „Auktion“. Kaufen kann man sie nicht: sie kommen einzeln unter den Hammer, sobald das Auktionshaus steht. Darunter zwei ganz neue Arten. Eine Aura läuft dauerhaft um dein Bild, überall wo du auftauchst, nicht nur wenn du gewinnst. Und ein Kartenrücken ändert deine verdeckten Karten in Poker, Blackjack, Solitär und Memory. Dazu ein Name, der flimmert wie ein Hologramm, ein Namensschild aus Metall statt aus Farbe, ein Gewitter als Profil-Banner und ein Gewinn-Effekt, bei dem in der Bildmitte ein Tresor aufgeht." },
+      ],
+    },
+    {
       id: "2026-09-21",
       datum: "21. September 2026",
       titel: "Tagesbericht beim Reinkommen, und das Glücksrad verschenkt Fortuna",
