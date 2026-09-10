@@ -257,6 +257,8 @@
       if (Casino._loadComeback) Casino._loadComeback();
       if (Casino.renderAbholBadge) Casino.renderAbholBadge();
       if (Casino._renderHero) Casino._renderHero();
+      // Einmal am Tag von selbst: was passiert ist, waehrend niemand da war.
+      if (Casino._berichtVielleicht) Casino._berichtVielleicht();
     },
   });
 

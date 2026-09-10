@@ -3717,10 +3717,59 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .vault-hit:active { transform: translateY(4px); box-shadow: 0 2px 0 #3c414d; }
 
 /* Glücksrad. */
-.wheel-stage { position: relative; width: min(320px, 80vw); margin: 16px auto 8px; }
-.wheel-stage svg { width: 100%; height: auto; filter: drop-shadow(0 6px 20px rgba(0,0,0,0.5)); }
-.wheel-pointer { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); z-index: 2;
-  color: var(--accent-strong); font-size: 1.8rem; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
+/* ── Glücksrad ─────────────────────────────────────────────────────────── */
+.gr-tafel { max-width: 460px; }
+.gr-intro, .gr-bremse { margin: 0 auto 4px; max-width: 34ch; }
+
+.gr-buehne { position: relative; width: min(320px, 78vw); margin: 14px auto 10px; }
+.gr-buehne svg { display: block; width: 100%; height: auto;
+  filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.55)); }
+
+/* Der Ring, auf dem die Stifte sitzen. */
+.gr-ring { stroke: var(--accent); opacity: 0.9; }
+.gr-feldrand { stroke: var(--accent-strong); stroke-width: 1.5; opacity: 0.55; }
+.gr-strich { stroke: rgba(0, 0, 0, 0.45); stroke-width: 1; }
+.gr-stift { fill: var(--accent-ink); opacity: 0.75; }
+
+/* Die Farbe sagt, was ein Feld wert ist — vier Stufen statt acht Zufallstoene. */
+.gr-grund { fill: var(--surface-solid); }
+.gr-feld { transition: filter 0.25s ease; }
+.gr-klein { fill: rgba(255, 255, 255, 0.03); }
+.gr-mittel { fill: rgba(var(--accent-rgb), 0.16); }
+.gr-gross { fill: rgba(var(--accent-rgb), 0.42); }
+.gr-jackpot { fill: var(--accent); }
+.gr-treffer { filter: brightness(1.4) saturate(1.15); }
+
+.gr-schrift { font-size: 13px; font-weight: 800; fill: var(--text); letter-spacing: 0.02em; }
+/* Nur das Jackpot-Feld ist voll gold — nur dort ist dunkle Schrift lesbar. */
+.gr-schrift-jackpot { fill: var(--accent-ink); font-size: 11px; letter-spacing: 0.08em; }
+.gr-schrift-lang { font-size: 11px; }
+
+.gr-nabe { fill: var(--surface-solid); }
+.gr-nabe-rand { stroke: var(--accent); stroke-width: 2.5; }
+.gr-nabe-kern { fill: var(--accent); }
+
+/* Zeiger: ein Stift oben, der beim Drehen leicht wippt. */
+.gr-zeiger { position: absolute; top: -6px; left: 50%; width: 26px; height: 34px; z-index: 2;
+  transform: translateX(-50%); transform-origin: 50% 10%;
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent));
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7)); }
+html:not(.reduce-motion) .gr-zeiger-tickt { animation: gr-tick 0.14s linear infinite; }
+@keyframes gr-tick {
+  0%, 100% { transform: translateX(-50%) rotate(0deg); }
+  50% { transform: translateX(-50%) rotate(-11deg); }
+}
+
+.gr-ergebnis { margin: 0 auto 10px; padding: 8px 16px; border-radius: 14px; display: inline-block;
+  background: var(--surface-sunken); border: 1px solid var(--line); }
+.gr-ergebnis small { display: block; font-size: 0.7rem; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--text-dim); }
+.gr-ergebnis b { font-size: 1.35rem; color: var(--accent-strong); }
+.gr-ergebnis-jackpot { border-color: var(--accent); box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.35); }
+
+.gr-knopf { width: 100%; margin-top: 4px; }
+.gr-uhr { margin: 8px 0 0; font-size: 0.8rem; color: var(--text-dim); }
 
 /* Spieler-Level. */
 .level-chip { font-size: 0.72rem; font-weight: 800; padding: 2px 7px; border-radius: 999px;
@@ -7974,3 +8023,33 @@ html:not(.reduce-motion) .hilo-rein { animation: hilo-rein 0.4s cubic-bezier(0.2
   .kn-zeile { grid-template-columns: 1fr 54px 54px; padding: 6px var(--sp-2); }
   .kn-w { width: 46px; height: 46px; }
 }
+
+/* ── Tagesbericht ──────────────────────────────────────────────────────── */
+.tb-card { max-width: 520px; text-align: left; }
+.tb-card h2, .tb-card .update-emoji { text-align: center; }
+.tb-card .update-emoji { display: block; margin: 0 auto; }
+.tb-card .update-emoji svg { width: 40px; height: 40px; color: var(--accent); }
+.tb-zeitraum { text-align: center; margin: 2px 0 14px; }
+
+.tb-block { margin: 0 0 16px; }
+.tb-h { margin: 0 0 8px; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-dim); font-weight: 700; }
+.tb-liste { display: flex; flex-direction: column; gap: 6px; }
+
+.tb-zeile { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left;
+  padding: 9px 11px; border-radius: 12px; background: var(--surface-sunken);
+  border: 1px solid var(--line-neutral); color: inherit; font: inherit; }
+button.tb-zeile { cursor: pointer; }
+button.tb-zeile:hover { border-color: var(--line-strong); background: var(--surface-2); }
+.tb-tun { border-color: var(--line); }
+.tb-leise { opacity: 0.66; }
+
+.tb-sym { flex: 0 0 22px; display: grid; place-items: center; color: var(--text-dim); }
+.tb-sym svg { width: 20px; height: 20px; }
+.tb-sym-gold { color: var(--accent); }
+
+.tb-text { flex: 1; min-width: 0; font-size: 0.86rem; line-height: 1.35; }
+.tb-text b { display: block; font-size: 0.9rem; }
+.tb-text small { display: block; color: var(--text-dim); font-size: 0.76rem; line-height: 1.3; }
+.tb-pfeil { flex: 0 0 auto; color: var(--text-dim); font-size: 1.1rem; }
+.tb-nichts { margin: 0; }

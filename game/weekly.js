@@ -64,6 +64,9 @@ function rollover(io, accounts) {
     state.lastWinner = { key, name: winner.name, net: Math.round(winner.weeklyNet) };
     accounts.adjustChips(key, PRIZE);
     chat.announce(io, `🏆 SPIELER DER WOCHE: ${winner.name} mit +${Math.round(winner.weeklyNet).toLocaleString("de-DE")} Chips Netto — Preis: ${PRIZE.toLocaleString("de-DE")} Chips! Die Krone glänzt eine Woche im Leaderboard.`);
+    try {
+      require("./chronik").notiere("woche", `Spieler der Woche: ${winner.name} mit +${Math.round(winner.weeklyNet).toLocaleString("de-DE")} Chips netto.`, { user: winner.name });
+    } catch {}
   } else {
     state.lastWinner = null;
   }
@@ -71,7 +74,10 @@ function rollover(io, accounts) {
   accounts.save();
 
   const g = city.rollGoldenStreet();
-  if (g) chat.announce(io, `✨ NEUE GOLDENE STRASSE: ${g.st} in ${g.districtName} zahlt diese Woche DOPPELTEN Tribut — holt sie euch!`);
+  if (g) {
+    chat.announce(io, `✨ NEUE GOLDENE STRASSE: ${g.st} in ${g.districtName} zahlt diese Woche DOPPELTEN Tribut — holt sie euch!`);
+    try { require("./chronik").notiere("woche", `Neue Goldene Straße: ${g.st} in ${g.districtName} zahlt doppelten Tribut.`); } catch {}
+  }
 
   // Clan der Woche: crown the top clan by weekly PvP-duel wins, then reset.
   try { clans.weeklyRollover(io); } catch (e) { console.error("clan weekly rollover:", e.message); }

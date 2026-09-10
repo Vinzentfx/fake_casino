@@ -176,6 +176,8 @@
   socket.on("comeback:update", () => { if (Casino.screens.current() === "lobby") laden(); });
 
   Casino._loadComeback = laden;
+  // Der Tagesbericht verlinkt das Paket direkt.
+  Casino._zeigePaket = zeigePaket;
   // Beim Neuladen steht die Lobby unter Umstaenden schon, bevor diese Datei
   // ausgefuehrt wurde — dann holt onEnter den Stand nicht mehr.
   if (Casino.screens && Casino.screens.current() === "lobby") laden();

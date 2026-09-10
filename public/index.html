@@ -67,10 +67,11 @@
       <!-- Nur sichtbar, solange das Paket wirklich abzuholen ist. Ein Eintrag,
            der immer dasteht und meist ins Leere fuehrt, wird ignoriert. -->
       <button class="sheet-item" id="menu-geschenk" type="button" hidden><i class="si-icon" data-icon="geschenk"></i><b>Willkommens-Paket</b><small>Wartet auf dich</small></button>
+      <button class="sheet-item" id="menu-bericht" type="button"><i class="si-icon" data-icon="ansage"></i><b>Tagesbericht</b><small id="menu-bericht-sub">Was du verpasst hast</small></button>
       <button class="sheet-item" data-nav="quests"><i class="si-icon" data-icon="quests"></i><b>Aufträge</b><small>Tages- und Wochenziele</small></button>
       <button class="sheet-item" data-nav="season"><i class="si-icon" data-icon="season"></i><b>Season-Pass</b><small id="menu-season-sub">Fortschritt und Belohnungen</small></button>
-      <button class="sheet-item" data-nav="calendar"><i class="si-icon" data-icon="kalender"></i><b>Kalender</b><small>Täglich einmal abholen</small></button>
-      <button class="sheet-item" data-nav="wheel"><i class="si-icon" data-icon="gluecksrad"></i><b>Glücksrad</b><small>Einmal am Tag drehen</small></button>
+      <button class="sheet-item" data-nav="calendar"><i class="si-icon" data-icon="kalender"></i><b>Kalender</b><small id="menu-calendar-sub">Täglich einmal abholen</small></button>
+      <button class="sheet-item" data-nav="wheel"><i class="si-icon" data-icon="gluecksrad"></i><b>Glücksrad</b><small id="menu-wheel-sub">Einmal am Tag drehen</small></button>
       <button class="sheet-item" data-nav="leaderboard"><i class="si-icon" data-icon="bestenliste"></i><b>Bestenliste</b><small>Wer liegt vorn</small></button>
       <button class="sheet-item" data-nav="stats"><i class="si-icon" data-icon="statistik"></i><b>Statistik</b><small>Deine Bilanz je Spiel</small></button>
     </div>
@@ -1405,13 +1406,15 @@
     <section class="screen" data-screen="wheel">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
       <h2 class="screen-title"><i data-icon="gluecksrad"></i>Glücksrad</h2>
-      <div class="tafel tafel-mitte">
-        <p class="muted small">Einmal am Tag gratis drehen — Chips gewinnen!</p>
-        <div class="wheel-stage">
-          <div class="wheel-pointer">▼</div>
-          <svg id="wheel-svg" viewBox="0 0 200 200"></svg>
+      <div class="tafel tafel-mitte gr-tafel">
+        <p class="muted small gr-intro">Einmal am Tag gratis drehen. Kein Einsatz, kein Risiko.</p>
+        <div class="gr-buehne">
+          <svg id="wheel-svg" viewBox="0 0 240 240" aria-hidden="true"></svg>
+          <div class="gr-zeiger" id="gr-zeiger" aria-hidden="true"></div>
         </div>
-        <button class="btn-primary" id="wheel-spin" style="width:100%;margin-top:8px"><i data-icon="gluecksrad"></i> Drehen</button>
+        <div class="gr-ergebnis" id="gr-ergebnis" hidden></div>
+        <button class="btn-primary gr-knopf" id="wheel-spin">Gratis drehen</button>
+        <p class="gr-uhr" id="gr-uhr"></p>
         <div class="form-error" id="wheel-error"></div>
       </div>
     </section>
@@ -2129,6 +2132,17 @@
     </div>
   </div>
 
+  <!-- ===================== TAGESBERICHT ===================== -->
+  <div id="bericht-modal" class="update-modal hidden">
+    <div class="update-card tb-card">
+      <div class="update-emoji" data-icon="ansage"></div>
+      <h2>Tagesbericht</h2>
+      <p class="muted small tb-zeitraum" id="bericht-zeitraum"></p>
+      <div id="bericht-inhalt"></div>
+      <button class="btn-primary" id="bericht-close" style="width:100%">Los geht's</button>
+    </div>
+  </div>
+
   <div id="onboarding-modal" class="update-modal hidden">
     <div class="update-card">
       <div class="update-emoji" data-icon="marke"></div>
@@ -2160,6 +2174,7 @@
   <script defer src="/js/changelog.js"></script>
   <script defer src="/js/app.js"></script>
   <script defer src="/js/home.js"></script>
+  <script defer src="/js/bericht.js"></script>
   <script defer src="/js/chat.js"></script>
   <script defer src="/js/feed.js"></script>
   <script defer src="/js/lobby.js"></script>

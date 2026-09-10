@@ -50,6 +50,7 @@ const { setupKniffel } = require("./game/kniffel");
 const { setupHilo } = require("./game/hilo");
 const { setupWuerfel } = require("./game/wuerfel");
 const { setupLotterie } = require("./game/lotterie");
+const { setupBericht } = require("./game/bericht");
 const { setupAnnouncements } = require("./game/announcements");
 const { setupPrefs } = require("./game/prefs");
 const achievements = require("./game/achievements");
@@ -466,6 +467,11 @@ setupHilo(io, accounts);
 setupWuerfel(io, accounts);
 setupLotterie(io, accounts);
 setupAnnouncements(io);
+setupBericht(io, accounts);
+/* Jedes Modul haengt sich mit io.on("connection") ein, und es sind mehr als
+   fuenfzig geworden. Node warnt dann vor einem Speicherleck, obwohl hier
+   keines ist: die Zuhoerer werden einmal beim Start gesetzt, nicht je Spieler. */
+io.setMaxListeners(0);
 setupPrefs(io, accounts);
 feed.setupFeed(io, accounts);
 achievements.setupAchievements(io, accounts);

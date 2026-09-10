@@ -298,4 +298,20 @@ function levelVonXp(xp) {
   return lv;
 }
 
-module.exports = { setupSeason, addXp, fokusHeute, levelVonXp, SEASON };
+/**
+ * Wie viele freigeschaltete Stufen noch nicht abgeholt sind.
+ *
+ * Der Client konnte das schon aus publicState() rechnen, der Tagesbericht und
+ * die Marke am Menue brauchen es aber auch — und die sollen dafuer nicht den
+ * ganzen Season-Zustand ziehen muessen.
+ */
+function offeneStufen(acc) {
+  if (!acc) return 0;
+  const st = publicState(acc);
+  if (!st) return 0;
+  // Absichtlich OHNE Pruefung auf "Season laeuft": abholen kann man auch nach
+  // dem Ende, also muss die Marke es auch nach dem Ende noch sagen.
+  return st.rewards.filter((r) => r.unlocked && !r.claimed).length;
+}
+
+module.exports = { setupSeason, addXp, fokusHeute, levelVonXp, offeneStufen, SEASON };

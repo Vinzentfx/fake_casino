@@ -620,34 +620,41 @@ function setzeSheetMarke(sel, anzahl) {
 function renderAbholBadge() {
   const btn = $("#menu-btn");
   if (!btn || !state.account) return;
-  let season = 0, geschenk = 0;
 
-  const zeichne = () => {
-    const gesamt = season + geschenk;
+  /* Eine Runde fuer alles. Vorher fragte der Client season:state und
+     comeback:state getrennt und zaehlte deren Antworten selbst zusammen — mit
+     dem Kalender und dem Rad waeren das vier Runden geworden, von denen jede
+     die Zahl am Knopf einmal umschreibt. Der Server rechnet das jetzt in
+     game/bericht.js. */
+  socket.emit("bericht:marken", (m) => {
+    if (!m || !m.ok) return;
+    const gesamt = m.gesamt || 0;
     let marke = btn.querySelector(".menu-count");
-    if (!gesamt) { if (marke) marke.remove(); return; }
-    if (!marke) {
-      marke = document.createElement("span");
-      marke.className = "menu-count";
-      btn.appendChild(marke);
+    if (!gesamt) { if (marke) marke.remove(); }
+    else {
+      if (!marke) {
+        marke = document.createElement("span");
+        marke.className = "menu-count";
+        btn.appendChild(marke);
+      }
+      marke.textContent = String(gesamt);
+      marke.title = `${gesamt} ${gesamt === 1 ? "Belohnung wartet" : "Belohnungen warten"}`;
     }
-    marke.textContent = String(gesamt);
-    marke.title = `${gesamt} ${gesamt === 1 ? "Belohnung wartet" : "Belohnungen warten"}`;
-  };
 
-  socket.emit("season:state", (r) => {
-    season = r && r.ok ? (r.rewards || []).filter((x) => x.unlocked && !x.claimed).length : 0;
+    // Und dieselbe Zahl an dem Eintrag, aus dem sie kommt.
+    setzeSheetMarke('[data-nav="season"]', m.season);
+    setzeSheetMarke('[data-nav="calendar"]', m.kalender);
+    setzeSheetMarke('[data-nav="wheel"]', m.rad);
+    setzeSheetMarke("#menu-geschenk", m.geschenk);
+
     const sub = $("#menu-season-sub");
-    if (sub) sub.textContent = season ? `${season} ${season === 1 ? "Stufe wartet" : "Stufen warten"}` : "Fortschritt und Belohnungen";
-    setzeSheetMarke('[data-nav="season"]', season);
-    zeichne();
-  });
-  socket.emit("comeback:state", (r) => {
-    geschenk = r && r.ok && r.geschenkOffen && !r.geholt ? 1 : 0;
+    if (sub) sub.textContent = m.season ? `${m.season} ${m.season === 1 ? "Stufe wartet" : "Stufen warten"}` : "Fortschritt und Belohnungen";
+    const kal = $("#menu-calendar-sub");
+    if (kal) kal.textContent = m.kalender ? "Heute noch nicht abgeholt" : "Heute schon abgeholt";
+    const rad = $("#menu-wheel-sub");
+    if (rad) rad.textContent = m.rad ? "Gratis-Dreh ist frei" : "Heute schon gedreht";
     const eintrag = $("#menu-geschenk");
-    if (eintrag) eintrag.hidden = !geschenk;
-    setzeSheetMarke("#menu-geschenk", geschenk);
-    zeichne();
+    if (eintrag) eintrag.hidden = !m.geschenk;
   });
 }
 window.Casino.renderAbholBadge = renderAbholBadge;
@@ -1348,6 +1355,7 @@ $("#calendar-claim-btn")?.addEventListener("click", () => {
     setAccount(r.account);
     toast(`📅 Tag ${r.day} — +${r.reward.toLocaleString("de-DE")} Chips!`);
     loadCalendar();
+    renderAbholBadge();
   });
 });
 

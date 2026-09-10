@@ -283,5 +283,7 @@ function setupLotterie(_io, _accounts) {
 
 module.exports = {
   setupLotterie,
+  // Der Tagesbericht zeigt Jackpot, naechste Ziehung und ob man Lose hat.
+  oeffentlich,
   _intern: { ziehe, pruefeTipp, treffer, naechsteZiehung, LOSPREIS, ZAHLEN_BIS, TIPPS, MAX_LOSE, JACKPOT_ANTEIL, JACKPOT_MAX, GEWINN_3, GEWINN_2 },
 };

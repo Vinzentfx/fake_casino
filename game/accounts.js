@@ -817,9 +817,15 @@ const WHEEL_SEGMENTS = [
  * es kamen 6.500 an — das sieht nach einem Fehler aus, nicht nach einer Regel.
  * JACKPOT bleibt JACKPOT, dort steht ohnehin keine Zahl.
  */
+/* Stufe statt Farbe. Vorher stand in jedem Feld ein fester Hexwert
+   ("#5ea8e0"), der zu keiner der drei Paletten gehoerte — und die Farben
+   sagten nichts: das graue 250er sah so wichtig aus wie der JACKPOT. Der
+   Server schickt jetzt den Rang, das Aussehen macht das Stylesheet. */
+const stufeVon = (prize) => (prize >= 50000 ? "jackpot" : prize >= 10000 ? "gross" : prize >= 2000 ? "mittel" : "klein");
+
 const wheelSegmentsPublic = (faktor = 1) => WHEEL_SEGMENTS.map((s) => ({
   label: /^\d/.test(s.label) ? Math.round(s.prize * faktor).toLocaleString("de-DE") : s.label,
-  color: s.color,
+  stufe: stufeVon(s.prize),
 }));
 
 function wheelState(name) {

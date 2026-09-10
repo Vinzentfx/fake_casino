@@ -210,6 +210,19 @@ function setze(key, spiel, wert, extra) {
   // immer, auch wenn der Rekord spaeter wieder faellt.
   if (acc) { acc.rekorde = (acc.rekorde || 0) + 1; try { _accounts.save(); } catch {} }
 
+  /* Fuer den Tagesbericht: gefallene Rekorde sind das, was Abwesende am
+     meisten interessiert. Eigene Verbesserungen bleiben draussen, aus demselben
+     Grund wie unten beim Chat. */
+  try {
+    const chronik = require("./chronik");
+    const b = state.best[spiel];
+    if (alt && alt.key !== key) {
+      chronik.notiere("rekord", `${b.name} schlägt ${alt.name} bei ${SPIELE[spiel].label}: ${b.text} statt ${alt.text}.`, { user: b.name });
+    } else if (!alt) {
+      chronik.notiere("rekord", `${b.name} stellt den ersten Rekord der Woche bei ${SPIELE[spiel].label} auf: ${b.text}.`, { user: b.name });
+    }
+  } catch {}
+
   // Nur ansagen, wenn jemand einen FREMDEN Rekord schlaegt. Wer seinen eigenen
   // verbessert, muss dafuer nicht den Chat vollschreiben.
   if (alt && alt.key !== key && _io) {

@@ -19,6 +19,19 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-21",
+      datum: "21. September 2026",
+      titel: "Tagesbericht beim Reinkommen, und das Glücksrad sieht endlich nach Casino aus",
+      items: [
+        { icon: "ansage", titel: "Tagesbericht",
+          text: "Wir spielen selten gleichzeitig. Wer drei Tage nicht reinschaut, hat bisher alles verpasst: Rekorde fallen, Gebäude wechseln den Besitzer, die Lotterie zieht — und der Chat ist längst weggerollt. Beim ersten Reinkommen am Tag steht jetzt da, was passiert ist, seit du zuletzt hier warst, was gerade auf dich wartet und wie es steht (Jackpot, Goldene Straße, dein Platz). Über das Menü ist er jederzeit erreichbar." },
+        { icon: "geschenk", titel: "Die Zahl oben rechts zählt jetzt alles mit",
+          text: "Bisher kam sie nur, wenn eine Season-Stufe freigeschaltet war. Jetzt zählt sie auch den Kalender und den Gratis-Dreh am Glücksrad, und im Menü steht bei jedem Eintrag, was dort liegt." },
+        { icon: "gluecksrad", titel: "Glücksrad neu gebaut",
+          text: "Es war ein flacher Tortenteller in acht Pastellfarben, die zu keinem der drei Designs passten, und auf der linken Hälfte stand jede Zahl auf dem Kopf. Jetzt: goldener Rand mit Stiften, ein Zeiger, der beim Drehen mitwippt, und die Farbe eines Feldes sagt endlich, was es wert ist. Der Countdown steht unter dem Knopf statt darin, und was du gewonnen hast, bleibt danach stehen. An den Gewinnen ändert sich nichts." },
+      ],
+    },
+    {
       id: "2026-09-20",
       datum: "20. September 2026",
       titel: "Kniffel gegeneinander, und Achievements zeigen endlich den Fortschritt",

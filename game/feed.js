@@ -15,11 +15,23 @@ let _io = null;
 let _accounts = null;
 const items = [];
 
+/* Feed-Typ -> Chronik-Gruppe. Was hier nicht steht, wandert unter seinem
+   eigenen Namen in die Chronik. */
+const CHRONIK_ART = { win: "gewinn", loss: "verlust" };
+
 function push(type, text, meta = {}) {
   const item = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type, text: String(text).slice(0, 180), ts: Date.now(), meta };
   items.unshift(item);
   if (items.length > HISTORY) items.length = HISTORY;
   if (_io) _io.emit("feed:update", item);
+  /* Derselbe Moment noch einmal auf die Platte, fuer den Tagesbericht. Der
+     Feed haelt nur dreissig Eintraege und ist nach jedem Deploy leer — wer
+     drei Tage weg war, hat sonst nichts zum Nachlesen. */
+  try {
+    require("./chronik").notiere(CHRONIK_ART[type] || type, text, {
+      user: meta.user, wert: meta.amount,
+    });
+  } catch {}
   return item;
 }
 

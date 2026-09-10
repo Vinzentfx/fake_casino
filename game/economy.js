@@ -732,6 +732,10 @@ function setupEconomy(io, accounts) {
       // Takeover: the previous owner is compensated (premium above value burns).
       if (r.payout && r.payout.to && r.payout.to !== key && r.payout.amount > 0) {
         accounts.adjustChips(r.payout.to, r.payout.amount);
+        try {
+          const vor = accounts.get(r.payout.to);
+          require("./chronik").notiere("stadt", `${acc.name} nimmt ${vor ? vor.name : "einem Rivalen"} ein Gebäude ab (${r.payout.amount.toLocaleString("de-DE")} Chips Ablöse).`, { user: acc.name });
+        } catch {}
         // …and if there's a bounty on that rival, the raider collects it.
         const victim = accounts.get(r.payout.to);
         const bounty = accounts.claimBounty(r.payout.to, key);
@@ -744,7 +748,12 @@ function setupEconomy(io, accounts) {
         ok: true, account: res, cost: r.cost || 0, gain: r.gain || 0,
         district: districtId ? city.publicDistrict(districtId, key) : null,
       });
-      for (const msg of city.territoryDiff(before, city.territorySnapshot())) chat.announce(io, msg);
+      for (const msg of city.territoryDiff(before, city.territorySnapshot())) {
+        chat.announce(io, msg);
+        // Fuer den Tagesbericht: Monopole und Bosswechsel sind die einzigen
+        // Stadt-Ereignisse, die auch Tage spaeter noch jemanden interessieren.
+        try { require("./chronik").notiere("stadt", msg); } catch {}
+      }
       // Buys & takeovers count for quests, but each building only once/day.
       if (r.cost) quests.track(key, "buy_house", 1, buildingId);
       achievements.check(key);
