@@ -837,7 +837,10 @@ socket.on("presence:update", ({ online } = {}) => {
   if (window.Casino._lobbyPresence) window.Casino._lobbyPresence(online || []);
 });
 
-const RESCUE_THRESHOLD = 50; // mirror of server; controls when the help button shows
+/* Kommt vom Server (/api/config). Fest getippt lief er beim Anheben der
+   Schwelle auseinander: der Knopf waere erst unter 50 Chips erschienen,
+   obwohl die Hilfe schon unter 2.000 zusteht. */
+let RESCUE_THRESHOLD = 2000;
 
 // Active product buffs shown in the topbar.
 /* Die vier laufen dauerhaft oben in der Kopfzeile mit, direkt neben dem
@@ -1346,6 +1349,7 @@ $("#login-form").addEventListener("submit", async (e) => {
   try {
     const data = await api("/api/login", { name, pin });
     if (data.config?.bonusCooldownMs) state.bonusCooldownMs = data.config.bonusCooldownMs;
+    if (data.config?.rescueThreshold) RESCUE_THRESHOLD = data.config.rescueThreshold;
     setAccount(data.account, data.token);
     showScreen("lobby");
     if (data.created) maybeShowOnboarding();
@@ -2817,6 +2821,7 @@ $("#set-motion")?.addEventListener("change", (e) => {
     if (!res.ok) return;
     const cfg = await res.json();
     if (cfg.bonusCooldownMs) state.bonusCooldownMs = cfg.bonusCooldownMs;
+    if (cfg.rescueThreshold) RESCUE_THRESHOLD = cfg.rescueThreshold;
     const el = $("#login-start-chips");
     if (el && cfg.startingChips) el.textContent = cfg.startingChips.toLocaleString("de-DE");
   } catch {
@@ -2862,6 +2867,7 @@ $("#set-motion")?.addEventListener("change", (e) => {
   try {
     const data = await api("/api/session", { token });
     if (data.config?.bonusCooldownMs) state.bonusCooldownMs = data.config.bonusCooldownMs;
+    if (data.config?.rescueThreshold) RESCUE_THRESHOLD = data.config.rescueThreshold;
     setAccount(data.account, data.token);
     // Geteilter Link? Dann dorthin, sonst in die Lobby. In beiden Faellen
     // ersetzen statt anhaengen, damit die Zurueck-Geste nicht auf einem

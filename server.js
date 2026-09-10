@@ -159,6 +159,9 @@ app.get("/api/config", (_req, res) => {
   res.json({
     startingChips: accounts.STARTING_CHIPS,
     bonusCooldownMs: accounts.DAILY_BONUS_COOLDOWN_MS,
+    // Ab wann der Soforthilfe-Knopf erscheint. Stand vorher als feste 50 im
+    // Client und waere beim Anheben auf 2.000 dort haengengeblieben.
+    rescueThreshold: accounts.RESCUE_THRESHOLD,
   });
 });
 

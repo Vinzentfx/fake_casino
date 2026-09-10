@@ -19,6 +19,21 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-11",
+      datum: "11. September 2026",
+      titel: "Wer alles in Häuser gesteckt hat, wurde dafür bestraft",
+      items: [
+        { icon: "businesses", titel: "Die Vermögensbremse traf die Falschen",
+          text: "Freie Einnahmen (Stunden-Bonus, Kalender, Aufträge, Glücksrad) werden gebremst, wenn man reich ist. Nur: gerechnet wurde mit Immobilien voll und Bankguthaben gar nicht. Wer seine Chips in Gebäude gesteckt hatte, galt damit als reich und bekam ein Viertel — obwohl er nichts mehr zum Spielen hatte. Zwei von euch liefen mit 814 und 10.062 Chips auf der Hand bei 38 und 25 Prozent, während jemand mit 780.000 bar bei 96 lief. Ab jetzt zählt, was man ausgeben kann: Chips und Bank voll, Immobilien zu einem Viertel. Für die Betroffenen springt der Zufluss auf 88 bis 100 Prozent." },
+        { icon: "geschenk", titel: "Die Soforthilfe war ein Witz",
+          text: "Sie kam erst unter 50 Chips und füllte auf 150 auf. Der kleinste Einsatz im Haus sind 50, das reichte für drei Slot-Drehungen. Jetzt: ab unter 2.000 Chips, füllt auf 2.000 auf, alle 30 Minuten. Das Bankguthaben zählt mit, wer dort etwas liegen hat, braucht keine Nothilfe." },
+        { icon: "kosmetik", titel: "Die beiden neuen Titel sind bezahlbar",
+          text: "„67“ kostet jetzt 67.676 statt 6,7 Millionen, „25 pages on november 26th“ 250.000 statt 2,5 Millionen. Bei den alten Preisen hätte ein einziger Titel mehr gekostet als alles Geld, das es im Haus gibt. Mein Fehler." },
+        { icon: "statistik", titel: "Fünf Milliarden bei Poker",
+          text: "In einer Statistik stand bei Poker ein Netto von 5.069.495.042 und bei Slots 274 Millionen. Im ganzen Haus sind keine zehn Millionen Chips im Umlauf. Das stammt aus der Zeit mit den Poker-Bots, deren Stapel das Haus bezahlt hat. Die Geldwerte sind jetzt auf null gesetzt, Runden und Siege bleiben stehen." },
+      ],
+    },
+    {
       id: "2026-09-22",
       datum: "22. September 2026",
       titel: "Das Auktionshaus, und drei Sachen, die nie funktioniert haben",

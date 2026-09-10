@@ -59,9 +59,20 @@ const CASHBACK_CAP_BLESSED = 50000;  // ⛪ Kirche
 const STREAK_GRACE_MS = STREAK_GRACE_HOURS * 60 * 60 * 1000; // miss this window → streak resets
 
 // Pleite-Schutz: keep a broke player in the game without waiting for the bonus.
-const RESCUE_THRESHOLD = 50;       // only available when chips are below this
-const RESCUE_TO = 150;             // tops the balance up to this amount
-const RESCUE_COOLDOWN_MS = 10 * 60 * 1000; // 10 min, bounds any farming
+/*
+ * Soforthilfe — der Boden, auf dem man wieder aufstehen kann.
+ *
+ * Sie griff unter 50 Chips und fuellte auf 150 auf. Der kleinste Einsatz im
+ * Haus sind 50: das reichte fuer drei Slot-Drehungen, und danach stand man
+ * wieder da. Der Stunden-Bonus allein bringt das Siebenfache.
+ *
+ * Jetzt so viel, dass man eine Runde spielen kann, statt eine Drehung. Das
+ * Bankguthaben zaehlt dabei mit — sonst hoelte sich jemand mit 1,5 Millionen
+ * auf der Bank und 1.702 Chips auf der Hand alle halbe Stunde Almosen ab.
+ */
+const RESCUE_THRESHOLD = 2000;     // nur, wenn Chips UND Bank darunter liegen
+const RESCUE_TO = 2000;            // fuellt bis hierhin auf
+const RESCUE_COOLDOWN_MS = 30 * 60 * 1000; // 30 min, deckelt das Nachfassen
 
 // Brute-force protection on password login — PERSISTED on the account (the old
 // RAM map reset with every deploy, which happens often) and ESCALATING:
@@ -179,12 +190,68 @@ function resumeSession(token) {
   return { ok: true, account: publicAccount(acc), token: issueToken(acc.name) };
 }
 
+/*
+ * Konten laden.
+ *
+ * Die alte Fassung fing JEDEN Fehler ab und gab ein leeres Objekt zurueck.
+ * Fehlt die Datei, ist das richtig: frisches Haus. Ist sie aber da und laesst
+ * sich nicht lesen, waeren damit alle Konten weg — und der naechste save()
+ * haette die kaputte Datei mit dem leeren Stand ueberschrieben. Aus einem
+ * Lesefehler waere so ein endgueltiger Datenverlust geworden.
+ *
+ * Aufgefallen ist das, weil eine spaeter ergaenzte Aufraeumfunktion hier eine
+ * Konstante benutzte, die zu diesem Zeitpunkt noch nicht existierte: der
+ * Fehler verschwand still im catch, und das Haus startete mit null Konten.
+ */
 function load() {
+  let roh;
   try {
-    return JSON.parse(fs.readFileSync(ACCOUNTS_FILE, "utf8"));
+    roh = fs.readFileSync(ACCOUNTS_FILE, "utf8");
   } catch {
-    return {};
+    return {};   // noch keine Datei: neues Haus
   }
+  try {
+    return raeumeStatistik(JSON.parse(roh));
+  } catch (e) {
+    console.error("[accounts] accounts.json ist vorhanden, aber unlesbar:", e.message);
+    console.error("[accounts] Start abgebrochen, damit der Stand nicht ueberschrieben wird.");
+    process.exit(1);
+  }
+}
+
+/*
+ * Einmalige Bereinigung kaputter Spielstatistiken.
+ *
+ * In einem Konto stand bei Poker ein Netto von 5,07 MILLIARDEN und bei Slots
+ * 274 Millionen. Im ganzen Haus sind keine zehn Millionen Chips im Umlauf, und
+ * eine Pokerhand ist durch den Einkaufsdeckel von 100.000 je Platz nach oben
+ * begrenzt: ueber 127 Haende liegt das rechnerische Maximum bei rund 114
+ * Millionen. Der Wert war also vierzigmal hoeher als ueberhaupt moeglich.
+ *
+ * Die Ursache liegt in der Zeit, als es Poker-Bots gab, deren Stapel das Haus
+ * bezahlt hat (siehe game/tableManager.js). Die Bots sind lange raus, die Zahl
+ * stand aber weiter im Statistik-Bildschirm und hat die ganze Seite entwertet.
+ *
+ * Geloescht wird nur der GELDWERT. Runden und Siege bleiben stehen: die sind
+ * glaubwuerdig, und "127 Haende, 73 gewonnen" ist mehr wert als gar nichts.
+ */
+function raeumeStatistik(roh) {
+  /* Steht bewusst IN der Funktion: als const weiter unten waere sie beim
+     Aufruf aus load() heraus noch nicht initialisiert gewesen. */
+  const STAT_UNMOEGLICH = 50_000_000;
+  let bereinigt = 0;
+  for (const acc of Object.values(roh || {})) {
+    const pg = acc && acc.stats && acc.stats.perGame;
+    if (!pg) continue;
+    for (const eintrag of Object.values(pg)) {
+      if (eintrag && Math.abs(Number(eintrag.net) || 0) > STAT_UNMOEGLICH) {
+        eintrag.net = 0;
+        bereinigt++;
+      }
+    }
+  }
+  if (bereinigt) console.log(`[accounts] ${bereinigt} unmoegliche Spielstatistik(en) auf 0 gesetzt.`);
+  return roh;
 }
 
 function save() {
@@ -221,10 +288,41 @@ function get(name) {
 const city = require("./city");
 const stocks = require("./stocks");
 
+/**
+ * Was jemand insgesamt hat. Nur zum Anzeigen.
+ *
+ * Das Bankguthaben fehlte hier. Bei einem Konto mit 1.702 Chips auf der Hand
+ * und 1,5 Millionen auf der Bank stand als Vermoegen der Immobilienwert allein
+ * — und der Spieler galt als arm.
+ */
 function _netWorth(acc) {
-  const worth = acc.chips || 0;
   const key = normalizeName(acc.name);
-  return worth + city.ownerValue(key) + stocks.portfolioValue(key);
+  return (acc.chips || 0) + _bank(acc) + city.ownerValue(key) + stocks.portfolioValue(key);
+}
+
+const _bank = (acc) => Math.floor((acc && acc.savings && acc.savings.amount) || 0);
+
+/*
+ * Womit die Vermoegensbremse rechnet — und das ist ausdruecklich NICHT
+ * dasselbe wie das angezeigte Vermoegen.
+ *
+ * Vorher zaehlten Immobilien voll und die Bank gar nicht. Damit traf die
+ * Bremse genau die Falschen: wer seine Chips in Gebaeude gesteckt hatte, galt
+ * als reich und bekam ein Viertel, obwohl er nichts mehr zum Spielen hatte.
+ * Im Spielstand vom 10.9. stand Spender bei 25 Prozent mit 10.062 Chips und
+ * CharlieEpstein bei 38 Prozent mit 814 — waehrend jemand mit 780.000 Chips
+ * bar auf der Hand bei 96 Prozent lief.
+ *
+ * Jetzt zaehlt, was man ausgeben KANN: Chips und Bank voll, Aktien voll (die
+ * lassen sich sofort verkaufen), Immobilien zu einem Viertel. Ein Gebaeude ist
+ * Vermoegen, aber keins, mit dem man an den Tisch geht — und der Tribut, den
+ * es abwirft, ist genau die Einnahme, die die Bremse sonst wegkuerzt.
+ */
+const IMMOBILIEN_GEWICHT = 0.25;
+function _bremsWert(acc) {
+  const key = normalizeName(acc.name);
+  return (acc.chips || 0) + _bank(acc) + stocks.portfolioValue(key)
+    + city.ownerValue(key) * IMMOBILIEN_GEWICHT;
 }
 
 // Anti-inflation: guaranteed FREE income (hourly bonus, quests, calendar) is
@@ -249,7 +347,7 @@ const FAUCET_FLOOR = 0.25;
 function faucetFactor(name) {
   const acc = get(name);
   if (!acc) return 1;
-  const nw = _netWorth(acc);
+  const nw = _bremsWert(acc);
   if (nw <= FAUCET_FULL) return 1;
   if (nw >= FAUCET_MIN_NW) return FAUCET_FLOOR;
   const t = (nw - FAUCET_FULL) / (FAUCET_MIN_NW - FAUCET_FULL);
@@ -529,7 +627,7 @@ function claimDailyBonus(name) {
 function rescue(name) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
-  if (acc.chips >= RESCUE_THRESHOLD)
+  if (acc.chips + _bank(acc) >= RESCUE_THRESHOLD)
     return { ok: false, error: "Du hast noch genug Chips." };
   // Kirchenpatron trophy: blessed — double top-up, half cooldown.
   const blessed = city.hasTrophy(normalizeName(acc.name), "kirche");
@@ -946,6 +1044,7 @@ module.exports = {
   touchSeen,
   DAILY_BONUS,
   DAILY_BONUS_COOLDOWN_MS,
+  RESCUE_THRESHOLD,
   save,
   get,
   publicAccount,
