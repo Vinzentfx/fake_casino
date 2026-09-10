@@ -8395,52 +8395,173 @@ html[data-karte="auk_spiegel"]:not(.reduce-motion) .mem-back {
 html:not(.reduce-motion) .cos-karte-demo[data-karte="auk_spiegel"] { animation: pl-sweep 3.4s linear infinite; }
 
 /* ── Auktionshaus ───────────────────────────────────────────────────────── */
-.auk-los { text-align: center; max-width: 520px; margin: 0 auto; }
-.auk-kopf { display: flex; justify-content: space-between; align-items: center;
-  font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
-.auk-nr { font-weight: 800; color: var(--accent); }
+.auk-los, .auk-kommt, .auk-archiv, .auk-leer { max-width: 540px; margin: 0 auto 14px; }
+.auk-los { text-align: center; }
 
-/* Die Buehne zeigt dasselbe Bild wie der Laden — man soll sehen, worauf man
-   bietet, und nicht nur den Namen lesen. */
-.auk-buehne { display: grid; place-items: center; min-height: 96px; margin: 14px 0 6px;
-  font-size: 1.9rem; }
-.auk-buehne .cos-banner-demo { width: 100%; max-width: 320px; height: 54px; }
-.auk-buehne .cos-karte-demo { width: 62px; height: 86px; }
-.auk-schild { padding: 6px 14px; border-radius: var(--r-pill); font-size: 0.9rem; font-weight: 700;
-  border: 1px solid var(--line-neutral); }
-.auk-titel { font-size: 1.15rem; font-style: italic; color: var(--text-dim); }
-.auk-name { margin: 2px 0 14px; font-size: 1.25rem; }
+/* Die Plakette am oberen Rand: Losnummer links, Art rechts. */
+.auk-plakette { display: flex; justify-content: space-between; align-items: center;
+  margin: -4px -4px 4px; padding: 6px 12px; border-radius: var(--r-pill);
+  background: var(--surface-sunken); border: 1px solid var(--line);
+  font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase; }
+.auk-nr { font-weight: 900; color: var(--accent-strong); }
+.auk-art { color: var(--text-dim); font-weight: 700; }
 
-.auk-stand { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.auk-feld { padding: 10px 8px; border-radius: 12px; background: var(--surface-sunken);
+/*
+ * Die Buehne. Ein Scheinwerferkegel von oben und ein Podest darunter — das
+ * Stueck soll ausgestellt aussehen und nicht wie eine Zeile in einer Liste.
+ * Beides sind reine Flaechen, sie fangen keine Tipps ab.
+ */
+.auk-buehne { position: relative; display: grid; place-items: center; min-height: 150px;
+  margin: 10px 0 2px; overflow: hidden; border-radius: var(--r-md); }
+.auk-licht { position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(60% 78% at 50% 6%, rgba(var(--accent-rgb), 0.2), transparent 70%),
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.07), transparent 62%); }
+.auk-licht::before { content: ""; position: absolute; left: 50%; top: -14%; width: 62%; height: 96%;
+  transform: translateX(-50%); pointer-events: none;
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.16), transparent 78%); }
+.auk-podest { position: absolute; left: 50%; bottom: 8px; width: 58%; height: 16px;
+  transform: translateX(-50%); pointer-events: none; border-radius: 50%;
+  background: radial-gradient(50% 100% at 50% 50%, rgba(var(--accent-rgb), 0.32), transparent 72%);
+  box-shadow: 0 -6px 22px rgba(var(--accent-rgb), 0.16); }
+.auk-stueck { position: relative; z-index: 1; font-size: 2rem; display: grid; place-items: center;
+  padding-bottom: 12px; }
+.auk-stueck .cos-banner-demo { width: 300px; max-width: 74vw; height: 58px; }
+.auk-stueck .cos-karte-demo { width: 66px; height: 92px; }
+.auk-schild { padding: 7px 16px; border-radius: var(--r-pill); font-size: 0.92rem; font-weight: 700;
   border: 1px solid var(--line-neutral); }
-.auk-feld > small { display: block; font-size: 0.7rem; letter-spacing: 0.07em;
+.auk-titeltext { font-size: 1.2rem; font-style: italic; color: var(--text-dim); }
+.auk-effekt { font-size: 1.1rem; font-weight: 800; color: var(--accent-strong);
+  letter-spacing: 0.04em; }
+
+.auk-name { margin: 6px 0 0; font-size: 1.35rem; }
+.auk-einmal { margin: 2px 0 14px; font-size: 0.78rem; color: var(--text-mute); }
+
+.auk-stand { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.auk-feld { padding: 10px 8px; border-radius: 14px; background: var(--surface-sunken);
+  border: 1px solid var(--line-neutral); }
+.auk-feld > small { display: block; font-size: 0.68rem; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--text-dim); }
-.auk-feld > b { display: block; font-size: 1.3rem; font-family: var(--font-num); margin: 2px 0; }
-.auk-feld > small:last-child { text-transform: none; letter-spacing: 0; font-size: 0.72rem;
-  line-height: 1.3; }
-.auk-uhr.auk-heiss { color: var(--bad); }
-html:not(.reduce-motion) .auk-uhr.auk-heiss { animation: se-pulsen 1.1s ease-in-out infinite; }
+.auk-gross { display: flex; align-items: center; justify-content: center; gap: 0.22em;
+  font-size: 1.5rem; font-family: var(--font-num); margin: 3px 0 1px; line-height: 1.1; }
+.auk-von { text-transform: none !important; letter-spacing: 0 !important; font-size: 0.72rem;
+  color: var(--text-mute) !important; }
+.auk-uhr.auk-heiss, .auk-von.auk-heiss { color: var(--bad) !important; }
 
-.auk-bieten { display: flex; flex-direction: column; gap: 8px; }
-.auk-bieten input { width: 100%; }
-.auk-hinweis { margin: 8px 0 0; }
-.auk-fuehrt { margin: 0; padding: 10px; border-radius: 12px; font-weight: 700;
-  background: rgba(var(--good-rgb), 0.14); border: 1px solid rgba(var(--good-rgb), 0.4);
+/* Wie viel der Laufzeit schon durch ist. */
+.auk-balken { height: 4px; border-radius: 999px; background: var(--surface-sunken);
+  overflow: hidden; margin: 8px 0 14px; }
+.auk-balken i { display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.5), var(--accent));
+  transition: width 0.9s linear; }
+.auk-balken i.auk-balken-heiss { background: linear-gradient(90deg, var(--bad-deep), var(--bad)); }
+
+/* Das Band sagt in einem Satz, wo man steht. */
+.auk-band { padding: 11px 13px; border-radius: 14px; text-align: left; margin-bottom: 14px; }
+.auk-band b { display: block; font-size: 0.95rem; }
+.auk-band small { display: block; font-size: 0.79rem; line-height: 1.35; opacity: 0.85; margin-top: 2px; }
+.auk-band-gut { background: rgba(var(--good-rgb), 0.14); border: 1px solid rgba(var(--good-rgb), 0.42);
   color: var(--good-text); }
-.auk-sperre { margin: 0; padding: 10px; border-radius: 12px; font-size: 0.86rem;
-  background: var(--surface-sunken); border: 1px solid var(--line-neutral); color: var(--text-dim); }
+.auk-band-warn { background: rgba(var(--bad-rgb), 0.14); border: 1px solid rgba(var(--bad-rgb), 0.45);
+  color: var(--bad-text); }
+html:not(.reduce-motion) .auk-band-warn { animation: se-pulsen 2s ease-in-out infinite; }
+.auk-band-still { background: var(--surface-sunken); border: 1px solid var(--line-neutral);
+  color: var(--text-dim); }
 
-.auk-h { margin: 16px 0 6px; font-size: 0.76rem; letter-spacing: 0.07em; text-transform: uppercase;
+/* Bieten ueber Knoepfe: auf dem iPad ist ein Zahlenfeld eine Tastatur, die
+   den halben Schirm verdeckt. */
+.auk-stufen { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.auk-stufe { padding: 10px 6px; border-radius: 14px; cursor: pointer;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.2), rgba(var(--accent-rgb), 0.08));
+  border: 1px solid var(--line-strong); color: var(--text); font: inherit; }
+.auk-stufe b { display: block; font-family: var(--font-num); font-size: 1.05rem; }
+.auk-stufe small { display: block; font-size: 0.7rem; color: var(--text-dim); margin-top: 1px; }
+.auk-stufe:hover { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.26); }
+.auk-stufe:active { transform: scale(0.98); }
+.auk-zuteuer { opacity: 0.42; cursor: default; }
+.auk-zuteuer:hover { border-color: var(--line-strong); background: rgba(var(--accent-rgb), 0.08); }
+
+.auk-eigen { margin-top: 10px; text-align: left; }
+.auk-eigen > summary { cursor: pointer; font-size: 0.8rem; color: var(--text-dim);
+  list-style: none; padding: 4px 2px; }
+.auk-eigen > summary::-webkit-details-marker { display: none; }
+.auk-eigen > summary::before { content: "▸ "; }
+.auk-eigen[open] > summary::before { content: "▾ "; }
+.auk-eigen-zeile { display: flex; gap: 8px; align-items: stretch; margin-top: 6px; }
+.auk-eigen-zeile input { flex: 1; min-width: 0; }
+.auk-eigen-zeile .btn-primary { flex: 0 0 auto; padding-left: 18px; padding-right: 18px; }
+.auk-hinweis { margin: 10px 0 0; text-align: left; }
+
+.auk-h { margin: 0 0 8px; font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--text-dim); text-align: left; }
-.auk-verlauf, .auk-archiv { text-align: left; }
-.auk-archiv { max-width: 520px; margin: 12px auto 0; }
-.auk-zeile { display: flex; justify-content: space-between; gap: 10px; align-items: center;
-  padding: 7px 10px; border-radius: 10px; background: var(--surface-sunken);
+.auk-verlauf { text-align: left; margin-top: 16px; }
+.auk-zeile { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center;
+  padding: 8px 11px; border-radius: 11px; background: var(--surface-sunken);
   border: 1px solid var(--line-neutral); margin-bottom: 5px; font-size: 0.84rem; }
-.auk-zeile b { font-family: var(--font-num); white-space: nowrap; }
-.auk-rest { text-align: center; margin: 12px auto 0; max-width: 520px; }
+.auk-zeile b { font-family: var(--font-num); white-space: nowrap; display: inline-flex;
+  align-items: center; gap: 0.2em; }
+.auk-wer { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auk-wer i { font-style: normal; color: var(--text-mute); }
+.auk-wann { font-size: 0.72rem; color: var(--text-mute); white-space: nowrap; }
+.auk-zeile.auk-fuehrt { border-color: var(--line-strong); background: rgba(var(--accent-rgb), 0.09); }
+.auk-zeile.auk-meins .auk-wer { color: var(--accent-strong); font-weight: 700; }
+
+/* Was noch kommt: Werbung fuers Wiederkommen. */
+.auk-kommt-reihe { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.auk-kachel { padding: 10px 6px; border-radius: 12px; text-align: center;
+  background: var(--surface-sunken); border: 1px solid var(--line-neutral); }
+.auk-kachel-bild { display: grid; place-items: center; height: 46px; font-size: 1.1rem;
+  overflow: hidden; }
+.auk-kachel b { display: block; font-size: 0.78rem; margin-top: 4px; }
+.auk-kachel small { display: block; font-size: 0.68rem; color: var(--text-mute); }
+.auk-mini { font-size: 0.78rem; }
+.cos-karte-demo.auk-mini { width: 24px; height: 34px; }
+.cos-banner-demo.auk-mini { height: 24px; }
+
+.auk-leer { text-align: center; padding: 26px 18px; }
+.auk-leer-sym svg { width: 34px; height: 34px; color: var(--accent); }
+.auk-leer b { display: block; margin: 8px 0 4px; }
 
 @media (max-width: 420px) {
   .auk-stand { grid-template-columns: 1fr; }
+  .auk-zeile { grid-template-columns: 1fr auto; }
+  .auk-wann { display: none; }
 }
+
+/* Die rote Marke: ein neues Los oder ein ueberbotenes Gebot. Bewusst KEINE
+   Zahl — es gibt nichts zu zaehlen, es gibt nur "sieh nach". */
+.menu-btn.hat-auktion::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bad);
+  border: 2px solid var(--bar);
+  box-shadow: 0 0 8px var(--bad);
+}
+html:not(.reduce-motion) .menu-btn.hat-auktion::before { animation: se-pulsen 1.6s ease-in-out infinite; }
+/* Beide Punkte sitzen an derselben Ecke. Wenn die Auktion ruft, hat sie
+   Vorrang: dort laeuft eine Uhr, ein ungelesenes Update wartet auch morgen
+   noch — und im Menue steht bei den Updates ohnehin die Zahl daneben. */
+.menu-btn.hat-auktion.has-news::after { display: none; }
+.sheet-item.hat-auktion { position: relative; }
+.sheet-item.hat-auktion::after {
+  content: "!";
+  grid-row: 1 / 3;
+  grid-column: 3;
+  min-width: 20px;
+  height: 20px;
+  border-radius: var(--r-pill);
+  background: var(--bad);
+  color: #2a0704;
+  font-size: 0.72rem;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  align-self: center;
+}
+html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1.6s ease-in-out infinite; }

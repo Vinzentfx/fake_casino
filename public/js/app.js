@@ -669,6 +669,23 @@ function renderAbholBadge() {
     if (rad) rad.textContent = m.rad ? "Gratis-Dreh ist frei" : "Heute schon gedreht";
     const eintrag = $("#menu-geschenk");
     if (eintrag) eintrag.hidden = !m.geschenk;
+
+    /* Die Auktion bekommt eine eigene, ROTE Marke: sie ist nichts zum
+       Abholen, sondern etwas, das ohne dich zu Ende geht. Ein neues Los
+       oder ein ueberbotenes Gebot — beides verschwindet, sobald man
+       hinsieht. */
+    const auk = m.auktion || {};
+    btn.classList.toggle("hat-auktion", !!auk.an);
+    const auknav = $('[data-nav="auktion"]');
+    if (auknav) {
+      auknav.classList.toggle("hat-auktion", !!auk.an);
+      const sub = $("#menu-auktion-sub");
+      if (sub) {
+        sub.textContent = auk.ueberboten ? "Du wurdest überboten"
+          : auk.neu ? "Neues Los unter dem Hammer"
+          : "Was es nur einmal gibt";
+      }
+    }
   });
 }
 window.Casino.renderAbholBadge = renderAbholBadge;

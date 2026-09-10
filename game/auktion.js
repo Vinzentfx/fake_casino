@@ -248,7 +248,7 @@ function bieten(key, betrag) {
   los.gebot = betrag;
   los.bieter = key;
   los.bieterName = acc.name;
-  los.verlauf.unshift({ name: acc.name, betrag, ts: Date.now() });
+  los.verlauf.unshift({ key, name: acc.name, betrag, ts: Date.now() });
   if (los.verlauf.length > VERLAUF_MAX) los.verlauf.length = VERLAUF_MAX;
 
   /* Verlaengerung. Steht bewusst NACH dem Gebot: sonst koennte man mit einem
@@ -260,7 +260,20 @@ function bieten(key, betrag) {
   }
   save();
 
+  if (!vorher) {
+    try { chat.announce(io, `🔨 Erstes Gebot für „${los.label}“: ${acc.name} bietet ${de(betrag)} Chips.`); } catch {}
+  }
+
   if (vorher && vorher !== key) {
+    const vorKonto = accounts.get(vorher);
+    if (vorKonto) { vorKonto.auktionUeberboten = true; accounts.save(); }
+    /* Auch in den Chat. In einer Runde, die versetzt spielt, ist ein
+       Bietgefecht das Spannendste, was gerade passiert — und wer es erst am
+       naechsten Tag erfaehrt, haette mitgeboten. Der Mindestschritt sorgt
+       dafuer, dass daraus keine Maschinengewehr-Salve wird. */
+    try {
+      chat.announce(io, `🔨 ${acc.name} überbietet ${vorherName} bei „${los.label}“: ${de(betrag)} Chips.`);
+    } catch {}
     // Der Ueberbotene ist fast immer gerade NICHT da — genau darum lohnt sich
     // hier eine Nachricht aufs Geraet.
     try {
@@ -285,6 +298,46 @@ function bieten(key, betrag) {
   return { ok: true, verlaengert, account: accounts.publicAccount(acc), ...oeffentlich(key) };
 }
 
+/**
+ * Was noch kommt.
+ *
+ * Absichtlich offen: wer sieht, dass die Aura noch aussteht, kommt wieder und
+ * spart darauf hin. Eine Ueberraschung waere hier keine, weil es nur neun
+ * Stuecke gibt und man sie im Laden ohnehin alle sieht.
+ */
+function kommendes(los) {
+  return offeneStuecke()
+    .filter((s) => !los || !(s.type === los.type && s.id === los.id))
+    .map((s) => ({ type: s.type, id: s.id, label: s.label, art: ART_NAME[s.type] || s.type }));
+}
+
+/**
+ * Die persoenliche Marke fuers Menue: rot, wenn etwas ansteht.
+ *
+ * Zwei Anlaesse, beide mit Frist: ein Los, das man noch nie gesehen hat, und
+ * ein Gebot, das ueberboten wurde. Beides verschwindet, sobald man das
+ * Auktionshaus aufmacht — deshalb steht der Merker am Konto und nicht im
+ * localStorage: Safari raeumt den nach sieben Tagen weg, und wer so lange weg
+ * war, soll die Marke ja gerade sehen.
+ */
+function menueMarke(key) {
+  const acc = key ? accounts.get(key) : null;
+  if (!acc) return { neu: false, ueberboten: false, an: false };
+  const neu = !!(state.los && state.los.nr > (acc.auktionGesehen || 0));
+  const ueberboten = !!acc.auktionUeberboten;
+  return { neu, ueberboten, an: neu || ueberboten };
+}
+
+/** Merkt, dass jemand hingesehen hat. Loescht beide Anlaesse. */
+function gesehen(key) {
+  const acc = key ? accounts.get(key) : null;
+  if (!acc) return;
+  let geaendert = false;
+  if (state.los && (acc.auktionGesehen || 0) !== state.los.nr) { acc.auktionGesehen = state.los.nr; geaendert = true; }
+  if (acc.auktionUeberboten) { delete acc.auktionUeberboten; geaendert = true; }
+  if (geaendert) accounts.save();
+}
+
 function oeffentlich(key) {
   const los = state.los;
   const acc = key ? accounts.get(key) : null;
@@ -292,20 +345,21 @@ function oeffentlich(key) {
   return {
     los: los ? {
       nr: los.nr, art: los.art, label: los.label, type: los.type, id: los.id,
-      endet: los.endet, gebot: los.gebot,
+      start: los.start, endet: los.endet, gebot: los.gebot,
       bieterName: los.bieterName,
       binIch: !!(key && los.bieter === key),
+      // Habe ich hier schon einmal geboten und wurde ueberholt?
+      warIch: !!(key && los.verlauf.some((g) => g.key === key)),
       mindest: mindestGebot(los),
-      verlauf: los.verlauf.slice(0, VERLAUF_MAX),
+      verlauf: los.verlauf.slice(0, VERLAUF_MAX).map((g) => ({ ...g, ich: !!(key && g.key === key) })),
     } : null,
-    // Ohne das Stueck, das gerade auf der Buehne steht: "noch 9 warten auf
-    // ihren Termin", waehrend eines davon versteigert wird, liest sich falsch.
-    offen: Math.max(0, offeneStuecke().length - (los ? 1 : 0)),
+    kommendes: kommendes(los),
     archiv: state.archiv.slice(0, 8),
     startGebot: START_GEBOT,
     verlaengerung: VERLAENGERUNG_MS,
     sperreBis: sperreBis > Date.now() ? sperreBis : 0,
     meineChips: acc ? acc.chips : 0,
+    marke: menueMarke(key),
   };
 }
 
@@ -336,7 +390,12 @@ function setupAuktion(_io, _accounts) {
   io.on("connection", (socket) => {
     socket.on("auktion:state", (ack) => {
       if (typeof ack !== "function") return;
-      ack({ ok: true, ...oeffentlich(socket.data.account || null) });
+      const key = socket.data.account || null;
+      const zustand = { ok: true, ...oeffentlich(key) };
+      // Erst antworten, DANN abhaken: sonst faende der Client seine eigene
+      // Marke nie und wuesste nicht, warum sie eben noch rot war.
+      gesehen(key);
+      ack(zustand);
     });
 
     socket.on("auktion:bieten", ({ betrag } = {}, ack) => {
@@ -347,4 +406,4 @@ function setupAuktion(_io, _accounts) {
   });
 }
 
-module.exports = { setupAuktion, oeffentlich, START_GEBOT };
+module.exports = { setupAuktion, oeffentlich, menueMarke, START_GEBOT };

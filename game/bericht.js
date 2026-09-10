@@ -54,7 +54,16 @@ function marken(accounts, key) {
   } catch {}
   try { kalender = accounts.calendarState(key)?.canClaim ? 1 : 0; } catch {}
   try { rad = require("./gluecksrad").zustand(key)?.canSpin ? 1 : 0; } catch {}
-  return { season, geschenk, kalender, rad, gesamt: season + geschenk + kalender + rad };
+  /* Die Auktion zaehlt NICHT mit: sie ist nichts zum Abholen, sondern etwas,
+     das man verpassen kann. Deshalb eine eigene, rote Marke statt einer Zahl
+     im goldenen Zaehler. */
+  let auktion = { neu: false, ueberboten: false, an: false };
+  try { auktion = require("./auktion").menueMarke(key); } catch {}
+  return {
+    season, geschenk, kalender, rad,
+    gesamt: season + geschenk + kalender + rad,
+    auktion,
+  };
 }
 
 /**
