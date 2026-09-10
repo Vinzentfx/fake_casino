@@ -94,6 +94,8 @@ function adminReiter() {
       if (ziel === "events") loadAdminDashboard();
       if (ziel === "ansage") ladeAnsage();
       if (ziel === "filter") wfLade();
+      // Die Stadt hat 1292 Grundstuecke. Die baut niemand auf Verdacht auf.
+      if (ziel === "werkzeug") loadAdminLots();
     });
   });
 }
@@ -1686,6 +1688,22 @@ socket.on("admin:kicked", ({ reason }) => {
   showScreen("login", { history: "replace" });
 });
 
+/* ===========================================================================
+   Admin: Konten
+   ---------------------------------------------------------------------------
+   Vorher stand unter jedem der 78 Konten ein rotes "Löschen" — eine
+   unwiderrufliche Aktion, 78 Mal, einen Fehltipp entfernt. Und wer Chips
+   setzen, sperren oder eine IP bannen wollte, tippte den Namen in jeweils ein
+   eigenes Formular darunter neu ein.
+
+   Jetzt: eine schmale Liste zum Suchen, ein Tipp öffnet die Person, und alles
+   zu dieser Person steht an einer Stelle. Was sich nicht rückgängig machen
+   lässt, steht unten in einem eigenen Kasten und fragt nach.
+   ========================================================================= */
+
+let adKonten = [];        // zuletzt geladene Liste
+let adGewaehlt = null;    // Name der geöffneten Person
+
 function loadAdminAccounts() {
   loadAdminDashboard();
   loadIpBans();
@@ -1695,53 +1713,198 @@ function loadAdminAccounts() {
     }
   });
   const list = $("#admin-account-list");
-  list.innerHTML = '<li class="muted">Lädt…</li>';
+  if (!list) return;
+  list.innerHTML = '<div class="muted small">Lädt…</div>';
   socket.emit("admin:listAccounts", (res) => {
-    if (!res || !res.ok) { list.innerHTML = '<li class="muted">Fehler.</li>'; return; }
-    if (!res.accounts.length) { list.innerHTML = '<li class="muted">Keine Accounts.</li>'; return; }
-    list.innerHTML = "";
-    res.accounts.sort((a, b) => b.chips - a.chips).forEach((p) => {
-      const savings = Number(p.savings) || 0;
-      const li = document.createElement("li");
-      li.className = "admin-acc";
-      li.innerHTML =
-        `<div class="admin-acc-top"><span>${escapeHtml(p.name)}${p.banned ? " 🚫" : ""}${p.shadowban ? " 🌑" : ""}</span><b>${p.chips.toLocaleString("de-DE")}<i class=mk></i></b></div>` +
-        `<div class="admin-acc-lb">Bank: <b>${savings.toLocaleString("de-DE")}<i class=mk></i></b>` +
-        ` <button class="chip-btn" data-admin-clear-bank="${escapeHtml(p.name)}">Bank leeren</button>` +
-        ` <button class="btn-danger" data-admin-delete="${escapeHtml(p.name)}">Löschen</button></div>` +
-        `<div class="admin-acc-lb">Leaderboard löschen:` +
-        ` <button class="chip-btn" data-stat="bigwin" title="Größter Gewinn">🎰✖</button>` +
-        ` <button class="chip-btn" data-stat="bigloss" title="Größter Verlust">💸✖</button>` +
-        ` <button class="chip-btn" data-stat="games" title="Aktivste">🎲✖</button></div>`;
-      li.querySelector("[data-admin-clear-bank]")?.addEventListener("click", async () => {
-        if (!await window.Casino.dialog.frage(`${p.name}: Bank wirklich leeren?`, { okText: "Leeren", gefahr: true })) return;
-        socket.emit("admin:clearBank", { target: p.name }, (r) => {
-          if (r && r.ok) {
-            toast(`${p.name}: Bank geleert (${(r.cleared || 0).toLocaleString("de-DE")} Chips).`);
-            loadAdminAccounts();
-          } else toast((r && r.error) || "Fehler.");
-        });
-      });
-      li.querySelector("[data-admin-delete]")?.addEventListener("click", async () => {
-        if (!await window.Casino.dialog.frage(`Account "${p.name}" wirklich löschen?`, { okText: "Löschen", gefahr: true })) return;
-        socket.emit("admin:deleteAccount", { target: p.name }, (res) => {
-          if (!res || !res.ok) { toast(res?.error || "Fehler."); return; }
-          toast(`${p.name} gelöscht.`);
-          loadAdminAccounts();
-        });
-      });
-      li.querySelectorAll("[data-stat]").forEach((b) =>
-        b.addEventListener("click", () => {
-          socket.emit("admin:resetStat", { target: p.name, stat: b.dataset.stat }, (r) => {
-            if (r && r.ok) toast(`${p.name}: aus Leaderboard entfernt.`);
-            else toast((r && r.error) || "Fehler.");
-          });
-        }));
-      list.appendChild(li);
-    });
+    if (!res || !res.ok) { list.innerHTML = '<div class="muted small">Fehler.</div>'; return; }
+    adKonten = (res.accounts || []).slice().sort((a, b) => b.chips - a.chips);
+    zeichneKontenListe();
+    if (adGewaehlt) zeichnePerson(adGewaehlt);
   });
-  loadAdminLots();
 }
+
+function zeichneKontenListe() {
+  const list = $("#admin-account-list");
+  if (!list) return;
+  const suche = ($("#ad-suche")?.value || "").trim().toLowerCase();
+  const treffer = suche
+    ? adKonten.filter((p) => String(p.name).toLowerCase().includes(suche))
+    : adKonten;
+
+  const zaehler = $("#ad-treffer");
+  if (zaehler) {
+    zaehler.textContent = suche
+      ? `${treffer.length} von ${adKonten.length}`
+      : `${adKonten.length} Konten`;
+  }
+
+  if (!treffer.length) { list.innerHTML = '<div class="muted small">Kein Konto gefunden.</div>'; return; }
+  /* Ohne Suche nur die ersten 25: 78 Zeilen sind auf dem iPad ein
+     Bildschirmkilometer, und wer jemand Bestimmten sucht, tippt ohnehin. */
+  const zeigen = suche ? treffer : treffer.slice(0, 25);
+  list.innerHTML = zeigen.map((p, i) => `
+    <button class="ad-reihe${adGewaehlt === p.name ? " aktiv" : ""}" type="button" data-konto="${escapeHtml(p.name)}">
+      <span class="ad-platz">${suche ? "" : i + 1}</span>
+      <span class="ad-name">${escapeHtml(p.name)}</span>
+      ${p.banned ? '<span class="ad-flag ad-flag-bad">gesperrt</span>' : ""}
+      ${p.shadowban ? '<span class="ad-flag">Pechvogel</span>' : ""}
+      <b>${Math.floor(p.chips || 0).toLocaleString("de-DE")}<i class=mk></i></b>
+    </button>`).join("")
+    + (!suche && treffer.length > zeigen.length
+      ? `<div class="muted small ad-mehr">… und ${treffer.length - zeigen.length} weitere. Zum Finden oben tippen.</div>` : "");
+}
+
+/** Alles zu einer Person an einer Stelle. */
+function zeichnePerson(name) {
+  const box = $("#ad-person");
+  if (!box) return;
+  const p = adKonten.find((x) => x.name === name);
+  if (!p) { box.classList.add("hidden"); adGewaehlt = null; return; }
+  adGewaehlt = p.name;
+  box.classList.remove("hidden");
+  const chips = Math.floor(p.chips || 0);
+  const bank = Math.floor(p.savings || 0);
+
+  box.innerHTML = `
+    <div class="ad-karte ad-person-karte">
+      <div class="ad-person-kopf">
+        <div>
+          <b>${escapeHtml(p.name)}</b>
+          <small>${chips.toLocaleString("de-DE")} auf der Hand · ${bank.toLocaleString("de-DE")} auf der Bank</small>
+        </div>
+        <button class="chip-btn ad-zu" type="button" data-person-zu aria-label="Schließen">✕</button>
+      </div>
+
+      <div class="ad-flags">
+        <button class="ad-schalter${p.banned ? " an" : ""}" type="button" data-person-tun="${p.banned ? "unban" : "ban"}">
+          ${p.banned ? "Sperre aufheben" : "Konto sperren"}</button>
+        <button class="ad-schalter${p.shadowban ? " an" : ""}" type="button" data-person-tun="${p.shadowban ? "schattenaus" : "schattenan"}">
+          ${p.shadowban ? "Pechvogel beenden" : "Pechvogel"}</button>
+      </div>
+      <p class="hint">Pechvogel verliert still jeden Slot-Spin und jede Solo-Roulette-Runde. Es sieht aus wie Pech, nicht wie eine Strafe.</p>
+
+      <div class="ad-feld ad-feld-breit">
+        <span>Chips setzen</span>
+        <div class="ad-zeile">
+          <input id="ad-chips" type="number" inputmode="numeric" min="0" step="1000" value="${chips}" />
+          <button class="btn-secondary ad-knopf" type="button" data-person-tun="chips">Setzen</button>
+        </div>
+      </div>
+
+      <div class="ad-knopfreihe">
+        <button class="chip-btn" type="button" data-person-tun="bank">Bank leeren</button>
+        <button class="chip-btn" type="button" data-person-tun="bonus">Bonus wieder frei</button>
+        <button class="chip-btn" type="button" data-person-tun="ipban">IP sperren</button>
+      </div>
+
+      <div class="ad-feld ad-feld-breit">
+        <span>Aus der Bestenliste nehmen</span>
+        <div class="ad-knopfreihe">
+          <button class="chip-btn" type="button" data-person-stat="bigwin">Größter Gewinn</button>
+          <button class="chip-btn" type="button" data-person-stat="bigloss">Größter Verlust</button>
+          <button class="chip-btn" type="button" data-person-stat="games">Aktivste</button>
+        </div>
+      </div>
+
+      <div class="ad-gefahr">
+        <b>Nicht rückgängig zu machen</b>
+        <div class="ad-knopfreihe">
+          <button class="btn-danger ad-knopf" type="button" data-person-tun="achievements">Achievements zurücksetzen</button>
+          <button class="btn-danger ad-knopf" type="button" data-person-tun="loeschen">Konto löschen</button>
+        </div>
+      </div>
+      <div class="form-error" id="ad-person-error"></div>
+    </div>`;
+}
+
+/** Ein Klick in der Personenkarte. Alles läuft über dieselbe Rückmeldung. */
+async function personTun(tun, name) {
+  const fehler = $("#ad-person-error");
+  if (fehler) fehler.textContent = "";
+  const fertig = (text) => { toast(text); loadAdminAccounts(); };
+  const melde = (r, text) => {
+    if (!r || !r.ok) { if (fehler) fehler.textContent = (r && r.error) || "Fehler."; return false; }
+    fertig(text); return true;
+  };
+
+  if (tun === "chips") {
+    const betrag = parseInt($("#ad-chips")?.value, 10);
+    if (!Number.isFinite(betrag) || betrag < 0) { if (fehler) fehler.textContent = "Ungültiger Betrag."; return; }
+    socket.emit("admin:setChips", { target: name, amount: betrag }, (r) =>
+      melde(r, `${name}: ${betrag.toLocaleString("de-DE")} Chips.`));
+    return;
+  }
+  if (tun === "ban" || tun === "unban") {
+    socket.emit(tun === "ban" ? "admin:ban" : "admin:unban", { target: name }, (r) =>
+      melde(r, tun === "ban" ? `${name} gesperrt.` : `${name} entsperrt.`));
+    return;
+  }
+  if (tun === "schattenan" || tun === "schattenaus") {
+    const an = tun === "schattenan";
+    socket.emit("admin:shadowban", { target: name, on: an }, (r) =>
+      melde(r, an ? `${name} ist jetzt Pechvogel.` : `${name} hat wieder normales Glück.`));
+    return;
+  }
+  if (tun === "bank") {
+    if (!await window.Casino.dialog.frage(`${name}: Bank wirklich leeren?`, { okText: "Leeren", gefahr: true })) return;
+    socket.emit("admin:clearBank", { target: name }, (r) =>
+      melde(r, `${name}: Bank geleert (${((r && r.cleared) || 0).toLocaleString("de-DE")} Chips).`));
+    return;
+  }
+  if (tun === "bonus") {
+    socket.emit("admin:resetBonus", { target: name }, (r) => melde(r, `${name}: Bonus und Soforthilfe wieder frei.`));
+    return;
+  }
+  if (tun === "ipban") {
+    if (!await window.Casino.dialog.frage(`Die zuletzt bekannte IP von ${name} sperren?`, { okText: "Sperren", gefahr: true })) return;
+    socket.emit("admin:ipban", { target: name }, (r) => {
+      if (!r || !r.ok) { if (fehler) fehler.textContent = (r && r.error) || "Fehler."; return; }
+      toast(`IP ${r.ip} gesperrt (${r.kicked} Verbindung${r.kicked === 1 ? "" : "en"} getrennt).`);
+      loadIpBans();
+    });
+    return;
+  }
+  if (tun === "achievements") {
+    if (!await window.Casino.dialog.frage(`${name}: alle Achievements zurücksetzen?`, { okText: "Zurücksetzen", gefahr: true })) return;
+    socket.emit("admin:resetAchievements", { target: name }, (r) => melde(r, `${name}: Achievements zurückgesetzt.`));
+    return;
+  }
+  if (tun === "loeschen") {
+    if (!await window.Casino.dialog.frage(`Konto „${name}“ endgültig löschen? Chips, Erfolge, Kosmetik und Stadtbesitz sind weg.`, { okText: "Löschen", gefahr: true })) return;
+    adGewaehlt = null;
+    $("#ad-person")?.classList.add("hidden");
+    socket.emit("admin:deleteAccount", { target: name }, (r) => melde(r, `${name} gelöscht.`));
+  }
+}
+
+$("#ad-suche")?.addEventListener("input", zeichneKontenListe);
+
+document.addEventListener("click", (e) => {
+  const reihe = e.target.closest("[data-konto]");
+  if (reihe) {
+    const name = reihe.dataset.konto;
+    if (adGewaehlt === name) { adGewaehlt = null; $("#ad-person")?.classList.add("hidden"); }
+    else zeichnePerson(name);
+    zeichneKontenListe();
+    $("#ad-person")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    return;
+  }
+  if (e.target.closest("[data-person-zu]")) {
+    adGewaehlt = null;
+    $("#ad-person")?.classList.add("hidden");
+    zeichneKontenListe();
+    return;
+  }
+  const stat = e.target.closest("[data-person-stat]");
+  if (stat && adGewaehlt) {
+    socket.emit("admin:resetStat", { target: adGewaehlt, stat: stat.dataset.personStat }, (r) => {
+      toast(r && r.ok ? `${adGewaehlt}: aus der Bestenliste genommen.` : ((r && r.error) || "Fehler."));
+    });
+    return;
+  }
+  const tun = e.target.closest("[data-person-tun]");
+  if (tun && adGewaehlt) personTun(tun.dataset.personTun, adGewaehlt);
+});
 
 function adminMoney(n) {
   return `${Math.floor(Number(n) || 0).toLocaleString("de-DE")}<i class=mk></i>`;
@@ -1785,34 +1948,37 @@ function loadAdminDashboard() {
       ? items.map((p) => `<li><span>${escapeHtml(p.name)}</span><b>${valFn(p)}</b></li>`).join("")
       : `<li class="muted">${empty}</li>`;
     box.innerHTML = `
-      <div style="display:flex;justify-content:space-between;gap:.75rem;align-items:center;flex-wrap:wrap">
-        <h3 style="margin:0">Live-Ops Dashboard</h3>
+      <div class="ad-kopf ad-lage-kopf">
+        <h3>Lage im Haus</h3>
         <button class="chip-btn" id="admin-dash-refresh">Aktualisieren</button>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.75rem">
-        <div style="border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.75rem;background:rgba(0,0,0,.16)">
+      <div class="ad-kacheln">
+        <div class="ad-kachel">
           <div class="muted small">Online</div>
-          <b>${d.online?.accounts || 0} Accounts</b><div class="small muted">${d.online?.sockets || 0} Tabs verbunden</div>
-          <div class="small" style="margin-top:.35rem">${online.length ? online.map((p) => escapeHtml(p.name)).join(", ") : "Niemand online"}</div>
+          <b>${d.online?.accounts || 0} ${(d.online?.accounts || 0) === 1 ? "Spieler" : "Spieler"}</b>
+          <div class="small muted">${d.online?.sockets || 0} ${(d.online?.sockets || 0) === 1 ? "Fenster" : "Fenster"} verbunden</div>
+          <div class="small ad-kachel-liste">${online.length ? online.map((p) => escapeHtml(p.name)).join(", ") : "Niemand da"}</div>
         </div>
-        <div style="border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.75rem;background:rgba(0,0,0,.16)">
+        <div class="ad-kachel">
           <div class="muted small">Events</div>
           <b>${laufen ? `${laufen} ${laufen === 1 ? "läuft" : "laufen"}` : "Keins aktiv"}</b>
-          <div class="small muted" style="margin-top:.35rem">${
+          <div class="small muted ad-kachel-liste">${
             laufen
               ? escapeHtml(EVENTS.filter((e) => (evZustand[e.id] || {}).active).map((e) => e.name).join(", "))
               : "Starten und stoppen im Reiter „Events“."}</div>
-          <button class="chip-btn" id="admin-zu-events" style="margin-top:.5rem">Zu den Events</button>
+          <button class="chip-btn" id="admin-zu-events">Zu den Events</button>
         </div>
-        <div style="border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.75rem;background:rgba(0,0,0,.16)">
-          <div class="muted small">Casino gesamt</div>
-          <b>${adminMoney(d.totals?.chips || 0)}</b><div class="small muted">Bank: ${adminMoney(d.totals?.bank || 0)} · Accounts: ${d.totals?.accounts || 0}</div>
+        <div class="ad-kachel">
+          <div class="muted small">Chips im Umlauf</div>
+          <b>${adminMoney(d.totals?.chips || 0)}</b>
+          <div class="small muted">Auf der Bank: ${adminMoney(d.totals?.bank || 0)}</div>
+          <div class="small muted">${d.totals?.accounts || 0} Konten</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem">
-        <div><div class="muted small" style="margin-bottom:.25rem">Wochengewinner</div><ol class="leaderboard" style="margin:0">${miniList(winners, (p) => `+${adminMoney(p.weeklyNet)}`, "Keine Gewinne diese Woche.")}</ol></div>
-        <div><div class="muted small" style="margin-bottom:.25rem">Wochenverluste</div><ol class="leaderboard" style="margin:0">${miniList(losers, (p) => `-${adminMoney(Math.abs(p.weeklyNet || 0))}`, "Keine Verluste diese Woche.")}</ol></div>
-        <div><div class="muted small" style="margin-bottom:.25rem">Große Ausschläge</div><ol class="leaderboard" style="margin:0">${miniList(alerts, (p) => `W ${adminMoney(p.biggestWin)} / L ${adminMoney(p.biggestLoss)}`, "Keine großen Ausschläge.")}</ol></div>
+      <div class="ad-kacheln">
+        <div><div class="muted small ad-listen-kopf">Wochengewinner</div><ol class="leaderboard ad-mini">${miniList(winners, (p) => `+${adminMoney(p.weeklyNet)}`, "Keine Gewinne diese Woche.")}</ol></div>
+        <div><div class="muted small ad-listen-kopf">Wochenverluste</div><ol class="leaderboard ad-mini">${miniList(losers, (p) => `-${adminMoney(Math.abs(p.weeklyNet || 0))}`, "Keine Verluste diese Woche.")}</ol></div>
+        <div><div class="muted small ad-listen-kopf">Größte Einzelrunden</div><ol class="leaderboard ad-mini">${miniList(alerts, (p) => `<span class="ad-gut">+${adminMoney(p.biggestWin)}</span> <span class="ad-schlecht">−${adminMoney(p.biggestLoss)}</span>`, "Nichts Auffälliges.")}</ol></div>
       </div>`;
     $("#admin-dash-refresh")?.addEventListener("click", loadAdminDashboard);
     /* Die sieben Sofort-Knoepfe sind weg. Sie feuerten ohne Rueckfrage mit
@@ -1829,50 +1995,64 @@ function loadAdminDashboard() {
   });
 }
 
+/*
+ * Stadt-Grundstuecke.
+ *
+ * Die Stadt hat 1292 davon. Vorher baute der Bildschirm sie ALLE als eigene
+ * Knoepfe auf, und zwar bei jedem Oeffnen des Admin-Bereichs, auch wenn man
+ * nur eine Ansage stellen wollte. Jetzt wird gesucht, gezeigt werden
+ * hoechstens 25, und geladen wird erst beim Wechsel auf den Reiter.
+ */
+let adLots = [];
+
 function loadAdminLots() {
   const list = $("#admin-lot-list");
   if (!list) return;
   list.innerHTML = '<li class="muted">Lädt…</li>';
   socket.emit("admin:cityLots", (res) => {
     if (!res || !res.ok) { list.innerHTML = '<li class="muted">Fehler.</li>'; return; }
-    if (!res.lots.length) { list.innerHTML = '<li class="muted">Keine Gebäude im Besitz.</li>'; return; }
-    list.innerHTML = "";
-    res.lots.forEach((l) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<span>${l.emoji} ${escapeHtml(l.name)} — ${l.owner ? escapeHtml(l.owner) : "?"}</span>`;
-      const btn = document.createElement("button");
-      btn.className = "btn-danger";
-      btn.textContent = "Freigeben";
-      btn.addEventListener("click", () => {
-        socket.emit("admin:clearLot", { plotId: l.id }, (r) => {
-          if (r && r.ok) { toast("Gebäude freigegeben."); loadAdminLots(); }
-          else toast((r && r.error) || "Fehler.");
-        });
-      });
-      li.appendChild(btn);
-      list.appendChild(li);
-    });
+    adLots = res.lots || [];
+    zeichneLots();
   });
 }
+
+function zeichneLots() {
+  const list = $("#admin-lot-list");
+  if (!list) return;
+  const suche = ($("#ad-lot-suche")?.value || "").trim().toLowerCase();
+  const treffer = suche
+    ? adLots.filter((l) => `${l.name} ${l.owner || ""}`.toLowerCase().includes(suche))
+    : adLots;
+  const zaehler = $("#ad-lot-treffer");
+  if (zaehler) zaehler.textContent = `${adLots.length} im Besitz`;
+
+  if (!adLots.length) { list.innerHTML = '<li class="muted">Kein Gebäude im Besitz.</li>'; return; }
+  if (!treffer.length) { list.innerHTML = '<li class="muted">Nichts gefunden.</li>'; return; }
+  const zeigen = treffer.slice(0, 25);
+  list.innerHTML = zeigen.map((l) => `<li>
+      <span>${escapeHtml(l.name)} <span class="muted small">${l.owner ? escapeHtml(l.owner) : "?"}</span></span>
+      <button class="chip-btn" type="button" data-lot="${escapeHtml(String(l.id))}">Freigeben</button>
+    </li>`).join("")
+    + (treffer.length > zeigen.length
+      ? `<li class="muted small">… und ${treffer.length - zeigen.length} weitere. Zum Finden oben tippen.</li>` : "");
+}
+
+$("#ad-lot-suche")?.addEventListener("input", zeichneLots);
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-lot]");
+  if (!btn) return;
+  socket.emit("admin:clearLot", { plotId: btn.dataset.lot }, (r) => {
+    if (r && r.ok) { toast("Gebäude freigegeben."); loadAdminLots(); }
+    else toast((r && r.error) || "Fehler.");
+  });
+});
 
 $("#admin-reset-city-btn")?.addEventListener("click", async () => {
   if (!await window.Casino.dialog.frage("Wirklich die GANZE Stadt zurücksetzen? Alle Grundstücke und Unternehmen gehen an NPC zurück.", { okText: "Zurücksetzen", gefahr: true })) return;
   socket.emit("admin:resetCity", (r) => {
     if (r && r.ok) { toast("Stadt zurückgesetzt."); loadAdminLots(); }
     else toast((r && r.error) || "Fehler.");
-  });
-});
-
-$("#admin-set-chips-btn").addEventListener("click", () => {
-  const errEl = $("#admin-chips-error");
-  errEl.textContent = "";
-  const target = $("#admin-target-chips").value.trim();
-  const amount = parseInt($("#admin-amount").value, 10);
-  if (!target || !Number.isFinite(amount) || amount < 0) { errEl.textContent = "Ungültige Eingabe."; return; }
-  socket.emit("admin:setChips", { target, amount }, (res) => {
-    if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
-    toast(`${target}: Chips auf ${amount.toLocaleString("de-DE")} Chips gesetzt.`);
-    loadAdminAccounts();
   });
 });
 
@@ -2050,37 +2230,6 @@ $("#admin-announcement-clear")?.addEventListener("click", () => {
   });
 });
 
-["admin-shadow-on-btn", "admin-shadow-off-btn"].forEach((id) => {
-  $("#" + id)?.addEventListener("click", () => {
-    const errEl = $("#admin-ban-error");
-    errEl.textContent = "";
-    const target = $("#admin-target-ban").value.trim();
-    if (!target) { errEl.textContent = "Spielername eingeben."; return; }
-    const on = id === "admin-shadow-on-btn";
-    socket.emit("admin:shadowban", { target, on }, (res) => {
-      if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
-      toast(on ? `🌑 ${target} ist jetzt ein Pechvogel.` : `🌞 ${target} hat wieder normales Glück.`);
-      loadAdminAccounts();
-    });
-  });
-});
-
-["admin-ban-btn","admin-unban-btn"].forEach((id) => {
-  $("#" + id).addEventListener("click", () => {
-    const errEl = $("#admin-ban-error");
-    errEl.textContent = "";
-    const target = $("#admin-target-ban").value.trim();
-    if (!target) { errEl.textContent = "Spielername eingeben."; return; }
-    const event = id === "admin-ban-btn" ? "admin:ban" : "admin:unban";
-    socket.emit(event, { target }, (res) => {
-      if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
-      toast(id === "admin-ban-btn" ? `${target} gesperrt.` : `${target} entsperrt.`);
-      $("#admin-target-ban").value = "";
-      loadAdminAccounts();
-    });
-  });
-});
-
 // ---- Admin: IP-Bann ----
 $("#admin-ipban-btn")?.addEventListener("click", () => {
   const errEl = $("#admin-ipban-error");
@@ -2212,9 +2361,13 @@ function wfProbe() {
   wfProbeTimer = setTimeout(() => {
     socket.emit("admin:filterProbe", { text }, (r) => {
       if (!r || !r.ok) return;
-      aus.textContent = r.entschaerft;
+      /* Die gefundenen Woerter standen im title — auf dem iPad also
+         nirgends. Sie sind das Einzige, was die Probe wirklich beantwortet. */
+      aus.innerHTML = `<span class="wf-probe-text">${escapeHtml(r.entschaerft)}</span>` +
+        (r.treffer.length
+          ? `<small class="wf-probe-treffer">Gefunden: ${escapeHtml(r.treffer.join(", "))}</small>`
+          : `<small class="wf-probe-treffer">Nichts beanstandet.</small>`);
       aus.className = "wf-probe-aus" + (r.treffer.length ? " getroffen" : " sauber");
-      aus.title = r.treffer.length ? "Gefunden: " + r.treffer.join(", ") : "";
     });
   }, 220);
 }
@@ -2590,20 +2743,6 @@ $("#admin-restore-input")?.addEventListener("change", async (e) => {
   } catch (err) {
     errEl.textContent = err.message;
   }
-});
-
-["admin-reset-bonus-btn", "admin-reset-ach-btn"].forEach((id) => {
-  $("#" + id)?.addEventListener("click", () => {
-    const errEl = $("#admin-test-error");
-    errEl.textContent = "";
-    const target = $("#admin-target-test").value.trim();
-    if (!target) { errEl.textContent = "Spielername eingeben."; return; }
-    const event = id === "admin-reset-bonus-btn" ? "admin:resetBonus" : "admin:resetAchievements";
-    socket.emit(event, { target }, (res) => {
-      if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
-      toast(id === "admin-reset-bonus-btn" ? `${target}: Bonus & Soforthilfe wieder verfügbar.` : `${target}: Achievements zurückgesetzt.`);
-    });
-  });
 });
 
 // ============================================================

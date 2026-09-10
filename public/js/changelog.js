@@ -24,6 +24,8 @@
       titel: "Das Auktionshaus, und drei Sachen, die nie funktioniert haben",
       gross: true,
       items: [
+        { icon: "admin", titel: "Admin-Bereich aufgeräumt",
+          text: "Betrifft nur mich, steht aber der Vollständigkeit halber hier: Kontenliste durchsuchbar statt 78 Karten untereinander, alles zu einer Person an einer Stelle, gefährliche Sachen erst nach Rückfrage, und die Stadtliste mit ihren 1292 Grundstücken lädt nicht mehr bei jedem Öffnen mit." },
         { icon: "kosmetik", titel: "Silber- und Goldrahmen waren unsichtbar",
           text: "Wer 40.000 oder 80.000 für einen Rahmen gezahlt hat, hat nichts bekommen. Der Ring war da, aber durchsichtig: die Grundregel für alle Rahmen hat die Farbe der einzelnen Rahmen überstimmt. Aufgefallen ist es nicht, weil Neon zusätzlich leuchtet und die bewegten Rahmen ihren Ring anders zeichnen. Beide sehen jetzt aus, wofür ihr bezahlt habt." },
         { icon: "kosmetik", titel: "Salut hat nie etwas gezeigt",
