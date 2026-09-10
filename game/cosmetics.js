@@ -82,6 +82,12 @@ const STYLES = [
   // acht Wochen spielt, muss anders aussehen als alles Kaufbare.
   { id: "s2_bernstein", label: "Bernstein", cost: null, via: "Season 2, Stufe 10", season: "porta-herbst-2", preview: ["#ffb347", "#7a3d00"], motion: true },
   { id: "s2_phoenix",   label: "Glut",      cost: null, via: "Season 2, Stufe 20", season: "porta-herbst-2", preview: ["#fff3b0", "#ff2d00"], motion: true },
+  /*
+   * Fortuna. Sieben Stueck, mehr wird es nie geben, und es gibt sie nur am
+   * Glueckrad. Kein weiterer Streifenverlauf: im Namen dreht sich ein Rad aus
+   * zwoelf Goldsegmenten, genau wie das Glueckrad zwoelf Felder hat.
+   */
+  { id: "rad_fortuna", label: "Fortuna", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad", preview: ["#fff3c4", "#a97c1a"], motion: true },
 ];
 
 /* ── Rahmen ums Bild ──────────────────────────────────────────────────────
@@ -98,6 +104,7 @@ const FRAMES = [
   { id: "flamme",    label: "Flamme",      cost: 600000, motion: true },
   { id: "sterne",    label: "Sternenring", cost: 900000, motion: true },
   { id: "s2_wolf",   label: "Wolfsring",   cost: null, via: "Season 2, Stufe 15", season: "porta-herbst-2", motion: true },
+  { id: "rad_fortuna", label: "Fortunas Rad", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad", motion: true },
 ];
 
 /* ── Titel ────────────────────────────────────────────────────────────────
@@ -126,6 +133,7 @@ const TITLES = [
    * war, als das Casino wieder aufmachte.
    */
   { id: "rueckkehrer",    text: "Rückkehrer", cost: null, via: "Zur Wiedereröffnung dabei gewesen", limitiert: "comeback" },
+  { id: "rad_fortuna",    text: "Fortunas Liebling", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad" },
 ];
 
 /* ── Gewinn-Effekt ────────────────────────────────────────────────────────
@@ -254,9 +262,11 @@ function setupCosmetics(io, accounts) {
       let seasonEnde = 0, comebackEnde = 0;
       try { seasonEnde = require("./season").SEASON.endsAt || 0; } catch {}
       try { const cb = require("./comeback").publicState(null); comebackEnde = cb.geschenkOffen ? cb.geschenkBis : 0; } catch {}
+      const radRest = Math.max(0, FORTUNA_MAX - fortunaVergeben(accounts));
       return {
         chips: acc.chips,
         fristen: { season: seasonEnde, comeback: comebackEnde },
+        fortuna: { rest: radRest, max: FORTUNA_MAX },
         avatars: AVATARS.map((a) => ({ ...a, owned: hat("avatar", a.id), equipped: a.emoji === eqAva })),
         colors: COLORS.map((c) => ({ ...c, owned: hat("color", c.id), equipped: (c.color || null) === eqCol })),
         styles: STYLES.map((x) => ({ ...x, owned: hat("style", x.id), equipped: (acc.nameStyle || "standard") === x.id })),
@@ -391,4 +401,46 @@ function saubererSpruch(roh) {
     .slice(0, SPRUCH_MAX);
 }
 
-module.exports = { setupCosmetics, grant, label, publicLook, eintrittsSpruch, saubererSpruch, SPRUCH_MAX, AVATARS, COLORS, STYLES, FRAMES, TITLES, EFFEKTE, SPRUECHE, BANNER, SCHILDER };
+/* ── Fortuna: sieben Stueck, mehr nicht ────────────────────────────────────
+ *
+ * Bewusst OHNE eigene Datei. Wie viele vergeben sind, steht schon in den
+ * Konten: es ist die Anzahl derer, die den Stil besitzen. Ein zweiter Zaehler
+ * koennte davon abweichen, und dann waere die Frage, welcher stimmt.
+ */
+const FORTUNA_MAX = 7;
+const FORTUNA_STUECKE = [
+  { type: "frame", id: "rad_fortuna" },
+  { type: "style", id: "rad_fortuna" },
+  { type: "title", id: "rad_fortuna" },
+];
+
+function fortunaVergeben(accounts) {
+  let n = 0;
+  try {
+    for (const a of accounts.rawAll()) {
+      const l = a.cosOwned && a.cosOwned.styles;
+      if (Array.isArray(l) && l.includes("rad_fortuna")) n++;
+    }
+  } catch {}
+  return n;
+}
+
+const hatFortuna = (acc) => !!(acc && acc.cosOwned && Array.isArray(acc.cosOwned.styles)
+  && acc.cosOwned.styles.includes("rad_fortuna"));
+
+/**
+ * Alle drei Stuecke auf einmal. Gibt die Beschriftungen zurueck.
+ *
+ * Mit der Art davor: "Fortuna" allein sagt nicht, ob das der Rahmen, der Stil
+ * oder der Titel ist, und alle drei heissen aehnlich.
+ */
+const ART_NAME = { frame: "Rahmen", style: "Namensstil", title: "Titel" };
+function gibFortuna(acc) {
+  const erhalten = [];
+  for (const st of FORTUNA_STUECKE) {
+    if (grant(acc, st.type, st.id)) erhalten.push(`${ART_NAME[st.type] || st.type}: ${label(st.type, st.id)}`);
+  }
+  return erhalten;
+}
+
+module.exports = { setupCosmetics, grant, label, publicLook, eintrittsSpruch, saubererSpruch, SPRUCH_MAX, AVATARS, COLORS, STYLES, FRAMES, TITLES, EFFEKTE, SPRUECHE, BANNER, SCHILDER, FORTUNA_MAX, FORTUNA_STUECKE, fortunaVergeben, hatFortuna, gibFortuna };

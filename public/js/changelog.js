@@ -21,14 +21,19 @@
     {
       id: "2026-09-21",
       datum: "21. September 2026",
-      titel: "Tagesbericht beim Reinkommen, und das Glücksrad sieht endlich nach Casino aus",
+      titel: "Tagesbericht beim Reinkommen, und das Glücksrad verschenkt Fortuna",
+      gross: true,
       items: [
         { icon: "ansage", titel: "Tagesbericht",
           text: "Wir spielen selten gleichzeitig. Wer drei Tage nicht reinschaut, hat bisher alles verpasst: Rekorde fallen, Gebäude wechseln den Besitzer, die Lotterie zieht — und der Chat ist längst weggerollt. Beim ersten Reinkommen am Tag steht jetzt da, was passiert ist, seit du zuletzt hier warst, was gerade auf dich wartet und wie es steht (Jackpot, Goldene Straße, dein Platz). Über das Menü ist er jederzeit erreichbar." },
         { icon: "geschenk", titel: "Die Zahl oben rechts zählt jetzt alles mit",
           text: "Bisher kam sie nur, wenn eine Season-Stufe freigeschaltet war. Jetzt zählt sie auch den Kalender und den Gratis-Dreh am Glücksrad, und im Menü steht bei jedem Eintrag, was dort liegt." },
-        { icon: "gluecksrad", titel: "Glücksrad neu gebaut",
-          text: "Es war ein flacher Tortenteller in acht Pastellfarben, die zu keinem der drei Designs passten, und auf der linken Hälfte stand jede Zahl auf dem Kopf. Jetzt: goldener Rand mit Stiften, ein Zeiger, der beim Drehen mitwippt, und die Farbe eines Feldes sagt endlich, was es wert ist. Der Countdown steht unter dem Knopf statt darin, und was du gewonnen hast, bleibt danach stehen. An den Gewinnen ändert sich nichts." },
+        { icon: "gluecksrad", titel: "Glücksrad verschenkt jetzt Sachen, die es für Chips nicht gibt",
+          text: "Das Rad war die dritte tägliche Gratis-Quelle neben Stunden-Bonus und Kalender und brachte nur ein Zehntel davon: ein Pflichtklick ohne eigenen Grund. Jetzt stehen zwölf Felder drauf, und die Hälfte zahlt keine Chips: Gratis-Lose für die Lotterie, Season-XP (die zählen NICHT gegen dein Tageslimit) und der Glückstag, der deine nächste Kalender-Abholung verdoppelt. Die Chip-Beträge sind dafür kleiner geworden. Blau heißt Sonderfeld, Gold heißt Chips." },
+        { icon: "kosmetik", titel: "FORTUNA — sieben Stück im ganzen Casino",
+          text: "Auf einem Feld steht FORTUNA. Wer es trifft, bekommt drei Stücke auf einmal: einen Ring aus zwölf Goldsegmenten um sein Bild, einen Namen, in dem sich ein Rad dreht, und den Titel „Fortunas Liebling“. Es gibt genau sieben davon, dann nie wieder — danach zahlt das Feld Chips. Auf dem Glücksrad steht, wie viele noch im Rad sind, und wenn eines fällt, steht es im Chat. Nicht kaufbar, nicht handelbar, reine Glückssache: jeder hat denselben einen Dreh am Tag." },
+        { icon: "gluecksrad", titel: "Und das Rad sieht endlich nach Casino aus",
+          text: "Es war ein flacher Tortenteller in acht Pastellfarben, die zu keinem der drei Designs passten, und auf der linken Hälfte stand jede Zahl auf dem Kopf. Jetzt: goldener Rand mit Stiften, ein Zeiger, der beim Drehen mitwippt, der Countdown unter dem Knopf statt darin, und was du gewonnen hast, bleibt danach stehen." },
       ],
     },
     {

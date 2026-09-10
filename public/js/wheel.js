@@ -6,12 +6,14 @@
    Einmal am Tag gratis. Der Server bestimmt das Feld, hier
    dreht nur das Bild dorthin.
 
-   Das Rad war vorher ein flacher Tortenteller mit acht fest
-   getippten Pastellfarben, die zu keiner der drei Paletten
-   gehoerten, und auf der linken Haelfte stand jede Zahl auf dem
-   Kopf. Jetzt kommt vom Server die STUFE eines Feldes (klein,
-   mittel, gross, jackpot), das Aussehen macht das Stylesheet —
-   damit sagt die Farbe endlich, was ein Feld wert ist.
+   Vom Server kommt die STUFE eines Feldes (klein, mittel, gross,
+   sonder, fortuna), das Aussehen macht das Stylesheet. Gold heisst
+   Chips, blau heisst etwas anderes (Lose, XP, Glueckstag), und
+   FORTUNA ist voll gold.
+
+   Was ein Dreh gebracht hat, formuliert der SERVER (titel + text).
+   Der Client zeigt es nur an — sonst muesste jede neue Feldart hier
+   noch einmal beschrieben werden.
    ============================================================ */
 
 (function () {
@@ -55,7 +57,7 @@
       const links = mitte > 180;
       const [lx, ly] = pt(mitte, R_FELD * 0.62);
       const dreh = links ? mitte + 90 : mitte - 90;
-      const lang = s.label.length > 6;
+      const lang = s.label.length > 5;
       felder += `<text class="gr-schrift gr-schrift-${s.stufe || "klein"}${lang ? " gr-schrift-lang" : ""}"
         x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" text-anchor="middle" dominant-baseline="central"
         transform="rotate(${dreh.toFixed(2)} ${lx.toFixed(2)} ${ly.toFixed(2)})">${escapeHtml(s.label)}</text>`;
@@ -129,12 +131,52 @@
     if (zeile) zeile.textContent = "Dein Dreh ist frei.";
   }
 
-  function zeigeErgebnis(preis, jackpot) {
+  const ART_KOPF = {
+    chips: "Gewonnen", los: "Lotterie", xp: "Season", glueckstag: "Morgen doppelt", fortuna: "Eines von sieben",
+  };
+
+  function zeigeErgebnis(r) {
     const box = $("#gr-ergebnis");
     if (!box) return;
-    box.className = `gr-ergebnis${jackpot ? " gr-ergebnis-jackpot" : ""}`;
-    box.innerHTML = `<small>${jackpot ? "JACKPOT" : "Gewonnen"}</small><b>+${zahl(preis)} Chips</b>`;
+    box.className = `gr-ergebnis${r.art === "fortuna" ? " gr-ergebnis-fortuna" : ""}`;
+    box.innerHTML =
+      `<small>${escapeHtml(ART_KOPF[r.art] || "Gewonnen")}</small>` +
+      `<b>${escapeHtml(r.titel || "")}</b>` +
+      (r.text ? `<span>${escapeHtml(r.text)}</span>` : "");
     box.hidden = false;
+  }
+
+  /** Wie viele Fortuna noch im Rad sind. Der Grund, morgen wiederzukommen. */
+  function zeigeFortuna(f) {
+    const zeile = $("#gr-fortuna");
+    if (!zeile) return;
+    if (!f) { zeile.hidden = true; return; }
+    zeile.hidden = false;
+    if (f.hat) {
+      zeile.innerHTML = `<b>Du hast Fortuna.</b><small>Für dich zahlt das Feld jetzt Chips.</small>`;
+      return;
+    }
+    if (!f.rest) {
+      zeile.innerHTML = `<b>Alle ${f.max} Fortuna sind vergeben.</b><small>Das Feld zahlt jetzt Chips.</small>`;
+      return;
+    }
+    zeile.innerHTML =
+      `<b>Noch ${f.rest} von ${f.max} Fortuna im Rad.</b>` +
+      `<small>Ring, Namensstil und Titel. Danach gibt es nie wieder welche.</small>`;
+  }
+
+  /** Der grosse Moment. Drei Stuecke auf einmal, das ist ein Fenster wert. */
+  function zeigeFortunaFenster(r) {
+    const m = $("#fortuna-modal");
+    if (!m) return;
+    const unter = $("#fo-unter");
+    if (unter) unter.textContent = r.text || "";
+    const liste = $("#fo-liste");
+    if (liste) {
+      liste.innerHTML = (r.stuecke || []).map((s) => `<div class="fo-stueck">${escapeHtml(s)}</div>`).join("");
+    }
+    m.classList.remove("hidden");
+    window.Casino.fx?.confetti({ count: 90, wucht: 1.4 });
   }
 
   function lade() {
@@ -143,6 +185,7 @@
       segmente = s.segments || [];
       zeichneRad();
       setzeKnopf(s);
+      zeigeFortuna(s.fortuna);
       // Die Bremse steht sonst nirgends: das Rad verspricht 10.000 und es
       // kommen 6.500 an, ohne dass jemand sagt warum.
       const hinweis = $("#gr-intro-bremse");
@@ -186,16 +229,38 @@
         const feld = document.querySelector(`.gr-feld[data-i="${r.index}"]`);
         feld?.classList.add("gr-treffer");
         if (r.account) applyAccount(r.account);
-        const jackpot = r.prize >= 50000;
-        zeigeErgebnis(r.prize, jackpot);
+        zeigeErgebnis(r);
         const buehne = document.querySelector(".gr-buehne");
-        if (jackpot) window.Casino.fx?.bigWin(r.prize, { label: "Jackpot am Rad" });
-        else if (buehne) window.Casino.fx?.coins(buehne, { count: r.prize >= 10000 ? 18 : 8 });
-        toast(jackpot ? `JACKPOT! +${zahl(r.prize)} Chips!` : `+${zahl(r.prize)} Chips vom Glücksrad.`);
+        if (r.art === "fortuna") {
+          zeigeFortunaFenster(r);
+        } else if (r.chips >= 25000) {
+          window.Casino.fx?.bigWin(r.chips, { label: "Am Glücksrad" });
+        } else if (buehne) {
+          window.Casino.fx?.coins(buehne, { count: r.chips >= 5000 ? 16 : 8 });
+        }
+        toast(r.art === "fortuna" ? "FORTUNA! Eines von sieben." : `Glücksrad: ${r.titel}`);
         window.Casino.renderAbholBadge?.();
-        socket.emit("wheel:state", (s) => { if (s && s.ok) setzeKnopf(s); });
+        socket.emit("wheel:state", (s) => {
+          if (!s || !s.ok) return;
+          // Neu zeichnen: wer Fortuna gewonnen hat, sieht dort ab jetzt Chips.
+          segmente = s.segments || [];
+          zeichneRad();
+          setzeKnopf(s);
+          zeigeFortuna(s.fortuna);
+        });
       }, DREH_MS + 250);
     });
+  });
+
+  $("#fo-close")?.addEventListener("click", () => $("#fortuna-modal")?.classList.add("hidden"));
+  $("#fo-kosmetik")?.addEventListener("click", () => {
+    $("#fortuna-modal")?.classList.add("hidden");
+    window.Casino.screens.show("cosmetics");
+  });
+
+  /* Ein Fortuna weniger im Rad betrifft alle, nicht nur den Gewinner. */
+  socket.on("wheel:fortuna", () => {
+    if (window.Casino.screens.current() === "wheel") lade();
   });
 
   window.Casino._loadWheel = lade;

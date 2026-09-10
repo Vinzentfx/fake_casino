@@ -53,7 +53,7 @@ function marken(accounts, key) {
     geschenk = cb && cb.geschenkOffen && !cb.geholt ? 1 : 0;
   } catch {}
   try { kalender = accounts.calendarState(key)?.canClaim ? 1 : 0; } catch {}
-  try { rad = accounts.wheelState(key)?.canSpin ? 1 : 0; } catch {}
+  try { rad = require("./gluecksrad").zustand(key)?.canSpin ? 1 : 0; } catch {}
   return { season, geschenk, kalender, rad, gesamt: season + geschenk + kalender + rad };
 }
 

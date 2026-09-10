@@ -25,8 +25,10 @@
   // Nur was der Server auch kennt. Ein unbekannter Wert aus einer alten
   // Nachricht darf keine fremde Klasse ins Dokument schreiben.
   const STILE = new Set(["sonne", "eis", "gift", "beere", "puls", "schimmer",
-    "neon", "regenbogen", "feuer", "glitch", "vanta", "splitter", "krone", "s2_bernstein", "s2_phoenix"]);
-  const RAHMEN = new Set(["silber", "gold", "neon", "rotierend", "flamme", "sterne", "s2_wolf"]);
+    "neon", "regenbogen", "feuer", "glitch", "vanta", "splitter", "krone", "s2_bernstein", "s2_phoenix",
+    "rad_fortuna"]);
+  const RAHMEN = new Set(["silber", "gold", "neon", "rotierend", "flamme", "sterne", "s2_wolf",
+    "rad_fortuna"]);
 
   /**
    * Der Name mit Farbe oder Stil.

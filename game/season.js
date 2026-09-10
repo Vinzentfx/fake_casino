@@ -198,12 +198,20 @@ function addXp(name, amount, kind = "play", spiel = null) {
   try { gala = require("./comeback").xpFaktor(); } catch {}
   roh = Math.floor(roh * serienFaktor(s) * clanFaktor(key) * gala);
 
+  /*
+   * "geschenk" geht am Tagesdeckel vorbei, in beide Richtungen: es wird nicht
+   * abgeschnitten UND es verbraucht nichts vom Deckel. Der Deckel begrenzt,
+   * wie viel man an einem Tag ERSPIELEN kann; ein Geschenk ist nichts
+   * Erspieltes. Ohne diese Ausnahme haette das Glücksrad an einem Abend, an
+   * dem man ohnehin schon gespielt hat, gar nichts gebracht.
+   */
+  const geschenk = kind === "geschenk";
   const capKey = kind === "quest" ? "questDayXp" : "playDayXp";
   const cap = kind === "quest" ? QUEST_XP_DAILY_CAP : PLAY_XP_DAILY_CAP;
-  const room = Math.max(0, cap - (s[capKey] || 0));
+  const room = geschenk ? roh : Math.max(0, cap - (s[capKey] || 0));
   const gain = Math.max(0, Math.min(room, roh));
   if (!gain) return 0;
-  s[capKey] = (s[capKey] || 0) + gain;
+  if (!geschenk) s[capKey] = (s[capKey] || 0) + gain;
   s.xp = (s.xp || 0) + gain;
   _accounts.save();
 

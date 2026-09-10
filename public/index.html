@@ -1416,6 +1416,7 @@
         <button class="btn-primary gr-knopf" id="wheel-spin">Gratis drehen</button>
         <p class="gr-uhr" id="gr-uhr"></p>
         <div class="form-error" id="wheel-error"></div>
+        <div class="gr-fortuna-zeile" id="gr-fortuna" hidden></div>
       </div>
     </section>
 
@@ -2128,6 +2129,21 @@
         <button class="chip-btn" id="tour-back" type="button">Zurück</button>
         <button class="chip-btn" id="tour-skip" type="button">Überspringen</button>
         <button class="btn-primary" id="tour-next" type="button">Weiter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FORTUNA ===================== -->
+  <div id="fortuna-modal" class="update-modal hidden">
+    <div class="update-card fo-card">
+      <div class="fo-rad" aria-hidden="true"></div>
+      <h2 class="fo-titel">FORTUNA</h2>
+      <p class="fo-unter" id="fo-unter"></p>
+      <div class="fo-liste" id="fo-liste"></div>
+      <p class="fo-fuss">Angelegt wird das alles unter Kosmetik.</p>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn-primary" id="fo-kosmetik" style="flex:1;min-width:150px">Zur Kosmetik</button>
+        <button class="chip-btn" id="fo-close" style="flex:1;min-width:150px">Später</button>
       </div>
     </div>
   </div>

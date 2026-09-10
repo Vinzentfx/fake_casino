@@ -798,64 +798,9 @@ function listAll() {
   }));
 }
 
-// ─── Glücksrad (1× täglich gratis) ──────────────────────────────────────────
-const WHEEL_COOLDOWN_MS = 20 * 60 * 60 * 1000;
-const WHEEL_SEGMENTS = [
-  { label: "500",    prize: 500,   weight: 22, color: "#5ea8e0" },
-  { label: "10.000", prize: 10000, weight: 6,  color: "#66c07a" },
-  { label: "1.000",  prize: 1000,  weight: 20, color: "#d1a35e" },
-  { label: "25.000", prize: 25000, weight: 3,  color: "#c86bd6" },
-  { label: "2.000",  prize: 2000,  weight: 16, color: "#5ea8e0" },
-  { label: "250",    prize: 250,   weight: 18, color: "#8ea0a8" },
-  { label: "5.000",  prize: 5000,  weight: 10, color: "#66c07a" },
-  { label: "JACKPOT", prize: 50000, weight: 1, color: "#f4d782" },
-];
-/**
- * Die Felder des Rads, wie sie der Spieler sieht.
- *
- * `faktor` ist seine Vermoegensbremse. Ohne sie stand "10.000" auf dem Rad und
- * es kamen 6.500 an — das sieht nach einem Fehler aus, nicht nach einer Regel.
- * JACKPOT bleibt JACKPOT, dort steht ohnehin keine Zahl.
- */
-/* Stufe statt Farbe. Vorher stand in jedem Feld ein fester Hexwert
-   ("#5ea8e0"), der zu keiner der drei Paletten gehoerte — und die Farben
-   sagten nichts: das graue 250er sah so wichtig aus wie der JACKPOT. Der
-   Server schickt jetzt den Rang, das Aussehen macht das Stylesheet. */
-const stufeVon = (prize) => (prize >= 50000 ? "jackpot" : prize >= 10000 ? "gross" : prize >= 2000 ? "mittel" : "klein");
-
-const wheelSegmentsPublic = (faktor = 1) => WHEEL_SEGMENTS.map((s) => ({
-  label: /^\d/.test(s.label) ? Math.round(s.prize * faktor).toLocaleString("de-DE") : s.label,
-  stufe: stufeVon(s.prize),
-}));
-
-function wheelState(name) {
-  const acc = get(name);
-  if (!acc) return null;
-  const since = Date.now() - (acc.lastWheelAt || 0);
-  // Dieselbe Sache wie beim Kalender: das Rad zahlt gebremst aus.
-  const f = faucetFactor(acc.name);
-  return {
-    segments: wheelSegmentsPublic(f),
-    canSpin: since >= WHEEL_COOLDOWN_MS,
-    msLeft: Math.max(0, WHEEL_COOLDOWN_MS - since),
-    faucet: Math.round(f * 100),
-  };
-}
-
-function spinWheel(name) {
-  const acc = get(name);
-  if (!acc) return { ok: false, error: "Account nicht gefunden." };
-  const since = Date.now() - (acc.lastWheelAt || 0);
-  if (since < WHEEL_COOLDOWN_MS) return { ok: false, error: "Schon gedreht — komm später wieder!", msLeft: WHEEL_COOLDOWN_MS - since };
-  const total = WHEEL_SEGMENTS.reduce((s, x) => s + x.weight, 0);
-  let r = crypto.randomInt(total), idx = 0;
-  for (let i = 0; i < WHEEL_SEGMENTS.length; i++) { if (r < WHEEL_SEGMENTS[i].weight) { idx = i; break; } r -= WHEEL_SEGMENTS[i].weight; }
-  const prize = Math.round(WHEEL_SEGMENTS[idx].prize * faucetFactor(name)); // rich players tapered
-  acc.chips += prize;
-  acc.lastWheelAt = Date.now();
-  save();
-  return { ok: true, index: idx, prize, label: WHEEL_SEGMENTS[idx].label, account: publicAccount(acc) };
-}
+/* Das Gluecksrad wohnt seit dem Umbau in game/gluecksrad.js: es verteilt
+   nicht mehr nur Chips, sondern auch Lose, Season-XP und Kosmetik, und dafuer
+   braucht es Zugriff auf halbe Casino. Am Konto bleibt nur `lastWheelAt`. */
 
 // ─── Rivalen / Kopfgeld ─────────────────────────────────────────────────────
 // Put chips on a rival's head; whoever takes over one of their buildings
@@ -930,6 +875,7 @@ function calendarState(name) {
     current: idx,              // ladder position claimable next (0-based)
     claimedToday,
     canClaim: !claimedToday,
+    glueckstag: !!acc.glueckstag,
   };
 }
 
@@ -940,12 +886,17 @@ function claimCalendar(name) {
   const cal = acc.calendar || { idx: 0, lastDay: -999 };
   if (cal.lastDay === today) return { ok: false, error: "Heute schon abgeholt — komm morgen wieder!" };
   const idx = (cal.lastDay === today - 1) ? cal.idx : 0; // consecutive? else reset
-  const reward = Math.round(CAL_REWARDS[idx] * faucetFactor(name));
+  /* Glückstag vom Rad: die naechste Kalender-Abholung zaehlt doppelt. Der
+     Merker wird hier verbraucht, egal auf welcher Sprosse man steht — wer ihn
+     aufhebt, bis er auf Tag 7 steht, hat das verdient. */
+  const glueckstag = !!acc.glueckstag;
+  if (glueckstag) delete acc.glueckstag;
+  const reward = Math.round(CAL_REWARDS[idx] * faucetFactor(name)) * (glueckstag ? 2 : 1);
   acc.chips += reward;
   acc.calendar = { idx: (idx + 1) % CAL_REWARDS.length, lastDay: today };
   if ((idx + 1) > (acc.calBest || 0)) acc.calBest = idx + 1; // for achievements
   save();
-  return { ok: true, reward, day: idx + 1, account: publicAccount(acc) };
+  return { ok: true, reward, day: idx + 1, glueckstag, account: publicAccount(acc) };
 }
 
 // ─── Wohnsitz (residence — pure social flavour, free) ──────────────────────
@@ -1032,8 +983,6 @@ module.exports = {
   isShadowbanned,
   calendarState,
   claimCalendar,
-  wheelState,
-  spinWheel,
   levelInfo,
   faucetFactor,
   placeBounty,

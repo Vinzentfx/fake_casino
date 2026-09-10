@@ -66,6 +66,14 @@
         ? bau("jetzt", "Nur jetzt", restText(f.comeback))
         : bau("vorbei", "Vorbei", "nicht mehr zu haben");
     }
+    /* Fortuna laeuft nicht nach ZEIT ab, sondern nach STUECKZAHL. Deshalb
+       steht hier kein Countdown, sondern wie viele es noch gibt. */
+    if (x.limitiert === "rad") {
+      const fo = (stand && stand.fortuna) || {};
+      return fo.rest
+        ? bau("jetzt", `${fo.rest} von ${fo.max}`, "nur am Glücksrad")
+        : bau("vorbei", "Vergeben", "alle sieben sind weg");
+    }
     return bau("verdienen", "Zu verdienen", "");
   }
 

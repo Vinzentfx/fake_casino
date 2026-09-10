@@ -232,6 +232,41 @@ function oeffentlich(key) {
   };
 }
 
+/**
+ * Ein geschenktes Los (Glücksrad).
+ *
+ * Laeuft absichtlich wie ein normaler Kauf, nur ohne Abbuchung: der Anteil
+ * fuer den Jackpot wandert trotzdem in den Topf, bezahlt vom Haus. Sonst
+ * wuerde ein Gratis-Los aus dem Topf gewinnen, ohne je etwas eingezahlt zu
+ * haben, und die Ziehung waere fuer alle anderen schlechter.
+ *
+ * Der Tipp wird gewuerfelt. Selbst aussuchen waere schoener, hiesse aber, das
+ * Rad muesste mitten im Drehen ein Formular aufmachen.
+ */
+function schenkeLos(key, anzahl = 1) {
+  if (!key) return { ok: false, tipps: [] };
+  const meine = state.lose[key] || [];
+  const tipps = [];
+  for (let i = 0; i < anzahl; i++) {
+    if (meine.length + tipps.length >= MAX_LOSE) break;
+    let t = null;
+    // Doppelte Tipps sind erlaubt, aber sinnlos: dann lieber neu wuerfeln.
+    for (let versuch = 0; versuch < 20; versuch++) {
+      const kandidat = zufallsTipp();
+      const schon = meine.concat(tipps).some((x) => x.join() === kandidat.join());
+      if (!schon) { t = kandidat; break; }
+    }
+    if (!t) break;
+    tipps.push(t);
+    state.jackpot = Math.min(JACKPOT_MAX, state.jackpot + Math.floor(LOSPREIS * JACKPOT_ANTEIL));
+  }
+  if (!tipps.length) return { ok: false, tipps: [], voll: true };
+  state.lose[key] = meine.concat(tipps);
+  save();
+  if (io) io.emit("lotterie:update", oeffentlich(null));
+  return { ok: true, tipps, naechste: state.naechste };
+}
+
 function setupLotterie(_io, _accounts) {
   io = _io; accounts = _accounts;
   load();
@@ -285,5 +320,6 @@ module.exports = {
   setupLotterie,
   // Der Tagesbericht zeigt Jackpot, naechste Ziehung und ob man Lose hat.
   oeffentlich,
+  schenkeLos,
   _intern: { ziehe, pruefeTipp, treffer, naechsteZiehung, LOSPREIS, ZAHLEN_BIS, TIPPS, MAX_LOSE, JACKPOT_ANTEIL, JACKPOT_MAX, GEWINN_3, GEWINN_2 },
 };
