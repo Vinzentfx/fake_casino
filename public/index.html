@@ -93,6 +93,7 @@
       <span class="sheet-label">Du</span>
       <button class="sheet-item" data-nav="profile"><i class="si-icon" data-icon="profil"></i><b>Profil</b><small>Guthaben, Erfolge, Abmelden</small></button>
       <button class="sheet-item" data-nav="cosmetics"><i class="si-icon" data-icon="kosmetik"></i><b>Kosmetik</b><small>Avatar und Namensfarbe</small></button>
+      <button class="sheet-item" data-nav="auktion"><i class="si-icon" data-icon="auktion"></i><b>Auktionshaus</b><small id="menu-auktion-sub">Was es nur einmal gibt</small></button>
       <button class="sheet-item" data-nav="settings"><i class="si-icon" data-icon="einstellungen"></i><b>Einstellungen</b><small>Design, Ton, Passwort</small></button>
       <a class="sheet-item" href="/datenschutz.html"><i class="si-icon" data-icon="sperre"></i><b>Datenschutz</b><small>Was gespeichert wird</small></a>
       <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><i class="si-icon" data-icon="admin"></i><b>Admin</b><small>Verwaltung</small></button>
@@ -1410,6 +1411,14 @@
       <div id="clan-mine"></div>
     </section>
 
+    <!-- ===================== AUKTIONSHAUS ===================== -->
+    <section class="screen" data-screen="auktion">
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="auktion"></i>Auktionshaus</h2>
+      <p class="hint" style="margin-top:-6px">Ein Stück zur Zeit, und es gibt es nur hier. Was geboten wird, verbrennt — es geht an niemanden.</p>
+      <div id="auk-inhalt"></div>
+    </section>
+
     <!-- ===================== GLÜCKSRAD ===================== -->
     <section class="screen" data-screen="wheel">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
@@ -2199,6 +2208,7 @@
   <script defer src="/js/app.js"></script>
   <script defer src="/js/home.js"></script>
   <script defer src="/js/bericht.js"></script>
+  <script defer src="/js/auktion.js"></script>
   <script defer src="/js/chat.js"></script>
   <script defer src="/js/feed.js"></script>
   <script defer src="/js/lobby.js"></script>

@@ -8167,6 +8167,10 @@ html:not(.reduce-motion) .fr-rad_fortuna::before { animation: pl-spin 7s linear 
   align-items: center;
   justify-content: center;
   isolation: isolate;
+  /* Die Aura ist groesser als das Bild und ragt darueber hinaus. Ohne diesen
+     Abstand liegt sie in einer Zeile auf dem Namen daneben — im Profil faellt
+     das nicht auf, weil dort viel Platz ist, in der Online-Liste sofort. */
+  margin: 0 0.3em;
 }
 /* Traeger sind zwei: die Huelle aus core/player.js und die Kachel im Laden.
    Bewusst als Liste und nicht als [class*="au-"] — so ein Teilstueck steckt
@@ -8189,9 +8193,15 @@ html:not(.reduce-motion) .fr-rad_fortuna::before { animation: pl-spin 7s linear 
  * Ebenen mit verschobener Zeit ergeben zwei Wellen, und das reicht, damit es
  * nicht nach Blinken aussieht.
  */
+/* Der Schein liegt als box-shadow AM BILD, nicht als Hintergrund der Huelle:
+   die Huelle ist genau so gross wie das Bild, ein Hintergrund waere also
+   vollstaendig davon verdeckt. Beim kleinen Bild ist das nicht aufgefallen,
+   beim grossen im Profil war die Aura dann plötzlich weg. */
+/* Rund, sonst ist der Schein ein Rechteck: .pl-ava ist nur dann kreisfoermig,
+   wenn zusaetzlich ein Rahmen angelegt ist. */
+.au-auk_goldstaub > .pl-ava { border-radius: 50%; box-shadow: 0 0 0.5em 0.22em rgba(247, 220, 140, 0.34); }
 .au-auk_goldstaub::before,
 .au-auk_goldstaub::after { z-index: 0; }
-.au-auk_goldstaub { background: radial-gradient(circle, rgba(247, 220, 140, 0.3), transparent 66%); }
 .au-auk_goldstaub::before,
 .au-auk_goldstaub::after {
   width: 3px;
@@ -8219,23 +8229,28 @@ html:not(.reduce-motion) .au-auk_goldstaub::after { animation: au-staub 3.2s eas
    wie das Bild, und das Bild ist mal 1,9em in der Topbar und mal doppelt so
    gross im Profil. Mit em waere der Ring dort daneben gelegen. */
 .au-auk_leere::before {
-  width: 165%;
-  height: 165%;
-  margin: -82.5% 0 0 -82.5%;
+  width: 152%;
+  height: 152%;
+  margin: -76% 0 0 -76%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.95) 30%, rgba(28, 14, 54, 0.7) 52%, transparent 72%);
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.95) 34%, rgba(28, 14, 54, 0.72) 54%, transparent 71%);
 }
+/*
+ * Der Ring als zwei gefaerbte RANDSEITEN, nicht als Kegelverlauf mit Maske.
+ * Der Kegelverlauf sah beim grossen Bild im Profil gut aus und beim kleinen in
+ * der Liste wie hingeworfene Punkte: die Maske liess dort nur noch zwei Pixel
+ * Ringbreite uebrig. Ein Rand ist bei jeder Groesse gleich dick und bleibt
+ * ein Ring.
+ */
 .au-auk_leere::after {
-  width: 148%;
-  height: 148%;
-  margin: -74% 0 0 -74%;
+  width: 128%;
+  height: 128%;
+  margin: -64% 0 0 -64%;
   border-radius: 50%;
-  background: conic-gradient(from 0deg,
-    transparent 0deg 18deg, rgba(190, 160, 255, 0.9) 26deg 34deg,
-    transparent 42deg 150deg, rgba(255, 255, 255, 0.85) 158deg 168deg,
-    transparent 176deg 280deg, rgba(150, 200, 255, 0.8) 288deg 298deg, transparent 306deg 360deg);
-  -webkit-mask: radial-gradient(circle, transparent 58%, #000 61%, #000 74%, transparent 77%);
-  mask: radial-gradient(circle, transparent 58%, #000 61%, #000 74%, transparent 77%);
+  border: 2px solid transparent;
+  border-top-color: rgba(198, 170, 255, 0.95);
+  border-right-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 7px rgba(170, 140, 255, 0.5);
 }
 html:not(.reduce-motion) .au-auk_leere::before { animation: au-sog 3.6s ease-in-out infinite; }
 html:not(.reduce-motion) .au-auk_leere::after { animation: pl-spin 2.4s linear infinite; }
@@ -8378,3 +8393,54 @@ html[data-karte="auk_spiegel"]:not(.reduce-motion) .mem-back {
   background-size: 260% 100%;
 }
 html:not(.reduce-motion) .cos-karte-demo[data-karte="auk_spiegel"] { animation: pl-sweep 3.4s linear infinite; }
+
+/* ── Auktionshaus ───────────────────────────────────────────────────────── */
+.auk-los { text-align: center; max-width: 520px; margin: 0 auto; }
+.auk-kopf { display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+.auk-nr { font-weight: 800; color: var(--accent); }
+
+/* Die Buehne zeigt dasselbe Bild wie der Laden — man soll sehen, worauf man
+   bietet, und nicht nur den Namen lesen. */
+.auk-buehne { display: grid; place-items: center; min-height: 96px; margin: 14px 0 6px;
+  font-size: 1.9rem; }
+.auk-buehne .cos-banner-demo { width: 100%; max-width: 320px; height: 54px; }
+.auk-buehne .cos-karte-demo { width: 62px; height: 86px; }
+.auk-schild { padding: 6px 14px; border-radius: var(--r-pill); font-size: 0.9rem; font-weight: 700;
+  border: 1px solid var(--line-neutral); }
+.auk-titel { font-size: 1.15rem; font-style: italic; color: var(--text-dim); }
+.auk-name { margin: 2px 0 14px; font-size: 1.25rem; }
+
+.auk-stand { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.auk-feld { padding: 10px 8px; border-radius: 12px; background: var(--surface-sunken);
+  border: 1px solid var(--line-neutral); }
+.auk-feld > small { display: block; font-size: 0.7rem; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-dim); }
+.auk-feld > b { display: block; font-size: 1.3rem; font-family: var(--font-num); margin: 2px 0; }
+.auk-feld > small:last-child { text-transform: none; letter-spacing: 0; font-size: 0.72rem;
+  line-height: 1.3; }
+.auk-uhr.auk-heiss { color: var(--bad); }
+html:not(.reduce-motion) .auk-uhr.auk-heiss { animation: se-pulsen 1.1s ease-in-out infinite; }
+
+.auk-bieten { display: flex; flex-direction: column; gap: 8px; }
+.auk-bieten input { width: 100%; }
+.auk-hinweis { margin: 8px 0 0; }
+.auk-fuehrt { margin: 0; padding: 10px; border-radius: 12px; font-weight: 700;
+  background: rgba(var(--good-rgb), 0.14); border: 1px solid rgba(var(--good-rgb), 0.4);
+  color: var(--good-text); }
+.auk-sperre { margin: 0; padding: 10px; border-radius: 12px; font-size: 0.86rem;
+  background: var(--surface-sunken); border: 1px solid var(--line-neutral); color: var(--text-dim); }
+
+.auk-h { margin: 16px 0 6px; font-size: 0.76rem; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--text-dim); text-align: left; }
+.auk-verlauf, .auk-archiv { text-align: left; }
+.auk-archiv { max-width: 520px; margin: 12px auto 0; }
+.auk-zeile { display: flex; justify-content: space-between; gap: 10px; align-items: center;
+  padding: 7px 10px; border-radius: 10px; background: var(--surface-sunken);
+  border: 1px solid var(--line-neutral); margin-bottom: 5px; font-size: 0.84rem; }
+.auk-zeile b { font-family: var(--font-num); white-space: nowrap; }
+.auk-rest { text-align: center; margin: 12px auto 0; max-width: 520px; }
+
+@media (max-width: 420px) {
+  .auk-stand { grid-template-columns: 1fr; }
+}

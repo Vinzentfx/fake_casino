@@ -440,6 +440,12 @@
       <path d="M5.4 4.2h13.2v8.4H5.4Z" ${S}/>
       <path d="M5.4 4.2h4.4v2.8h4.4v2.8h4.4M9.8 7v2.8H5.4M14.2 4.2v2.8M14.2 9.8v2.8" ${S} stroke-width="1.3" opacity=".65"/>`,
 
+    // Auktionshammer auf dem Klangblock — Auktionshaus.
+    auktion: `<path d="M4.2 20.4h9.2" ${S} stroke-width="2"/>
+      <rect x="5" y="16.8" width="7.6" height="2.2" rx="0.8" ${A}/>
+      <path d="M9.6 16.8 15 9.6" ${S} stroke-width="1.8"/>
+      <rect x="13.2" y="4.2" width="7.2" height="4.4" rx="1.2" transform="rotate(37 16.8 6.4)" ${A}/>`,
+
     // Einkaufswagen — Markt.
     warenkorb: `<path d="M2.6 3.4h2.6l2.4 11.2h9.8l2-7.6H6.4" ${S}/>
       <circle cx="9.4" cy="19.4" r="1.7" ${A}/>

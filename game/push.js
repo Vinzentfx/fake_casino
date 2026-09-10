@@ -44,6 +44,11 @@ const TYPEN = {
   rekord: { label: "Wochenrekorde", hint: "Wenn jemand deinen Rekord schlägt", standard: true },
   tisch:  { label: "Offene Tische", hint: "Wenn jemand auf Mitspieler wartet", standard: true },
   serie:  { label: "Login-Serie", hint: "Erinnerung, bevor deine Serie reißt", standard: false },
+  /* Ueberboten im Auktionshaus. Eigener Anlass, weil er die eine Sache
+     betrifft, bei der Nichtstun wirklich etwas kostet: wer nicht nachlegt,
+     verliert das Stueck. Und der Ueberbotene ist per Definition gerade nicht
+     da, sonst haette er selbst geboten. */
+  auktion: { label: "Auktionshaus", hint: "Wenn dich jemand überbietet", standard: true },
 };
 
 // Ein Geraet bekommt denselben Anlass hoechstens so oft. Ohne die Sperre wuerde
@@ -57,6 +62,11 @@ const MIN_ABSTAND = {
   rekord: 10 * 60 * 1000,
   tisch: 60 * 60 * 1000,
   serie: 20 * 60 * 60 * 1000,
+  /* Kurz, mit Absicht: gegen Ende eines Loses ueberbietet man sich im
+     Minutentakt, und jede dieser Nachrichten ist eine, auf die man reagieren
+     KANN. Fuenf Minuten sind die Untergrenze, damit ein Bietgefecht nicht das
+     Telefon sprengt. */
+  auktion: 5 * 60 * 1000,
 };
 
 // Wer gerade offen im Casino sitzt, braucht keine Benachrichtigung: er sieht

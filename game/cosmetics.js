@@ -137,10 +137,13 @@ const TITLES = [
    * war, als das Casino wieder aufmachte.
    */
   { id: "rueckkehrer",    text: "Rückkehrer", cost: null, via: "Zur Wiedereröffnung dabei gewesen", limitiert: "comeback" },
-  { id: "rad_fortuna",    text: "Fortunas Liebling", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad" },
-  // Zwei Insider aus der Runde. Der Preis ist der Witz.
-  { id: "sechssieben",    text: "67",                        cost: 67000 },
-  { id: "seiten25",       text: "25 pages on november 26th", cost: 26000 },
+  { id: "rad_fortuna",    text: "Big Yahus Liebling", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad" },
+  /* Zwei Insider aus der Runde. Der Preis ist Teil des Witzes: das reichste
+     Konto steht bei rund 1,5 Millionen, beide liegen bewusst darueber. Sie
+     sind kein Kauf, sondern ein Projekt — und ganz nebenbei die groesste
+     Chip-Senke, die es hier gibt. */
+  { id: "sechssieben",    text: "67",                        cost: 6700000 },
+  { id: "seiten25",       text: "25 pages on november 26th", cost: 2500000 },
   { id: "auk_meistbietend", text: "Meistbietend", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion" },
 ];
 

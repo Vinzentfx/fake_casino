@@ -1,0 +1,350 @@
+"use strict";
+
+/**
+ * Auktionshaus — die einzige Stelle, an der es die seltenen Stuecke gibt.
+ *
+ * Der Laden verkauft zu festen Preisen, der Season-Pass verteilt nach
+ * Fortschritt, das Glueckrad nach Glueck. Hier entscheidet, wer am meisten
+ * dafuer uebrig hat. Ein Los zur Zeit, und was geboten wird, VERBRENNT: es
+ * geht an niemanden. Genau das ist der Zweck, dem Casino fehlen Senken.
+ *
+ * Zwei Regeln machen das fuer eine Runde, die sich nie gleichzeitig trifft,
+ * ueberhaupt erst fair:
+ *
+ *   Verlaengerung. Jedes Gebot in den letzten zwei Minuten schiebt das Ende um
+ *   zwei Minuten nach hinten. Ohne das gewinnt immer, wer zufaellig in der
+ *   Schlusssekunde online ist, und das ist keine Auktion, sondern eine
+ *   Anwesenheitspraemie.
+ *
+ *   Eine Woche Pause nach einem Zuschlag. Sonst raeumen die zwei groessten
+ *   Konten alles ab und die Stuecke sagen nur noch, wer reich ist.
+ *
+ * Geboten wird mit ECHTEN Chips: der Betrag geht sofort vom Konto und kommt
+ * sofort zurueck, sobald jemand ueberbietet. Ohne diese Hinterlegung bietet
+ * man Geld, das man nach der naechsten Slot-Runde nicht mehr hat.
+ *
+ * Stand in data/auktion.json.
+ */
+
+const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
+const chat = require("./chat");
+const cosmetics = require("./cosmetics");
+
+const DATA_DIR = path.join(__dirname, "..", "data");
+const DATEI = path.join(DATA_DIR, "auktion.json");
+
+const START_GEBOT = 50_000;
+const SCHRITT_MIN = 5_000;
+const SCHRITT_ANTEIL = 0.05;
+const ENDE_STUNDE = 20, ENDE_MINUTE = 30;  // eine halbe Stunde nach der Lotterie
+const MIN_LAUFZEIT_MS = 24 * 60 * 60 * 1000;
+const VERLAENGERUNG_MS = 2 * 60 * 1000;
+const SPERRE_MS = 7 * 24 * 60 * 60 * 1000;
+const VERLAUF_MAX = 12;
+const ARCHIV_MAX = 20;
+
+/* Welche Arten ueberhaupt versteigert werden. Ein Los ist immer ein Stueck aus
+   game/cosmetics.js mit limitiert: "auktion" — hier steht nur, in welchen
+   Toepfen gesucht wird. */
+const ARTEN = ["style", "frame", "title", "effect", "banner", "schild", "aura", "karte"];
+
+let io = null, accounts = null;
+let state = { v: 1, nr: 0, los: null, vergeben: {}, archiv: [] };
+
+const de = (n) => Math.round(Number(n) || 0).toLocaleString("de-DE");
+const marke = (type, id) => `${type}:${id}`;
+
+function load() {
+  try {
+    const roh = JSON.parse(fs.readFileSync(DATEI, "utf8"));
+    state = {
+      v: 1,
+      nr: Number(roh.nr) || 0,
+      los: roh.los || null,
+      vergeben: roh.vergeben && typeof roh.vergeben === "object" ? roh.vergeben : {},
+      archiv: Array.isArray(roh.archiv) ? roh.archiv : [],
+    };
+  } catch { /* erste Auktion */ }
+}
+
+function save() {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(DATEI, JSON.stringify(state, null, 2));
+  } catch {}
+}
+
+/** Das naechste 20:30, das mindestens einen Tag entfernt ist. */
+function naechstesEnde(ab = Date.now()) {
+  const d = new Date(ab + MIN_LAUFZEIT_MS);
+  d.setHours(ENDE_STUNDE, ENDE_MINUTE, 0, 0);
+  if (d.getTime() <= ab + MIN_LAUFZEIT_MS) d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
+
+/** Alle Auktionsstuecke, die noch niemandem gehoeren. */
+function offeneStuecke() {
+  const out = [];
+  for (const type of ARTEN) {
+    const liste = {
+      style: cosmetics.STYLES, frame: cosmetics.FRAMES, title: cosmetics.TITLES,
+      effect: cosmetics.EFFEKTE, banner: cosmetics.BANNER, schild: cosmetics.SCHILDER,
+      aura: cosmetics.AUREN, karte: cosmetics.KARTEN,
+    }[type] || [];
+    for (const x of liste) {
+      if (x.limitiert !== "auktion") continue;
+      if (state.vergeben[marke(type, x.id)]) continue;
+      out.push({ type, id: x.id, label: x.label || x.text || x.id });
+    }
+  }
+  return out;
+}
+
+const ART_NAME = {
+  style: "Namensstil", frame: "Rahmen", title: "Titel", effect: "Gewinn-Effekt",
+  banner: "Profil-Banner", schild: "Namensschild", aura: "Aura", karte: "Kartenrücken",
+};
+
+/** Der Mindestbetrag fuer das naechste Gebot. */
+function mindestGebot(los) {
+  if (!los) return START_GEBOT;
+  if (!los.gebot) return START_GEBOT;
+  return los.gebot + Math.max(SCHRITT_MIN, Math.ceil(los.gebot * SCHRITT_ANTEIL / 1000) * 1000);
+}
+
+function starteLos() {
+  const offen = offeneStuecke();
+  if (!offen.length) {
+    // Alles vergeben. Auch das muss bei allen ankommen, sonst zeigt der
+    // Bildschirm weiter das Los, das gerade den Hammer bekommen hat.
+    state.los = null;
+    save();
+    sende();
+    return null;
+  }
+  const s = offen[crypto.randomInt(offen.length)];
+  state.nr += 1;
+  state.los = {
+    nr: state.nr,
+    type: s.type,
+    id: s.id,
+    label: s.label,
+    art: ART_NAME[s.type] || s.type,
+    start: Date.now(),
+    endet: naechstesEnde(),
+    gebot: 0,
+    bieter: null,
+    bieterName: null,
+    verlauf: [],
+  };
+  save();
+  try {
+    chat.announce(io, `🔨 AUKTIONSHAUS: ${ART_NAME[s.type]} „${s.label}“ kommt unter den Hammer. Startgebot ${de(START_GEBOT)} Chips, Zuschlag ${endeText(state.los.endet)}.`);
+  } catch {}
+  try { require("./chronik").notiere("event", `Neu im Auktionshaus: ${ART_NAME[s.type]} „${s.label}“. Startgebot ${de(START_GEBOT)} Chips.`); } catch {}
+  sende();
+  return state.los;
+}
+
+function endeText(ts) {
+  const d = new Date(ts);
+  const heute = new Date();
+  const gleich = d.toDateString() === heute.toDateString();
+  const morgen = new Date(heute.getTime() + 86400000).toDateString() === d.toDateString();
+  const uhr = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")} Uhr`;
+  if (gleich) return `heute um ${uhr}`;
+  if (morgen) return `morgen um ${uhr}`;
+  return `am ${d.toLocaleDateString("de-DE", { weekday: "long" })} um ${uhr}`;
+}
+
+/** Zuschlag: Stueck vergeben, Gebot verbrennen, neues Los aufmachen. */
+function hammer() {
+  const los = state.los;
+  if (!los) return;
+
+  if (!los.bieter || !los.gebot) {
+    // Niemand hat geboten. Das Stueck wandert zurueck in den Topf und kommt
+    // spaeter wieder — weggeworfen wird hier nichts.
+    try { chat.announce(io, `🔨 Keine Gebote für „${los.label}“. Das Stück kommt später noch einmal.`); } catch {}
+    state.los = null;
+    save();
+    starteLos();
+    return;
+  }
+
+  const acc = accounts.get(los.bieter);
+  const stuecke = [];
+  if (acc) {
+    if (cosmetics.grant(acc, los.type, los.id)) stuecke.push(los.label);
+    acc.auktionSieg = Date.now();
+    accounts.save();
+  }
+  // Das Gebot ist beim Bieten abgebucht worden und wird hier NICHT
+  // weitergereicht: es verbrennt. Das ist der ganze Zweck des Hauses.
+  state.vergeben[marke(los.type, los.id)] = {
+    key: los.bieter, name: los.bieterName, betrag: los.gebot, ts: Date.now(),
+  };
+  state.archiv.unshift({
+    nr: los.nr, art: los.art, label: los.label,
+    name: los.bieterName, betrag: los.gebot, ts: Date.now(),
+  });
+  if (state.archiv.length > ARCHIV_MAX) state.archiv.length = ARCHIV_MAX;
+
+  try {
+    chat.announce(io, `🔨 ZUSCHLAG! ${los.bieterName} ersteigert ${los.art} „${los.label}“ für ${de(los.gebot)} Chips.`);
+  } catch {}
+  try {
+    require("./chronik").notiere("event", `${los.bieterName} ersteigert ${los.art} „${los.label}“ für ${de(los.gebot)} Chips.`, { user: los.bieterName, wert: los.gebot });
+  } catch {}
+  if (acc) {
+    for (const s of io.of("/").sockets.values()) {
+      if (s.data && s.data.account === los.bieter) {
+        s.emit("auktion:zuschlag", { art: los.art, label: los.label, betrag: los.gebot, stuecke });
+        /* Das hinterlegte Gebot ist jetzt endgueltig weg. Ohne diese Zeile
+           steht in der Topbar weiter der Stand von VOR dem Gebot, weil der
+           Zuschlag nicht vom Client ausgeloest wurde. */
+        s.emit("account:update", { account: accounts.publicAccount(acc) });
+        break;
+      }
+    }
+  }
+  state.los = null;
+  save();
+  starteLos();
+}
+
+function bieten(key, betrag) {
+  const los = state.los;
+  if (!los) return { ok: false, error: "Zurzeit steht nichts unter dem Hammer." };
+  const acc = accounts.get(key);
+  if (!acc) return { ok: false, error: "Nicht eingeloggt." };
+  if (Date.now() >= los.endet) return { ok: false, error: "Zu spät, der Zuschlag ist durch." };
+
+  const sperreBis = (acc.auktionSieg || 0) + SPERRE_MS;
+  if (Date.now() < sperreBis) {
+    const tage = Math.ceil((sperreBis - Date.now()) / 86400000);
+    return { ok: false, error: `Du hast gerade erst ersteigert. Noch ${tage} ${tage === 1 ? "Tag" : "Tage"} Pause.` };
+  }
+  if (los.bieter === key) return { ok: false, error: "Du hältst das Höchstgebot bereits." };
+
+  betrag = Math.floor(Number(betrag) || 0);
+  const mind = mindestGebot(los);
+  if (betrag < mind) return { ok: false, error: `Mindestens ${de(mind)} Chips.` };
+  if (acc.chips < betrag) return { ok: false, error: "Nicht genug Chips." };
+
+  // Erst dem Vorbieter zurueckgeben, dann beim neuen abbuchen. Andersherum
+  // koennte bei einem Absturz dazwischen zweimal dasselbe Geld hinterlegt sein.
+  const vorher = los.bieter, vorherName = los.bieterName, vorherBetrag = los.gebot;
+  if (vorher && vorherBetrag > 0) accounts.adjustChips(vorher, vorherBetrag);
+  const ab = accounts.adjustChips(key, -betrag);
+  if (!ab.ok) {
+    // Zurueckrollen: der Vorbieter haelt sein Gebot weiter.
+    if (vorher && vorherBetrag > 0) accounts.adjustChips(vorher, -vorherBetrag);
+    return { ok: false, error: ab.error || "Chips konnten nicht hinterlegt werden." };
+  }
+
+  los.gebot = betrag;
+  los.bieter = key;
+  los.bieterName = acc.name;
+  los.verlauf.unshift({ name: acc.name, betrag, ts: Date.now() });
+  if (los.verlauf.length > VERLAUF_MAX) los.verlauf.length = VERLAUF_MAX;
+
+  /* Verlaengerung. Steht bewusst NACH dem Gebot: sonst koennte man mit einem
+     ungueltigen Gebot die Uhr weiterschieben. */
+  let verlaengert = false;
+  if (los.endet - Date.now() < VERLAENGERUNG_MS) {
+    los.endet = Date.now() + VERLAENGERUNG_MS;
+    verlaengert = true;
+  }
+  save();
+
+  if (vorher && vorher !== key) {
+    // Der Ueberbotene ist fast immer gerade NICHT da — genau darum lohnt sich
+    // hier eine Nachricht aufs Geraet.
+    try {
+      require("./push").an(vorher, "auktion", {
+        title: `🔨 Überboten: ${los.label}`,
+        body: `${acc.name} bietet jetzt ${de(betrag)} Chips. Deine ${de(vorherBetrag)} sind zurück auf dem Konto.`,
+        url: "/#/auktion",
+      });
+    } catch {}
+    const vorAcc = accounts.get(vorher);
+    for (const s of io.of("/").sockets.values()) {
+      if (s.data && s.data.account === vorher) {
+        s.emit("auktion:ueberboten", { label: los.label, betrag, zurueck: vorherBetrag, von: acc.name });
+        // Dasselbe von der anderen Seite: die Rueckzahlung kommt vom Server,
+        // nicht auf Zuruf des Clients.
+        if (vorAcc) s.emit("account:update", { account: accounts.publicAccount(vorAcc) });
+        break;
+      }
+    }
+  }
+  sende();
+  return { ok: true, verlaengert, account: accounts.publicAccount(acc), ...oeffentlich(key) };
+}
+
+function oeffentlich(key) {
+  const los = state.los;
+  const acc = key ? accounts.get(key) : null;
+  const sperreBis = acc ? (acc.auktionSieg || 0) + SPERRE_MS : 0;
+  return {
+    los: los ? {
+      nr: los.nr, art: los.art, label: los.label, type: los.type, id: los.id,
+      endet: los.endet, gebot: los.gebot,
+      bieterName: los.bieterName,
+      binIch: !!(key && los.bieter === key),
+      mindest: mindestGebot(los),
+      verlauf: los.verlauf.slice(0, VERLAUF_MAX),
+    } : null,
+    // Ohne das Stueck, das gerade auf der Buehne steht: "noch 9 warten auf
+    // ihren Termin", waehrend eines davon versteigert wird, liest sich falsch.
+    offen: Math.max(0, offeneStuecke().length - (los ? 1 : 0)),
+    archiv: state.archiv.slice(0, 8),
+    startGebot: START_GEBOT,
+    verlaengerung: VERLAENGERUNG_MS,
+    sperreBis: sperreBis > Date.now() ? sperreBis : 0,
+    meineChips: acc ? acc.chips : 0,
+  };
+}
+
+function sende() {
+  if (!io) return;
+  // Ohne Schluessel: der persoenliche Teil (binIch, Sperre) fehlt, den holt
+  // sich jeder Client beim naechsten auktion:state selbst.
+  io.emit("auktion:update");
+}
+
+function tick() {
+  if (!state.los) { starteLos(); return; }
+  if (Date.now() >= state.los.endet) hammer();
+}
+
+function setupAuktion(_io, _accounts) {
+  io = _io;
+  accounts = _accounts;
+  load();
+
+  // Beim Start: kein Los da, oder eines, dessen Zeit waehrend eines Neustarts
+  // abgelaufen ist.
+  if (!state.los) starteLos();
+  else if (Date.now() >= state.los.endet) hammer();
+
+  setInterval(tick, 10_000).unref();
+
+  io.on("connection", (socket) => {
+    socket.on("auktion:state", (ack) => {
+      if (typeof ack !== "function") return;
+      ack({ ok: true, ...oeffentlich(socket.data.account || null) });
+    });
+
+    socket.on("auktion:bieten", ({ betrag } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+      ack(bieten(socket.data.account, betrag));
+    });
+  });
+}
+
+module.exports = { setupAuktion, oeffentlich, START_GEBOT };

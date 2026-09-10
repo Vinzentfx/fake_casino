@@ -52,6 +52,7 @@ const { setupWuerfel } = require("./game/wuerfel");
 const { setupLotterie } = require("./game/lotterie");
 const { setupBericht } = require("./game/bericht");
 const gluecksrad = require("./game/gluecksrad");
+const { setupAuktion } = require("./game/auktion");
 const { setupAnnouncements } = require("./game/announcements");
 const { setupPrefs } = require("./game/prefs");
 const achievements = require("./game/achievements");
@@ -470,6 +471,7 @@ setupLotterie(io, accounts);
 setupAnnouncements(io);
 setupBericht(io, accounts);
 gluecksrad.setup(io, accounts);
+setupAuktion(io, accounts);
 /* Jedes Modul haengt sich mit io.on("connection") ein, und es sind mehr als
    fuenfzig geworden. Node warnt dann vor einem Speicherleck, obwohl hier
    keines ist: die Zuhoerer werden einmal beim Start gesetzt, nicht je Spieler. */

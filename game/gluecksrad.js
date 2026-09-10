@@ -13,7 +13,7 @@
  * steht FORTUNA. Davon gibt es SIEBEN im ganzen Casino, danach nie wieder;
  * das Feld zahlt dann Chips. Wer eins hat, trägt einen Ring aus zwölf
  * Goldsegmenten um sein Bild, einen Namen, in dem sich ein Rad dreht, und den
- * Titel "Fortunas Liebling".
+ * Titel "Big Yahus Liebling".
  *
  * Die Chip-Ausbeute ist dabei ABSICHTLICH gefallen (von rund 3.150 auf 1.600
  * je Dreh): das Rad soll interessanter werden, nicht ergiebiger.

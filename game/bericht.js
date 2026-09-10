@@ -127,6 +127,20 @@ function zahlenAus(accounts, key, seit) {
   } catch {}
 
   try {
+    const a = require("./auktion").oeffentlich(key);
+    if (a.los) {
+      out.push({
+        icon: "auktion", label: `Unter dem Hammer: ${a.los.art}`,
+        wert: a.los.label,
+        sub: a.los.gebot
+          ? `${de(a.los.gebot)} Chips von ${a.los.bieterName}${a.los.binIch ? " (das bist du)" : ""}.`
+          : `Noch kein Gebot. Start bei ${de(a.startGebot)} Chips.`,
+        nav: "auktion",
+      });
+    }
+  } catch {}
+
+  try {
     const weekly = require("./weekly");
     const w = weekly.lastWinner && weekly.lastWinner();
     if (w && w.name) out.push({ icon: "krone", label: "Spieler der Woche", wert: w.name, sub: `+${de(w.net)} Chips netto`, nav: "leaderboard" });
