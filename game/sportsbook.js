@@ -113,7 +113,16 @@ function strengthOf(name) {
 
 // ── Real fixtures (football-data.org) — activates only when a token is set ──
 const FD_TOKEN = process.env.FOOTBALL_DATA_TOKEN || "";
-const FD_COMPS = (process.env.FOOTBALL_DATA_COMPS || "WC").split(",").map((s) => s.trim()).filter(Boolean);
+/*
+ * Welche Wettbewerbe geholt werden, wenn ein Token gesetzt ist.
+ *
+ * Stand vorher auf "WC" (Weltmeisterschaft) — und dazwischen liegen Jahre
+ * ohne ein einziges Spiel. Wer einen Schluessel eintrug, sah trotzdem nur
+ * simulierte Partien und musste raten, warum. Jetzt die drei Ligen, die
+ * ohnehin schon als Mannschaften hinterlegt sind und fast jedes Wochenende
+ * spielen. Ueberschreibbar per FOOTBALL_DATA_COMPS.
+ */
+const FD_COMPS = (process.env.FOOTBALL_DATA_COMPS || "BL1,PL,PD").split(",").map((s) => s.trim()).filter(Boolean);
 const FD_POLL_MS = 3 * 60 * 1000;              // refresh fixtures every 3 min (free tier = 10 req/min)
 const REAL_ID_BASE = 1_000_000_000;            // keep real match ids in a separate numeric space
 const COMP_META = {
@@ -398,7 +407,7 @@ function setupSportsbook(io, accounts) {
   }
 
   if (FD_TOKEN) {
-    console.log(`[sports] real fixtures ON (${FD_COMPS.join(",")})`);
+    console.log(`[sports] echte Spiele AN (${FD_COMPS.join(",")})`);
     pollReal();
     setInterval(pollReal, FD_POLL_MS);
   }

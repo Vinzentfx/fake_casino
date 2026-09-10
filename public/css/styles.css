@@ -4858,18 +4858,23 @@ html.reduce-motion .mem-flip { transition: none; }
 }
 .cb-title { font-weight: 800; color: var(--gold-strong); font-size: 0.9rem; margin-bottom: 7px; }
 .cb-crown { filter: drop-shadow(0 0 5px rgba(var(--accent-rgb), 0.8)); }
-.cb-list { display: flex; flex-direction: column; gap: 3px; }
-.cb-row {
+/* Champion-Banner der Rennbahn.
+   Praefix chb- statt cb-: cb- gehoert der Besitzliste in der Stadt
+   (.city-board weiter unten). Beide hatten .cb-row und .cb-name, die
+   spaetere Regel gewann, und ihr Raster gab dem Namen eine 10px breite
+   Spalte — im Banner stand dann nur noch "V" statt "Vincent". */
+.chb-list { display: flex; flex-direction: column; gap: 3px; }
+.chb-row {
   display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px;
   font-size: 0.82rem; background: rgba(255,255,255,0.03);
 }
-.cb-row.cb-me { background: rgba(126,215,154,0.14); border: 1px solid rgba(126,215,154,0.35); }
-.cb-row.cb-outside { opacity: 0.85; margin-top: 2px; }
-.cb-row.cb-empty { opacity: 0.8; font-size: 0.8rem; }
-.cb-medal { flex: 0 0 24px; text-align: center; font-weight: 800; }
-.cb-name { flex: 1; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cb-wins { flex: 0 0 auto; opacity: 0.85; }
-.cb-cash { flex: 0 0 auto; color: var(--good-text); font-weight: 800; min-width: 62px; text-align: right; }
+.chb-row.chb-me { background: rgba(126,215,154,0.14); border: 1px solid rgba(126,215,154,0.35); }
+.chb-row.chb-outside { opacity: 0.85; margin-top: 2px; }
+.chb-row.chb-empty { opacity: 0.8; font-size: 0.8rem; }
+.chb-medal { flex: 0 0 24px; text-align: center; font-weight: 800; }
+.chb-name { flex: 1; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chb-wins { flex: 0 0 auto; opacity: 0.85; }
+.chb-cash { flex: 0 0 auto; color: var(--good-text); font-weight: 800; min-width: 62px; text-align: right; }
 .cb-foot { margin-top: 8px; font-size: 0.76rem; opacity: 0.75; }
 .hc-rename {
   border: 0; background: none; cursor: pointer; font-size: 0.85rem; padding: 0 2px; opacity: 0.6;
@@ -7177,8 +7182,8 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 
 /* Die Platzziffer ersetzt 🥇🥈🥉 auch in Rennbahn und Bestenliste. Die
    dortigen Huellen hatten Schriftgroessen fuer Emoji gesetzt. */
-.rp-medal, .cb-medal, .lb-rank { font-size: 0; }
-.rp-medal .platz, .cb-medal .platz, .lb-rank .platz { font-size: 0.7rem; }
+.rp-medal, .chb-medal, .lb-rank { font-size: 0; }
+.rp-medal .platz, .chb-medal .platz, .lb-rank .platz { font-size: 0.7rem; }
 .lb-champ { display: inline-flex; align-items: center; gap: 4px; }
 .lb-champ .ui-icon { width: 13px; height: 13px; }
 .lb-champ i { font-style: normal; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; }
@@ -7883,3 +7888,6 @@ html:not(.reduce-motion) .hilo-rein { animation: hilo-rein 0.4s cubic-bezier(0.2
 /* Risikofreie Seite: sichtbar zurueckgenommen, sie bringt nichts. */
 .hilo-tipp.sicher small { color: var(--text-mute); }
 .hilo-tipp.sicher { opacity: 0.75; }
+/* Der fallende Chip ist jetzt eine gezeichnete Münze, kein Text mehr. */
+.rain-chip svg { width: 2.2rem; height: 2.2rem; display: block; color: var(--gold, #f4d782); }
+.rain-chip.gold svg { width: 2.8rem; height: 2.8rem; color: #ffe08a; }

@@ -19,6 +19,21 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-19",
+      datum: "19. September 2026",
+      titel: "Vier Sachen repariert, die ihr gemeldet habt",
+      items: [
+        { icon: "rufen", titel: "Beim Chip-Regen fiel das Wort „Chips“ vom Himmel",
+          text: "Statt Münzen regnete es das Wort „Chips“ in Riesenschrift. Ein Überbleibsel davon, dass wir die Münz-Emoji überall durch das Wort ersetzt haben — im Fließtext richtig, hier nicht. Jetzt fallen gezeichnete Münzen, die goldene mit Ring und Stern, damit man sie im Fallen erkennt." },
+        { icon: "horses", titel: "Im Champion-Banner stand nur der erste Buchstabe",
+          text: "Da stand „V“ statt „Vincent“. Zwei verschiedene Bauteile hatten sich denselben CSS-Namen geteilt: das Banner der Rennbahn und die Besitzliste in der Stadt. Die Stadt gewann, und ihr Raster gab dem Namen eine zehn Pixel breite Spalte." },
+        { icon: "horses", titel: "Pferdenamen, die klangen wie ein Ersatzteil",
+          text: "„Mitternachtwind“ fehlte das Fugen-s, „Turbohufe“ und „Goldhufe“ klangen nach Werkstatt. Die Bausteine tragen ihr s jetzt selbst, „hufe“ ist raus, dafür gibt es Husar, Komet, Falke und Bote dazu. Und „Blitzblitz“ kann nicht mehr passieren." },
+        { icon: "sports", titel: "Die echten Spiele waren da, nur nie zu sehen",
+          text: "Auf dem Brett stehen 67 echte Partien gegen 5 simulierte. Nur: die simulierten laufen im Dauerbetrieb und gelten damit fast immer als „live“, und live stand ganz oben. Die echten lagen darunter und wurden nie gefunden. Jetzt stehen echte Spiele zuerst, mit ihrer richtigen Anstoßzeit — die Sortierung danach hat übrigens auch nie funktioniert, sie rechnete mit Text statt mit Datum." },
+      ],
+    },
+    {
       id: "2026-09-18",
       datum: "18. September 2026",
       titel: "Drei neue Spiele",

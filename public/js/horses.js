@@ -478,10 +478,10 @@
     // Platzziffern wie ueberall sonst im Haus, siehe core/icons.js.
     const medals = [0, 1, 2].map((i) => window.Casino.icons.platz(i));
 
-    let head = `<div class="cb-title"><span class="cb-crown">👑</span> Renn-Champion des Tages</div>`;
+    let head = `<div class="chb-title"><span class="chb-crown">👑</span> Renn-Champion des Tages</div>`;
     let rows = "";
     if (!top.length) {
-      rows = `<div class="cb-row cb-empty">Noch kein Sieg heute — der Thron ist frei! Melde ein Pferd an und hol dir ${fmt(prizes[0])}<i class=mk></i>.</div>`;
+      rows = `<div class="chb-row chb-empty">Noch kein Sieg heute — der Thron ist frei! Melde ein Pferd an und hol dir ${fmt(prizes[0])}<i class=mk></i>.</div>`;
     } else {
       /*
        * Medaille und Preis kommen aus dem RANG, nicht aus der Position in der
@@ -494,18 +494,18 @@
         const isMe = meName && r.name.toLowerCase() === meName.toLowerCase();
         const platz = medals[(r.rank || 1) - 1] || `${r.rank}.`;
         const geld = r.prize != null ? r.prize : (prizes[(r.rank || 1) - 1] || 0);
-        return `<div class="cb-row${isMe ? " cb-me" : ""}"><span class="cb-medal">${platz}</span><span class="cb-name">${escapeHtml(r.name)}${isMe ? " (du)" : ""}</span><span class="cb-wins">${r.wins} ${r.wins === 1 ? "Sieg" : "Siege"}</span><span class="cb-cash">+${fmt(geld)}</span></div>`;
+        return `<div class="chb-row${isMe ? " chb-me" : ""}"><span class="chb-medal">${platz}</span><span class="chb-name">${escapeHtml(r.name)}${isMe ? " (du)" : ""}</span><span class="chb-wins">${r.wins} ${r.wins === 1 ? "Sieg" : "Siege"}</span><span class="chb-cash">+${fmt(geld)}</span></div>`;
       }).join("");
       // Eigener Rang, falls außerhalb der Top 3.
       if (me && me.rank > 3) {
-        rows += `<div class="cb-row cb-me cb-outside"><span class="cb-medal">${me.rank}.</span><span class="cb-name">${escapeHtml(me.name)} (du)</span><span class="cb-wins">${me.wins} ${me.wins === 1 ? "Sieg" : "Siege"}</span><span class="cb-cash">–</span></div>`;
+        rows += `<div class="chb-row chb-me chb-outside"><span class="chb-medal">${me.rank}.</span><span class="chb-name">${escapeHtml(me.name)} (du)</span><span class="chb-wins">${me.wins} ${me.wins === 1 ? "Sieg" : "Siege"}</span><span class="chb-cash">–</span></div>`;
       } else if (!me) {
-        rows += `<div class="cb-row cb-outside"><span class="cb-medal">–</span><span class="cb-name">Du: noch kein Sieg heute</span><span class="cb-wins"></span><span class="cb-cash"></span></div>`;
+        rows += `<div class="chb-row chb-outside"><span class="chb-medal">–</span><span class="chb-name">Du: noch kein Sieg heute</span><span class="chb-wins"></span><span class="chb-cash"></span></div>`;
       }
     }
-    const potLine = st.betPot > 0 ? `<div class="cb-foot">💰 Heutiger Wett-Topf: <b>${fmt(st.betPot)}<i class=mk></i></b> — 50/30/20 % on top für Platz 1–3</div>` : "";
-    const foot = yest ? `<div class="cb-foot">Gestern: 🏆 <b>${escapeHtml(yest.name)}</b> (${yest.wins} ${yest.wins === 1 ? "Sieg" : "Siege"})</div>` : "";
-    el.innerHTML = head + `<div class="cb-list">${rows}</div>` + potLine + foot;
+    const potLine = st.betPot > 0 ? `<div class="chb-foot">💰 Heutiger Wett-Topf: <b>${fmt(st.betPot)}<i class=mk></i></b> — 50/30/20 % on top für Platz 1–3</div>` : "";
+    const foot = yest ? `<div class="chb-foot">Gestern: 🏆 <b>${escapeHtml(yest.name)}</b> (${yest.wins} ${yest.wins === 1 ? "Sieg" : "Siege"})</div>` : "";
+    el.innerHTML = head + `<div class="chb-list">${rows}</div>` + potLine + foot;
   }
 
   // ── Wettschein (Bottom-Sheet) ─────────────────────────────────────────────

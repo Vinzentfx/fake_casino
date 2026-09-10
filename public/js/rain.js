@@ -31,7 +31,17 @@
     if (!layer) return;
     const el = document.createElement("button");
     el.className = "rain-chip" + (c.gold ? " gold" : "");
-    el.textContent = c.gold ? "💰" : "Chips";
+    /*
+     * Gezeichnete Muenze statt Text.
+     *
+     * Hier stand `el.textContent = "Chips"` — ein Rest der Aktion, in der die
+     * Muenz-Emoji ueberall durch das Wort "Chips" ersetzt wurden. In einem
+     * Fliesstext ist das richtig, hier fiel dadurch das WORT "Chips" in
+     * 2,2rem Schrift vom Himmel statt einer Muenze. Die goldene bekommt einen
+     * Ring und einen Stern dazu, damit man sie im Fallen unterscheidet.
+     */
+    el.innerHTML = c.gold ? goldMuenze() : muenze();
+    el.setAttribute("aria-label", c.gold ? "Goldener Chip" : "Chip");
     el.style.left = (c.x * 100) + "%";
     el.style.animationDuration = c.dur + "ms";
     let claimed = false;
@@ -54,6 +64,19 @@
     el.addEventListener("animationend", () => el.remove());
     layer.appendChild(el);
   }
+
+  /* Die normale Muenze: dieselbe Form wie die Marke neben jedem Betrag. */
+  const muenze = () => `<svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" fill="none"
+    stroke-width="2" stroke-linecap="round">
+    <circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="3.4" opacity=".65"/>
+    <path d="M12 3.6v2.4M12 18v2.4M3.6 12H6M18 12h2.4"/></svg>`;
+
+  /* Die goldene ist fuenfmal so viel wert und muss das im Fallen zeigen. */
+  const goldMuenze = () => `<svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" fill="none"
+    stroke-width="2" stroke-linecap="round">
+    <circle cx="12" cy="12" r="8.8" fill="currentColor" opacity=".18"/>
+    <circle cx="12" cy="12" r="8.8"/><circle cx="12" cy="12" r="5.2" opacity=".7"/>
+    <path d="M12 8.6l1 2.2 2.4.3-1.8 1.7.5 2.4-2.1-1.2-2.1 1.2.5-2.4-1.8-1.7 2.4-.3z" fill="currentColor" stroke="none"/></svg>`;
 
   function pop(el, txt, gold) {
     const rect = el.getBoundingClientRect();

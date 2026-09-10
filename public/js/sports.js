@@ -50,11 +50,29 @@
     return liste;
   }
 
+  /* kickoffAt kommt als ISO-Zeichenkette. "2026-09-11T18:30:00Z" minus
+     "2026-09-12T13:30:00Z" ergibt NaN, die Sortierung nach Anstoss lief also
+     ins Leere. */
+  const anstoss = (m) => (m.kickoffAt ? Date.parse(m.kickoffAt) || 0 : 0);
+
   function gefilterteSpiele() {
     let liste = data.matches.slice();
     if (filterLiga === "__sim") liste = liste.filter((m) => !m.real);
     else if (filterLiga !== "alle") liste = liste.filter((m) => m.real && m.league === filterLiga);
-    liste.sort((a, b) => rang(a) - rang(b) || (a.kickoffAt || 0) - (b.kickoffAt || 0));
+    /*
+     * ECHTE Spiele zuerst.
+     *
+     * Vorher wurde nur nach Zustand sortiert, und "live" stand oben. Die
+     * simulierten Partien laufen aber im Dauerbetrieb (eine komprimierte
+     * Halbzeit alle paar Sekunden), sind also fast immer live — und
+     * besetzten damit dauerhaft die Spitze der Liste. Die 67 echten Spiele
+     * standen darunter und wurden schlicht nie gesehen. Genau deshalb kam
+     * die Meldung, es gaebe gar keine echten.
+     */
+    liste.sort((a, b) =>
+      (b.real ? 1 : 0) - (a.real ? 1 : 0) ||
+      rang(a) - rang(b) ||
+      anstoss(a) - anstoss(b));
     return liste;
   }
 

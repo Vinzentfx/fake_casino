@@ -75,11 +75,29 @@ function save() {
   } catch {}
 }
 
-const NAME_A = ["Blitz", "Donner", "Sturm", "Gold", "Schatten", "Feuer", "Wirbel", "Silber", "Nacht", "Königs", "Porta", "Weser", "Turbo", "Kaiser", "Mitternacht", "Diamant"];
-const NAME_B = ["hufe", "wind", "pfeil", "stern", "läufer", "flamme", "geist", "prinz", "graf", "rakete", "blitz", "träumer", "jäger", "tänzer", "donner", "legende"];
+/*
+ * Pferdenamen aus zwei Teilen.
+ *
+ * Die Bausteine tragen ihr Fugen-s schon mit ("Mitternachts", "Königs"),
+ * weil es vorher fehlte: aus Mitternacht + wind wurde "Mitternachtwind".
+ * "hufe" ist raus, damit nichts wie ein Ersatzteil klingt ("Turbohufe",
+ * "Goldhufe"), dafuer sind ein paar Endungen dazugekommen, die zu einem
+ * Rennpferd passen.
+ */
+const NAME_A = ["Blitz", "Donner", "Sturm", "Gold", "Schatten", "Feuer", "Wirbel", "Silber",
+  "Nacht", "Königs", "Porta", "Weser", "Turbo", "Kaiser", "Mitternachts", "Diamant",
+  "Nebel", "Funken", "Wetter", "Morgen"];
+const NAME_B = ["wind", "pfeil", "stern", "läufer", "flamme", "geist", "prinz", "graf",
+  "rakete", "blitz", "träumer", "jäger", "tänzer", "donner", "legende", "husar",
+  "komet", "schweif", "falke", "bote"];
+
 function horseName() {
-  for (let i = 0; i < 30; i++) {
-    const n = NAME_A[crypto.randomInt(NAME_A.length)] + NAME_B[crypto.randomInt(NAME_B.length)];
+  for (let i = 0; i < 40; i++) {
+    const a = NAME_A[crypto.randomInt(NAME_A.length)];
+    const b = NAME_B[crypto.randomInt(NAME_B.length)];
+    // "Blitzblitz" und "Donnerdonner" wirken wie ein Fehler, nicht wie ein Name.
+    if (a.toLowerCase() === b) continue;
+    const n = a + b;
     if (!Object.values(store.horses).some((h) => h.name === n)) return n;
   }
   return "Pferd" + store.seq;
