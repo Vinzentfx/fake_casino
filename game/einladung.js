@@ -38,12 +38,12 @@ const MAX_JE_FENSTER = 8;    // und insgesamt nicht mehr als acht pro Minute
  */
 const SPIEL_NAMEN = {
   poker: "Poker", roulette: "Roulette", blackjack: "Blackjack", memory: "Memory-Duell",
-  sudoku: "Sudoku-Duell", solitaire: "Solitär-Rennen", chess: "Schach", pinco: "Pinco Ball",
+  sudoku: "Sudoku-Duell", solitaire: "Solitär-Rennen", chess: "Schach", pinco: "Pinco Ball", kniffel: "Kniffel-Duell",
   slots: "Slots-Duell",
 };
 const SCHIRM_ZU_SPIEL = {
   poker: "poker", roulette: "roulette", blackjack: "blackjack", memory: "memory",
-  sudoku: "sudoku", solitaire: "solrace", chess: "chess", pinco: "pinco", slots: "pvp",
+  sudoku: "sudoku", solitaire: "solrace", chess: "chess", pinco: "pinco", slots: "pvp", kniffel: "kniffel",
 };
 
 const zuletztAn = new Map();   // "absender>empfaenger" -> Zeitpunkt

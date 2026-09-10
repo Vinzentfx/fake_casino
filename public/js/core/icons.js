@@ -29,6 +29,13 @@
       <path d="M15.2 8.4v7.6" ${S} opacity=".7"/>
       <path d="M13.3 10.1l1.9-1.9 1.9 1.9" ${A} stroke="none"/>
       <path d="M17.1 14.3l-1.9 1.9-1.9-1.9" ${S}/>`,
+    // Zwei Wuerfel: Kniffel geht gegeneinander.
+    kniffel: `<rect x="2.6" y="8.4" width="11" height="11" rx="2.2" ${S}/>
+      <circle cx="5.9" cy="11.7" r="1" ${A}/><circle cx="10.3" cy="16.1" r="1" ${A}/>
+      <circle cx="8.1" cy="13.9" r="1" ${A}/>
+      <rect x="11.4" y="3.4" width="10.2" height="10.2" rx="2" ${S} opacity=".75"/>
+      <circle cx="14.4" cy="6.4" r=".95" ${A}/><circle cx="18.6" cy="6.4" r=".95" ${A}/>
+      <circle cx="14.4" cy="10.6" r=".95" ${A}/><circle cx="18.6" cy="10.6" r=".95" ${A}/>`,
     // Ein Wuerfel in Schraegsicht mit fuenf Augen.
     wuerfel: `<rect x="3.5" y="6" width="12.5" height="12.5" rx="2.5" ${S}/>
       <circle cx="7" cy="9.5" r="1.05" ${A}/><circle cx="12.5" cy="9.5" r="1.05" ${A}/>

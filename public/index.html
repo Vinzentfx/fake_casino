@@ -614,6 +614,58 @@
 
     <!-- ===================== STATISTIK ===================== -->
     <!-- ===================== MINES ===================== -->
+    <!-- ===================== KNIFFEL-DUELL ===================== -->
+    <section class="screen" data-screen="kniffel">
+      <div class="kn-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div style="text-align:center"><div class="ph-icon" data-icon="kniffel"></div><h2>Kniffel-Duell</h2></div>
+
+        <div id="kn-setup">
+          <div class="crash-betrow">
+            <label>Einsatz<input id="kn-amount" type="number" inputmode="numeric" min="50" step="50" value="500" /></label>
+          </div>
+          <label class="kn-check"><input type="checkbox" id="kn-oeffentlich" checked /> Öffentlich (steht in „Offene Lobbys“)</label>
+          <button class="btn-primary" id="kn-create" style="width:100%;margin-top:10px"><i data-icon="kniffel"></i> Partie aufmachen</button>
+          <div class="kn-trenner">oder einem Code beitreten</div>
+          <div class="kn-join-row">
+            <input id="kn-code-eingabe" type="text" maxlength="4" placeholder="z.B. AB12" style="text-transform:uppercase" />
+            <button class="btn-secondary" id="kn-join">Beitreten</button>
+          </div>
+          <p class="muted small">Sieben Felder, drei Würfe pro Zug. Wer am Ende mehr Punkte hat, nimmt den Topf.
+            Das Haus behält 5 Prozent Vermittlung, sonst nichts.</p>
+        </div>
+
+        <div id="kn-warten" class="hidden" style="text-align:center">
+          <p class="muted small">Warte auf einen Gegner. Der Einsatz kommt zurück, wenn du abbrichst.</p>
+          <div class="kn-code-gross" id="kn-code">----</div>
+          <p class="muted small" id="kn-warten-info"></p>
+          <button class="btn-secondary" id="kn-abbrechen">Abbrechen</button>
+        </div>
+
+        <div id="kn-spiel" class="hidden">
+          <div class="kn-kopfzeile">
+            <span id="kn-dran"></span>
+            <span class="kn-zeit" id="kn-zeit"></span>
+          </div>
+          <div class="kn-wuerfel" id="kn-wuerfel"></div>
+          <button class="btn-primary" id="kn-wurf" style="width:100%"><i data-icon="wuerfel"></i> Nochmal würfeln</button>
+          <div class="kn-zettel" id="kn-zettel"></div>
+          <div class="kn-fuss">
+            <span id="kn-topf"></span>
+            <button class="chip-btn" id="kn-aufgeben" type="button">Aufgeben</button>
+          </div>
+        </div>
+
+        <div id="kn-ende" class="hidden" style="text-align:center">
+          <h3 id="kn-ende-titel"></h3>
+          <p id="kn-ende-text"></p>
+          <button class="btn-primary" id="kn-nochmal">Neue Partie</button>
+        </div>
+
+        <div class="form-error" id="kn-error"></div>
+      </div>
+    </section>
+
     <!-- ===================== HIGHER / LOWER ===================== -->
     <section class="screen" data-screen="hilo">
       <div class="hilo-wrap">
@@ -2111,6 +2163,7 @@
   <script defer src="/js/chat.js"></script>
   <script defer src="/js/feed.js"></script>
   <script defer src="/js/lobby.js"></script>
+  <script defer src="/js/kniffel.js"></script>
   <script defer src="/js/hilo.js"></script>
   <script defer src="/js/wuerfel.js"></script>
   <script defer src="/js/lotterie.js"></script>

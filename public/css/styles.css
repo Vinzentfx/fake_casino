@@ -7914,3 +7914,63 @@ html:not(.reduce-motion) .hilo-rein { animation: hilo-rein 0.4s cubic-bezier(0.2
 /* Ab der Hälfte lohnt es sich, das Schloss etwas hoffnungsvoller zu zeichnen. */
 .badge.nah { border-color: rgba(var(--accent-rgb), 0.4); }
 .badge.nah .badge-fort { color: var(--accent-strong); }
+
+/* ============================================================
+   Kniffel-Duell
+   ============================================================ */
+.kn-wrap { max-width: 620px; margin: 0 auto; padding: 0 var(--sp-3) var(--sp-6); }
+.kn-check { display: flex; align-items: center; gap: 8px; margin-top: var(--sp-3); font-size: var(--fs-sm); color: var(--text-dim); }
+.kn-trenner { margin: var(--sp-4) 0 var(--sp-2); text-align: center; font-size: var(--fs-xs);
+  color: var(--text-mute); text-transform: uppercase; letter-spacing: .06em; }
+.kn-join-row { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-2); }
+.kn-join-row input { padding: 10px; border-radius: var(--r-sm); background: var(--surface-sunken);
+  border: 1px solid var(--line); color: var(--text); text-align: center; font-weight: 800; letter-spacing: .18em; }
+.kn-code-gross { font-size: 2.2rem; font-weight: 900; letter-spacing: .25em; color: var(--accent-strong); margin: var(--sp-3) 0; }
+
+.kn-kopfzeile { display: flex; justify-content: space-between; align-items: baseline;
+  margin: var(--sp-3) 0; font-size: var(--fs-sm); }
+.kn-zeit { font-variant-numeric: tabular-nums; color: var(--text-dim); }
+.kn-zeit.knapp { color: var(--bad-text); font-weight: 800; }
+
+.kn-wuerfel { display: flex; justify-content: center; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.kn-w { position: relative; width: 54px; height: 54px; padding: 7px; flex: none; border-radius: 12px;
+  background: #f4f1ea; color: #23232a; border: 2px solid rgba(0,0,0,.2);
+  box-shadow: 0 3px 10px rgba(0,0,0,.3); cursor: pointer; }
+.kn-w svg { width: 100%; height: 100%; display: block; }
+.kn-w.gehalten { border-color: var(--accent-strong); transform: translateY(-4px);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .35), 0 3px 10px rgba(0,0,0,.3); }
+.kn-w:disabled { cursor: default; opacity: .75; }
+.kn-w-marke { position: absolute; left: 0; right: 0; bottom: -14px; font-size: .55rem;
+  font-weight: 800; color: var(--accent-strong); text-transform: uppercase; }
+
+.kn-zettel { margin-top: var(--sp-5); border-radius: var(--radius);
+  border: 1px solid var(--line-neutral); overflow: hidden; }
+.kn-zeile { display: grid; grid-template-columns: 1fr 68px 68px; align-items: center;
+  gap: var(--sp-2); padding: 7px var(--sp-3); border-bottom: 1px solid var(--line-neutral); }
+.kn-zeile:last-child { border-bottom: 0; }
+.kn-kopf { background: var(--surface-sunken); font-weight: 800; font-size: var(--fs-xs);
+  text-transform: uppercase; letter-spacing: .04em; color: var(--text-dim); text-align: center; }
+.kn-kopf span:first-child { text-align: left; }
+/* Lange Spielernamen duerfen die Spalte nicht sprengen. */
+.kn-kopf span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.kn-feld { min-width: 0; }
+.kn-feld b, .kn-feld em { overflow: hidden; text-overflow: ellipsis; }
+.kn-feld b { display: block; font-size: var(--fs-sm); }
+.kn-feld em { font-style: normal; font-size: 0.68rem; color: var(--text-mute); }
+.kn-wert { text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+.kn-leer { text-align: center; color: var(--text-mute); }
+/* Eintragen ist die eigentliche Entscheidung — der Knopf zeigt, was es brächte. */
+.kn-setzen { width: 100%; padding: 5px 0; border-radius: var(--r-sm); font-weight: 800;
+  background: rgba(var(--good-rgb), .18); border: 1px solid rgba(var(--good-rgb), .45);
+  color: var(--good-text); cursor: pointer; font-variant-numeric: tabular-nums; }
+.kn-setzen.null { background: var(--surface-sunken); border-color: var(--line-neutral); color: var(--text-mute); }
+.kn-setzen:active { transform: scale(.95); }
+.kn-summe { background: var(--surface-sunken); font-weight: 900; text-align: center; }
+.kn-summe span:first-child { text-align: left; }
+.kn-fuss { display: flex; justify-content: space-between; align-items: center; margin-top: var(--sp-3);
+  font-size: var(--fs-sm); color: var(--text-dim); }
+
+@media (max-width: 420px) {
+  .kn-zeile { grid-template-columns: 1fr 54px 54px; padding: 6px var(--sp-2); }
+  .kn-w { width: 46px; height: 46px; }
+}

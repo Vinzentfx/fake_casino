@@ -149,6 +149,7 @@ function setupPoker(io, accounts) {
     lobby: "in der Lobby",
     hilo: "bei Higher/Lower",
     wuerfel: "beim Würfelpoker",
+    kniffel: "beim Kniffel",
     lotterie: "bei der Lotterie",
     poker: "spielt Poker",
     slots: "an den Slots",
@@ -185,7 +186,7 @@ function setupPoker(io, accounts) {
   // Towers und Rennbahn fehlten hier. Weil presence:screen unbekannte Namen
   // auf "lobby" zurueckfallen laesst, sah man jeden, der dort spielte, als
   // "in der Lobby" — und auf den Spielkarten waeren beide dauerhaft leer.
-  const GAME_SCREENS = new Set(["poker", "slots", "blackjack", "roulette", "sports", "crash", "mines", "towers", "horses", "pinco", "memory", "sudoku", "solitaire", "chess", "hilo", "wuerfel"]);
+  const GAME_SCREENS = new Set(["poker", "slots", "blackjack", "roulette", "sports", "crash", "mines", "towers", "horses", "pinco", "memory", "sudoku", "solitaire", "chess", "hilo", "wuerfel", "kniffel"]);
   function pickStatus(sockets) {
     const screens = sockets.map((s) => s.data && s.data.screen).filter(Boolean);
     const game = screens.find((name) => GAME_SCREENS.has(name));

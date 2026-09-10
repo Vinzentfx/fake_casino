@@ -19,6 +19,20 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-20",
+      datum: "20. September 2026",
+      titel: "Kniffel gegeneinander, und Achievements zeigen endlich den Fortschritt",
+      gross: true,
+      items: [
+        { icon: "kniffel", titel: "Kniffel-Duell",
+          text: "Zwei Spieler, sieben Felder, drei Würfe pro Zug. Du siehst direkt auf dem Zettel, was jedes freie Feld mit deinen Würfeln bringen würde — die Entscheidung ist, wo du einen mittelmäßigen Wurf einträgst, nicht das Kopfrechnen. Sieben Felder statt der klassischen dreizehn, weil eine volle Partie zu zweit über eine Viertelstunde dauert und so lange bleibt hier niemand am Tisch. Das Haus behält nur 5 Prozent Vermittlung, der Rest geht an den Gewinner." },
+        { icon: "achievements", titel: "Achievements mit Fortschrittsbalken",
+          text: "„Spiele 1.000 Runden“ war ein graues Schloss, auch wenn du bei 780 standest. Jetzt steht überall, wie weit du bist, und die noch offenen sind danach sortiert: was fast geschafft ist, steht oben." },
+        { icon: "achievements", titel: "25 neue Achievements",
+          text: "Level 25 und 50, alle Casino-Spiele einmal gespielt, Higher/Lower-Kette, fünf gleiche im Würfelpoker, drei Richtige und der Jackpot in der Lotterie, ein Pferd kaufen und 25 Rennen gewinnen, 150 Häuser, Boss von drei Ortsteilen, Sparkonto, Clan beitreten, jemandem Chips schicken, jemanden einladen, Kosmetik sammeln, einen Wochenrekord halten und Season-Stufe 20." },
+      ],
+    },
+    {
       id: "2026-09-19",
       datum: "19. September 2026",
       titel: "Vier Sachen repariert, die ihr gemeldet habt",

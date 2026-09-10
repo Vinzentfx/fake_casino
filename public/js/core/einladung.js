@@ -71,7 +71,7 @@
     roulette: "am Roulette", crash: "bei Crash", mines: "bei Mines", towers: "bei Towers",
     horses: "an der Rennbahn", pinco: "bei Pinco", memory: "bei Memory", sudoku: "bei Sudoku",
     solitaire: "bei Solitär", chess: "beim Schach", sports: "bei Sportwetten",
-    hilo: "bei Higher/Lower", wuerfel: "beim Würfelpoker", lotterie: "bei der Lotterie",
+    hilo: "bei Higher/Lower", wuerfel: "beim Würfelpoker", lotterie: "bei der Lotterie", kniffel: "beim Kniffel",
   };
   const wo = (s) => WO[s] || "online";
 
@@ -99,6 +99,7 @@
       poker: w._pokerJoinCode, pvp: w._pvpJoinCode, blackjack: w._bjJoinCode,
       roulette: w._rouletteJoinCode, memory: w._memoryJoinCode, sudoku: w._sudokuJoinCode,
       solrace: w._solraceJoinCode, chess: w._chessJoinCode, pinco: w._pincoJoinCode,
+      kniffel: w._kniffelJoinCode,
     };
     const fn = m[spiel];
     if (fn) fn(code);

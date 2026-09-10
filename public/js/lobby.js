@@ -60,6 +60,7 @@
     else if (game === "solrace" && window.Casino._solraceJoinCode) window.Casino._solraceJoinCode(code);
     else if (game === "chess" && window.Casino._chessJoinCode) window.Casino._chessJoinCode(code);
     else if (game === "pinco" && window.Casino._pincoJoinCode) window.Casino._pincoJoinCode(code);
+    else if (game === "kniffel" && window.Casino._kniffelJoinCode) window.Casino._kniffelJoinCode(code);
     else toast("Diese Lobby lässt sich gerade nicht beitreten.");
   }
 

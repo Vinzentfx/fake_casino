@@ -47,6 +47,7 @@
     { id: "chess",      name: "Schach-Duell",   sub: "Blitz um Chips, mit Wertung",       icon: "♟️", cat: "pvp", h: 240 },
     { id: "memory",     name: "Memory-Duell",   sub: "Paare finden, schneller als er",    icon: "🧠", cat: "pvp", h: 322 },
     { id: "sudoku",     name: "Sudoku-Race",    sub: "Solo oder Duell, wer zuerst löst",  icon: "🔢", cat: "pvp", h: 206 },
+    { id: "kniffel",    name: "Kniffel-Duell",  sub: "Sieben Felder, wer mehr Punkte holt", icon: "🎯", cat: "pvp", h: 18 },
     { id: "solitaire",  name: "Solitär",        sub: "Klondike, frei oder gegen das Haus", icon: "🂡", cat: "pvp", h: 354 },
 
     // --- Wirtschaft: was du mit den Gewinnen machst ---
