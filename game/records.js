@@ -176,6 +176,10 @@ function meldeSerie(key, spiel, net) {
   if (net < 0) { acc.serien[spiel] = 0; _accounts.save(); return null; }
   const laenge = (acc.serien[spiel] || 0) + 1;
   acc.serien[spiel] = laenge;
+  // Bestwert getrennt von der LAUFENDEN Serie: die faellt beim naechsten
+  // Verlust auf null, das Achievement soll aber bestehen bleiben.
+  const bestFeld = spiel + "Best";
+  if ((acc.serien[bestFeld] || 0) < laenge) acc.serien[bestFeld] = laenge;
   // recordHand speichert die Konten BEVOR es die Zuhoerer aufruft. Diese
   // Aenderung liegt also hinter dem Speichern und muesste sonst darauf warten,
   // dass irgendwer anders speichert — bei einem Neustart waere die laufende
@@ -201,6 +205,10 @@ function setze(key, spiel, wert, extra) {
     at: Date.now(),
   };
   save();
+
+  // Zaehler fuer das Achievement "Rekordhalter". Einmal gehalten zaehlt fuer
+  // immer, auch wenn der Rekord spaeter wieder faellt.
+  if (acc) { acc.rekorde = (acc.rekorde || 0) + 1; try { _accounts.save(); } catch {} }
 
   // Nur ansagen, wenn jemand einen FREMDEN Rekord schlaegt. Wer seinen eigenen
   // verbessert, muss dafuer nicht den Chat vollschreiben.

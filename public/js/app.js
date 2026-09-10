@@ -998,7 +998,9 @@ function renderAchievements() {
     if (!res || !res.ok) { box.innerHTML = '<p class="muted small">–</p>'; return; }
 
     const offen = res.list.filter((a) => a.unlocked);
-    const zu = res.list.filter((a) => !a.unlocked);
+    // Gesperrte nach Fortschritt: was fast geschafft ist, steht oben. Sonst
+    // sucht man das Naheliegende zwischen fuenfzig Schloessern.
+    const zu = res.list.filter((a) => !a.unlocked).sort((x, y) => (y.anteil || 0) - (x.anteil || 0));
     if (zaehler) zaehler.textContent = `${offen.length} von ${res.list.length}`;
 
     /*
@@ -1019,10 +1021,24 @@ function renderAchievements() {
         : a.unlocked
           ? `✓ Geschafft${wann ? " am " + wann : ""}`
           : `+${a.reward.toLocaleString("de-DE")}<i class=mk></i>`;
-      return `<div class="badge ${a.unlocked ? "on" : ""}${sel ? " selected" : ""}" data-ach="${a.id}" data-unlocked="${a.unlocked ? 1 : 0}">` +
+      /*
+       * Fortschrittsbalken bei allem, was mehr als einen Schritt braucht.
+       *
+       * "Spiele 1.000 Runden" als graues Schloss ist entmutigend, wenn man
+       * bei 780 steht und es nicht sieht. Die Zahlen kommen vom Server aus
+       * derselben Quelle wie die Freischaltung, koennen also nicht davon
+       * abweichen. Bei Ja/Nein-Zielen (ziel === 1) waere ein Balken sinnlos.
+       */
+      const mitBalken = !a.unlocked && a.ziel > 1;
+      const balken = mitBalken
+        ? `<div class="badge-bar"><i style="width:${Math.round((a.anteil || 0) * 100)}%"></i></div>` +
+          `<span class="badge-fort">${(a.ist || 0).toLocaleString("de-DE")} von ${a.ziel.toLocaleString("de-DE")}</span>`
+        : "";
+      return `<div class="badge ${a.unlocked ? "on" : ""}${sel ? " selected" : ""}${mitBalken && a.anteil >= 0.5 ? " nah" : ""}" data-ach="${a.id}" data-unlocked="${a.unlocked ? 1 : 0}">` +
         `<span class="badge-emoji">${a.unlocked ? a.emoji : "🔒"}</span>` +
         `<span class="badge-label">${escapeHtml(a.label)}</span>` +
         `<span class="badge-desc">${escapeHtml(a.desc)}</span>` +
+        balken +
         `<small>${zeile}</small></div>`;
     };
 

@@ -92,6 +92,14 @@ function schritt(deck, karte, richtung) {
 }
 
 function setupHilo(io, accounts) {
+  /* Laengste Kette merken — Grundlage fuer das Achievement "Kartenleser". */
+  function merkeKette(key, treffer) {
+    const acc = accounts.get(key);
+    if (!acc) return;
+    acc.serien = acc.serien || {};
+    if ((acc.serien.hiloBest || 0) < treffer) { acc.serien.hiloBest = treffer; accounts.save(); }
+  }
+
   // Am ACCOUNT statt am Socket: ein Neuladen darf keine Runde kosten.
   const spiele = new Map();
 
@@ -239,6 +247,7 @@ function setupHilo(io, accounts) {
       accounts.adjustChips(key, payout);
       accounts.recordHand(key, payout - g.bet, true, "hilo", { einsatz: g.bet });
       try { require("./records").melde(key, "hilo", g.bet, payout); } catch {}
+      merkeKette(key, g.treffer);
       ack({ ok: true, payout, mult: g.mult, treffer: g.treffer, account: accounts.publicAccount(accounts.get(key)) });
     });
   });

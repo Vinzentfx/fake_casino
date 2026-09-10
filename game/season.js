@@ -291,4 +291,11 @@ function setupSeason(io, accounts) {
   });
 }
 
-module.exports = { setupSeason, addXp, fokusHeute, SEASON };
+/** Welche Stufe entspricht dieser XP-Zahl? Fuer das Season-Achievement. */
+function levelVonXp(xp) {
+  let lv = 0;
+  for (const l of LEVELS) { if ((xp || 0) >= l.xp) lv = l.level; else break; }
+  return lv;
+}
+
+module.exports = { setupSeason, addXp, fokusHeute, levelVonXp, SEASON };

@@ -151,6 +151,8 @@ function setupEinladung(io, accounts) {
         privat: !d,
       };
       for (const s of ziele) s.emit("einladung:neu", nutzlast);
+      // Zaehler fuer das Achievement "Gastgeber".
+      if (acc) { acc.einladungen = (acc.einladungen || 0) + 1; accounts.save(); }
       antwort({ ok: true });
     });
   });

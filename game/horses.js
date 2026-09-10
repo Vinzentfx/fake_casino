@@ -889,6 +889,8 @@ function setupHorses(_io, _accounts) {
       store.market = store.market.filter((id) => id !== horseId);
       save();
       const acc = accounts.get(key());
+      // Zaehler fuer das Achievement "Eigenes Pferd".
+      if (acc) { acc.horsesOwned = (acc.horsesOwned || 0) + 1; accounts.save(); }
       try { require("./feed").add("horses", `🐎 ${acc.name} kauft ${h.name} für ${price.toLocaleString("de-DE")} Chips.`, { user: acc.name }); } catch {}
       ack({ ok: true, account: deduct.account, horse: publicHorse(h, { own: true }) });
     });

@@ -7891,3 +7891,26 @@ html:not(.reduce-motion) .hilo-rein { animation: hilo-rein 0.4s cubic-bezier(0.2
 /* Der fallende Chip ist jetzt eine gezeichnete Münze, kein Text mehr. */
 .rain-chip svg { width: 2.2rem; height: 2.2rem; display: block; color: var(--gold, #f4d782); }
 .rain-chip.gold svg { width: 2.8rem; height: 2.8rem; color: #ffe08a; }
+
+/* --- Achievements: Fortschritt statt nur Schloss ----------------------------
+   "Spiele 1.000 Runden" als graues Schloss ist entmutigend, wenn man bei 780
+   steht und es nicht sieht. Balken nur, wo es mehr als einen Schritt gibt. */
+.badge-bar {
+  width: 100%;
+  height: 5px;
+  margin: 6px 0 3px;
+  border-radius: 3px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.badge-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.55), var(--accent-strong));
+  transition: width 0.4s ease;
+}
+.badge-fort { font-size: 0.66rem; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+/* Ab der Hälfte lohnt es sich, das Schloss etwas hoffnungsvoller zu zeichnen. */
+.badge.nah { border-color: rgba(var(--accent-rgb), 0.4); }
+.badge.nah .badge-fort { color: var(--accent-strong); }

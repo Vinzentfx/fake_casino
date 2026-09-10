@@ -125,6 +125,11 @@ function setupWuerfel(io, accounts) {
     if (payout > 0) accounts.adjustChips(key, payout);
     accounts.recordHand(key, payout - g.bet, true, "wuerfel", { einsatz: g.bet });
     if (payout > 0) { try { require("./records").melde(key, "wuerfel", g.bet, payout); } catch {} }
+    // Fuer das Achievement "Fuenf gleiche".
+    if (kat === "fuenf") {
+      const acc = accounts.get(key);
+      if (acc) { acc.serien = acc.serien || {}; acc.serien.wuerfelFuenf = (acc.serien.wuerfelFuenf || 0) + 1; accounts.save(); }
+    }
     return { kat, payout };
   }
 

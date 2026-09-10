@@ -491,10 +491,14 @@ accounts.onHand((name) => {
 // Chip-Transfer zwischen Spielern (socket-auth required)
 io.on("connection", (socket) => {
   socket.on("account:transfer", ({ to, amount } = {}, ack) => {
+    // Zaehler fuer das Achievement "Spendabel" — hochgezaehlt wird erst, wenn
+    // die Ueberweisung unten tatsaechlich geklappt hat.
     if (!ack) return;
     if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
     const res = accounts.transfer(socket.data.account, to, amount);
     if (!res.ok) return ack({ ok: false, error: res.error });
+    const abs = accounts.get(socket.data.account);
+    if (abs) { abs.transfersSent = (abs.transfersSent || 0) + 1; accounts.save(); }
     // Update sender
     socket.emit("account:update", { account: res.fromAccount });
     // Notify recipient if online

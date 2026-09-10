@@ -156,6 +156,18 @@ function ziehungDurchfuehren() {
   for (const [key, betrag] of Object.entries(auszahlungen)) {
     if (betrag > 0 && accounts) accounts.adjustChips(key, betrag);
   }
+  // Zaehler fuer die Achievements "Drei Richtige" und "Der Jackpot".
+  if (accounts) {
+    const merke = (key, feld) => {
+      const acc = accounts.get(key);
+      if (!acc) return;
+      acc.lotto = acc.lotto || {};
+      acc.lotto[feld] = (acc.lotto[feld] || 0) + 1;
+    };
+    for (const g of gewinner[3]) merke(g.key, "drei");
+    for (const g of gewinner[4]) merke(g.key, "jackpot");
+    if (gewinner[3].length || gewinner[4].length) accounts.save();
+  }
 
   const namen = (liste) => liste.map((g) => {
     const a = accounts && accounts.get(g.key);
