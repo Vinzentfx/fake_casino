@@ -1,21 +1,21 @@
 "use strict";
 
 /**
- * One-time data snapshot: pulls Porta Westfalica's 15 Stadtteile from
- * OpenStreetMap (Overpass API) — district boundaries, every real building
- * (garages/sheds filtered out), and landmarks (schools, stations, parks,
- * sports grounds) — and writes a compact game map to game/data/porta.json.
+ * Einmaliger Auszug: holt die Stadtteile von Porta Westfalica aus
+ * OpenStreetMap (Overpass-API), also Ortsteilgrenzen, jedes echte Gebäude
+ * (ohne Garagen und Schuppen) und Wahrzeichen (Schulen, Bahnhöfe, Parks,
+ * Sportplätze), und schreibt eine kompakte Spielkarte nach game/data/porta.json.
  *
- * Run manually when the map should be refreshed:  node tools/fetch-porta.js
- * The game itself never talks to Overpass; it only reads the snapshot.
+ * Von Hand starten, wenn die Karte neu soll:  node tools/fetch-porta.js
+ * Das Spiel selbst fragt Overpass nie, es liest nur den Auszug.
  */
 
 const fs = require("fs");
 const path = require("path");
 
 const OUT = process.env.OUT || path.join(__dirname, "..", "game", "data", "porta.json");
-// Several Overpass mirrors — the main endpoint rate-limits (429/504) under load,
-// so we rotate through mirrors and back off between tries.
+// Mehrere Overpass-Spiegel. Der Hauptserver bremst unter Last (429/504),
+// deshalb wird reihum gewechselt und zwischen den Versuchen gewartet.
 const APIS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
@@ -23,8 +23,8 @@ const APIS = [
   "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ];
 
-// The playable Stadtteile of Porta Westfalica (OSM relation ids, admin_level 10).
-// A focused subset of the 15 — keeps the map readable and the snapshot small.
+// Die spielbaren Stadtteile von Porta Westfalica (OSM-Relationen, admin_level 10).
+// Eine Auswahl aus den 15, damit die Karte lesbar und der Auszug klein bleibt.
 const DISTRICTS = [
   { id: "eisbergen",     name: "Eisbergen",     rel: 1335614 },
   { id: "hausberge",     name: "Hausberge",     rel: 1335589 },
@@ -39,28 +39,28 @@ const SELECTED_DISTRICTS = process.env.ONLY_DISTRICT
   ? DISTRICTS.filter((d) => d.id === process.env.ONLY_DISTRICT)
   : DISTRICTS;
 
-// Buildings that are not really "a house you could own": filtered out.
+// Gebäude, die nicht wirklich "ein Haus zum Besitzen" sind, fliegen raus.
 const SKIP_BUILDING = /^(garage|garages|shed|carport|roof|hut|power|greenhouse|ruins|construction|service|container|transformer_tower)$/;
 
-// Rough local projection: meters east/north of the city centre.
+// Grobe lokale Projektion: Meter nach Osten/Norden ab der Stadtmitte.
 const CENTER = { lat: 52.2436, lon: 8.9184 }; // Porta Westfalica
 const M_PER_DEG_LAT = 111320;
 const mPerDegLon = M_PER_DEG_LAT * Math.cos((CENTER.lat * Math.PI) / 180);
 const px = (lon) => Math.round((lon - CENTER.lon) * mPerDegLon);
-const py = (lat) => Math.round((CENTER.lat - lat) * M_PER_DEG_LAT); // screen-y grows south
+const py = (lat) => Math.round((CENTER.lat - lat) * M_PER_DEG_LAT); // Bildschirm-y wächst nach Süden
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function overpass(query, tries = 8) {
   let lastStatus = "?";
   for (let i = 0; i < tries; i++) {
-    const api = APIS[i % APIS.length]; // rotate through mirrors
+    const api = APIS[i % APIS.length]; // Spiegel reihum
     try {
       const res = await fetch(api, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          // Overpass rejects requests without a descriptive UA (406).
+          // Overpass lehnt Anfragen ohne aussagekräftigen User-Agent ab (406).
           "User-Agent": "fake-casino-map-snapshot/1.0 (hobby project, one-time fetch)",
           "Accept": "application/json",
         },
@@ -71,16 +71,16 @@ async function overpass(query, tries = 8) {
     } catch (e) {
       lastStatus = e.message;
     }
-    const wait = Math.min(45000, 8000 + i * 6000); // backoff, cap 45s
+    const wait = Math.min(45000, 8000 + i * 6000); // immer länger warten, höchstens 45 s
     console.log(`  … Overpass ${lastStatus} @ ${api.split("/")[2]}, warte ${Math.round(wait / 1000)}s (Versuch ${i + 1}/${tries})`);
     await sleep(wait);
   }
   throw new Error("Overpass gab dauerhaft keinen Erfolg zurück (letzter Status: " + lastStatus + ").");
 }
 
-// ─── Geometry helpers ───────────────────────────────────────────────────────
+// --- Geometrie ---
 
-/** Stitch a relation's member ways into closed outer rings. */
+/** Die Wege einer Relation zu geschlossenen Außenringen zusammensetzen. */
 function assembleRings(members) {
   const ways = members
     .filter((m) => m.type === "way" && m.role !== "inner" && Array.isArray(m.geometry))
@@ -115,7 +115,7 @@ function polyArea(pts) {
   return a / 2;
 }
 
-/** Douglas-Peucker simplification (tolerance in meters). */
+/** Douglas-Peucker-Vereinfachung (Toleranz in Metern). */
 function simplify(pts, tol) {
   if (pts.length <= 4) return pts;
   const sqTol = tol * tol;
@@ -149,8 +149,8 @@ const centroid = (pts) => {
   return [Math.round(x / pts.length), Math.round(y / pts.length)];
 };
 
-// ─── Building classification ────────────────────────────────────────────────
-/** Map OSM tags → game class (drives price + buff). */
+// --- Gebäude einordnen ---
+/** OSM-Tags auf eine Spielklasse abbilden (bestimmt den Preis). */
 function classify(tags, pois) {
   const b = tags.building || "yes";
   if (b === "hotel" || pois.hotel) return "hotel";
@@ -162,7 +162,7 @@ function classify(tags, pois) {
   return "residential";
 }
 
-// ─── Main ───────────────────────────────────────────────────────────────────
+// --- Hauptteil ---
 (async () => {
   console.log("→ Hole Stadtteil-Grenzen …");
   const relIds = SELECTED_DISTRICTS.map((d) => d.rel).join(",");
@@ -195,7 +195,7 @@ area(${area})->.d;
     const data = await overpass(q);
     const els = data.elements || [];
 
-    // POI nodes → for classifying the building they sit in/near.
+    // Einzelne Punkte (POIs), um das Gebäude einzuordnen, in oder an dem sie liegen.
     const poiNodes = [];
     const landmarks = [];
     for (const el of els) {
@@ -218,17 +218,17 @@ area(${area})->.d;
     for (const el of els) {
       if (el.type !== "way" || !el.geometry) continue;
       const t = el.tags || {};
-      // Streets: polyline + class (drives stroke width) + name (for the info panel).
+      // Straßen: Linienzug, Klasse (bestimmt die Strichstärke) und Name (fürs Infofeld).
       if (t.highway) {
         let pts = el.geometry.map((g) => [px(g.lon), py(g.lat)]);
         pts = simplify(pts, 3);
         if (pts.length < 2) continue;
         const major = /^(motorway|trunk|primary|secondary)$/.test(t.highway) ? 2
-          : /^(tertiary|residential|unclassified|living_street|pedestrian)$/.test(t.highway) ? 1 : 0; // 0 = service
+          : /^(tertiary|residential|unclassified|living_street|pedestrian)$/.test(t.highway) ? 1 : 0; // 0 = Zufahrt
         roads.push({ pts, w: major, n: t.name || null });
         continue;
       }
-      // Landmark grounds (schools, parks, sports) — kept separate, not buyable.
+      // Wahrzeichen-Flächen (Schulen, Parks, Sport), getrennt geführt und nicht kaufbar.
       if (!t.building) {
         const pts = el.geometry.map((g) => [px(g.lon), py(g.lat)]);
         const [cx, cy] = centroid(pts);
@@ -244,7 +244,7 @@ area(${area})->.d;
       pts = simplify(pts, 1.2);
       if (pts.length < 3) continue;
       const areaM2 = Math.abs(polyArea(pts));
-      if (areaM2 < 25) continue; // ignore mini-structures
+      if (areaM2 < 25) continue; // Kleinkram ignorieren
       const [cx, cy] = centroid(pts);
       const near = { hotel: 0, cafe: 0, kiosk: 0, shop: 0, bank: 0 };
       for (const p of poiNodes) {
@@ -258,14 +258,14 @@ area(${area})->.d;
         cls: classify(t, near),
         bank: near.bank ? 1 : 0,
         n: t["addr:street"] ? `${t["addr:street"]} ${t["addr:housenumber"] || ""}`.trim() : null,
-        t: t.building && t.building !== "yes" ? t.building : null, // original OSM type for the info panel
-        nm: t.name || null,                                        // e.g. shop/church names
+        t: t.building && t.building !== "yes" ? t.building : null, // ursprünglicher OSM-Typ fürs Infofeld
+        nm: t.name || null,                                        // z. B. Namen von Läden oder Kirchen
         lv: t["building:levels"] ? parseFloat(t["building:levels"]) || null : null,
       });
     }
 
-    // Buildings without an address: borrow the nearest named street (≤80 m)
-    // so the info panel can still say where the house stands.
+    // Gebäude ohne Adresse leihen sich die nächste benannte Straße (≤80 m),
+    // damit im Infofeld trotzdem steht, wo das Haus ist.
     const namedPts = [];
     for (const r of roads) if (r.n) for (const p of r.pts) namedPts.push([p[0], p[1], r.n]);
     for (const b of buildings) {
@@ -286,7 +286,7 @@ area(${area})->.d;
       roads,
     });
     console.log(`   ${buildings.length} Gebäude, ${landmarks.length} Landmarks, ${roads.length} Straßen`);
-    await sleep(6000); // be polite to Overpass (mirrors rate-limit under load)
+    await sleep(6000); // Overpass nicht überlasten (die Spiegel bremsen sonst)
   }
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });

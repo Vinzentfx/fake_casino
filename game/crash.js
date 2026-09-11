@@ -1,28 +1,28 @@
 "use strict";
 
 /**
- * Crash / Aviator — one SHARED round for everyone.
+ * Crash (wie Aviator), eine Runde für alle gemeinsam.
  *
- * Round loop: BETTING (place your bet + optional auto-cashout) → FLYING (a
- * rocket climbs, the multiplier grows exponentially) → CRASH (at a provably-
- * fair random point the rocket explodes). Cash out before the crash to win
- * bet × multiplier; if you're still in when it blows, you lose the bet.
+ * Ablauf: SETZEN (Einsatz und auf Wunsch Auto-Auszahlung), dann FLUG (die Rakete
+ * steigt, der Multiplikator wächst exponentiell), dann CRASH (an einem zufälligen,
+ * nachprüfbar fairen Punkt explodiert sie). Wer vorher auszahlt, bekommt
+ * Einsatz × Multiplikator, wer noch drin ist, verliert.
  *
- * Server-authoritative: the crash point is fixed when the flight starts and
- * cashouts are resolved against the server clock. House game → casino rake +
- * quests + weekly net via accounts.recordHand.
+ * Alles auf dem Server: der Crashpunkt steht beim Start fest, Auszahlungen gelten
+ * nach der Uhr des Servers. Hausspiel, läuft also über accounts.recordHand in
+ * Rake, Aufträge und Wochenbilanz.
  *
- * Fairness: P(crash ≥ x) = (1 − edge) / x  → house edge = `HOUSE_EDGE`.
+ * Fairness: P(Crash ≥ x) = (1 − edge) / x, Hausvorteil = `HOUSE_EDGE`.
  */
 
 const crypto = require("crypto");
 
 const BET_MS = 7000;        // betting window
-const PAUSE_MS = 4500;      // after a crash before the next round
+const PAUSE_MS = 4500;      // Pause nach dem Crash bis zur nächsten Runde
 const TICK_MS = 100;        // multiplier broadcast cadence
-const GROWTH = 0.00013;     // exp growth/ms → ~2× at 5.3s, ~10× at 17.7s
+const GROWTH = 0.00013;     // exponentielles Wachstum pro ms, ~2× nach 5,3 s, ~10× nach 17,7 s
 const HOUSE_EDGE = 0.03;    // 97% RTP
-const MAX_CRASH = 120;      // cap so a round can't run forever (~37s)
+const MAX_CRASH = 120;      // Deckel, damit eine Runde nicht ewig läuft (~37 s)
 // 1.000.000 waren zwoelf Prozent der gesamten Geldmenge auf einen Knopfdruck.
 // Der groesste je gesetzte Betrag im ganzen Casino lag bei rund 886.000, das
 // neunzigste Perzentil bei 200.000.
@@ -44,7 +44,7 @@ function setupCrash(io, accounts) {
   const state = {
     phase: "betting",     // betting | flying | crashed
     roundId: 1,
-    endsAt: Date.now() + BET_MS, // when the current phase ends (betting/pause)
+    endsAt: Date.now() + BET_MS, // wann die aktuelle Phase endet (Setzen oder Pause)
     startAt: 0,           // flight start
     crashPoint: 0,
     bets: {},             // key → { name, amount, target, cashedAt }
@@ -74,7 +74,7 @@ function setupCrash(io, accounts) {
   }
   const broadcast = (ev, extra) => io.emit(ev, { ...snapshot(), ...extra });
 
-  // ── Round state machine ─────────────────────────────────────────────────
+  // --- Round state machine ---
   function startBetting() {
     state.phase = "betting";
     state.roundId += 1;
@@ -92,9 +92,9 @@ function setupCrash(io, accounts) {
   function crash() {
     state.phase = "crashed";
     state.endsAt = Date.now() + PAUSE_MS;
-    // Anyone still in loses (bet already deducted). Record every settled bet.
+    // Wer noch drin ist, verliert (Einsatz schon abgezogen). Jede Wette verbuchen.
     for (const [key, b] of Object.entries(state.bets)) {
-      if (b.cashedAt) continue; // already paid on cashout
+      if (b.cashedAt) continue; // schon beim Auszahlen bezahlt
       accounts.recordHand(key, -b.amount, true, "crash");
     }
     state.history.unshift(state.crashPoint);
@@ -119,7 +119,7 @@ function setupCrash(io, accounts) {
     } else if (state.phase === "flying") {
       const elapsed = now - state.startAt;
       const m = mAt(elapsed);
-      // Auto-cashouts that have reached their target.
+      // Auto-Auszahlungen, die ihr Ziel erreicht haben.
       for (const [key, b] of Object.entries(state.bets)) {
         if (!b.cashedAt && b.target && m >= b.target && b.target <= state.crashPoint) {
           const payout = cashOut(key, b.target);
@@ -155,7 +155,7 @@ function setupCrash(io, accounts) {
       if (typeof ack !== "function") return;
       const a = acc(socket);
       if (!a) return ack({ ok: false, error: "Nicht eingeloggt." });
-      if (state.phase !== "betting") return ack({ ok: false, error: "Gerade kein Einsatz möglich — warte auf die nächste Runde." });
+      if (state.phase !== "betting") return ack({ ok: false, error: "Gerade geht kein Einsatz, warte auf die nächste Runde." });
       const key = socket.data.account;
       if (state.bets[key]) return ack({ ok: false, error: "Du hast diese Runde schon gesetzt." });
       amount = Math.floor(Number(amount));
@@ -179,7 +179,7 @@ function setupCrash(io, accounts) {
       const b = state.bets[key];
       if (!b || b.cashedAt) return ack({ ok: false, error: "Nichts zum Auszahlen." });
       const m = mAt(Date.now() - state.startAt);
-      if (m > state.crashPoint) return ack({ ok: false, error: "Zu spät — geplatzt!" });
+      if (m > state.crashPoint) return ack({ ok: false, error: "Zu spät, schon geplatzt!" });
       const payout = cashOut(key, m);
       ack({ ok: true, mult: m, payout, account: accounts.publicAccount(accounts.get(key)) });
       broadcast("crash:round");

@@ -1,12 +1,12 @@
 "use strict";
 
 /**
- * Higher/Lower — Einzelspieler, serverseitig entschieden.
+ * Higher/Lower, Einzelspieler, serverseitig entschieden.
  *
  * Eine Karte liegt offen. Ist die naechste hoeher oder tiefer? Jeder Treffer
  * multipliziert, aussteigen geht jederzeit. Danebengelegen kostet den Einsatz.
  *
- * Die Multiplikatoren sind KEINE Tabelle, sondern werden aus dem echten
+ * Die Multiplikatoren sind keine Tabelle, sondern werden aus dem echten
  * Restdeck gerechnet:
  *
  *   Schritt = (hoeher + tiefer) / richtige Seite · (1 − HOUSE_EDGE)
@@ -17,10 +17,10 @@
  * man sieht der Karte an, was sie wert ist.
  *
  * Gleicher Rang ist ein PUSH: die Karte wandert weg, der Multiplikator bleibt.
- * Deshalb steht im Zaehler (hoeher + tiefer) und nicht 51 — Gleichstaende sind
+ * Deshalb steht im Zaehler (hoeher + tiefer) und nicht 51. Gleichstaende sind
  * aus der Rechnung raus, weil sie weder gewinnen noch verlieren.
  *
- * Das Deck wird beim Start gemischt (crypto) und liegt NUR auf dem Server.
+ * Das Deck wird beim Start gemischt (crypto) und liegt nur auf dem Server.
  */
 
 const crypto = require("crypto");
@@ -76,7 +76,7 @@ function schritt(deck, karte, richtung) {
    * Nie unter 1.
    *
    * Bei einer Zwei kann keine Karte tiefer sein: "hoeher" ist damit
-   * risikolos, und der rechnerisch faire Faktor waere 0,98 — der
+   * risikolos, und der rechnerisch faire Faktor waere 0,98, der
    * Hausvorteil auf eine Wette, die man gar nicht verlieren kann. Im Spiel
    * sah das so aus: richtig getippt, und der Multiplikator FIEL von 1,06
    * auf 1,04. Das ist zwar korrekt gerechnet, aber niemand akzeptiert es,
@@ -92,7 +92,7 @@ function schritt(deck, karte, richtung) {
 }
 
 function setupHilo(io, accounts) {
-  /* Laengste Kette merken — Grundlage fuer das Achievement "Kartenleser". */
+  /* Laengste Kette merken, Grundlage fuer das Achievement "Kartenleser". */
   function merkeKette(key, treffer) {
     const acc = accounts.get(key);
     if (!acc) return;
@@ -100,7 +100,7 @@ function setupHilo(io, accounts) {
     if ((acc.serien.hiloBest || 0) < treffer) { acc.serien.hiloBest = treffer; accounts.save(); }
   }
 
-  // Am ACCOUNT statt am Socket: ein Neuladen darf keine Runde kosten.
+  // Am Account statt am Socket: ein Neuladen darf keine Runde kosten.
   const spiele = new Map();
 
   /** Verlassene Runden abrechnen, damit kein Einsatz haengen bleibt. */
@@ -134,7 +134,7 @@ function setupHilo(io, accounts) {
         mult: Math.round(g.mult * 100) / 100,
         treffer: g.treffer,
         rest: g.deck.length,
-        // Was die naechste Entscheidung wert waere — der Client zeigt es auf
+        // Was die naechste Entscheidung wert waere, der Client zeigt es auf
         // den Knoepfen, damit man vor dem Tippen weiss, worauf man sich einlaesst.
         hoch: schritt(g.deck, g.karte, "hoch"),
         tief: schritt(g.deck, g.karte, "tief"),

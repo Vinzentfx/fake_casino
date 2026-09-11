@@ -7,18 +7,18 @@
  *
  * Vorher konnte sie genau eines: dastehen. Kein Ton, kein Ablauf, kein
  * Verlauf. Wer sie schrieb, sah nicht, was er zuletzt geschrieben hatte,
- * und wer nicht gerade online war, erfuhr nie davon — obwohl das Haus seit
+ * und wer nicht gerade online war, erfuhr nie davon, obwohl das Haus seit
  * Monaten ein Push-System hat und genau die lange Abwesenden erreichen
  * will. Eine Wartungsansage blieb ausserdem stehen, bis jemand daran
  * dachte, sie zu loeschen; bei einer Ansage mit "ab 20 Uhr" ist das der
  * Normalfall, nicht die Ausnahme.
  *
  * Jetzt:
- *   ART      info | warnung | fest — bestimmt Farbe und Ton der Zeile.
+ *   ART      info | warnung | fest: bestimmt Farbe und Ton der Zeile.
  *   ABLAUF   optional. Danach verschwindet sie von selbst.
  *   VERLAUF  die letzten zehn, damit man sich nicht wiederholt.
  *   PUSH     optional, ueber den Anlass "ansage". Wer verbunden ist,
- *            bekommt keinen — der sieht die Zeile ja.
+ *            bekommt keinen, der sieht die Zeile ja.
  */
 
 const fs = require("fs");
@@ -46,7 +46,7 @@ function load() {
   try {
     const raw = JSON.parse(fs.readFileSync(FILE, "utf8"));
     if (raw && typeof raw === "object") {
-      // Alte Fassung: die Datei WAR die Ansage.
+      // Alte Fassung: die Datei war die Ansage.
       if (typeof raw.text === "string") return { aktuell: raw, verlauf: [] };
       return {
         aktuell: raw.aktuell && typeof raw.aktuell.text === "string" ? raw.aktuell : null,
@@ -119,7 +119,7 @@ function setupAnnouncements(io) {
 
       art = istArt(art) ? art : "info";
 
-      /* Ablauf. 0 heisst "bis ich sie wegnehme" — der bisherige und weiter
+      /* Ablauf. 0 heisst "bis ich sie wegnehme", der bisherige und weiter
          der uebliche Fall. Nach oben eine Woche, damit ein vertippter Wert
          keine Zeile hinterlaesst, die den Sommer ueberdauert. */
       const min = Math.max(0, Math.min(7 * 24 * 60, Math.floor(Number(minuten) || 0)));
@@ -132,7 +132,7 @@ function setupAnnouncements(io) {
       io.emit("announcement:state", { announcement: publicState(), toast: true });
 
       /* Push nur auf ausdruecklichen Wunsch. Eine Ansage erreicht sonst nur,
-         wer gerade zufaellig da ist — und das sind genau nicht die, die man
+         wer gerade zufaellig da ist, und das sind genau nicht die, die man
          mit einer Ansage meint. Wer verbunden ist, bekommt keinen: `anAlle`
          laesst die Online-Liste ohnehin aus. */
       let erreicht = 0;
@@ -144,7 +144,7 @@ function setupAnnouncements(io) {
             body: text,
             url: "/",
           });
-        } catch { /* Push nicht eingerichtet — die Ansage steht trotzdem. */ }
+        } catch { /* Push nicht eingerichtet, die Ansage steht trotzdem. */ }
       }
       ack({ ok: true, announcement: publicState(), pushErreicht: erreicht });
     });

@@ -3,7 +3,7 @@
 /**
  * Mitspieler in die eigene Lobby holen.
  *
- * Absenderseite: ein Knopf neben dem Chat, der NUR erscheint, wenn man
+ * Absenderseite: ein Knopf neben dem Chat, der nur erscheint, wenn man
  * gerade wirklich in einer Lobby sitzt. Bewusst dort und nicht in den neun
  * Lobby-Bildschirmen einzeln: eine Stelle, die auf jedem Bildschirm liegt,
  * statt neun, die auseinanderlaufen.
@@ -117,7 +117,7 @@
   }
 
   // Beim Bildschirmwechsel sofort, sonst im ruhigen Takt: eine Lobby
-  // aufzumachen wechselt den Bildschirm NICHT, der Zustand aendert sich also
+  // aufzumachen wechselt den Bildschirm nicht, der Zustand aendert sich also
   // auch ohne Navigation.
   document.addEventListener("casino:screen", hole);
   socket.on("connect", hole);

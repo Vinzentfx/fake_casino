@@ -1,11 +1,11 @@
 "use strict";
 
 /**
- * Vorschläge / Suggestions — players send game ideas straight to the owner.
+ * Vorschläge: Spieler schicken Ideen direkt an den Besitzer.
  *
- * Anti-spam: max SUGGEST_PER_HOUR per account per rolling hour (in-memory).
- * Suggestions persist to data/suggestions.json so the owner sees them across
- * sessions. Only the owner ("vincent") can list/delete them.
+ * Gegen Spam: höchstens SUGGEST_PER_HOUR je Konto in der letzten Stunde (im
+ * Speicher). Die Vorschläge liegen in data/suggestions.json, damit sie nicht
+ * verloren gehen. Ansehen und löschen kann nur der Besitzer.
  */
 
 const path = require("path");
@@ -28,7 +28,7 @@ function save() {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(FILE, JSON.stringify(items)); } catch {}
 }
 
-const rate = new Map(); // key -> [timestamps]
+const rate = new Map(); // Konto -> [Zeitpunkte]
 function recent(key) {
   const now = Date.now();
   const list = (rate.get(key) || []).filter((t) => now - t < HOUR_MS);
@@ -70,15 +70,15 @@ function setupSuggestions(io, accounts) {
       const key = socket.data.account;
       const used = recent(key);
       if (used.length >= SUGGEST_PER_HOUR)
-        return ack({ ok: false, error: `Max. ${SUGGEST_PER_HOUR} Vorschläge pro Stunde — versuch es später nochmal.` });
+        return ack({ ok: false, error: `Max. ${SUGGEST_PER_HOUR} Vorschläge pro Stunde, versuch es später noch mal.` });
 
       used.push(Date.now());
       const item = { name: acc.name, text, at: Date.now() };
       items.push(item);
-      if (items.length > 1000) items = items.slice(-1000); // hard cap
+      if (items.length > 1000) items = items.slice(-1000); // feste Obergrenze
       save();
 
-      // Ping the owner if online.
+      // Dem Besitzer Bescheid geben, falls online.
       const os = ownerSocket();
       if (os) os.emit("suggest:new", { name: acc.name });
 

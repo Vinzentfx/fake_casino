@@ -11,7 +11,7 @@
  *
  * Schlimmer als das Aussehen ist die Wirkung: confirm() und prompt() halten
  * den ganzen JavaScript-Ablauf an. In einer Anwendung, die permanent mit dem
- * Server spricht, steht damit alles — Chat, Timer, laufende Runden — bis
+ * Server spricht, steht damit alles (Chat, Timer, laufende Runden) bis
  * jemand auf OK tippt.
  *
  * Diese Dialoge geben stattdessen ein Promise zurueck. Aufrufer muessen also

@@ -5,7 +5,7 @@
  *
  * Zweck steht in game/push.js: das Casino ist voller Dinge, die zu zweit
  * stattfinden, und niemand weiss, wann die anderen da sind. Hier ist die
- * Oberflaeche dazu — plus der Knopf, mit dem man die anderen ruft.
+ * Oberflaeche dazu, außerdem der Knopf, mit dem man die anderen ruft.
  *
  * iPad ist der wichtigste Fall und gleichzeitig der einzige mit einer echten
  * Huerde: Safari erlaubt Push nur, wenn die Seite ueber "Zum Home-Bildschirm"
@@ -49,7 +49,7 @@
     return new Promise((r) => socket.emit("push:state", r));
   }
 
-  /** Ist DIESES Gerät angemeldet? Die Geräteliste kommt vom Server. */
+  /** Ist dieses Gerät angemeldet? Die Geräteliste kommt vom Server. */
   async function meinAbo() {
     if (!reg) return null;
     try { return await reg.pushManager.getSubscription(); } catch { return null; }

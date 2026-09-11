@@ -1,12 +1,12 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Clans (Client).
+   Clans
 
    Der Bildschirm war eine einzige Rolle: Level, Season, Motto, Schatzkammer,
    Auftraege, Mitgliederliste, Anfragen, Protokoll und ganz unten der
    Verlassen-Knopf. Auf dem iPad hiess das anderthalb Meter wischen, um zu
-   sehen, wer im Clan ist — und die woechentlichen Auftraege, das Einzige,
+   sehen, wer im Clan ist, und die woechentlichen Auftraege, das Einzige,
    was ohne zwei gleichzeitig anwesende Leute funktioniert, lagen irgendwo
    in der Mitte.
 
@@ -36,7 +36,7 @@
   const rolleZeichen = (r) => (r === "founder" ? sym("krone") : r === "officer" ? sym("stern-voll") : "");
 
   /*
-   * Wappen oder Ersatz. Ohne Bild steht der Tag in der Clanfarbe da — das
+   * Wappen oder Ersatz. Ohne Bild steht der Tag in der Clanfarbe da, das
    * sieht nach Absicht aus, ein leeres Kaestchen nach Fehler.
    */
   function wappenHtml(c, groesse) {
@@ -47,7 +47,7 @@
     return `<span class="${kl} cl-wappen-leer" style="color:${c.color};border-color:${c.color}">${escapeHtml((c.tag || "?").slice(0, 3))}</span>`;
   }
 
-  /* Restzeit als Text. Unter einer Stunde in Minuten, darueber in Stunden —
+  /* Restzeit als Text. Unter einer Stunde in Minuten, darueber in Stunden,
      "noch 71h 04min" liest niemand als "knapp drei Tage". */
   function restText(ms) {
     if (ms <= 0) return "gleich vorbei";
@@ -58,10 +58,10 @@
     return `noch ${Math.floor(std / 24)} Tage ${std % 24} h`;
   }
 
-  // ── Eintritt: gruenden oder beitreten ─────────────────────
+  // --- Eintritt: gruenden oder beitreten ---
   /*
    * Der leere Zustand sagte bisher nur "Clan gründen (100.000)" und darunter
-   * "Noch keine Clans — gründe den ersten!". Wofuer man hunderttausend Chips
+   * "Noch keine Clans, gründe den ersten!". Wofuer man hunderttausend Chips
    * ausgibt, stand nirgends.
    */
   function renderEintritt() {
@@ -72,7 +72,7 @@
           <span class="cl-werbung-sym">${sym("clans")}</span>
           <div>
             <b>Zusammen spielen, ohne gleichzeitig da zu sein</b>
-            <small>Ein Clan sammelt, was seine Mitglieder ohnehin spielen —
+            <small>Ein Clan sammelt, was seine Mitglieder ohnehin spielen,
               jede Runde zählt für alle, egal wer gerade online ist.</small>
           </div>
         </div>
@@ -89,7 +89,7 @@
       </div>
 
       <div class="cl-gruenden">
-        <div class="cd-sub">Clan gründen <span class="muted">— ${betrag(data.createCost)}</span></div>
+        <div class="cd-sub">Clan gründen <span class="muted">(${betrag(data.createCost)})</span></div>
         <div class="cl-gruenden-felder">
           <label>Name<input id="clan-name" maxlength="22" placeholder="z. B. Die Haie" /></label>
           <label>Tag<input id="clan-tag" maxlength="4" placeholder="HAI" style="text-transform:uppercase" /></label>
@@ -105,7 +105,7 @@
       <ol class="leaderboard cl-liste" id="clan-board"></ol>`;
   }
 
-  // ── Auftraege: das Herzstueck ─────────────────────────────
+  // --- Auftraege: das Herzstueck ---
   /*
    * Sie standen vorher als vierter Abschnitt zwischen Schatzkammer und
    * Mitgliederliste, als schmale Balken ohne Angabe, wie man sie erfuellt
@@ -125,7 +125,7 @@
       </div>
       ${qs.map((q) => {
         const pct = q.target ? Math.min(100, Math.round((100 * q.progress) / q.target)) : 0;
-        /* Wer hat beigetragen. Die drei Groessten reichen — eine Liste aus
+        /* Wer hat beigetragen. Die drei Groessten reichen, eine Liste aus
            zwanzig Namen mit je vier XP sagt nichts mehr. */
         const wer = Object.entries(q.wer || {})
           .map(([k, xp]) => ({ name: namen.get(k) || k, xp }))
@@ -153,10 +153,10 @@
       }).join("")}`;
   }
 
-  // ── Krieg ─────────────────────────────────────────────────
+  // --- Krieg ---
   /*
    * Der Krieg sah tot aus und war es nicht. Gemessen wird laengst die
-   * Season-XP beider Clans ueber mehrere Tage — dafuer muss niemand
+   * Season-XP beider Clans ueber mehrere Tage, dafuer muss niemand
    * gleichzeitig da sein. Die Oberflaeche sprach aber weiter von
    * Duell-Siegen, zeigte zwei nackte Zahlen ohne Groessenordnung, und die
    * Restzeit wurde einmal beim Laden ausgerechnet und stand danach still.
@@ -217,7 +217,7 @@
       } Topf: <b>${betrag(w.stake * 2)}</b></p>
 
       <p class="hint">Gezählt wird die Season-XP, die ihr in der Kriegszeit zusammen
-        sammelt — jede Runde von jedem, egal welches Spiel. Duell-Siege zählen
+        sammelt, also jede Runde von jedem, egal welches Spiel. Duell-Siege zählen
         zusätzlich. Niemand muss dafür gleichzeitig online sein.</p>
 
       ${beitraege.length ? `<div class="cl-krieg-wer">
@@ -227,7 +227,7 @@
           return `<div class="cl-wer-zeile"><span>${escapeHtml(b.name)}</span>
             <i style="width:${pct}%"></i><b>${fmt(b.xp)}</b></div>`;
         }).join("")}
-      </div>` : `<p class="muted small">Noch hat niemand etwas beigetragen — die nächste Runde zählt schon.</p>`}
+      </div>` : `<p class="muted small">Noch hat niemand etwas beigetragen, die nächste Runde zählt schon.</p>`}
     </div>`;
   }
 
@@ -249,7 +249,7 @@
     }, 30000);
   }
 
-  // ── Mitglieder ────────────────────────────────────────────
+  // --- Mitglieder ---
   function renderMitglieder(c) {
     const founder = isFounder(), manage = canManage();
     const beitragMap = new Map((c.beitrag || []).map((b) => [b.key, b.xp]));
@@ -264,7 +264,7 @@
       let ctrls = "";
       if (m.key !== c.founder) {
         /* Beschriftet statt bebildert. Vorher standen hier ⬇️ und 🚫
-           nebeneinander, beide erklaert nur im title — auf dem iPad also
+           nebeneinander, beide erklaert nur im title, auf dem iPad also
            gar nicht. Einer der beiden warf jemanden aus dem Clan. */
         if (founder) ctrls += m.role === "officer"
           ? `<button class="icon-btn clan-demote" data-k="${escapeHtml(m.key)}">${sym("degradieren")}<span>Zurückstufen</span></button>`
@@ -304,7 +304,7 @@
     return html;
   }
 
-  // ── Kasse ─────────────────────────────────────────────────
+  // --- Kasse ---
   function renderKasse(c) {
     const manage = canManage();
     let html = `<div class="cl-kasse">
@@ -336,7 +336,7 @@
     return html;
   }
 
-  // ── Fortschritt (Level + Clan-Season) ─────────────────────
+  // --- Fortschritt (Level + Clan-Season) ---
   function renderFortschritt(c) {
     const lvl = c.level || { level: 1, xpInLevel: 0, xpForNext: 500 };
     const xpPct = lvl.xpForNext ? Math.min(100, Math.round((100 * lvl.xpInLevel) / lvl.xpForNext)) : 100;
@@ -365,13 +365,13 @@
             <span class="cs-num">${r.level}</span>
             <span class="cs-label">${escapeHtml(r.label)}</span>
             <span class="cs-xp">${fmt(r.xp)} XP</span></div>`).join("")}</div>
-        <small class="muted">Jede Season-XP eines Mitglieds zählt hier mit — egal welches Spiel.</small>
+        <small class="muted">Jede Season-XP eines Mitglieds zählt hier mit, egal welches Spiel.</small>
       </div>`;
     }
     return html;
   }
 
-  // ── Ranglisten ────────────────────────────────────────────
+  // --- Ranglisten ---
   function renderRanglisten() {
     const wl = data.weeklyLeague || [];
     const board = data.leaderboard || [];
@@ -379,14 +379,14 @@
     const canWar = data.clan && canManage() && !data.clan.war;
     const platz = (i) => `<span class="cl-platz p${i + 1}">${i + 1}</span>`;
 
-    let html = `<h3 class="section-title">${sym("season")}Clan-Liga <span class="muted small">— gesammelte Season-XP diese Woche</span></h3>`;
+    let html = `<h3 class="section-title">${sym("season")}Clan-Liga <span class="muted small">(Season-XP dieser Woche)</span></h3>`;
     html += wl.length
       ? `<ol class="leaderboard cl-liste">` + wl.map((c, i) =>
           `<li>${platz(i)}<span><b style="color:${c.color}">[${escapeHtml(c.tag)}]</b> ${escapeHtml(c.name)}</span>
            <span><b>${fmt(c.xp)}</b> XP${c.wins ? ` · ${c.wins} Duelle` : ""}</span></li>`).join("") + `</ol>`
       : `<p class="muted small">Diese Woche hat noch kein Clan XP gesammelt.</p>`;
 
-    html += `<h3 class="section-title">${sym("bestenliste")}Clan-Rangliste <span class="muted small">— Gesamtwert der Mitglieder</span></h3>`;
+    html += `<h3 class="section-title">${sym("bestenliste")}Clan-Rangliste <span class="muted small">(Gesamtwert der Mitglieder)</span></h3>`;
     html += board.length
       ? `<ol class="leaderboard cl-liste" id="clan-board">` + board.map((c, i) => {
           let action = "";
@@ -403,11 +403,11 @@
             <small class="muted">${c.size} ${c.size === 1 ? "Mitglied" : "Mitglieder"}</small></span></span>
             <span>${betrag(c.value)} ${meldeKnopf} ${action}</span></li>`;
         }).join("") + `</ol>`
-      : `<p class="muted small">Noch keine Clans — gründe den ersten.</p>`;
+      : `<p class="muted small">Noch keine Clans, gründe den ersten.</p>`;
     return html;
   }
 
-  // ── Zusammenbau ───────────────────────────────────────────
+  // --- Zusammenbau ---
   function renderMine() {
     const box = $("#clan-mine");
     if (!box) return;
@@ -467,7 +467,7 @@
     if (c.war && c.war.state === "active") starteUhr();
   }
 
-  // ── Verdrahtung ───────────────────────────────────────────
+  // --- Verdrahtung ---
   function verdrahteEintritt() {
     $("#clan-create-btn")?.addEventListener("click", () => {
       const name = $("#clan-name").value.trim(), tag = $("#clan-tag").value.trim();
@@ -481,7 +481,7 @@
   }
 
   function verdrahteRanglisten() {
-    /* Bilder kann kein Filter pruefen — nur Menschen. Der Knopf schickt die
+    /* Bilder kann kein Filter pruefen, nur Menschen. Der Knopf schickt die
        Meldung an den Hausherrn, entschieden wird dort. */
     document.querySelectorAll(".cl-melden").forEach((b) => b.addEventListener("click", async () => {
       const grund = await window.Casino.dialog.eingabe(
@@ -490,7 +490,7 @@
       if (grund == null) return;
       socket.emit("clan:meldeWappen", { clanId: b.dataset.melde, grund }, (r) => {
         if (!r || !r.ok) return toast(r?.error || "Fehler.");
-        toast(r.schon ? "Hattest du schon gemeldet." : "Danke — ist beim Hausherrn gemeldet.");
+        toast(r.schon ? "Hattest du schon gemeldet." : "Danke, ist gemeldet.");
       });
     }));
     document.querySelectorAll(".clan-join").forEach((b) => b.addEventListener("click", () => {
@@ -516,7 +516,7 @@
 
     /*
      * Wappen hochladen. Das Bild wird im Browser auf 256x256 gebracht und
-     * neu kodiert (core/bildwahl.js) — was hier rausgeht, ist ein frisch
+     * neu kodiert (core/bildwahl.js), was hier rausgeht, ist ein frisch
      * gezeichnetes Rasterbild, kein weitergereichter Dateiinhalt.
      */
     $("#cl-wappen-neu")?.addEventListener("click", async () => {
@@ -595,7 +595,7 @@
 
   /*
    * Krieg erklaeren. Die Dauer war eine freie Texteingabe mit dem Hinweis
-   * "1, 3 oder 7" — wer 5 tippte, bekam kommentarlos 3, weil der Server
+   * "1, 3 oder 7", wer 5 tippte, bekam kommentarlos 3, weil der Server
    * unbekannte Werte darauf zurueckfallen laesst. Die erlaubten Werte
    * schickt er in warConfig.days laengst mit; jetzt werden sie auch benutzt.
    */

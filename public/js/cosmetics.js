@@ -19,10 +19,10 @@
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
 
   let stand = null;
-  let vorschau = null;   // { type, id } — nur angesehen, nicht gekauft
+  let vorschau = null;   // { type, id }, nur angesehen, nicht gekauft
 
   /*
-   * Preis oder Zustand eines Stuecks. Gibt HTML zurueck, nicht Text — die
+   * Preis oder Zustand eines Stuecks. Gibt HTML zurueck, nicht Text, die
    * Spielmarke und das Schloss sind gezeichnet. Was von aussen kommt (`via`
    * aus dem Katalog) wird hier einzeln escaped; frueher lief der ganze
    * Rueckgabewert durch escapeHtml, was jetzt die Marke als Zeichenkette
@@ -56,7 +56,7 @@
   function marke(x) {
     if (x.owned || x.cost !== null) return "";
     const f = (stand && stand.fristen) || {};
-    // Zwei Zeilen: oben WAS es ist, darunter WIE LANGE noch. In einer Zeile
+    // Zwei Zeilen: oben was es ist, darunter wie LANGE noch. In einer Zeile
     // passt der Countdown nicht in die schmale Kachel und wird abgeschnitten.
     const bau = (art, kopf, frist) =>
       `<span class="cos-marke cos-marke-${art}">${kopf}${frist ? `<i>${frist}</i>` : ""}</span>`;
@@ -69,7 +69,7 @@
     /* Auktionsware laeuft gar nicht ab: sie kommt einzeln unter den Hammer,
        und wer sie hat, hat sie von dort. */
     if (x.limitiert === "auktion") return bau("auktion", "Auktion", "einzeln versteigert");
-    /* Fortuna laeuft nicht nach ZEIT ab, sondern nach STUECKZAHL. Deshalb
+    /* Fortuna laeuft nicht nach ZEIT ab, sondern nach Stückzahl. Deshalb
        steht hier kein Countdown, sondern wie viele es noch gibt. */
     if (x.limitiert === "rad") {
       const fo = (stand && stand.fortuna) || {};
@@ -131,7 +131,7 @@
       (x.motion ? `<span class="cos-motion" title="bewegt sich">✨</span>` : ""))).join(""));
 
     setze("#cos-titles", s.titles.map((x) => knopf("title", x,
-      `<span class="cos-title-demo">${x.text ? escapeHtml(x.text) : "— ohne —"}</span>`)).join(""));
+      `<span class="cos-title-demo">${x.text ? escapeHtml(x.text) : "(ohne)"}</span>`)).join(""));
 
     setze("#cos-frames", s.frames.map((x) => knopf("frame", x,
       `<span class="pl-ava ${x.id === "keiner" ? "" : "fr-" + x.id}">🙂</span>`)).join(""));
@@ -152,7 +152,7 @@
       `<span class="cos-banner-label">${escapeHtml(x.label)}</span>`)).join(""));
 
     setze("#cos-sprueche", s.sprueche.map((x) => knopf("spruch", x,
-      `<span class="cos-title-demo">${x.eigen ? "✍️ Eigener Satz" : x.text ? escapeHtml(x.text.replace("{name}", (Casino.getAccount() || {}).name || "Du")) : "— ohne —"}</span>`)).join(""));
+      `<span class="cos-title-demo">${x.eigen ? "Eigener Satz" : x.text ? escapeHtml(x.text.replace("{name}", (Casino.getAccount() || {}).name || "Du")) : "(ohne)"}</span>`)).join(""));
 
     // Das Eingabefeld erscheint erst, wenn der eigene Satz gekauft ist.
     const eigen = s.sprueche.find((x) => x.eigen);
@@ -187,7 +187,7 @@
       return toast(x && x.via ? `Nicht zu kaufen. ${x.via}.` : "Gibt es nur über den Season-Pass.");
     }
     const owned = el.dataset.owned === "1";
-    // Einen Effekt kann man nicht in einer Zeile zeigen — der muss laufen.
+    // Einen Effekt kann man nicht in einer Zeile zeigen, der muss laufen.
     // Deshalb spielt jeder Tipp ihn einmal ab, egal ob gekauft oder nicht.
     if (type === "effect") {
       const acc = Casino.getAccount() || {};
@@ -210,7 +210,7 @@
       if (r.account) applyAccount(r.account);
       vorschau = null;
       Casino.sound.play(owned ? "select" : "win");
-      toast(owned ? "✓ Angelegt!" : "🎨 Gekauft! Jetzt nochmal antippen zum Anlegen.");
+      toast(owned ? "Angelegt." : "Gekauft. Noch mal antippen, dann ist es angelegt.");
       render(r);
     });
   }
@@ -234,7 +234,7 @@
       const feld = $("#cos-spruch-text");
       socket.emit("cos:spruchText", { text: feld.value }, (r) => {
         if (!r || !r.ok) return toast((r && r.error) || "Fehler.");
-        toast("✓ Satz gespeichert.");
+        toast("Satz gespeichert.");
         render(r);
       });
       return;

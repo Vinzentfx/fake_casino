@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Auktionshaus.
+   Auktionshaus
 
    Ein Los zur Zeit. Geboten wird mit echten Chips, die sofort
    hinterlegt werden; wer ueberboten wird, hat sein Geld sofort
@@ -74,12 +74,12 @@
     }
   }
 
-  /* Bei diesen Arten IST die Vorschau der Name (der Stil faerbt ihn, das
+  /* Bei diesen Arten ist die Vorschau der Name (der Stil faerbt ihn, das
      Schild traegt ihn, der Titel ist er). In der kleinen Kachel steht er
      deshalb nur einmal. */
   const zeigtNamen = (type) => type === "style" || type === "schild" || type === "title" || type === "effect";
 
-  /** Dieselbe Zeichnung wie im Laden — man soll sehen, worauf man bietet. */
+  /** Dieselbe Zeichnung wie im Laden, man soll sehen, worauf man bietet. */
   function stueck(type, id, label, klein) {
     const k = klein ? " auk-mini" : "";
     if (type === "style") return `<span class="pl-name nm-${escapeHtml(id)}${k}" data-name="${escapeHtml(label)}">${escapeHtml(label)}</span>`;
@@ -256,7 +256,7 @@
       if (r.account) applyAccount(r.account);
       eigenes = null;
       Casino.sound.play("win");
-      toast(r.verlaengert ? "Geboten — und die Uhr läuft zwei Minuten länger." : `Geboten: ${zahl(betrag)} Chips.`);
+      toast(r.verlaengert ? "Geboten. Die Uhr läuft jetzt zwei Minuten länger." : `Geboten: ${zahl(betrag)} Chips.`);
       render(r);
       if (Casino.renderAbholBadge) Casino.renderAbholBadge();
     });

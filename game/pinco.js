@@ -15,13 +15,13 @@ const BOARDS = {
   medium: {
     label: "Mittel",
     rows: 10,
-    // Buffed ~95% → ~98% RTP (still < 100%, house keeps its edge).
+    // von ~95 % auf ~98 % RTP angehoben (bleibt unter 100 %, das Haus behält seinen Vorteil).
     multipliers: [7.33, 2.74, 1.57, 1.11, 0.84, 0.70, 0.84, 1.11, 1.57, 2.74, 7.33],
   },
   large: {
     label: "Groß",
     rows: 14,
-    // Buffed ~93% → ~98% RTP.
+    // von ~93 % auf ~98 % RTP angehoben.
     multipliers: [15.23, 6.41, 3.20, 2.05, 1.33, 0.96, 0.81, 0.70, 0.81, 0.96, 1.33, 2.05, 3.20, 6.41, 15.23],
   },
 };
@@ -87,7 +87,7 @@ function describe(room) {
   return {
     code: room.code,
     game: "pinco",
-    label: "🟢 Pinco Ball",
+    label: "Pinco Ball",
     host: room.hostName,
     players: room.players.size,
     max: MAX_PLAYERS,
@@ -111,7 +111,7 @@ function setupPinco(io, accounts) {
    * Ein geworfener Ball.
    *
    * Fuer Statistik, XP und Quests werden zehn Baelle zu einer "Hand"
-   * zusammengefasst — sonst laufen bei einer Pinco-Sitzung hunderte Ereignisse
+   * zusammengefasst, sonst laufen bei einer Pinco-Sitzung hunderte Ereignisse
    * durch die halbe Anwendung.
    *
    * Fuer den Wochenrekord ist genau das aber falsch, und das war der Fehler:

@@ -1,10 +1,10 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Chip-Regen (client).
-   Chips rain over whatever screen you're on; tap them to grab.
-   Falls through to the page beneath (layer is click-through,
-   only the chips themselves catch taps). Server-authoritative.
+   Chip-Regen
+   Chips regnen über den Screen, auf dem man gerade ist, antippen sammelt sie
+   ein. Die Ebene lässt Klicks durch, nur die Chips selbst fangen sie.
+   Entschieden wird auf dem Server.
    ============================================================ */
 
 (function () {
@@ -18,7 +18,7 @@
   const hud = $("#rain-hud");
 
   function setHud() {
-    hud.innerHTML = `💸 Chip-Regen! <b>+${fmt(mySum)}<i class=mk></i></b>`;
+    hud.innerHTML = `Chip-Regen! <b>+${fmt(mySum)}<i class=mk></i></b>`;
     hud.classList.toggle("hidden", !active);
   }
 
@@ -34,9 +34,9 @@
     /*
      * Gezeichnete Muenze statt Text.
      *
-     * Hier stand `el.textContent = "Chips"` — ein Rest der Aktion, in der die
+     * Hier stand `el.textContent = "Chips"`, ein Rest der Aktion, in der die
      * Muenz-Emoji ueberall durch das Wort "Chips" ersetzt wurden. In einem
-     * Fliesstext ist das richtig, hier fiel dadurch das WORT "Chips" in
+     * Fliesstext ist das richtig, hier fiel dadurch das Wort "Chips" in
      * 2,2rem Schrift vom Himmel statt einer Muenze. Die goldene bekommt einen
      * Ring und einen Stern dazu, damit man sie im Fallen unterscheidet.
      */
@@ -96,15 +96,15 @@
     setHud();
     if (!d) return;
     const top = d.results && d.results[0];
-    if (mySum > 0) toast(`💸 Regen vorbei — du hast ${fmt(mySum)} Chips gesammelt!`);
-    else if (top) toast(`💸 Regen vorbei — ${escapeHtml(top.name)} war am fleißigsten (+${fmt(top.sum)}).`);
+    if (mySum > 0) toast(`Regen vorbei, du hast ${fmt(mySum)} Chips gesammelt.`);
+    else if (top) toast(`Regen vorbei, ${escapeHtml(top.name)} hat am meisten erwischt (+${fmt(top.sum)}).`);
     mySum = 0;
   }
 
-  socket.on("rain:start", () => { begin(); toast("💸 CHIP-REGEN! Tipp die fallenden Chips an!"); });
+  socket.on("rain:start", () => { begin(); toast("Chip-Regen! Tipp die fallenden Chips an."); });
   socket.on("rain:chip", spawnChip);
   socket.on("rain:end", end);
-  // Join a running rain on (re)connect — new chips arrive via broadcast.
+  // Bei (Wieder-)Verbindung in einen laufenden Regen einsteigen, neue Chips kommen per Broadcast.
   socket.on("connect", () => socket.emit("rain:state", (s) => { if (s && s.active && !active) begin(); }));
   socket.emit("rain:state", (s) => { if (s && s.active) begin(); });
 })();

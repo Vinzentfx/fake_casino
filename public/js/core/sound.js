@@ -4,7 +4,7 @@
  * Gemeinsame Ton-Engine.
  *
  * Vorher hatten Slots, Roulette und Blackjack je eine eigene, fast wortgleiche
- * Kopie von ac(), tone() und noise() — und die uebrigen gut zwanzig Spiele gar
+ * Kopie von ac(), tone() und noise(), und die uebrigen gut zwanzig Spiele gar
  * keinen Ton. Der Schalter "Soundeffekte" in den Einstellungen wirkte deshalb
  * auf drei von fuenfundzwanzig Spielen.
  *
@@ -109,7 +109,7 @@
 
   /**
    * Fertige Klaenge. Wer ein Spiel vertont, greift hierauf zurueck statt
-   * eigene Frequenzen zu erfinden — dann klingt das ganze Haus nach einem Haus.
+   * eigene Frequenzen zu erfinden, dann klingt das ganze Haus nach einem Haus.
    */
   const CUES = {
     tick:    () => click(2400, 0.025),

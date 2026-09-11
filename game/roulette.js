@@ -14,10 +14,10 @@ function numColor(n) {
 // Nerf 2026-07-10: klassische Quoten (36 / 2 / 3 ≙ 97,3 % RTP) waren das mit
 // Abstand großzügigste Haus-Spiel und wurden als Grind-Maschine genutzt.
 // Jetzt: Zahl 34× (91,9 %), einfache Chancen 1,95× (94,9 %), Dutzend/Kolonne
-// 2,85× (92,4 %) — Misch-RTP ~94 %, vergleichbar mit den Slots.
+// 2,85× (92,4 %), Misch-RTP ~94 %, vergleichbar mit den Slots.
 function payoutFactor(type, value, number) {
   if (type === "number") return number === value ? 34 : 0;
-  if (number === 0) return 0; // green pocket — all outside bets lose
+  if (number === 0) return 0; // die grüne Null, alle Außenwetten verlieren
   if (type === "red")    return RED_NUMS.has(number) ? 1.95 : 0;
   if (type === "black")  return !RED_NUMS.has(number) ? 1.95 : 0;
   if (type === "odd")    return number % 2 === 1 ? 1.95 : 0;
@@ -49,11 +49,11 @@ function setupRoulette(io, accounts) {
           return ack({ ok: false, error: "Ungültige Wette." });
         if (b.type === "number") {
           const v = Math.floor(Number(b.value));
-          if (v < 0 || v > 36) return ack({ ok: false, error: "Zahl 0–36." });
+          if (v < 0 || v > 36) return ack({ ok: false, error: "Zahl zwischen 0 und 36." });
           clean.push({ type: "number", value: v, amount });
         } else if (b.type === "dozen" || b.type === "column") {
           const v = Math.floor(Number(b.value));
-          if (v < 1 || v > 3) return ack({ ok: false, error: "Wert 1–3." });
+          if (v < 1 || v > 3) return ack({ ok: false, error: "Wert zwischen 1 und 3." });
           clean.push({ type: b.type, value: v, amount });
         } else {
           clean.push({ type: b.type, amount });
@@ -68,8 +68,8 @@ function setupRoulette(io, accounts) {
       accounts.adjustChips(socket.data.account, -totalBet);
 
       let number = crypto.randomInt(37);
-      // Shadowban: the ball lands on a number that misses every placed bet
-      // (random among the uncovered numbers; if they covered all 37, honest spin).
+      // Pechvogel-Modus: die Kugel landet auf einer Zahl, die keine Wette trifft
+      // (zufällig unter den freien Zahlen; wer alle 37 belegt hat, bekommt einen ehrlichen Dreh).
       if (accounts.isShadowbanned(socket.data.account)) {
         const losers = [];
         for (let n = 0; n <= 36; n++) {
@@ -94,7 +94,7 @@ function setupRoulette(io, accounts) {
       if (totalReturn > 0) {
         accounts.adjustChips(socket.data.account, totalReturn);
       }
-      // Record every spin (win or loss) so gamesPlayed stays accurate.
+      // Jeden Dreh verbuchen (Gewinn oder Verlust), damit gamesPlayed stimmt.
       accounts.recordHand(socket.data.account, totalReturn - totalBet, true, "roulette", { einsatz: totalBet });
 
       ack({

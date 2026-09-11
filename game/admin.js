@@ -10,7 +10,7 @@ const wortfilter = require("./wortfilter");
 const bilder = require("./bilder");
 let _heist = null;
 function setHeist(h) { _heist = h; }
-let _events = {}; // { rain, quiz, vault } — admin events wired in server.js
+let _events = {}; // { rain, quiz, vault }, die Admin-Events aus server.js
 function setEvents(e) { _events = e || {}; }
 
 /* ---------------------------------------------------------------------------
@@ -19,17 +19,17 @@ function setEvents(e) { _events = e || {}; }
    Heist, Chip-Regen, Tresorkampf und Quiz dauern unter zwei Minuten. Genau
    deshalb loesen sie bewusst keine Benachrichtigung aus: die Nachricht kaeme
    spaeter als das Ende. Umgekehrt heisst das aber, dass sie nur die
-   erreichen, die zufaellig gerade offen haben — bei einem Haus, in dem sich
+   erreichen, die zufaellig gerade offen haben: bei einem Haus, in dem sich
    ein paar Freunde abends verabreden, sind das meistens null.
 
    Ein Vorlauf loest beides: das Event wird angekuendigt, die Benachrichtigung
    geht sofort raus ("in fuenf Minuten"), und gestartet wird erst, wenn die
    Zeit um ist. Dann ist die Nachricht alt genug, dass jemand sie gelesen und
-   die Seite geoeffnet haben kann — und kurz genug, dass niemand vergisst,
+   die Seite geoeffnet haben kann, und kurz genug, dass niemand vergisst,
    worauf er wartet.
 
    Gespeichert wird nichts: ein Serverneustart im Vorlauf laesst die
-   Ankuendigung fallen, und das ist richtig so — niemand soll nach einem
+   Ankuendigung fallen, und das ist richtig so: niemand soll nach einem
    Neustart von einem Event ueberrascht werden, das jemand vor Stunden
    angesetzt hat.
 --------------------------------------------------------------------------- */
@@ -65,10 +65,10 @@ function planeEvent(io, { id, name, minuten, text, starte }) {
   const startetUm = Date.now() + min * 60 * 1000;
 
   try {
-    chat.announce(io, `${text} — es geht in ${min} ${min === 1 ? "Minute" : "Minuten"} los!`);
+    chat.announce(io, `${text}, es geht in ${min} ${min === 1 ? "Minute" : "Minuten"} los!`);
   } catch {}
 
-  /* Die Benachrichtigung geht ueber "live": es IST ein Live-Event, nur eben
+  /* Die Benachrichtigung geht ueber "live": es ist ein Live-Event, nur eben
      eins mit Vorlauf. Wer Live-Events abgeschaltet hat, will auch hierueber
      nicht geweckt werden. */
   (async () => {
@@ -76,7 +76,7 @@ function planeEvent(io, { id, name, minuten, text, starte }) {
       const push = require("./push");
       await push.anAlle("live", {
         title: "Gleich geht's los",
-        body: `${text} — in ${min} ${min === 1 ? "Minute" : "Minuten"}.`,
+        body: `${text}, in ${min} ${min === 1 ? "Minute" : "Minuten"}.`,
         url: "/",
       });
     } catch {}
@@ -151,7 +151,7 @@ function setupAdmin(io, accounts) {
             bank: all.reduce((sum, a) => sum + (a.savings || 0), 0),
           },
           /* Der Zustand jedes Events, nicht nur ein Ja/Nein. Vorher stand
-             im Bildschirm "Heist: aktiv" — ohne zu sagen, wie lange noch
+             im Bildschirm "Heist: aktiv", ohne zu sagen, wie lange noch
              und um wie viel. Wer nachsehen wollte, musste selbst mitspielen.
 
              `zustand` liefert jedes Modul seit dieser Runde; `active` bleibt
@@ -176,10 +176,10 @@ function setupAdmin(io, accounts) {
       });
     });
 
-    /* ── Wortfilter ────────────────────────────────────────────────────
+    /* --- Wortfilter ---
        Was in einer Runde als schlimm gilt, entscheidet die Runde. Die
        Basisliste im Modul deckt das Grobe ab, alles Weitere kommt hier
-       dazu — und Ausnahmen fuer Woerter, die zu Unrecht haengenbleiben. */
+       dazu, und Ausnahmen fuer Woerter, die zu Unrecht haengenbleiben. */
     socket.on("admin:filterState", (ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -198,7 +198,7 @@ function setupAdmin(io, accounts) {
       ack(art === "ausnahme" ? wortfilter.entferneAusnahme(wort) : wortfilter.entferne(wort));
     });
 
-    /* ── Bilder ────────────────────────────────────────────────────────
+    /* --- Bilder ---
        Ein Wortfilter hilft hier nicht: was auf einem Bild zu sehen ist,
        kann nur ein Mensch beurteilen. Der Admin sieht alle hochgeladenen
        Wappen und die Meldungen dazu. */
@@ -220,7 +220,7 @@ function setupAdmin(io, accounts) {
       ack({ ok: weg, error: weg ? undefined : "Bild gibt es nicht (mehr)." });
     });
 
-    /* Meldung abhaken, ohne das Bild zu entfernen — wenn sie unbegruendet war. */
+    /* Meldung abhaken, ohne das Bild zu entfernen, wenn sie unbegruendet war. */
     socket.on("admin:meldungOk", ({ clanId } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -230,7 +230,7 @@ function setupAdmin(io, accounts) {
 
     /* Ausprobieren, ohne dass jemand es sieht. Laeuft bewusst im Server:
        der Filter ist dort, eine zweite Fassung im Browser waere eine zweite
-       Wahrheit — und genau die wuerde man beim Pflegen der Liste nicht
+       Wahrheit. Und genau die wuerde man beim Pflegen der Liste nicht
        merken. */
     socket.on("admin:filterProbe", ({ text } = {}, ack) => {
       if (!ack) return;
@@ -244,7 +244,7 @@ function setupAdmin(io, accounts) {
       });
     });
 
-    /* Bestandsnamen. Der Filter greift nur bei neuen Konten — sonst sperrt
+    /* Bestandsnamen. Der Filter greift nur bei neuen Konten, sonst sperrt
        eine spaeter ergaenzte Wortliste jemanden aus seinem eigenen Account
        aus. Was schon da ist, listen wir hier auf; umbenennen oder stehen
        lassen entscheidet der Besitzer je Fall. */
@@ -285,7 +285,7 @@ function setupAdmin(io, accounts) {
       const delta = amount - acc.chips;
       const res = accounts.adjustChips(String(target).toLowerCase(), delta);
       if (!res.ok) return ack({ ok: false, error: res.error });
-      // Notify the target if they're online
+      // Das Ziel benachrichtigen, falls online
       io.of("/").sockets.forEach((s) => {
         if (s.data.account === String(target).toLowerCase()) {
           s.emit("account:update", { account: res.account });
@@ -316,7 +316,7 @@ function setupAdmin(io, accounts) {
     });
 
     // IP-Bann: sperrt die IP eines Spielers (per Name → letzte bekannte IP)
-    // ODER eine direkt angegebene IP; trennt alle Sockets dieser IP sofort.
+    // oder eine direkt angegebene IP; trennt alle Sockets dieser IP sofort.
     socket.on("admin:ipban", ({ target, ip } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -357,8 +357,8 @@ function setupAdmin(io, accounts) {
       ack({ ok: true, bans });
     });
 
-    // Shadowban ("Pechvogel"): the player silently loses every slots spin and
-    // every solo roulette round — they just think they're unlucky.
+    // Pechvogel-Modus: der Spieler verliert still jeden Slot-Dreh und jede
+    // Solo-Roulette-Runde und hält es einfach für Pech.
     socket.on("admin:shadowban", ({ target, on } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -369,7 +369,7 @@ function setupAdmin(io, accounts) {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const key = String(target).toLowerCase();
-      // Kick them off if online
+      // Rauswerfen, falls online
       io.of("/").sockets.forEach((s) => {
         if (s.data.account === key) {
           s.emit("admin:kicked", { reason: "Dein Account wurde gelöscht." });
@@ -391,7 +391,7 @@ function setupAdmin(io, accounts) {
       ack({ ok: true, cleared });
     });
 
-    // Remove a player from a specific leaderboard by zeroing the stat behind it.
+    // Einen Spieler aus einer Bestenliste nehmen, indem der Wert dahinter auf null geht.
     socket.on("admin:resetStat", ({ target, stat } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -406,15 +406,15 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
-    // List all owned city lots (for the admin "free a building" panel).
+    // Alle vergebenen Grundstücke auflisten (für "Gebäude freigeben" im Admin).
     socket.on("admin:cityLots", (ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       ack({ ok: true, lots: city.ownedLots() });
     });
 
-    // Strip a building/lot from its owner (back to NPC). Broadcast so all open
-    // city screens refresh.
+    // Einem Besitzer ein Gebäude wegnehmen (zurück an niemanden). Allen Bescheid geben,
+    // damit offene Stadt-Screens neu laden.
     socket.on("admin:clearLot", ({ plotId } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -423,7 +423,7 @@ function setupAdmin(io, accounts) {
       ack(res);
     });
 
-    // Wipe the whole shared city back to a fresh NPC start (after a price rebalance).
+    // Die ganze Stadt auf Anfang zurücksetzen (nach einer Preis-Umstellung).
     socket.on("admin:resetCity", (ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -432,9 +432,9 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
-    // ── Test-Tools (owner only) ──────────────────────────────────────────
+    // --- Test-Werkzeuge (nur Besitzer) ---
 
-    // Arm a one-shot MAX WIN on the owner's next slot spin (animation showcase).
+    // Einmaligen MAXIMALGEWINN für den nächsten Slot-Dreh des Besitzers scharf stellen (zum Vorführen).
     socket.on("admin:slotsForceWin", (ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -455,7 +455,7 @@ function setupAdmin(io, accounts) {
       ack(cb.stoppeGala());
     });
 
-    // ── Live-Ops (owner only) ────────────────────────────────────────────
+    // --- Live-Ops (nur Besitzer) ---
     socket.on("admin:happyHour", ({ on, minutes } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -479,7 +479,7 @@ function setupAdmin(io, accounts) {
         if (vorlauf > 0) {
           return ack(planeEvent(io, {
             id: "heist", name: "Casino-Heist", minuten: vorlauf,
-            text: `Gleich wird der Tresor geknackt — ${Number(loot || 500000).toLocaleString("de-DE")} Chips Beute`,
+            text: `Gleich wird der Tresor geknackt, ${Number(loot || 500000).toLocaleString("de-DE")} Chips Beute`,
             starte: () => _heist.start(loot || 500000, seconds || 60),
           }));
         }
@@ -498,7 +498,7 @@ function setupAdmin(io, accounts) {
         if (vorlauf > 0) {
           return ack(planeEvent(io, {
             id: "rain", name: "Chip-Regen", minuten: vorlauf,
-            text: `Gleich regnet es Chips — ${Number(pot || 250000).toLocaleString("de-DE")} im Topf`,
+            text: `Gleich regnet es Chips, ${Number(pot || 250000).toLocaleString("de-DE")} im Topf`,
             starte: () => _events.rain.start(pot || 250000, seconds || 30),
           }));
         }
@@ -517,7 +517,7 @@ function setupAdmin(io, accounts) {
         if (vorlauf > 0) {
           return ack(planeEvent(io, {
             id: "quiz", name: "Blitz-Quiz", minuten: vorlauf,
-            text: `Gleich läuft ein Blitz-Quiz — ${Number(prize || 20000).toLocaleString("de-DE")} Chips je Frage`,
+            text: `Gleich läuft ein Blitz-Quiz, ${Number(prize || 20000).toLocaleString("de-DE")} Chips je Frage`,
             starte: () => _events.quiz.start(rounds || 5, prize || 20000),
           }));
         }
@@ -536,7 +536,7 @@ function setupAdmin(io, accounts) {
         if (vorlauf > 0) {
           return ack(planeEvent(io, {
             id: "vault", name: "Tresorkampf", minuten: vorlauf,
-            text: `Gleich wird um den Tresor gekämpft — ${Number(pot || 500000).toLocaleString("de-DE")} im Topf`,
+            text: `Gleich wird um den Tresor gekämpft, ${Number(pot || 500000).toLocaleString("de-DE")} im Topf`,
             starte: () => _events.vault.start(pot || 500000, seconds || 90),
           }));
         }
@@ -547,7 +547,7 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
-    // Fire a city news event now (random district if none given).
+    // Jetzt eine Stadtnachricht auslösen (zufälliger Ortsteil, wenn keiner angegeben ist).
     socket.on("admin:cityEvent", ({ districtId } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -578,7 +578,7 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
-    // Wipe a player's achievements (re-test unlock flow; already paid rewards stay).
+    // Achievements eines Spielers löschen (zum Testen, ausgezahlte Belohnungen bleiben).
     socket.on("admin:resetAchievements", ({ target } = {}, ack) => {
       if (!ack) return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });

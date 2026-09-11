@@ -1,11 +1,12 @@
 "use strict";
 
 /**
- * Casino Season / Pass.
+ * Casino-Season mit Pass.
  *
- * Progress is earned through real play and completed quests, with daily XP caps
- * so tiny-bet loops cannot grind unlimited faucet value. Rewards are claimed
- * manually and chip rewards go through the normal wealth taper.
+ * Fortschritt gibt es fürs echte Spielen und für erledigte Aufträge, mit einem
+ * Tagesdeckel für XP, damit man mit Mini-Einsätzen nicht endlos Gratiswert
+ * abgreift. Belohnungen holt man selbst ab, Chips gehen durch die normale
+ * Vermögensbremse.
  */
 
 const SEASON = {
@@ -33,7 +34,7 @@ const QUEST_XP_DAILY_CAP = 280;
  *                 reinzuschauen.
  *   CLAN-BONUS    Der Clan-Fortschritt gibt allen Mitgliedern bis zu +25 %.
  *
- * Alle drei wirken VOR dem Tagesdeckel. Der Deckel bleibt die harte Grenze,
+ * Alle drei wirken vor dem Tagesdeckel. Der Deckel bleibt die harte Grenze,
  * die Boni entscheiden nur, wie schnell man ihn erreicht.
  */
 const FOKUS_FAKTOR = 2;
@@ -180,7 +181,7 @@ function emitState(name) {
  *
  * Reihenfolge: Grundwert × Fokus × Serie × Clan, danach am Tagesdeckel
  * abschneiden. Die Boni entscheiden also, wie schnell man den Deckel
- * erreicht, nicht wie hoch er liegt — sonst waere er keiner.
+ * erreicht, nicht wie hoch er liegt, sonst waere er keiner.
  */
 function addXp(name, amount, kind = "play", spiel = null) {
   if (!_accounts) return 0;
@@ -200,7 +201,7 @@ function addXp(name, amount, kind = "play", spiel = null) {
 
   /*
    * "geschenk" geht am Tagesdeckel vorbei, in beide Richtungen: es wird nicht
-   * abgeschnitten UND es verbraucht nichts vom Deckel. Der Deckel begrenzt,
+   * abgeschnitten und es verbraucht nichts vom Deckel. Der Deckel begrenzt,
    * wie viel man an einem Tag ERSPIELEN kann; ein Geschenk ist nichts
    * Erspieltes. Ohne diese Ausnahme haette das Glücksrad an einem Abend, an
    * dem man ohnehin schon gespielt hat, gar nichts gebracht.
@@ -238,7 +239,7 @@ function belohnungsText(r, faktor = 1) {
   for (const k of r.kosmetik || []) {
     try { teile.push(require("./cosmetics").label(k.type, k.id)); } catch { teile.push(k.id); }
   }
-  return teile.join(" + ") || "—";
+  return teile.join(" + ") || "-";
 }
 
 function setupSeason(io, accounts) {
@@ -310,14 +311,14 @@ function levelVonXp(xp) {
  * Wie viele freigeschaltete Stufen noch nicht abgeholt sind.
  *
  * Der Client konnte das schon aus publicState() rechnen, der Tagesbericht und
- * die Marke am Menue brauchen es aber auch — und die sollen dafuer nicht den
+ * die Marke am Menue brauchen es aber auch, und die sollen dafuer nicht den
  * ganzen Season-Zustand ziehen muessen.
  */
 function offeneStufen(acc) {
   if (!acc) return 0;
   const st = publicState(acc);
   if (!st) return 0;
-  // Absichtlich OHNE Pruefung auf "Season laeuft": abholen kann man auch nach
+  // Absichtlich ohne Pruefung auf "Season laeuft": abholen kann man auch nach
   // dem Ende, also muss die Marke es auch nach dem Ende noch sagen.
   return st.rewards.filter((r) => r.unlocked && !r.claimed).length;
 }

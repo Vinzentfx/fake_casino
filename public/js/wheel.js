@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Glücksrad.
+   Glücksrad
 
    Einmal am Tag gratis. Der Server bestimmt das Feld, hier
    dreht nur das Bild dorthin.
@@ -12,7 +12,7 @@
    FORTUNA ist voll gold.
 
    Was ein Dreh gebracht hat, formuliert der SERVER (titel + text).
-   Der Client zeigt es nur an — sonst muesste jede neue Feldart hier
+   Der Client zeigt es nur an, sonst muesste jede neue Feldart hier
    noch einmal beschrieben werden.
    ============================================================ */
 
@@ -52,7 +52,7 @@
       felder += `<path class="gr-feld gr-${s.stufe || "klein"}" data-i="${i}" d="M${M} ${M} L${x0.toFixed(2)} ${y0.toFixed(2)} A${R_FELD} ${R_FELD} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z"/>`;
 
       /* Beschriftung laeuft am Radius entlang und wird auf der linken Haelfte
-         umgedreht — sonst steht die Haelfte aller Zahlen auf dem Kopf, und
+         umgedreht, sonst steht die Haelfte aller Zahlen auf dem Kopf, und
          genau so sah es vorher aus. */
       const links = mitte > 180;
       const [lx, ly] = pt(mitte, R_FELD * 0.62);
@@ -99,7 +99,7 @@
     return "gleich";
   }
 
-  /** Knopf und Countdown. Die Restzeit lief vorher IM Knopftext mit. */
+  /** Knopf und Countdown. Die Restzeit lief vorher im Knopftext mit. */
   function setzeKnopf(s) {
     const btn = $("#wheel-spin");
     const zeile = $("#gr-uhr");

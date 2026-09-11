@@ -1,5 +1,5 @@
 /* ============================================================
-   Fake Casino – Design-Tokens
+   Design-Tokens
    ------------------------------------------------------------
    Zwei Schichten:
 
@@ -71,7 +71,7 @@
 }
 
 /* ============================================================
-   Palette 1 – KLASSIK (Standard)
+   Palette 1: KLASSIK (Standard)
    Filzgrün und Gold, aber tiefer abgestimmt: dunklerer Grund,
    klarere Kanten, ruhigere Flächen.
    ============================================================ */
@@ -132,7 +132,7 @@ html[data-theme="klassik"] {
 }
 
 /* ============================================================
-   Palette 2 – MITTERNACHT
+   Palette 2: MITTERNACHT
    Tiefes Marineblau mit warmem Gold. Ruhiger und eleganter,
    weniger Spieltisch, mehr Salon.
    ============================================================ */
@@ -192,7 +192,7 @@ html[data-theme="mitternacht"] {
 }
 
 /* ============================================================
-   Palette 3 – NEON
+   Palette 3: NEON
    Fast schwarz mit Türkis. Der moderne Wett-App-Look.
    ============================================================ */
 html[data-theme="neon"] {
@@ -262,7 +262,7 @@ html[data-theme="neon"] {
 }
 
 /* ============================================================
-   Schatten – abgeleitet, damit sie zur Palette passen
+   Schatten, abgeleitet, damit sie zur Palette passen
    ============================================================ */
 :root {
   --e-1: 0 1px 2px hsl(var(--shadow-color) / 0.3);

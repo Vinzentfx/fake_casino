@@ -1,16 +1,15 @@
 "use strict";
 
 /**
- * Weekly cycle: "Spieler der Woche" + Goldene Straße.
+ * Die Woche: "Spieler der Woche" und Goldene Straße.
  *
- * Every account accumulates weeklyNet (net chips won/lost, all games) via
- * accounts.recordHand. At the week rollover the player with the highest
- * positive net wins the Wochen-Pokal: a chip prize, a chat announcement and
- * the 🏆 crown next to their name in every leaderboard for the whole next
- * week. Then all weeklyNet counters reset and a new GOLDEN STREET is rolled
- * (that street pays double tribute — fight for it).
+ * Jedes Konto sammelt über accounts.recordHand ein weeklyNet (Netto über alle
+ * Spiele). Beim Wochenwechsel gewinnt, wer das höchste positive Netto hat, den
+ * Wochen-Pokal: Chips, eine Ansage im Chat und eine Woche lang die Krone neben
+ * dem Namen in allen Bestenlisten. Danach gehen alle Zähler auf null und eine
+ * neue GOLDENE STRASSE wird gezogen (die zahlt doppelten Tribut).
  *
- * State in data/weekly.json; tick() is called every minute from economy.js.
+ * Stand in data/weekly.json, tick() ruft economy.js jede Minute auf.
  */
 
 const path = require("path");
@@ -24,7 +23,7 @@ const FILE = path.join(DATA_DIR, "weekly.json");
 
 const PRIZE = 100000; // Wochen-Pokal prize
 
-// Epoch week number (rolls over Monday 00:00 UTC — good enough for friends).
+// Wochennummer seit 1970 (wechselt Montag 00:00 UTC, reicht für uns).
 const weekNow = () => Math.floor((Date.now() / 86400000 + 3) / 7);
 
 let state = load();
@@ -44,7 +43,7 @@ function save() {
   } catch {}
 }
 
-/** Normalized key of the reigning Spieler der Woche (or null). */
+/** Schlüssel des aktuellen Spielers der Woche (oder null). */
 function champName() {
   return state.lastWinner ? state.lastWinner.key : null;
 }
@@ -52,9 +51,9 @@ function lastWinner() {
   return state.lastWinner;
 }
 
-/** Advance the week: crown the winner, reset nets, roll the golden street. */
+/** Woche weiterschalten: Sieger krönen, Zähler zurücksetzen, neue Goldene Straße. */
 function rollover(io, accounts) {
-  // Winner of the ENDING week: highest positive weekly net.
+  // Sieger der Woche, die gerade endet: das höchste positive Netto.
   let winner = null;
   for (const a of accounts.rawAll()) {
     if ((a.weeklyNet || 0) > 0 && (!winner || a.weeklyNet > winner.weeklyNet)) winner = a;
@@ -63,7 +62,7 @@ function rollover(io, accounts) {
     const key = String(winner.name).trim().toLowerCase();
     state.lastWinner = { key, name: winner.name, net: Math.round(winner.weeklyNet) };
     accounts.adjustChips(key, PRIZE);
-    chat.announce(io, `🏆 SPIELER DER WOCHE: ${winner.name} mit +${Math.round(winner.weeklyNet).toLocaleString("de-DE")} Chips Netto — Preis: ${PRIZE.toLocaleString("de-DE")} Chips! Die Krone glänzt eine Woche im Leaderboard.`);
+    chat.announce(io, `Spieler der Woche ist ${winner.name} mit +${Math.round(winner.weeklyNet).toLocaleString("de-DE")} Chips. Dafür gibt es ${PRIZE.toLocaleString("de-DE")} Chips und eine Woche lang die Krone in der Bestenliste.`);
     try {
       require("./chronik").notiere("woche", `Spieler der Woche: ${winner.name} mit +${Math.round(winner.weeklyNet).toLocaleString("de-DE")} Chips netto.`, { user: winner.name });
     } catch {}
@@ -75,11 +74,11 @@ function rollover(io, accounts) {
 
   const g = city.rollGoldenStreet();
   if (g) {
-    chat.announce(io, `✨ NEUE GOLDENE STRASSE: ${g.st} in ${g.districtName} zahlt diese Woche DOPPELTEN Tribut — holt sie euch!`);
+    chat.announce(io, `Neue Goldene Straße: ${g.st} in ${g.districtName} zahlt diese Woche doppelten Tribut.`);
     try { require("./chronik").notiere("woche", `Neue Goldene Straße: ${g.st} in ${g.districtName} zahlt doppelten Tribut.`); } catch {}
   }
 
-  // Clan der Woche: crown the top clan by weekly PvP-duel wins, then reset.
+  // Clan der Woche: den besten Clan der Woche krönen, dann zurücksetzen.
   try { clans.weeklyRollover(io); } catch (e) { console.error("clan weekly rollover:", e.message); }
 
   state.week = weekNow();
@@ -87,18 +86,18 @@ function rollover(io, accounts) {
   io.emit("city:update");
 }
 
-/** Called every minute; fires the rollover when the week changes. Also seeds
- *  the very first golden street if none exists yet. */
+/** Läuft jede Minute und schaltet die Woche weiter, wenn sie gewechselt hat.
+ *  Legt außerdem die allererste Goldene Straße an, falls es noch keine gibt. */
 function tick(io, accounts) {
   if (!city.goldenStreet()) {
     const g = city.rollGoldenStreet();
-    if (g) chat.announce(io, `✨ GOLDENE STRASSE: ${g.st} in ${g.districtName} zahlt diese Woche DOPPELTEN Tribut!`);
+    if (g) chat.announce(io, `Goldene Straße: ${g.st} in ${g.districtName} zahlt diese Woche doppelten Tribut.`);
   }
   try { clans.tickWars(io); } catch (e) { console.error("clan war tick:", e.message); }
   if (weekNow() !== state.week) rollover(io, accounts);
 }
 
-/** Admin/testing: force the weekly rollover right now. */
+/** Admin und Tests: Wochenwechsel sofort auslösen. */
 function forceRollover(io, accounts) {
   rollover(io, accounts);
 }

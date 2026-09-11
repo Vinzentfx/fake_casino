@@ -1,17 +1,18 @@
 "use strict";
 
 /**
- * Live-Ops: time-limited events that make the casino feel alive.
+ * Live-Ops: Events auf Zeit, damit im Casino etwas los ist.
  *
- *   • HAPPY HOUR — all quest rewards double for a while.
- *   • SLOT DES TAGES — one machine (rotates daily) pays a bonus on wins,
- *     capped per player/day so RTP can't run away.
- *   • MINI-TURNIER — for N minutes, whoever lands the biggest single slot win
- *     takes a prize pot. Live scoreboard, chat announcements.
+ *   HAPPY HOUR      alle Auftragsbelohnungen zählen eine Weile doppelt.
+ *   SLOT DES TAGES  ein Automat (wechselt täglich) zahlt auf Gewinne einen
+ *                   Bonus, je Spieler und Tag gedeckelt, damit die RTP nicht
+ *                   davonläuft.
+ *   MINI-TURNIER    N Minuten lang holt der größte einzelne Slot-Gewinn einen
+ *                   Preis. Mit Live-Tabelle und Ansagen im Chat.
  *
- * The owner ("vincent") can start/stop each from the admin panel; Happy Hour
- * and tournaments also auto-expire. Global state is persisted to
- * data/liveops.json so it survives restarts.
+ * Der Besitzer kann alles im Admin starten und stoppen, Happy Hour und
+ * Turniere laufen auch von selbst aus. Der Stand liegt in data/liveops.json
+ * und übersteht einen Neustart.
  */
 
 const path = require("path");
@@ -23,7 +24,7 @@ const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "liveops.json");
 
 let _io = null, _accounts = null, _heist = null;
-let _events = {}; // { rain, quiz, vault } — Admin-Events, die auch zufällig spawnen (setEvents)
+let _events = {}; // { rain, quiz, vault }, Admin-Events, die auch zufällig spawnen (setEvents)
 let state = load();
 
 const AUTO_CHECK_MS = 10 * 60 * 1000;
@@ -32,7 +33,7 @@ const AUTO_HEIST_CHANCE = 0.015;
 const AUTO_HAPPY_CHANCE = 0.02;
 const AUTO_CITY_CHANCE = 0.025;
 // Chip-Regen / Blitz-Quiz / Tresorkampf: gleiche faire Chance wie der Heist,
-// mit eigenen langen Cooldowns → im Schnitt grob EIN zufälliges Geld-Event
+// mit eigenen langen Cooldowns → im Schnitt grob ein zufälliges Geld-Event
 // alle paar Stunden Online-Zeit, nie zwei gleichzeitig vom selben Typ.
 const AUTO_RAIN_CHANCE = 0.015;
 const AUTO_QUIZ_CHANCE = 0.015;
@@ -75,7 +76,7 @@ function onlineCount() {
 
 /**
  * Push nur fuer Events, die lange genug laufen, dass Nachkommen sich lohnt.
- * Chip-Regen, Heist und Tresorkampf dauern unter zwei Minuten — wer da erst
+ * Chip-Regen, Heist und Tresorkampf dauern unter zwei Minuten, wer da erst
  * durch die Nachricht aufwacht, kommt zu spaet und aergert sich nur.
  */
 function meldePush(titel, text) {
@@ -84,7 +85,7 @@ function meldePush(titel, text) {
   } catch {}
 }
 
-// ─── Happy Hour ─────────────────────────────────────────────────────────────
+// --- Happy Hour ---
 const happyActive = () => state.happyUntil > Date.now();
 /** Quest reward multiplier (used by quests.js). */
 const questMult = () => (happyActive() ? 2 : 1);
@@ -93,16 +94,16 @@ function startHappy(minutes) {
   const mins = Math.max(1, Math.min(240, Math.floor(minutes) || 60));
   state.happyUntil = Date.now() + mins * 60000;
   save();
-  if (_io) { chat.announce(_io, `🍹 HAPPY HOUR! Für ${mins} Minuten gibt's DOPPELTE Quest-Belohnungen — ran an die Aufträge!`); broadcast(); }
-  meldePush("🍹 Happy Hour läuft", `${mins} Minuten lang doppelte Quest-Belohnungen.`);
+  if (_io) { chat.announce(_io, `Happy Hour! ${mins} Minuten lang zahlen alle Aufträge doppelt.`); broadcast(); }
+  meldePush("Happy Hour läuft", `${mins} Minuten lang doppelte Belohnungen für Aufträge.`);
 }
 function stopHappy() {
   state.happyUntil = 0;
   save();
-  if (_io) { chat.announce(_io, "🍹 Happy Hour ist vorbei."); broadcast(); }
+  if (_io) { chat.announce(_io, "Happy Hour ist vorbei."); broadcast(); }
 }
 
-// ─── Mini-Turnier ───────────────────────────────────────────────────────────
+// --- Mini-Turnier ---
 const tourneyActive = () => !!(state.tourney && state.tourney.endsAt > Date.now());
 
 function startTourney(minutes, prize, opts = {}) {
@@ -112,15 +113,15 @@ function startTourney(minutes, prize, opts = {}) {
   state.tourney = { endsAt: Date.now() + mins * 60000, prize: pr, best: {} }; // best: key → {name, win}
   autoState().tourneyCooldownUntil = state.tourney.endsAt + randInt(90, 180) * 60000;
   save();
-  const prefix = opts.auto ? "🎲 Zufälliges " : "";
-  if (_io) { chat.announce(_io, `🏁 ${prefix}SLOT-TURNIER gestartet! ${mins} Min — der größte Einzelgewinn holt ${pr.toLocaleString("de-DE")} Chips. Los!`); broadcast(); }
-  meldePush("🏁 Slot-Turnier läuft", `${mins} Minuten, ${pr.toLocaleString("de-DE")} Chips für das beste Vielfache.`);
+  const prefix = opts.auto ? "Zufälliges " : "";
+  if (_io) { chat.announce(_io, `${prefix}Slot-Turnier läuft, ${mins} Minuten. Das beste Vielfache holt ${pr.toLocaleString("de-DE")} Chips.`); broadcast(); }
+  meldePush("Slot-Turnier läuft", `${mins} Minuten, ${pr.toLocaleString("de-DE")} Chips für das beste Vielfache.`);
   return { ok: true };
 }
 
-/** Record a slot win toward the running tournament (called from slots.js).
- *  Ranked by the win MULTIPLE (win / bet), not the absolute win, so a small
- *  better with a lucky big multiplier can beat a whale — fair across stakes. */
+/** Einen Slot-Gewinn fürs laufende Turnier eintragen (ruft slots.js auf).
+ *  Gewertet wird das Vielfache (Gewinn / Einsatz), nicht der absolute Gewinn,
+ *  damit jemand mit kleinem Einsatz und Glück einen Großspieler schlagen kann. */
 function recordTourneyWin(name, win, bet) {
   if (!tourneyActive() || win <= 0 || !bet || bet <= 0) return;
   const mult = win / bet;
@@ -146,16 +147,16 @@ function settleTourney() {
     const acc = _accounts.get(winner.key);
     if (acc) { acc.tourneyWins = (acc.tourneyWins || 0) + 1; _accounts.save(); }
     try { require("./achievements").check(winner.key); } catch {}
-    if (_io) chat.announce(_io, `🏆 TURNIER-SIEG: ${winner.name} mit ${winner.mult}× Einsatz — Preis: ${t.prize.toLocaleString("de-DE")} Chips!`);
+    if (_io) chat.announce(_io, `${winner.name} gewinnt das Slot-Turnier mit ${winner.mult}× Einsatz und bekommt ${t.prize.toLocaleString("de-DE")} Chips.`);
     if (_io) _io.emit("liveops:tourneyWin", { name: winner.name, mult: winner.mult, prize: t.prize });
   } else if (_io) {
-    chat.announce(_io, "🏁 Turnier vorbei — niemand hat gespielt, kein Sieger.");
+    chat.announce(_io, "Turnier vorbei. Niemand hat mitgespielt, also auch kein Sieger.");
   }
   broadcast();
 }
 function stopTourney() { if (state.tourney) settleTourney(); }
 
-// ─── Public state + wiring ──────────────────────────────────────────────────
+// --- Public state + wiring ---
 function publicState() {
   const t = state.tourney;
   let board = null;
@@ -221,7 +222,7 @@ function maybeAutoSpawn() {
   }
 
   // Tresorkampf braucht ≥2 Spieler online (start() prüft das selbst und lehnt
-  // sonst ab — dann bleibt der Cooldown ungesetzt und es klappt später wieder).
+  // sonst ab, dann bleibt der Cooldown ungesetzt und es klappt später wieder).
   if (_events.vault && !_events.vault.active() && online >= 2 &&
       now >= (a.vaultCooldownUntil || 0) && Math.random() < AUTO_VAULT_CHANCE) {
     const pot = Math.round(randInt(VAULT_POT_MIN, VAULT_POT_MAX) / 1000) * 1000;
@@ -234,7 +235,7 @@ function maybeAutoSpawn() {
     if (event) {
       _io.emit("city:update");
       _io.emit("city:news", event);
-      chat.announce(_io, `📰 Seltenes Stadt-Ereignis: ${event.txt}`);
+      chat.announce(_io, `Seltenes Stadt-Ereignis: ${event.txt}`);
       try { require("./feed").add("event", `Stadt-Ereignis: ${event.txt}`); } catch {}
       a.cityCooldownUntil = Date.now() + randInt(180, 360) * 60000;
     }

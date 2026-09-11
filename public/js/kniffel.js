@@ -1,11 +1,11 @@
 "use strict";
 
 /**
- * Kniffel-Duell — Oberflaeche.
+ * Kniffel-Duell, Oberfläche.
  *
  * Zwei Bloecke: die Wuerfel oben (antippen zum Halten), der Block darunter
  * zeigt beide Zettel nebeneinander. Was ein Feld mit den aktuellen Wuerfeln
- * braechte, steht direkt daneben — sonst muesste man im Kopf rechnen, und
+ * braechte, steht direkt daneben, sonst muesste man im Kopf rechnen, und
  * genau das ist bei Kniffel die Entscheidung, nicht das Rechnen.
  *
  * Die Vorschau bekommt nur, wer dran ist. Der Server schickt sie dem Gegner
@@ -61,7 +61,7 @@
       return;
     }
 
-    // ── Würfel ────────────────────────────────────────────────────────────
+    // --- Würfel ---
     const box = $("#kn-wuerfel");
     box.innerHTML = "";
     (v.wuerfel || []).forEach((a, i) => {
@@ -94,7 +94,7 @@
       }, 1000);
     }
 
-    // ── Zettel ────────────────────────────────────────────────────────────
+    // --- Zettel ---
     const ichKey = v.spieler.find((s) => s.name === (Casino.getAccount() || {}).name);
     const kopf = `<div class="kn-zeile kn-kopf"><span></span>` +
       v.spieler.map((s) => `<span>${escapeHtml(s.name)}</span>`).join("") + `</div>`;
@@ -107,7 +107,7 @@
         if (meins && v.ichBinDran && vorschauWert != null) {
           return `<button class="kn-setzen${vorschauWert === 0 ? " null" : ""}" data-feld="${f.id}">${vorschauWert}</button>`;
         }
-        return `<span class="kn-leer">–</span>`;
+        return `<span class="kn-leer">-</span>`;
       }).join("");
       return `<div class="kn-zeile"><span class="kn-feld"><b>${escapeHtml(f.label)}</b><em>${escapeHtml(f.hinweis)}</em></span>${zellen}</div>`;
     }).join("");

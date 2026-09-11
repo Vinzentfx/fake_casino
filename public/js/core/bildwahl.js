@@ -15,7 +15,7 @@
  * Der Umweg ueber ein Canvas raeumt das alles ab, ohne dass jemand eine
  * Bibliothek einbinden muss: der Browser dekodiert das Bild, wir zeichnen es
  * in eine Flaeche fester Groesse, und heraus kommt ein frisch erzeugtes
- * Rasterbild — ohne Skript, ohne Anhaengsel, ohne EXIF, mit bekannter
+ * Rasterbild ohne Skript, ohne Anhaengsel, ohne EXIF, mit bekannter
  * Kantenlaenge. Die Originaldatei verlaesst das Geraet nie.
  *
  * Der Server prueft trotzdem Signatur und Groesse: ein Client laesst sich
@@ -53,7 +53,7 @@
     try {
       /* createImageBitmap dekodiert nebenlaeufig und faellt bei kaputten
          Dateien sauber auf die Nase, statt eine halbe Zeichnung zu liefern.
-         Safari kann es seit 15 — fuer aeltere kommt der Rueckfall darunter. */
+         Safari kann es seit 15, fuer aeltere kommt der Rueckfall darunter. */
       if (typeof createImageBitmap === "function") {
         bitmap = await createImageBitmap(datei);
       }
@@ -77,7 +77,7 @@
     const bh = bitmap.height || bitmap.naturalHeight;
     if (!bw || !bh) return { ok: false, error: "Das Bild ist leer." };
 
-    // Mittigen Ausschnitt nehmen — ein Wappen ist quadratisch, und ein
+    // Mittigen Ausschnitt nehmen, ein Wappen ist quadratisch, und ein
     // gestauchtes Bild sieht immer nach Fehler aus.
     const seite = Math.min(bw, bh);
     const sx = Math.floor((bw - seite) / 2);
@@ -97,7 +97,7 @@
     if (bitmap.close) { try { bitmap.close(); } catch {} }
 
     /* WebP ist deutlich kleiner als PNG. Kann ein Browser es nicht, liefert
-       toDataURL still ein PNG — das faellt hier auf und wird akzeptiert,
+       toDataURL still ein PNG, das faellt hier auf und wird akzeptiert,
        der Server nimmt beides. */
     let datenUrl = c.toDataURL("image/webp", guete);
     if (!/^data:image\/webp/.test(datenUrl)) {

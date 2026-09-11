@@ -1,18 +1,18 @@
 "use strict";
 
 /**
- * Schach-Duell — PvP wager chess with a Blitz clock.
+ * Schach-Duell mit Einsatz und Blitz-Uhr.
  *
- * Two players stake a buy-in; the winner takes the pot minus rake. Move legality,
- * check, checkmate, stalemate and draws are decided by chess.js (server-side, so
- * the client needs no chess logic). Each player has a running clock; flagging on
- * time loses. Resign / leaving / disconnect → opponent wins (walkover, no rake).
- * A draw refunds both buy-ins.
+ * Beide zahlen ein Buy-in, der Sieger bekommt den Topf minus Rake. Ob ein Zug
+ * erlaubt ist, Schach, Matt, Patt und Remis entscheidet chess.js auf dem
+ * Server, der Client braucht keine Schachlogik. Jeder hat eine laufende Uhr,
+ * wer die Zeit überschreitet, hat verloren. Aufgeben, Verlassen oder Verbindungsabbruch:
+ * der Gegner gewinnt kampflos (ohne Rake). Remis gibt beiden das Buy-in zurück.
  *
- * Ranked: every decisive result updates both players' chess Elo + W/L/D on their
- * account, which feeds the chess leaderboard and the Clan-Liga (see chessLeague).
+ * Gewertet: jedes Ergebnis ändert Elo und Siege/Niederlagen/Remis am Konto,
+ * daraus kommen die Schach-Bestenliste und die Clan-Liga (siehe chessLeague).
  *
- * Match/lobby lifecycle mirrors memory.js / sudoku.js.
+ * Match und Lobby laufen wie in memory.js und sudoku.js.
  */
 
 const { Chess } = require("chess.js");
@@ -25,7 +25,7 @@ const RAKE = 0.10;
 const MIN_BUYIN = 50;
 const MAX_BUYIN = 1_000_000;
 
-// Time controls: base minutes + increment seconds.
+// Bedenkzeit: Grundminuten plus Sekunden pro Zug.
 const TIME_CONTROLS = {
   "3+2": { base: 180_000, inc: 2_000 },
   "5+0": { base: 300_000, inc: 0 },
@@ -33,7 +33,7 @@ const TIME_CONTROLS = {
 };
 const DEFAULT_TC = "5+0";
 
-// ── Elo ────────────────────────────────────────────────────
+// --- Elo ---
 const K = 24;
 function expected(a, b) { return 1 / (1 + Math.pow(10, (b - a) / 400)); }
 function eloUpdate(ra, rb, scoreA) {
@@ -60,7 +60,7 @@ function setupChess(io, accounts) {
   }
   const currentMatch = (socket) => { const c = socket.data.chessCode; return c ? matches.get(c) : null; };
 
-  // Live clock: remaining time for the side to move, accounting for elapsed think time.
+  // Live-Uhr: Restzeit für die Seite am Zug, die laufende Bedenkzeit schon abgezogen.
   function liveClocks(match) {
     const c = { ...match.clocks };
     if (match.state === "playing" && match.turnStart) {
@@ -71,7 +71,7 @@ function setupChess(io, accounts) {
   }
 
   function boardArray(game) {
-    // 8x8 (rank 8 → 1) of null | { t, c }
+    // 8x8 (Reihe 8 bis 1) aus null | { t, c }
     return game.board().map((row) => row.map((sq) => (sq ? { t: sq.type, c: sq.color } : null)));
   }
 
@@ -104,7 +104,7 @@ function setupChess(io, accounts) {
       })(),
     };
   }
-  // Neutral spectator view: white at the bottom, both players shown, no controls.
+  // Neutrale Zuschauersicht: Weiß unten, beide Spieler zu sehen, keine Knöpfe.
   function specState(match) {
     const players = [...match.players.values()];
     const pub = (p) => p && { name: p.name, color: p.color, rating: p.rating };
@@ -115,7 +115,7 @@ function setupChess(io, accounts) {
       code: match.code, state: match.state, public: !!match.public, tc: match.tc, buyIn: match.buyIn, pot: match.pot,
       board: (playing || match.state === "done") && match.game ? boardArray(match.game) : null,
       turn: playing ? match.game.turn() : null,
-      yourColor: "w", // view from white's side
+      yourColor: "w", // aus Sicht von Weiß
       clocks: playing ? liveClocks(match) : (match.state === "done" ? match.clocks : null),
       check: playing ? match.game.inCheck() : false,
       lastMove: match.lastMove || null,
@@ -139,11 +139,11 @@ function setupChess(io, accounts) {
     const host = match.players.get(match.host);
     const names = [...match.players.values()].map((p) => p.name);
     return {
-      code: match.code, game: "chess", label: `♟️ Schach-Duell (${match.tc})`,
+      code: match.code, game: "chess", label: `Schach-Duell (${match.tc})`,
       host: host ? host.name : "?", players: [...match.players.values()].filter((p) => p.socket).length,
       max: 2, buyIn: match.buyIn,
       joinable: match.state === "waiting" && match.players.size < 2,
-      watchable: match.state === "playing", // running public games can be spectated
+      watchable: match.state === "playing", // laufende öffentliche Partien kann man zuschauen
       names,
     };
   }
@@ -175,7 +175,7 @@ function setupChess(io, accounts) {
     socket.data.chessSpectate = null;
   }
 
-  // Apply the ranked Elo/stat update for a decisive or drawn game.
+  // Elo und Statistik für ein entschiedenes Spiel oder ein Remis eintragen.
   function applyRating(match, winnerId, draw) {
     const players = [...match.players.values()];
     if (players.length !== 2) return null;
@@ -198,21 +198,21 @@ function setupChess(io, accounts) {
     if (match.state === "done") return;
     match.state = "done";
     if (match.clockTimer) { clearInterval(match.clockTimer); match.clockTimer = null; }
-    match.clocks = liveClocks(match); // freeze
+    match.clocks = liveClocks(match); // anhalten
     const players = [...match.players.values()];
     const walkover = reason === "walkover";
 
     let rake = 0, payout = 0, ratingChange = null;
     if (draw) {
-      players.forEach((p) => accounts.adjustChips(p.id, match.buyIn)); // refund
+      players.forEach((p) => accounts.adjustChips(p.id, match.buyIn)); // zurück
       ratingChange = applyRating(match, null, true);
     } else if (winner) {
       rake = walkover ? 0 : Math.floor(match.pot * RAKE);
       payout = match.pot - rake;
       accounts.adjustChips(winner.id, payout);
-      // Walkover still counts as a ranked win (opponent abandoned).
+      // Kampflos zählt trotzdem als gewerteter Sieg (der Gegner ist gegangen).
       ratingChange = applyRating(match, winner.id, false);
-      // Decisive win (not a walkover) also counts toward the clan league / war.
+      // Ein echter Sieg (nicht kampflos) zählt auch für Clan-Liga und Krieg.
       if (!walkover) { try { clans.recordPvpWin(winner.id, "chess"); } catch {} }
     }
 
@@ -233,7 +233,7 @@ function setupChess(io, accounts) {
     match.rematchWant = [];
     match.pot = 0;
     const players = [...match.players.values()];
-    // Random colors.
+    // Farben auslosen.
     const whiteFirst = Math.random() < 0.5;
     players[0].color = whiteFirst ? "w" : "b";
     players[1].color = whiteFirst ? "b" : "w";
@@ -250,7 +250,7 @@ function setupChess(io, accounts) {
     match.lastMove = null;
     match.state = "playing";
     match.result = null;
-    // Clock ticker: flag the side that runs out of time.
+    // Uhr: wer keine Zeit mehr hat, verliert.
     match.clockTimer = setInterval(() => {
       if (match.state !== "playing") return;
       const c = liveClocks(match);
@@ -270,7 +270,7 @@ function setupChess(io, accounts) {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN)
-        return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
+        return ack && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       if (!TIME_CONTROLS[tc]) tc = DEFAULT_TC;
       const a = acc(socket);
       if (!a || a.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
@@ -318,7 +318,7 @@ function setupChess(io, accounts) {
       startGame(match);
     });
 
-    // Legal target squares for a piece (for client highlighting).
+    // Erlaubte Zielfelder einer Figur (zum Hervorheben im Client).
     socket.on("chess:legal", ({ square } = {}, ack) => {
       if (typeof ack !== "function") return;
       const match = currentMatch(socket);
@@ -337,7 +337,7 @@ function setupChess(io, accounts) {
       const me = match.players.get(socket.data.account);
       if (!me) return ack && ack({ ok: false, error: "Nicht im Match." });
       if (me.color !== match.game.turn()) return ack && ack({ ok: false, error: "Nicht am Zug." });
-      // Deduct elapsed think time first; flag if it ran out.
+      // Erst die verbrauchte Bedenkzeit abziehen, ist sie aus, ist das Spiel verloren.
       const now = Date.now();
       const turn = match.game.turn();
       match.clocks[turn] = Math.max(0, match.clocks[turn] - (now - match.turnStart));
@@ -350,12 +350,12 @@ function setupChess(io, accounts) {
       try { mv = match.game.move({ from, to, promotion: promotion || "q" }); }
       catch { mv = null; }
       if (!mv) return ack && ack({ ok: false, error: "Ungültiger Zug." });
-      match.clocks[turn] += match.inc; // increment
+      match.clocks[turn] += match.inc; // Zeitgutschrift
       match.turnStart = now;
       match.lastMove = { from: mv.from, to: mv.to };
       ack && ack({ ok: true });
 
-      // Game over?
+      // Vorbei?
       if (match.game.isCheckmate()) {
         finish(match, { winner: me, reason: "checkmate" });
       } else if (match.game.isStalemate()) {
@@ -389,14 +389,14 @@ function setupChess(io, accounts) {
       else broadcast(match.code);
     });
 
-    // ── Spectate ──
+    // --- Zuschauen ---
     socket.on("chess:spectate", ({ code } = {}, ack) => {
       code = String(code || "").trim().toUpperCase();
       const match = matches.get(code);
       if (!match) return ack && ack({ ok: false, error: "Match nicht gefunden." });
       if (match.players.has(socket.data.account)) return ack && ack({ ok: false, error: "Du spielst dieses Match." });
-      chessUnspectate(socket);        // stop watching any previous game
-      leaveCurrent(socket);           // can't play and spectate at once
+      chessUnspectate(socket);        // alte Partie nicht mehr zuschauen
+      leaveCurrent(socket);           // spielen und zuschauen gleichzeitig geht nicht
       match.spectators.add(socket);
       socket.data.chessSpectate = code;
       socket.join(code);
@@ -409,15 +409,15 @@ function setupChess(io, accounts) {
     socket.on("disconnect", () => { leaveCurrent(socket); chessUnspectate(socket); });
   });
 
-  // ── Leaderboards / Clan-Liga ─────────────────────────────
+  // --- Bestenlisten und Clan-Liga ---
   function allWithChess() {
     const out = [];
-    const raw = accounts.rawAll ? accounts.rawAll() : []; // rawAll() → array of account objects
+    const raw = accounts.rawAll ? accounts.rawAll() : []; // rawAll() liefert ein Array der Kontoobjekte
     for (const a of raw) {
       if (!a || typeof a.chessRating !== "number") continue;
       const games = (a.chessWins || 0) + (a.chessLosses || 0) + (a.chessDraws || 0);
       if (games === 0) continue;
-      // clans.tagOf/clanColorOf take an account key but normalize their arg, so the display name resolves.
+      // clans.tagOf/clanColorOf wollen einen Kontoschlüssel, normalisieren aber selbst, der Anzeigename geht also auch.
       out.push({ name: a.name, rating: a.chessRating, wins: a.chessWins || 0, losses: a.chessLosses || 0, draws: a.chessDraws || 0, games, clan: a.clan || null });
     }
     return out;

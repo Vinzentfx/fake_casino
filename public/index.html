@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b2a1d" />
-  <title>🎰 Fake Casino</title>
+  <title>Fake Casino</title>
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -114,7 +114,7 @@
       <div class="login-card">
         <div class="logo" data-icon="marke"></div>
         <h1>Fake Casino</h1>
-        <p class="subtitle">Spielgeld-Casino — kein echtes Geld, nur Spaß.</p>
+        <p class="subtitle">Spielgeld-Casino. Kein echtes Geld, nur Spaß.</p>
 
         <form id="login-form" autocomplete="off">
           <label>Spielername
@@ -186,7 +186,7 @@
           <div class="recs-grid" id="recs-grid"></div>
         </section>
 
-        <!-- Was gerade läuft. Steht bewusst UNTER den Spielen: die beiden
+        <!-- Was gerade läuft. Steht bewusst unter den Spielen: die beiden
              Kästen sind meistens leer und haben oben nur Platz gefressen. -->
         <section id="lobby-live">
           <!-- Herausforderungen, die auf einen Gegner warten. Anders als die
@@ -228,7 +228,7 @@
       <div id="poker-lobby">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <div style="text-align:center"><div class="ph-icon" data-icon="poker"></div><h2>Texas Hold'em</h2></div>
-        <p class="muted small" style="text-align:center;margin:0 0 8px">Spiele gegen echte Spieler — erstelle einen Tisch oder tritt einem über die Lobby bei.</p>
+        <p class="muted small" style="text-align:center;margin:0 0 8px">Spiele gegen echte Spieler. Erstelle einen Tisch oder tritt einem über die Lobby bei.</p>
         <div class="poker-actions">
           <div class="panel">
             <h3>Tisch erstellen</h3>
@@ -252,7 +252,7 @@
           </div>
         </div>
         <p class="muted small" style="text-align:center">
-          Erstelle einen Tisch und teile den Code mit deinen Freunden — sie treten von überall bei.
+          Erstelle einen Tisch und teile den Code mit deinen Freunden, dann können sie von überall beitreten.
         </p>
       </div>
 
@@ -280,13 +280,13 @@
         <div class="pvp-side you">
           <span class="pvp-pname" id="pvp-you-name">Du</span>
           <b class="pvp-pchips" id="pvp-you-chips">0</b>
-          <span class="pvp-pspins" id="pvp-you-spins">–</span>
+          <span class="pvp-pspins" id="pvp-you-spins">-</span>
         </div>
         <div class="pvp-vs">VS</div>
         <div class="pvp-side opp">
           <span class="pvp-pname" id="pvp-opp-name">Gegner</span>
           <b class="pvp-pchips" id="pvp-opp-chips">0</b>
-          <span class="pvp-pspins" id="pvp-opp-spins">–</span>
+          <span class="pvp-pspins" id="pvp-opp-spins">-</span>
         </div>
         <button class="pvp-quit" id="pvp-quit" aria-label="Duell verlassen"><i data-icon="schliessen"></i></button>
       </div>
@@ -295,9 +295,9 @@
       <div id="slots-select">
         <button class="back-btn" data-nav="lobby" id="slots-lobby-back">‹ Lobby</button>
         <div style="text-align:center"><div class="ph-icon" data-icon="slots"></div><h2>Slots</h2>
-          <p class="jackpot-line" id="jackpot-line">💰 Gemeinschafts-Jackpot: <b>…</b></p>
+          <p class="jackpot-line" id="jackpot-line">Gemeinschafts-Jackpot: <b>…</b></p>
         </div>
-        <button class="pvp-entry" id="pvp-entry"><span>🆚 PvP-Duell</span><small>Gegeneinander — größerer Gewinn gewinnt den Pot</small></button>
+        <button class="pvp-entry" id="pvp-entry"><span>PvP-Duell</span><small>Wer mehr gewinnt, bekommt den Pot</small></button>
         <div class="machine-grid" id="machine-grid"></div>
       </div>
 
@@ -307,12 +307,12 @@
         <div style="text-align:center"><div class="ph-icon" data-icon="krieg"></div><h2>Slots-Duell</h2></div>
         <div class="pvp-mode-grid">
           <button class="pvp-mode-card" id="pvp-choose-bot">
-            <span class="pvp-mode-icon">🤖</span>
+            <span class="pvp-mode-icon" data-icon="wuerfel"></span>
             <span class="pvp-mode-name">Gegen Bot</span>
             <span class="pvp-mode-sub">Sofort loslegen · keine Gebühr · zufällige Maschine</span>
           </button>
           <button class="pvp-mode-card" id="pvp-choose-friend">
-            <span class="pvp-mode-icon">👥</span>
+            <span class="pvp-mode-icon" data-icon="gruppe"></span>
             <span class="pvp-mode-name">Gegen Freunde</span>
             <span class="pvp-mode-sub">Code teilen · 15% Gebühr auf den Pot</span>
           </button>
@@ -324,7 +324,7 @@
         <button class="back-btn" id="pvp-bot-back">‹ Zurück</button>
         <div style="text-align:center"><div class="ph-icon" data-icon="wuerfel"></div><h2>Gegen Bot spielen</h2></div>
         <div class="panel">
-          <p class="muted small" style="margin-top:0">Wähle deinen Einsatz. Du und der Bot spielen je 20 Spins auf derselben zufälligen Maschine — wer am Ende mehr Match-Chips hat, gewinnt den Pot.</p>
+          <p class="muted small" style="margin-top:0">Wähle deinen Einsatz. Du und der Bot spielen je 20 Spins auf derselben zufälligen Maschine. Wer am Ende mehr Match-Chips hat, gewinnt den Pot.</p>
           <label>Buy-in
             <input id="pvp-bot-buyin" type="number" inputmode="numeric" min="10" step="10" value="500" />
           </label>
@@ -353,7 +353,7 @@
             <div class="form-error" id="pvp-join-error"></div>
           </div>
         </div>
-        <p class="muted small" style="text-align:center">Beide zahlen den Buy-in in den Pot. 20 Spins — wer mehr Match-Chips übrig hat, gewinnt alles.</p>
+        <p class="muted small" style="text-align:center">Beide zahlen den Buy-in in den Pot. 20 Spins, wer mehr Match-Chips übrig hat, gewinnt alles.</p>
       </div>
 
       <!-- PvP: Warteraum -->
@@ -414,7 +414,7 @@
             <div class="bet-display"><span class="lbl">Einsatz</span><b id="bet-amount">20</b></div>
             <button class="bet-step" id="bet-up">+</button>
           </div>
-          <div class="spin-hint">🕹️ Hebel ziehen
+          <div class="spin-hint">Hebel ziehen
             <button id="buy-bonus" class="auto-roll-btn" style="display:none"><i data-icon="geschenk"></i> Bonus</button>
             <button id="force-win-btn" class="auto-roll-btn" style="display:none" title="Admin: nächster Spin = Maximalgewinn"><i data-icon="quests"></i> Max</button>
             <button id="auto-roll" class="auto-roll-btn"><i data-icon="vor"></i> Auto</button>
@@ -462,7 +462,7 @@
         <!-- Geteilte Lobby (jeder gegen Dealer, alle sehen Gewinne/Verluste) -->
         <div id="bj-lobby-panel" class="bj-lobby-panel hidden">
           <div class="bj-lobby-head">
-            <span>♠️ Tisch <b id="bj-lobby-code"></b></span>
+            <span>Tisch <b id="bj-lobby-code"></b></span>
             <button class="chip-btn" id="bj-lobby-leave">Verlassen</button>
           </div>
           <div class="bj-lobby-players" id="bj-lobby-players"></div>
@@ -531,7 +531,7 @@
         <!-- Geteilte Lobby: alle setzen auf denselben Kessel, Anführer dreht einmal -->
         <div id="rt-lobby-panel" class="bj-lobby-panel hidden">
           <div class="bj-lobby-head">
-            <span>🎡 Tisch <b id="rt-lobby-code"></b></span>
+            <span>Tisch <b id="rt-lobby-code"></b></span>
             <button class="chip-btn" id="rt-lobby-leave">Verlassen</button>
           </div>
           <div class="bj-lobby-players" id="rt-lobby-players"></div>
@@ -556,14 +556,14 @@
 
         <div id="rt-hotcold" class="rt-hotcold hidden">
           <div class="rt-hc-col">
-            <span class="rt-hc-label rt-hc-hot">🔥 Heiß</span>
+            <span class="rt-hc-label rt-hc-hot">Heiß</span>
             <div id="rt-hot" class="rt-hc-nums"></div>
           </div>
           <div class="rt-hc-col">
-            <span class="rt-hc-label rt-hc-cold">❄️ Kalt</span>
+            <span class="rt-hc-label rt-hc-cold">Kalt</span>
             <div id="rt-cold" class="rt-hc-nums"></div>
           </div>
-          <div class="rt-hc-note">* reiner Aberglaube — jede Zahl ist immer exakt gleich wahrscheinlich 😉</div>
+          <div class="rt-hc-note">* reiner Aberglaube, jede Zahl kommt immer gleich oft</div>
         </div>
 
         <div id="rt-placed-bets" class="rt-placed-bets">
@@ -589,7 +589,7 @@
       <div class="sb-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
         <h2 style="text-align:center;margin:4px 0 2px"><i data-icon="sports"></i>Sportwetten</h2>
-        <p class="muted small" style="text-align:center;margin:0 0 10px">🌍 Echte Spiele aus Bundesliga, Premier League und La Liga (echtes Ergebnis zählt) + simulierte Ligen für sofortige Action · du siehst, worauf andere tippen</p>
+        <p class="muted small" style="text-align:center;margin:0 0 10px">Echte Spiele aus Bundesliga, Premier League und La Liga (echtes Ergebnis zählt) + simulierte Ligen für sofortige Action · du siehst, worauf andere tippen</p>
         <div id="sb-slip-panel" class="sb-slip-panel hidden"></div>
         <nav id="sb-leagues" class="cat-tabs" aria-label="Ligen"></nav>
         <div id="sb-matches" class="sb-matches"></div>
@@ -677,7 +677,7 @@
         <div class="hilo-topbar">
           <div class="hilo-stat"><span>Kette</span><b id="hilo-kette">0</b></div>
           <div class="hilo-stat"><span>Multiplikator</span><b id="hilo-mult">1,00×</b></div>
-          <div class="hilo-stat"><span>Auszahlung</span><b id="hilo-cashval">—</b></div>
+          <div class="hilo-stat"><span>Auszahlung</span><b id="hilo-cashval">-</b></div>
         </div>
 
         <div class="hilo-tisch">
@@ -691,11 +691,11 @@
         <div class="hilo-tipps hidden" id="hilo-tipps">
           <button class="hilo-tipp hilo-hoch" id="hilo-hoch" type="button">
             <span class="hilo-pfeil">▲</span><span class="hilo-wort">Höher</span>
-            <small id="hilo-hoch-mult">—</small><em id="hilo-hoch-chance"></em>
+            <small id="hilo-hoch-mult">-</small><em id="hilo-hoch-chance"></em>
           </button>
           <button class="hilo-tipp hilo-tief" id="hilo-tief" type="button">
             <span class="hilo-pfeil">▼</span><span class="hilo-wort">Tiefer</span>
-            <small id="hilo-tief-mult">—</small><em id="hilo-tief-chance"></em>
+            <small id="hilo-tief-mult">-</small><em id="hilo-tief-chance"></em>
           </button>
         </div>
 
@@ -744,7 +744,7 @@
 
         <!-- Die Tabelle kommt vom Server, samt Chancen. Wer Würfel halten darf,
              kommt viel leichter an eine Straße als die Poker-Rangfolge glauben
-             lässt — deshalb steht die echte Chance daneben. -->
+             lässt. Deshalb steht die echte Chance daneben. -->
         <div class="wp-tabelle" id="wp-tabelle"></div>
 
         <div class="form-error" id="wp-error"></div>
@@ -760,7 +760,7 @@
 
         <div class="lo-jackpot">
           <span>Jackpot</span>
-          <b id="lo-jackpot">—</b>
+          <b id="lo-jackpot">-</b>
           <small id="lo-naechste"></small>
         </div>
 
@@ -787,8 +787,8 @@
         <div style="text-align:center"><div class="ph-icon" data-icon="mines"></div><h2>Mines</h2></div>
         <div class="mines-topbar">
           <div class="mines-stat"><span>Multiplikator</span><b id="mines-mult">1.00×</b></div>
-          <div class="mines-stat"><span>Auszahlung</span><b id="mines-cashval">—</b></div>
-          <div class="mines-stat"><span>Nächstes Feld</span><b id="mines-next">—</b></div>
+          <div class="mines-stat"><span>Auszahlung</span><b id="mines-cashval">-</b></div>
+          <div class="mines-stat"><span>Nächstes Feld</span><b id="mines-next">-</b></div>
         </div>
         <div class="mines-grid" id="mines-grid"></div>
 
@@ -834,8 +834,8 @@
         <div style="text-align:center"><div class="ph-icon" data-icon="towers"></div><h2>Towers</h2></div>
         <div class="mines-topbar">
           <div class="mines-stat"><span>Multiplikator</span><b id="tw-mult">1.00×</b></div>
-          <div class="mines-stat"><span>Auszahlung</span><b id="tw-cashval">—</b></div>
-          <div class="mines-stat"><span>Nächste Ebene</span><b id="tw-next">—</b></div>
+          <div class="mines-stat"><span>Auszahlung</span><b id="tw-cashval">-</b></div>
+          <div class="mines-stat"><span>Nächste Ebene</span><b id="tw-next">-</b></div>
         </div>
         <div class="towers-board" id="tw-board"></div>
         <div class="towers-setup" id="tw-setup">
@@ -916,8 +916,8 @@
               <button type="button" class="mem-size-btn" data-size="large">Groß<span>30 Karten</span></button>
             </div>
             <div class="mem-visibility">
-              <label class="mem-radio"><input type="radio" name="mem-vis" value="public" checked /> 🌐 Öffentlich <span class="muted small">(in Lobby sichtbar)</span></label>
-              <label class="mem-radio"><input type="radio" name="mem-vis" value="private" /> 🔒 Privat <span class="muted small">(nur per Code)</span></label>
+              <label class="mem-radio"><input type="radio" name="mem-vis" value="public" checked /> Öffentlich <span class="muted small">(in Lobby sichtbar)</span></label>
+              <label class="mem-radio"><input type="radio" name="mem-vis" value="private" /> Privat <span class="muted small">(nur per Code)</span></label>
             </div>
             <button class="btn-primary" id="mem-create" style="width:100%;margin-top:8px"><i data-icon="memory"></i> Duell erstellen</button>
           </div>
@@ -953,7 +953,7 @@
         <!-- Result -->
         <div id="mem-result" style="display:none;text-align:center">
           <div class="mem-result-emoji" id="mem-result-emoji">🏆</div>
-          <h3 id="mem-result-title">—</h3>
+          <h3 id="mem-result-title">-</h3>
           <p class="muted small" id="mem-result-sub"></p>
           <div class="rematch-row"><button class="btn-primary" id="mem-rematch" style="margin-top:10px"><i data-icon="aktualisieren"></i> Revanche</button>
           <button class="btn-secondary" id="mem-again" style="margin-top:10px">Zurück</button></div>
@@ -982,8 +982,8 @@
               <button type="button" class="mem-size-btn" data-tc="10+5">10+5<span>Schnell</span></button>
             </div>
             <div class="mem-visibility">
-              <label class="mem-radio"><input type="radio" name="chs-vis" value="public" checked /> 🌐 Öffentlich</label>
-              <label class="mem-radio"><input type="radio" name="chs-vis" value="private" /> 🔒 Privat (nur per Code)</label>
+              <label class="mem-radio"><input type="radio" name="chs-vis" value="public" checked /> Öffentlich</label>
+              <label class="mem-radio"><input type="radio" name="chs-vis" value="private" /> Privat (nur per Code)</label>
             </div>
             <button class="btn-primary" id="chs-create" style="width:100%;margin-top:8px"><i data-icon="chess"></i> Duell erstellen</button>
           </div>
@@ -1008,7 +1008,7 @@
 
         <!-- Game -->
         <div id="chs-game" style="display:none">
-          <div class="chs-spec-banner" id="chs-spec-banner" style="display:none">👁️ Zuschauer-Modus</div>
+          <div class="chs-spec-banner" id="chs-spec-banner" style="display:none">Zuschauer-Modus</div>
           <div class="chs-playerbar" id="chs-opp-bar"><span class="chs-pname">Gegner</span><span class="chs-clock" id="chs-opp-clock">5:00</span></div>
           <div class="chs-board" id="chs-board"></div>
           <div class="chs-playerbar" id="chs-you-bar"><span class="chs-pname">Du</span><span class="chs-clock" id="chs-you-clock">5:00</span></div>
@@ -1020,7 +1020,7 @@
         <!-- Result -->
         <div id="chs-result" style="display:none;text-align:center">
           <div class="mem-result-emoji" id="chs-result-emoji">🏆</div>
-          <h3 id="chs-result-title">—</h3>
+          <h3 id="chs-result-title">-</h3>
           <p class="muted small" id="chs-result-sub"></p>
           <div class="rematch-row"><button class="btn-primary" id="chs-rematch" style="margin-top:10px"><i data-icon="aktualisieren"></i> Revanche</button>
           <button class="btn-secondary" id="chs-again" style="margin-top:10px">Zurück</button></div>
@@ -1055,13 +1055,13 @@
           </div>
 
           <div id="sol-free-panel" class="mem-panel">
-            <p class="muted small">Ganz entspannt spielen — <b>kein Einsatz</b>, <b>unbegrenzte Neuauflagen</b> (Draw-1). Zählt trotzdem für Achievements & Statistik.</p>
+            <p class="muted small">Ohne Druck: <b>kein Einsatz</b>, <b>unbegrenzte Neuauflagen</b> (Draw-1). Zählt trotzdem für Achievements & Statistik.</p>
             <button class="btn-primary" id="sol-free-start" style="width:100%"><i data-icon="profi"></i> Solo starten</button>
           </div>
 
           <div id="sol-solo-panel" class="mem-panel" style="display:none">
             <p class="muted small">Draw-1, begrenzte Neuauflagen. Räum das ganze Brett ab → <b>Einsatz × 2</b>. Gibst du auf, ist der Einsatz weg. Max-Einsatz bewusst niedrig.</p>
-            <label class="mem-label">Einsatz (20–500 Chips)
+            <label class="mem-label">Einsatz (20 bis 500 Chips)
               <input id="sol-bet" type="number" inputmode="numeric" min="20" max="500" step="10" value="50" />
             </label>
             <button class="btn-primary" id="sol-solo-start" style="width:100%;margin-top:8px">🃏 Spiel starten</button>
@@ -1074,8 +1074,8 @@
                 <input id="sol-buyin" type="number" inputmode="numeric" min="50" step="50" value="200" />
               </label>
               <div class="mem-visibility">
-                <label class="mem-radio"><input type="radio" name="sol-vis" value="public" checked /> 🌐 Öffentlich</label>
-                <label class="mem-radio"><input type="radio" name="sol-vis" value="private" /> 🔒 Privat (nur per Code)</label>
+                <label class="mem-radio"><input type="radio" name="sol-vis" value="public" checked /> Öffentlich</label>
+                <label class="mem-radio"><input type="radio" name="sol-vis" value="private" /> Privat (nur per Code)</label>
               </div>
               <button class="btn-primary" id="sol-race-create" style="width:100%;margin-top:8px"><i data-icon="krieg"></i> Race erstellen</button>
             </div>
@@ -1112,7 +1112,7 @@
         <!-- Result -->
         <div id="sol-result" style="display:none;text-align:center">
           <div class="mem-result-emoji" id="sol-result-emoji">🏆</div>
-          <h3 id="sol-result-title">—</h3>
+          <h3 id="sol-result-title">-</h3>
           <p class="muted small" id="sol-result-sub"></p>
           <div class="rematch-row"><button class="btn-primary" id="sol-rematch" style="margin-top:10px;display:none"><i data-icon="aktualisieren"></i> Revanche</button>
           <button class="btn-primary" id="sol-again" style="margin-top:10px">Nochmal</button></div>
@@ -1142,7 +1142,7 @@
           </div>
 
           <div id="sdk-solo-panel" class="mem-panel">
-            <p class="muted small">Ganz in Ruhe lösen — <b>kein Zeitlimit</b>, <b>kein Einsatz</b>. Zählt trotzdem für Achievements & Statistik.</p>
+            <p class="muted small">In Ruhe lösen: <b>kein Zeitlimit</b>, <b>kein Einsatz</b>. Zählt trotzdem für Achievements & Statistik.</p>
             <button class="btn-primary" id="sdk-solo-start" style="width:100%"><i data-icon="profi"></i> Solo starten</button>
           </div>
 
@@ -1174,8 +1174,8 @@
                 <input id="sdk-buyin" type="number" inputmode="numeric" min="50" step="50" value="200" />
               </label>
               <div class="mem-visibility">
-                <label class="mem-radio"><input type="radio" name="sdk-vis" value="public" checked /> 🌐 Öffentlich <span class="muted small">(in Lobby sichtbar)</span></label>
-                <label class="mem-radio"><input type="radio" name="sdk-vis" value="private" /> 🔒 Privat <span class="muted small">(nur per Code)</span></label>
+                <label class="mem-radio"><input type="radio" name="sdk-vis" value="public" checked /> Öffentlich <span class="muted small">(in Lobby sichtbar)</span></label>
+                <label class="mem-radio"><input type="radio" name="sdk-vis" value="private" /> Privat <span class="muted small">(nur per Code)</span></label>
               </div>
               <button class="btn-primary" id="sdk-create" style="width:100%;margin-top:8px"><i data-icon="sudoku"></i> Race erstellen</button>
             </div>
@@ -1225,7 +1225,7 @@
         <!-- Result -->
         <div id="sdk-result" style="display:none;text-align:center">
           <div class="mem-result-emoji" id="sdk-result-emoji">🏆</div>
-          <h3 id="sdk-result-title">—</h3>
+          <h3 id="sdk-result-title">-</h3>
           <p class="muted small" id="sdk-result-sub"></p>
           <div class="rematch-row"><button class="btn-primary" id="sdk-rematch" style="margin-top:10px"><i data-icon="aktualisieren"></i> Revanche</button>
           <button class="btn-secondary" id="sdk-again" style="margin-top:10px">Zurück</button></div>
@@ -1239,7 +1239,7 @@
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
       <h2 class="screen-title"><i data-icon="vorschlaege"></i>Vorschläge</h2>
       <div class="tafel">
-        <p class="muted small">Welches Spiel oder Feature wünschst du dir? Schreib es hier rein — es landet direkt beim Casino-Betreiber.</p>
+        <p class="muted small">Welches Spiel oder Feature wünschst du dir? Schreib es hier rein, das lese ich.</p>
         <div id="suggest-form">
           <textarea id="suggest-text" rows="4" maxlength="500" placeholder="Dein Vorschlag…"></textarea>
           <div class="suggest-row">
@@ -1247,7 +1247,7 @@
             <button class="btn-primary" id="suggest-send">Absenden</button>
           </div>
           <div class="form-error" id="suggest-error"></div>
-          <div class="suggest-ok" id="suggest-thanks" style="display:none">✅ Danke! Dein Vorschlag ist angekommen.</div>
+          <div class="suggest-ok" id="suggest-thanks" style="display:none">Danke, ist angekommen.</div>
         </div>
         <!-- Owner-only inbox -->
         <div id="suggest-inbox" style="display:none">
@@ -1281,7 +1281,7 @@
       </div>
     </section>
 
-    <!-- ===================== 🐎 RENNBAHN ===================== -->
+    <!-- ===================== RENNBAHN ===================== -->
     <section class="screen" data-screen="horses">
       <div class="horses-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
@@ -1312,7 +1312,7 @@
         </div>
 
         <div class="horses-view hidden" id="hv-market">
-          <p class="muted small">Neue Pferde im Angebot — das Sortiment wechselt regelmäßig. Max. 4 aktive Pferde pro Stall.</p>
+          <p class="muted small">Neue Pferde, das Angebot wechselt regelmäßig. Max. 4 aktive Pferde pro Stall.</p>
           <div class="market-list" id="market-list"></div>
         </div>
 
@@ -1395,16 +1395,10 @@
       </div>
     </section>
 
-    <!-- ===================== CLANS ===================== -->
     <!-- ===================== CLANS =====================
-         Vorher lag alles in einer einzigen Rolle: Level, Season, Motto,
-         Schatzkammer, Auftraege, Mitglieder, Anfragen, Protokoll,
-         Verlassen-Knopf — auf dem iPad gut anderthalb Meter Wischweg, und
-         die Woechentlichen Auftraege, das einzige, was ohne Gleichzeitigkeit
-         funktioniert, sassen in der Mitte davon.
-
-         Jetzt: der Kopf mit Krieg und Auftraegen steht oben, alles Uebrige
-         liegt hinter Reitern. -->
+         Kopf mit Krieg und Aufträgen oben, der Rest hinter Reitern.
+         Die Wochenaufträge stehen bewusst vorne, weil sie als einziges
+         auch ohne gleichzeitiges Online-Sein laufen. -->
     <section class="screen" data-screen="clans">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
       <h2 class="screen-title">Clans</h2>
@@ -1442,7 +1436,7 @@
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
       <h2 class="screen-title"><i data-icon="kalender"></i>Login-Kalender</h2>
       <div class="tafel">
-        <p class="muted small">Jeden Tag einloggen & abholen — die Belohnung steigt. Ein Tag verpasst = zurück auf Tag 1. (Zusätzlich zum Stunden-Bonus.)</p>
+        <p class="muted small">Jeden Tag einmal abholen, die Belohnung steigt. Wer einen Tag auslässt, fängt wieder bei Tag 1 an. Kommt zum Stunden-Bonus dazu.</p>
         <div id="calendar-grid" class="calendar-grid"><p class="muted small">Lädt…</p></div>
         <button class="btn-primary" id="calendar-claim-btn" style="margin-top:14px;width:100%">Heutige Belohnung abholen</button>
       </div>
@@ -1453,7 +1447,7 @@
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
       <h2 class="screen-title"><i data-icon="quests"></i>Aufträge</h2>
       <div class="tafel">
-        <p class="muted small">Verdiene Chips durchs Spielen — Belohnung gibt's automatisch beim Abschluss. Alle sehen dieselben Aufträge.</p>
+        <p class="muted small">Chips fürs Spielen. Die Belohnung gibt's automatisch, sobald ein Auftrag erfüllt ist. Alle sehen dieselben Aufträge.</p>
         <p class="hint hidden" id="quest-hinweis"></p>
         <h3 class="section-title">Wiederholbar <span class="muted small">· mehrfach pro Tag</span></h3>
         <div id="quest-repeat"><p class="muted small">Lädt…</p></div>
@@ -1471,11 +1465,8 @@
     </section>
 
     <!-- ===================== STATISTIK =====================
-         Vorher: eine Visitenkarte und darunter sieben Zeilen "Label — Wert",
-         inklusive "Größter Einzelgewinn +0" bei jemandem, der noch nie
-         gespielt hat. Jetzt tragen die Zahlen, die etwas bedeuten, eine
-         eigene Kachel, und die Bilanz je Spiel zeigt, wohin die Chips
-         wirklich gegangen sind. -->
+         Oben Kacheln für die Zahlen, die etwas aussagen, darunter die
+         Bilanz je Spiel. -->
     <section class="screen" data-screen="stats">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
       <h2 class="screen-title" id="stats-title">Deine Statistik</h2>
@@ -1565,12 +1556,12 @@
 
         <hr class="settings-rule" />
         <h3>Passwort ändern</h3>
-        <p class="hint" style="margin-top:-4px">Tipp: Dein Name steht öffentlich in der Bestenliste — eine 4-stellige PIN ist leicht zu erraten. Nimm ein richtiges Passwort (6–24 Zeichen).</p>
+        <p class="hint" style="margin-top:-4px">Dein Name steht öffentlich in der Bestenliste, eine vierstellige PIN ist also schnell geraten. Nimm lieber ein richtiges Passwort (6 bis 24 Zeichen).</p>
         <form id="change-pin-form" autocomplete="off">
           <label>Altes Passwort / alte PIN
             <input id="cp-old" type="password" maxlength="24" placeholder="••••" required />
           </label>
-          <label>Neues Passwort (6–24 Zeichen)
+          <label>Neues Passwort (6 bis 24 Zeichen)
             <input id="cp-new" type="password" minlength="6" maxlength="24" placeholder="••••••" required />
           </label>
           <label>Neues Passwort bestätigen
@@ -1628,7 +1619,7 @@
           </div>
         </section>
 
-        <!-- Laufende Aufgabe steht GANZ OBEN, sonst startet man eine und
+        <!-- Laufende Aufgabe steht ganz oben, sonst startet man eine und
              sieht sie nicht, weil sie unter vier Jobkarten liegt. -->
         <div class="panel work-task-panel hidden" id="work-task-panel">
           <div id="work-task-box"></div>
@@ -1643,7 +1634,7 @@
              Steht deshalb unten und klein. -->
         <details class="wk-clicker" id="work-clicker-wrap">
           <summary>
-            <span>🖐️ Trinkgeld sammeln</span>
+            <span>Trinkgeld sammeln</span>
             <small>Wenn du wirklich blank bist: +<span id="clicker-power">1</span><i class=mk></i> pro Klick</small>
           </summary>
           <div class="wk-clicker-body">
@@ -1671,9 +1662,9 @@
         </div>
 
         <div class="panel biz-collect-panel">
-          <div class="cd-sub" style="margin-bottom:8px">🏆 Dein Imperium</div>
+          <div class="cd-sub" style="margin-bottom:8px">Dein Imperium</div>
           <div id="biz-buffs" class="biz-buffs">
-            <p class="muted small" style="margin:0;text-align:center">Noch kein Besitz. Kauf dein erstes Haus — komplette Straßen färben die Karte in deiner Farbe!</p>
+            <p class="muted small" style="margin:0;text-align:center">Noch kein Besitz. Kauf dein erstes Haus. Wem eine ganze Straße gehört, dem färbt sie die Karte ein.</p>
           </div>
         </div>
 
@@ -1694,7 +1685,7 @@
 
         <!-- Wem gehoert die Stadt. Inhalt kommt aus js/economy.js. -->
         <div class="panel biz-collect-panel">
-          <div class="cd-sub" style="margin-bottom:8px">🏙️ Wem gehört Porta</div>
+          <div class="cd-sub" style="margin-bottom:8px">Wem gehört Porta</div>
           <p class="muted small" id="city-board-hint" style="margin:0 0 8px">Lädt…</p>
           <div id="city-board" class="city-board"></div>
         </div>
@@ -1725,7 +1716,7 @@
         <div style="text-align:center">
           <div class="ph-icon" data-icon="stocks"></div>
           <h2>Börse</h2>
-          <p class="muted small">Long oder Short mit Hebel. Vorsicht: Aktien können insolvent gehen — dann ist alles weg.</p>
+          <p class="muted small">Long oder Short mit Hebel. Vorsicht: Aktien können pleitegehen, dann ist alles weg.</p>
         </div>
 
         <div class="stk-news" id="stk-news"></div>
@@ -1783,10 +1774,7 @@
       <section class="ad-tafel hidden" data-ad-tafel="ansage">
 
         <!-- ===== Ansage an alle =====
-             Hiess "Global Announcement" — englisch in einem Haus, das sonst
-             durchweg deutsch spricht. Und sie konnte genau eines: dastehen.
-             Kein Ton, kein Ablauf, kein Verlauf, kein Push, und man sah
-             nicht einmal, ob gerade eine steht. -->
+             Mit Ton, Ablaufzeit, Verlauf und optional Push. -->
         <h3 class="admin-h"><i data-icon="ansage"></i>Ansage an alle</h3>
         <div class="an-box">
           <div id="an-steht" class="an-steht hidden"></div>
@@ -1794,7 +1782,7 @@
           <label class="an-feld">
             <span>Text</span>
             <textarea id="admin-announcement-text" maxlength="220" rows="3"
-                      placeholder="z. B. Heute Abend ab 20 Uhr Turnier — seid dabei!"></textarea>
+                      placeholder="z. B. Heute Abend ab 20 Uhr Turnier, kommt vorbei!"></textarea>
             <small class="an-zaehler" id="an-zaehler">0 / 220</small>
           </label>
 
@@ -1819,7 +1807,7 @@
           <label class="an-push">
             <input type="checkbox" id="an-push" />
             <span><b>Auch als Benachrichtigung schicken</b>
-            <small>Erreicht die, die gerade nicht da sind. Wer verbunden ist, bekommt keine — der sieht die Zeile ohnehin.</small></span>
+            <small>Erreicht die, die gerade nicht da sind. Wer verbunden ist, bekommt keine, der sieht die Zeile ohnehin.</small></span>
           </label>
 
           <div class="an-vorschau-wrap">
@@ -1845,15 +1833,9 @@
       </section>
 
       <!-- ===== Spieler =====
-           Vorher: eine Karte je Konto mit einem roten "Löschen" direkt darin,
-           78 Mal untereinander — eine unwiderrufliche Aktion einen Fehltipp
-           entfernt. Darunter vier Formulare, in die man den Namen jedes Mal
-           neu tippte.
-
-           Jetzt: eine schmale Liste zum Suchen, ein Tipp öffnet die Person,
-           und alles zu dieser Person steht an einer Stelle. Was nicht
-           rückgängig zu machen ist, steht unten in einem eigenen Kasten und
-           fragt nach. -->
+           Liste zum Suchen, ein Tipp öffnet die Karte der Person. Alles,
+           was sich nicht zurücknehmen lässt, steht unten in einem eigenen
+           Kasten und fragt vorher nach. -->
       <section class="ad-tafel hidden" data-ad-tafel="spieler">
         <h3 class="admin-h"><i data-icon="gruppe"></i>Konten</h3>
 
@@ -1873,7 +1855,7 @@
             <button class="btn-danger ad-knopf" id="admin-ipban-btn">IP sperren</button>
           </div>
           <div class="form-error" id="admin-ipban-error"></div>
-          <ol class="leaderboard ad-ipliste" id="admin-ipban-list"><li class="muted">—</li></ol>
+          <ol class="leaderboard ad-ipliste" id="admin-ipban-list"><li class="muted">-</li></ol>
         </div>
       </section>
 
@@ -1887,7 +1869,7 @@
       <!-- ===== Wortfilter =====
            Was in einer Runde als schlimm gilt, entscheidet die Runde. Die
            Basisliste im Modul deckt das Grobe ab, hier kommt das Eigene
-           dazu — und Ausnahmen für Wörter, die zu Unrecht hängenbleiben
+           dazu, außerdem Ausnahmen für Wörter, die zu Unrecht hängenbleiben
            ("Fickmühle" ist ein Brettspiel). -->
       <section class="ad-tafel hidden" data-ad-tafel="filter">
         <h3 class="admin-h"><i data-icon="sperre"></i>Wortfilter</h3>
@@ -1910,7 +1892,7 @@
 
           <div class="wf-spalte">
             <div class="cd-sub">Ausnahmen</div>
-            <p class="hint">Was hier steht, gilt als harmlos — auch wenn ein gesperrtes Wort darin vorkommt.</p>
+            <p class="hint">Was hier steht, gilt als harmlos, auch wenn ein gesperrtes Wort darin vorkommt.</p>
             <div class="wf-zeile">
               <input id="wf-neu-aus" type="text" maxlength="40" placeholder="Ausnahme hinzufügen" />
               <button class="btn-secondary" id="wf-add-aus">Hinzufügen</button>
@@ -1922,9 +1904,9 @@
 
         <div class="wf-probe">
           <div class="cd-sub">Ausprobieren</div>
-          <p class="hint">Tippe etwas ein und sieh, was der Filter daraus macht — ohne dass jemand es zu sehen bekommt.</p>
+          <p class="hint">Tippe etwas ein und sieh, was der Filter daraus macht. Sehen kann das niemand außer dir.</p>
           <input id="wf-probe-text" type="text" maxlength="120" placeholder="z. B. eine Nachricht oder ein Name" />
-          <div class="wf-probe-aus" id="wf-probe-aus">—</div>
+          <div class="wf-probe-aus" id="wf-probe-aus">-</div>
         </div>
 
         <!-- Hochgeladene Bilder. Ein Wortfilter hilft hier nicht: was auf
@@ -1938,7 +1920,7 @@
 
         <div class="wf-bestand">
           <div class="cd-sub">Namen, die es schon gibt</div>
-          <p class="hint">Der Filter greift nur bei neuen Konten — sonst sperrt ein später
+          <p class="hint">Der Filter greift nur bei neuen Konten, sonst sperrt ein später
             ergänztes Wort jemanden aus seinem eigenen Account aus. Hier siehst du,
             was der Filter beanstanden würde.</p>
           <button class="btn-secondary" id="wf-bestand-btn">Bestand prüfen</button>
@@ -2002,7 +1984,7 @@
   </main>
 
   <!-- ===================== SCHWEBENDER CHAT (unten links, jeder Screen) ===================== -->
-  <!-- Ruhezustand: nur die 💬-Blase, Log ausgeblendet & klick-durchlässig, damit
+  <!-- Ruhezustand: nur die Chat-Blase, der Verlauf ist ausgeblendet und lässt Klicks durch, damit
        Spiel-Buttons (v. a. Blackjack) frei bleiben. Neue Nachricht / Tippen blendet ein. -->
   <div id="chat-dock" class="chat-dock hidden" data-chat-room="global">
     <div class="chat-log" data-chat-log></div>

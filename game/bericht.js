@@ -1,11 +1,11 @@
 "use strict";
 
 /**
- * Tagesbericht — was war, waehrend du weg warst.
+ * Tagesbericht: was war, waehrend du weg warst.
  *
  * Das Casino wird in Schueben gespielt: selten sind zwei Leute gleichzeitig da,
  * und wer drei Tage nicht reinschaut, verpasst alles. Rekorde fallen, Gebaeude
- * wechseln den Besitzer, die Lotterie zieht — und niemand erfaehrt es, weil der
+ * wechseln den Besitzer, die Lotterie zieht, und niemand erfaehrt es, weil der
  * Chat weggerollt ist und der Live-Feed nach jedem Deploy leer anfaengt.
  *
  * Der Bericht beantwortet beim Reinkommen drei Fragen in dieser Reihenfolge:
@@ -14,7 +14,7 @@
  *   3. Wie steht es gerade (Jackpot, Krone, Goldene Strasse, mein Platz)?
  *
  * Quelle fuer (2) ist die Chronik (game/chronik.js), nicht der Live-Feed.
- * Der Merker, bis wann berichtet wurde, steht als `berichtAt` am Konto — nicht
+ * Der Merker, bis wann berichtet wurde, steht als `berichtAt` am Konto, nicht
  * im localStorage: Safari wirft den nach sieben Tagen weg, und genau nach so
  * einer Pause ist der Bericht am wichtigsten.
  */
@@ -54,7 +54,7 @@ function marken(accounts, key) {
   } catch {}
   try { kalender = accounts.calendarState(key)?.canClaim ? 1 : 0; } catch {}
   try { rad = require("./gluecksrad").zustand(key)?.canSpin ? 1 : 0; } catch {}
-  /* Die Auktion zaehlt NICHT mit: sie ist nichts zum Abholen, sondern etwas,
+  /* Die Auktion zaehlt nicht mit: sie ist nichts zum Abholen, sondern etwas,
      das man verpassen kann. Deshalb eine eigene, rote Marke statt einer Zahl
      im goldenen Zaehler. */
   let auktion = { neu: false, ueberboten: false, an: false };
@@ -69,7 +69,7 @@ function marken(accounts, key) {
 /**
  * Die Marken als anklickbare Zeilen.
  *
- * Bewusst NICHT der Stunden-Bonus: den gibt es fast immer, er stuende dauerhaft
+ * Bewusst nicht der Stunden-Bonus: den gibt es fast immer, er stuende dauerhaft
  * hier und im Menue eine dauerhafte 1. Eine Marke, die immer leuchtet, sagt
  * nichts mehr. Er hat seinen eigenen grossen Knopf in der Lobby.
  */

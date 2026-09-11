@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – open-lobby browser (home screen).
-   Lists every joinable lobby across games so players can join without
-   exchanging a code. Live-updates via the server's "lobby:list" broadcast.
+   Offene Lobbys (Startseite)
+   Listet alle Lobbys, denen man beitreten kann, über alle Spiele hinweg, damit
+   niemand Codes austauschen muss. Aktualisiert sich über "lobby:list".
    ============================================================ */
 
 (function () {
@@ -19,7 +19,7 @@
 
   function render() {
     if (!lobbies.length) {
-      listEl.innerHTML = '<p class="muted small">Keine offenen Lobbys gerade. Erstelle eine in 🃏 Poker oder 🎰 Slots-Duell — sie taucht hier für alle auf.</p>';
+      listEl.innerHTML = '<p class="muted small">Gerade ist keine Lobby offen. Wer eine bei Poker oder im Slots-Duell aufmacht, taucht hier für alle auf.</p>';
       return;
     }
     listEl.innerHTML = lobbies.map((l) => {
@@ -28,7 +28,7 @@
         ? `Läuft: ${l.names.map(escapeHtml).join(" vs ")}`
         : `Anführer: ${escapeHtml(l.host)} · ${l.players}/${l.max} Spieler`;
       const btn = watchOnly
-        ? `<button class="btn-secondary lobby-watch" data-game="${escapeHtml(l.game)}" data-code="${escapeHtml(l.code)}">👁️ Zuschauen</button>`
+        ? `<button class="btn-secondary lobby-watch" data-game="${escapeHtml(l.game)}" data-code="${escapeHtml(l.code)}">Zuschauen</button>`
         : `<button class="btn-primary lobby-join" data-game="${escapeHtml(l.game)}" data-code="${escapeHtml(l.code)}">Beitreten</button>`;
       return `
       <div class="lobby-card">
@@ -70,7 +70,7 @@
     });
   }
 
-  // Server pushes the full list on any change (array payload).
+  // Bei jeder Änderung schickt der Server die ganze Liste (als Array).
   socket.on("lobby:list", (list) => {
     lobbies = Array.isArray(list) ? list : (list && list.lobbies) || [];
     if (onScreen()) render();

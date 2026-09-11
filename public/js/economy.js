@@ -1,12 +1,12 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Economy client
-   • Work: a capped clicker (starter aid only).
-   • Stadt: ECHTE Karte von Porta Westfalica — Territorium & Status.
-     Übersicht (Stadtteile mit Boss & Index) → Ortsteil (echte
-     Häuser + Straßen). Besitz malt die Karte in deiner Farbe:
-     Straßen-Monopole, Stadtteil-Boss, Trophäen-Gebäude,
+   Wirtschaft
+   Arbeiten: ein gedeckelter Klicker, nur als Starthilfe.
+   Stadt: die echte Karte von Porta Westfalica. Übersicht (Stadtteile mit
+     Boss und Index), darunter der Ortsteil mit echten Häusern und Straßen.
+     Besitz färbt die Karte in deiner Farbe: Straßen-Monopole, Stadtteil-Boss,
+     Trophäen, Spekulation, Wohnsitz. Entschieden wird auf dem Server.
      Ortsteil-Spekulation, Wohnsitz. Server ist autoritativ.
    ============================================================ */
 
@@ -26,7 +26,7 @@
     return task && task.type === "route" ? " → " : " · ";
   }
 
-  // ── Work (capped clicker) ────────────────────────────────────────────────
+  // --- Arbeiten (gedeckelter Klicker) ---
   function applyWorkState(s) {
     if (!s || !s.ok) return;
     const factor = s.hustle && s.hustle.factor ? s.hustle.factor : 1;
@@ -81,7 +81,7 @@
       ? "Je weniger du besitzt, desto mehr zahlt die Schicht."
       : faktor >= 1
         ? `Bei ${fmt(f.smoothedNetWorth || f.netWorth || 0)}<i class=mk></i> Vermögen.`
-        : "Du bist längst reich — hier gibt es nur noch wenig.";
+        : "Du bist längst reich, hier gibt es nur noch wenig.";
     renderTask(jobs.activeTask);
     box.innerHTML = (jobs.jobs || []).map((j) => {
       const m = jobMeta(j);
@@ -113,7 +113,7 @@
       </button>`;
     }).join("");
     if (jobs.activeShift && !timeLeft(jobs.activeShift.readyAt)) {
-      // Achtung: die ganze Karte IST der Knopf. Nur die Beschriftung
+      // Achtung: die ganze Karte ist der Knopf. Nur die Beschriftung
       // austauschen, nicht den Karteninhalt.
       const karte = box.querySelector('[data-job-action="shift"]');
       if (karte) {
@@ -160,14 +160,14 @@
       inner += `<div class="work-chip-row">${(task.chips || []).map((c) =>
         `<button class="work-chip" data-pick="${c}">${fmt(c)}</button>`).join("")}</div>`;
       inner += `<div class="work-input-line">Gelegt: <b id="work-route-current">${
-        routeAnswer.length ? routeAnswer.map((c) => fmt(c)).join(" + ") + " = " + fmt(summe) + "<i class=mk></i>" : "–"
+        routeAnswer.length ? routeAnswer.map((c) => fmt(c)).join(" + ") + " = " + fmt(summe) + "<i class=mk></i>" : "-"
       }</b></div>`;
       inner += `<div class="work-task-actions"><button class="btn-secondary" id="work-task-reset">Zurück</button><button class="btn-primary" id="work-task-submit">Auszahlen</button></div>`;
     } else if (task.type === "bestellung") {
       inner += `<div class="work-route-target">${(task.target || []).map(escapeHtml).join(" → ")}</div>`;
       inner += `<div class="work-task-buttons">${(task.options || []).map((o) =>
         `<button class="btn-secondary work-pick-btn" data-pick="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
-      inner += `<div class="work-input-line">Reihenfolge: <b id="work-route-current">${routeAnswer.join(" → ") || "–"}</b></div>`;
+      inner += `<div class="work-input-line">Reihenfolge: <b id="work-route-current">${routeAnswer.join(" → ") || "-"}</b></div>`;
       inner += `<div class="work-task-actions"><button class="btn-secondary" id="work-task-reset">Zurück</button><button class="btn-primary" id="work-task-submit">Ausliefern</button></div>`;
     } else if (task.zeilen) {
       // Wettscheine pruefen: erst die Zeilen lesen, dann den falschen tippen.
@@ -262,7 +262,7 @@
       routeAnswer.push(pickBtn.dataset.pick || "");
       const cur = $("#work-route-current");
       const task = workState && workState.activeTask;
-      if (cur) cur.textContent = routeAnswer.join(taskSep(task)) || "–";
+      if (cur) cur.textContent = routeAnswer.join(taskSep(task)) || "-";
       return;
     }
     const chip = e.target.closest(".work-chip");
@@ -335,7 +335,7 @@
     setTimeout(() => el.remove(), 800);
   }
 
-  // ── City state ───────────────────────────────────────────────────────────
+  // --- Stadt ---
   let view = "overview";
   let overview = null;
   let district = null;
@@ -355,7 +355,7 @@
       if (!res || !res.ok) return;
       overview = res.overview;
       renderEmpire(overview.me);
-      // Nach jedem Kauf aendern sich Besitz UND die eigene Staffel, die
+      // Nach jedem Kauf aendern sich Besitz und die eigene Staffel, die
       // zwischengespeicherten Hauslisten waeren dann veraltet.
       besitzerHaeuser = {};
       renderBoard();
@@ -377,12 +377,12 @@
     });
   }
 
-  // ── "Dein Imperium" panel ────────────────────────────────────────────────
+  // --- "Dein Imperium" ---
   function renderEmpire(me) {
     const box = $("#biz-buffs");
     if (!box) return;
     if (!me || !me.houses) {
-      box.innerHTML = `<p class="muted small" style="margin:0;text-align:center">Noch kein Besitz. Kauf dein erstes Haus — komplette Straßen färben die Karte in deiner Farbe!</p>`;
+      box.innerHTML = `<p class="muted small" style="margin:0;text-align:center">Noch kein Besitz. Kauf dein erstes Haus. Wem eine ganze Straße gehört, dem färbt sie die Karte ein.</p>`;
       return;
     }
     const chips = [];
@@ -393,7 +393,7 @@
     for (const s of me.sets || []) chips.push(`<span class="buff-chip">${s.emoji} ${escapeHtml(s.label)} (+${s.tribute.toLocaleString("de-DE")}/Std)</span>`);
     for (const t of me.trophies) chips.push(`<span class="buff-chip">${t.emoji} ${escapeHtml(t.title)}</span>`);
     for (const d of me.bossOf) chips.push(`<span class="buff-chip">${window.Casino.icons.ui("krone")}Boss von ${escapeHtml(d)}</span>`);
-    // "Meine Immobilien" — tap to jump to the building on the map.
+    // "Meine Immobilien": antippen springt zum Gebäude auf der Karte.
     let list = `<details class="empire-list"><summary>Meine Immobilien (${me.houses})</summary><div class="empire-items">`;
     for (const p of me.properties || []) {
       list += `<button class="empire-item" data-goto-d="${p.did}" data-goto-b="${p.id}">${p.emoji} ${escapeHtml(p.label)}<small>${escapeHtml(p.districtName)} · ${fmt(p.price)}<i class=mk></i></small></button>`;
@@ -402,14 +402,14 @@
     box.innerHTML = chips.join("") + list;
   }
 
-  // ── "Wem gehört Porta" ───────────────────────────────────────────────────
+  // --- "Wem gehört Porta" ---
   /*
    * Die Uebernahme gab es schon immer (150 %, der Vorbesitzer bekommt den
    * Marktwert), aber sie stand nur an einem einzelnen Haus tief in einem
    * Ortsteil. Wer neu anfing, sah nur eine Karte voller fremder Farben und
    * hatte kein Ziel. Hier steht jetzt, wem wie viel gehoert, und ein Tipp auf
    * eine Zeile listet die Haeuser dieser Person mit dem Preis, den DU dafuer
-   * zahlen wuerdest — billigste zuerst, damit sichtbar ist, was erreichbar ist.
+   * zahlen würdest, billigste zuerst, damit sichtbar ist, was erreichbar ist.
    */
   let offenerBesitzer = null;
   let besitzerHaeuser = {};
@@ -424,7 +424,7 @@
       const staffel = overview.ownerScale || 1;
       const teile = [`${fmt(b.besetzt)} von ${fmt(b.gesamt)} Gebäuden haben einen Besitzer, ${fmt(b.frei)} sind noch frei.`];
       if (staffel > 1.01) {
-        teile.push(`Dein Kaufpreis liegt bei ${staffel.toLocaleString("de-DE")}× — je mehr du besitzt, desto teurer wird das nächste Haus (höchstens ${overview.ownerScaleMax}×).`);
+        teile.push(`Dein Kaufpreis liegt bei ${staffel.toLocaleString("de-DE")}×. Je mehr du besitzt, desto teurer wird das nächste Haus (höchstens ${overview.ownerScaleMax}×).`);
       } else {
         teile.push("Jedes Haus lässt sich übernehmen: du zahlst 50 % Aufschlag, der Vorbesitzer bekommt den vollen Marktwert.");
       }
@@ -506,14 +506,14 @@
     });
   }
 
-  // Jump from the property list straight to the building on the map.
+  // Aus der Immobilienliste direkt zum Gebäude auf der Karte springen.
   $("#biz-buffs").addEventListener("click", (e) => {
     const item = e.target.closest(".empire-item");
     if (!item) return;
     springeZuGebaeude(item.dataset.gotoD, parseInt(item.dataset.gotoB, 10));
   });
 
-  // ── Geometry helpers ─────────────────────────────────────────────────────
+  // --- Geometrie ---
   const pathOf = (pts) => "M" + pts.map((p) => p[0] + " " + p[1]).join("L") + "Z";
   const openPath = (pts) => "M" + pts.map((p) => p[0] + " " + p[1]).join("L");
   function bboxOf(ptsList) {
@@ -530,14 +530,14 @@
   };
   const setViewBox = () => { if (vb) $("#city-map").setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); };
 
-  // ── Overview: all districts ──────────────────────────────────────────────
+  // --- Übersicht: alle Ortsteile ---
   function renderOverview() {
     const svg = $("#city-map");
     if (!svg || !overview) return;
     $("#city-back").classList.add("hidden");
     $("#city-zoom").classList.add("hidden");
     $("#city-title").textContent = overview.city;
-    $("#city-subtitle").innerHTML = `Erobere die echte Stadt: Häuser kaufen, Straßen-Monopole sichern, Stadtteil-Boss werden. Chips kommen aus dem Casino — hier zeigst du sie her.`;
+    $("#city-subtitle").innerHTML = `Erobere die echte Stadt: Häuser kaufen, Straßen-Monopole sichern, Stadtteil-Boss werden. Verdient wird im Casino, hier zeigst du, was du hast.`;
     const lp = $("#land-price");
     if (lp) {
       lp.innerHTML = (overview.casinoOwnerName ? `${window.Casino.icons.ui("marke")}${escapeHtml(overview.casinoOwnerName)}` : `${window.Casino.icons.ui("marke")}frei`)
@@ -577,7 +577,7 @@
     svg.innerHTML = parts.join("");
   }
 
-  // ── District: real buildings, streets, territory colours ────────────────
+  // --- Ortsteil: echte Gebäude, Straßen, Farben ---
   function renderDistrict() {
     const svg = $("#city-map");
     if (!svg || !district) return;
@@ -588,7 +588,7 @@
     const monoStr = district.monopolies.length
       ? ` · ${window.Casino.icons.ui("krone")}${district.monopolies.map((m) => escapeHtml(m.st)).slice(0, 3).join(", ")}${district.monopolies.length > 3 ? "…" : ""}`
       : "";
-    $("#city-subtitle").innerHTML = `${district.buildings.length} echte Häuser${mine ? ` — <b>${mine}</b> deins` : ""}${monoStr}`;
+    $("#city-subtitle").innerHTML = `${district.buildings.length} echte Häuser${mine ? `, <b>${mine}</b> davon deins` : ""}${monoStr}`;
     const lp = $("#land-price");
     if (lp) {
       const pct = Math.round((district.idx - 1) * 100);
@@ -602,7 +602,7 @@
     if (!vb) vb = { ...fitVb };
     setViewBox();
 
-    // Street name → monopoly (colours the whole street).
+    // Straßenname -> Monopol (färbt die ganze Straße).
     const monoBySt = {};
     for (const m of district.monopolies) monoBySt[m.st] = m;
 
@@ -615,9 +615,9 @@
         parts.push(`<path d="${pathOf(l.pts)}" fill="${l.type === "park" ? "#31513a" : "#33494f"}" opacity="0.8"/>`);
     }
 
-    // Streets: monopolised streets glow in the owner's colour; the weekly
-    // GOLDEN street shimmers gold underneath everything. 👑✨
-    const monoLabelAt = {}; // st -> longest road midpoint for the label
+    // Straßen: Monopole leuchten in der Farbe des Besitzers, darunter schimmert
+    // die Goldene Straße der Woche.
+    const monoLabelAt = {}; // Straße -> Mitte des längsten Stücks, für die Beschriftung
     let goldenLabelAt = null;
     for (const r of district.roads || []) {
       const mono = r.n && monoBySt[r.n];
@@ -637,9 +637,9 @@
         goldenLabelAt = { len: r.pts.length, p: r.pts[Math.floor(r.pts.length / 2)] };
     }
 
-    // Buildings: territory painting — owned houses fill in the owner's colour.
-    // When a house is selected, every house on the SAME street is highlighted so
-    // you can spot the whole street at a glance.
+    // Gebäude: eigene Häuser in der Farbe des Besitzers. Ist ein Haus gewählt,
+    // wird jedes Haus derselben Straße hervorgehoben, damit man die ganze
+    // Straße auf einen Blick sieht.
     const selB = selectedId != null ? district.buildings.find((x) => x.id === selectedId) : null;
     const selSt = selB ? selB.st : null;
     for (const b of district.buildings) {
@@ -648,7 +648,7 @@
       let fill = CLS_FILL[b.cls] || "#3e5748";
       let stroke = "rgba(0,0,0,0.35)", sw = 0.4;
       if (b.owner) { fill = b.color; stroke = b.mine ? "#f4d782" : "rgba(0,0,0,0.5)"; sw = b.mine ? 1.6 : 0.7; }
-      if (sameSt) { stroke = "#ffcf5e"; sw = 2.0; }   // same-street highlight
+      if (sameSt) { stroke = "#ffcf5e"; sw = 2.0; }   // gleiche Straße hervorheben
       if (sel) { stroke = "#7ec8ff"; sw = 2.4; }
       const special = b.cls === "casino" || b.cls === "bank" || b.trophy;
       parts.push(`<path class="bld" data-b="${b.id}" d="${pathOf(b.pts)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${special ? 'filter="url(#glow)"' : ""} style="cursor:pointer"/>`);
@@ -662,7 +662,7 @@
       parts.push(window.Casino.icons.svgGruppe(LM_ICON[l.type] || "marke", l.x, l.y, 26, "#fff"));
     }
 
-    // Monopoly street labels on top.
+    // Monopol-Beschriftungen obendrauf.
     for (const [st, info] of Object.entries(monoLabelAt)) {
       const m = monoBySt[st];
       parts.push(`<text x="${info.p[0]}" y="${info.p[1] - 8}" text-anchor="middle" font-size="13" font-weight="800" fill="${m.color}" stroke="#1c231b" stroke-width="2.5" paint-order="stroke" style="pointer-events:none">${escapeHtml(m.ownerName)}s ${escapeHtml(st)}</text>`);
@@ -673,13 +673,13 @@
     svg.innerHTML = `<defs><filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#f4d782" flood-opacity="0.85"/></filter></defs>` + parts.join("");
   }
 
-  // ── Pan & zoom (district view) ───────────────────────────────────────────
+  // --- Verschieben und Zoomen (Ortsteil) ---
   const mapEl = $("#city-map");
   const pointers = new Map();
   let panStart = null, moved = false, pinchStart = null;
-  // Selection happens on pointerup using the pointerdown target: after
-  // setPointerCapture the browser retargets the eventual click to the SVG
-  // itself, so a plain click handler never sees the .bld path (mouse bug).
+  // Ausgewählt wird bei pointerup über das Ziel von pointerdown: nach
+  // setPointerCapture leitet der Browser den Klick aufs SVG selbst um, ein
+  // normaler click-Handler sieht den .bld-Pfad also nie (Fehler mit der Maus).
   let downTarget = null;
 
   const clientToMap = (cx, cy) => {
@@ -732,7 +732,7 @@
     }
   });
   const endPointer = (e) => {
-    // A tap (no drag) selects the building under the initial pointerdown.
+    // Tippen ohne Ziehen wählt das Gebäude unter dem ersten pointerdown.
     if (e.type === "pointerup" && view === "district" && !moved && pointers.size === 1 && downTarget) {
       const bEl = downTarget.closest && downTarget.closest(".bld");
       if (bEl) {
@@ -762,15 +762,15 @@
     loadCity();
   });
 
-  // Overview has no pointer capture, so a plain click works there.
-  // (District selection happens in endPointer — see note at downTarget.)
+  // Die Übersicht hat kein Pointer-Capture, ein normaler Klick reicht dort.
+  // (Ortsteile werden in endPointer ausgewählt, siehe Hinweis bei downTarget.)
   mapEl.addEventListener("click", (e) => {
     if (moved) return;
     const dEl = e.target.closest(".dist");
     if (dEl && view === "overview") loadDistrict(dEl.dataset.d);
   });
 
-  // ── Detail panel ─────────────────────────────────────────────────────────
+  // --- Detailansicht ---
   const bldById = (id) => district && district.buildings.find((b) => b.id === id);
 
   const OSM_TYPE = {
@@ -809,13 +809,13 @@
     const box = $("#city-detail");
     if (!box) return;
     if (view === "overview") {
-      // Overview panel = local news feed (Spekulation!).
-      let html = `<div class="cd-sub" style="margin-bottom:6px">📰 Orts-News</div>`;
+      // In der Übersicht steht der Nachrichtenticker (Spekulation).
+      let html = `<div class="cd-sub" style="margin-bottom:6px">Nachrichten aus dem Ort</div>`;
       if (overview && overview.news && overview.news.length) {
         html += overview.news.map((n) => `<div class="cd-row ${n.up ? "news-up" : "news-down"}">${escapeHtml(n.txt)}</div>`).join("");
-        html += `<p class="muted small" style="margin:8px 0 0">News bewegen den Preis-Index des Ortsteils — kauf billig, verkauf teuer (Verkauf: 90%).</p>`;
+        html += `<p class="muted small" style="margin:8px 0 0">Nachrichten bewegen den Preisindex des Ortsteils. Billig kaufen, teuer verkaufen (Verkauf zu 90 %).</p>`;
       } else {
-        html += `<p class="muted small" style="margin:0">Noch keine Ereignisse — die Indizes driften vor sich hin. Tippe einen Stadtteil an!</p>`;
+        html += `<p class="muted small" style="margin:0">Noch nichts passiert, die Indizes driften vor sich hin. Tipp einen Stadtteil an.</p>`;
       }
       box.innerHTML = html;
       return;
@@ -830,67 +830,67 @@
     const title = b.nm ? escapeHtml(b.nm) : escapeHtml(c.name);
     const head = `<div class="cd-head">${troph ? troph.emoji : c.emoji} <b>${title}</b>${troph ? ` <span class="cd-trophy-tag">TROPHÄE</span>` : ""}</div>`;
 
-    // Info block: address, type, size.
+    // Adresse, Art, Größe.
     let body = `<div class="cd-info">`;
-    body += `<div class="cd-row">📍 ${b.n ? `<b>${escapeHtml(b.n)}</b> · ` : ""}${escapeHtml(district.name)}</div>`;
+    body += `<div class="cd-row">${b.n ? `<b>${escapeHtml(b.n)}</b> · ` : ""}${escapeHtml(district.name)}</div>`;
     const art = b.t ? (OSM_TYPE[b.t] || b.t.replace(/_/g, " ")) : c.name;
-    body += `<div class="cd-row">🏗️ Art: <b>${escapeHtml(art)}</b>${b.lv ? ` · ${b.lv} ${b.lv === 1 ? "Etage" : "Etagen"}` : ""}</div>`;
-    body += `<div class="cd-row">📐 ${fmt(b.a)} m² Grundfläche${b.lm ? " · ⭐ Top-Lage" : ""}</div>`;
-    // Residents (Wohnsitz flavour).
+    body += `<div class="cd-row">Art: <b>${escapeHtml(art)}</b>${b.lv ? ` · ${b.lv} ${b.lv === 1 ? "Etage" : "Etagen"}` : ""}</div>`;
+    body += `<div class="cd-row">${fmt(b.a)} m² Grundfläche${b.lm ? " · Top-Lage" : ""}</div>`;
+    // Bewohner (Wohnsitz).
     const residents = (district.residents && district.residents[b.id]) || [];
     if (residents.length)
-      body += `<div class="cd-row">🛏️ Hier wohnt: <b>${residents.map(escapeHtml).join(", ")}</b></div>`;
+      body += `<div class="cd-row">Hier wohnt: <b>${residents.map(escapeHtml).join(", ")}</b></div>`;
     body += `</div>`;
 
-    // Trophy perk.
+    // Vorteil der Trophäe.
     if (troph)
-      body += `<div class="cd-row cd-buff ${b.mine ? "on" : ""}">${troph.emoji} <b>${escapeHtml(troph.title)}</b> — ${escapeHtml(troph.perk)}${b.mine ? ` · <span class="pos">deins!</span>` : ""}</div>`;
+      body += `<div class="cd-row cd-buff ${b.mine ? "on" : ""}">${troph.emoji} <b>${escapeHtml(troph.title)}</b>: ${escapeHtml(troph.perk)}${b.mine ? ` · <span class="pos">deins!</span>` : ""}</div>`;
     if (c.perk)
-      body += `<div class="cd-row cd-buff ${b.mine ? "on" : ""}">⭐ <b>${escapeHtml(c.perk)}</b></div>`;
+      body += `<div class="cd-row cd-buff ${b.mine ? "on" : ""}"><b>${escapeHtml(c.perk)}</b></div>`;
 
-    // Street monopoly progress.
+    // Fortschritt beim Straßen-Monopol.
     if (b.st && district.streetTotals[b.st]) {
       const total = district.streetTotals[b.st];
       const ownedByMe = district.buildings.filter((x) => x.st === b.st && x.mine).length;
       const mono = district.monopolies.find((m) => m.st === b.st);
       if (mono)
-        body += `<div class="cd-row cd-street">👑 <b style="color:${mono.color}">${escapeHtml(mono.ownerName)}s ${escapeHtml(b.st)}</b> — Straßen-Monopol!</div>`;
+        body += `<div class="cd-row cd-street"><b style="color:${mono.color}">${escapeHtml(mono.ownerName)}s ${escapeHtml(b.st)}</b>, Straßen-Monopol</div>`;
       else
-        body += `<div class="cd-row cd-street">🏘️ <b>${escapeHtml(b.st)}</b>: ${ownedByMe}/${total} Häuser deins — bei ${total}/${total} färbt sich die Straße!</div>`;
+        body += `<div class="cd-row cd-street"><b>${escapeHtml(b.st)}</b>: ${ownedByMe} von ${total} Häusern gehören dir. Bei allen ${total} färbt sich die Straße.</div>`;
     }
 
     body += `<div class="cd-section">`;
-    body += `<div class="cd-row">Besitzer: <b>${b.mine ? "Du" : b.ownerName ? `<span style="color:${b.color}">${escapeHtml(b.ownerName)}</span>` : "— frei —"}</b></div>`;
+    body += `<div class="cd-row">Besitzer: <b>${b.mine ? "Du" : b.ownerName ? `<span style="color:${b.color}">${escapeHtml(b.ownerName)}</span>` : "frei"}</b></div>`;
     if (!b.owner) {
-      /* myPrice kommt jetzt vom Server und enthaelt Boss-Rabatt UND
-         Besitzer-Staffel. Es kann also unter ODER ueber dem Marktwert
+      /* myPrice kommt jetzt vom Server und enthaelt Boss-Rabatt und
+         Besitzer-Staffel. Es kann also unter oder ueber dem Marktwert
          liegen, deshalb beide Richtungen zeigen statt nur den Rabatt. */
       const meiner = b.myPrice != null ? b.myPrice : b.price;
       const abweichung = meiner !== b.price;
-      body += `<button class="btn-primary cd-btn" data-act="buy">Kaufen — ${fmt(meiner)}<i class=mk></i>${abweichung ? ` <s class="muted small">${fmt(b.price)}</s>` : ""}</button>`;
+      body += `<button class="btn-primary cd-btn" data-act="buy">Kaufen für ${fmt(meiner)}<i class=mk></i>${abweichung ? ` <s class="muted small">${fmt(b.price)}</s>` : ""}</button>`;
       body += staffelHinweis(meiner < b.price);
     } else if (b.mine) {
-      body += `<button class="btn-primary cd-btn" data-act="sell">Verkaufen — ${fmt(b.sellPrice)}<i class=mk></i></button>`;
+      body += `<button class="btn-primary cd-btn" data-act="sell">Verkaufen für ${fmt(b.sellPrice)}<i class=mk></i></button>`;
       if (/^(kiosk|cafe|shop|hotel|factory)$/.test(b.cls)) {
         body += b.listed
-          ? `<div class="cd-row" style="color:#7ec8ff">📈 Börsennotiert</div>`
-          : `<button class="cd-toggle" data-act="ipo">📈 An die Börse bringen (IPO)</button>`;
+          ? `<div class="cd-row" style="color:#7ec8ff">An der Börse</div>`
+          : `<button class="cd-toggle" data-act="ipo">An die Börse bringen (IPO)</button>`;
       }
     } else {
       /* Preis kommt vom Server: der Client rechnete hier frueher price × 1,5
          nach und haette mit der Besitzer-Staffel eine falsche Zahl gezeigt. */
       const kosten = b.takeoverCost != null ? b.takeoverCost : Math.ceil(b.price * 1.5);
-      body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen — ${fmt(kosten)}<i class=mk></i></button>`;
+      body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen für ${fmt(kosten)}<i class=mk></i></button>`;
       body += `<div class="cd-row muted small">50 % Aufschlag auf den Marktwert von ${fmt(b.price)}<i class=mk></i>. Der Vorbesitzer bekommt den vollen Marktwert, der Rest verfällt.</div>`;
       body += staffelHinweis(false);
     }
-    // Wohnsitz: free flavour on any building.
+    // Wohnsitz: geht bei jedem Gebäude und kostet nichts.
     const myAcc = window.Casino.getAccount && window.Casino.getAccount();
     const myName = myAcc && myAcc.name;
     const iLiveHere = myName && residents.some((r) => r.toLowerCase() === myName.toLowerCase());
     body += iLiveHere
-      ? `<button class="cd-toggle on" data-act="moveout">🛏️ Du wohnst hier — ausziehen</button>`
-      : `<button class="cd-toggle" data-act="movein">🛏️ Hier einziehen (kostenlos, nur Spaß)</button>`;
+      ? `<button class="cd-toggle on" data-act="moveout">Du wohnst hier (ausziehen)</button>`
+      : `<button class="cd-toggle" data-act="movein">Hier einziehen (kostet nichts, nur zum Spaß)</button>`;
     body += `</div>`;
     box.innerHTML = head + body;
   }
@@ -904,7 +904,7 @@
     if (act === "movein" || act === "moveout") {
       socket.emit("city:residence", { buildingId: act === "movein" ? b.id : null }, (res) => {
         if (!res || !res.ok) { toast((res && res.error) || "Fehler."); return; }
-        toast(act === "movein" ? "🛏️ Eingezogen!" : "📦 Ausgezogen.");
+        toast(act === "movein" ? "Eingezogen." : "Ausgezogen.");
         loadDistrict(district.id, true);
       });
       return;
@@ -919,29 +919,29 @@
       renderDistrict();
       renderDetail();
       socket.emit("city:state", (r2) => { if (r2 && r2.ok) { overview = r2.overview; renderEmpire(overview.me); } });
-      if (res.raised) toast(`🚀 Börsengang! +${fmt(res.raised)} Chips Kapital (${res.sym}).`);
-      else if (res.gain) toast(`✓ +${fmt(res.gain)} Chips`);
-      else if (res.cost) toast(`✓ −${fmt(res.cost)} Chips`);
-      else toast("✓ Erledigt");
+      if (res.raised) toast(`Börsengang geschafft, +${fmt(res.raised)} Chips Kapital (${res.sym}).`);
+      else if (res.gain) toast(`+${fmt(res.gain)} Chips`);
+      else if (res.cost) toast(`−${fmt(res.cost)} Chips`);
+      else toast("Erledigt.");
     });
   });
 
-  // Live refresh + news toasts.
+  // Neu laden, wenn sich etwas tut, und Nachrichten als Toast.
   socket.on("city:update", () => {
     const screen = document.querySelector('[data-screen="businesses"]');
     if (screen && screen.classList.contains("active")) loadCity();
   });
   socket.on("city:news", (n) => {
-    if (n && n.txt) toast(`📰 ${n.txt}`);
+    if (n && n.txt) toast(n.txt);
   });
-  // Achievement unlocked → celebrate (only for me; big ones hit the chat anyway).
+  // Achievement freigeschaltet: feiern (nur bei mir, die großen stehen eh im Chat).
   socket.on("ach:unlocked", (a) => {
     const acc = window.Casino.getAccount && window.Casino.getAccount();
     if (!a || !acc || !a.user || a.user.toLowerCase() !== acc.name.toLowerCase()) return;
-    toast(`🏆 Achievement: ${a.emoji} ${a.label} — +${fmt(a.reward)} Chips!`);
+    toast(`Achievement: ${a.label} (+${fmt(a.reward)} Chips)`);
   });
 
-  // ── Screen-entry hooks (called by app.js's showScreen) ───────────────────
+  // --- Beim Betreten der Screens (ruft der Router auf) ---
   window.Casino._loadWork = loadWork;
   window.Casino._loadBusinesses = () => {
     view = "overview"; district = null; selectedId = null; vb = null;

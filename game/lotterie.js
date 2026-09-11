@@ -1,9 +1,9 @@
 "use strict";
 
 /**
- * Lotterie — vier Zahlen aus sechzehn, eine Ziehung am Tag.
+ * Lotterie: vier Zahlen aus sechzehn, eine Ziehung am Tag.
  *
- * Das ist bewusst KEIN Spiel gegen das Haus, sondern eine SENKE. Die Stadt
+ * Das ist bewusst kein Spiel gegen das Haus, sondern eine SENKE. Die Stadt
  * war bisher die einzige Stelle, an der Chips wirklich verschwinden, und bei
  * den aktiven Spielern ist sie fast ausgereizt. Hier fliesst ein Teil jedes
  * Loses in den Topf, ein Teil geht als feste Gewinne zurueck, und der Rest
@@ -12,7 +12,7 @@
  * Und sie passt zur Runde: niemand muss gleichzeitig online sein. Los kaufen
  * wann man will, abends wird gezogen, am naechsten Tag schaut man nach.
  *
- * ── Die Zahlen ──────────────────────────────────────────────────────────
+ * --- Die Zahlen ---
  * 4 aus 16 → C(16,4) = 1.820 Moeglichkeiten.
  *
  *   4 richtig   1 zu 1820   (0,055 %)  → Jackpot
@@ -23,7 +23,7 @@
  * Gewinne. 40 % wandern in den Jackpot. Bleiben rund 12 % als Senke.
  *
  * Der Jackpot faellt im Schnitt alle 1.820 Lose. Bei 40 % Zufluss steht er
- * dann bei etwa 1,46 Mio — eine Zahl, die sich lohnt, ohne die Wirtschaft
+ * dann bei etwa 1,46 Mio, eine Zahl, die sich lohnt, ohne die Wirtschaft
  * umzuwerfen (im Umlauf sind rund 6,4 Mio).
  *
  * Deckel je Spieler: 10 Lose pro Ziehung. Nicht wegen der Kosten, sondern
@@ -46,7 +46,7 @@ const JACKPOT_START = 250_000;
 /*
  * Obergrenze fuer den Topf.
  *
- * Ohne Deckel wuchs er in der Simulation auf ueber 6 Mio — so viel, wie im
+ * Ohne Deckel wuchs er in der Simulation auf ueber 6 Mio, so viel, wie im
  * ganzen Casino an Chips existiert. Ein einzelner Treffer wuerde damit die
  * Rangliste umschreiben. Ab hier fliesst der Anteil nicht mehr in den Topf,
  * sondern verlaesst die Wirtschaft, die Lotterie wird also nur noch strenger
@@ -114,7 +114,7 @@ function pruefeTipp(zahlen) {
 
 const treffer = (tipp, gezogen) => tipp.filter((z) => gezogen.includes(z)).length;
 
-/** Zufaelliger gueltiger Tipp — fuer den "Zufall"-Knopf. */
+/** Zufaelliger gueltiger Tipp, fuer den "Zufall"-Knopf. */
 function zufallsTipp() {
   return ziehe();
 }
@@ -190,19 +190,19 @@ function ziehungDurchfuehren() {
 
   if (io) {
     const zahlenText = gezogen.join(" · ");
-    let text = `🎟️ LOTTERIE, Ziehung ${state.letzte.nr}: ${zahlenText}`;
+    let text = `Lotterie, Ziehung ${state.letzte.nr}: ${zahlenText}`;
     if (gewinner[4].length) {
-      text += ` — JACKPOT! ${namen(gewinner[4]).join(", ")} ${gewinner[4].length > 1 ? "teilen sich" : "gewinnt"} ${jackpotAus.toLocaleString("de-DE")} Chips!`;
+      text += `. Jackpot! ${namen(gewinner[4]).join(", ")} ${gewinner[4].length > 1 ? "teilen sich" : "gewinnt"} ${jackpotAus.toLocaleString("de-DE")} Chips!`;
     } else if (gewinner[3].length) {
-      text += ` — 3 Richtige für ${namen(gewinner[3]).join(", ")}. Jackpot wächst auf ${state.jackpot.toLocaleString("de-DE")}.`;
+      text += `. 3 Richtige für ${namen(gewinner[3]).join(", ")}. Jackpot wächst auf ${state.jackpot.toLocaleString("de-DE")}.`;
     } else {
-      text += ` — kein großer Treffer. Jackpot steht bei ${state.jackpot.toLocaleString("de-DE")}.`;
+      text += `. Kein großer Treffer. Jackpot steht bei ${state.jackpot.toLocaleString("de-DE")}.`;
     }
     try { require("./chat").announce(io, text); } catch {}
-    try { require("./feed").add("event", text.replace("🎟️ ", "")); } catch {}
+    try { require("./feed").add("event", text); } catch {}
     try {
       require("./push").anAlle("live", {
-        title: gewinner[4].length ? "🎟️ Der Lotterie-Jackpot ist gefallen!" : "🎟️ Lotterie gezogen",
+        title: gewinner[4].length ? "Der Lotterie-Jackpot ist gefallen!" : "Lotterie gezogen",
         body: `Zahlen: ${zahlenText}. Schau nach, ob du dabei warst.`,
         url: "/",
       });

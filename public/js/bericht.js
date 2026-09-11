@@ -1,14 +1,14 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Tagesbericht.
+   Tagesbericht
 
    Was war, waehrend du weg warst. Oeffnet sich beim ersten
    Reinkommen am Tag von selbst, wenn etwas drinsteht, und ist
    danach jederzeit ueber das Menue erreichbar.
 
    Der Server (game/bericht.js) liefert fertige Zeilen. Hier
-   wird nur gezeichnet und navigiert — damit die Texte an einer
+   wird nur gezeichnet und navigiert, damit die Texte an einer
    Stelle stehen und nicht doppelt gepflegt werden muessen.
    ============================================================ */
 
@@ -23,7 +23,7 @@
   let heuteGezeigt = false;
 
   function zeitraum(b) {
-    if (b.erstesMal) return "Dein erster Bericht — die letzten zwei Tage.";
+    if (b.erstesMal) return "Dein erster Bericht, er geht zwei Tage zurück.";
     const h = Math.max(1, b.stunden || 0);
     if (h < 20) return `Seit deinem letzten Bericht vor ${h} ${h === 1 ? "Stunde" : "Stunden"}.`;
     const t = Math.round(h / 24);
@@ -76,7 +76,7 @@
     letzter = b;
     zeichne(b);
     $("#bericht-modal")?.classList.remove("hidden");
-    // Gelesen heisst: ab hier faengt der naechste Bericht an. Erst NACH dem
+    // Gelesen heisst: ab hier faengt der naechste Bericht an. Erst nach dem
     // Zeichnen, sonst berichtet der Server sich selbst weg.
     socket.emit("bericht:gelesen", () => {
       if (Casino.renderAbholBadge) Casino.renderAbholBadge();

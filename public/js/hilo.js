@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Higher/Lower — Oberflaeche.
+ * Higher/Lower, Oberfläche.
  *
  * Die beiden Knoepfe tragen ihren eigenen Multiplikator und die Chance dazu.
  * Das ist der Kern des Spiels: bei einer Zwei ist "hoeher" fast sicher und
@@ -9,7 +9,7 @@
  * Zahlen waere es blindes Raten statt einer Entscheidung.
  *
  * Der Server rechnet die Werte aus dem echten Restdeck, der Client zeigt sie
- * nur an — hier wird nichts nachgerechnet, sonst laufen beide auseinander.
+ * nur an. Hier wird nichts nachgerechnet, sonst laufen beide auseinander.
  */
 (function () {
   const { socket, toast, applyAccount } = window.Casino;
@@ -23,7 +23,7 @@
   let grenzen = { minBet: 50, maxBet: 50000, maxWin: 0 };
   let laeuft = false;
 
-  /* ── Verlauf ─────────────────────────────────────────────────────────── */
+  /* --- Verlauf --- */
   const ladeVerlauf = () => { try { return JSON.parse(localStorage.getItem(VERLAUF_KEY)) || []; } catch { return []; } };
   function merkeVerlauf(gewonnen, mult) {
     const v = ladeVerlauf();
@@ -40,7 +40,7 @@
       : "";
   }
 
-  /* ── Karten ──────────────────────────────────────────────────────────── */
+  /* --- Karten --- */
   const ROT = new Set([1, 2]); // Herz und Karo im Farbindex des Servers
 
   function karteEl(k, klasse = "") {
@@ -65,7 +65,7 @@
     }
   }
 
-  /* ── Darstellung ─────────────────────────────────────────────────────── */
+  /* --- Darstellung --- */
   function zeichne(v, extra = {}) {
     stand = v;
     laeuft = !!v && !v.none && !v.over;
@@ -77,7 +77,7 @@
     if (!laeuft) {
       $("#hilo-kette").textContent = "0";
       $("#hilo-mult").textContent = "1,00×";
-      $("#hilo-cashval").textContent = "—";
+      $("#hilo-cashval").textContent = "-";
       $("#hilo-rest").textContent = "";
       if (grenzen.maxWin) $("#hilo-cap").innerHTML = `Höchstgewinn ${fmt(grenzen.maxWin)}<i class=mk></i> pro Runde`;
       return;
@@ -85,7 +85,7 @@
 
     $("#hilo-kette").textContent = String(v.treffer);
     $("#hilo-mult").textContent = mx(v.mult) + "×";
-    $("#hilo-cashval").textContent = v.cashout ? fmt(v.cashout) : "—";
+    $("#hilo-cashval").textContent = v.cashout ? fmt(v.cashout) : "-";
     $("#hilo-rest").textContent = `${v.rest} Karten übrig`;
     zeichneKarten(v, extra.alt);
 
@@ -113,13 +113,13 @@
 
     const btn = $("#hilo-cashout");
     if (btn && v.cashout) {
-      btn.innerHTML = `<i data-icon="auszahlen"></i> Auszahlen — ${fmt(v.cashout)} Chips (${mx(v.mult)}×)` +
+      btn.innerHTML = `<i data-icon="auszahlen"></i> Auszahlen: ${fmt(v.cashout)} Chips (${mx(v.mult)}×)` +
         (v.gedeckelt ? " · Deckel erreicht" : "");
       if (Casino.icons) Casino.icons.zeichne(btn);
     }
   }
 
-  /* ── Aktionen ────────────────────────────────────────────────────────── */
+  /* --- Aktionen --- */
   function starten() {
     const err = $("#hilo-error"); err.textContent = "";
     const bet = parseInt($("#hilo-amount").value, 10);
@@ -143,7 +143,7 @@
       if (r.account) applyAccount(r.account);
 
       if (r.ergebnis === "push") {
-        toast("Gleicher Wert — zählt nicht, weiter geht's.");
+        toast("Gleicher Wert, zählt nicht. Weiter geht's.");
         Casino.sound?.play("tick");
         zeichne(r, { alt: r.alt });
         return;
@@ -162,8 +162,8 @@
         merkeVerlauf(true, r.mult);
         Casino.fx.bigWin(r.payout, { label: r.grund === "deckel" ? "Höchstgewinn erreicht" : "Deck leer", faktor: r.mult });
         toast(r.grund === "deckel"
-          ? `Deckel erreicht — ${fmt(r.payout)} Chips ausgezahlt.`
-          : `Deck leer — ${fmt(r.payout)} Chips ausgezahlt.`);
+          ? `Deckel erreicht, ${fmt(r.payout)} Chips ausgezahlt.`
+          : `Deck leer, ${fmt(r.payout)} Chips ausgezahlt.`);
       }
     });
   }
@@ -181,7 +181,7 @@
     });
   }
 
-  /* ── Einhaengen ──────────────────────────────────────────────────────── */
+  /* --- Einhaengen --- */
   function wire() {
     $("#hilo-start")?.addEventListener("click", starten);
     $("#hilo-hoch")?.addEventListener("click", () => tippen("hoch"));

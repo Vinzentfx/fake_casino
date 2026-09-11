@@ -1,28 +1,28 @@
 "use strict";
 
 /**
- * Shared lobby registry — a single browsable list of open game lobbies across
- * all game types, so players can SEE and JOIN any lobby without exchanging
- * codes. Each game (poker, slots-pvp, …) registers a `describe()` provider per
- * open lobby; the registry pulls live descriptors when building the public list.
+ * Gemeinsame Lobby-Liste: eine Übersicht aller offenen Lobbys über alle Spiele,
+ * damit man jede SEHEN und ihr beitreten kann, ohne Codes auszutauschen. Jedes
+ * Spiel (Poker, Slots-PvP, …) meldet je offener Lobby eine `describe()`-Funktion
+ * an, die Liste holt sich beim Aufbauen den aktuellen Stand.
  *
- * A descriptor looks like:
+ * Ein Eintrag sieht so aus:
  *   { code, game, label, host, players, max, buyIn, joinable }
- * Only `joinable` descriptors are advertised; a provider returning null (or
- * joinable:false) hides its lobby (e.g. once a match has started or filled).
+ * Angezeigt wird nur, was `joinable` ist. Gibt die Funktion null zurück (oder
+ * joinable:false), verschwindet die Lobby (z. B. wenn das Match läuft oder voll ist).
  */
 
 let ioRef = null;
-const providers = new Map(); // code -> () => descriptor|null
+const providers = new Map(); // Code -> () => Eintrag|null
 
 function publicList() {
   const out = [];
   for (const describe of providers.values()) {
     let d;
     try { d = describe(); } catch { d = null; }
-    if (d && (d.joinable || d.watchable)) out.push(d); // joinable OR spectatable (running games)
+    if (d && (d.joinable || d.watchable)) out.push(d); // beitretbar oder zum Zuschauen (laufende Spiele)
   }
-  // Group by game, newest-ish first within (insertion order is roughly age).
+  // Nach Spiel gruppieren, darin ungefähr die neuesten zuerst (Einfügereihenfolge ist grob das Alter).
   return out.sort((a, b) => String(a.game).localeCompare(String(b.game)));
 }
 
@@ -38,7 +38,7 @@ function broadcast() {
  * wieder. Wer nicht zufaellig im selben Moment auf den Lobby-Bildschirm
  * schaut, erfaehrt nie davon.
  *
- * Bewusst HIER und nicht in den neun Spielen: add() ist die eine Stelle,
+ * Bewusst hier und nicht in den neun Spielen: add() ist die eine Stelle,
  * durch die jede Lobby laeuft. Vorher hatte nur Poker eine Nachricht, die
  * anderen acht Spiele gar keine.
  *
@@ -102,20 +102,20 @@ function melde(beschreibe) {
   } catch {}
 }
 
-/** A game calls this when it opens a lobby. */
+/** Ruft ein Spiel auf, wenn es eine Lobby aufmacht. */
 function add(code, describe) {
-  // Nur beim ERSTEN Mal melden. Manche Spiele registrieren dieselbe Lobby
+  // Nur beim ersten Mal melden. Manche Spiele registrieren dieselbe Lobby
   // nach einer Aenderung erneut, das ist keine neue Einladung.
   const istNeu = !providers.has(code);
   providers.set(code, describe);
   broadcast();
   if (istNeu) melde(describe);
 }
-/** Re-advertise after a notable change (player joined/left, state change). */
+/** Neu melden, wenn sich etwas tut (Spieler kommt oder geht, Zustand ändert sich). */
 function changed() {
   broadcast();
 }
-/** A game calls this when a lobby is torn down. */
+/** Ruft ein Spiel auf, wenn eine Lobby abgebaut wird. */
 function remove(code) {
   if (providers.delete(code)) broadcast();
 }

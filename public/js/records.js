@@ -10,7 +10,7 @@
  * Runde fest, mit Namen. Wer reinkommt, sieht, was die anderen hinterlassen
  * haben.
  *
- * Gewertet wird das VIELFACHE des Einsatzes, nicht die Hoehe des Gewinns. Sonst
+ * Gewertet wird das Vielfache des Einsatzes, nicht die Hoehe des Gewinns. Sonst
  * gewinnt immer, wer am meisten setzen kann, und in einer Freundesrunde mit
  * sehr unterschiedlichen Kontostaenden waere das sofort langweilig.
  */
@@ -118,7 +118,7 @@
   Casino._recordsState = () => letzterStand;
 
   // Beim Neuladen der Seite steht die Lobby unter Umstaenden schon, bevor
-  // diese Datei ueberhaupt ausgefuehrt wurde — dann ist onEnter laengst
+  // diese Datei ueberhaupt ausgefuehrt wurde, dann ist onEnter laengst
   // durch und niemand hat die Rekorde geholt. Genau das passiert auf dem
   // iPad staendig, weil Safari die Seite beim Zurueckwechseln neu laedt.
   if (Casino.screens.current() === "lobby") laden();

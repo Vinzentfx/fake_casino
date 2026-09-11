@@ -3,13 +3,13 @@
 /**
  * Rundgang durch die Neuerungen.
  *
- * Das Comeback-Fenster sagt, WAS sich geaendert hat. Danach steht man in der
+ * Das Comeback-Fenster sagt, was sich geaendert hat. Danach steht man in der
  * Lobby und weiss immer noch nicht, wo das alles ist. Der Rundgang zeigt es:
  * jeder Schritt erklaert eine Sache in zwei Saetzen und hat einen Knopf, der
  * genau dorthin springt.
  *
  * Laeuft genau einmal von selbst, danach nur noch ueber das Menue. Wer ihn
- * abbricht, bekommt ihn nicht wieder vorgesetzt — ein Rundgang, den man
+ * abbricht, bekommt ihn nicht wieder vorgesetzt, ein Rundgang, den man
  * weggeklickt hat, ist eine Antwort und keine Panne.
  */
 (function () {

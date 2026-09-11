@@ -1,31 +1,32 @@
 "use strict";
 
 /**
- * Sportsbook — SIMULATED football betting (the always-on backbone of the hybrid
- * plan; real fixtures can be layered in later behind an API key).
+ * Sportwetten auf SIMULIERTE Fußballspiele. Das ist der Teil, der immer läuft;
+ * echte Spiele kommen dazu, sobald ein API-Schlüssel gesetzt ist.
  *
- * A rolling pool of matches is generated continuously. Each match has a betting
- * window, then kicks off and is simulated (a Poisson goal model derived from the
- * two teams' strengths), the live score builds over a short compressed window,
- * and bets settle. Several markets per match (1X2, Over/Under 2.5, both-to-score)
- * with odds priced off the same model + a house margin. Everyone can SEE what
- * others are backing: per-selection stake/backer aggregates plus a live bet feed.
+ * Es gibt ständig eine Handvoll Spiele. Jedes hat ein Wettfenster, dann ist
+ * Anpfiff und das Spiel wird simuliert (Poisson-Modell für die Tore aus der
+ * Stärke beider Teams). Der Spielstand baut sich über ein kurzes, gerafftes
+ * Fenster auf, danach wird abgerechnet. Mehrere Märkte je Spiel (1X2, über/unter
+ * 2,5, beide treffen), die Quoten kommen aus demselben Modell plus Hausmarge.
+ * Jeder SIEHT, worauf die anderen setzen: Einsatz und Anzahl je Tipp und ein
+ * Live-Feed der Wetten.
  *
- * No lobby — it's a shared public board. Play money only; settle pays winners and
- * routes the house margin through the casino rake like the other house games.
+ * Keine Lobby, eine gemeinsame Tafel für alle. Nur Spielgeld; bei der Abrechnung
+ * läuft die Hausmarge wie bei den anderen Hausspielen über den Rake.
  */
 
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const SPORTS_FILE = path.join(__dirname, "..", "data", "sports.json");
-const restoreSingles = new Map(); // real-match single bets awaiting their match to be re-created after restart
+const restoreSingles = new Map(); // Einzelwetten auf echte Spiele, die nach einem Neustart auf ihr Spiel warten
 
-const MARGIN = 0.08;            // house overround baked into the odds
-const MAX_OPEN = 5;            // keep this many matches taking bets
-const BET_WINDOW_MS = 80_000;  // betting open before kickoff
+const MARGIN = 0.08;            // Hausmarge, steckt in den Quoten
+const MAX_OPEN = 5;            // so viele Spiele nehmen gleichzeitig Wetten an
+const BET_WINDOW_MS = 80_000;  // so lange vor dem Anpfiff kann man wetten
 const LIVE_MS = 24_000;        // compressed 90-minute match
-const DONE_LINGER_MS = 20_000; // show the result this long, then drop it
+const DONE_LINGER_MS = 20_000; // so lange steht das Ergebnis, dann fliegt es raus
 const MIN_BET = 50;
 // Fuenf Millionen besass nie jemand: die gesamte Geldmenge liegt bei 8,6.
 const MAX_BET = 500_000;
@@ -43,13 +44,13 @@ const LEAGUES = {
     ["Celta", 72], ["Getafe", 70], ["Rayo Vallecano", 70], ["Valencia", 69], ["Real Sociedad", 68] ] },
 };
 
-// Master strength ratings (0–100). The Bundesliga/PL/La-Liga values are DERIVED
-// FROM REAL DATA: points and goal difference per game from the completed 2025/26
-// season (football-data.org standings), mapped onto this scale. Newly promoted
-// clubs have no top-flight record, so they get two points below the weakest
-// returning side. Sim teams come from LEAGUES; the extras below
-// cover clubs/nations that real fixtures (football-data.org) may bring in, so we
-// can price odds for them too. Unknown teams fall back to STRENGTH_DEFAULT.
+// Stärkewerte (0 bis 100). Bundesliga, Premier League und La Liga kommen aus
+// echten Daten: Punkte und Tordifferenz pro Spiel aus der Saison 2025/26
+// (Tabellen von football-data.org), auf diese Skala umgerechnet. Aufsteiger
+// haben keine Erstliga-Zahlen und liegen zwei Punkte unter dem schwächsten
+// Team, das drin geblieben ist. Die Sim-Teams kommen aus LEAGUES; die Extras
+// darunter decken Vereine und Nationen ab, die mit echten Spielen reinkommen
+// können, damit es auch für die Quoten gibt. Unbekannte bekommen STRENGTH_DEFAULT.
 const STRENGTH_DEFAULT = 70;
 const TEAM_STRENGTHS = {};
 for (const lg of Object.values(LEAGUES)) for (const [n, s] of lg.teams) TEAM_STRENGTHS[n] = s;
@@ -64,11 +65,11 @@ Object.assign(TEAM_STRENGTHS, {
   "Fulham": 70, "Everton": 69, "Newcastle": 69, "Leeds United": 68, "Crystal Palace": 67, "Nottingham": 67, "Tottenham": 65, "Coventry City": 63, "Hull City": 63, "Ipswich Town": 63,
   // La Liga (Rest der laufenden Saison)
   "Athletic": 67, "Espanyol": 67, "Alavés": 66, "Elche": 66, "Osasuna": 66, "Sevilla FC": 66, "Levante": 65, "Deportivo": 63, "Málaga": 63, "Santander": 63,
-  // National teams (for World Cup / Euro)
+  // Nationalteams (für WM und EM)
   "Deutschland": 86, "Frankreich": 91, "Spanien": 89, "England": 88, "Brasilien": 90,
   "Argentinien": 91, "Portugal": 87, "Niederlande": 85, "Italien": 84, "Belgien": 83,
   "Kroatien": 82, "Marokko": 80, "Japan": 78, "Schweiz": 78,
-  // WC 2026 squads — football-data.org returns ENGLISH shortNames, so key on those.
+  // WM-Kader 2026. football-data.org liefert ENGLISCHE shortNames, deshalb stehen die hier.
   "France": 91, "Argentina": 91, "Brazil": 90, "Spain": 89, "England": 88, "Portugal": 87,
   "Germany": 86, "Netherlands": 85, "Belgium": 84, "Croatia": 82, "Uruguay": 82, "Colombia": 80,
   "Morocco": 80, "Senegal": 79, "Switzerland": 78, "Austria": 78, "Norway": 78, "Japan": 78,
@@ -79,9 +80,9 @@ Object.assign(TEAM_STRENGTHS, {
   "Uzbekistan": 68, "Iraq": 68, "Jordan": 67, "Cape Verde": 67, "New Zealand": 66,
   "Haiti": 64, "Curaçao": 63,
 });
-// Aliases map the long names some APIs use onto our canonical keys.
+// Andere Schreibweisen aus manchen APIs auf unsere Schlüssel abbilden.
 const TEAM_ALIASES = {
-  // Long API names → our canonical shortName keys (used when shortName is absent).
+  // Lange API-Namen auf unsere shortName-Schlüssel (wenn shortName fehlt).
   "FC Bayern München": "Bayern", "Bayer 04 Leverkusen": "Leverkusen", "Borussia Dortmund": "Dortmund",
   "RB Leipzig": "RB Leipzig", "VfB Stuttgart": "Stuttgart", "Eintracht Frankfurt": "Frankfurt",
   "SC Freiburg": "Freiburg", "SV Werder Bremen": "Bremen", "FC Augsburg": "Augsburg",
@@ -111,44 +112,44 @@ function strengthOf(name) {
   return STRENGTH_DEFAULT;
 }
 
-// ── Real fixtures (football-data.org) — activates only when a token is set ──
+// --- Echte Spiele (football-data.org), nur wenn ein Token gesetzt ist ---
 const FD_TOKEN = process.env.FOOTBALL_DATA_TOKEN || "";
 /*
  * Welche Wettbewerbe geholt werden, wenn ein Token gesetzt ist.
  *
- * Stand vorher auf "WC" (Weltmeisterschaft) — und dazwischen liegen Jahre
- * ohne ein einziges Spiel. Wer einen Schluessel eintrug, sah trotzdem nur
- * simulierte Partien und musste raten, warum. Jetzt die drei Ligen, die
- * ohnehin schon als Mannschaften hinterlegt sind und fast jedes Wochenende
- * spielen. Ueberschreibbar per FOOTBALL_DATA_COMPS.
+ * Stand vorher auf "WC" (Weltmeisterschaft), und zwischen zwei WMs liegen
+ * Jahre ohne ein einziges Spiel. Wer einen Schlüssel eintrug, sah trotzdem
+ * nur simulierte Partien. Jetzt die drei Ligen, deren Teams ohnehin
+ * hinterlegt sind und die fast jedes Wochenende spielen. Lässt sich per
+ * FOOTBALL_DATA_COMPS ändern.
  */
 const FD_COMPS = (process.env.FOOTBALL_DATA_COMPS || "BL1,PL,PD").split(",").map((s) => s.trim()).filter(Boolean);
-const FD_POLL_MS = 3 * 60 * 1000;              // refresh fixtures every 3 min (free tier = 10 req/min)
-const REAL_ID_BASE = 1_000_000_000;            // keep real match ids in a separate numeric space
+const FD_POLL_MS = 3 * 60 * 1000;              // alle 3 min neu holen (kostenlos sind 10 Anfragen pro Minute)
+const REAL_ID_BASE = 1_000_000_000;            // echte Spiele bekommen eigene IDs, getrennt von den simulierten
 const COMP_META = {
   BL1: { name: "Bundesliga", emoji: "🇩🇪" }, PL: { name: "Premier League", emoji: "🏴" },
   PD: { name: "La Liga", emoji: "🇪🇸" }, SA: { name: "Serie A", emoji: "🇮🇹" },
   FL1: { name: "Ligue 1", emoji: "🇫🇷" }, CL: { name: "Champions League", emoji: "🏆" },
   WC: { name: "WM", emoji: "🌍" }, EC: { name: "EM", emoji: "🇪🇺" },
 };
-const NEUTRAL_COMPS = new Set(["WC", "EC", "CL"]); // played at neutral venues → no home edge
+const NEUTRAL_COMPS = new Set(["WC", "EC", "CL"]); // neutraler Ort, also kein Heimvorteil
 
 let nextId = 1;
 const matches = new Map(); // id -> match
-const feed = [];           // recent bets across the board
+const feed = [];           // die letzten Wetten auf der ganzen Tafel
 const combos = [];         // active accumulator (parlay) bets across players
-const betLog = [];         // recent settled single bets (per user history)
-const matchResults = new Map(); // matchId -> { h, a } kept after a match is reaped, so combos can still settle
+const betLog = [];         // zuletzt abgerechnete Einzelwetten (Verlauf je Spieler)
+const matchResults = new Map(); // matchId -> { h, a }, bleibt nach dem Spiel, damit Kombis noch abrechnen können
 const BETLOG_KEEP = 400;
 function logBet(user, entry) {
   betLog.push({ user, ts: Date.now(), ...entry });
   if (betLog.length > BETLOG_KEEP) betLog.splice(0, betLog.length - BETLOG_KEEP);
 }
 const MAX_LEGS = 6;
-const SAME_GAME_HAIRCUT = 0.90; // correlation discount per extra leg from the SAME match
+const SAME_GAME_HAIRCUT = 0.90; // Abschlag je weiterem Tipp aus demselben Spiel (die hängen zusammen)
 const RESULTS_KEEP = 400;
 
-// ── Poisson maths (for both the simulation and the odds) ──────────────────
+// --- Poisson-Rechnung (für Simulation und Quoten) ---
 function poissonPmf(lambda, k) {
   let p = Math.exp(-lambda);
   for (let i = 1; i <= k; i++) p *= lambda / i;
@@ -162,17 +163,17 @@ function samplePoisson(lambda) {
 }
 
 function lambdas(homeStr, awayStr, neutral = false) {
-  const BASE = 1.32;                 // average goals per side
+  const BASE = 1.32;                 // Tore je Team im Schnitt
   const K = 1.25;                    // strength sensitivity (higher → clearer favourites)
   const ratio = homeStr / awayStr;
-  const homeAdv = neutral ? 1.0 : 1.12;  // no venue edge at neutral tournaments (World Cup)
+  const homeAdv = neutral ? 1.0 : 1.12;  // kein Heimvorteil bei Turnieren auf neutralem Platz (WM)
   const awayAdv = neutral ? 1.0 : 0.90;
   const lh = Math.max(0.2, Math.min(4.5, BASE * Math.pow(ratio, K) * homeAdv));
   const la = Math.max(0.2, Math.min(4.5, BASE * Math.pow(1 / ratio, K) * awayAdv));
   return { lh, la };
 }
 
-/** Fair market probabilities from the goal model (grid 0..8). */
+/** Faire Wahrscheinlichkeiten aus dem Tormodell (Raster 0..8). */
 function marketProbs(lh, la) {
   let pHome = 0, pDraw = 0, pAway = 0, pOver = 0, pO15 = 0, pO35 = 0, pBtts = 0;
   const ph = [], pa = [];
@@ -218,7 +219,7 @@ function createMatch() {
   return m;
 }
 
-// ── Settlement ────────────────────────────────────────────────────────────
+// --- Settlement ---
 function selWins(market, selection, score) {
   const tot = score.h + score.a;
   const oc = score.h > score.a ? "home" : score.h === score.a ? "draw" : "away";
@@ -231,9 +232,9 @@ function selWins(market, selection, score) {
   return false;
 }
 
-// ── Live odds / cash-out ────────────────────────────────────────────────────
+// --- Live odds / cash-out ---
 const CASHOUT_FEE = 0.06;
-/** Probability the bet still WINS given the current score + remaining time. */
+/** Wahrscheinlichkeit, dass die Wette bei diesem Stand und dieser Restzeit noch GEWINNT. */
 function liveWinProb(m, market, selection) {
   const remFrac = Math.max(0, (90 - (m.minute || 0)) / 90);
   const rlh = (m.lh || 1.3) * remFrac, rla = (m.la || 1.15) * remFrac;
@@ -245,7 +246,7 @@ function liveWinProb(m, market, selection) {
   }
   return p;
 }
-/** Dynamic cash-out value of an open/live bet (live fair value minus a small fee). */
+/** Auszahlwert einer offenen oder laufenden Wette (fairer Live-Wert minus kleine Gebühr). */
 function liveCashout(m, b) {
   const v = b.amount * liveWinProb(m, b.market, b.selection) * b.odds * (1 - CASHOUT_FEE);
   return Math.max(0, Math.min(Math.floor(v), Math.floor(b.amount * b.odds)));
@@ -259,23 +260,23 @@ function settle(m, accounts, io) {
       const boost = accounts.buffMult(b.user, "winBoost");
       if (boost > 1) payout = Math.round(payout * boost);
       accounts.adjustChips(b.user, payout);
-      accounts.recordHand(b.user, payout - b.amount, true, "sportwetten", { einsatz: b.amount }); // house game → casino rake on the margin
+      accounts.recordHand(b.user, payout - b.amount, true, "sportwetten", { einsatz: b.amount }); // Hausspiel, also Rake auf die Marge
       b.won = true; b.payout = payout;
       winners.add(b.user);
     } else {
       accounts.recordHand(b.user, -b.amount, true, "sportwetten");
       b.won = false; b.payout = 0;
     }
-    logBet(b.user, { match: `${m.home}–${m.away}`, sel: selLabel(b.market, b.selection, m), amount: b.amount, odds: b.odds, won: b.won, payout: b.payout });
+    logBet(b.user, { match: `${m.home} vs ${m.away}`, sel: selLabel(b.market, b.selection, m), amount: b.amount, odds: b.odds, won: b.won, payout: b.payout });
   }
   m.result = {
     score: { ...m.score },
     outcome: m.score.h > m.score.a ? "home" : m.score.h === m.score.a ? "draw" : "away",
   };
-  // Keep the final score so combo bets can still settle after the match is reaped.
+  // Endstand merken, damit Kombis auch nach dem Aufräumen noch abrechnen können.
   matchResults.set(m.id, { h: m.score.h, a: m.score.a });
   while (matchResults.size > RESULTS_KEEP) matchResults.delete(matchResults.keys().next().value);
-  // Winnings are credited server-side; push fresh balances so the topbar updates live.
+  // Gewinne bucht der Server, neue Stände rausschicken, damit die Kopfzeile mitzieht.
   if (io && winners.size) {
     for (const s of io.of("/").sockets.values()) {
       if (winners.has(s.data.account)) {
@@ -286,19 +287,19 @@ function settle(m, accounts, io) {
   }
 }
 
-// Simulated filler games can be turned off (SPORTS_SIM=off) to show ONLY real
-// fixtures (e.g. World-Cup-only). On by default.
+// Die simulierten Spiele lassen sich abschalten (SPORTS_SIM=off), dann gibt es
+// nur echte Spiele (z. B. nur WM). Standard ist an.
 const SIM_ENABLED = process.env.SPORTS_SIM !== "off";
 
-// ── Tick loop ─────────────────────────────────────────────────────────────
+// --- Tick loop ---
 function setupSportsbook(io, accounts) {
-  loadSports(accounts); // restore open bets/combos + results from before the restart
-  setInterval(persistSports, 60000).unref(); // periodic snapshot (a crash loses ≤60s)
+  loadSports(accounts); // offene Wetten, Kombis und Ergebnisse von vor dem Neustart zurückholen
+  setInterval(persistSports, 60000).unref(); // regelmäßig sichern (ein Absturz kostet höchstens 60 s)
   if (SIM_ENABLED) while (matches.size < MAX_OPEN) staggerCreate();
 
   function staggerCreate() {
     const m = createMatch();
-    // Stagger kickoffs so the board always has imminent and fresh matches.
+    // Anpfiffe verteilen, damit immer etwas kurz vor dem Start und etwas Frisches da ist.
     m.kickoff = Date.now() + 15_000 + Math.floor(Math.random() * BET_WINDOW_MS);
   }
 
@@ -309,15 +310,15 @@ function setupSportsbook(io, accounts) {
     let changed = false;
     for (const m of matches.values()) {
       if (m.real) {
-        // Real fixtures are driven by the poller; here we just lock betting at
-        // the real kickoff (→ "pending", no fabricated score) and reap old ones.
-        // The poller then sets the real live score / final result.
+        // Echte Spiele treibt der Poller. Hier wird nur zum echten Anpfiff
+        // geschlossen ("pending", kein erfundener Stand) und Altes weggeräumt.
+        // Den echten Live-Stand und das Ergebnis setzt dann der Poller.
         if (m.state === "open" && now >= m.kickoff) { m.state = "pending"; changed = true; }
         else if (m.state === "done" && now - m.doneAt > 6 * 60 * 60 * 1000) { matches.delete(m.id); changed = true; }
         continue;
       }
       if (m.state === "open" && now >= m.kickoff) {
-        // Kick off: simulate the final score + goal minutes for a live reveal.
+        // Anpfiff: Endstand und Torminuten simulieren, fürs Live-Aufdecken.
         m.state = "live";
         const fh = samplePoisson(m.lh), fa = samplePoisson(m.la);
         const goals = [];
@@ -353,7 +354,7 @@ function setupSportsbook(io, accounts) {
   }
   setInterval(tick, 1000);
 
-  // ── Real fixtures poller (football-data.org) ──────────────────────────────
+  // --- Real fixtures poller (football-data.org) ---
   async function pollReal() {
     if (!FD_TOKEN) return;
     const today = new Date();
@@ -383,7 +384,7 @@ function setupSportsbook(io, accounts) {
     let m = matches.get(id);
     if (!m) {
       const homeStr = strengthOf(home), awayStr = strengthOf(away);
-      const { lh, la } = lambdas(homeStr, awayStr, NEUTRAL_COMPS.has(code)); // WC/EC/CL = neutral venue
+      const { lh, la } = lambdas(homeStr, awayStr, NEUTRAL_COMPS.has(code)); // WM/EM/CL auf neutralem Platz
       const meta = COMP_META[code] || { name: code, emoji: "⚽" };
       m = {
         id, real: true, league: meta.name, leagueEmoji: meta.emoji, competition: meta.name,
@@ -401,9 +402,9 @@ function setupSportsbook(io, accounts) {
       m.score = score;
       if (!m.settled) { m.settled = true; settle(m, accounts, io); m.state = "done"; m.doneAt = Date.now(); }
     } else if (st === "CANCELLED" || st === "POSTPONED" || st === "SUSPENDED") {
-      // Match won't be played → void it: refund single bets, void combos, drop it.
+      // Spiel findet nicht statt: Einzelwetten zurück, Kombis ungültig, Spiel raus.
       if (!m.settled) { m.settled = true; voidMatch(m, accounts, io); matches.delete(id); }
-    } else m.state = Date.now() < m.kickoff ? "open" : "pending"; // TIMED/SCHEDULED → bettable or kicked-off-awaiting-result
+    } else m.state = Date.now() < m.kickoff ? "open" : "pending"; // TIMED/SCHEDULED: entweder offen oder angepfiffen und ohne Ergebnis
   }
 
   if (FD_TOKEN) {
@@ -432,15 +433,15 @@ function setupSportsbook(io, accounts) {
       const r = accounts.adjustChips(socket.data.account, -amount);
       const odds = mk.sels[selection];
       m.bets.push({ id: crypto.randomUUID(), user: socket.data.account, name: acc.name, market, selection, amount, odds });
-      feed.unshift({ name: acc.name, match: `${m.home}–${m.away}`, sel: selLabel(market, selection, m), amount, odds });
+      feed.unshift({ name: acc.name, match: `${m.home} vs ${m.away}`, sel: selLabel(market, selection, m), amount, odds });
       if (feed.length > FEED_MAX) feed.length = FEED_MAX;
-      require("./quests").track(socket.data.account, "bet_sport"); // quest counts on PLACING
+      require("./quests").track(socket.data.account, "bet_sport"); // der Auftrag zählt beim SETZEN
       ack && ack({ ok: true, account: r.account });
       io.emit("sports:update");
     });
 
-    // Cash-out: settle an own OPEN or LIVE single bet early for its current
-    // (dynamic) value — high if it's winning, low if it's losing.
+    // Auszahlen: eine eigene offene oder laufende Einzelwette vorzeitig zum
+    // aktuellen Wert abrechnen. Hoch, wenn sie vorne liegt, niedrig, wenn nicht.
     socket.on("sports:cashout", ({ matchId, betId } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Nicht eingeloggt." });
       const m = matches.get(Number(matchId));
@@ -450,13 +451,13 @@ function setupSportsbook(io, accounts) {
       const b = m.bets[i];
       const refund = liveCashout(m, b);
       const r = accounts.adjustChips(socket.data.account, refund);
-      accounts.recordHand(socket.data.account, refund - b.amount, true, "sportwetten"); // realize the P&L
+      accounts.recordHand(socket.data.account, refund - b.amount, true, "sportwetten"); // Gewinn/Verlust verbuchen
       m.bets.splice(i, 1);
       ack && ack({ ok: true, refund, account: r.account });
       io.emit("sports:update");
     });
 
-    // Combo / parlay: 2+ legs, ALL must win, odds multiply (more risk, more money).
+    // Kombi: ab 2 Tipps, alle müssen treffen, die Quoten multiplizieren sich (mehr Risiko, mehr Geld).
     socket.on("sports:combo", ({ legs, amount } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       if (!Array.isArray(legs) || legs.length < 2) return ack && ack({ ok: false, error: "Kombi braucht mind. 2 Tipps." });
@@ -476,9 +477,9 @@ function setupSportsbook(io, accounts) {
         if (seen.has(key)) return ack && ack({ ok: false, error: "Pro Spiel & Markt nur ein Tipp." });
         seen.add(key);
         clean.push({ matchId: m.id, market: leg.market, selection: leg.selection, odds: mk.sels[leg.selection],
-                     label: `${m.home}–${m.away}: ${selLabel(leg.market, leg.selection, m)}` });
+                     label: `${m.home} vs ${m.away}: ${selLabel(leg.market, leg.selection, m)}` });
       }
-      // Combined odds = product, minus a correlation haircut for same-match legs.
+      // Kombiquote = Produkt, minus Abschlag für Tipps aus demselben Spiel.
       const perMatch = {};
       for (const l of clean) perMatch[l.matchId] = (perMatch[l.matchId] || 0) + 1;
       let comboOdds = clean.reduce((o, l) => o * l.odds, 1);
@@ -503,8 +504,8 @@ function setupSportsbook(io, accounts) {
     const now = Date.now();
     const list = [...matches.values()]
       .sort((a, b) => {
-        if (!!a.real !== !!b.real) return a.real ? -1 : 1;       // real (WC) highlights first
-        if (a.state !== b.state) return order(a.state) - order(b.state); // live, then open, then done
+        if (!!a.real !== !!b.real) return a.real ? -1 : 1;       // echte Spiele zuerst
+        if (a.state !== b.state) return order(a.state) - order(b.state); // erst live, dann offen, dann fertig
         return a.kickoff - b.kickoff;
       })
       .map((m) => publicMatch(m, viewerKey, now));
@@ -520,8 +521,8 @@ function setupSportsbook(io, accounts) {
   }
 }
 
-/** A cancelled/postponed match is voided: single bets refunded, combos with this
- *  leg refunded too. */
+/** Abgesagtes oder verschobenes Spiel: Einzelwetten und Kombis mit diesem
+ *  Tipp gibt es zurück. */
 function voidMatch(m, accounts, io) {
   const touched = new Set();
   for (const b of m.bets) {
@@ -536,13 +537,13 @@ function voidMatch(m, accounts, io) {
   }
 }
 
-/** Settle any combo whose legs all have a known result. */
+/** Jede Kombi abrechnen, deren Tipps alle ein Ergebnis haben. */
 function settleCombos(accounts, io) {
   let changed = false;
   for (const c of combos) {
     if (c.settled) continue;
     if (!c.legs.every((l) => matchResults.has(l.matchId))) continue;
-    // Any voided leg → refund the whole combo stake.
+    // Ein ungültiger Tipp: der ganze Kombi-Einsatz geht zurück.
     if (c.legs.some((l) => matchResults.get(l.matchId).void)) {
       c.settled = true; c.won = null; c.payout = c.amount; c.voided = true;
       accounts.adjustChips(c.user, c.amount);
@@ -575,7 +576,7 @@ function settleCombos(accounts, io) {
 const order = (s) => (s === "live" ? 0 : s === "pending" ? 1 : s === "open" ? 2 : 3);
 
 function publicMatch(m, viewerKey, now) {
-  // Per-selection book: total stake + backer count, so everyone sees the action.
+  // Einsatz und Anzahl je Tipp, damit alle sehen, was los ist.
   const book = {};
   for (const [mk, def] of Object.entries(m.markets)) {
     book[mk] = {};
@@ -617,19 +618,19 @@ function pickTwo(arr) {
   return [arr[i], arr[j]];
 }
 
-/** For tooling/tests: a team's outcome chances + fair home odds vs an opponent. */
+/** Für Werkzeuge und Tests: Chancen eines Teams und faire Heimquote gegen einen Gegner. */
 function teamChances(strength, oppStrength = 75) {
   const { lh, la } = lambdas(strength, oppStrength);
   const p = marketProbs(lh, la);
   return { win: p.pHome, draw: p.pDraw, loss: p.pAway, homeOdds: odds(p.pHome) };
 }
 
-// ── Persistence: open bets/combos + results survive restarts/deploys ────────
+// --- Persistence: open bets/combos + results survive restarts/deploys ---
 function persistSports() {
   try {
     const singles = [];
     for (const m of matches.values()) {
-      if (m.state === "done") continue; // settled bets already paid out
+      if (m.state === "done") continue; // abgerechnete Wetten sind schon ausgezahlt
       for (const b of m.bets) singles.push({ ...b, matchId: m.id });
     }
     const data = {
@@ -661,22 +662,22 @@ function loadSports(accounts) {
   try { data = JSON.parse(fs.readFileSync(SPORTS_FILE, "utf8")); } catch { return; }
   if (!data) return;
   for (const [id, r] of data.matchResults || []) matchResults.set(Number(id), r);
-  // Combos: restore; orphaned sim legs (match gone, no result) → refund the combo.
+  // Kombis zurückholen. Hängt ein Sim-Tipp ohne Spiel und Ergebnis in der Luft, gibt es den Einsatz zurück.
   for (const c of data.combos || []) {
     if (c.settled) continue;
     const orphan = c.legs.some((l) => l.matchId < REAL_ID_BASE && !matchResults.has(l.matchId));
     if (orphan) { c.settled = true; c.voided = true; c.payout = c.amount; accounts.adjustChips(c.user, c.amount); }
-    combos.push(c); // settleCombos (tick) finishes the rest once all legs have results
+    combos.push(c); // den Rest erledigt settleCombos im Takt, sobald alle Tipps ein Ergebnis haben
   }
-  // Singles: settle if the result is already known; real → re-attach to the
-  // match when the poller recreates it; vanished sim → refund.
+  // Einzelwetten: abrechnen, wenn das Ergebnis schon feststeht. Echte hängen
+  // sich wieder ans Spiel, sobald der Poller es neu anlegt; weg-simulierte gibt es zurück.
   for (const b of data.singles || []) {
     const id = Number(b.matchId);
     if (settleRestoredSingle(b, accounts)) continue;
     if (id >= REAL_ID_BASE) {
       const arr = restoreSingles.get(id) || []; arr.push(b); restoreSingles.set(id, arr);
     } else {
-      accounts.adjustChips(b.user, b.amount); // sim match is gone → refund
+      accounts.adjustChips(b.user, b.amount); // Sim-Spiel ist weg, Einsatz zurück
     }
   }
 }

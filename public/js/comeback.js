@@ -5,7 +5,7 @@
  *
  * Beides steht ganz oben in der Lobby und nur dann, wenn es etwas zu holen
  * oder zu sehen gibt. Wer sein Paket hat und wenn keine Gala laeuft, sieht
- * hier gar nichts — ein Banner, das immer da ist, wird nach zwei Tagen
+ * hier gar nichts, ein Banner, das immer da ist, wird nach zwei Tagen
  * uebersehen.
  */
 (function () {
@@ -38,7 +38,7 @@
           <span class="cb-icon">🎁</span>
           <div class="cb-text">
             <b>Willkommen zurück!</b>
-            <small>Dein Wiedereröffnungs-Paket wartet: ${fmt(stand.chips)}<i class=mk></i>, ${fmt(stand.xp)} Season-XP${stuecke ? `, dazu ${stuecke} — beides gibt es nach der Wiedereröffnung nie wieder` : ""}.</small>
+            <small>Dein Wiedereröffnungs-Paket wartet: ${fmt(stand.chips)}<i class=mk></i>, ${fmt(stand.xp)} Season-XP${stuecke ? `, dazu ${stuecke}. Beides gibt es nach der Wiedereröffnung nie wieder` : ""}.</small>
           </div>
           <button class="btn-primary" id="cb-claim" type="button">Auspacken</button>
         </div>`);
@@ -50,7 +50,7 @@
           <span class="cb-icon">🎊</span>
           <div class="cb-text">
             <b>Eröffnungsgala läuft · noch ${rest(g.endsAt)}</b>
-            <small>${g.xpFaktor}× Season-XP auf jede Runde. Am Ende werden ${fmt(g.topf)}<i class=mk></i> unter allen verlost, die mitgespielt haben — je mehr Runden, desto mehr Lose. Du: ${fmt(g.meineRunden)} ${g.meineRunden === 1 ? "Runde" : "Runden"}, ${fmt(g.spieler)} dabei.</small>
+            <small>${g.xpFaktor}× Season-XP auf jede Runde. Am Ende werden ${fmt(g.topf)}<i class=mk></i> unter allen verlost, die mitgespielt haben, je mehr Runden, desto mehr Lose. Du: ${fmt(g.meineRunden)} ${g.meineRunden === 1 ? "Runde" : "Runden"}, ${fmt(g.spieler)} dabei.</small>
           </div>
         </div>`);
     }
@@ -73,7 +73,7 @@
    *
    * Vorher lief das Abholen still ab: ein Zahlenflug, ein Toast, weg. Die
    * beiden Kosmetik-Stuecke standen als Nebensatz im Toast und waren nach
-   * vier Sekunden fort — man hat also nie gesehen, dass man sie hat, und
+   * vier Sekunden fort, man hat also nie gesehen, dass man sie hat, und
    * genau die sind das Besondere am Paket. Jetzt wird es ausgepackt: erst
    * das Paket antippen, dann kommt jedes Stueck als eigene Karte, und die
    * Kosmetik-Karten sagen dazu, wo man sie anlegt.
@@ -148,7 +148,7 @@
       }
       if (r.account) applyAccount(r.account);
 
-      // Deckel fliegt ab, dann Salut — genau der Effekt, der im Paket liegt.
+      // Deckel fliegt ab, dann Salut, genau der Effekt, der im Paket liegt.
       $("#gs-buehne").classList.add("gs-auf");
       Casino.sound?.play("bigwin");
       const warten = reduziert() ? 0 : 520;
@@ -179,6 +179,6 @@
   // Der Tagesbericht verlinkt das Paket direkt.
   Casino._zeigePaket = zeigePaket;
   // Beim Neuladen steht die Lobby unter Umstaenden schon, bevor diese Datei
-  // ausgefuehrt wurde — dann holt onEnter den Stand nicht mehr.
+  // ausgefuehrt wurde, dann holt onEnter den Stand nicht mehr.
   if (Casino.screens && Casino.screens.current() === "lobby") laden();
 })();

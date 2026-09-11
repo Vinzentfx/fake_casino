@@ -55,7 +55,7 @@
    *
    * Die Aura braucht eine eigene Huelle um das Bild: sie malt ihre Teilchen in
    * ::before/::after, und das Bild selbst benutzt beide schon fuer den Rahmen.
-   * Ohne Aura kommt auch keine Huelle — dann steht ueberall genau dasselbe
+   * Ohne Aura kommt auch keine Huelle, dann steht ueberall genau dasselbe
    * Markup wie vorher.
    */
   function avatar(p, opts = {}) {

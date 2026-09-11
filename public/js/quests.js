@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – quest board (Aufträge).
-   Global rotation (same for everyone), progress bars, auto-paid
-   rewards; completion toasts arrive via the quest:done event.
+   Aufträge
+   Für alle dieselben, mit Fortschrittsbalken und automatischer Auszahlung.
+   Die Meldung beim Abschluss kommt über das Ereignis quest:done.
    ============================================================ */
 
 (function () {
@@ -34,7 +34,7 @@
     return `<div class="quest ${q.maxed ? "done" : ""}">
       <div class="quest-top">
         <span class="quest-label">${escapeHtml(q.label)}</span>
-        <b class="quest-reward">${q.maxed ? "🔒 morgen wieder" : "+" + fmt(q.reward) + "<i class=mk></i>"}</b>
+        <b class="quest-reward">${q.maxed ? "morgen wieder" : "+" + fmt(q.reward) + "<i class=mk></i>"}</b>
       </div>
       <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
       <div class="quest-prog">${q.prog}/${q.target} · heute ${q.done}/${q.cap}× geschafft</div>
@@ -54,7 +54,7 @@
       const hinweis = $("#quest-hinweis");
       if (hinweis) {
         const teile = [];
-        if (res.happy) teile.push("🍹 Happy Hour: doppelte Belohnung.");
+        if (res.happy) teile.push("Happy Hour: doppelte Belohnung.");
         if (res.faucet != null && res.faucet < 100) teile.push(`Ab einer Million Vermögen werden Gratis-Einnahmen abgeschwächt, bei dir auf ${res.faucet} %.`);
         hinweis.textContent = teile.join(" ");
         hinweis.classList.toggle("hidden", !teile.length);
@@ -69,12 +69,12 @@
     });
   }
 
-  // Completion celebration (mine only — big ones everyone sees in chat anyway).
+  // Kleine Feier beim Abschluss (nur für mich, die großen sehen eh alle im Chat).
   socket.on("quest:done", (q) => {
     const acc = window.Casino.getAccount && window.Casino.getAccount();
     if (!q || !acc || !q.user || q.user.toLowerCase() !== acc.name.toLowerCase()) return;
-    toast(`🎯 Auftrag erledigt: ${q.label} — +${fmt(q.reward)} Chips!`);
-    // refresh if the board is open
+    toast(`Auftrag erledigt: ${q.label} (+${fmt(q.reward)} Chips)`);
+    // neu laden, wenn die Tafel offen ist
     const screen = document.querySelector('[data-screen="quests"]');
     if (screen && screen.classList.contains("active")) load();
   });

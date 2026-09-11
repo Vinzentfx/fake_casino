@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Crash / Aviator (client).
-   One shared round for everyone: a rocket climbs with the
-   multiplier and explodes at the crash point. Cash out in time!
+   Crash (wie Aviator)
+   Eine Runde für alle: die Rakete steigt mit dem Multiplikator und explodiert
+   am Crashpunkt. Rechtzeitig auszahlen!
    ============================================================ */
 
 (function () {
@@ -13,22 +13,22 @@
 
   let phase = "betting";     // betting | flying | crashed
   let multiplier = 1;        // latest server multiplier
-  let dispMult = 1;          // smoothed for display/animation
+  let dispMult = 1;          // geglättet für Anzeige und Animation
   let crashPoint = null;
   let myBet = null;          // { amount, cashedAt }
   let bets = [];
   let history = [];
   let msLeft = 0, msLeftAt = 0;
 
-  // ── Rocket canvas ────────────────────────────────────────────────────────
+  // --- Rocket canvas ---
   const canvas = $("#crash-canvas");
   const ctx = canvas && canvas.getContext("2d");
-  let needBoom = false;   // crash arrived → spawn explosion at rocket position
+  let needBoom = false;   // Crash kam an, Explosion an der Rakete zeigen
   let boomAt = null;      // frozen explosion position
   let stars = null;       // parallax star layers
   let parts = [];         // exhaust + explosion particles
   let ring = 0;           // shockwave radius (0 = off)
-  let prevWholeMult = 1;  // for the multiplier pulse
+  let prevWholeMult = 1;  // fürs Pulsieren des Multiplikators
   let drawRaf = null;
   const MAX_PARTS = 180;
 
@@ -50,13 +50,13 @@
   function resize() {
     if (!canvas) return;
     const r = canvas.parentElement.getBoundingClientRect();
-    // iPads render at high DPR; capping the backing canvas keeps the same CSS
-    // size/look but avoids drawing millions of extra pixels every frame.
+    // iPads rechnen mit hoher Pixeldichte. Das Canvas dahinter zu deckeln sieht
+    // genauso aus, spart aber Millionen Pixel pro Bild.
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     canvas.width = r.width * dpr; canvas.height = r.height * dpr;
     canvas.style.width = r.width + "px"; canvas.style.height = r.height + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    stars = null; // re-seed for the new size
+    stars = null; // für die neue Größe neu verteilen
   }
   window.addEventListener("resize", resize);
 
@@ -155,11 +155,11 @@
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (!stars) seedStars(w, h);
 
-    // Smooth the displayed multiplier toward the server value.
+    // Den angezeigten Multiplikator weich an den Wert vom Server heranführen.
     dispMult += (multiplier - dispMult) * 0.25;
     const m = phase === "crashed" ? (crashPoint || dispMult) : dispMult;
 
-    // Map multiplier → rocket position on a curved path (log scale).
+    // Multiplikator auf eine Position der Rakete auf einer Kurve abbilden (log-Skala).
     const p = Math.min(1, Math.log(Math.max(1, m)) / Math.log(12)); // 1×→0, 12×→1
     const pad = 34;
     const x = pad + p * (w - pad * 2);
@@ -189,7 +189,7 @@
      * Hilfslinien fuer die Multiplikatoren.
      *
      * Vorher war die Flaeche eine leere dunkle Box: man sah die Zahl steigen,
-     * aber nicht, WIE weit oben man ist. Die Linien liegen auf derselben
+     * aber nicht, wie weit oben man ist. Die Linien liegen auf derselben
      * logarithmischen Skala wie die Flugbahn, damit die Rakete sie genau dann
      * kreuzt, wenn der Multiplikator sie erreicht.
      */
@@ -265,7 +265,7 @@
     // Explosion auslösen, sobald das Crash-Event da ist.
     if (needBoom) { needBoom = false; boomAt = { x, y }; spawnExplosion(x, y); }
 
-    // Partikel (Triebwerk + Explosion) — additiv für Neon-Glow.
+    // Partikel (Triebwerk + Explosion), additiv für Neon-Glow.
     if (flying) spawnExhaust(x - Math.cos(ang) * 18, y - Math.sin(ang) * 18, ang, p);
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
@@ -307,7 +307,7 @@
     drawRaf = requestAnimationFrame(draw);
   }
 
-  // ── Render helpers ───────────────────────────────────────────────────────
+  // --- Render helpers ---
   function renderMult() {
     const el = $("#crash-mult");
     if (!el) return;
@@ -325,8 +325,8 @@
     const el = $("#crash-status");
     if (!el) return;
     if (phase === "betting") { const s = Math.ceil(Math.max(0, (msLeftAt + msLeft) - Date.now()) / 1000); el.textContent = `Einsätze offen … Start in ${s}s`; }
-    else if (phase === "flying") el.textContent = "🚀 Steigt …";
-    else el.textContent = `💥 Geplatzt bei ${(crashPoint || 0).toFixed(2)}×`;
+    else if (phase === "flying") el.textContent = "Steigt …";
+    else el.textContent = `Geplatzt bei ${(crashPoint || 0).toFixed(2)}×`;
   }
   function renderHistory() {
     const el = $("#crash-history");
@@ -350,21 +350,21 @@
     if (phase === "flying" && mine && !mine.cashedAt) {
       const win = Math.round(mine.amount * dispMult);
       btn.disabled = false; btn.className = "btn-primary crash-cashbtn";
-      btn.textContent = `💸 Auszahlen — ${fmt(win)} Chips (${dispMult.toFixed(2)}×)`;
+      btn.textContent = `Auszahlen: ${fmt(win)} Chips (${dispMult.toFixed(2)}×)`;
     } else if (phase === "betting" && !mine) {
       btn.disabled = false; btn.className = "btn-primary";
-      btn.textContent = "🚀 Einsatz setzen";
+      btn.textContent = "Einsatz setzen";
     } else if (phase === "betting" && mine) {
-      btn.disabled = true; btn.className = "btn-primary"; btn.textContent = "✓ Einsatz gesetzt — warte auf Start";
+      btn.disabled = true; btn.className = "btn-primary"; btn.textContent = "Einsatz steht, warte auf den Start";
     } else if (mine && mine.cashedAt) {
-      btn.disabled = true; btn.className = "btn-primary"; btn.textContent = `✓ Ausgezahlt bei ${mine.cashedAt.toFixed(2)}×`;
+      btn.disabled = true; btn.className = "btn-primary"; btn.textContent = `Ausgezahlt bei ${mine.cashedAt.toFixed(2)}×`;
     } else {
       btn.disabled = true; btn.className = "btn-primary"; btn.textContent = phase === "flying" ? "Zuschauen …" : "Warte auf Runde";
     }
   }
   function renderAll() { renderMult(); renderStatus(); renderHistory(); renderPlayers(); renderAction(); }
 
-  // Keep the cashout button's live win amount + status ticking.
+  // Gewinn und Status am Auszahlen-Knopf laufend aktualisieren.
   setInterval(() => {
     const screen = document.querySelector('[data-screen="crash"]');
     if (!screen || !screen.classList.contains("active")) return;
@@ -372,14 +372,14 @@
     if (phase === "betting") renderStatus();
   }, 120);
 
-  // ── Apply server state ───────────────────────────────────────────────────
+  // --- Apply server state ---
   function apply(s) {
     if (!s) return;
     phase = s.phase; bets = s.bets || []; history = s.history || history;
     if (typeof s.multiplier === "number") multiplier = s.multiplier;
     if (s.crashPoint != null) crashPoint = s.crashPoint;
     if (typeof s.msLeft === "number") { msLeft = s.msLeft; msLeftAt = Date.now(); }
-    // Track my own bet from the shared list.
+    // Die eigene Wette aus der gemeinsamen Liste raussuchen.
     const me = window.Casino.getAccount && window.Casino.getAccount();
     const mine = me && bets.find((b) => b.name.toLowerCase() === me.name.toLowerCase());
     myBet = mine ? { amount: mine.amount, cashedAt: mine.cashedAt } : (phase === "betting" ? null : myBet);
@@ -423,10 +423,10 @@
     if (!d) return;
     if (d.account) applyAccount(d.account);
     feiereAusstieg(d.mult, d.payout);
-    if (d.auto) toast(`🚀 Auto-Cashout bei ${d.mult.toFixed(2)}× — +${fmt(d.payout)} Chips!`);
+    if (d.auto) toast(`Automatisch ausgezahlt bei ${d.mult.toFixed(2)}×: +${fmt(d.payout)} Chips`);
   });
 
-  // ── Actions ──────────────────────────────────────────────────────────────
+  // --- Actions ---
   $("#crash-action").addEventListener("click", () => {
     const err = $("#crash-error"); err.textContent = "";
     if (phase === "flying" && myBet && !myBet.cashedAt) {
@@ -434,7 +434,7 @@
         if (!r || !r.ok) { err.textContent = (r && r.error) || "Zu spät."; return; }
         applyAccount(r.account); myBet.cashedAt = r.mult;
         feiereAusstieg(r.mult, r.payout);
-        toast(`💸 Ausgezahlt bei ${r.mult.toFixed(2)}× — +${fmt(r.payout)} Chips!`);
+        toast(`Ausgezahlt bei ${r.mult.toFixed(2)}×: +${fmt(r.payout)} Chips`);
         renderAll();
       });
       return;
@@ -448,12 +448,12 @@
       if (!r || !r.ok) { err.textContent = (r && r.error) || "Fehler."; return; }
       applyAccount(r.account);
       myBet = { amount, cashedAt: null };
-      toast(target ? `Einsatz gesetzt · Auto @ ${target}×` : "Einsatz gesetzt 🚀");
+      toast(target ? `Einsatz gesetzt · Auto @ ${target}×` : "Einsatz gesetzt");
       renderAll();
     });
   });
 
-  // ── Screen hook ──────────────────────────────────────────────────────────
+  // --- Screen hook ---
   window.Casino._loadCrash = () => {
     resize();
     socket.emit("crash:state", (s) => {

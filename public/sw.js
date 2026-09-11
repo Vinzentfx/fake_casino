@@ -1,9 +1,9 @@
 "use strict";
 
 /**
- * Service Worker — ausschliesslich fuer Push.
+ * Service Worker, ausschließlich fuer Push.
  *
- * Hier wird bewusst NICHTS zwischengespeichert. Das Casino erkennt neue
+ * Hier wird bewusst nichts zwischengespeichert. Das Casino erkennt neue
  * Versionen ueber einen Fingerabdruck des Inhalts und laedt dann neu; ein
  * Cache im Service Worker wuerde genau dagegen arbeiten und dem Spieler alte
  * Dateien unterschieben. Der Worker existiert nur, damit Safari und Chrome
@@ -16,7 +16,7 @@ self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener("push", (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch {}
-  const titel = d.title || "🎰 Fake Casino";
+  const titel = d.title || "Fake Casino";
   e.waitUntil(self.registration.showNotification(titel, {
     body: d.body || "",
     icon: "/icons/icon-192.png",

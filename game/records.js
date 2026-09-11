@@ -4,17 +4,17 @@
  * Wochenrekorde je Spiel.
  *
  * Das Grundproblem des Casinos ist nicht, dass zu wenig da waere, sondern dass
- * ALLES Soziale gleichzeitige Anwesenheit verlangt: Poker, die Roulette- und
+ * alles Soziale gleichzeitige Anwesenheit verlangt: Poker, die Roulette- und
  * Blackjack-Lobby, Pinco, saemtliche Duelle, Clan-Kriege. Gespielt wird aber in
  * Schueben, manchmal wochenlang gar nicht. Damit laeuft der ganze
  * Mehrspieler-Teil praktisch nie.
  *
- * Hier steht die Gegenmassnahme: man spielt gegeneinander, OHNE gleichzeitig da
+ * Hier steht die Gegenmassnahme: man spielt gegeneinander, ohne gleichzeitig da
  * zu sein. Jede Woche haelt jedes Spiel seinen besten Wert fest, mit Namen. Wer
  * reinkommt, sieht, was die anderen hinterlassen haben, und kann es schlagen.
  *
- * Bewusst NICHT gewertet wird der absolute Gewinn — sonst gewinnt immer, wer am
- * meisten setzt. Gewertet wird das VIELFACHE des Einsatzes. Damit hat jemand mit
+ * Bewusst nicht gewertet wird der absolute Gewinn, sonst gewinnt immer, wer am
+ * meisten setzt. Gewertet wird das Vielfache des Einsatzes. Damit hat jemand mit
  * 200 Chips dieselbe Chance auf den Wochenrekord wie jemand mit zwei Millionen,
  * und genau das haelt eine Freundesrunde zusammen.
  *
@@ -32,11 +32,11 @@ const FILE = path.join(DATA_DIR, "records.json");
 const weekNow = () => Math.floor((Date.now() / 86400000 + 3) / 7);
 
 /**
- * Welche Spiele eine Bestmarke fuehren, und WORAUF.
+ * Welche Spiele eine Bestmarke fuehren, und worauf.
  *
  * Das Vielfache des Einsatzes passt nicht ueberall. Blackjack zahlt hoechstens
  * das Zweieinhalbfache; dort war die Bestmarke nach dem ersten natuerlichen
- * Blackjack bei 2,50 und danach fuer immer unschlagbar — alle weiteren
+ * Blackjack bei 2,50 und danach fuer immer unschlagbar. Alle weiteren
  * Spieler haetten nur noch gleichziehen koennen. Ein Rekord, den man nicht
  * brechen kann, ist kein Rekord.
  *
@@ -161,7 +161,7 @@ function melde(key, spiel, einsatz, gewinn) {
 /**
  * Blackjack: Serie gewonnener Haende.
  *
- * `net` ist das Ergebnis der Hand. Ein Push (0) laesst die Serie stehen — man
+ * `net` ist das Ergebnis der Hand. Ein Push (0) laesst die Serie stehen. Man
  * hat ja nicht verloren. Die laufende Serie haengt am Account, damit sie einen
  * Neustart des Servers ueberlebt.
  */
@@ -176,13 +176,13 @@ function meldeSerie(key, spiel, net) {
   if (net < 0) { acc.serien[spiel] = 0; _accounts.save(); return null; }
   const laenge = (acc.serien[spiel] || 0) + 1;
   acc.serien[spiel] = laenge;
-  // Bestwert getrennt von der LAUFENDEN Serie: die faellt beim naechsten
+  // Bestwert getrennt von der laufenden Serie: die faellt beim naechsten
   // Verlust auf null, das Achievement soll aber bestehen bleiben.
   const bestFeld = spiel + "Best";
   if ((acc.serien[bestFeld] || 0) < laenge) acc.serien[bestFeld] = laenge;
-  // recordHand speichert die Konten BEVOR es die Zuhoerer aufruft. Diese
+  // recordHand speichert die Konten bevor es die Zuhoerer aufruft. Diese
   // Aenderung liegt also hinter dem Speichern und muesste sonst darauf warten,
-  // dass irgendwer anders speichert — bei einem Neustart waere die laufende
+  // dass irgendwer anders speichert, bei einem Neustart waere die laufende
   // Serie weg.
   _accounts.save();
   if (laenge < meta.min) return null;
@@ -227,13 +227,13 @@ function setze(key, spiel, wert, extra) {
   // verbessert, muss dafuer nicht den Chat vollschreiben.
   if (alt && alt.key !== key && _io) {
     try {
-      chat.announce(_io, `🏅 ${state.best[spiel].name} schlägt ${alt.name} bei ${SPIELE[spiel].label}: ${state.best[spiel].text} statt ${alt.text}!`);
+      chat.announce(_io, `${state.best[spiel].name} schlägt ${alt.name} bei ${SPIELE[spiel].label}: ${state.best[spiel].text} statt ${alt.text}!`);
     } catch {}
-    // Der alte Halter ist fast immer gerade NICHT da — das ist ja der Punkt.
+    // Der alte Halter ist fast immer gerade nicht da, darum geht es ja.
     // Genau darum lohnt sich hier eine Nachricht aufs Geraet.
     try {
       require("./push").an(alt.key, "rekord", {
-        title: `🏅 ${SPIELE[spiel].label}: Rekord weg`,
+        title: `${SPIELE[spiel].label}: Rekord weg`,
         body: `${state.best[spiel].name} hat deine ${alt.text} mit ${state.best[spiel].text} überboten.`,
         url: "/",
       });
@@ -288,7 +288,7 @@ function setupRecords(io, accounts) {
     const key = String(name).trim().toLowerCase();
     try {
       if (art === "serie") {
-        // Serien brauchen JEDE Hand, auch die verlorene: die beendet sie ja.
+        // Serien brauchen jede Hand, auch die verlorene: die beendet sie ja.
         meldeSerie(key, game, Number(winnings || 0));
         return;
       }

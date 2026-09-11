@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Markt (product inventory + player trading)
+   Markt: Inventar und Handel zwischen Spielern
    ============================================================ */
 
 (function () {
@@ -34,7 +34,7 @@
   function renderInventory() {
     const el = $("#mkt-inventory");
     if (!el) return;
-    if (!inventory.length) { el.innerHTML = '<p class="muted small">Leer — kauf Produkte bei deinen Unternehmen in der Stadt.</p>'; return; }
+    if (!inventory.length) { el.innerHTML = '<p class="muted small">Leer. Produkte gibt es bei deinen Firmen in der Stadt.</p>'; return; }
     el.innerHTML = inventory.map((it) => `
       <div class="mkt-item">
         <div class="mkt-item-head">${it.emoji} <b>${escapeHtml(it.name)}</b> ×${it.count}<br><span class="muted small">${escapeHtml(it.desc)} (${it.mins} Min)</span></div>
@@ -99,12 +99,12 @@
       if (!res || !res.ok) { toast((res && res.error) || "Fehler."); return; }
       applyAccount(res.account);
       inventory = res.inventory; offers = res.offers; render();
-      toast("Gekauft — im Inventar!");
+      toast("Gekauft, liegt im Inventar.");
     });
   }
 
   socket.on("market:update", () => { if (onScreen()) load(); });
 
-  // app.js's showScreen calls this when the market screen opens.
+  // Ruft der Router auf, wenn der Markt aufgeht.
   window.Casino._loadMarket = load;
 })();

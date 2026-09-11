@@ -1,11 +1,11 @@
 "use strict";
 
 /**
- * Glücksrad — einmal am Tag gratis.
+ * Glücksrad, einmal am Tag gratis.
  *
  * Vorher war es ein reiner Chip-Spender: acht Felder, alle mit einer Zahl
  * drauf. Damit war es die dritte tägliche Gratis-Quelle neben Stunden-Bonus
- * und Kalender, brachte aber nur rund ein Zehntel davon — ein Pflichtklick
+ * und Kalender, brachte aber nur rund ein Zehntel davon, ein Pflichtklick
  * ohne eigenen Grund.
  *
  * Jetzt verschenkt es Sachen, die man für Chips nicht bekommt: Lose für die
@@ -15,11 +15,11 @@
  * Goldsegmenten um sein Bild, einen Namen, in dem sich ein Rad dreht, und den
  * Titel "Big Yahus Liebling".
  *
- * Die Chip-Ausbeute ist dabei ABSICHTLICH gefallen (von rund 3.150 auf 1.600
+ * Die Chip-Ausbeute ist dabei absichtlich gefallen (von rund 3.150 auf 1.600
  * je Dreh): das Rad soll interessanter werden, nicht ergiebiger.
  *
  * Chips laufen wie überall durch die Vermögensbremse (faucetFactor). Lose,
- * XP und Kosmetik nicht — die sind für ein grosses Konto nicht mehr wert als
+ * XP und Kosmetik nicht, die sind für ein grosses Konto nicht mehr wert als
  * für ein kleines.
  */
 
@@ -67,7 +67,7 @@ function fortunaRest() {
   return Math.max(0, cosmetics.FORTUNA_MAX - cosmetics.fortunaVergeben(_accounts));
 }
 
-/** Zahlt das Fortuna-Feld für DIESEN Spieler noch Kosmetik, oder schon Chips? */
+/** Zahlt das Fortuna-Feld für diesen Spieler noch Kosmetik, oder schon Chips? */
 const fortunaOffen = (acc) => fortunaRest() > 0 && !cosmetics.hatFortuna(acc);
 
 /**
@@ -115,14 +115,14 @@ function drehe(key) {
   const acc = _accounts && _accounts.get(key);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
   const seit = Date.now() - (acc.lastWheelAt || 0);
-  if (seit < ABSTAND_MS) return { ok: false, error: "Heute schon gedreht — morgen wieder!", msLeft: ABSTAND_MS - seit };
+  if (seit < ABSTAND_MS) return { ok: false, error: "Heute schon gedreht, morgen wieder.", msLeft: ABSTAND_MS - seit };
 
   const idx = ziehe();
   const feld = FELDER[idx];
   const faktor = _accounts.faucetFactor(acc.name);
   acc.lastWheelAt = Date.now();
 
-  // Was am Ende auf der Karte steht, entsteht hier — an einer Stelle, damit
+  // Was am Ende auf der Karte steht, entsteht hier, an einer Stelle, damit
   // Ergebnis und Anzeige nicht auseinanderlaufen koennen.
   const out = { ok: true, index: idx, art: feld.art, chips: 0, titel: "", text: "" };
 
@@ -146,7 +146,7 @@ function drehe(key) {
       if (r.ok) {
         const n = r.tipps.length;
         out.titel = n === 1 ? "Ein Gratis-Los" : `${n} Gratis-Lose`;
-        out.text = `${r.tipps.map((t) => t.join(" · ")).join("   |   ")} — die Ziehung ist um 20 Uhr.`;
+        out.text = `${r.tipps.map((t) => t.join(" · ")).join("   |   ")}. Gezogen wird um 20 Uhr.`;
         out.tipps = r.tipps;
       } else {
         // Wer schon voll ist, geht nicht leer aus.
@@ -178,8 +178,8 @@ function drehe(key) {
     case "fortuna": {
       if (!fortunaOffen(acc)) {
         zahleChips(FORTUNA_ERSATZ, `+${de(Math.round(FORTUNA_ERSATZ * faktor))} Chips`,
-          cosmetics.hatFortuna(acc) ? "Fortuna hast du schon — dafür das Beste, was das Rad sonst hergibt."
-                                    : "Alle sieben Fortuna sind vergeben — dafür das Beste, was das Rad sonst hergibt.");
+          cosmetics.hatFortuna(acc) ? "Fortuna hast du schon, dafür das Beste, was das Rad sonst hergibt."
+                                    : "Alle sieben Fortuna sind vergeben, dafür das Beste, was das Rad sonst hergibt.");
         break;
       }
       const stuecke = cosmetics.gibFortuna(acc);
@@ -192,7 +192,7 @@ function drehe(key) {
       out.stuecke = stuecke;
       out.rest = rest;
       try {
-        chat.announce(_io, `🎡 FORTUNA! ${acc.name} dreht eines der sieben Stücke. ${rest > 0 ? `Noch ${rest} im Rad.` : "Das war das letzte."}`);
+        chat.announce(_io, `Fortuna! ${acc.name} dreht eines der sieben Stücke. ${rest > 0 ? `Noch ${rest} im Rad.` : "Das war das letzte."}`);
       } catch {}
       try {
         require("./chronik").notiere("event", `${acc.name} gewinnt Fortuna am Glücksrad. ${rest > 0 ? `Noch ${rest} von ${cosmetics.FORTUNA_MAX} im Rad.` : "Es war das letzte."}`, { user: acc.name });
@@ -224,7 +224,7 @@ function setup(io, accounts) {
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
       const r = drehe(socket.data.account);
       ack(r);
-      // Ein neues Fortuna aendert das Rad fuer ALLE (ein Stueck weniger).
+      // Ein neues Fortuna aendert das Rad fuer alle (ein Stueck weniger).
       if (r.ok && r.art === "fortuna") io.emit("wheel:fortuna", { rest: r.rest });
     });
   });

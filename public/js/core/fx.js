@@ -127,7 +127,7 @@
   /*
    * Jeder gekaufte Effekt hat eine eigene FORM und eine eigene BEWEGUNG,
    * nicht nur andere Farben. Dasselbe Konfetti in Orange statt Gelb waere
-   * kein Effekt, sondern ein Farbregler — und genau so hatte ich es zuerst
+   * kein Effekt, sondern ein Farbregler, und genau so hatte ich es zuerst
    * gebaut.
    *
    *   muenzen    Münzen springen von unten hoch und fallen zurück.
@@ -148,7 +148,7 @@
    * Runde ein Lebensereignis und fuer die Spitze ein Achselzucken. Gemessen
    * wird deshalb an zwei Groessen, und die groessere gewinnt:
    *
-   *   das VIELFACHE des Einsatzes, falls das Spiel es mitliefert, und
+   *   das Vielfache des Einsatzes, falls das Spiel es mitliefert, und
    *   der Gewinn im VERHAELTNIS zum eigenen Guthaben.
    *
    * Damit feiert dieselbe Runde bei einem Neuling lauter als bei jemandem
@@ -171,7 +171,7 @@
    *
    * Eigene CSS-Variablen (--hoch, --dx, …) MUESSEN ueber setProperty gesetzt
    * werden. Object.assign auf el.style legt bei unbekannten Namen nur eine
-   * JavaScript-Eigenschaft an, die das Stylesheet nie zu sehen bekommt — die
+   * JavaScript-Eigenschaft an, die das Stylesheet nie zu sehen bekommt, die
    * Animationen liefen dadurch gegen leere Werte und bewegten sich gar nicht.
    */
   function teil(klasse, stil, leben) {
@@ -189,7 +189,7 @@
 
   /**
    * Ein Farbschwall ueber den ganzen Bildschirm. Ab Stufe 3 laeuft er bei
-   * JEDEM Effekt mit — ein grosser Gewinn soll gross wirken, egal welchen
+   * jedem Effekt mit, ein grosser Gewinn soll gross wirken, egal welchen
    * Effekt jemand gekauft hat.
    */
   function schwall(farbe, w) {
@@ -292,7 +292,7 @@
   /**
    * Salut: zwei Partykanonen aus den unteren Ecken.
    *
-   * Bewusst anders als alles andere im Laden — es ist das einzige Stueck aus
+   * Bewusst anders als alles andere im Laden, es ist das einzige Stueck aus
    * dem Wiedereroeffnungs-Paket und soll man auf den ersten Blick erkennen.
    */
   function salut(w) {
@@ -418,7 +418,7 @@
       case "salut": return salut(w);
       case "auk_tresor": return tresor(w);
       default: {
-        // Konfetti: mehr, groesser, laenger — und ab Stufe 3 eine zweite Welle.
+        // Konfetti: mehr, groesser, laenger, und ab Stufe 3 eine zweite Welle.
         confetti({ count: 60 * w, wucht: w });
         if (w >= 3) setTimeout(() => confetti({ count: 40 * w, wucht: w }), 260);
         if (w >= 3) schwall("247,220,140", w);
@@ -436,7 +436,7 @@
     const host = ebene();
     const karte = document.createElement("div");
     karte.className = "fx-bigwin";
-    // Die Chip-Marke ist ein eigenes Element NEBEN der Zahl, nicht Teil des
+    // Die Chip-Marke ist ein eigenes Element neben der Zahl, nicht Teil des
     // formatierten Textes: countUp schreibt ueber textContent, dort wuerde
     // `<i class=mk></i>` als Zeichenkette im Bild stehen statt als Symbol.
     karte.innerHTML = `<small></small><b><span class="bw-zahl">0</span><i class=mk></i></b>`;

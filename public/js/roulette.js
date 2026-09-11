@@ -13,13 +13,13 @@
   let spinning = false;
   let wheelAngle = 0;
   let history = [];
-  let lobbyMode = null; // { code, isHost } when playing a shared-lobby table
+  let lobbyMode = null; // { code, isHost } am gemeinsamen Lobby-Tisch
 
   const BET_LABELS = {
-    red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1–18", high: "19–36",
+    red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1-18", high: "19-36",
   };
 
-  // ── Sound: Kugelrattern, Aufsetzen, Gewinn/Verlust, Chip-Klick ──
+  // --- Sound: Kugelrattern, Aufsetzen, Gewinn/Verlust, Chip-Klick ---
   // Die Bausteine stehen in core/sound.js, hier nur die Klangfarbe.
   const { tone, click } = window.Casino.sound;
 
@@ -28,14 +28,14 @@
   const sndWin    = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, "triangle", 0.07, i * 0.08));
   const sndLose   = () => tone(200, 0.4, "sawtooth", 0.06, 0, 90);
 
-  // Decelerating ball rattle synced to the ~4.8s wheel spin.
+  // Kugel-Rattern, das langsamer wird, passend zum ~4,8 s langen Dreh.
   function startBallRattle(totalMs) {
     let stopped = false, elapsed = 0, id = null;
     function step() {
       if (stopped) return;
       click(1600 + Math.random() * 1400, 0.03);
       const p = Math.min(1, elapsed / totalMs);
-      const gap = 28 + 230 * Math.pow(p, 2.2); // ticks slow down as the ball loses speed
+      const gap = 28 + 230 * Math.pow(p, 2.2); // die Ticks werden langsamer, wie die Kugel
       elapsed += gap;
       if (elapsed < totalMs) id = setTimeout(step, gap);
     }
@@ -43,7 +43,7 @@
     return () => { stopped = true; if (id) clearTimeout(id); };
   }
 
-  // ── Canvas wheel ───────────────────────────────────────────────
+  // --- Canvas wheel ---
   const canvas = $("#roulette-canvas");
   const ctx    = canvas.getContext("2d");
 
@@ -93,7 +93,7 @@
     ctx.fillStyle = "#7a5520"; ctx.fill();
     ctx.strokeStyle = "#c8920a"; ctx.lineWidth = 2; ctx.stroke();
 
-    // Ball indicator (fixed at top)
+    // Kugelanzeiger (fest oben)
     const br = w * 0.026;
     ctx.beginPath(); ctx.arc(cx, cy - r * 0.88, br, 0, Math.PI * 2);
     const g = ctx.createRadialGradient(cx - br * 0.35, cy - r * 0.88 - br * 0.35, 0, cx, cy - r * 0.88, br);
@@ -106,9 +106,9 @@
     const idx  = WHEEL.indexOf(number);
     const SLOT = 2 * Math.PI / 37;
     const jitter = (Math.random() - 0.5) * SLOT * 0.55;
-    // Wheel angle that puts slot idx centre at 12-o'clock indicator
+    // Winkel, bei dem das Fach idx genau unter dem Anzeiger auf 12 Uhr steht
     const base   = -(idx + 0.5) * SLOT + jitter;
-    // Travel at least 7 full clockwise rotations from current position
+    // Mindestens 7 volle Umdrehungen im Uhrzeigersinn ab der aktuellen Stellung
     const minEnd = wheelAngle + 7 * 2 * Math.PI;
     const n      = Math.ceil((minEnd - base) / (2 * Math.PI));
     const target = base + n * 2 * Math.PI;
@@ -142,7 +142,7 @@
     requestAnimationFrame(frame);
 
     /* Sicherheitsnetz. requestAnimationFrame steht still, solange der Tab im
-       Hintergrund liegt — auf dem iPad passiert das bei jedem App-Wechsel.
+       Hintergrund liegt, auf dem iPad passiert das bei jedem App-Wechsel.
        Der Einsatz ist zu diesem Zeitpunkt laengst abgebucht und das Ergebnis
        steht fest, aber die Runde bliebe bis zur Rueckkehr haengen: kein
        Ergebnis, kein Guthaben-Update, alle Knoepfe gesperrt.
@@ -151,7 +151,7 @@
     setTimeout(abschliessen, duration + 1500);
   }
 
-  // ── Betting table ──────────────────────────────────────────────
+  // --- Betting table ---
   /**
    * Das Tableau.
    *
@@ -160,7 +160,7 @@
    * einem schmalen Handy nicht, dort braucht es die stehende Fassung.
    *
    * Statt beim Wechsel neu zu bauen, traegt jede Zelle ihre Position fuer
-   * BEIDE Layouts als CSS-Variablen (--lr/--lc quer, --pr/--pc hochkant).
+   * beide Layouts als CSS-Variablen (--lr/--lc quer, --pr/--pc hochkant).
    * Welche gilt, entscheidet allein eine Media-Query. Ein DOM, zwei Layouts,
    * kein Neuaufbau beim Drehen des Geraets.
    */
@@ -199,7 +199,7 @@
 
     const doz = document.createElement("div");
     doz.className = "rt-dozens";
-    [["1", "1–12"], ["2", "13–24"], ["3", "25–36"]].forEach(([v, lbl]) => {
+    [["1", "1-12"], ["2", "13-24"], ["3", "25-36"]].forEach(([v, lbl]) => {
       const c = makeCell("dozen", v, "rt-dozen");
       c.textContent = lbl;
       doz.appendChild(c);
@@ -209,9 +209,9 @@
     const out = document.createElement("div");
     out.className = "rt-outside";
     [
-      ["low", "", "1–18"], ["even", "", "Gerade"],
+      ["low", "", "1-18"], ["even", "", "Gerade"],
       ["red", "rt-r", "Rot"], ["black", "rt-b", "Schwarz"],
-      ["odd", "", "Ungerade"], ["high", "", "19–36"],
+      ["odd", "", "Ungerade"], ["high", "", "19-36"],
     ].forEach(([type, cls, lbl]) => {
       const c = makeCell(type, undefined, "rt-out " + cls);
       c.textContent = lbl;
@@ -257,7 +257,7 @@
         bet.value = Number.isNaN(Number(cell.dataset.value)) ? cell.dataset.value : Number(cell.dataset.value);
       socket.emit("rlobby:bet", bet, (res) => { if (res && !res.ok) toast(res.error || "Fehler."); });
       sndChip();
-      return; // board updates from the server broadcast
+      return; // die Tafel kommt über den Broadcast vom Server
     }
     const key  = betKey(cell);
     bets[key]  = (bets[key] || 0) + chipValue;
@@ -293,8 +293,8 @@
       `<span class="rt-bet-total">= ${tot.toLocaleString("de-DE")}<i class=mk></i></span>`;
   }
 
-  // ── History ────────────────────────────────────────────────────
-  const freq = new Array(37).fill(0);   // how often each number has hit this session
+  // --- History ---
+  const freq = new Array(37).fill(0);   // wie oft jede Zahl in dieser Sitzung kam
   const lastSeen = new Array(37).fill(-1); // spin index a number was last seen (-1 = never)
   let spinCount = 0;
 
@@ -306,7 +306,7 @@
       `<span class="rt-hist-num rt-hist-${h.color}">${h.number}</span>`
     ).join("");
 
-    // Track stats for the (satirical) hot/cold board.
+    // Zahlen für die (satirische) Heiß/Kalt-Tafel mitzählen.
     freq[number]++;
     lastSeen[number] = spinCount++;
     renderHotCold();
@@ -329,7 +329,7 @@
     $("#rt-cold").innerHTML = cold.map(chip).join("");
   }
 
-  // ── Spin ───────────────────────────────────────────────────────
+  // --- Spin ---
   function showResult(number, color, netWin) {
     const numEl = $("#rt-result-num");
     numEl.textContent = number;
@@ -346,7 +346,7 @@
       netEl.textContent = "±0 Chips"; netEl.className = "rt-net-win";
     }
     $("#rt-result").style.display = "";
-    if (netWin > 0) { sndWin(); toast("🎉 +" + netWin.toLocaleString("de-DE") + " Chips!"); }
+    if (netWin > 0) { sndWin(); toast("+" + netWin.toLocaleString("de-DE") + " Chips"); }
     else if (netWin < 0) sndLose();
   }
 
@@ -431,7 +431,7 @@
     return 0;
   }
 
-  // ── Chip buttons ───────────────────────────────────────────────
+  // --- Chip buttons ---
   // Die ueblichen Casino-Farben je Wert, damit man den Chip an der Farbe
   // erkennt und nicht erst die Zahl lesen muss.
   const CHIP_FARBEN = { 100: "#ecf0f1", 1000: "#2980b9", 10000: "#27ae60", 50000: "#2c3e50" };
@@ -523,8 +523,8 @@
   $("#rt-undo").addEventListener("click", rueckgaengig);
   $("#rt-repeat").addEventListener("click", wiederholen);
 
-  // ── Shared-lobby integration (driven by public/js/rouletteLobby.js) ──────
-  const RT_LBL = { red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1–18", high: "19–36" };
+  // --- Gemeinsamer Lobby-Tisch (gesteuert von public/js/rouletteLobby.js) ---
+  const RT_LBL = { red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1-18", high: "19-36" };
 
   function renderLobbyPanel(state) {
     const me = window.Casino.getAccount && window.Casino.getAccount();
@@ -538,7 +538,7 @@
     const bEl = $("#rt-lobby-bets");
     if (bEl) bEl.innerHTML = state.bets.length
       ? state.bets.map((b) => `<span class="rt-bet-tag">${esc(b.name)}: ${esc(b.label)} ${b.amount.toLocaleString("de-DE")}<i class=mk></i></span>`).join("")
-      : '<span class="muted small">Noch keine Wetten — tippt auf den Tisch.</span>';
+      : '<span class="muted small">Noch keine Wetten, tippt auf den Tisch.</span>';
   }
   function esc(s) { return window.Casino.escapeHtml(String(s == null ? "" : s)); }
 
@@ -548,7 +548,7 @@
       else {
         lobbyMode = null; bets = {}; spinning = false;
         $("#rt-spin").disabled = false; $("#rt-clear").disabled = false;
-        $("#rt-spin").textContent = "🎡 Drehen";
+        $("#rt-spin").textContent = "Drehen";
         renderBets(); updateIndicators();
       }
     },
@@ -556,7 +556,7 @@
       if (!lobbyMode) return;
       lobbyMode.isHost = state.isHost;
       spinning = state.spinning;
-      // My bets → the local board.
+      // Meine Wetten aufs eigene Brett.
       bets = {};
       for (const b of state.myBets) {
         const key = b.value !== undefined ? b.type + ":" + b.value : b.type;
@@ -568,10 +568,10 @@
       history = state.history.slice(0, 12);
       const hEl = $("#rt-history");
       if (hEl) hEl.innerHTML = history.map((h) => `<span class="rt-hist-num rt-hist-${h.color}">${h.number}</span>`).join("");
-      // Spin button: only the host, and not mid-spin.
+      // Drehen-Knopf: nur der Host, und nicht während der Kessel läuft.
       const spinBtn = $("#rt-spin");
       spinBtn.disabled = spinning || !state.isHost;
-      spinBtn.textContent = state.isHost ? (spinning ? "Dreht…" : "🎡 Drehen") : "Warten auf Anführer…";
+      spinBtn.textContent = state.isHost ? (spinning ? "Dreht…" : "Drehen") : "Warte auf den Host…";
       $("#rt-clear").disabled = spinning;
     },
     playResult(result) {
@@ -583,12 +583,12 @@
         const mine = me && result.perPlayer.find((p) => p.name && me.name && p.name.toLowerCase() === me.name.toLowerCase());
         showResult(result.number, result.color, mine ? mine.net : 0);
         highlightBetCells(result.number);
-        // Balance, bets and history refresh arrive via the next rlobby:state.
+        // Kontostand, Wetten und Verlauf kommen mit dem nächsten rlobby:state.
       });
     },
   };
 
-  // ── Boot on screen entry ───────────────────────────────────────
+  // --- Start beim Betreten des Screens ---
   const screen = document.querySelector('[data-screen="roulette"]');
   let built = false;
   new MutationObserver(() => {

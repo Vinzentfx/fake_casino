@@ -1,26 +1,27 @@
 "use strict";
 
 /**
- * Shared city — REAL MAP EDITION (Porta Westfalica), territory & status model.
+ * Die gemeinsame Stadt, auf der echten Karte von Porta Westfalica.
  *
- * The map is a one-time OSM snapshot (game/data/porta.json): multiple Stadtteile
- * with their real buildings, streets and landmarks. The city is a chip SINK +
- * a TERRITORY/STATUS layer — money comes from playing the games. There are no
- * ownership buffs any more. Instead, owning real estate gives you:
+ * Die Karte ist ein einmaliger OSM-Auszug (game/data/porta.json): mehrere
+ * Stadtteile mit ihren echten Gebäuden, Straßen und Wahrzeichen. Die Stadt
+ * schluckt Chips und zeigt, wem was gehört. Verdient wird in den Spielen,
+ * Besitz gibt keine Boni mehr. Stattdessen bekommt man:
  *
- *   • STRASSEN-MONOPOLE — own every addressed house of a street (≥3 houses)
- *     and the street lights up in your colour on the map, for everyone.
- *   • STADTTEIL-BOSS — the player with the highest property value in a
- *     district wears the crown on the overview map.
- *   • TROPHÄEN — unique real buildings (Bahnhof, Kirchen, Schulen, plus the
- *     biggest building of each district) with a title and a small thematic
- *     perk. Only one owner each.
- *   • SPEKULATION — every district has its own price index, moved by drift
- *     and by silly local news events. Buy low, sell high (10% spread).
- *   • The CASINO (rake) and the BANK (prestige) stay the two apex
- *     assets, tied to other players actively gambling.
+ *   Straßen-Monopole  Wem jedes Haus mit Hausnummer einer Straße gehört (ab 3
+ *                     Häusern), dem leuchtet sie auf der Karte in seiner Farbe.
+ *   Stadtteil-Boss    Wer im Ortsteil den höchsten Immobilienwert hat, trägt
+ *                     auf der Übersicht die Krone.
+ *   Trophäen          Einzelne echte Gebäude (Bahnhof, Kirchen, Schulen und
+ *                     das größte Haus je Ortsteil) mit Titel und kleinem Vorteil.
+ *                     Jedes hat genau einen Besitzer.
+ *   Spekulation       Jeder Ortsteil hat einen eigenen Preisindex, der driftet
+ *                     und von albernen Lokalnachrichten bewegt wird. Billig
+ *                     kaufen, teuer verkaufen (10 % Abschlag).
+ *   Casino und Bank   Die beiden teuersten Stücke. Das Casino kassiert den Rake,
+ *                     beides lebt davon, dass die anderen spielen.
  *
- * Static geometry lives in the repo; ownership lives in data/city.json.
+ * Die Geometrie liegt im Repo, der Besitz in data/city.json.
  */
 
 const path = require("path");
@@ -30,7 +31,7 @@ const DATA_DIR = path.join(__dirname, "..", "data");
 const STATE_FILE = path.join(DATA_DIR, "city.json");
 const MAP_FILE = path.join(__dirname, "data", "porta.json");
 
-// Building classes drive the PRICE only (no buffs).
+// Die Gebäudeklasse bestimmt nur den PREIS (keine Boni).
 const CLASSES = {
   residential: { name: "Wohnhaus",   emoji: "🏠", base: 25000,      refA: 140 },
   civic:       { name: "Öffentlich", emoji: "🏛️", base: 120000,     refA: 400 },
@@ -43,7 +44,7 @@ const CLASSES = {
   bank:        { name: "Bank",       emoji: "🏦", base: 600000000,  refA: 0, perk: "Prestige-Objekt der Stadt." },
 };
 
-// Unique trophy buildings: title + small thematic perk. Price = normal × mult.
+// Trophäen-Gebäude: Titel und ein kleiner passender Vorteil. Preis = normal × mult.
 const TROPHIES = {
   bahnhof:     { title: "Bahnhofs-Baron",   emoji: "🚉", perk: "Pendler-Bonus: Stunden-Bonus ×1,5", mult: 10 },
   kirche:      { title: "Kirchenpatron",    emoji: "⛪", perk: "Segen: 15 % Verlust-Cashback (statt 10 %) mit doppeltem Limit · Soforthilfe ×2", mult: 8 },
@@ -51,14 +52,14 @@ const TROPHIES = {
   wahrzeichen: { title: "Wahrzeichen",      emoji: "🏛️", perk: "Prestige: das größte Gebäude des Ortsteils", mult: 12 },
 };
 
-const SELL_SPREAD = 0.9;     // sell back at 90% (10% sink) → speculation needs real moves
-const BUYOUT_PREMIUM = 1.5;  // takeover: buyer pays 150%, ex-owner gets 100%, 50% burns
+const SELL_SPREAD = 0.9;     // Rückkauf zu 90 % (10 % verschwinden), Spekulieren lohnt also nur bei echten Ausschlägen
+const BUYOUT_PREMIUM = 1.5;  // Übernahme: Käufer zahlt 150 %, Vorbesitzer bekommt 100 %, 50 % verbrennen
 const IDX_MIN = 0.55, IDX_MAX = 1.9;
 const LANDMARK_BOOST = 1.25;
 const LANDMARK_RADIUS = 120;
-const MONOPOly_MIN = 3;      // a street needs ≥3 addressed houses to be a monopoly target
+const MONOPOly_MIN = 3;      // eine Straße braucht mindestens 3 Häuser mit Nummer für ein Monopol
 
-// Stable player colours for territory painting (same hash client-side).
+// Feste Spielerfarben fürs Einfärben der Karte (gleicher Hash wie im Client).
 const PLAYER_COLORS = ["#e6b04b", "#5ea8e0", "#66c07a", "#c86bd6", "#e0705e", "#4fc7c0", "#d1a35e", "#8f9fe8"];
 function colorFor(key) {
   let h = 0;
@@ -66,45 +67,45 @@ function colorFor(key) {
   return PLAYER_COLORS[h % PLAYER_COLORS.length];
 }
 
-// Local news that move a district's price index (Spekulation).
+// Lokalnachrichten, die den Preisindex eines Ortsteils bewegen (Spekulation).
 const EVENT_POOL = [
-  { txt: "🎪 Schützenfest in {d} — alle wollen hin!", f: 1.15 },
-  { txt: "🚧 Großbaustelle in {d} — der Lärm nervt.", f: 0.87 },
-  { txt: "🚌 Neue Buslinie nach {d}!", f: 1.10 },
-  { txt: "🌊 Weser-Hochwasser bei {d} — Keller unter Wasser.", f: 0.84 },
-  { txt: "🛜 Glasfaser-Ausbau in {d} abgeschlossen.", f: 1.12 },
-  { txt: "🦫 Biber blockieren Neubaugebiet in {d}.", f: 0.91 },
-  { txt: "🏆 {d} gewinnt den „Schönstes Dorf“-Wettbewerb!", f: 1.18 },
-  { txt: "👻 Spuk-Gerüchte in {d} — Makler verzweifelt.", f: 0.89 },
-  { txt: "☕ Hippes Café eröffnet in {d}.", f: 1.08 },
-  { txt: "🛣️ Umgehungsstraße entlastet {d}.", f: 1.07 },
-  { txt: "🐗 Wildschwein-Rotte wühlt Gärten in {d} um.", f: 0.93 },
-  { txt: "🎬 Filmteam dreht in {d} — {d} ist berühmt!", f: 1.14 },
-  { txt: "💨 Starker Wind beschädigt Dächer in {d}.", f: 0.88 },
-  { txt: "🎡 Jahrmarkt in {d} — alle wollen hin!", f: 1.13 },
-  { txt: "🦠 Virus-Ausbruch in {d} — alle bleiben zu Hause.", f: 0.85 },
-  { txt: "🌳 Big Yahu ist in {d}.", f: 1.2 },
-  { txt: "🦗 Der Axtmörder treibt sein unwesen in {d}!", f: 0.82 },
+  { txt: "Schützenfest in {d}, alle wollen hin!", f: 1.15 },
+  { txt: "Großbaustelle in {d}, der Lärm nervt.", f: 0.87 },
+  { txt: "Neue Buslinie nach {d}!", f: 1.10 },
+  { txt: "Weser-Hochwasser bei {d}, die Keller stehen unter Wasser.", f: 0.84 },
+  { txt: "Glasfaser-Ausbau in {d} abgeschlossen.", f: 1.12 },
+  { txt: "Biber blockieren Neubaugebiet in {d}.", f: 0.91 },
+  { txt: "{d} gewinnt den „Schönstes Dorf“-Wettbewerb!", f: 1.18 },
+  { txt: "Spuk-Gerüchte in {d}, die Makler verzweifeln.", f: 0.89 },
+  { txt: "Hippes Café eröffnet in {d}.", f: 1.08 },
+  { txt: "Umgehungsstraße entlastet {d}.", f: 1.07 },
+  { txt: "Wildschwein-Rotte wühlt Gärten in {d} um.", f: 0.93 },
+  { txt: "Filmteam dreht in {d}. Jetzt ist {d} berühmt!", f: 1.14 },
+  { txt: "Starker Wind beschädigt Dächer in {d}.", f: 0.88 },
+  { txt: "Jahrmarkt in {d}, alle wollen hin!", f: 1.13 },
+  { txt: "Virus-Ausbruch in {d}, alle bleiben zu Hause.", f: 0.85 },
+  { txt: "Big Yahu ist in {d}.", f: 1.2 },
+  { txt: "Der Axtmörder treibt sein unwesen in {d}!", f: 0.82 },
 ];
 
-// ─── Static map (repo snapshot) ─────────────────────────────────────────────
+// --- Karte (Auszug im Repo) ---
 let MAP = { city: "?", districts: [] };
-const bldIndex = new Map();   // building id -> { b, district }
+const bldIndex = new Map();   // Gebäude-ID -> { b, district }
 let CASINO_ID = null, BANK_ID = null;
 
 function loadMap() {
   try {
     MAP = JSON.parse(fs.readFileSync(MAP_FILE, "utf8"));
   } catch (e) {
-    console.error("city: Karten-Snapshot fehlt (game/data/porta.json) — Stadt ist leer.", e.message);
+    console.error("city: Karten-Snapshot fehlt (game/data/porta.json), die Stadt bleibt leer.", e.message);
     MAP = { city: "Porta Westfalica", districts: [] };
   }
   bldIndex.clear();
   for (const d of MAP.districts) {
     for (const b of d.buildings) {
       b._did = d.id;
-      // Street key: only buildings with a real house number belong to a street
-      // set ("Zur Porta 88" → "Zur Porta"); borrowed street names don't count.
+      // Straßenschlüssel: nur Gebäude mit echter Hausnummer gehören zu einer
+      // Straße ("Zur Porta 88" -> "Zur Porta"), geliehene Straßennamen zählen nicht.
       const m = b.n && b.n.match(/^(.+?)\s+(\d.*)$/);
       b.st = m ? m[1] : null;
       b.lm = 0;
@@ -114,8 +115,8 @@ function loadMap() {
       bldIndex.set(b.id, { b, district: d });
     }
   }
-  // Unique prestige assets: Casino = largest non-residential in Hausberge,
-  // Bank = largest real bank building.
+  // Die beiden Prestige-Stücke: Casino = größtes Nicht-Wohngebäude in Hausberge,
+  // Bank = größtes echtes Bankgebäude.
   const hb = MAP.districts.find((d) => d.id === "hausberge");
   if (hb) {
     const cand = hb.buildings.filter((b) => b.cls !== "residential").sort((a, z) => z.a - a.a);
@@ -127,8 +128,8 @@ function loadMap() {
   banks.sort((a, z) => z.a - a.a);
   if (banks.length) { BANK_ID = banks[0].id; banks[0].cls = "bank"; }
 
-  // Trophies: Bahnhöfe, Kirchen, Schulgebäude — plus the biggest building of
-  // each district as its "Wahrzeichen". One owner each, real names included.
+  // Trophäen: Bahnhöfe, Kirchen, Schulgebäude und das größte Gebäude jedes
+  // Ortsteils als "Wahrzeichen". Je ein Besitzer, echte Namen inklusive.
   for (const d of MAP.districts) {
     for (const b of d.buildings) {
       if (b.id === CASINO_ID || b.id === BANK_ID) continue;
@@ -142,7 +143,7 @@ function loadMap() {
     if (biggest) biggest.trophy = "wahrzeichen";
   }
 
-  // Street groups per district (monopoly targets).
+  // Straßengruppen je Ortsteil (Ziele für Monopole).
   for (const d of MAP.districts) {
     d._streets = new Map();
     for (const b of d.buildings) {
@@ -155,7 +156,7 @@ function loadMap() {
 }
 loadMap();
 
-// ─── Ownership state (data volume) ──────────────────────────────────────────
+// --- Besitz (liegt im Datenordner) ---
 let state = loadState();
 
 function loadState() {
@@ -179,9 +180,9 @@ const idxOf = (did) => state.idx[did] || 1;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const round2 = (n) => Math.round(n * 100) / 100;
 
-// ─── Market life: per-district index drift + local news events ─────────────
+// --- Marktgeschehen: Drift je Ortsteil und Lokalnachrichten ---
 
-/** Fire a random local news event (optionally in a chosen district). */
+/** Eine zufällige Lokalnachricht auslösen (auf Wunsch in einem bestimmten Ortsteil). */
 function fireEvent(districtId) {
   if (!MAP.districts.length) return null;
   const d = (districtId && MAP.districts.find((x) => x.id === districtId))
@@ -198,20 +199,20 @@ function fireEvent(districtId) {
 function tickMarket() {
   for (const d of MAP.districts) {
     const i = idxOf(d.id);
-    // Weak mean reversion + strong noise: after an event the index takes
-    // unpredictable HOURS to normalise (was 4%/min → a dip recovered in ~30
-    // min, which made "buy every crash" a riskless arbitrage loop).
+    // Schwacher Zug zurück zur Mitte, starkes Rauschen: nach einem Ereignis
+    // braucht der Index unvorhersehbar STUNDEN (vorher 4 %/min, ein Einbruch war
+    // nach ~30 min erholt, und "jeden Crash kaufen" war risikolos).
     state.idx[d.id] = clamp(i + (1 - i) * 0.006 + (Math.random() * 2 - 1) * 0.02, IDX_MIN, IDX_MAX);
   }
-  // Roughly every ~8 minutes (60s ticks) a local event shakes one district.
+  // Ungefähr alle 8 Minuten (Takt 60 s) rüttelt eine Nachricht einen Ortsteil durch.
   const event = MAP.districts.length && Math.random() < 0.12 ? fireEvent() : null;
   save();
   return event;
 }
 
-/** Price: class base × footprint scale × landmark × trophy premium × district index.
- *  Trophies are clamped into a 5M–500M band: always a serious purchase, but
- *  always below Bank (600M) and Casino (1.2B). */
+/** Preis: Klassenbasis × Größe × Wahrzeichen × Trophäenaufschlag × Ortsteilindex.
+ *  Trophäen liegen immer zwischen 5 Mio. und 500 Mio.: ein ernsthafter Kauf,
+ *  aber immer unter Bank (600 Mio.) und Casino (1,2 Mrd.). */
 function priceOf(b) {
   const c = CLASSES[b.cls];
   if (b.cls === "casino" || b.cls === "bank") return c.base;
@@ -224,16 +225,16 @@ function priceOf(b) {
 const sellPriceOf = (b) => Math.round(priceOf(b) * SELL_SPREAD);
 const ownerOf = (id) => (state.own[id] ? state.own[id].owner : null);
 
-// ─── Derived territory stats (cached, recomputed after every change) ───────
+// --- Abgeleitete Zahlen (zwischengespeichert, nach jeder Änderung neu) ---
 let derivedDirty = true;
 let derived = null;
 
 function getDerived() {
   if (!derivedDirty && derived) return derived;
-  const monopolies = {};       // did -> [{ st, owner, ownerName, color, count }]
-  const streetsByOwner = {};   // key -> count of complete streets
-  const bossByDistrict = {};   // did -> { owner, name, color, value }
-  const valueByOwner = {};     // key -> total property value
+  const monopolies = {};       // Ortsteil -> [{ st, owner, ownerName, color, count }]
+  const streetsByOwner = {};   // Spieler -> Anzahl kompletter Straßen
+  const bossByDistrict = {};   // Ortsteil -> { owner, name, color, value }
+  const valueByOwner = {};     // Spieler -> gesamter Immobilienwert
 
   for (const d of MAP.districts) {
     monopolies[d.id] = [];
@@ -274,18 +275,18 @@ function istBossIrgendwo(key) {
   return false;
 }
 
-/** Complete streets a player owns (Straßenkönig leaderboard). */
+/** Komplette Straßen eines Spielers (Bestenliste Straßenkönig). */
 const streetCount = (key) => getDerived().streetsByOwner[key] || 0;
 
-/** Number of buildings a player owns (Haus-Tribut). */
+/** Anzahl Gebäude eines Spielers (Haus-Tribut). */
 function houseCount(key) {
   let n = 0;
   for (const o of Object.values(state.own)) if (o.owner === key) n++;
   return n;
 }
 
-// ─── Goldene Straße der Woche ───────────────────────────────────────────────
-// One random street per week pays DOUBLE tribute — everyone fights over it.
+// --- Goldene Straße der Woche ---
+// Jede Woche zahlt eine zufällige Straße doppelten Tribut, alle wollen sie.
 function rollGoldenStreet() {
   const candidates = [];
   for (const d of MAP.districts)
@@ -297,7 +298,7 @@ function rollGoldenStreet() {
   return pick;
 }
 const goldenStreet = () => state.golden || null;
-/** Does `key` hold the complete golden street? (→ its tribute counts double.) */
+/** Hat `key` die komplette Goldene Straße? (Dann zählt ihr Tribut doppelt.) */
 function ownsGolden(key) {
   const g = state.golden;
   if (!g) return false;
@@ -305,16 +306,16 @@ function ownsGolden(key) {
   return list.some((m) => m.st === g.st && m.owner === key);
 }
 
-// ─── Haus-Sets (collection bonuses) ─────────────────────────────────────────
-/** Sets `key` has completed → [{id, label, emoji, tribute}] */
+// --- Haus-Sets (Sammelboni) ---
+/** Sets, die `key` voll hat: [{id, label, emoji, tribute}] */
 function setsOf(key) {
   const out = [];
   if (!key || !MAP.districts.length) return out;
-  // 🌍 Stadtbekannt: at least one building in EVERY district.
+  // Stadtbekannt: mindestens ein Gebäude in jedem Ortsteil.
   const perDistrict = MAP.districts.map((d) => d.buildings.some((b) => state.own[b.id] && state.own[b.id].owner === key));
   if (perDistrict.every(Boolean))
     out.push({ id: "stadtbekannt", label: "Stadtbekannt", emoji: "🌍", tribute: 2000 });
-  // ☕ Kaffee-Kartell: ALL cafés of one district (needs ≥3 cafés there).
+  // Kaffee-Kartell: alle Cafés eines Ortsteils (braucht dort mindestens 3).
   for (const d of MAP.districts) {
     const cafes = d.buildings.filter((b) => b.cls === "cafe");
     if (cafes.length >= 3 && cafes.every((b) => state.own[b.id] && state.own[b.id].owner === key)) {
@@ -324,12 +325,12 @@ function setsOf(key) {
   return out;
 }
 
-/** Total city property value of a player (net worth + Immobilien-Mogul). */
+/** Gesamter Immobilienwert eines Spielers (für Vermögen und Immobilien-Mogul). */
 function ownerValue(key) {
   return getDerived().valueByOwner[key] || 0;
 }
 
-/** Trophies a player holds → [{kind, title, emoji, name}] */
+/** Trophäen eines Spielers: [{kind, title, emoji, name}] */
 function trophiesOf(key) {
   const out = [];
   for (const [id, o] of Object.entries(state.own)) {
@@ -344,21 +345,21 @@ const hasTrophy = (key, kind) => trophiesOf(key).some((t) => t.kind === kind);
 const casinoOwner = () => (CASINO_ID != null ? ownerOf(CASINO_ID) : null);
 const bankOwner = () => (BANK_ID != null ? ownerOf(BANK_ID) : null);
 
-/** Is `key` the current boss of a district? (Boss buys 10% cheaper there.) */
+/** Ist `key` gerade Boss eines Ortsteils? (Der Boss kauft dort 10 % billiger.) */
 const BOSS_DISCOUNT = 0.9;
 
-/* ── Besitzer-Staffel (Anti-Monopol) ──────────────────────────────────────
+/* --- Besitzer-Staffel (Anti-Monopol) ---
  *
  * Bisher kostete das dreissigste Haus genauso viel wie das erste. Wer einmal
  * vorne lag, kaufte deshalb immer weiter, und fuer alle anderen war die Stadt
  * erledigt, bevor sie angefangen hatten.
  *
- * Jetzt zahlt jeder auf JEDEN Kauf einen Aufschlag, der mit der Zahl seiner
+ * Jetzt zahlt jeder auf jeden Kauf einen Aufschlag, der mit der Zahl seiner
  * eigenen Haeuser waechst: vier Prozent je Haus, das man schon besitzt,
  * gedeckelt beim Dreifachen. Das nimmt niemandem etwas weg und druckt auch
  * kein Geld, es macht das Weiterkaufen nur teurer, je mehr man schon hat.
  *
- * Wichtig ist, was NICHT mitwaechst:
+ * Wichtig ist, was nicht mitwaechst:
  *   • Der Verkaufserloes. Sonst waere die Staffel nur eine Zahl, die man
  *     beim Verkauf wieder hereinholt, und sie wuerde gar nichts bremsen.
  *   • Die Entschaedigung bei einer Uebernahme. Die richtet sich nach dem
@@ -381,7 +382,7 @@ function isBoss(key, did) {
   return !!(b && b.owner === key);
 }
 
-/** Cheap territory snapshot for conquest broadcasts (diff before/after). */
+/** Kleiner Schnappschuss für die Eroberungsmeldungen (vorher/nachher vergleichen). */
 function territorySnapshot() {
   const der = getDerived();
   const monos = new Set();
@@ -392,7 +393,7 @@ function territorySnapshot() {
   return { monos, boss };
 }
 
-/** Human messages for everything that changed between two snapshots. */
+/** Meldungen für alles, was sich zwischen zwei Schnappschüssen geändert hat. */
 function territoryDiff(before, after) {
   const msgs = [];
   const nameOf = (did) => { const d = MAP.districts.find((x) => x.id === did); return d ? d.name : did; };
@@ -400,12 +401,12 @@ function territoryDiff(before, after) {
     if (before.monos.has(entry)) continue;
     const [, st, owner] = entry.split("|");
     const o = Object.values(state.own).find((x) => x.owner === owner);
-    msgs.push(`👑 ${o ? o.ownerName : owner} hat die ${st} erobert — Straßen-Monopol!`);
+    msgs.push(`${o ? o.ownerName : owner} hat die ${st} komplett, Straßen-Monopol!`);
   }
   for (const [did, owner] of Object.entries(after.boss)) {
     if (before.boss[did] === owner) continue;
     const o = Object.values(state.own).find((x) => x.owner === owner);
-    msgs.push(`🥇 ${o ? o.ownerName : owner} ist jetzt der Boss von ${nameOf(did)}!`);
+    msgs.push(`${o ? o.ownerName : owner} ist jetzt der Boss von ${nameOf(did)}!`);
   }
   return msgs;
 }
@@ -470,12 +471,12 @@ function ownerProperties(ownerKey, viewerKey, limit = 60) {
   return out.slice(0, limit);
 }
 
-// ─── Public views ───────────────────────────────────────────────────────────
+// --- Ansichten für den Client ---
 function publicOverview(key) {
   const der = getDerived();
   let me = null;
   if (key) {
-    // "Meine Immobilien": every owned building, for the jump-to list.
+    // "Meine Immobilien": jedes eigene Gebäude, für die Sprungliste.
     const properties = [];
     for (const [id, o] of Object.entries(state.own)) {
       if (o.owner !== key) continue;
@@ -536,7 +537,7 @@ function publicDistrict(id, key) {
   const d = MAP.districts.find((x) => x.id === id);
   if (!d) return null;
   const der = getDerived();
-  // Street progress info for the panel: total addressed houses per street.
+  // Fortschritt je Straße fürs Panel: Häuser mit Nummer pro Straße.
   const streetTotals = {};
   for (const [st, ids] of d._streets) streetTotals[st] = ids.length;
   // Einmal je Aufruf, nicht je Gebaeude: haengt nur am Spieler.
@@ -563,7 +564,7 @@ function publicDistrict(id, key) {
         t: b.t || null, nm: b.nm || null, lv: b.lv || null,
         trophy: b.trophy || null,
         price, sellPrice: sellPriceOf(b),
-        /* Was DIESER Spieler zahlen wuerde: Boss-Rabatt und Besitzer-Staffel
+        /* Was dieser Spieler zahlen wuerde: Boss-Rabatt und Besitzer-Staffel
            gehoeren auf den Server. Vorher rechnete der Client den
            Uebernahmepreis selbst als price × 1,5 nach und haette mit der
            Staffel eine falsche Zahl angezeigt. */
@@ -577,12 +578,12 @@ function publicDistrict(id, key) {
   };
 }
 
-// ─── Mutations ──────────────────────────────────────────────────────────────
+// --- Änderungen ---
 function buyBuilding(id, key, name) {
   const e = bldIndex.get(Number(id));
   if (!e) return err("Gebäude nicht gefunden.");
-  if (ownerOf(e.b.id)) return err("Gehört schon jemandem — nutze „Übernehmen“.");
-  // District boss buys 10% cheaper in "his" district (territory rewards territory).
+  if (ownerOf(e.b.id)) return err("Gehört schon jemandem, dafür gibt es „Übernehmen“.");
+  // Der Boss kauft in seinem Ortsteil 10 % billiger (Gebiet belohnt Gebiet).
   const discount = isBoss(key, e.b._did) ? BOSS_DISCOUNT : 1;
   return { ok: true, cost: Math.round(priceOf(e.b) * discount * ownerScale(key)), commit: () => {
     state.own[e.b.id] = { owner: key, ownerName: name };
@@ -602,12 +603,12 @@ function takeover(id, key, name) {
   const e = bldIndex.get(Number(id));
   if (!e) return err("Gebäude nicht gefunden.");
   const o = state.own[e.b.id];
-  if (!o) return err("Ist frei — einfach kaufen.");
+  if (!o) return err("Ist frei, einfach kaufen.");
   if (o.owner === key) return err("Gehört dir bereits.");
   const value = priceOf(e.b);
   return {
     ok: true,
-    // Der Kaeufer zahlt Aufschlag UND Staffel, der Vorbesitzer bekommt den
+    // Der Kaeufer zahlt Aufschlag und Staffel, der Vorbesitzer bekommt den
     // reinen Marktwert. Die Differenz verbrennt, wie bisher.
     cost: Math.ceil(value * BUYOUT_PREMIUM * ownerScale(key)),
     payout: { to: o.owner, amount: value },
@@ -630,7 +631,7 @@ function listCompany(id, key) {
 }
 
 const bldExists = (id) => bldIndex.has(Number(id));
-/** Short display info for a building (residence line in the profile). */
+/** Kurzinfo zu einem Gebäude (Wohnsitz-Zeile im Profil). */
 function bldInfo(id) {
   const e = bldIndex.get(Number(id));
   if (!e) return null;

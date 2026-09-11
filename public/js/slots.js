@@ -1,18 +1,18 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Slots client
-   Real slot-machine feel: pull the lever, symbols roll top→bottom
-   through a window with a center payline, then an escalating win
-   celebration (Small → Big → Mega → Ultra w/ money shower).
-   Server is authoritative (game/slots.js); this only animates.
+   Slots
+   Soll sich wie ein echter Automat anfühlen: Hebel ziehen, die Symbole
+   laufen von oben nach unten durchs Fenster mit der Mittellinie, danach
+   eine Gewinnfeier, die sich steigert (Small, Big, Mega, Ultra mit Geldregen).
+   Entschieden wird auf dem Server (game/slots.js), hier wird nur animiert.
    ============================================================ */
 
 (function () {
   const { socket, toast } = window.Casino;
   const $ = (s) => document.querySelector(s);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  // 🍋 Zitrone buff: spins twice as fast (animation durations halved).
+  // Zitronen-Bonus: doppelt so schnelle Drehs (Animationen halb so lang).
   function spinSpeed() {
     const a = window.Casino.getAccount();
     const b = a && a.buffs && a.buffs.fastSpins;
@@ -27,7 +27,7 @@
   let autoRoll = false;
   let autoRemaining = Infinity; // remaining auto-spins (Infinity = ∞)
   let freeWinTotal = 0;
-  let cellH = 70; // measured at runtime
+  let cellH = 70; // wird zur Laufzeit gemessen
   const FX_LIMITS = {
     confetti: 360,
     rainCoins: 220,
@@ -41,16 +41,16 @@
   let pvp = null; // { code, buyIn, state, isHost, chips, spinsLeft, done, youName, opponent, result }
 
   // ===============================================================
-  // Sound — Klangfarbe bleibt hier, die Mechanik kommt aus core/sound.js
+  // Sound, Klangfarbe bleibt hier, die Mechanik kommt aus core/sound.js
   // ===============================================================
   const { tone, noise } = window.Casino.sound;
 
-  // A single ratchet "click" (pawl over gear tooth).
+  // Ein einzelnes Ratschen-Klicken (Sperrklinke über einen Zahn).
   function ratchetClick() {
     tone(2100, 0.01, "square", 0.018);
     noise(0.012, 0.022, 0, 3200, 5);
   }
-  // Decelerating ratchet for the whole spin — the classic casino "rrrrr...r..r..r" .
+  // Ratsche für den ganzen Dreh, wird langsamer. Das typische "rrrrr...r..r..r".
   function startRatchet(totalMs) {
     let stopped = false;
     let elapsed = 0;
@@ -101,7 +101,7 @@
   }
   function updateJackpotLine(pot) {
     const el = document.getElementById("jackpot-line");
-    if (el && pot != null) el.innerHTML = `💰 Gemeinschafts-Jackpot: <b>${pot.toLocaleString("de-DE")}<i class=mk></i></b> <span class="muted small">— 0,5 % jedes Einsatzes, kann bei jedem Spin knallen</span>`;
+    if (el && pot != null) el.innerHTML = `Gemeinschafts-Jackpot: <b>${pot.toLocaleString("de-DE")}<i class=mk></i></b> <span class="muted small">(0,5 % von jedem Einsatz, kann bei jedem Dreh fallen)</span>`;
   }
   function isMachineUnlocked(m) {
     if (!m || m.unlockCost === 0) return true;
@@ -116,13 +116,13 @@
       const card = document.createElement("button");
       card.className = "machine-card theme-" + m.theme + (unlocked ? "" : " locked");
       const sampleSyms = Object.keys(m.emojis).slice(0, 5).map((sym) => symbolHtml(symbolAsset(m, sym) || m.emojis[sym], "mc-symbol-img")).join("");
-      const feature = m.mystery ? "🌿 Mystery-Reveal" : m.freeSpins ? "🎁 Freispiele" : "⚡ Klassisch";
+      const feature = m.mystery ? "Mystery-Reveal" : m.freeSpins ? "Freispiele" : "Klassisch";
       card.innerHTML = `
         <div class="mc-topline"><span class="mc-led"></span><span>Automat</span></div>
         <div class="mc-syms"><span>${sampleSyms}</span></div>
         <div class="mc-name">${m.name}</div>
         <div class="mc-tag">${m.tagline}</div>
-        <div class="mc-bets">Einsatz ${m.bets[0].toLocaleString("de-DE")}–${m.bets[m.bets.length - 1].toLocaleString("de-DE")}<i class=mk></i></div>
+        <div class="mc-bets">Einsatz ${m.bets[0].toLocaleString("de-DE")}-${m.bets[m.bets.length - 1].toLocaleString("de-DE")}<i class=mk></i></div>
         ${unlocked
           ? `<div class="mc-feature">${feature}</div>`
           : `<div class="mc-lock">🔒 ${m.unlockCost.toLocaleString("de-DE")}<i class=mk></i></div>`}`;
@@ -139,7 +139,7 @@
     socket.emit("slots:unlock", { machineId: m.id }, (res) => {
       if (res && res.ok) {
         window.Casino.applyAccount(res.account);
-        toast(`${m.name} freigeschaltet! 🎉`);
+        toast(`${m.name} ist freigeschaltet.`);
         renderMachineGrid();
       } else {
         toast((res && res.error) || "Freischalten fehlgeschlagen.");
@@ -148,17 +148,17 @@
   }
 
   // ===============================================================
-  // Open / close a machine
+  // Automat öffnen und schließen
   // ===============================================================
   function openMachine(id) {
     const m = machines.find((x) => x.id === id);
     if (!m) return;
-    // In a PvP duel the machine is assigned regardless of unlocks.
+    // Im PvP-Duell ist der Automat vorgegeben, Freischaltungen egal.
     if (!pvpMode && !isMachineUnlocked(m)) return toast("Erst freischalten.");
     machine = m;
     betIndex = pvpMode ? 0 : 1; // PvP: fixed bet = machine minimum
     freeActive = false;
-    resetSession(); // fresh streak/history per machine visit
+    resetSession(); // Serie und Verlauf je Besuch am Automaten neu
     $("#slots-select").classList.add("hidden");
     const mv = $("#slots-machine");
     mv.classList.remove("hidden");
@@ -167,8 +167,8 @@
     $("#machine-title").textContent = machine.name;
     $("#reels").style.gridTemplateColumns = `repeat(${machine.cols}, 1fr)`;
     buildReels(true);
-    // Decide payline visibility synchronously (only line machines with a true
-    // middle row). Positioning happens after layout.
+    // Gleich hier entscheiden, ob die Gewinnlinie sichtbar ist (nur Linien-Automaten
+    // mit echter Mittelreihe). Positioniert wird nach dem Layout.
     $("#payline").style.display = machine.mode === "lines" && machine.rows % 2 === 1 ? "" : "none";
     requestAnimationFrame(() => {
       measureCells();
@@ -178,8 +178,8 @@
     $("#win-amount").textContent = "0";
     $("#free-badge").classList.remove("show");
     $("#mult-badge").classList.remove("show");
-    // In PvP the machine & bet are fixed: lock the bet stepper and hide the
-    // "‹ Automaten" back button (no machine switching mid-duel).
+    // Im PvP stehen Automat und Einsatz fest: Einsatzwahl sperren und den
+    // "‹ Automaten"-Knopf ausblenden (kein Wechsel mitten im Duell).
     const lockBet = pvpMode;
     $("#bet-down").style.display = lockBet ? "none" : "";
     $("#bet-up").style.display = lockBet ? "none" : "";
@@ -187,7 +187,7 @@
     autoRoll = false;
     const autoBtn = $("#auto-roll");
     if (autoBtn) { autoBtn.classList.remove("active"); autoBtn.style.display = lockBet ? "none" : ""; }
-    if (pvpMode) $("#machine-title").textContent = machine.name + " 🎲";
+    if (pvpMode) $("#machine-title").textContent = machine.name + " (Duell)";
   }
   function closeMachine() {
     autoRoll = false;
@@ -238,7 +238,7 @@
     return escapeAttr(v);
   }
 
-  // Build idle reels showing `rows` symbols per column.
+  // Ruhende Walzen bauen, `rows` Symbole je Spalte.
   function buildReels(randomFill) {
     const reels = $("#reels");
     reels.innerHTML = "";
@@ -261,7 +261,7 @@
     cell.innerHTML = `<span>${symbolHtml(emoji)}</span>`;
     return cell;
   }
-  // A plain (non-indexed) cell for the rolling part of a strip.
+  // Einfaches Feld (ohne Index) für den rollenden Teil eines Streifens.
   function rollCell(emoji) {
     const cell = document.createElement("div");
     cell.className = "cell";
@@ -272,16 +272,16 @@
     const cell = document.querySelector("#reels .cell");
     if (cell) cellH = cell.getBoundingClientRect().height || cellH;
   }
-  // Centre the payline band on the true vertical middle of the symbol area.
-  // (Measured from real cells so it lines up regardless of padding/borders;
-  // for odd rows it sits on the middle row, for 4 rows on the exact centre.)
+  // Die Gewinnlinie genau auf die senkrechte Mitte der Symbolfläche legen.
+  // (An echten Feldern gemessen, damit Innenabstand und Rahmen egal sind; bei
+  // ungerader Reihenzahl liegt sie auf der mittleren Reihe, bei 4 genau dazwischen.)
   function positionPayline() {
     const pl = $("#payline");
     const win = $("#reels-window");
     const first = document.querySelector('.cell[data-c="0"][data-r="0"]');
     if (!pl || !win || !first) return;
-    // Only show a center line where it actually makes sense: payline machines
-    // with a true middle row (odd row count). Ways/cluster or even rows → hide.
+    // Mittellinie nur da, wo sie Sinn ergibt: Linien-Automaten mit echter
+    // Mittelreihe (ungerade Reihenzahl). Ways, Cluster oder gerade Reihen: weg damit.
     if (machine.mode !== "lines" || machine.rows % 2 === 0) {
       pl.style.display = "none";
       return;
@@ -291,7 +291,7 @@
     const fb = first.getBoundingClientRect();
     const ch = fb.height;
     // getBoundingClientRect umfasst den Rahmen (border-image!), position:absolute
-    // rechnet aber ab der Innenkante — clientTop gleicht das aus.
+    // rechnet aber ab der Innenkante, clientTop gleicht das aus.
     const cellsTop = fb.top - wb.top - win.clientTop;
     const center = cellsTop + (machine.rows * ch) / 2;
     pl.style.top = center - ch / 2 + "px";
@@ -321,9 +321,9 @@
     if (machine && machine.buyBonus && !pvpMode) {
       const cost = machine.bets[betIndex] * machine.buyBonus;
       btn.style.display = "";
-      btn.textContent = `🎁 Bonus ${cost.toLocaleString("de-DE")}`;
+      btn.textContent = `Bonus ${cost.toLocaleString("de-DE")}`;
     } else btn.style.display = "none";
-    // Admin-only showcase button: arm a guaranteed max win on the next spin.
+    // Nur für den Admin: Maximalgewinn für den nächsten Dreh scharf stellen.
     const fw = $("#force-win-btn");
     if (fw) {
       const acc = window.Casino.getAccount && window.Casino.getAccount();
@@ -372,7 +372,7 @@
       else window.Casino.adjustChips(-bet);
     }
 
-    // Occasionally taunt the player with a fake "luck" popup (parody).
+    // Ab und zu ein falsches "Glücks"-Popup einblenden (Parodie).
     if (!wasFree && !pvpMode && Math.random() < 0.13) luckPopup();
 
     const totalSpinMs = (850 + (machine.cols - 1) * 230 + 250) * spinSpeed();
@@ -405,8 +405,8 @@
       updateHud();
     } else {
       window.Casino.setChips(res.balance);
-      if (!wasFree) recordSession(res.totalWin, bet); // track streak on base spins
-      if (res.jackpot) window.Casino.toast(`💰💥 JACKPOT GEKNACKT: +${res.jackpot.toLocaleString("de-DE")} Chips!`);
+      if (!wasFree) recordSession(res.totalWin, bet); // Serie nur im Grundspiel zählen
+      if (res.jackpot) window.Casino.toast(`Jackpot geknackt: +${res.jackpot.toLocaleString("de-DE")} Chips!`);
       updateJackpotLine(res.jackpotPot);
       // Risiko anbieten (nur Basisspiel-Gewinne, nicht im Auto-Roll).
       if (res.canGamble && res.totalWin > 0 && !autoRoll) showGamble(res.totalWin);
@@ -431,13 +431,13 @@
         setControlsEnabled(false);
         const hint = $("#spin-hint");
         const oppDone = !pvp.opponent || pvp.opponent.done;
-        if (hint) hint.textContent = oppDone ? "Beide fertig…" : "🤖 Bot spielt noch…";
+        if (hint) hint.textContent = oppDone ? "Beide fertig…" : "Bot spielt noch…";
       } else {
         setControlsEnabled(true);
       }
     }
 
-    // Auto-Roll: queue the next spin once idle (base game only, not in PvP).
+    // Auto-Roll: nächsten Dreh anstoßen, sobald Ruhe ist (nur Grundspiel, nicht im PvP).
     if (autoRoll && !pvpMode && !freeActive && !spinning) {
       autoRemaining -= 1;
       if (autoRemaining <= 0) {
@@ -446,12 +446,12 @@
         setTimeout(() => { if (autoRoll && !spinning && !freeActive) doSpin(); }, 850);
       } else {
         setAuto(false);
-        toast("Auto-Roll gestoppt — nicht genug Chips.");
+        toast("Auto-Roll gestoppt, die Chips reichen nicht.");
       }
     }
   }
 
-  // Toggle continuous auto-spinning (with optional spin count).
+  // Auto-Dreh an/aus (optional mit Anzahl).
   function setAuto(on) {
     autoRoll = on && !pvpMode;
     if (autoRoll) {
@@ -463,18 +463,18 @@
     if (autoRoll && !spinning && !freeActive && !pvpMode) doSpin();
   }
   $("#auto-roll").addEventListener("click", () => setAuto(!autoRoll));
-  // Stop auto-spin when the player leaves the slots screen (e.g. taps the logo →
-  // lobby), so the reels don't keep spinning in the background.
+  // Auto-Dreh stoppen, sobald man den Slots-Screen verlässt (z. B. Logo antippen,
+  // zurück in die Lobby), sonst drehen die Walzen im Hintergrund weiter.
   window.Casino._slotsStopAuto = () => { if (autoRoll) setAuto(false); };
 
-  // Bonus-Buy: pay to start free spins immediately.
+  // Bonus kaufen: zahlen und sofort Freispiele starten.
   $("#force-win-btn").addEventListener("click", () => {
     socket.emit("admin:slotsForceWin", (r) => {
       if (!r || !r.ok) { window.Casino.toast((r && r.error) || "Kein Zugriff."); return; }
       const fw = $("#force-win-btn");
-      fw.textContent = "🎯 SCHARF";
-      setTimeout(() => (fw.textContent = "🎯 Max"), 4000);
-      window.Casino.toast("🎯 Nächster Spin = Maximalgewinn — zieh den Hebel!");
+      fw.textContent = "SCHARF";
+      setTimeout(() => (fw.textContent = "Max"), 4000);
+      window.Casino.toast("Nächster Dreh ist der Maximalgewinn. Zieh den Hebel.");
     });
   });
 
@@ -531,24 +531,24 @@
         confettiBurst(70);
         $("#gamble-amount").textContent = r.amount.toLocaleString("de-DE");
         if (r.canContinue) {
-          toast(`🃏 Richtig! ${r.amount.toLocaleString("de-DE")} Chips — nochmal?`);
+          toast(`Richtig, ${r.amount.toLocaleString("de-DE")} Chips. Noch mal?`);
         } else {
-          toast(`🃏 Maximum erreicht — ${r.amount.toLocaleString("de-DE")} Chips sind sicher!`);
+          toast(`Maximum erreicht, ${r.amount.toLocaleString("de-DE")} Chips sind sicher.`);
           setTimeout(hideGamble, 1400);
         }
       } else {
         sndReelStop(2);
         $("#gamble-bar").classList.add("gamble-lost");
-        toast("🃏 Falsche Farbe — der Gewinn ist weg.");
+        toast("Falsche Farbe, der Gewinn ist weg.");
         setTimeout(hideGamble, 1100);
       }
     });
   }
   $("#gamble-red").addEventListener("click", () => gambleGuess("red"));
   $("#gamble-black").addEventListener("click", () => gambleGuess("black"));
-  $("#gamble-collect").addEventListener("click", () => { hideGamble(); toast("💰 Gewinn abgeholt."); });
+  $("#gamble-collect").addEventListener("click", () => { hideGamble(); toast("Gewinn abgeholt."); });
 
-  // Begin rolling: give each reel a tall strip of random symbols scrolling down.
+  // Drehen: jede Walze bekommt einen langen Streifen Zufallssymbole, der nach unten läuft.
   function startRoll() {
     measureCells();
     for (let c = 0; c < machine.cols; c++) {
@@ -562,7 +562,7 @@
     }
   }
 
-  // Land each reel staggered onto the final grid, scrolling top→bottom.
+  // Walzen nacheinander auf dem Endraster landen lassen, von oben nach unten.
   async function landRoll(grid) {
     const stops = [];
     for (let c = 0; c < machine.cols; c++) {
@@ -570,12 +570,12 @@
       const strip = reel.querySelector(".strip");
       const spin = parseInt(strip.dataset.spin, 10);
 
-      // Strip content: [final rows] + [spin random]. Resting at translateY 0 shows finals.
+      // Inhalt des Streifens: [Endreihen] + [Zufall]. Bei translateY 0 sieht man das Ergebnis.
       strip.innerHTML = "";
       for (let r = 0; r < machine.rows; r++) strip.appendChild(makeCell(c, r, symbolAsset(machine, grid[c][r]) || machine.emojis[grid[c][r]]));
       for (let i = 0; i < spin; i++) strip.appendChild(rollCell(randSym()));
 
-      // Start shifted up so the random tail is in view, then animate down to finals.
+      // Nach oben versetzt starten, damit der Zufallsteil zu sehen ist, dann runter aufs Ergebnis.
       strip.style.transition = "none";
       strip.style.transform = `translateY(${-spin * cellH}px)`;
       strip.getBoundingClientRect(); // reflow
@@ -587,7 +587,7 @@
       stops.push(
         new Promise((resolve) => {
           setTimeout(() => {
-            // Trim to just the final rows (seamless) and let rays escape the reel.
+            // Auf die Endreihen kürzen (ohne Sprung) und die Strahlen aus der Walze lassen.
             strip.innerHTML = "";
             for (let r = 0; r < machine.rows; r++) strip.appendChild(makeCell(c, r, symbolAsset(machine, grid[c][r]) || machine.emojis[grid[c][r]]));
             strip.style.transition = "none";
@@ -607,10 +607,10 @@
   }
 
   // ===============================================================
-  // Resolve result — present each win in turn: mark it, fly its value
-  // into the central running total, accumulate. Markers stay while the
-  // counter climbs; on a cluster machine the grid tumbles only after a
-  // step's wins have been added.
+  // Ergebnis zeigen, ein Gewinn nach dem anderen: markieren, Betrag in die
+  // Summe in der Mitte fliegen lassen, aufaddieren. Die Markierungen bleiben,
+  // solange der Zähler läuft. Beim Cluster-Automaten rutscht das Raster erst
+  // nach, wenn die Gewinne eines Schritts drin sind.
   // ===============================================================
   async function resolveResult(res) {
     const fsMult = res.wasFreeSpin && machine.freeSpins && machine.freeSpins.multiplier
@@ -631,18 +631,18 @@
       }
 
       if (machine.mode === "cluster" && res.cascades && res.cascades.length) {
-        // Each cascade step escalates: faster trace, more confetti, strobe deeper in.
+        // Jeder Kaskadenschritt legt zu: schnelleres Nachzeichnen, mehr Konfetti, stärkeres Blitzen.
         let stepIdx = 0;
         const multiStep = res.cascades.length > 1;
         for (const step of res.cascades) {
           stepIdx++;
           for (const w of step.wins) {
-            await traceHighlight(w.positions, Math.max(40, 90 - stepIdx * 12), stepIdx); // reveal cluster cell-by-cell
+            await traceHighlight(w.positions, Math.max(40, 90 - stepIdx * 12), stepIdx); // Cluster Feld für Feld aufdecken
             comboEscalate(stepIdx, multiStep);
             await addWin(w.positions, Math.round(w.win * fsMult)); // fly + count up
           }
           await sleep(280);
-          // Tumble: clear winners, drop the new grid in.
+          // Nachrutschen: Gewinner raus, neues Raster reinfallen lassen.
           step.wins.forEach((w) => w.positions.forEach(([c, r]) => cellEl(c, r) && cellEl(c, r).classList.add("dim")));
           await sleep(220);
           clearHighlights();
@@ -653,15 +653,15 @@
           $("#reels").classList.remove("tumble");
         }
       } else if (res.wins && res.wins.length) {
-        // Line/ways: reveal each winning line in turn, tracing its connected
-        // symbols one-by-one. Each successive line builds the combo and hits harder.
+        // Linien/Ways: jede Gewinnlinie einzeln zeigen und ihre Symbole der Reihe
+        // nach nachzeichnen. Jede weitere Linie baut die Kombo auf und knallt mehr.
         let combo = 0;
         const multiWin = res.wins.length > 1;
         for (const w of res.wins) {
           clearHighlights();
           dimAllCells();
           combo++;
-          // Book of Rah: Bonussymbol expandiert über seine Walzen, DANN zahlt es.
+          // Book of Rah: Bonussymbol expandiert über seine Walzen, dann zahlt es.
           if (w.type === "expand") {
             bigBanner("📜 EXPANSION!", "t-big");
             sndBig();
@@ -711,7 +711,7 @@
   }
 
   // Unisono-Reveal & Nudge-Sequenz (Algen Abyss).
-  // rev.kind "symbol": alle Mystery-Zellen flippen GLEICHZEITIG zum selben
+  // rev.kind "symbol": alle Mystery-Zellen flippen gleichzeitig zum selben
   // Symbol. rev.kind "golden": Stack wird zu Golden Sharks; danach zahlt pro
   // Nudge die unterste Reihe eine Münze (Tier-Optik + ×Wert), der
   // Multiplikator tickt sichtbar hoch.
@@ -740,7 +740,7 @@
     allCells.forEach(([c, r]) => { const el = cellEl(c, r); if (el) el.classList.remove("mystery-pop"); });
 
     if (rev.kind === "symbol") {
-      // Unisono: EIN Symbol für alle — der Vollbild-Moment.
+      // Unisono: ein Symbol für alle. Der Vollbild-Moment.
       casinoStrobe();
       bluePulse();
       sndBig();
@@ -756,7 +756,7 @@
       return;
     }
 
-    // GOLDEN SHARKS — Stack flippt komplett, dann Nudge-Wellen.
+    // GOLDEN SHARKS: Stack flippt komplett, dann Nudge-Wellen.
     const goldAsset = (machine.assets && machine.assets.G) || machine.emojis.G || "🦈";
     bigBanner("🦈 GOLDEN SHARKS!", "t-mega");
     jackpotSirens(2200);
@@ -842,17 +842,17 @@
     });
   }
 
-  // Rising chromatic "blip" — the classic ascending payline-reveal tick.
+  // Aufsteigendes "Blip", das klassische Ticken beim Aufdecken der Linien.
   function sndBlip(i) {
     tone(440 * Math.pow(2, Math.min(i, 28) / 12), 0.05, "triangle", 0.05);
   }
-  // Electric crackle for the lightning arcs.
+  // Knistern für die Blitzbögen.
   function sndZap() {
     tone(1600 + Math.random() * 600, 0.08, "sawtooth", 0.05);
     tone(2600 + Math.random() * 800, 0.05, "square", 0.03);
   }
-  // Light a win's cells ONE AT A TIME, tracing the connection. Pitch climbs
-  // across the whole sequence (comboBase) so each successive win feels bigger.
+  // Die Felder eines Gewinns EINZELN aufleuchten lassen, entlang der Verbindung.
+  // Die Tonhöhe steigt über die ganze Folge (comboBase), jeder Gewinn wirkt größer.
   async function traceHighlight(positions, perMs, comboBase) {
     for (let i = 0; i < positions.length; i++) {
       const [c, r] = positions[i];
@@ -868,7 +868,7 @@
     }
   }
 
-  // Climbing "COMBO ×N" badge during a multi-win reveal.
+  // "COMBO ×N"-Schild, das bei mehreren Gewinnen hochzählt.
   function showCombo(n) {
     let el = document.getElementById("combo-badge");
     if (!el) {
@@ -880,22 +880,22 @@
     el.classList.remove("go");
     void el.offsetWidth;
     el.classList.add("go");
-    // Auto-fade so the badge never lingers after the sequence ends.
+    // Blendet sich selbst aus, damit es nach der Folge nicht stehen bleibt.
     clearTimeout(el._hideTimer);
     el._hideTimer = setTimeout(() => el.classList.remove("go"), 1000);
   }
 
-  // Ramp the celebration up as the win sequence grows — more wins back-to-back
-  // means progressively more confetti, shake and strobe (escalating dopamine).
+  // Die Feier wächst mit der Folge: mehr Gewinne hintereinander heißt mehr
+  // Konfetti, Wackeln und Blitzen.
   function comboEscalate(n, show) {
     if (show && n >= 1) showCombo(n);
-    if (n >= 1) confettiBurst(14 + n * 8);   // even the first win pops
+    if (n >= 1) confettiBurst(14 + n * 8);   // schon der erste Gewinn knallt
     if (n >= 2) { confettiBurst(28 + n * 26); zoomPunch(); sideLights(900); }
     if (n >= 3) { casinoStrobe(); moneyTicker(`COMBO ×${n}`); }
     if (n >= 4) { hypeWords(Math.min(8, n)); jackpotSirens(1300); }
   }
 
-  // Screen-space centre of a set of cells (for the flying "+amount").
+  // Bildschirmmitte einer Gruppe von Feldern (für das fliegende "+Betrag").
   function cellsCentroid(positions) {
     let x = 0, y = 0, n = 0;
     positions.forEach(([c, r]) => {
@@ -910,7 +910,7 @@
     return n ? { x: x / n, y: y / n } : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   }
 
-  // A floating "+amount" flies from the win cells to the central counter.
+  // Ein "+Betrag" fliegt von den Gewinnfeldern zum Zähler in der Mitte.
   function flyPlus(from, delta) {
     return new Promise((resolve) => {
       const el = document.createElement("div");
@@ -970,7 +970,7 @@
     let n = 0; const iv = setInterval(() => { redraw(); if (++n > 3) clearInterval(iv); }, 65);
     setTimeout(() => { g.style.transition = "opacity .22s"; g.style.opacity = "0"; setTimeout(() => g.remove(), 240); }, 380);
   }
-  // Draw bolts along the chain of a win's cells + a quick blue screen pulse.
+  // Blitze entlang der Gewinnfelder plus ein kurzes blaues Aufleuchten.
   function lightningChain(positions) {
     if (!positions || positions.length < 2) return;
     const pts = positions.map(([c, r]) => { const el = cellEl(c, r); if (!el) return null; const b = el.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }).filter(Boolean);
@@ -982,7 +982,7 @@
     if (!pulseEl) { pulseEl = document.createElement("div"); pulseEl.id = "slot-zap-flash"; document.body.appendChild(pulseEl); }
     pulseEl.classList.remove("go"); void pulseEl.offsetWidth; pulseEl.classList.add("go");
   }
-  // Expanding shockwave ring at a win's centre.
+  // Druckwellen-Ring in der Mitte eines Gewinns.
   function cellShockwave(center) {
     const r = document.createElement("div");
     r.className = "slot-shockwave";
@@ -1009,7 +1009,7 @@
     WC.amt.className = "wc-amount";
     moneyTicker("GEWINN ERKANNT");
     sideLights(1200);
-    // Below the first tier (4× bet) it's just a "WIN", no fanfare.
+    // Unter der ersten Stufe (4× Einsatz) ist es nur ein "WIN", ohne Tamtam.
     if (total < wcBet * WIN_TIERS[0].mult) {
       WC.tier.textContent = "WIN";
       WC.tier.className = "wc-tier show t-small";
@@ -1019,19 +1019,19 @@
     }
   }
 
-  // Fly the win in, then ramp the running counter up by `delta`, escalating tiers.
+  // Gewinn reinfliegen lassen, dann den Zähler um `delta` hochzählen, Stufen steigen.
   async function addWin(positions, delta) {
     if (delta <= 0) return;
     sndWin();
-    flicker(); // every win flashes
-    // Blue electric arcs between the connected winning symbols + a shockwave.
+    flicker(); // jeder Gewinn blitzt
+    // Blaue Blitze zwischen den verbundenen Gewinnsymbolen und eine Druckwelle.
     const center = cellsCentroid(positions);
     lightningChain(positions);
     sndZap();
     cellShockwave(center);
-    // Burst the winning symbol out of the hit cells — bigger win, bigger burst.
+    // Das Gewinnsymbol aus den Feldern platzen lassen, je größer der Gewinn, desto mehr.
     const firstCell = positions[0] && cellEl(positions[0][0], positions[0][1]);
-    // Ohne Zelle gibt es kein Symbol zum Zerstaeuben — dann eben keine
+    // Ohne Zelle gibt es kein Symbol zum Zerstaeuben, dann eben keine
     // Explosion. (Hier stand ein Muenz-Emoji als Rueckfall; es ging als
     // Textinhalt in die Partikel, wo eine Marke aus HTML nichts verloren hat.)
     const emoji = firstCell ? firstCell.textContent.trim() : "";
@@ -1078,8 +1078,8 @@
     $("#win-celebration").classList.remove("show", "dopamine-on");
   }
 
-  // Escalating win tiers, RELATIVE to the bet (a win only counts as "big" if it
-  // actually beats the stake by a meaningful multiple).
+  // Gewinnstufen RELATIV zum Einsatz (groß ist ein Gewinn nur, wenn er den
+  // Einsatz um ein ordentliches Vielfaches schlägt).
   const WIN_TIERS = [
     { mult: 3,   name: "BIG WIN",            cls: "t-big",   fx: () => { quake("big"); confettiBurst(180); zoomPunch(); shockwave(); sideLights(1800); moneyTicker("BIG WIN"); sndBig(); hypeWords(4); } },
     { mult: 7,   name: "MEGA WIN",           cls: "t-mega",  fx: () => { quake("mega"); confettiBurst(260); zoomPunch(); shockwave(); casinoStrobe(); jackpotSirens(1800); sideLights(2200); moneyTicker("MEGA WIN"); sndBig(); hypeWords(7); } },
@@ -1091,7 +1091,7 @@
   ];
 
   function quake(level) {
-    // Shake the whole app, not just the stage, for a more violent feel.
+    // Die ganze App wackeln lassen, nicht nur die Bühne, das wirkt heftiger.
     const stage = document.getElementById("app") || $("#slot-stage");
     const cls = level === "mega" ? "shake-strong" : "shake";
     stage.classList.add(cls);
@@ -1169,7 +1169,7 @@
     }
     frame();
   }
-  // Raining gold coins — the "money shower" for ULTRA wins.
+  // Goldmünzen regnen lassen, der Geldregen für ULTRA-Gewinne.
   function coinRain(duration = 2600) {
     const { canvas, ctx } = canvasCtx();
     const coins = [];
@@ -1306,7 +1306,7 @@
     el.classList.add("go");
   }
 
-  // One-shot helper to fire a CSS animation by toggling .go on a singleton div.
+  // Kleiner Helfer: CSS-Animation auslösen, indem .go an einem einzelnen div umgeschaltet wird.
   function fireFx(id, ms) {
     let el = document.getElementById(id);
     if (!el) { el = document.createElement("div"); el.id = id; document.body.appendChild(el); }
@@ -1315,12 +1315,12 @@
     el.classList.add("go");
     if (ms) { clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("go"), ms); }
   }
-  // Expanding shockwave ring from the centre.
+  // Druckwellen-Ring aus der Mitte.
   function shockwave() { fireFx("shockwave", 750); setTimeout(() => fireFx("shockwave2", 750), 120); }
-  // Full-screen rainbow pulse that hue-cycles for the duration.
+  // Regenbogen über den ganzen Bildschirm, wechselt dabei die Farbe.
   function screenRainbow(ms = 1600) { fireFx("screen-rainbow", ms); }
 
-  // A rapid screen + reel flicker fired on EVERY win — constant flashing.
+  // Schnelles Flackern von Bildschirm und Walzen bei jedem Gewinn.
   function flicker() {
     let el = document.getElementById("win-flash");
     if (!el) {
@@ -1360,7 +1360,7 @@
     }
   }
 
-  // Burst the winning symbol outward from a point.
+  // Gewinnsymbol von einem Punkt aus nach außen platzen lassen.
   function emojiExplosion(emoji, from, count) {
     const active = document.querySelectorAll(".emoji-bit").length;
     count = Math.max(0, Math.min(count, FX_LIMITS.emojiNodes - active));
@@ -1395,7 +1395,7 @@
     setTimeout(() => s.classList.remove("zoompunch"), 430);
   }
 
-  // Satirical "luck manipulation" popup — purely cosmetic, mocks predatory casino UX.
+  // Satirisches "Glücks-Manipulations"-Popup. Nur Deko, macht sich über die Tricks echter Casinos lustig.
   const LUCK_MSGS = [
     "🍀 Glückssträhne aktiviert!", "🔥 Du bist HEUTE besonders glücklich!", "⭐ VIP-Bonus-Modus läuft!",
     "🎯 Der Algorithmus mag dich gerade!", "💎 Nächster Spin = bestimmt Jackpot!*", "🤖 Glücks-KI auf deiner Seite!",
@@ -1415,10 +1415,10 @@
   }
 
   // ===============================================================
-  // Session strip — recent spins + win/loss streak (per machine visit)
+  // Leiste mit den letzten Drehs und der Gewinn-/Verlustserie (je Besuch am Automaten)
   // ===============================================================
   let sessionDots = []; // recent base spins: { totalWin, bet, net }
-  let streak = 0;       // +N net-win streak, -N no-net-win streak
+  let streak = 0;       // +N Gewinnserie, -N Serie ohne Gewinn
 
   function resetSession() {
     sessionDots = [];
@@ -1451,7 +1451,7 @@
   }
 
   // ===============================================================
-  // Lever — pull down to spin
+  // Hebel: runterziehen zum Drehen
   // ===============================================================
   (function setupLever() {
     const lever = $("#lever");
@@ -1476,7 +1476,7 @@
         release();
         return;
       }
-      // Snap down then spring back, and spin.
+      // Runterschnappen, zurückfedern, drehen.
       arm.style.transition = "transform 0.12s ease-in";
       setArm(MAX);
       doSpin();
@@ -1505,15 +1505,15 @@
         if (!spinning && !freeActive) doSpin();
         setTimeout(release, 120);
       } else if (!moved) {
-        fire(); // treated as a tap
+        fire(); // zählt als Tippen
       } else {
         release();
       }
       pulled = 0;
     });
-    // Plain click fallback (and makes it testable).
+    // Einfacher Klick als Rückfall (macht es auch testbar).
     lever.addEventListener("click", (e) => {
-      if (e.target === arm) return; // handled by pointer flow
+      if (e.target === arm) return; // läuft über die Pointer-Events
       fire();
     });
   })();
@@ -1546,7 +1546,7 @@
       const oppChipsEl = $("#pvp-opp-chips");
       const newChips = pvp.opponent.chips;
       oppChipsEl.textContent = newChips.toLocaleString("de-DE");
-      // Flash animation when bot chips change
+      // Kurz aufblinken, wenn sich die Bot-Chips ändern
       if (prevOppChips !== null && prevOppChips !== newChips) {
         oppChipsEl.classList.remove("pvp-chip-flash");
         void oppChipsEl.offsetWidth; // reflow
@@ -1558,7 +1558,7 @@
       $("#pvp-opp-spins").textContent = pvp.opponent.done ? "Fertig" : spinsLeft + " Spins";
     } else {
       $("#pvp-opp-name").textContent = "Wartet…";
-      $("#pvp-opp-chips").textContent = "–";
+      $("#pvp-opp-chips").textContent = "-";
       $("#pvp-opp-spins").textContent = "";
       prevOppChips = null;
     }
@@ -1575,7 +1575,7 @@
     pvp.opponent = st.opponent;
     pvp.machineId = st.machineId;
     pvp.machineName = st.machineName;
-    // Friend duels get their own chat channel; bot duels stay on global.
+    // Duelle unter Freunden bekommen einen eigenen Chat, Bot-Duelle bleiben im allgemeinen.
     if (window.Casino.chat && st.code && !st.vsBot) window.Casino.chat.enterLobby(st.code);
     if (!spinning && st.you) {
       pvp.chips = st.you.chips;
@@ -1595,7 +1595,7 @@
       setHud(true);
       updateHud();
       if (justEntered && st.vsBot && st.opponent) {
-        toast(`🤖 Duell gestartet — Freispiele zählen nicht für den Bot!`);
+        toast(`Duell läuft. Freispiele zählen beim Bot nicht mit.`);
       }
     } else if (st.state === "done") {
       pvpMode = false;
@@ -1607,7 +1607,7 @@
   function renderRoom(st) {
     $("#pvp-room-code").textContent = st.code;
     const you = st.you ? st.you.name : "Du";
-    const opp = st.opponent ? st.opponent.name : "— wartet —";
+    const opp = st.opponent ? st.opponent.name : "(wartet)";
     $("#pvp-room-players").innerHTML =
       `<div class="pvp-room-player">👤 ${esc(you)} <span class="muted">(du)</span></div>` +
       `<div class="pvp-room-player">🆚 ${esc(opp)}</div>` +
@@ -1616,14 +1616,14 @@
     startBtn.disabled = !(st.isHost && st.opponent);
     startBtn.textContent = st.isHost ? "Duell starten" : "Warten auf Host…";
     $("#pvp-room-hint").textContent = st.opponent
-      ? (st.isHost ? "Bereit — starte das Duell!" : "Warte, bis der Host startet.")
+      ? (st.isHost ? "Alle da, du kannst starten." : "Warte, bis der Host startet.")
       : "Teile den Code mit deinem Gegner.";
   }
 
   function enterPvpPlay() {
     pvpMode = true;
     setHud(true);
-    // Hide all sub-views first, then open the assigned machine.
+    // Erst alle Unteransichten ausblenden, dann den zugeteilten Automaten öffnen.
     showSlotsView("slots-machine");
     if (pvp.machineId && machines.some((m) => m.id === pvp.machineId)) {
       openMachine(pvp.machineId);
@@ -1649,7 +1649,7 @@
       .join("<br>");
     detail += `<br>Pot: <b>${result.pot.toLocaleString("de-DE")}<i class=mk></i></b>`;
     if (result.tie) {
-      detail += `<br><span class="muted">Unentschieden — Buy-ins zurückerstattet.</span>`;
+      detail += `<br><span class="muted">Unentschieden, alle bekommen ihren Einsatz zurück.</span>`;
     } else {
       if (result.rake > 0)
         detail += `<br><span class="muted">−15% Gebühr (${result.rake.toLocaleString("de-DE")}<i class=mk></i>)</span>`;
@@ -1676,8 +1676,8 @@
     if (window.Casino.chat) window.Casino.chat.leaveLobby();
   }
 
-  // Joined a slots-duel from the home-screen lobby browser → open slots; the
-  // pvp:state broadcast then shows the duel room automatically.
+  // Über die Lobby auf der Startseite einem Slots-Duell beigetreten: Slots öffnen,
+  // den Duellraum zeigt dann pvp:state von selbst.
   window.Casino._pvpJoinCode = (code) => {
     window.Casino.showScreen("slots");
     pvp = null; pvpMode = false; setHud(false); prevOppChips = null;
@@ -1735,7 +1735,7 @@
   $("#pvp-result-back").addEventListener("click", () => { pvp = null; prevOppChips = null; showSlotsView("pvp-lobby"); });
   socket.on("pvp:state", onPvpState);
 
-  // Leaving the slots screen during a duel forfeits it.
+  // Wer den Slots-Screen mitten im Duell verlässt, gibt auf.
   new MutationObserver(() => {
     if (pvpMode && !slotsScreen.classList.contains("active") && !spinning && !freeActive) pvpExit();
   }).observe(slotsScreen, { attributes: true, attributeFilter: ["class"] });
@@ -1755,7 +1755,7 @@
     const rows = [];
 
     if (machine.mode === "cluster") {
-      rows.push(`<p class="pt-note">Auszahlung in Chips bei Einsatz <b>${bet}</b> — bei 5+ verbundenen Symbolen (Cluster).</p>`);
+      rows.push(`<p class="pt-note">Auszahlung in Chips bei Einsatz <b>${bet}</b>, ab 5 verbundenen Symbolen (Cluster).</p>`);
       const syms = Object.keys(machine.clusterPays).sort(
         (a, b) => coins(topVal(machine.clusterPays[b])) - coins(topVal(machine.clusterPays[a]))
       );
@@ -1779,7 +1779,7 @@
         const table = machine.pays[sym];
         const cnts = Object.keys(table).map(Number).sort((a, b) => a - b);
         const parts = cnts.map((n) => {
-          // "anywhere" pays use thresholds (3+, 4+, …); lines/ways use exact counts.
+          // "anywhere" zahlt ab Schwellen (3+, 4+, …), Linien und Ways nach genauer Anzahl.
           const suffix = anywhere ? "+" : "×";
           return `<span class="pt-cnt">${n}${suffix}</span> ${coins(table[n]).toLocaleString("de-DE")}`;
         }).join("");
@@ -1787,20 +1787,20 @@
       }
     }
     if (machine.mystery) {
-      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.mystery) || machine.emojis[machine.mystery], "pt-symbol-img")}</span><div class="pt-vals">Mystery-Algen — decken alle zusammen DASSELBE Symbol auf … oder werden zu Golden Sharks</div></div>`);
-      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.golden) || machine.emojis[machine.golden], "pt-symbol-img")}</span><div class="pt-vals">Golden Shark — jeder trägt eine Münze (×1 bis ×2500 vom Einsatz). Nudge & Reveal: Der Stack rutscht Reihe für Reihe ab, jede Reihe zahlt, jeder Nudge erhöht den Multiplikator um +1</div></div>`);
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.mystery) || machine.emojis[machine.mystery], "pt-symbol-img")}</span><div class="pt-vals">Mystery-Algen: decken alle zusammen dasselbe Symbol auf, oder sie werden zu Golden Sharks</div></div>`);
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.golden) || machine.emojis[machine.golden], "pt-symbol-img")}</span><div class="pt-vals">Golden Shark: jeder trägt eine Münze (×1 bis ×2500 vom Einsatz). Nudge & Reveal: Der Stack rutscht Reihe für Reihe ab, jede Reihe zahlt, jeder Nudge erhöht den Multiplikator um +1</div></div>`);
     }
     if (machine.bookPays) {
       const bookParts = Object.keys(machine.bookPays).map(Number).sort((a, b) => a - b)
         .map((n) => `<span class="pt-cnt">${n}×</span> ${Math.round(bet * machine.bookPays[n]).toLocaleString("de-DE")}`).join("");
       rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.scatter) || machine.emojis[machine.scatter], "pt-symbol-img")}</span><div class="pt-vals">${bookParts}</div></div>`);
-      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">📜</span><div class="pt-vals">${machine.freeSpins.trigger}+ Bücher starten ${machine.freeSpins.count} Freispiele mit einem zufälligen BONUSSYMBOL: Landet es auf genug Walzen, expandiert es über die ganze Walze und zahlt auf allen ${machine.lineCount || 10} Linien — Position egal. Retrigger möglich, Symbol bleibt.</div></div>`);
-      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">🃏</span><div class="pt-vals">Risiko: Jeden Basisspiel-Gewinn auf Rot/Schwarz verdoppeln — bis zu 5× hintereinander. Falsche Farbe = alles weg.</div></div>`);
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">📜</span><div class="pt-vals">${machine.freeSpins.trigger}+ Bücher starten ${machine.freeSpins.count} Freispiele mit einem zufälligen BONUSSYMBOL: Landet es auf genug Walzen, expandiert es über die ganze Walze und zahlt auf allen ${machine.lineCount || 10} Linien, egal wo. Retrigger möglich, Symbol bleibt.</div></div>`);
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">🃏</span><div class="pt-vals">Jeden Gewinn im Grundspiel auf Rot oder Schwarz verdoppeln, bis zu 5× hintereinander. Falsche Farbe, alles weg.</div></div>`);
     } else if (machine.scatter) {
       const fsText = machine.mystery
-        ? `${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus (+1 je Extra-Scatter). In den Freispielen: Mystery-Stacks auf Walze 2+4, Multiplikator steigt jeden Spin — ohne Limit; jeder Scatter = +1 Spin`
+        ? `${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus (+1 je Extra-Scatter). In den Freispielen: Mystery-Stacks auf Walze 2+4, Multiplikator steigt mit jedem Dreh ohne Obergrenze, jeder Scatter gibt +1 Dreh`
         : `${machine.freeSpins.trigger}+ lösen ${machine.freeSpins.count} Freispiele aus`;
-      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.scatter) || machine.emojis[machine.scatter], "pt-symbol-img")}</span><div class="pt-vals">Scatter — ${fsText}</div></div>`);
+      rows.push(`<div class="pt-row pt-scatter"><span class="pt-sym">${symbolHtml(symbolAsset(machine, machine.scatter) || machine.emojis[machine.scatter], "pt-symbol-img")}</span><div class="pt-vals">Scatter: ${fsText}</div></div>`);
     }
     body.innerHTML = rows.join("");
     $("#paytable-modal").classList.remove("hidden");

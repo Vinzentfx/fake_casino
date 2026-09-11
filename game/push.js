@@ -64,7 +64,7 @@ const MIN_ABSTAND = {
   serie: 20 * 60 * 60 * 1000,
   /* Kurz, mit Absicht: gegen Ende eines Loses ueberbietet man sich im
      Minutentakt, und jede dieser Nachrichten ist eine, auf die man reagieren
-     KANN. Fuenf Minuten sind die Untergrenze, damit ein Bietgefecht nicht das
+     kann. Fuenf Minuten sind die Untergrenze, damit ein Bietgefecht nicht das
      Telefon sprengt. */
   auktion: 5 * 60 * 1000,
 };
@@ -176,7 +176,7 @@ async function anEinen(acc, typ, payload) {
 }
 
 /**
- * An alle, die gerade NICHT im Casino sind. `ausser` nimmt Account-Keys, etwa
+ * An alle, die gerade nicht im Casino sind. `ausser` nimmt Account-Keys, etwa
  * den Ausloeser selbst.
  */
 async function anAlle(typ, payload, { ausser = [] } = {}) {
@@ -202,7 +202,7 @@ async function an(key, typ, payload) {
   try { return await anEinen(acc, typ, payload); } catch { return 0; }
 }
 
-// ─── Mitspieler rufen ───────────────────────────────────────────────────────
+// --- Mitspieler rufen ---
 // Der ehrlichste Auslöser von allen: ein echter Mensch sitzt gerade da und
 // sucht Gesellschaft. Kein Automatismus schafft das. Dafuer streng begrenzt,
 // sonst wird daraus eine Klingelanlage.
@@ -239,7 +239,7 @@ async function rufe(key, text) {
   return { ok: true, erreicht: n };
 }
 
-// ─── Serien-Erinnerung ──────────────────────────────────────────────────────
+// --- Serien-Erinnerung ---
 // Die Login-Serie reisst 26 Stunden nach dem letzten Abholen. Ab Tag drei tut
 // das weh genug, dass eine Erinnerung willkommen ist statt laestig.
 const SERIE_GRACE_MS = 26 * 60 * 60 * 1000;
@@ -259,7 +259,7 @@ async function pruefeSerien() {
     const std = Math.max(1, Math.round(rest / 3600000));
     try {
       await anEinen(acc, "serie", {
-        title: `🔥 Serie Tag ${acc.bonusStreak}`,
+        title: `Serie: Tag ${acc.bonusStreak}`,
         body: `In etwa ${std} Std reißt deine Serie. Einmal Bonus abholen reicht.`,
         url: "/",
       });
@@ -308,7 +308,7 @@ function setupPush(io, accounts) {
       // Die Probe umgeht Online-Filter und Sperre, sonst prueft sie nichts.
       const gemerkt = { ...p.zuletzt };
       p.zuletzt = {};
-      const n = await anEinen(acc, "live", { title: "🎰 Fake Casino", body: "Probe-Nachricht. Push funktioniert.", url: "/" });
+      const n = await anEinen(acc, "live", { title: "Fake Casino", body: "Probe-Nachricht. Push funktioniert.", url: "/" });
       p.zuletzt = gemerkt;
       _accounts.save();
       if (typeof ack === "function") ack(n > 0 ? { ok: true, geraete: n } : { ok: false, error: "Kein Gerät hat die Probe angenommen." });
@@ -333,7 +333,7 @@ function setupPush(io, accounts) {
   });
 
   // Login setzt den Online-Merker. Der Login laeuft nicht ueber ein eigenes
-  // Ereignis, deshalb wird hier regelmaessig abgeglichen — billig und robust.
+  // Ereignis, deshalb wird hier regelmaessig abgeglichen, billig und robust.
   const gleicheOnlineAb = () => {
     _online.clear();
     for (const s of io.of("/").sockets.values()) {

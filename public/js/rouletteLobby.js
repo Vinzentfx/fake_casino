@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Roulette lobby coordinator.
-   Socket wiring + panel buttons for the shared roulette table; the actual
-   board/wheel rendering lives in roulette.js via window.Casino._roulette.
+   Roulette-Lobby
+   Socket-Anbindung und Knöpfe für den gemeinsamen Tisch. Brett und Kessel
+   zeichnet roulette.js über window.Casino._roulette.
    ============================================================ */
 
 (function () {
@@ -51,7 +51,7 @@
   if (document.readyState !== "loading") wire();
   else document.addEventListener("DOMContentLoaded", wire);
 
-  // Joined from the home-screen lobby browser.
+  // Über die Lobby-Liste auf der Startseite beigetreten.
   window.Casino._rouletteJoinCode = (c) => {
     window.Casino.showScreen("roulette");
     socket.emit("rlobby:join", { code: c }, (res) => {
@@ -60,7 +60,7 @@
     });
   };
 
-  // Leave the lobby when navigating away from the roulette screen.
+  // Beim Wegnavigieren von Roulette die Lobby verlassen.
   const rtScreen = document.querySelector('[data-screen="roulette"]');
   if (rtScreen) {
     new MutationObserver(() => {

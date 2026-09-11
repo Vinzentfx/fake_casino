@@ -1,12 +1,12 @@
 "use strict";
 
 /**
- * Player marketplace for business products.
+ * Marktplatz für Firmenprodukte zwischen Spielern.
  *
- * Buying a product (game/economy.js → city.buyProduct) puts an ITEM in your
- * inventory. From there you can USE it (consume → buff) or LIST it for sale to
- * other players at your own price. Buyers purchase from the listings; the chips
- * go to the seller. Offers are persisted to data/market.json.
+ * Ein gekauftes Produkt (game/economy.js, city.buyProduct) landet als Gegenstand
+ * im Inventar. Von dort kann man es BENUTZEN (verbrauchen, gibt einen Bonus)
+ * oder zu einem eigenen Preis ANBIETEN. Käufer kaufen aus den Angeboten, die
+ * Chips gehen an den Verkäufer. Angebote liegen in data/market.json.
  */
 
 const path = require("path");
@@ -16,10 +16,10 @@ const city = require("./city");
 const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "market.json");
 
-// Product metadata keyed by item key (from the city building catalog).
+// Produktdaten nach Gegenstand (aus dem Gebäudekatalog der Stadt).
 const PRODUCTS = {};
-// Legacy: the buff-product economy was retired (buildings grant buffs directly
-// now), so the catalog is empty — kept only so old inventories don't crash.
+// Alt: die Bonus-Produkte gibt es nicht mehr (Gebäude geben Boni jetzt direkt),
+// der Katalog ist deshalb leer und nur noch da, damit alte Inventare nicht abstürzen.
 for (const t of Object.values(city.BUILDING_TYPES || {}))
   if (t.products) for (const p of t.products) PRODUCTS[p.key] = p;
 
@@ -89,7 +89,7 @@ function setupMarket(io, accounts) {
       const o = store.offers[offerId];
       if (!o) return ack({ ok: false, error: "Angebot weg." });
       if (o.seller !== key()) return ack({ ok: false, error: "Nicht dein Angebot." });
-      accounts.addItem(key(), o.key, 1); // back to inventory
+      accounts.addItem(key(), o.key, 1); // zurück ins Inventar
       delete store.offers[offerId];
       save();
       io.emit("market:update");
@@ -105,7 +105,7 @@ function setupMarket(io, accounts) {
       const buyer = accounts.get(key());
       if (buyer.chips < o.price) return ack({ ok: false, error: "Nicht genug Chips." });
       const res = accounts.adjustChips(key(), -o.price);
-      accounts.adjustChips(o.seller, o.price); // pay the seller
+      accounts.adjustChips(o.seller, o.price); // Verkäufer bezahlen
       accounts.addItem(key(), o.key, 1);
       delete store.offers[offerId];
       save();

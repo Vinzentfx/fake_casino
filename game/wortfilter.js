@@ -15,7 +15,7 @@
  * ---------------------------------------------------------------------------
  * Die zwei Probleme, an denen solche Filter scheitern
  *
- * UMGEHUNG. "Sch3iße", "S c h e i ß e", "Scheeeiße", "$cheiße" — wer will,
+ * UMGEHUNG. "Sch3iße", "S c h e i ß e", "Scheeeiße", "$cheiße": wer will,
  * kommt an einer naiven Wortliste vorbei. Dagegen wird der Text vor der
  * Pruefung normalisiert: Ziffern und Zeichen, die wie Buchstaben aussehen,
  * werden zurueckuebersetzt, lange Wiederholungen gekuerzt.
@@ -25,7 +25,7 @@
  *
  *   1. An Wortgrenzen, auf dem normal geschriebenen Text. Findet die
  *      normale Verwendung und trifft nichts Harmloses.
- *   2. Verdichtet — alles ausser Buchstaben faellt weg — aber NUR mit den
+ *   2. Verdichtet (alles ausser Buchstaben faellt weg) aber nur mit den
  *      Woertern aus HART, die auch mitten in einem Wort nie harmlos sind.
  *      Das faengt "s c h e i ß e" und "f.i.c.k", ohne "Sextett" zu treffen.
  *
@@ -46,7 +46,7 @@ const FILE = path.join(DATA_DIR, "wortfilter.json");
    Bewusst kurz gehalten und auf das Grobe beschraenkt: Beleidigungen,
    Herabwuerdigungen, Sexuelles. Eine ausufernde Liste erzeugt vor allem
    Fehlalarme, und in einer Runde von Freunden ist ein rauer Ton nicht das
-   Problem — ein Name in der Bestenliste, den man niemandem zeigen mag,
+   Problem: ein Name in der Bestenliste, den man niemandem zeigen mag,
    schon.
 --------------------------------------------------------------------------- */
 
@@ -72,7 +72,7 @@ const BASIS = [
 ];
 
 /* Woerter, die auch verdichtet und mitten im Text nie harmlos sind. Nur
-   diese gehen in den zweiten Durchgang — deshalb ist die Liste kurz und
+   diese gehen in den zweiten Durchgang, deshalb ist die Liste kurz und
    enthaelt nichts, was Teil eines normalen Wortes sein koennte. */
 const HART = [
   "hurensohn", "arschloch", "wichser", "wixxer", "hitler", "nigger", "nigga",
@@ -82,7 +82,7 @@ const HART = [
 
 /* Ausnahmen. Erwischt der Filter eines dieser Woerter, ist es kein Treffer.
    Steht hier, weil "Fickmuehle" ein Brettspiel ist und "Arschbombe" ein
-   Sprung ins Wasser — beides wuerde man nicht sperren wollen. */
+   Sprung ins Wasser, beides wuerde man nicht sperren wollen. */
 const AUSNAHMEN_BASIS = [
   "fickmühle", "fickmuehle", "arschbombe", "sextett", "sexta", "dickicht",
   "dickmilch", "schwanzflosse", "blasenentzündung", "blasmusik", "blasrohr",
@@ -113,7 +113,7 @@ function speichern() {
 const ERSATZ = {
   "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "8": "b", "9": "g",
   "@": "a", "$": "s", "!": "i", "|": "i", "+": "t", "€": "e", "£": "l",
-  "á": "a", "à": "a", "â": "a", "ã": "a", "å": "a",
+  "á": "a", "à": "a", "---": "a", "ã": "a", "å": "a",
   "é": "e", "è": "e", "ê": "e", "ë": "e",
   "í": "i", "ì": "i", "î": "i", "ï": "i",
   "ó": "o", "ò": "o", "ô": "o", "õ": "o",
@@ -126,7 +126,7 @@ const ERSATZ = {
  *
  * Das Mitfuehren der Herkunft ist der Grund, warum das hier keine drei
  * Zeilen sind: nur so laesst sich im Chat genau die Stelle maskieren, die
- * den Treffer ausgeloest hat — und nicht der halbe Satz.
+ * den Treffer ausgeloest hat, und nicht der halbe Satz.
  *
  * @returns {{text: string, herkunft: number[]}}
  */
@@ -160,9 +160,9 @@ function normalisiere(roh) {
 /**
  * Nur Buchstaben. Fuer den zweiten Durchgang gegen "s c h e i ß e".
  *
- * @param {boolean} [einfach] Zusaetzlich jede Wiederholung auf EINEN
+ * @param {boolean} [einfach] Zusaetzlich jede Wiederholung auf einen
  *   Buchstaben kuerzen. `normalisiere` laesst zwei stehen, weil "Schiff"
- *   sonst zu "Schif" wuerde — hier stoert das nicht, denn geprueft wird nur
+ *   sonst zu "Schif" wuerde, hier stoert das nicht, denn geprueft wird nur
  *   gegen die eindeutigen Woerter, und "arschlooooch" soll greifen.
  */
 function verdichte(roh, einfach) {
@@ -211,7 +211,7 @@ function treffer(roh) {
 
   const gefunden = new Map();   // "von:bis" -> Treffer
 
-  // ── Durchgang 1: an Wortgrenzen ──
+  // --- Durchgang 1: an Wortgrenzen ---
   const { text: nText, herkunft } = normalisiere(original);
   for (const w of alleWoerter()) {
     const nw = normalisiere(w).text;
@@ -232,7 +232,7 @@ function treffer(roh) {
     }
   }
 
-  // ── Durchgang 2: verdichtet, nur die eindeutigen ──
+  // --- Durchgang 2: verdichtet, nur die eindeutigen ---
   const { text: dText, herkunft: dHerkunft } = verdichte(original, true);
   const harte = [...HART, ...eigene.woerter.filter((w) => String(w).length >= 6).map((w) => String(w).toLowerCase())];
   for (const w of harte) {

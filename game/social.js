@@ -1,11 +1,12 @@
 "use strict";
 
 /**
- * Social duel challenges — relay a "challenge to a duel" from one online player
- * to another. The CHALLENGER first creates a private match for the chosen game
- * (client-side, via the game's own create), then sends the invite carrying the
- * match code; this module just forwards it to the target if they're online. The
- * target accepts by joining that code — reusing all existing PvP match logic.
+ * Duell-Herausforderungen: leitet ein "Ich fordere dich heraus" von einem Spieler
+ * an einen anderen weiter. Der Herausforderer legt zuerst ein privates Match im
+ * gewählten Spiel an (im Client, über das Anlegen des Spiels selbst) und schickt
+ * dann die Einladung mit dem Code. Dieses Modul reicht sie nur weiter, wenn das
+ * Ziel online ist. Angenommen wird durch Beitreten mit dem Code, also mit der
+ * ganz normalen PvP-Logik.
  */
 
 const GAME_LABELS = {
@@ -55,7 +56,7 @@ function setupSocial(io, accounts) {
       ack({ ok: true, delivered: true, label: label2 });
     });
 
-    // Target declined → let the challenger know so they can cancel their waiting room.
+    // Abgelehnt: dem Herausforderer Bescheid geben, damit er seinen Warteraum schließen kann.
     socket.on("social:challengeDecline", ({ to, game } = {}) => {
       if (!socket.data.account) return;
       const targetKey = String(to || "").trim().toLowerCase();

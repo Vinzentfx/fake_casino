@@ -1,18 +1,18 @@
 "use strict";
 
 /**
- * Simple, deliberately beatable poker bot.
+ * Einfacher Poker-Bot, absichtlich schlagbar.
  *
- * Style: loose-passive — calls a lot with medium hands, folds trash to bets,
- * rarely bluffs, only raises with strong hands. A thinking human profits over
- * time, which is the point (play vs bots to earn).
+ * Spielt locker und passiv: callt viel mit mittleren Händen, wirft Schrott weg,
+ * wenn gesetzt wird, blufft selten und erhöht nur mit starken Händen. Wer
+ * mitdenkt, gewinnt auf Dauer, genau darum ging es (gegen Bots Chips verdienen).
  */
 
 const { evaluateBest7 } = require("./handEvaluator");
 
 const BOT_NAMES = ["Bot Alex", "Bot Mia", "Bot Leo", "Bot Nora", "Bot Sam"];
 
-// Chen-style preflop strength, normalized to ~0..1.
+// Preflop-Stärke ungefähr nach Chen, auf ~0..1 gebracht.
 function preflopStrength(hole) {
   const [a, b] = hole;
   const hi = Math.max(a.rank, b.rank);
@@ -26,7 +26,7 @@ function preflopStrength(hole) {
     if (a.suit === b.suit) score += 2;
     const gap = hi - lo - 1;
     score -= gap === 0 ? 0 : gap === 1 ? 1 : gap === 2 ? 2 : gap === 3 ? 4 : 5;
-    if (gap <= 1 && hi < 12) score += 1; // straightish bonus
+    if (gap <= 1 && hi < 12) score += 1; // kleiner Bonus für Straßen-Nähe
   }
   return Math.max(0, Math.min(1, score / 20));
 }
@@ -38,7 +38,7 @@ function postflopStrength(hole, board) {
   return map[cat] ?? 0.16;
 }
 
-/** Decide a bot action for table.seats[idx]. Returns { action, amount? }. */
+/** Aktion für den Bot auf table.seats[idx] wählen. Gibt { action, amount? } zurück. */
 function decide(table, idx) {
   const seat = table.seats[idx];
   const toCall = table.currentBet - seat.bet;
@@ -49,10 +49,10 @@ function decide(table, idx) {
   let strength = table.board.length
     ? postflopStrength(seat.hole, table.board)
     : preflopStrength(seat.hole);
-  strength += (Math.random() - 0.5) * 0.1; // a little unpredictability
+  strength += (Math.random() - 0.5) * 0.1; // ein bisschen unberechenbar
 
   if (toCall <= 0) {
-    // Check, or bet when strong.
+    // Checken, oder setzen, wenn stark.
     if (strength > 0.62 && Math.random() < 0.55) {
       const target = Math.min(Math.max(bb * 2, Math.round(pot * 0.5)), stack);
       if (target > 0) return { action: "raise", amount: seat.bet + target };
@@ -62,19 +62,19 @@ function decide(table, idx) {
 
   const potOdds = toCall / (pot + toCall);
 
-  // Trash facing a bet → mostly fold (call only tiny bets sometimes).
+  // Schrott gegen einen Einsatz: meistens folden (kleine Einsätze manchmal callen).
   if (strength < 0.3) {
     if (toCall <= bb && Math.random() < 0.45) return { action: "call" };
     return { action: "fold" };
   }
-  // Strong → sometimes raise.
+  // Stark: manchmal erhöhen.
   if (strength > 0.78 && Math.random() < 0.5) {
     const raiseTo = table.currentBet + Math.max(bb * 2, Math.round(pot * 0.6));
     const maxTo = seat.bet + stack;
     if (raiseTo > table.currentBet && raiseTo <= maxTo) return { action: "raise", amount: raiseTo };
     return { action: "call" };
   }
-  // Medium → loose call when odds aren't terrible.
+  // Mittel: locker callen, wenn die Pot Odds nicht furchtbar sind.
   if (strength > potOdds * 0.8) return { action: "call" };
   return { action: "fold" };
 }

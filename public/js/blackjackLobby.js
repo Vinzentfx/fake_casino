@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Blackjack lobby (social layer).
-   The game itself is unchanged (each player vs the dealer); this just shows a
-   shared roster + a live feed of who won/lost how much, plus per-lobby chat.
+   Blackjack-Lobby, nur zum Zusammensitzen.
+   Am Spiel ändert sich nichts (jeder gegen seinen Dealer), man sieht aber, wer
+   am Tisch sitzt, wer wie viel gewinnt oder verliert, und hat einen eigenen Chat.
    ============================================================ */
 
 (function () {
@@ -43,7 +43,7 @@
   const miniCard = (c) => `<span class="bj-mini${c.s === "h" || c.s === "d" ? " red" : ""}">${rl(c.r)}${SUIT[c.s]}</span>`;
   const resLabel = (r) => r === "win" ? '<b class="pos">✓</b>' : r === "blackjack" ? '<b class="pos">BJ</b>' : (r === "lose" || r === "bust") ? '<b class="neg">✗</b>' : r === "push" ? "=" : "";
   function renderHand(h) {
-    if (!h || h.phase === "betting" || !h.hands) return '<div class="bj-lp-hand muted small">— setzt —</div>';
+    if (!h || h.phase === "betting" || !h.hands) return '<div class="bj-lp-hand muted small">setzt gerade</div>';
     const d = h.dealer;
     const dealer = d ? (d.up ? `Dealer ${miniCard(d.up)} 🂠` : `Dealer ${d.cards.map(miniCard).join(" ")} =${d.value}`) : "";
     const hands = h.hands.map((hh) => `<div class="bj-lp-hand">${hh.cards.map(miniCard).join(" ")} <b>=${hh.value}</b> ${resLabel(hh.result)}</div>`).join("");
@@ -65,7 +65,7 @@
       const verb = f.net > 0 ? `gewann +${fmt(f.net)}<i class=mk></i>` : f.net < 0 ? `verlor −${fmt(f.net)}<i class=mk></i>` : "Push";
       return `<div class="bj-feed-row"><span>${escapeHtml(f.name)}</span> <span class="${cls}">${verb}</span></div>`;
     }).join("");
-    $("bj-lobby-feed").innerHTML = feed || '<div class="muted small">Noch keine Runde gespielt — gib Karten!</div>';
+    $("bj-lobby-feed").innerHTML = feed || '<div class="muted small">Noch keine Runde gespielt.</div>';
   }
 
   socket.on("bjlobby:state", (s) => {
@@ -89,7 +89,7 @@
   if (document.readyState !== "loading") wire();
   else document.addEventListener("DOMContentLoaded", wire);
 
-  // Joined from the home-screen lobby browser.
+  // Über die Lobby-Liste auf der Startseite beigetreten.
   window.Casino._bjJoinCode = (c) => {
     window.Casino.showScreen("blackjack");
     socket.emit("bjlobby:join", { code: c }, (res) => {
@@ -98,7 +98,7 @@
     });
   };
 
-  // Leave the lobby automatically when navigating away from blackjack.
+  // Beim Wegnavigieren von Blackjack die Lobby automatisch verlassen.
   const bjScreen = document.querySelector('[data-screen="blackjack"]');
   if (bjScreen) {
     new MutationObserver(() => {

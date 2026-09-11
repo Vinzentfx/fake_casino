@@ -121,12 +121,12 @@
     // stehen, damit ein neues Spiel ohne eigenes Symbol trotzdem etwas zeigt.
     const symbol = (Casino.icons && Casino.icons.icon(g.id)) || g.icon;
     /*
-     * Der Stern steht NEBEN der Kachel, nicht darin.
+     * Der Stern steht neben der Kachel, nicht darin.
      *
      * Vorher stand er als <button> in der Kachel, die selbst ein <button> ist.
      * Das ist ungueltiges HTML: der Browser schliesst die aeussere Schaltflaeche
      * und haengt den Stern als Geschwister dahinter. Im Raster wurde daraus je
-     * Spiel eine zweite, leere Kachel, in der nur der Stern stand — die Haelfte
+     * Spiel eine zweite, leere Kachel, in der nur der Stern stand. Die Haelfte
      * aller Felder war grau und die Reihenfolge sah zerwuerfelt aus.
      */
     return `
@@ -165,7 +165,7 @@
 
   /**
    * Oben eine Reihe mit Favoriten, sonst mit zuletzt Gespieltem. Wer nichts
-   * von beidem hat (neuer Account), sieht die Reihe gar nicht — ein leerer
+   * von beidem hat (neuer Account), sieht die Reihe gar nicht. Ein leerer
    * Kasten mit "noch nichts" kostet nur Platz.
    */
   function zeichneSchnellzugriff() {
@@ -187,7 +187,7 @@
   // Wartende Herausforderungen
   // ---------------------------------------------------------------
   /*
-   * Ein Duell wartet, bis jemand vorbeikommt — deshalb steht es hier oben und
+   * Ein Duell wartet, bis jemand vorbeikommt, deshalb steht es hier oben und
    * nicht nur im Spiel selbst. Ohne diesen Hinweis findet es niemand, und
    * genau das war ja das Problem der alten PvP-Modi.
    */

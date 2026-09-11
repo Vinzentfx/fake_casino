@@ -1,10 +1,10 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Schach-Duell (client).
-   PvP wager chess. Board + clocks rendered from server state;
-   click a piece to see legal moves, click a target to move.
-   Server-authoritative (chess.js). Includes the Schach-Liga view.
+   Schach-Duell
+   Schach mit Einsatz. Brett und Uhren kommen aus dem Stand vom Server. Figur
+   antippen zeigt die erlaubten Züge, Zielfeld antippen zieht. Die Regeln prüft
+   der Server (chess.js). Die Schach-Liga steht auch hier drin.
    ============================================================ */
 
 (function () {
@@ -14,7 +14,7 @@
 
   const GLYPH = {
     /*
-     * BEIDE Farben benutzen die gefuellten Figuren.
+     * beide Farben benutzen die gefuellten Figuren.
      *
      * Vorher standen bei Weiss die Umriss-Zeichen (♔♕♖) und wurden weiss
      * eingefaerbt: uebrig blieb ein duenner weisser Strich, der auf hellen
@@ -41,7 +41,7 @@
       document.querySelectorAll("#chs-tcs .mem-size-btn").forEach((x) => x.classList.toggle("active", x === b));
     }));
 
-  // ── Board ─────────────────────────────────────────────────
+  // --- Board ---
   function myColor() { return st && st.yourColor ? st.yourColor : "w"; }
   function squareName(row, col) { return FILES[col] + (8 - row); } // board[row][col], row0=rank8
 
@@ -75,7 +75,7 @@
   }
 
   function clickSquare(sq) {
-    if (!st || st.state !== "playing" || st.spectating) return; // spectators can't move
+    if (!st || st.state !== "playing" || st.spectating) return; // Zuschauer ziehen nicht
     const myTurn = st.turn === myColor();
     if (!myTurn) return;
     if (selected && legalTargets.includes(sq)) {
@@ -86,9 +86,9 @@
       });
       return;
     }
-    // select a piece of mine
+    // eigene Figur auswählen
     const board = st.board;
-    // find r,c for sq
+    // Zeile und Spalte zum Feld finden
     const col = FILES.indexOf(sq[0]), row = 8 - parseInt(sq[1], 10);
     const piece = board && board[row] && board[row][col];
     if (piece && piece.c === myColor()) {
@@ -101,7 +101,7 @@
     } else { selected = null; legalTargets = []; renderBoard(); }
   }
 
-  // ── Clocks ────────────────────────────────────────────────
+  // --- Clocks ---
   function fmtClock(ms) {
     ms = Math.max(0, ms | 0);
     const m = Math.floor(ms / 60000), s = Math.floor((ms % 60000) / 1000);
@@ -126,7 +126,7 @@
   }
   function stopClock() { if (clockInt) { clearInterval(clockInt); clockInt = null; } }
 
-  // ── Status / moves ────────────────────────────────────────
+  // --- Status / moves ---
   let statusTimer = null;
   function flashStatus(msg) {
     const el = $("#chs-status"); if (!el) return;
@@ -171,36 +171,36 @@
     const reasonTxt = { checkmate: "Schachmatt", timeout: "Zeit abgelaufen", resign: "Aufgabe", walkover: "Gegner hat verlassen", stalemate: "Patt", draw: "Remis" }[r.reason] || r.reason;
     if (r.draw) {
       emoji.textContent = "🤝"; title.textContent = "Remis!";
-      sub.innerHTML = `${reasonTxt} — Einsatz zurück (${fmt(st.buyIn)}<i class=mk></i>).<br>` + r.players.map((p) => `${escapeHtml(p.name)}: ${p.rating}`).join(" · ");
+      sub.innerHTML = `${reasonTxt}, Einsatz zurück (${fmt(st.buyIn)}<i class=mk></i>).<br>` + r.players.map((p) => `${escapeHtml(p.name)}: ${p.rating}`).join(" · ");
     } else {
       const iWon = myName && r.winner && r.winner.toLowerCase() === myName.toLowerCase();
       emoji.textContent = iWon ? "🏆" : "😔";
       title.textContent = iWon ? "Gewonnen!" : `${escapeHtml(r.winner)} gewinnt`;
       sub.innerHTML = `${reasonTxt} · ` + (iWon ? `+${fmt(r.payout)}<i class=mk></i> (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)}<i class=mk></i> an ${escapeHtml(r.winner)}`) +
         `<br>` + r.players.map((p) => `${escapeHtml(p.name)}: ${p.rating}`).join(" · ");
-      if (r.walkover && iWon) toast(`🏆 Gegner hat das Duell verlassen — du gewinnst ${fmt(r.payout)} Chips!`);
+      if (r.walkover && iWon) toast(`Dein Gegner hat das Duell verlassen, du bekommst ${fmt(r.payout)} Chips.`);
     }
   }
 
-  // ── State ─────────────────────────────────────────────────
+  // --- State ---
   function apply(s) {
     const prev = st && st.state;
     st = s; myCode = s.code;
     if (s.state === "waiting") {
       show("chs-wait");
       $("#chs-code-show").textContent = s.code;
-      $("#chs-wait-info").textContent = `${s.playerCount}/2 Spieler · ${s.tc} · ${s.public ? "🌐 öffentlich" : "🔒 privat (nur per Code)"}`;
+      $("#chs-wait-info").textContent = `${s.playerCount}/2 Spieler · ${s.tc} · ${s.public ? "öffentlich" : "privat (nur per Code)"}`;
       $("#chs-start").style.display = (s.isHost && s.playerCount === 2) ? "" : "none";
     } else if (s.state === "playing") {
       show("chs-game");
       if (prev !== "playing") { selected = null; legalTargets = []; }
-      // clock baseline for local ticking
+      // Grundlage für die Uhr, die lokal weitertickt
       clockBase = { ...s.clocks }; clockTurn = s.turn; clockAt = Date.now();
       renderBoard(); renderClocks(); renderPlayerBars(); renderStatus(); renderMoves();
       startClock();
       $("#chs-resign").style.display = s.spectating ? "none" : "";
       $("#chs-spec-banner").style.display = s.spectating ? "" : "none";
-      if (s.spectating) $("#chs-spec-banner").textContent = `👁️ Zuschauer${s.spectatorCount > 1 ? " (" + s.spectatorCount + ")" : ""} · ‹ Lobby zum Verlassen`;
+      if (s.spectating) $("#chs-spec-banner").textContent = `Zuschauer${s.spectatorCount > 1 ? " (" + s.spectatorCount + ")" : ""} · ‹ Lobby zum Verlassen`;
     } else if (s.state === "done") {
       stopClock();
       $("#chs-spec-banner").style.display = "none";
@@ -208,14 +208,14 @@
       renderResult();
       const rm = s.rematch || {};
       $("#chs-rematch").style.display = (rm.canRematch && !s.spectating) ? "" : "none";
-      $("#chs-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "🔁 Gegner will Revanche!" : "");
+      $("#chs-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "Dein Gegner will eine Revanche!" : "");
     }
   }
 
   socket.on("chess:state", (s) => { if (s) apply(s); });
   socket.on("account:update", (d) => { if (d && d.account) applyAccount(d.account); });
 
-  // ── Buttons ───────────────────────────────────────────────
+  // --- Buttons ---
   $("#chs-create").addEventListener("click", () => {
     const err = $("#chs-error"); err.textContent = "";
     const buyIn = parseInt($("#chs-buyin").value, 10);
@@ -253,7 +253,7 @@
   const chsBack = document.querySelector('[data-screen="chess"] .back-btn');
   if (chsBack) chsBack.addEventListener("click", () => { if (myCode) leave(); });
 
-  // ── League ────────────────────────────────────────────────
+  // --- League ---
   function renderLeague(data) {
     const me = data.me;
     $("#chs-me-card").innerHTML = me
@@ -281,11 +281,11 @@
   $("#chs-league-btn").addEventListener("click", openLeague);
   $("#chs-league-back").addEventListener("click", () => show("chs-setup"));
 
-  // ── Spectate ──────────────────────────────────────────────
+  // --- Spectate ---
   socket.on("chess:specEnd", () => {
     stopClock(); st = null; myCode = null;
     $("#chs-spec-banner").style.display = "none";
-    toast("👁️ Das Match ist vorbei.");
+    toast("Das Match ist vorbei.");
     const active = document.querySelector('[data-screen="chess"]');
     if (active && active.classList.contains("active")) show("chs-setup");
   });

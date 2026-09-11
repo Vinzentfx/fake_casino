@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Auktionshaus — die einzige Stelle, an der es die seltenen Stuecke gibt.
+ * Auktionshaus, die einzige Stelle, an der es die seltenen Stuecke gibt.
  *
  * Der Laden verkauft zu festen Preisen, der Season-Pass verteilt nach
  * Fortschritt, das Glueckrad nach Glueck. Hier entscheidet, wer am meisten
@@ -19,7 +19,7 @@
  *   Eine Woche Pause nach einem Zuschlag. Sonst raeumen die zwei groessten
  *   Konten alles ab und die Stuecke sagen nur noch, wer reich ist.
  *
- * Geboten wird mit ECHTEN Chips: der Betrag geht sofort vom Konto und kommt
+ * Geboten wird mit echten Chips: der Betrag geht sofort vom Konto und kommt
  * sofort zurueck, sobald jemand ueberbietet. Ohne diese Hinterlegung bietet
  * man Geld, das man nach der naechsten Slot-Runde nicht mehr hat.
  *
@@ -46,7 +46,7 @@ const VERLAUF_MAX = 12;
 const ARCHIV_MAX = 20;
 
 /* Welche Arten ueberhaupt versteigert werden. Ein Los ist immer ein Stueck aus
-   game/cosmetics.js mit limitiert: "auktion" — hier steht nur, in welchen
+   game/cosmetics.js mit limitiert: "auktion". Hier steht nur, in welchen
    Toepfen gesucht wird. */
 const ARTEN = ["style", "frame", "title", "effect", "banner", "schild", "aura", "karte"];
 
@@ -141,7 +141,7 @@ function starteLos() {
   };
   save();
   try {
-    chat.announce(io, `🔨 AUKTIONSHAUS: ${ART_NAME[s.type]} „${s.label}“ kommt unter den Hammer. Startgebot ${de(START_GEBOT)} Chips, Zuschlag ${endeText(state.los.endet)}.`);
+    chat.announce(io, `Auktionshaus: ${ART_NAME[s.type]} „${s.label}“ kommt unter den Hammer. Startgebot ${de(START_GEBOT)} Chips, Zuschlag ${endeText(state.los.endet)}.`);
   } catch {}
   try { require("./chronik").notiere("event", `Neu im Auktionshaus: ${ART_NAME[s.type]} „${s.label}“. Startgebot ${de(START_GEBOT)} Chips.`); } catch {}
   sende();
@@ -166,8 +166,8 @@ function hammer() {
 
   if (!los.bieter || !los.gebot) {
     // Niemand hat geboten. Das Stueck wandert zurueck in den Topf und kommt
-    // spaeter wieder — weggeworfen wird hier nichts.
-    try { chat.announce(io, `🔨 Keine Gebote für „${los.label}“. Das Stück kommt später noch einmal.`); } catch {}
+    // spaeter wieder, weggeworfen wird hier nichts.
+    try { chat.announce(io, `Keine Gebote für „${los.label}“. Das Stück kommt später noch einmal.`); } catch {}
     state.los = null;
     save();
     starteLos();
@@ -181,7 +181,7 @@ function hammer() {
     acc.auktionSieg = Date.now();
     accounts.save();
   }
-  // Das Gebot ist beim Bieten abgebucht worden und wird hier NICHT
+  // Das Gebot ist beim Bieten abgebucht worden und wird hier nicht
   // weitergereicht: es verbrennt. Das ist der ganze Zweck des Hauses.
   state.vergeben[marke(los.type, los.id)] = {
     key: los.bieter, name: los.bieterName, betrag: los.gebot, ts: Date.now(),
@@ -193,7 +193,7 @@ function hammer() {
   if (state.archiv.length > ARCHIV_MAX) state.archiv.length = ARCHIV_MAX;
 
   try {
-    chat.announce(io, `🔨 ZUSCHLAG! ${los.bieterName} ersteigert ${los.art} „${los.label}“ für ${de(los.gebot)} Chips.`);
+    chat.announce(io, `Zuschlag: ${los.bieterName} ersteigert ${los.art} „${los.label}“ für ${de(los.gebot)} Chips.`);
   } catch {}
   try {
     require("./chronik").notiere("event", `${los.bieterName} ersteigert ${los.art} „${los.label}“ für ${de(los.gebot)} Chips.`, { user: los.bieterName, wert: los.gebot });
@@ -203,7 +203,7 @@ function hammer() {
       if (s.data && s.data.account === los.bieter) {
         s.emit("auktion:zuschlag", { art: los.art, label: los.label, betrag: los.gebot, stuecke });
         /* Das hinterlegte Gebot ist jetzt endgueltig weg. Ohne diese Zeile
-           steht in der Topbar weiter der Stand von VOR dem Gebot, weil der
+           steht in der Topbar weiter der Stand von vor dem Gebot, weil der
            Zuschlag nicht vom Client ausgeloest wurde. */
         s.emit("account:update", { account: accounts.publicAccount(acc) });
         break;
@@ -251,7 +251,7 @@ function bieten(key, betrag) {
   los.verlauf.unshift({ key, name: acc.name, betrag, ts: Date.now() });
   if (los.verlauf.length > VERLAUF_MAX) los.verlauf.length = VERLAUF_MAX;
 
-  /* Verlaengerung. Steht bewusst NACH dem Gebot: sonst koennte man mit einem
+  /* Verlaengerung. Steht bewusst nach dem Gebot: sonst koennte man mit einem
      ungueltigen Gebot die Uhr weiterschieben. */
   let verlaengert = false;
   if (los.endet - Date.now() < VERLAENGERUNG_MS) {
@@ -261,24 +261,24 @@ function bieten(key, betrag) {
   save();
 
   if (!vorher) {
-    try { chat.announce(io, `🔨 Erstes Gebot für „${los.label}“: ${acc.name} bietet ${de(betrag)} Chips.`); } catch {}
+    try { chat.announce(io, `Erstes Gebot für „${los.label}“: ${acc.name} bietet ${de(betrag)} Chips.`); } catch {}
   }
 
   if (vorher && vorher !== key) {
     const vorKonto = accounts.get(vorher);
     if (vorKonto) { vorKonto.auktionUeberboten = true; accounts.save(); }
     /* Auch in den Chat. In einer Runde, die versetzt spielt, ist ein
-       Bietgefecht das Spannendste, was gerade passiert — und wer es erst am
+       Bietgefecht das Spannendste, was gerade passiert, und wer es erst am
        naechsten Tag erfaehrt, haette mitgeboten. Der Mindestschritt sorgt
        dafuer, dass daraus keine Maschinengewehr-Salve wird. */
     try {
-      chat.announce(io, `🔨 ${acc.name} überbietet ${vorherName} bei „${los.label}“: ${de(betrag)} Chips.`);
+      chat.announce(io, `${acc.name} überbietet ${vorherName} bei „${los.label}“: ${de(betrag)} Chips.`);
     } catch {}
-    // Der Ueberbotene ist fast immer gerade NICHT da — genau darum lohnt sich
+    // Der Ueberbotene ist fast immer gerade nicht da, genau darum lohnt sich
     // hier eine Nachricht aufs Geraet.
     try {
       require("./push").an(vorher, "auktion", {
-        title: `🔨 Überboten: ${los.label}`,
+        title: `Überboten: ${los.label}`,
         body: `${acc.name} bietet jetzt ${de(betrag)} Chips. Deine ${de(vorherBetrag)} sind zurück auf dem Konto.`,
         url: "/#/auktion",
       });
@@ -316,7 +316,7 @@ function kommendes(los) {
  *
  * Zwei Anlaesse, beide mit Frist: ein Los, das man noch nie gesehen hat, und
  * ein Gebot, das ueberboten wurde. Beides verschwindet, sobald man das
- * Auktionshaus aufmacht — deshalb steht der Merker am Konto und nicht im
+ * Auktionshaus aufmacht, deshalb steht der Merker am Konto und nicht im
  * localStorage: Safari raeumt den nach sieben Tagen weg, und wer so lange weg
  * war, soll die Marke ja gerade sehen.
  */
@@ -392,7 +392,7 @@ function setupAuktion(_io, _accounts) {
       if (typeof ack !== "function") return;
       const key = socket.data.account || null;
       const zustand = { ok: true, ...oeffentlich(key) };
-      // Erst antworten, DANN abhaken: sonst faende der Client seine eigene
+      // Erst antworten, dann abhaken: sonst faende der Client seine eigene
       // Marke nie und wuesste nicht, warum sie eben noch rot war.
       gesehen(key);
       ack(zustand);

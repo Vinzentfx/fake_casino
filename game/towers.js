@@ -1,22 +1,23 @@
 "use strict";
 
 /**
- * Towers (Dragon Tower) — single-player, server-authoritative.
+ * Towers (wie Dragon Tower), allein gegen das Haus, entschieden auf dem Server.
  *
- * Climb a 9-level tower. On each level you pick ONE tile from a row; some tiles
- * are safe (eggs), one or more are traps (skulls). Pick a safe tile → climb one
- * level and your multiplier rises. Pick a trap → you lose the bet. Cash out any
- * time after ≥1 correct pick to bank bet × current multiplier.
+ * Ein Turm mit 9 Ebenen. Auf jeder wählt man ein Feld aus einer Reihe, manche
+ * sind sicher (Eier), eins oder mehr sind Fallen (Totenköpfe). Sicheres Feld:
+ * eine Ebene höher, der Multiplikator steigt. Falle: Einsatz weg. Auszahlen
+ * geht jederzeit ab dem ersten richtigen Feld, dann gibt es Einsatz × Multiplikator.
  *
- * Five difficulties change the row width and how many tiles are safe:
- *   Easy   4 tiles, 3 safe (75%)   Medium 3 tiles, 2 safe (67%)
- *   Hard   2 tiles, 1 safe (50%)   Expert 3 tiles, 1 safe (33%)
- *   Master 4 tiles, 1 safe (25%)
+ * Fünf Schwierigkeiten ändern die Breite der Reihe und wie viele Felder sicher sind:
+ *   Leicht    4 Felder, 3 sicher (75 %)   Mittel   3 Felder, 2 sicher (67 %)
+ *   Schwer    2 Felder, 1 sicher (50 %)   Experte  3 Felder, 1 sicher (33 %)
+ *   Meister   4 Felder, 1 sicher (25 %)
  *
- * Fair multiplier after climbing L levels: (1 − edge) · (width/safe)^L
- * → EV of every cash-out level = (1 − edge). This matches Stake's Dragon Tower
- * exactly (e.g. Master L9 = 256 901.12×). Trap positions per row are rolled at
- * start with crypto RNG and never sent to the client until the game ends.
+ * Fairer Multiplikator nach L Ebenen: (1 − edge) · (Breite/sicher)^L, jede
+ * Auszahl-Ebene ist im Erwartungswert also (1 − edge) wert. Das entspricht genau
+ * Dragon Tower bei Stake (z. B. Meister Ebene 9 = 256 901,12×). Wo die Fallen
+ * liegen, wird beim Start mit crypto-Zufall ausgewürfelt und geht erst am Ende
+ * an den Client.
  */
 
 const crypto = require("crypto");
@@ -40,8 +41,8 @@ const DIFFICULTIES = {
  *
  * Der hoehere Einsatz hat ein Problem sichtbar gemacht, das vorher schon da
  * war: der Meister-Turm auf Ebene 9 zahlt rund
- * 256.901 mal den Einsatz. Mit 250.000 waeren das 64 Milliarden Chips
- * — ein einziger Treffer wuerde die ganze Wirtschaft erledigen. Die Chance
+ * 256.901 mal den Einsatz. Mit 250.000 waeren das 64 Milliarden Chips,
+ * und ein einziger Treffer wuerde die ganze Wirtschaft erledigen. Die Chance
  * liegt bei etwa 1 zu 262.000, das passiert also praktisch nie; aber
  * "praktisch nie" mal "zerstoert alles" ist trotzdem ein schlechtes Geschaeft.
  *
@@ -50,21 +51,21 @@ const DIFFICULTIES = {
  * steht sichtbar in der Oberflaeche, damit niemand ueberrascht wird. */
 const MAX_WIN = 2_000_000;
 
-/** Cash-out multiplier after climbing `level` rows (0 = not started → 1×). */
+/** Auszahlfaktor nach `level` Ebenen (0 = noch nicht angefangen, also 1×). */
 function multiplier(diff, level) {
   if (level <= 0) return 1;
   const step = diff.width / diff.safe;
   return Math.max(1, Math.floor(Math.pow(step, level) * (1 - HOUSE_EDGE) * 100) / 100);
 }
 
-/** Full multiplier ladder for the client's paytable (levels 1..ROWS). */
+/** Die ganze Leiter für die Gewinntabelle im Client (Ebenen 1..ROWS). */
 function ladder(diff) {
   const out = [];
   for (let l = 1; l <= ROWS; l++) out.push(multiplier(diff, l));
   return out;
 }
 
-/** Roll trap tile positions for every row (each row: width − safe traps). */
+/** Fallen für jede Reihe auswürfeln (je Reihe Breite − sicher Fallen). */
 function rollTraps(diff) {
   const traps = [];
   const bad = diff.width - diff.safe;
@@ -79,10 +80,10 @@ function rollTraps(diff) {
 const IDLE_SETTLE_MS = 30 * 60_000; // verlassene Spiele nach 30 Min auto-abrechnen
 
 function setupTowers(io, accounts) {
-  // Spiele hängen am ACCOUNT, nicht am Socket: Tab-Reload/Verbindungsabriss
-  // mitten im Lauf kostet nicht mehr Einsatz + aufgelaufenen Multiplikator —
+  // Spiele hängen am Account, nicht am Socket: Tab-Reload/Verbindungsabriss
+  // mitten im Lauf kostet nicht mehr Einsatz + aufgelaufenen Multiplikator,
   // der Client holt das laufende Spiel per towers:state zurück.
-  const games = new Map(); // accountKey → game
+  const games = new Map(); // Kontoschlüssel -> Spiel
 
   // Verlassene Spiele (30 Min ohne Aktion): Ebene ≥1 → Auto-Cashout zum
   // aktuellen Multiplikator, Ebene 0 → Einsatz zurück. Kein Vorteil erzielbar
@@ -118,7 +119,7 @@ function setupTowers(io, accounts) {
         safe: diff.safe,
         rows: ROWS,
         level: g.level,                              // climbed rows so far
-        picks: g.picks,                              // chosen tile per climbed row
+        picks: g.picks,                              // gewähltes Feld je Ebene
         over: g.over,
         multiplier: multiplier(diff, g.level),
         nextMultiplier: g.over || g.level >= ROWS ? null : multiplier(diff, g.level + 1),

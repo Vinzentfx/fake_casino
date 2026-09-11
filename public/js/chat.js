@@ -1,19 +1,20 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – floating chat dock (bottom-left, every screen).
+   Chat-Dock, schwebt unten links auf jedem Screen.
 
-   Idle state: only the 💬 bubble shows; the message log is faded out and
-   click-through (pointer-events:none) so it never blocks game buttons. A new
-   message or a tap reveals the log briefly, then it fades again. Tapping the
-   bubble opens the input. One dock, whose room switches with the screen
-   (global on the home/lobby, a lobby code inside a game lobby — set later).
+   In Ruhe ist nur die Blase zu sehen. Der Verlauf ist ausgeblendet und lässt
+   Klicks durch (pointer-events:none), damit er nie einen Spielknopf verdeckt.
+   Eine neue Nachricht oder ein Tipp blendet ihn kurz ein, danach verblasst er
+   wieder. Die Blase antippen öffnet die Eingabe. Es gibt nur ein Dock, der Raum
+   wechselt mit dem Screen (global in Lobby und Startseite, der Lobby-Code in
+   einer Spiel-Lobby).
    ============================================================ */
 
 (function () {
   const { socket, escapeHtml } = window.Casino;
   const fmtTime = (ts) => new Date(ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  const FADE_MS = 7000; // hide the log this long after the last message/interaction
+  const FADE_MS = 7000; // so lange nach der letzten Nachricht oder Berührung wird der Verlauf ausgeblendet
 
   const dock = document.getElementById("chat-dock");
   if (!dock) return;
@@ -49,7 +50,7 @@
     if (scroll) logEl.scrollTop = logEl.scrollHeight;
   }
 
-  // ── Reveal / fade ──────────────────────────────────────────────────────
+  // --- Reveal / fade ---
   function reveal() {
     dock.classList.add("show");
     clearTimeout(fadeTimer);
@@ -66,7 +67,7 @@
     else { fadeTimer = setTimeout(hide, FADE_MS); }
   }
 
-  // ── Room / history ─────────────────────────────────────────────────────
+  // --- Room / history ---
   function loadRoom(r) {
     room = r || "global";
     dock.dataset.chatRoom = room;
@@ -77,7 +78,7 @@
       if (token !== loadToken) return;
       logEl.innerHTML = "";
       if (!res || !res.ok || !res.messages.length) {
-        logEl.innerHTML = '<div class="chat-empty muted small">Noch keine Nachrichten 👋</div>';
+        logEl.innerHTML = '<div class="chat-empty muted small">Noch keine Nachrichten</div>';
         return;
       }
       res.messages.forEach((m) => append(m, false));
@@ -85,7 +86,7 @@
     });
   }
 
-  // ── Wiring ─────────────────────────────────────────────────────────────
+  // --- Wiring ---
   toggleEl.addEventListener("click", () => setOpen(!open));
 
   formEl.addEventListener("submit", (e) => {
@@ -99,13 +100,13 @@
     reveal();
   });
 
-  // Collapse the input shortly after it loses focus if left empty (keeps the
-  // screen clear on iPad once you're done typing).
+  // Die Eingabe kurz nach dem Fokusverlust einklappen, wenn sie leer ist (dann
+  // bleibt der Bildschirm auf dem iPad frei, sobald man fertig ist).
   textEl.addEventListener("blur", () => {
     setTimeout(() => { if (open && !textEl.value.trim() && document.activeElement !== textEl) setOpen(false); }, 250);
   });
 
-  // Any interaction with the dock keeps it awake.
+  // Jede Berührung am Dock hält es wach.
   dock.addEventListener("pointerdown", reveal);
 
   socket.on("chat:msg", ({ room: r, msg }) => {
@@ -114,12 +115,12 @@
     reveal();
   });
 
-  // ── Public API ─────────────────────────────────────────────────────────
+  // --- Public API ---
   window.Casino.chat = {
-    // Enter/leave a game lobby's private chat channel (keyed by lobby code).
+    // Privaten Chat einer Lobby betreten oder verlassen (Schlüssel ist der Lobby-Code).
     enterLobby: (code) => { dock.dataset.lobbyRoom = code; if (code !== room) loadRoom(code); },
     leaveLobby: () => { delete dock.dataset.lobbyRoom; loadRoom("global"); },
-    // Show/hide the whole dock (hidden on the login screen).
+    // Ganzes Dock ein- oder ausblenden (auf der Anmeldung ist es weg).
     update: (screen) => {
       if (screen === "login") { dock.classList.add("hidden"); setOpen(false); return; }
       dock.classList.remove("hidden");

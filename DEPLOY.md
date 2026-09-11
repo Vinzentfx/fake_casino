@@ -74,7 +74,7 @@ Läuft auf http://localhost:3000. Der lokale `data/`-Ordner ist **Testmüll**
 Spielständen zu tun. Zum Testen ist das genau richtig, verwechsle es nur nicht
 mit dem Produktivstand.
 
-Umgebungsvariablen fürs lokale Testen stehen in `~/.claude/launch.json`.
+Umgebungsvariablen fürs lokale Testen stehen in der lokalen Startkonfiguration (nicht im Repo).
 
 ## Deployen
 
@@ -90,7 +90,7 @@ startet den Dienst neu.
 
 Seit 6.9.2026 hängt eine neue Abhängigkeit dran (`web-push`), die kommt über den
 Installationsschritt automatisch mit. Beim ersten Start danach legt der Server
-`data/vapid.json` an — den Schlüssel für Benachrichtigungen. Die Datei liegt in
+`data/vapid.json` an, den Schlüssel für Benachrichtigungen. Die Datei liegt in
 `data/`, ist also gitignored und wird mitgesichert. Löscht man sie, muss sich
 jedes Gerät neu anmelden. Während des Neustarts sehen Besucher etwa drei Sekunden
 lang einen 502. Nicht mitten in einer Pokerrunde deployen.

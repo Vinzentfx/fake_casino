@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Hochgeladene Bilder — zurzeit nur Clan-Wappen.
+ * Hochgeladene Bilder, zurzeit nur Clan-Wappen.
  *
  * ---------------------------------------------------------------------------
  * Warum das hier so wenig tut
@@ -14,12 +14,12 @@
  * Gegen all das hilft ein Schritt, der hier gar nicht stattfindet: der Browser
  * zeichnet das gewaehlte Bild in ein Canvas fester Groesse und gibt es als
  * WebP wieder aus. Was dabei herauskommt, ist ein frisch erzeugtes Rasterbild
- * — ohne Skript, ohne EXIF, ohne Anhaengsel, in bekannter Kantenlaenge. Die
+ * ohne Skript, ohne EXIF, ohne Anhaengsel, in bekannter Kantenlaenge. Die
  * Originaldatei verlaesst das Geraet nie.
  *
  * Der Server muss deshalb nur noch pruefen, dass wirklich ankam, was er
  * erwartet: die richtige Signatur am Dateianfang und eine plausible Groesse.
- * Auf ein Bild, das er selbst nicht erzeugt hat, verlaesst er sich nicht —
+ * Auf ein Bild, das er selbst nicht erzeugt hat, verlaesst er sich nicht,
  * der Client koennte gefaelscht sein.
  *
  * Ausgeliefert wird ueber eine eigene Route (server.js), nicht ueber
@@ -48,13 +48,13 @@ function sicherstellen() {
   try { fs.mkdirSync(BILD_DIR, { recursive: true }); } catch {}
 }
 
-/** Nur Zeichen, die der Server selbst vergibt — kein Pfad kommt von aussen. */
+/** Nur Zeichen, die der Server selbst vergibt, kein Pfad kommt von aussen. */
 const sauberesKuerzel = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 40);
 
 /**
  * Ein Bild ablegen.
  *
- * @param {string} art    "clan" — mehr gibt es noch nicht.
+ * @param {string} art    "clan", mehr gibt es noch nicht.
  * @param {string} id     Kennung des Besitzers, etwa die Clan-Id.
  * @param {string} datenUrl  "data:image/webp;base64,…" aus dem Canvas.
  * @returns {{ok: boolean, error?: string, url?: string, bytes?: number}}
@@ -73,7 +73,7 @@ function speichere(art, id, datenUrl) {
     return { ok: false, error: `Bild ist zu groß (${Math.round(buf.length / 1024)} KB, erlaubt sind ${Math.round(MAX_BYTES / 1024)}).` };
   }
 
-  /* Die angegebene Art zaehlt nicht — nur was tatsaechlich in der Datei
+  /* Die angegebene Art zaehlt nicht, nur was tatsaechlich in der Datei
      steht. Ein umbenanntes Skript kommt so nicht durch. */
   const sig = SIGNATUREN.find((s) => s.test(buf));
   if (!sig) return { ok: false, error: "Das ist kein PNG, JPEG oder WebP." };
@@ -121,7 +121,7 @@ function loesche(art, id) {
   try { fs.rmSync(p, { force: true }); return true; } catch { return false; }
 }
 
-/** Alles, was da ist — fuer die Admin-Uebersicht. */
+/** Alles, was da ist, fuer die Admin-Uebersicht. */
 function alle() {
   sicherstellen();
   try {
@@ -129,7 +129,7 @@ function alle() {
       const p = path.join(BILD_DIR, datei);
       const st = fs.statSync(p);
       /* Die Art trennt der erste Bindestrich ab und darf deshalb selbst
-         keinen enthalten — sonst frisst der gierige Ausdruck den ersten
+         keinen enthalten, sonst frisst der gierige Ausdruck den ersten
          Bindestrich der Kennung mit, und aus "clan-die-haie" wird die Art
          "clan-die" und die Kennung "haie". Genau das ist passiert. */
       const m = /^([a-z0-9_]+)-(.+)\.(webp|png|jpg)$/.exec(datei);

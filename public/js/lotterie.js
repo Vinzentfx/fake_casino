@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Lotterie — Oberflaeche.
+ * Lotterie, Oberfläche.
  *
  * Ein Tippschein mit sechzehn Zahlen, vier davon ankreuzen, Los kaufen. Die
  * Ziehung laeuft abends von selbst; wer dann nicht da ist, verpasst nichts.
@@ -43,7 +43,7 @@
     const kaufen = $("#lo-kaufen");
     kaufen.disabled = !voll;
     kaufen.textContent = voll
-      ? `Los kaufen — ${fmt(stand.lospreis)} Chips`
+      ? `Los kaufen (${fmt(stand.lospreis)} Chips)`
       : `Noch ${stand.tipps - gewaehlt.size} Zahl${stand.tipps - gewaehlt.size === 1 ? "" : "en"} wählen`;
   }
 
@@ -90,7 +90,7 @@
       ? `<h3 class="lo-titel">Ziehung ${l.nr}</h3>
          <div class="lo-gezogen">${l.gezogen.map((z) => `<span>${z}</span>`).join("")}</div>
          <p class="muted small">
-           ${l.gewinner[4].length ? `🎉 Jackpot an ${l.gewinner[4].join(", ")} — ${fmt(l.jackpotAus)} Chips.`
+           ${l.gewinner[4].length ? `Jackpot an ${l.gewinner[4].join(", ")}: ${fmt(l.jackpotAus)} Chips.`
              : "Kein Volltreffer."}
            ${l.gewinner[3].length ? ` 3 Richtige: ${l.gewinner[3].join(", ")}.` : ""}
            ${l.gewinner[2] ? ` ${l.gewinner[2]}× zwei Richtige.` : ""}
@@ -107,7 +107,7 @@
       if (!r || !r.ok) { err.textContent = (r && r.error) || "Ging nicht."; return; }
       if (r.account) applyAccount(r.account);
       Casino.sound?.play("select");
-      toast(`🎟️ Los gekauft: ${r.tipp.join(" · ")}`);
+      toast(`Los gekauft: ${r.tipp.join(" · ")}`);
       gewaehlt.clear();
       zeichne(r);
     });

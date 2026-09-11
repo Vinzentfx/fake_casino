@@ -72,7 +72,7 @@
 
   function handResult(hand) {
     if (!hand.result) return "";
-    const map = { win:"✅ Gewonnen", blackjack:"🃏 Blackjack!", push:"🤝 Unentschieden", lose:"❌ Verloren", bust:"💥 Überkauft" };
+    const map = { win: "Gewonnen", blackjack: "Blackjack!", push: "Unentschieden", lose: "Verloren", bust: "Überkauft" };
     return map[hand.result] || hand.result;
   }
 
@@ -238,11 +238,11 @@
     setupChipButtons();
   }
 
-  // Called by app.js's showScreen when the blackjack screen opens.
+  // Ruft der Router auf, wenn der Blackjack-Screen aufgeht.
   window.Casino._loadBlackjack = onEnterBlackjack;
 
   /*
-   * Knoepfe genau EINMAL verdrahten.
+   * Knoepfe genau einmal verdrahten.
    *
    * Hier stand beides untereinander: ein DOMContentLoaded-Listener und
    * darunter derselbe Block nochmal, "falls DOMContentLoaded schon durch

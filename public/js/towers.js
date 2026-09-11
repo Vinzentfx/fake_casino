@@ -1,10 +1,10 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Towers (Dragon Tower, client).
-   Climb the tower: pick a safe tile (🥚) each level to raise the
-   multiplier, avoid the traps (💀). Cash out any time.
-   Server-authoritative (game/towers.js); this only renders.
+   Towers (wie Dragon Tower)
+   Den Turm hochklettern: auf jeder Ebene ein sicheres Feld (Ei) wählen, dann
+   steigt der Multiplikator. Fallen (Totenkopf) meiden. Auszahlen geht immer.
+   Entschieden wird auf dem Server (game/towers.js), hier wird nur gezeichnet.
    ============================================================ */
 
 (function () {
@@ -15,7 +15,7 @@
   // englische Schreibweise, die im Rest des Hauses nirgends vorkommt.
   const mx = (n) => Number(n || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // Client-side difficulty configs (width, safe) — nur für die Vorschau-Leiter;
+  // Schwierigkeiten im Client (Breite, sicher), nur für die Vorschau-Leiter;
   // die echten Werte kommen server-seitig identisch mit (Stake-exakt, RTP 98%).
   const DIFFS = [
     { key: "easy", label: "Einfach", w: 4, s: 3 },
@@ -85,10 +85,10 @@
 
   function renderTop(v) {
     $("#tw-mult").textContent = mx(v.multiplier || 1) + "×";
-    $("#tw-cashval").textContent = v.cashout ? fmt(v.cashout) + " Chips" : "—";
-    $("#tw-next").textContent = v.nextMultiplier ? mx(v.nextMultiplier) + "×" : "—";
+    $("#tw-cashval").textContent = v.cashout ? fmt(v.cashout) + " Chips" : "-";
+    $("#tw-next").textContent = v.nextMultiplier ? mx(v.nextMultiplier) + "×" : "-";
     const btn = $("#tw-cashout");
-    btn.textContent = v.cashout ? `💸 Auszahlen — ${fmt(v.cashout)} Chips (${mx(v.multiplier)}×)` : "💸 Auszahlen";
+    btn.textContent = v.cashout ? `Auszahlen: ${fmt(v.cashout)} Chips (${mx(v.multiplier)}×)` : "Auszahlen";
     btn.disabled = !v.cashout;
   }
 
@@ -116,7 +116,7 @@
        * Auf "Meister" verspricht Ebene 9 das 256.901-fache. Ausgezahlt werden
        * hoechstens 2 Mio je Runde, also ist die Stufe schon beim
        * Mindesteinsatz von 50 Chips abgeschnitten. Eine Leiter, die etwas
-       * verspricht und dann kuerzt, ist eine Luege — Mines zeigt seinen
+       * verspricht und dann kuerzt, ist eine Luege, Mines zeigt seinen
        * Deckel laengst, Towers hat ihn nur verschwiegen.
        */
       const mlab = document.createElement("span");
@@ -138,7 +138,7 @@
         /*
          * Zwei Seiten wie in Mines: der Deckel klappt um, dahinter liegt eine
          * gezeichnete Seite. Vorher stand die Kachel leer da und beim Tippen
-         * erschien ein Emoji darin — kein Moment, und auf jedem Geraet ein
+         * erschien ein Emoji darin, kein Moment, und auf jedem Geraet ein
          * anderes Bild.
          */
         b.innerHTML = `<span class="tw-flip"><span class="tw-back"></span><span class="tw-front"></span></span>`;
@@ -188,7 +188,7 @@
     const prev = game;
     game = v;
     renderTop(v.bust ? { ...v, cashout: 0, nextMultiplier: null } : v);
-    if (v.bust) { $("#tw-cashval").textContent = "verloren"; $("#tw-next").textContent = "—"; }
+    if (v.bust) { $("#tw-cashval").textContent = "verloren"; $("#tw-next").textContent = "-"; }
     // Frisch aufgedeckte Kachel für die Pop-Animation ermitteln.
     const fx = {};
     if (prev && !prev.over && v.level > prev.level) fx.pop = { row: v.level - 1, tile: v.picks[v.level - 1] };
@@ -232,7 +232,7 @@
     const err = $("#tw-error"); err.textContent = "";
     const bet = parseInt($("#tw-amount").value, 10);
     // Grenzen kommen vom Server. Fest getippt liefen sie auseinander, sobald
-    // dort eine Zahl geaendert wird — genau das war hier passiert.
+    // dort eine Zahl geaendert wird, genau das war hier passiert.
     if (!Number.isFinite(bet) || bet < grenzen.minBet) { err.textContent = `Mindestens ${fmt(grenzen.minBet)} Chips.`; return; }
     if (bet > grenzen.maxBet) { err.textContent = `Maximaleinsatz ${fmt(grenzen.maxBet)} Chips.`; return; }
     socket.emit("towers:start", { bet, difficulty: diffKey }, (v) => {
@@ -267,7 +267,7 @@
     // Läuft server-seitig noch ein Spiel (z.B. nach Tab-Reload)? → fortsetzen.
     socket.emit("towers:state", (v) => {
       if (v && v.minBet) {
-        // maxWin MUSS mit: der Server schickt den Deckel, und ohne ihn
+        // maxWin muss mit: der Server schickt den Deckel, und ohne ihn
         // verspricht die Leiter Betraege, die nie ausgezahlt werden.
         grenzen = { minBet: v.minBet, maxBet: v.maxBet, maxWin: v.maxWin };
         const feld = $("#tw-amount");

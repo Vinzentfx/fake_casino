@@ -1,12 +1,12 @@
 "use strict";
 
 /**
- * Kniffel — zwei Spieler, abwechselnd, serverseitig entschieden.
+ * Kniffel: zwei Spieler, abwechselnd, serverseitig entschieden.
  *
  * Sieben Kategorien statt der klassischen dreizehn: eine volle Partie dauert
  * zu zweit weit ueber eine Viertelstunde, und so lange bleibt hier niemand
  * am selben Tisch. Sieben sind in etwa fuenf Minuten durch und behalten die
- * Entscheidung, um die es geht — wo trage ich einen mittelmaessigen Wurf ein.
+ * Entscheidung, um die es geht: wo trage ich einen mittelmaessigen Wurf ein.
  *
  * Warum kein versetztes Duell (game/asyncDuell.js)? Weil man dort die ganze
  * Aufgabe auf einmal bekommt. Bei Kniffel waeren das alle kuenftigen Wuerfe,
@@ -32,21 +32,21 @@ const TOT_MS = 20 * 60 * 1000;  // verwaiste Partie aufraeumen
 
 /*
  * Die sieben Felder. `punkte(w)` bekommt die fuenf Augenzahlen und gibt,
- * was das Feld dafuer zahlt — 0, wenn die Bedingung nicht erfuellt ist.
- * Eingetragen werden MUSS trotzdem, genau darin liegt das Spiel.
+ * was das Feld dafuer zahlt, 0, wenn die Bedingung nicht erfuellt ist.
+ * Eingetragen werden muss trotzdem, genau darin liegt das Spiel.
  */
 const FELDER = [
-  { id: "dreier", label: "Dreierpasch", hinweis: "3 gleiche — zählt alle Augen",
+  { id: "dreier", label: "Dreierpasch", hinweis: "3 gleiche, zählt alle Augen",
     punkte: (w) => (maxGleich(w) >= 3 ? summe(w) : 0) },
-  { id: "vierer", label: "Viererpasch", hinweis: "4 gleiche — zählt alle Augen",
+  { id: "vierer", label: "Viererpasch", hinweis: "4 gleiche, zählt alle Augen",
     punkte: (w) => (maxGleich(w) >= 4 ? summe(w) : 0) },
-  { id: "full",   label: "Full House",  hinweis: "3 + 2 gleiche — 25 Punkte",
+  { id: "full",   label: "Full House",  hinweis: "3 + 2 gleiche, 25 Punkte",
     punkte: (w) => (istFull(w) ? 25 : 0) },
-  { id: "kleine", label: "Kleine Straße", hinweis: "4 in Folge — 30 Punkte",
+  { id: "kleine", label: "Kleine Straße", hinweis: "4 in Folge, 30 Punkte",
     punkte: (w) => (folgeLaenge(w) >= 4 ? 30 : 0) },
-  { id: "grosse", label: "Große Straße",  hinweis: "5 in Folge — 40 Punkte",
+  { id: "grosse", label: "Große Straße",  hinweis: "5 in Folge, 40 Punkte",
     punkte: (w) => (folgeLaenge(w) >= 5 ? 40 : 0) },
-  { id: "kniffel", label: "Kniffel",      hinweis: "5 gleiche — 50 Punkte",
+  { id: "kniffel", label: "Kniffel",      hinweis: "5 gleiche, 50 Punkte",
     punkte: (w) => (maxGleich(w) === 5 ? 50 : 0) },
   { id: "chance", label: "Chance",        hinweis: "Zählt immer alle Augen",
     punkte: (w) => summe(w) },
@@ -67,7 +67,7 @@ function folgeLaenge(w) {
   return best;
 }
 
-/** Was jedes noch freie Feld mit DIESEN Würfeln bringen würde. */
+/** Was jedes noch freie Feld mit diesen Würfeln bringen würde. */
 function vorschau(w, blatt) {
   const out = {};
   for (const f of FELDER) if (blatt[f.id] == null) out[f.id] = f.punkte(w);
@@ -78,7 +78,7 @@ const gesamt = (blatt) => FELDER.reduce((s, f) => s + (blatt[f.id] || 0), 0);
 const alleGesetzt = (blatt) => FELDER.every((f) => blatt[f.id] != null);
 
 function setupKniffel(io, accounts) {
-  const partien = new Map(); // code -> partie
+  const partien = new Map(); // Code -> Partie
 
   function makeCode() {
     let c;
@@ -92,7 +92,7 @@ function setupKniffel(io, accounts) {
   function beschreibe(p) {
     const namen = spielerListe(p).map((s) => s.name);
     return {
-      code: p.code, game: "kniffel", label: "🎯 Kniffel-Duell",
+      code: p.code, game: "kniffel", label: "Kniffel-Duell",
       host: namen[0] || "?", players: p.spieler.size, max: 2,
       buyIn: p.einsatz,
       joinable: p.phase === "warten" && p.spieler.size < 2,
@@ -112,7 +112,7 @@ function setupKniffel(io, accounts) {
       spieler: liste,
       dran: p.dran, dranName: dran ? dran.name : null, ichBinDran,
       wuerfel: p.wuerfel, halten: p.halten, wuerfeUebrig: p.wuerfeUebrig,
-      // Die Vorschau bekommt nur, wer dran ist — sonst rechnet der Gegner mit.
+      // Die Vorschau bekommt nur, wer dran ist, sonst rechnet der Gegner mit.
       vorschau: ichBinDran && p.wuerfel.length ? vorschau(p.wuerfel, p.spieler.get(fuer).blatt) : null,
       zugBis: p.zugBis, ergebnis: p.ergebnis || null,
     };
@@ -181,7 +181,7 @@ function setupKniffel(io, accounts) {
     clearTimeout(p.timer);
     /*
      * Wer nicht eintraegt, blockiert sonst die ganze Partie. Nach Ablauf
-     * traegt der Server in das erste freie Feld ein — meist eine Null, aber
+     * traegt der Server in das erste freie Feld ein, meist eine Null, aber
      * das Spiel laeuft weiter, und das ist wichtiger.
      */
     p.timer = setTimeout(() => {
@@ -203,7 +203,7 @@ function setupKniffel(io, accounts) {
     if (!s || !feld || s.blatt[feldId] != null) return false;
     s.blatt[feldId] = feld.punkte(p.wuerfel);
     if (automatisch) {
-      try { chat.announce(io, `⏱️ ${s.name} war zu langsam — ${feld.label} wurde mit ${s.blatt[feldId]} eingetragen.`); } catch {}
+      try { chat.announce(io, `${s.name} war zu langsam, ${feld.label} wurde mit ${s.blatt[feldId]} eingetragen.`); } catch {}
     }
     if (spielerListe(p).every((x) => alleGesetzt(x.blatt))) { beende(p, "fertig"); return true; }
     neuerZug(p, naechster(p, key));
@@ -227,7 +227,7 @@ function setupKniffel(io, accounts) {
      *
      * Beendete bleiben absichtlich noch eine Minute liegen, damit beide das
      * Ergebnis sehen koennen. Ohne die Phasen-Pruefung galt man in dieser
-     * Minute aber weiter als "schon in einer Partie" — der Knopf "Neue
+     * Minute aber weiter als "schon in einer Partie", der Knopf "Neue
      * Partie" lief dann sechzig Sekunden lang ins Leere.
      */
     function meine() {
@@ -319,7 +319,7 @@ function setupKniffel(io, accounts) {
       const p = meine();
       const antwort = (r) => typeof ack === "function" && ack(r);
       if (!p || p.phase !== "laeuft" || p.dran !== key()) return antwort({ ok: false, error: "Du bist nicht dran." });
-      if (p.wuerfeUebrig < 1) return antwort({ ok: false, error: "Keine Würfe mehr — trag ein." });
+      if (p.wuerfeUebrig < 1) return antwort({ ok: false, error: "Keine Würfe mehr, trag ein." });
       p.wuerfel = p.wuerfel.map((x, i) => (p.halten[i] ? x : wurf()));
       p.wuerfeUebrig -= 1;
       p.letzteAktion = Date.now();

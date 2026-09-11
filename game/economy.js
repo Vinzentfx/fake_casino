@@ -1,13 +1,15 @@
 "use strict";
 
 /**
- * Economy: the work clicker (a capped bootstrap, NOT an idle game) plus the
- * shared-city actions (buy/sell land, build, buy out & take over businesses).
+ * Wirtschaft: der Arbeits-Klicker (gedeckelte Starthilfe, kein Idle-Spiel) und
+ * die Aktionen in der gemeinsamen Stadt (Land kaufen und verkaufen, bauen,
+ * Firmen herauskaufen und übernehmen).
  *
- * The city no longer pays passive income — owning a building grants a BUFF, and
- * buying anything is a chip SINK. Real chips come from playing the games. The
- * clicker exists only to help a broke/new player scrape together a first stake;
- * it's deliberately capped so it never competes with the games or the city.
+ * Die Stadt zahlt kein passives Einkommen mehr. Ein Gebäude gibt einen Bonus,
+ * und jeder Kauf schluckt Chips. Richtiges Geld kommt aus den Spielen. Den
+ * Klicker gibt es nur, damit jemand ohne Chips sich einen ersten Einsatz
+ * zusammenkratzen kann, deshalb ist er gedeckelt und macht weder den Spielen
+ * noch der Stadt Konkurrenz.
  */
 
 const city = require("./city");
@@ -17,23 +19,23 @@ const achievements = require("./achievements");
 const quests = require("./quests");
 const weekly = require("./weekly");
 
-// ─── Work clicker (capped) ──────────────────────────────────────────────────
-const MAX_CLICK_LEVEL = 5;     // a few upgrades, then it's maxed out
+// --- Arbeits-Klicker (gedeckelt) ---
+const MAX_CLICK_LEVEL = 5;     // ein paar Stufen, dann ist Schluss
 const CLICK_POWER_BY_LEVEL = [2, 4, 7, 11, 16, 22];
-const clickUpgradeCost = (lvl) => 200 * (lvl + 1); // lvl 0→200, 1→400, … 4→1000
-const HUSTLE_TARGET = 25;      // valid work clicks per bonus
-const HUSTLE_MIN_GAP = 180;    // clicks faster than this don't build hustle
+const clickUpgradeCost = (lvl) => 200 * (lvl + 1); // Stufe 0: 200, 1: 400, … 4: 1000
+const HUSTLE_TARGET = 25;      // gültige Klicks je Bonus
+const HUSTLE_MIN_GAP = 180;    // schnellere Klicks zählen nicht
 const HUSTLE_HOUR_CAP = 10000;
 const HUSTLE_DAY_CAP = 60000;
 const WORK_FACTOR_WINDOW = 15 * 60 * 1000;
 const JOB_HOUR_CAP = 32000;
 const JOB_DAY_CAP = 150000;
 /*
- * Die Jobs sind jetzt Rollen IM Haus, und die Aufgaben sind das, was man in
+ * Die Jobs sind jetzt Rollen im Haus, und die Aufgaben sind das, was man in
  * so einer Rolle wirklich koennen muss: wechseln, richtig auszahlen, Quoten
  * rechnen, einen falschen Wettschein erkennen.
  *
- * Vorher waren es Paketstapel, Kabelfarben und Zahlenfelder — thematisch
+ * Vorher waren es Paketstapel, Kabelfarben und Zahlenfelder, thematisch
  * beliebig, und fast alle nach demselben Muster "die Loesung steht da, tippe
  * sie ab". Das war kein Raetsel, sondern eine Gehorsamspruefung.
  *
@@ -59,7 +61,7 @@ const dayNow = () => Math.floor(Date.now() / 86400000);
 // man rechnen, deshalb eine Minute.
 const TASK_TTL = 60_000;
 // Wer falsch liegt, bekommt trotzdem etwas. Die Wartezeit laeuft ohnehin, und
-// Arbeiten ist die Hilfe fuer Leute ohne Chips — ein Totalausfall ist da die
+// Arbeiten ist die Hilfe fuer Leute ohne Chips, ein Totalausfall ist da die
 // falsche Strafe. Richtig liegen lohnt sich trotzdem deutlich.
 const TROSTLOHN = 0.4;
 const WORK_STOPS = ["Depot", "Bank", "Markt", "Park", "Kiosk", "Hotel"];
@@ -123,7 +125,7 @@ const fmtChips = (n) => Math.round(n).toLocaleString("de-DE");
 /*
  * Grundstrategie Blackjack, auf die Faelle beschraenkt, die eindeutig sind.
  * Genau diese Situationen kosten am Tisch am meisten Geld, wenn man sie
- * falsch spielt — deshalb stehen sie hier.
+ * falsch spielt. Deshalb stehen sie hier.
  */
 const BJ_FAELLE = [
   { hand: "harte 16", dealer: 10, richtig: "Karte", warum: "Gegen eine hohe Dealer-Karte musst du verbessern." },
@@ -132,7 +134,7 @@ const BJ_FAELLE = [
   { hand: "harte 12", dealer: 2,  richtig: "Karte",  warum: "Bei Dealer 2 ist Passen mit 12 noch zu schwach." },
   { hand: "harte 11", dealer: 6,  richtig: "Verdoppeln", warum: "Mit 11 gegen eine schwache Karte verdoppelt man immer." },
   { hand: "harte 10", dealer: 9,  richtig: "Verdoppeln", warum: "10 gegen 9 ist noch klar im Vorteil." },
-  { hand: "zwei Achter", dealer: 7, richtig: "Teilen", warum: "16 ist die schlechteste Hand — zwei Achten sind besser." },
+  { hand: "zwei Achter", dealer: 7, richtig: "Teilen", warum: "16 ist die schlechteste Hand, zwei Achten sind besser." },
   { hand: "zwei Asse", dealer: 6, richtig: "Teilen", warum: "Asse teilt man immer." },
   { hand: "harte 17", dealer: 10, richtig: "Passen", warum: "Ab 17 wird nicht mehr gezogen." },
   { hand: "harte 9", dealer: 3, richtig: "Verdoppeln", warum: "9 gegen 3 bis 6 wird verdoppelt." },
@@ -144,7 +146,7 @@ function makeWorkTask(id, job, now = Date.now()) {
   const type = taskPool[zufall(taskPool.length)];
   const ende = now + TASK_TTL;
 
-  // ── Kasse: Betrag in moeglichst wenige Chips wechseln ────────────────────
+  // --- Kasse: Betrag in moeglichst wenige Chips wechseln ---
   if (type === "wechseln") {
     const { betrag, chips } = wechselBetrag();
     return {
@@ -160,7 +162,7 @@ function makeWorkTask(id, job, now = Date.now()) {
     };
   }
 
-  // ── Croupier: was zahlt der Tisch aus? ───────────────────────────────────
+  // --- Croupier: was zahlt der Tisch aus? ---
   if (type === "auszahlung") {
     const { payoutFactor } = require("./roulette");
     const einsatz = (1 + zufall(20)) * 50; // 50 bis 1.000
@@ -190,7 +192,7 @@ function makeWorkTask(id, job, now = Date.now()) {
     };
   }
 
-  // ── Kasse: Quote ausrechnen ──────────────────────────────────────────────
+  // --- Kasse: Quote ausrechnen ---
   if (type === "quote") {
     const einsatz = (1 + zufall(20)) * 100;
     const quote = Math.round((1.2 + Math.random() * 4) * 100) / 100;
@@ -208,13 +210,13 @@ function makeWorkTask(id, job, now = Date.now()) {
     };
   }
 
-  // ── Croupier: Grundstrategie ─────────────────────────────────────────────
+  // --- Croupier: Grundstrategie ---
   if (type === "strategie") {
     const f = waehle(BJ_FAELLE);
     return {
       id, type, expiresAt: ende,
       answer: f.richtig.toLowerCase(),
-      loesung: `${f.richtig} — ${f.warum}`,
+      loesung: `${f.richtig}: ${f.warum}`,
       public: {
         id, type, title: "Richtig beraten",
         prompt: `Ein Gast hat ${f.hand}, der Dealer zeigt ${f.dealer}. Was rätst du?`,
@@ -223,7 +225,7 @@ function makeWorkTask(id, job, now = Date.now()) {
     };
   }
 
-  // ── Sicherheit: welcher Schein rechnet nicht auf? ────────────────────────
+  // --- Sicherheit: welcher Schein rechnet nicht auf? ---
   if (type === "schein") {
     const scheine = [];
     const falschIdx = zufall(4);
@@ -253,7 +255,7 @@ function makeWorkTask(id, job, now = Date.now()) {
     };
   }
 
-  // ── Kellner: Bestellungen in der richtigen Reihenfolge ───────────────────
+  // --- Kellner: Bestellungen in der richtigen Reihenfolge ---
   const anzahl = 3 + zufall(2);
   const bestellung = Array.from({ length: anzahl }, () => ({
     tisch: waehle(TISCHE), getraenk: waehle(GETRAENKE),
@@ -282,7 +284,7 @@ function makeWorkTask(id, job, now = Date.now()) {
  * Liste wurde nur zusammengefuegt, ein Text zusaetzlich kleingeschrieben. Der
  * Server legt die Loesung als Text ab ("P3P1P2P4"), der Client schickt eine
  * Liste (["P3","P1","P2","P4"]). Damit verglich man "p3p1p2p4" mit
- * "P3P1P2P4" — die Aufgaben route, wires und stack waren dadurch schlicht
+ * "P3P1P2P4", die Aufgaben route, wires und stack waren dadurch schlicht
  * unloesbar, und ein Fehlversuch verbrannte trotzdem die Wartezeit.
  */
 function normalizeTaskAnswer(answer) {
@@ -405,10 +407,10 @@ let _accountsRef = null;
  * "Krone" dafuer, Boss eines Ortsteils zu sein.
  *
  * Die Pruefung lief erst nur nach einem Kauf, dann zusaetzlich beim Oeffnen
- * der Stadt — und haing damit immer noch daran, dass jemand den richtigen
+ * der Stadt, und haing damit immer noch daran, dass jemand den richtigen
  * Bildschirm antippt. Wer seinen Ortsteil laengst erobert hatte und die Karte
  * einfach nicht mehr aufmachte, wartete weiter vergeblich. Deshalb laeuft sie
- * jetzt zusaetzlich in einem Durchgang ueber ALLE Konten.
+ * jetzt zusaetzlich in einem Durchgang ueber alle Konten.
  */
 function stadtKosmetik(io, accounts, key, acc) {
   if (!acc) return null;
@@ -421,7 +423,7 @@ function stadtKosmetik(io, accounts, key, acc) {
   if (io) {
     for (const s2 of io.of("/").sockets.values()) {
       if (s2.data && s2.data.account === key) {
-        s2.emit("notice", { text: `🎨 Freigeschaltet: ${neu} — anlegen in der Kosmetik.` });
+        s2.emit("notice", { text: `Freigeschaltet: ${neu}. Anlegen kannst du es in der Kosmetik.` });
         break;
       }
     }
@@ -442,13 +444,13 @@ function setupEconomy(io, accounts) {
   _accountsRef = accounts;
   const acct = (s) => (s.data.account ? accounts.get(s.data.account) : null);
 
-  /** Tell everyone the shared city changed; clients re-pull city:state. */
+  /** Allen sagen, dass sich die Stadt geändert hat, die Clients holen city:state neu. */
   function broadcastCity() {
     io.emit("city:update");
   }
 
-  // Per-ACCOUNT click rate limiter (~20/s) — keyed by account, not socket, so
-  // opening extra tabs/sockets can't multiply the click faucet.
+  // Klick-Bremse je Konto (~20/s), nicht je Socket, sonst vervielfacht man
+  // den Klicker einfach mit mehr Tabs.
   const clickTimes = new Map();
   const CLICK_MAX = 20, CLICK_WINDOW = 1000;
 
@@ -461,7 +463,7 @@ function setupEconomy(io, accounts) {
   setInterval(() => stadtKosmetikFuerAlle(io, accounts), 60 * 60 * 1000).unref();
 
   io.on("connection", (socket) => {
-    // ── Work clicker ────────────────────────────────────────────────────────
+    // --- Arbeits-Klicker ---
     socket.on("work:click", (ack) => {
       if (typeof ack !== "function") return;
       const acc = acct(socket);
@@ -473,15 +475,15 @@ function setupEconomy(io, accounts) {
       times.push(now); clickTimes.set(key, times);
 
       const e = ensureEconomy(acc);
-      // Hourly earnings cap: with an autoclicker the 20/s rate limit alone
-      // would still allow ~1M+/h — the clicker is a bootstrap, not a job.
+      // Deckel pro Stunde: mit Autoklicker ließe allein die 20/s-Bremse noch
+      // ~1 Mio./h zu. Der Klicker ist Starthilfe, kein Job.
       const HOUR = 3600000, CLICK_EARN_CAP = 35000;
       if (!e.clickHourAt || now - e.clickHourAt >= HOUR) { e.clickHourAt = now; e.clickEarned = 0; }
       if ((e.clickEarned || 0) >= CLICK_EARN_CAP)
         return ack({ ok: false, error: "Feierabend! Der Klick-Job ist für diese Stunde ausgeschöpft." });
       if (e.hustleDay !== dayNow()) { e.hustleDay = dayNow(); e.hustleDayEarned = 0; e.hustleClicks = 0; }
       if (!e.hustleHourAt || now - e.hustleHourAt >= HOUR) { e.hustleHourAt = now; e.hustleHourEarned = 0; }
-      // Schulleiter trophy: education pays — clicks ×3.
+      // Schulleiter (Trophäe): Bildung zahlt sich aus, Klicks ×3.
       const schule = city.hasTrophy(key, "schule") ? 3 : 1;
       const factor = workFactorState(acc, e, now);
       let earned = Math.max(1, Math.round(clickPower(e) * schule * factor.factor));
@@ -526,7 +528,7 @@ function setupEconomy(io, accounts) {
       const acc = acct(socket);
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
       const e = ensureEconomy(acc);
-      if (e.clickLevel >= MAX_CLICK_LEVEL) return ack({ ok: false, error: "Schon voll ausgebaut — der Rest kommt aus den Spielen & der Stadt." });
+      if (e.clickLevel >= MAX_CLICK_LEVEL) return ack({ ok: false, error: "Schon voll ausgebaut. Mehr gibt es in den Spielen und in der Stadt." });
       const cost = clickUpgradeCost(e.clickLevel);
       if (acc.chips < cost) return ack({ ok: false, error: "Nicht genug Chips." });
       e.clickLevel += 1;
@@ -610,7 +612,7 @@ function setupEconomy(io, accounts) {
       const job = JOBS[task.jobId];
       if (!job) { delete jobs.activeTask; accounts.save(); return ack({ ok: false, error: "Job nicht gefunden.", jobs: publicJobs(acc, e, now) }); }
 
-      /* Beim Wechseln soll die Reihenfolge der angetippten Chips egal sein —
+      /* Beim Wechseln soll die Reihenfolge der angetippten Chips egal sein,
          wichtig ist, WELCHE Chips, nicht in welcher Folge man sie greift. */
       let eingabe = answer;
       if (task.sortAnswer === "desc" && Array.isArray(eingabe)) {
@@ -622,7 +624,7 @@ function setupEconomy(io, accounts) {
       delete jobs.activeTask;
 
       /* Kein Totalausfall mehr. Die Wartezeit laeuft ohnehin, und Arbeiten ist
-         die Hilfe fuer Leute ohne Chips — wer danebenliegt, bekommt den
+         die Hilfe fuer Leute ohne Chips, wer danebenliegt, bekommt den
          Trostlohn und erfaehrt die richtige Antwort. Richtig liegen bringt
          immer noch das Zweieinhalbfache. */
       const result = awardJob(acc, socket.data.account, e, job, now,
@@ -671,7 +673,7 @@ function setupEconomy(io, accounts) {
       });
     });
 
-    // ── Shared city (real map: districts → buildings) ─────────────────────
+    // --- Gemeinsame Stadt (echte Karte: Ortsteile, dann Gebäude) ---
     socket.on("city:state", (ack) => {
       if (typeof ack !== "function") return;
       const key = socket.data.account || null;
@@ -697,11 +699,11 @@ function setupEconomy(io, accounts) {
       const key = socket.data.account || null;
       const d = city.publicDistrict(id, key);
       if (!d) return ack({ ok: false, error: "Stadtteil nicht gefunden." });
-      d.residents = accounts.residentsByBuilding(); // Wohnsitz flavour for the panel
+      d.residents = accounts.residentsByBuilding(); // Wohnsitz fürs Panel
       ack({ ok: true, district: d });
     });
 
-    // Wohnsitz: free social flavour — "live" in any house on the map.
+    // Wohnsitz: reine Deko, man "wohnt" in einem beliebigen Haus auf der Karte.
     socket.on("city:residence", ({ buildingId } = {}, ack) => {
       if (typeof ack !== "function") return;
       const acc = acct(socket);
@@ -712,10 +714,10 @@ function setupEconomy(io, accounts) {
       broadcastCity();
     });
 
-    // Generic building action: validate, pay cost / receive gain, compensate a
-    // dispossessed ex-owner (takeover), commit, broadcast. Conquests (new
-    // street monopoly, boss change) are announced in the global chat, and
-    // every action may complete an achievement.
+    // Allgemeine Gebäude-Aktion: prüfen, bezahlen oder gutschreiben, bei einer
+    // Übernahme den Vorbesitzer entschädigen, speichern, allen Bescheid geben.
+    // Eroberungen (neues Straßen-Monopol, neuer Boss) kommen in den Chat, und
+    // jede Aktion kann ein Achievement abschließen.
     function doAction(socket, ack, make, districtId, buildingId) {
       const acc = acct(socket);
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
@@ -729,18 +731,18 @@ function setupEconomy(io, accounts) {
       if (r.cost) res = accounts.adjustChips(key, -r.cost).account;
       else if (r.gain) res = accounts.adjustChips(key, r.gain).account;
       else res = accounts.publicAccount(accounts.get(key));
-      // Takeover: the previous owner is compensated (premium above value burns).
+      // Übernahme: der Vorbesitzer wird entschädigt (der Aufschlag über dem Wert verbrennt).
       if (r.payout && r.payout.to && r.payout.to !== key && r.payout.amount > 0) {
         accounts.adjustChips(r.payout.to, r.payout.amount);
         try {
           const vor = accounts.get(r.payout.to);
           require("./chronik").notiere("stadt", `${acc.name} nimmt ${vor ? vor.name : "einem Rivalen"} ein Gebäude ab (${r.payout.amount.toLocaleString("de-DE")} Chips Ablöse).`, { user: acc.name });
         } catch {}
-        // …and if there's a bounty on that rival, the raider collects it.
+        // …und wenn auf den Rivalen ein Kopfgeld ausgesetzt ist, kassiert es der Angreifer.
         const victim = accounts.get(r.payout.to);
         const bounty = accounts.claimBounty(r.payout.to, key);
         if (bounty > 0) {
-          chat.announce(io, `🎯 KOPFGELD! ${acc.name} hat ${victim ? victim.name : "einem Rivalen"} ein Gebäude abgenommen und ${bounty.toLocaleString("de-DE")} Chips Kopfgeld kassiert!`);
+          chat.announce(io, `Kopfgeld! ${acc.name} hat ${victim ? victim.name : "einem Rivalen"} ein Gebäude abgenommen und ${bounty.toLocaleString("de-DE")} Chips Kopfgeld kassiert!`);
           achievements.check(key);
         }
       }
@@ -754,7 +756,7 @@ function setupEconomy(io, accounts) {
         // Stadt-Ereignisse, die auch Tage spaeter noch jemanden interessieren.
         try { require("./chronik").notiere("stadt", msg); } catch {}
       }
-      // Buys & takeovers count for quests, but each building only once/day.
+      // Käufe und Übernahmen zählen für Aufträge, jedes Gebäude aber nur einmal am Tag.
       if (r.cost) quests.track(key, "buy_house", 1, buildingId);
       achievements.check(key);
       stadtKosmetik(io, accounts, key, acc);
@@ -769,8 +771,8 @@ function setupEconomy(io, accounts) {
     socket.on("city:sell",     A((id, key) => city.sellBuilding(id, key)));
     socket.on("city:takeover", A((id, key, name) => city.takeover(id, key, name)));
 
-    // List one of your businesses on the stock market (IPO): raise capital
-    // now, and it starts trading for everyone.
+    // Eine eigene Firma an die Börse bringen: jetzt Kapital holen, danach
+    // wird sie für alle gehandelt.
     socket.on("city:ipo", ({ buildingId, districtId } = {}, ack) => {
       if (typeof ack !== "function") return;
       const acc = acct(socket);
@@ -785,17 +787,17 @@ function setupEconomy(io, accounts) {
       broadcastCity();
     });
 
-    // ── Rivalen / Kopfgeld ────────────────────────────────────────────────
+    // --- Rivalen / Kopfgeld ---
     socket.on("bounty:place", ({ target, amount } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
       const r = accounts.placeBounty(socket.data.account, target, amount);
       if (!r.ok) return ack(r);
-      chat.announce(io, `🎯 KOPFGELD ausgesetzt: ${(accounts.get(socket.data.account) || {}).name || "?"} setzt ${Math.floor(amount).toLocaleString("de-DE")} Chips auf ${r.targetName} — übernimm ein Gebäude von ${r.targetName}, um es zu kassieren!`);
+      chat.announce(io, `Kopfgeld: ${(accounts.get(socket.data.account) || {}).name || "?"} setzt ${Math.floor(amount).toLocaleString("de-DE")} Chips auf ${r.targetName}. Wer ein Gebäude von ${r.targetName} übernimmt, kassiert es.`);
       ack(r);
     });
 
-    // ── Login-Kalender ────────────────────────────────────────────────────
+    // --- Login-Kalender ---
     socket.on("calendar:state", (ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
@@ -812,16 +814,16 @@ function setupEconomy(io, accounts) {
     socket.on("disconnect", () => clickTimes.delete(socket.id));
   });
 
-  // Market life: per-district indices drift every minute; occasionally a local
-  // news event shakes one district — everyone gets a toast (Spekulation!).
-  // The same heartbeat drives the weekly cycle (Spieler der Woche, Goldene Straße).
+  // Marktgeschehen: die Indizes der Ortsteile driften jede Minute, ab und zu
+  // rüttelt eine Lokalnachricht einen Ortsteil durch und alle bekommen einen Toast.
+  // Derselbe Takt treibt auch die Woche an (Spieler der Woche, Goldene Straße).
   setInterval(() => {
     const event = city.tickMarket();
     io.emit("city:update");
     if (event) io.emit("city:news", event);
     weekly.tick(io, accounts);
   }, 60000).unref();
-  weekly.tick(io, accounts); // seed golden street on boot
+  weekly.tick(io, accounts); // Goldene Straße beim Start festlegen
 }
 
 module.exports = { setupEconomy };

@@ -71,7 +71,7 @@
    * noch wohin es geht, noch was die vier besonderen Stufen ueberhaupt sind.
    *
    * Jetzt drei Ebenen:
-   *   OBEN   Wie weit bin ich, was kommt als Naechstes, wie lange noch.
+   *   oben   Wie weit bin ich, was kommt als Naechstes, wie lange noch.
    *   MITTE  Eine Schiene mit allen zwanzig Stufen auf einen Blick, die
    *          besonderen hervorgehoben, die eigene Position markiert.
    *   UNTEN  Die Belohnungen als waagerechte Bahn, automatisch zur aktuellen
@@ -142,7 +142,7 @@
         ${clanKarte(s)}
       </div>
 
-      <h3 class="section-title">🎁 Belohnungen</h3>
+      <h3 class="section-title">Belohnungen</h3>
       <div class="se-bahn" id="se-bahn">
         ${stufen.map((r) => `
           <div class="se-karte se-${zustand(r)}${istSpecial(r) ? " se-special" : ""}" data-level="${r.level}">
@@ -170,7 +170,7 @@
         ${s.faucet != null && s.faucet < 100 ? `<p class="hint">Die Chip-Beträge sind schon deine: ab einer Million Vermögen werden Gratis-Einnahmen abgeschwächt, bei dir auf ${s.faucet} %. Kosmetik ist davon nie betroffen.</p>` : ""}
       </details>`;
 
-    // Die Bahn dorthin schieben, wo man gerade steht — sonst startet sie bei
+    // Die Bahn dorthin schieben, wo man gerade steht, sonst startet sie bei
     // Stufe 1, und die ist nach der ersten Woche uninteressant.
     const bahn = $("#se-bahn");
     const hier = bahn && bahn.querySelector(`[data-level="${Math.max(1, s.level)}"]`);
@@ -211,7 +211,7 @@
     }
     if (chips > 0 || stuecke.length) {
       window.Casino.fx.bigWin(chips, { label: stuecke.length ? stuecke.join(" · ") : "Season-Belohnungen" });
-      toast(`🎟️ ${offen.length} ${offen.length === 1 ? "Stufe" : "Stufen"} abgeholt: +${fmt(chips)} Chips${stuecke.length ? " und " + stuecke.join(", ") : ""}`);
+      toast(`${offen.length} ${offen.length === 1 ? "Stufe" : "Stufen"} abgeholt: +${fmt(chips)} Chips${stuecke.length ? " und " + stuecke.join(", ") : ""}`);
     }
     load();
     if (window.Casino.renderAbholBadge) window.Casino.renderAbholBadge();
@@ -226,7 +226,7 @@
       const teile = [];
       if (r.chips > 0) teile.push(`+${fmt(r.chips)} Chips`);
       if (r.kosmetik) teile.push(`${r.kosmetik} freigeschaltet`);
-      toast(`🎟️ Stufe ${btn.dataset.seasonClaim}: ${teile.join(" · ") || "abgeholt"}`);
+      toast(`Stufe ${btn.dataset.seasonClaim}: ${teile.join(" · ") || "abgeholt"}`);
       // Kosmetik ist selten und darf gefeiert werden.
       if (r.kosmetik) window.Casino.fx.bigWin(r.chips || 0, { label: `Stufe ${btn.dataset.seasonClaim} · ${r.kosmetik}` });
       else if (r.chips > 0) { window.Casino.sound.play("cash"); window.Casino.fx.coins(btn); }

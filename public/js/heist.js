@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Casino-Heist (client overlay).
-   Everyone hammers KNACKEN! to drain the vault before time runs
-   out; loot is split by contribution. Server-authoritative.
+   Casino-Heist (Overlay)
+   Alle hauen auf KNACKEN!, bis der Tresor leer ist oder die Zeit abläuft. Die
+   Beute wird nach Treffern verteilt, entschieden wird auf dem Server.
    ============================================================ */
 
 (function () {
@@ -60,11 +60,11 @@
         const me = window.Casino.getAccount && window.Casino.getAccount();
         return me && r.name.toLowerCase() === me.name.toLowerCase();
       });
-      box.innerHTML = `<div class="heist-win">💰 TRESOR GEKNACKT!</div>` +
+      box.innerHTML = `<div class="heist-win">Tresor geknackt!</div>` +
         (mine ? `<div>Dein Anteil: <b>+${fmt(mine.share)}<i class=mk></i></b> (${mine.hits} Treffer)</div>` : `<div class="muted small">Du warst nicht dabei.</div>`) +
         `<div class="heist-crooks">${(d.results || []).slice(0, 6).map((r) => `${escapeHtml(r.name)}: +${fmt(r.share)}`).join(" · ")}</div>`;
     } else {
-      box.innerHTML = `<div class="heist-fail">🔒 Tresor gehalten — Heist gescheitert!</div>`;
+      box.innerHTML = `<div class="heist-fail">Der Tresor hat gehalten, Heist gescheitert.</div>`;
     }
     $("#heist-timer").textContent = "";
     $("#heist-pill").classList.add("hidden");
@@ -77,7 +77,7 @@
     socket.emit("heist:hit", (r) => { if (r && r.ok) { myHits = r.myHits; } });
   });
 
-  socket.on("heist:start", (s) => { show(s); toast("🚨 CASINO-HEIST! Ran an den Tresor!"); });
+  socket.on("heist:start", (s) => { show(s); toast("Casino-Heist! Ran an den Tresor."); });
   socket.on("heist:progress", update);
   socket.on("heist:end", end);
   // Join an already-running heist on (re)connect.

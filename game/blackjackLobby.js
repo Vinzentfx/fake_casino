@@ -1,15 +1,15 @@
 "use strict";
 
 /**
- * Blackjack lobbies — a purely SOCIAL layer over the normal single-player game.
+ * Blackjack-Lobbys, eine rein GESELLIGE Schicht über dem normalen Einzelspiel.
  *
- * Mechanically nothing changes: every player still plays their own hands against
- * their own dealer (game/blackjack.js is untouched in its rules). A lobby just
- * seats people together so they can see a live roster and a feed of who won/lost
- * how much, plus the shared per-lobby chat. No round-start gating — everyone
- * plays at their own pace.
+ * An der Mechanik ändert sich nichts: jeder spielt seine Hände gegen seinen
+ * eigenen Dealer (die Regeln in game/blackjack.js bleiben unberührt). Die Lobby
+ * setzt nur Leute zusammen, damit man sieht, wer dabei ist und wer wie viel
+ * gewinnt oder verliert, dazu gibt es einen gemeinsamen Chat. Kein gemeinsamer
+ * Rundenstart, jeder spielt in seinem Tempo.
  *
- * game/blackjack.js calls `report(socket, net)` whenever a hand resolves.
+ * game/blackjack.js ruft `report(socket, net)` auf, sobald eine Hand fertig ist.
  */
 
 const lobby = require("./lobby");
@@ -19,7 +19,7 @@ const MAX_PLAYERS = 8;
 const FEED_MAX = 25;
 
 let ioRef = null;
-const rooms = new Map(); // code -> { code, hostKey, hostName, players: Map(key -> {key,name,net,hands}), feed: [] }
+const rooms = new Map(); // Code -> { code, hostKey, hostName, players: Map(key -> {key,name,net,hands}), feed: [] }
 
 function makeCode() {
   let code;
@@ -33,7 +33,7 @@ function describe(room) {
   return {
     code: room.code,
     game: "blackjack",
-    label: "♠️ Blackjack",
+    label: "Blackjack",
     host: room.hostName,
     players: room.players.size,
     max: MAX_PLAYERS,
@@ -68,7 +68,7 @@ function leave(socket) {
     lobby.remove(code);
     return;
   }
-  // Host left → hand leadership to whoever's still here.
+  // Host ist weg: die Leitung geht an jemanden, der noch da ist.
   if (room.hostKey === socket.data.account) {
     const first = [...room.players.values()][0];
     room.hostKey = first.key;
@@ -78,7 +78,7 @@ function leave(socket) {
   lobby.changed();
 }
 
-/** Called by game/blackjack.js when a hand resolves. */
+/** Ruft game/blackjack.js auf, wenn eine Hand fertig ist. */
 function report(socket, net) {
   const code = socket && socket.data && socket.data.bjRoom;
   if (!code) return;
@@ -93,7 +93,7 @@ function report(socket, net) {
   broadcast(room);
 }
 
-/** Called by game/blackjack.js on every state change — share the live hand. */
+/** Ruft game/blackjack.js bei jeder Änderung auf, damit die laufende Hand geteilt wird. */
 function reportHand(socket, snap) {
   const code = socket && socket.data && socket.data.bjRoom;
   if (!code) return;

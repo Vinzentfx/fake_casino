@@ -1,9 +1,9 @@
 "use strict";
 
 /**
- * Blitz-Quiz — admin event: a few multiple-choice rounds broadcast to everyone
- * online. Fastest correct answer wins the round prize. One answer per account
- * per round; the correct index never leaves the server until the round is over.
+ * Blitz-Quiz, ein Admin-Event: ein paar Fragen mit vier Antworten an alle, die
+ * online sind. Die schnellste richtige Antwort gewinnt die Runde. Eine Antwort
+ * je Konto und Runde, die richtige Lösung verlässt den Server erst am Ende.
  */
 
 const chat = require("./chat");
@@ -11,7 +11,7 @@ const chat = require("./chat");
 const ROUND_MS = 12000;   // answer window per question
 const BREAK_MS = 6000;    // result display between rounds
 
-// { q, a: [4 options], c: correct index }
+// { q, a: [4 Antworten], c: Index der richtigen }
 const QUESTIONS = [
   // Casino-Wissen (aus dem eigenen Casino ableitbar!)
   { q: "Welche Farbe hat die 0 beim Roulette?", a: ["Rot", "Schwarz", "Grün", "Gold"], c: 2 },
@@ -112,8 +112,8 @@ function setupQuiz(io, accounts) {
   function finish() {
     if (!state) return;
     const rows = board();
-    if (rows.length) chat.announce(io, `❓ Blitz-Quiz vorbei — Champion: ${rows[0].name} mit ${rows[0].wins} richtigen Antworten! 🏆`);
-    else chat.announce(io, "❓ Blitz-Quiz vorbei — keine einzige richtige Antwort. Autsch.");
+    if (rows.length) chat.announce(io, `Blitz-Quiz vorbei. Die meisten richtigen Antworten hatte ${rows[0].name} (${rows[0].wins}).`);
+    else chat.announce(io, "Blitz-Quiz vorbei, keine einzige richtige Antwort. Autsch.");
     io.emit("quiz:end", { board: rows.slice(0, 8) });
     cleanup();
   }
@@ -123,8 +123,8 @@ function setupQuiz(io, accounts) {
     rounds = Math.max(1, Math.min(15, Math.floor(rounds) || 5));
     prize = Math.max(500, Math.floor(prize) || 20000);
     state = { round: 0, rounds, prize, used: new Set(), q: null, answers: new Map(), endsAt: 0, wins: {} };
-    const prefix = opts.auto ? "🎲 ZUFÄLLIGES " : "";
-    chat.announce(io, `❓ ${prefix}BLITZ-QUIZ! ${rounds} Fragen, ${prize.toLocaleString("de-DE")} Chips pro Runde für die schnellste richtige Antwort. Erste Frage kommt gleich!`);
+    const prefix = opts.auto ? "Zufälliges " : "";
+    chat.announce(io, `${prefix}Blitz-Quiz! ${rounds} Fragen, ${prize.toLocaleString("de-DE")} Chips pro Runde für die schnellste richtige Antwort. Erste Frage kommt gleich!`);
     io.emit("quiz:begin", { rounds, prize, firstAt: Date.now() + 4000 });
     timer = setTimeout(nextRound, 4000);
     return { ok: true };
@@ -132,7 +132,7 @@ function setupQuiz(io, accounts) {
 
   function stop() {
     if (!state) return;
-    chat.announce(io, "❓ Blitz-Quiz abgebrochen.");
+    chat.announce(io, "Blitz-Quiz abgebrochen.");
     io.emit("quiz:end", { board: board().slice(0, 8), aborted: true });
     cleanup();
   }
@@ -154,7 +154,7 @@ function setupQuiz(io, accounts) {
     });
   });
 
-  // `zustand` gibt Runden, Preis und die laufende Frage nach aussen — der Admin-Bildschirm
+  // `zustand` gibt Runden, Preis und die laufende Frage nach aussen, der Admin-Bildschirm
   // zeigt damit einen Countdown statt nur "laeuft".
   return { start, stop, active, zustand: snapshot };
 }

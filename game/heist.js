@@ -1,19 +1,19 @@
 "use strict";
 
 /**
- * Casino-Heist — a rare co-op event the owner triggers.
+ * Casino-Heist, ein seltenes Event zum Zusammenspielen, das der Besitzer startet.
  *
- * Everyone online hammers a "Knacken!" button to drain the shared vault's HP
- * before the timer runs out. Crack it in time and the loot is split among the
- * crooks in proportion to their hits; run out of time and the vault holds.
+ * Alle, die online sind, hauen auf "Knacken!", bis der Tresor keine
+ * Lebenspunkte mehr hat. Schaffen sie es rechtzeitig, wird die Beute nach
+ * Treffern verteilt, sonst hält der Tresor.
  *
- * Vault HP scales with the number of players online at the start, so it always
- * needs teamwork. Hits are rate-limited per account (no autoclicker runaway).
+ * Die Lebenspunkte richten sich nach der Zahl der Spieler beim Start, man
+ * braucht also immer alle. Treffer sind je Konto gebremst (kein Autoklicker).
  */
 
 const chat = require("./chat");
 
-const HIT_MAX = 8, HIT_WINDOW = 1000; // ≤8 hits/s per account
+const HIT_MAX = 8, HIT_WINDOW = 1000; // höchstens 8 Treffer pro Sekunde und Konto
 const HP_PER_PLAYER = 200;
 const MIN_HP = 400;
 
@@ -37,12 +37,12 @@ function setupHeist(io, accounts) {
       if (share > 0) { accounts.adjustChips(key, share); const a = accounts.get(key); results.push({ name: a ? a.name : key, share, hits: h }); }
     }
     results.sort((a, b) => b.share - a.share);
-    chat.announce(io, `💰 TRESOR GEKNACKT! ${results.length} Ganoven teilen sich ${state.loot.toLocaleString("de-DE")} Chips!`);
+    chat.announce(io, `Tresor geknackt! ${results.length} Ganoven teilen sich ${state.loot.toLocaleString("de-DE")} Chips!`);
     io.emit("heist:end", { success: true, loot: state.loot, results });
     cleanup();
   }
   function fail() {
-    chat.announce(io, "🔒 Heist gescheitert — der Tresor hat gehalten. Nächstes Mal!");
+    chat.announce(io, "Heist gescheitert, der Tresor hat gehalten. Nächstes Mal.");
     io.emit("heist:end", { success: false });
     cleanup();
   }
@@ -53,8 +53,8 @@ function setupHeist(io, accounts) {
     seconds = Math.max(15, Math.min(300, Math.floor(seconds) || 60));
     const hp = Math.max(MIN_HP, HP_PER_PLAYER * online());
     state = { endsAt: Date.now() + seconds * 1000, vaultMax: hp, vaultHp: hp, hits: {}, loot };
-    const prefix = opts.auto ? "ZUFÄLLIGER " : "";
-    chat.announce(io, `🚨 ${prefix}CASINO-HEIST! Knackt gemeinsam den Tresor — ${loot.toLocaleString("de-DE")} Chips Beute wartet. Alle ran an den Button!`);
+    const prefix = opts.auto ? "Zufälliger " : "";
+    chat.announce(io, `${prefix}Casino-Heist! Knackt zusammen den Tresor, ${loot.toLocaleString("de-DE")} Chips Beute warten. Alle auf den Knopf!`);
     io.emit("heist:start", snapshot());
     ticker = setInterval(() => {
       if (!state) return;
@@ -82,7 +82,7 @@ function setupHeist(io, accounts) {
     });
   });
 
-  // `zustand` gibt Restzeit, Beute und der Zustand des Tresors nach aussen — der Admin-Bildschirm
+  // `zustand` gibt Restzeit, Beute und der Zustand des Tresors nach aussen, der Admin-Bildschirm
   // zeigt damit einen Countdown statt nur "laeuft".
   return { start, stop, active, zustand: snapshot };
 }

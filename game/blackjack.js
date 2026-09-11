@@ -1,17 +1,17 @@
 "use strict";
 
 /**
- * Blackjack — server-authoritative.
+ * Blackjack, entschieden auf dem Server.
  *
- * Each connected socket gets its own session (shoe + hand state).
- * The shoe is a 6-deck shoe reshuffled when fewer than 52 cards remain.
+ * Jeder Spieler hat seine eigene Sitzung (Schlitten und Hand). Der Schlitten
+ * hat 6 Decks und wird neu gemischt, wenn weniger als 52 Karten übrig sind.
  *
- * Rules:
- *   Dealer hits soft 17, stands on hard 17+.
- *   Blackjack pays 3:2.
- *   Double down on any first 2 cards (per hand after split).
- *   Split pairs once (no re-split, no double after split).
- *   No insurance.
+ * Regeln:
+ *   Der Dealer zieht bei Soft 17 und bleibt ab Hard 17 stehen.
+ *   Blackjack zahlt 3:2.
+ *   Verdoppeln auf die ersten zwei Karten (nach dem Teilen je Hand).
+ *   Paare einmal teilen (kein zweites Teilen, kein Verdoppeln danach).
+ *   Keine Versicherung.
  */
 
 const crypto = require("crypto");
@@ -49,7 +49,7 @@ function deal(session) {
 
 function cardValue(card) {
   if (card.rank >= 11 && card.rank <= 13) return 10; // J Q K
-  if (card.rank === 14) return 11;                    // A (initially 11)
+  if (card.rank === 14) return 11;                    // Ass (erst mal 11)
   return card.rank;
 }
 
@@ -61,13 +61,13 @@ function handValue(cards) {
     total += v;
     if (c.rank === 14) aces++;
   }
-  // Reduce aces from 11 → 1 to avoid bust
+  // Asse von 11 auf 1 runter, solange die Hand sonst überkauft wäre
   while (total > 21 && aces > 0) { total -= 10; aces--; }
   return total;
 }
 
 function isSoft(cards) {
-  // True if the hand contains an ace counted as 11
+  // true, wenn die Hand ein Ass enthält, das als 11 zählt
   let total = 0;
   let aces = 0;
   for (const c of cards) {
@@ -82,33 +82,33 @@ function isBust(cards) { return handValue(cards) > 21; }
 function isBlackjack(cards) { return cards.length === 2 && handValue(cards) === 21; }
 
 // ---------------------------------------------------------------------------
-// Shadowban ("Pechvogel"): the dealer always ends up beating the player. Cards
-// look real — it just plays like a brutal cold streak.
+// Pechvogel-Modus: der Dealer schlägt den Spieler am Ende immer. Die Karten
+// sehen echt aus, es spielt sich nur wie eine üble Pechsträhne.
 // ---------------------------------------------------------------------------
 
-/** A card object with the given blackjack value (2..10 → that rank, 11 → ace). */
+/** Karte mit dem gewünschten Blackjack-Wert (2..10 = dieser Rang, 11 = Ass). */
 function cardOfValue(v) {
   const suit = SUITS[crypto.randomInt(SUITS.length)];
   return { rank: v === 11 ? 14 : v, suit };
 }
 
-/** Rig the dealer's hand (keeping the shown up-card) to beat every non-busted
- *  player hand. A player 21 can only be tied (dealer can't top 21) → push. */
+/** Die Hand des Dealers so legen (die offene Karte bleibt), dass sie jede
+ *  nicht überkaufte Spielerhand schlägt. Gegen 21 geht nur Gleichstand, also Push. */
 function rigDealerToWin(session) {
   let playerBest = -1;
   for (const h of session.playerHands) {
     const v = handValue(h.cards);
     if (v <= 21 && v > playerBest) playerBest = v;
   }
-  if (playerBest < 0) return; // all busted → already lost, dealer plays out below
+  if (playerBest < 0) return; // alle überkauft, schon verloren, der Dealer spielt unten zu Ende
   let target = Math.max(17, playerBest + 1);
-  if (target > 21) target = 21; // can't beat a hard 21 → push
-  const cards = [session.dealerCards[0]]; // keep the revealed up-card
+  if (target > 21) target = 21; // eine harte 21 ist nicht zu schlagen, also Push
+  const cards = [session.dealerCards[0]]; // die offene Karte bleibt
   let guard = 0;
   while (handValue(cards) < target && guard++ < 12) {
     let rem = target - handValue(cards);
     let c = Math.min(10, rem);
-    if (rem - c === 1) c -= 1; // never leave an unplaceable "1"
+    if (rem - c === 1) c -= 1; // nie eine "1" übrig lassen, die keine Karte ist
     if (c < 2) c = 2;
     cards.push(cardOfValue(c));
   }
@@ -116,7 +116,7 @@ function rigDealerToWin(session) {
 }
 
 // ---------------------------------------------------------------------------
-// State for client (hides dealer hole card until reveal)
+// Zustand für den Client (die verdeckte Dealerkarte bleibt verdeckt, bis sie aufgedeckt wird)
 // ---------------------------------------------------------------------------
 
 function clientState(session, accounts) {
@@ -150,7 +150,7 @@ function clientState(session, accounts) {
   };
 }
 
-/** Compact live-hand snapshot for the lobby table (others see your cards). */
+/** Kurzer Stand der laufenden Hand für den Lobby-Tisch (die anderen sehen deine Karten). */
 function handSnapshot(session) {
   if (!session.playerHands || !session.playerHands.length) return { phase: session.phase || "betting" };
   return {
@@ -186,7 +186,7 @@ function startHand(session, bet, accounts) {
   session.playerHands = [{ cards: [deal(session), deal(session)], bet, doubled: false, done: false, result: null }];
   session.dealerCards = [deal(session), deal(session)];
 
-  // Pechvogel: deny the player a natural blackjack (its 3:2 would be a win).
+  // Pechvogel: kein natürlicher Blackjack für den Spieler (3:2 wäre ein Gewinn).
   if (accounts.isShadowbanned(session.name)) {
     let guard = 0;
     while (isBlackjack(session.playerHands[0].cards) && guard++ < 25) {
@@ -202,7 +202,7 @@ function startHand(session, bet, accounts) {
     }
     return resolveHand(session, accounts, "blackjack");
   }
-  // Dealer blackjack (no player BJ)
+  // Dealer hat Blackjack (Spieler nicht)
   if (isBlackjack(session.dealerCards)) {
     return resolveHand(session, accounts, "lose_all");
   }
@@ -227,7 +227,7 @@ function playerAction(session, action, accounts) {
       return advanceHand(session, accounts);
     }
     if (handValue(hand.cards) === 21) {
-      // Auto-stand on 21
+      // Bei 21 automatisch stehen
       hand.done = true;
       return advanceHand(session, accounts);
     }
@@ -265,19 +265,19 @@ function playerAction(session, action, accounts) {
 }
 
 function advanceHand(session, accounts) {
-  // Move to next unfinished hand
+  // Zur nächsten offenen Hand
   const next = session.playerHands.findIndex((h, i) => i > session.activeHand && !h.done);
   if (next !== -1) {
     session.activeHand = next;
     return { ok: true };
   }
-  // All hands done — dealer plays
+  // Alle Hände fertig, der Dealer spielt
   return dealerPlay(session, accounts);
 }
 
 function dealerPlay(session, accounts) {
   session.phase = "dealer";
-  // Pechvogel: the dealer is rigged to beat the player.
+  // Pechvogel: der Dealer ist so gelegt, dass er gewinnt.
   if (accounts.isShadowbanned(session.name)) {
     rigDealerToWin(session);
     return settleAll(session, accounts);
@@ -309,7 +309,7 @@ function settleAll(session, accounts) {
     }
   }
 
-  // Pay out. Track the true net (won − wagered) so biggest win/loss stats are accurate.
+  // Auszahlen. Das echte Netto (gewonnen minus gesetzt) merken, damit größter Gewinn und Verlust stimmen.
   let net = 0;
   for (const hand of session.playerHands) {
     if (hand.result === "win") {
@@ -318,7 +318,7 @@ function settleAll(session, accounts) {
     } else if (hand.result === "push") {
       accounts.adjustChips(session.name, hand.bet);
     } else {
-      net -= hand.bet; // lose/bust: stake already taken at deal
+      net -= hand.bet; // verloren oder überkauft: der Einsatz ist schon beim Geben abgezogen
     }
   }
 
@@ -332,7 +332,7 @@ function settleAll(session, accounts) {
 }
 
 function resolveHand(session, accounts, outcome) {
-  // Called for natural blackjack / dealer BJ before dealer plays normally
+  // Bei natürlichem Blackjack oder Dealer-Blackjack, bevor der Dealer normal spielt
   session.phase = "done";
   if (outcome === "blackjack") {
     const bet = session.playerHands[0].bet;
@@ -347,7 +347,7 @@ function resolveHand(session, accounts, outcome) {
     session.lastNet = 0;
     accounts.recordHand(session.name, 0, true, "blackjack", { einsatz: session.playerHands[0].bet });
     session.playerHands[0].result = "push";
-    session.message = "Unentschieden — Einsatz zurück.";
+    session.message = "Unentschieden, Einsatz zurück.";
   } else if (outcome === "lose_all") {
     session.lastNet = -session.playerHands[0].bet;
     accounts.recordHand(session.name, -session.playerHands[0].bet, true, "blackjack", { einsatz: session.playerHands[0].bet });
@@ -363,8 +363,8 @@ function buildResultMessage(hands, dealerBust, dealerVal) {
   const losses = hands.filter(h => h.result === "lose" || h.result === "bust").length;
   const pushes = hands.filter(h => h.result === "push").length;
   if (hands.length === 1) {
-    if (hands[0].result === "win") return "Gewonnen! 🎉";
-    if (hands[0].result === "push") return "Unentschieden — Einsatz zurück.";
+    if (hands[0].result === "win") return "Gewonnen!";
+    if (hands[0].result === "push") return "Unentschieden, Einsatz zurück.";
     return "Verloren.";
   }
   return `Gewonnen: ${wins}  Unentschieden: ${pushes}  Verloren: ${losses}`;
@@ -375,10 +375,10 @@ function buildResultMessage(hands, dealerBust, dealerVal) {
 // ---------------------------------------------------------------------------
 
 function setupBlackjack(io, accounts) {
-  // Sessions hängen am ACCOUNT, nicht am Socket: Reload/Verbindungsabriss
-  // mitten in der Hand kostet den Einsatz nicht mehr — bj:init nach dem
+  // Sessions hängen am Account, nicht am Socket: Reload/Verbindungsabriss
+  // mitten in der Hand kostet den Einsatz nicht mehr, bj:init nach dem
   // Reconnect liefert die laufende Hand einfach wieder aus.
-  const sessions = new Map(); // accountKey → session
+  const sessions = new Map(); // Kontoschlüssel -> Sitzung
   const IDLE_STAND_MS = 30 * 60_000;
   const freshSession = () => ({ shoe: null, phase: "betting", playerHands: [], dealerCards: [],
                                 activeHand: 0, split: false, message: "", name: null, lastAt: Date.now() });
@@ -411,10 +411,10 @@ function setupBlackjack(io, accounts) {
     function push() {
       const session = getSession();
       socket.emit("bj:state", clientState(session, accounts));
-      // Share the live hand with the lobby table (everyone sees everyone's cards).
+      // Die laufende Hand an den Lobby-Tisch geben (alle sehen die Karten aller).
       bjLobby.reportHand(socket, handSnapshot(session));
-      // Report a finished hand's net to the player's blackjack lobby (if any),
-      // so everyone at the table sees who won/lost how much. Once per hand.
+      // Das Netto einer fertigen Hand an die Blackjack-Lobby melden (falls man in
+      // einer sitzt), damit der Tisch sieht, wer wie viel gewonnen hat. Einmal je Hand.
       if (session.phase === "done" && !session.reported) {
         session.reported = true;
         bjLobby.report(socket, session.lastNet || 0);

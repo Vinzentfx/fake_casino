@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Börse (stock market) client
+   Börse
    ============================================================ */
 
 (function () {
@@ -27,7 +27,7 @@
     });
   }
 
-  // Mini SVG sparkline from a price history.
+  // Kleine SVG-Kurve aus dem Kursverlauf.
   function sparkline(history) {
     if (!history || history.length < 2) return "";
     const w = 64, h = 22;
@@ -114,7 +114,7 @@
     $("#stk-short").addEventListener("click", () => openPos(-1));
   }
 
-  // Large detail chart with a baseline and min/max labels.
+  // Großer Kursverlauf mit Grundlinie und Beschriftung für Minimum und Maximum.
   function bigChart(history) {
     if (!history || history.length < 2) return '<div class="stk-bigchart-empty muted small">Noch kein Verlauf.</div>';
     const w = 320, h = 120, pad = 4;
@@ -181,6 +181,6 @@
     if (onScreen()) load();
   });
 
-  // app.js's showScreen calls this when the stocks screen opens.
+  // Ruft der Router auf, wenn die Börse aufgeht.
   window.Casino._loadStocks = load;
 })();

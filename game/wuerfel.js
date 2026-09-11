@@ -1,20 +1,20 @@
 "use strict";
 
 /**
- * Wuerfelpoker — Einzelspieler, serverseitig entschieden.
+ * Würfelpoker, Einzelspieler, serverseitig entschieden.
  *
  * Fuenf Wuerfel, ein Wurf, dann darfst du beliebige Wuerfel behalten und den
- * Rest EINMAL neu werfen. Was am Ende liegt, zahlt nach fester Tabelle.
+ * Rest einmal neu werfen. Was am Ende liegt, zahlt nach fester Tabelle.
  *
  * Warum nur ein Nachwurf, und warum diese Tabelle:
  *
  * Mit zwei Nachwuerfen liegt praktisch jede Runde bei "drei gleiche oder
- * besser" — simuliert kamen "vier gleiche" in 21 % der Runden. Eine Tabelle,
+ * besser", simuliert kamen "vier gleiche" in 21 % der Runden. Eine Tabelle,
  * die darauf noch etwas auszahlt, muesste so klein sein, dass vier gleiche
  * das 1,25-fache bringen. Das fuehlt sich falsch an. Mit einem Nachwurf sind
  * die Haende selten genug fuer Auszahlungen, die sich lohnen.
  *
- * Die Tabelle folgt der ECHTEN Seltenheit in diesem Spiel, nicht dem
+ * Die Tabelle folgt der echten Seltenheit in diesem Spiel, nicht dem
  * Poker-Rang. Wer Wuerfel halten darf, kommt viel leichter an eine Strasse
  * als die Poker-Rangfolge vermuten laesst: gezielt gespielt faellt die grosse
  * Strasse in 8 % der Runden, vier gleiche in 12 %. Deshalb liegen sie hier
@@ -22,7 +22,7 @@
  * nach Poker-Gefuehl rechnet und sich getaeuscht fuehlt.
  *
  * Kalibriert per Simulation (250.000 Runden je Strategie) gegen drei
- * Spielweisen — Gruppen jagen, Strassen jagen, gemischt. Die beste kommt auf
+ * Spielweisen: Gruppen jagen, Strassen jagen, gemischt. Die beste kommt auf
  * 96,7 %, naives Spiel auf rund 86 %. Dass gutes Spiel mehr bringt, ist
  * Absicht; damit der Abstand nicht an fehlender Information liegt, schlaegt
  * die Oberflaeche vor, welche Wuerfel sich zu halten lohnen.
@@ -36,7 +36,7 @@ const MAX_WIN = 2_000_000;
 const IDLE_SETTLE_MS = 10 * 60 * 1000;
 
 /* Auszahlung als Vielfaches des Einsatzes. Alles, was hier nicht steht, ist
- * verloren — bewusst keine Trostpreise: sie muessten so klein sein, dass sie
+ * verloren. Bewusst keine Trostpreise: sie muessten so klein sein, dass sie
  * sich wie ein Verlust anfuehlen ("du gewinnst 0,25x"). */
 const TABELLE = [
   { id: "fuenf",  label: "Fünf gleiche",   zahlt: 25,  chance: "1 zu 77" },

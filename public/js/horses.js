@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Porta-Rennbahn (Client).
+   Porta-Rennbahn
    Geteiltes Live-Rennen: Canvas-Seitenansicht mit animierten
    Pferde-Silhouetten, Wetten mit Live-Quoten, Stall & Markt.
    Server ist autoritativ (game/horses.js); hier nur Darstellung.
@@ -25,7 +25,7 @@
   let market = [];
   let raf = false;
 
-  // ── Tabs ──────────────────────────────────────────────────────────────────
+  // --- Tabs ---
   document.querySelectorAll(".horses-tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".horses-tab").forEach((b) => b.classList.toggle("active", b === btn));
@@ -35,7 +35,7 @@
     });
   });
 
-  // ── Canvas-Rennen ─────────────────────────────────────────────────────────
+  // --- Canvas-Rennen ---
   const canvas = $("#race-canvas");
   const ctx = canvas && canvas.getContext("2d");
 
@@ -105,7 +105,7 @@
     const now = performance.now() / 1000;
     ctx.clearRect(0, 0, w, h);
 
-    // ── Kulisse ── Himmel mit Sonne + driftenden Wolken
+    // --- Kulisse --- Himmel mit Sonne + driftenden Wolken
     const sky = ctx.createLinearGradient(0, 0, 0, h * 0.42);
     sky.addColorStop(0, "#7db1de"); sky.addColorStop(1, "#cfe4f2");
     ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h * 0.42);
@@ -264,7 +264,7 @@
   }
   function startDraw() { if (!raf) { raf = true; requestAnimationFrame(draw); } }
 
-  // ── Render: Kopf, Feld/Wetten, Ticker, Stall, Markt ───────────────────────
+  // --- Render: Kopf, Feld/Wetten, Ticker, Stall, Markt ---
   let countdownIv = null;
   function renderHead() {
     const el = $("#race-head");
@@ -308,7 +308,7 @@
       const me = window.Casino.getAccount && window.Casino.getAccount();
       const mine = me && h.owner && h.owner === me.name.toLowerCase();
       const ownerTag = h.npc ? '<span class="hf-npc">Stall Porta</span>' : `<span class="hf-owner">${mine ? window.Casino.icons.ui("stern-voll") + "dein Pferd" : window.Casino.icons.ui("profil") + escapeHtml(h.ownerName || h.owner)}</span>`;
-      const form = (h.formHint === "up" ? "▲" : h.formHint === "down" ? "▼" : "–") + (h.handicap ? " (Handicap)" : "");
+      const form = (h.formHint === "up" ? "▲" : h.formHint === "down" ? "▼" : "-") + (h.handicap ? " (Handicap)" : "");
       const myTags = (myByLane[f.lane] || []).map((b) => `<span class="hf-mybet">${b.type === "win" ? "Sieg" : "Platz"} ${fmt(b.amount)}</span>`).join("");
       const pos = st.phase === "done" && st.result ? `<b class="hf-pos">${st.result.find((r) => r.lane === f.lane).pos}.</b>` : "";
       return `<div class="hf-row">
@@ -329,7 +329,7 @@
     const el = $("#race-bets");
     if (!el || !st) return;
     const bets = st.bets || [];
-    $("#race-bets-head").textContent = bets.length ? `Wetten (${bets.length})` : "Wetten — noch keine";
+    $("#race-bets-head").textContent = bets.length ? `Wetten (${bets.length})` : "Wetten (noch keine)";
     el.innerHTML = bets.slice(-14).reverse().map((b) => {
       const horse = st.field[b.lane] ? st.field[b.lane].horse.name : "?";
       const res = b.won === true ? ` <b class="pos">+${fmt(Math.round(b.amount * b.odds))}</b>` : b.won === false ? ' <b class="neg">verloren</b>' : "";
@@ -359,15 +359,15 @@
   function renderStable() {
     const el = $("#stable-list");
     if (!el) return;
-    $("#stable-hint").textContent = stable.length ? `Startgeld ${fmt(config.entryFee || 2000)} Chips · Training dauert ~20 Min (Pferd solange gesperrt) · Kondition unter ${config.enterMinCondition || 50} = Zwangspause` : "Noch keine Pferde — schau im Markt vorbei!";
+    $("#stable-hint").textContent = stable.length ? `Startgeld ${fmt(config.entryFee || 2000)} Chips · Training dauert ~20 Min (Pferd solange gesperrt) · Kondition unter ${config.enterMinCondition || 50} = Zwangspause` : "Noch keine Pferde, schau im Markt vorbei!";
     el.innerHTML = stable.map((h) => {
       const career = Math.round(h.career * 100);
-      const form = h.formHint === "up" ? "▲ gute Form" : h.formHint === "down" ? "▼ außer Form" : "– normale Form";
+      const form = h.formHint === "up" ? "▲ gute Form" : h.formHint === "down" ? "▼ außer Form" : "normale Form";
       if (h.retired) return `<div class="horse-card retired"><div class="hc-name">${window.Casino.icons.ui("bestenliste")}${escapeHtml(h.name)} <span class="muted small">in Rente</span></div>
         <div class="hc-sub">${h.races} Rennen · ${h.wins} Siege · ${fmt(h.earnings)}<i class=mk></i> verdient</div></div>`;
-      const evBadge = h.event ? `<div class="hc-event">${escapeHtml(h.event.label)} — noch ~${h.event.hoursLeft}h${h.event.block ? " · kann nicht antreten" : ""}</div>` : "";
+      const evBadge = h.event ? `<div class="hc-event">${escapeHtml(h.event.label)}, noch ~${h.event.hoursLeft}h${h.event.block ? " · kann nicht antreten" : ""}</div>` : "";
       const busy = !!h.training;
-      const trainBadge = busy ? `<div class="hc-event">${window.Casino.icons.ui("kondition")}Im Training — noch ~${h.training.minsLeft} Min · nicht startbereit</div>` : "";
+      const trainBadge = busy ? `<div class="hc-event">${window.Casino.icons.ui("kondition")}Im Training, noch ~${h.training.minsLeft} Min · nicht startbereit</div>` : "";
       const hcap = h.handicap ? " (Handicap)" : "";
       const dis = busy ? "disabled" : "";
       const condClass = h.condition >= 70 ? "" : h.condition >= 50 ? "sb-warn" : "sb-low";
@@ -449,7 +449,7 @@
         <div class="hc-stats">
           <div class="hc-stat"><span>${window.Casino.icons.ui("blitz")}Tempo</span> ${statBar(h.speed)} <b>${h.speed}</b></div>
           <div class="hc-stat"><span>${window.Casino.icons.ui("ausdauer")}Ausdauer</span> ${statBar(h.stamina)} <b>${h.stamina}</b></div>
-          <div class="muted small">Temperament <span class="hc-temp">${temp}</span> (${h.temperament}/10) — je mehr, desto unberechenbarer</div>
+          <div class="muted small">Temperament <span class="hc-temp">${temp}</span> (${h.temperament}/10), je mehr, desto unberechenbarer</div>
         </div>
         <div class="hc-actions"><button class="hc-buy btn-primary" data-id="${h.id}">${window.Casino.icons.ui("warenkorb")} Kaufen · ${fmt(h.price)}<i class=mk></i></button></div>
       </div>`;
@@ -466,7 +466,7 @@
 
   function renderAll() { renderChamp(); renderHead(); renderField(); renderBets(); renderSprint(); }
 
-  // ── Tages-Champion-Banner ─────────────────────────────────────────────────
+  // --- Tages-Champion-Banner ---
   function renderChamp() {
     const el = $("#champ-banner");
     if (!el || !st) return;
@@ -478,10 +478,10 @@
     // Platzziffern wie ueberall sonst im Haus, siehe core/icons.js.
     const medals = [0, 1, 2].map((i) => window.Casino.icons.platz(i));
 
-    let head = `<div class="chb-title"><span class="chb-crown">👑</span> Renn-Champion des Tages</div>`;
+    let head = `<div class="chb-title">Renn-Champion des Tages</div>`;
     let rows = "";
     if (!top.length) {
-      rows = `<div class="chb-row chb-empty">Noch kein Sieg heute — der Thron ist frei! Melde ein Pferd an und hol dir ${fmt(prizes[0])}<i class=mk></i>.</div>`;
+      rows = `<div class="chb-row chb-empty">Heute hat noch niemand gewonnen. Melde ein Pferd an, dem Sieger winken ${fmt(prizes[0])}<i class=mk></i>.</div>`;
     } else {
       /*
        * Medaille und Preis kommen aus dem RANG, nicht aus der Position in der
@@ -498,17 +498,17 @@
       }).join("");
       // Eigener Rang, falls außerhalb der Top 3.
       if (me && me.rank > 3) {
-        rows += `<div class="chb-row chb-me chb-outside"><span class="chb-medal">${me.rank}.</span><span class="chb-name">${escapeHtml(me.name)} (du)</span><span class="chb-wins">${me.wins} ${me.wins === 1 ? "Sieg" : "Siege"}</span><span class="chb-cash">–</span></div>`;
+        rows += `<div class="chb-row chb-me chb-outside"><span class="chb-medal">${me.rank}.</span><span class="chb-name">${escapeHtml(me.name)} (du)</span><span class="chb-wins">${me.wins} ${me.wins === 1 ? "Sieg" : "Siege"}</span><span class="chb-cash">-</span></div>`;
       } else if (!me) {
-        rows += `<div class="chb-row chb-outside"><span class="chb-medal">–</span><span class="chb-name">Du: noch kein Sieg heute</span><span class="chb-wins"></span><span class="chb-cash"></span></div>`;
+        rows += `<div class="chb-row chb-outside"><span class="chb-medal">-</span><span class="chb-name">Du: noch kein Sieg heute</span><span class="chb-wins"></span><span class="chb-cash"></span></div>`;
       }
     }
-    const potLine = st.betPot > 0 ? `<div class="chb-foot">💰 Heutiger Wett-Topf: <b>${fmt(st.betPot)}<i class=mk></i></b> — 50/30/20 % on top für Platz 1–3</div>` : "";
-    const foot = yest ? `<div class="chb-foot">Gestern: 🏆 <b>${escapeHtml(yest.name)}</b> (${yest.wins} ${yest.wins === 1 ? "Sieg" : "Siege"})</div>` : "";
+    const potLine = st.betPot > 0 ? `<div class="chb-foot">Wett-Topf heute: <b>${fmt(st.betPot)}<i class=mk></i></b>, davon 50/30/20 % zusätzlich für Platz 1 bis 3</div>` : "";
+    const foot = yest ? `<div class="chb-foot">Gestern: <b>${escapeHtml(yest.name)}</b> (${yest.wins} ${yest.wins === 1 ? "Sieg" : "Siege"})</div>` : "";
     el.innerHTML = head + `<div class="chb-list">${rows}</div>` + potLine + foot;
   }
 
-  // ── Wettschein (Bottom-Sheet) ─────────────────────────────────────────────
+  // --- Wettschein (Bottom-Sheet) ---
   let slip = null; // { lane, type, amount }
   const CHIPS = [100, 500, 1000, 5000, 25000];
 
@@ -562,7 +562,7 @@
     socket.emit("horses:bet", { lane, type, amount }, (r) => {
       if (!r || !r.ok) return toast((r && r.error) || "Wette fehlgeschlagen.");
       applyAccount(r.account);
-      toast(`✅ ${type === "win" ? "Sieg" : "Platz"} auf ${horse}: ${fmt(amount)} @ ${r.bet.odds}`);
+      toast(`${type === "win" ? "Sieg" : "Platz"} auf ${horse}: ${fmt(amount)} @ ${r.bet.odds}`);
       st.myBets.push(r.bet);
       closeBetSlip();
       renderField();
@@ -572,12 +572,12 @@
   $("#sprint-btn").addEventListener("click", () => {
     socket.emit("horses:sprint", (r) => {
       if (!r || !r.ok) return toast((r && r.error) || "Kein Sprint möglich.");
-      toast(r.early ? "⚡ Sprint gezündet — SEHR früh, hoffentlich hält er durch!" : "⚡ Sprint gezündet!");
+      toast(r.early ? "Sprint gezündet, ziemlich früh. Hoffentlich hält er durch." : "Sprint gezündet!");
       $("#sprint-btn").classList.add("hidden");
     });
   });
 
-  // ── Socket ────────────────────────────────────────────────────────────────
+  // --- Socket ---
   function applyState(s) {
     if (!s) return;
     s._at = Date.now();

@@ -1,14 +1,14 @@
 "use strict";
 
 /**
- * Roulette lobbies — a SHARED table: everyone places bets on the same wheel and
- * sees what the others are betting on; the lobby leader spins ONE ball and that
- * single result settles every player's bets at once. Each lobby keeps its own
- * shared roll board (recent winning numbers).
+ * Roulette-Lobbys, ein GEMEINSAMER Tisch: alle setzen auf denselben Kessel und
+ * sehen, worauf die anderen setzen. Der Lobby-Leiter wirft eine Kugel, und
+ * dieses eine Ergebnis rechnet alle Wetten auf einmal ab. Jede Lobby hat ihre
+ * eigene Tafel mit den letzten Zahlen.
  *
- * Bets touch real account chips when placed (deducted), are refunded on clear /
- * leave, and pay out on the shared spin. Reuses the payout math from
- * game/roulette.js so the odds match the solo game exactly.
+ * Gesetzte Chips gehen sofort vom Konto, beim Abräumen oder Verlassen kommen
+ * sie zurück, ausgezahlt wird beim gemeinsamen Dreh. Die Auszahlungen kommen
+ * aus game/roulette.js, die Quoten sind also genau wie im Solo-Spiel.
  */
 
 const crypto = require("crypto");
@@ -21,7 +21,7 @@ const HISTORY_MAX = 18;
 
 let ioRef = null;
 let accountsRef = null;
-const rooms = new Map(); // code -> room
+const rooms = new Map(); // Code -> Raum
 
 function makeCode() {
   let code;
@@ -35,7 +35,7 @@ function describe(room) {
   return {
     code: room.code,
     game: "roulette",
-    label: "🎡 Roulette",
+    label: "Roulette",
     host: room.hostName,
     players: room.players.size,
     max: MAX_PLAYERS,
@@ -46,7 +46,7 @@ function describe(room) {
 const register = (code) => lobby.add(code, () => (rooms.has(code) ? describe(rooms.get(code)) : null));
 
 function betLabel(b) {
-  const L = { red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1–18", high: "19–36" };
+  const L = { red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1-18", high: "19-36" };
   if (b.type === "number") return "Zahl " + b.value;
   if (b.type === "dozen") return b.value + ". Dutzend";
   if (b.type === "column") return b.value + ". Reihe";
@@ -63,7 +63,7 @@ function stateFor(room, viewerKey) {
     players: [...room.players.values()].map((p) => ({
       name: p.name, staked: p.staked, net: p.net, betCount: p.bets.length,
     })),
-    // Every player's current-round bets, so you can see what others backed.
+    // Die Wetten aller in dieser Runde, damit man sieht, worauf die anderen setzen.
     bets: [...room.players.values()].flatMap((p) =>
       p.bets.map((b) => ({ name: p.name, label: betLabel(b), amount: b.amount, type: b.type, value: b.value }))),
     myBets: me ? me.bets.map((b) => ({ type: b.type, value: b.value, amount: b.amount })) : [],
@@ -95,10 +95,10 @@ function leave(socket) {
   if (!room) return;
   room.sockets.delete(socket);
   const player = room.players.get(socket.data.account);
-  // Only refund/remove if this was the player's last socket in the room.
+  // Nur zurückgeben und entfernen, wenn das der letzte Socket des Spielers im Raum war.
   const stillHere = [...room.sockets].some((s) => s.data.account === socket.data.account);
   if (player && !stillHere) {
-    if (!room.spinning) refund(room, player); // mid-spin bets still resolve
+    if (!room.spinning) refund(room, player); // Wetten während des Drehs werden noch abgerechnet
     room.players.delete(socket.data.account);
   }
   if (room.players.size === 0) {
@@ -182,7 +182,7 @@ function setupRouletteLobby(io, accounts) {
     socket.on("rlobby:bet", (payload = {}, ack) => {
       const room = curRoom();
       if (!room) return ack && ack({ ok: false, error: "Keine Lobby." });
-      if (room.spinning) return ack && ack({ ok: false, error: "Kessel dreht — warte." });
+      if (room.spinning) return ack && ack({ ok: false, error: "Der Kessel dreht noch, kurz warten." });
       const player = room.players.get(socket.data.account);
       if (!player) return ack && ack({ ok: false, error: "Nicht am Tisch." });
       const bet = validateBet(payload);
@@ -227,14 +227,14 @@ function setupRouletteLobby(io, accounts) {
       for (const p of room.players.values()) {
         let ret = 0;
         for (const b of p.bets) ret += Math.floor(b.amount * payoutFactor(b.type, b.value, number));
-        // Kein winBoost auf Roulette (siehe roulette.js — wäre bei Rot/Schwarz farmbar).
+        // Kein winBoost auf Roulette (siehe roulette.js, wäre bei Rot/Schwarz farmbar).
         const staked = p.staked;
         if (ret > 0) {
           const r = accounts.adjustChips(p.key, ret);
           const sock = [...room.sockets].find((s) => s.data.account === p.key);
           if (sock && r.ok) sock.emit("account:update", { account: r.account });
         }
-        accounts.recordHand(p.key, ret - staked, true, "roulette", { einsatz: staked }); // win or loss → keeps stats accurate
+        accounts.recordHand(p.key, ret - staked, true, "roulette", { einsatz: staked }); // Gewinn oder Verlust, damit die Statistik stimmt
         p.net += ret - staked;
         if (staked > 0 || ret > 0) perPlayer.push({ name: p.name, staked, ret, net: ret - staked });
         p.bets = [];
@@ -246,7 +246,7 @@ function setupRouletteLobby(io, accounts) {
 
       ack && ack && ack({ ok: true });
       ioRef.to(room.code).emit("rlobby:result", { number, color, wheelIdx, perPlayer });
-      // Settle the spin after the wheel animation so balances/bets clear in sync.
+      // Erst nach der Animation abrechnen, damit Kontostand und Wetten gleichzeitig verschwinden.
       setTimeout(() => {
         const r = rooms.get(room.code);
         if (!r) return;

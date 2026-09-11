@@ -1,25 +1,25 @@
 "use strict";
 
 /**
- * Manages all live poker tables and wires them to Socket.IO.
+ * Verwaltet alle laufenden Pokertische und hängt sie an Socket.IO.
  *
- * One socket can be at one table at a time. Chips move between an account's
- * bank (accounts.js) and a table seat on buy-in / cash-out; while seated, the
- * seat's stack is the source of truth.
+ * Ein Socket sitzt immer nur an einem Tisch. Beim Buy-in und bei der Auszahlung
+ * wandern Chips zwischen Konto (accounts.js) und Platz, solange man sitzt, gilt
+ * der Stapel am Platz.
  */
 
 const { PokerTable } = require("./pokerTable");
 const { decide: botDecide, BOT_NAMES } = require("./pokerBot");
 const lobby = require("./lobby");
 
-const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // ohne Zeichen, die man verwechseln kann
 const NEXT_HAND_DELAY_MS = 4500;
-// Caps: bot tables fund the bots' stacks, so an uncapped buy-in is a money
-// faucet (beat the bots → pocket created chips). Bound the buy-in (and blinds,
-// so the buy-in always covers them).
+// Obergrenzen: an Bot-Tischen zahlt das Haus die Stapel der Bots, ein Buy-in
+// ohne Deckel wäre also eine Gelddruckmaschine (Bots schlagen, erfundene Chips
+// einstecken). Deshalb Buy-in und Blinds deckeln, das Buy-in deckt die Blinds immer.
 const MAX_BUYIN = 100000;
 const MAX_BB = 2000;
-const TURN_MS = 30000; // auto-fold a stalling player after 30s
+const TURN_MS = 30000; // wer 30 s nichts tut, foldet automatisch
 
 /**
  * Wer war zuletzt da, ist aber gerade nicht online.
@@ -63,7 +63,7 @@ let _io = null;
 
 function setupPoker(io, accounts) {
   _io = io;
-  /** code -> { table, sockets:Set<Socket>, timer } */
+  /** Code -> { table, sockets:Set<Socket>, timer } */
   const tables = new Map();
 
   function makeCode() {
@@ -79,7 +79,7 @@ function setupPoker(io, accounts) {
   function broadcast(code) {
     const entry = tables.get(code);
     if (!entry) return;
-    scheduleTurnTimer(entry); // (re)arm the auto-fold timer for whoever's to act
+    scheduleTurnTimer(entry); // Auto-Fold-Timer für den, der dran ist, (neu) stellen
     for (const sock of entry.sockets) {
       const viewerId = sock.data.account || null;
       const st = entry.table.getStateFor(viewerId);
@@ -94,7 +94,7 @@ function setupPoker(io, accounts) {
     }
   }
 
-  // Auto-fold a player who stalls so they can't freeze the table.
+  // Wer trödelt, foldet automatisch, damit niemand den Tisch einfrieren kann.
   function scheduleTurnTimer(entry) {
     const { table } = entry;
     clearTimeout(entry.turnTimer);
@@ -102,12 +102,12 @@ function setupPoker(io, accounts) {
     if (!table.handActive || table.toAct < 0) return;
     const idx = table.toAct;
     const seat = table.seats[idx];
-    if (!seat || seat.isBot) return; // bots act via scheduleBots
+    if (!seat || seat.isBot) return; // Bots handeln über scheduleBots
     entry.turnDeadline = Date.now() + TURN_MS;
     entry.turnTimer = setTimeout(() => {
       if (!tables.has(table.code) || !table.handActive || table.toAct !== idx) return;
       const toCall = table.currentBet - seat.bet;
-      table.act(seat.id, toCall > 0 ? "fold" : "check", 0); // auto-fold (or free check)
+      table.act(seat.id, toCall > 0 ? "fold" : "check", 0); // automatisch folden (oder gratis checken)
       broadcast(table.code);
       scheduleBots(entry);
     }, TURN_MS);
@@ -116,7 +116,7 @@ function setupPoker(io, accounts) {
   function destroyIfEmpty(code) {
     const entry = tables.get(code);
     if (!entry) return;
-    // No human sockets → tear the table down (bots don't keep it alive).
+    // Kein Mensch mehr am Tisch: abbauen (Bots halten ihn nicht am Leben).
     if (entry.sockets.size === 0) {
       clearTimeout(entry.timer);
       clearTimeout(entry.botTimer);
@@ -126,15 +126,15 @@ function setupPoker(io, accounts) {
     }
   }
 
-  // Public lobby descriptor for the shared browser (only open friend tables,
-  // not private solo-vs-bots games).
+  // Öffentlicher Eintrag für die Lobby-Liste (nur offene Tische unter Freunden,
+  // keine privaten Solo-Spiele gegen Bots).
   function describePoker(entry) {
     const { table } = entry;
     const maxSeats = table.seats.length;
     return {
       code: table.code,
       game: "poker",
-      label: "🃏 Poker",
+      label: "Poker",
       host: entry.hostName || "?",
       players: entry.sockets.size,
       max: maxSeats,
@@ -185,7 +185,7 @@ function setupPoker(io, accounts) {
   };
   // Towers und Rennbahn fehlten hier. Weil presence:screen unbekannte Namen
   // auf "lobby" zurueckfallen laesst, sah man jeden, der dort spielte, als
-  // "in der Lobby" — und auf den Spielkarten waeren beide dauerhaft leer.
+  // "in der Lobby", und auf den Spielkarten waeren beide dauerhaft leer.
   const GAME_SCREENS = new Set(["poker", "slots", "blackjack", "roulette", "sports", "crash", "mines", "towers", "horses", "pinco", "memory", "sudoku", "solitaire", "chess", "hilo", "wuerfel", "kniffel"]);
   function pickStatus(sockets) {
     const screens = sockets.map((s) => s.data && s.data.screen).filter(Boolean);
@@ -243,7 +243,7 @@ function setupPoker(io, accounts) {
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
-  // If it's a bot's turn, play it after a short "thinking" delay, then chain.
+  // Ist ein Bot dran, nach kurzer "Denkpause" spielen und weiter.
   function scheduleBots(entry) {
     const { table } = entry;
     if (!table.handActive || table.toAct < 0) return;
@@ -267,16 +267,16 @@ function setupPoker(io, accounts) {
 
   function attachHooks(entry, code) {
     const { table } = entry;
-    // Stats per hand (net chips won/lost), via the account store.
+    // Statistik je Hand (Netto gewonnen oder verloren) über die Kontoverwaltung.
     table.onResults = (results) => {
-      for (const r of results) accounts.recordHand(r.id, r.amount, false, "poker"); // poker is PvP — no casino rake
+      for (const r of results) accounts.recordHand(r.id, r.amount, false, "poker"); // Poker ist PvP, kein Rake
     };
-    // After a hand ends: show result, then auto-start the next one.
+    // Nach einer Hand: Ergebnis zeigen, dann die nächste automatisch starten.
     table.onHandComplete = () => {
       broadcast(code);
       clearTimeout(entry.timer);
       entry.timer = setTimeout(() => {
-        // Don't keep bots playing each other once the human is broke/gone.
+        // Bots nicht weiter gegeneinander spielen lassen, wenn der Mensch pleite oder weg ist.
         if (tableHasBots(table) && !humanHasChips(table)) return;
         if (table.canStart()) {
           table.startHand();
@@ -292,7 +292,7 @@ function setupPoker(io, accounts) {
     return code ? tables.get(code) : null;
   }
 
-  /** Move a socket out of its current table (cashing out any seat). */
+  /** Einen Socket von seinem Tisch holen (und einen Platz dabei auszahlen). */
   function leaveCurrent(socket) {
     const entry = currentEntry(socket);
     if (!entry) return;
@@ -312,7 +312,7 @@ function setupPoker(io, accounts) {
     socket.data.tableCode = null;
     broadcast(code);
     destroyIfEmpty(code);
-    if (tables.has(code)) lobby.changed(); // player left but table lives on
+    if (tables.has(code)) lobby.changed(); // Spieler weg, Tisch bleibt
   }
 
   io.on("connection", (socket) => {
@@ -364,12 +364,12 @@ function setupPoker(io, accounts) {
       registerLobby(code);
       ack && ack({ ok: true, code });
       broadcast(code);
-      // Die Benachrichtigung (Chat + Push) macht jetzt lobby.add() fuer ALLE
+      // Die Benachrichtigung (Chat + Push) macht jetzt lobby.add() fuer alle
       // Spiele. Hier stand sie frueher doppelt, und nur Poker hatte sie.
     });
 
-    // Poker bots removed: their stacks were house-funded, so beating them
-    // printed chips (a money faucet). Poker is now human-vs-human only.
+    // Poker-Bots sind raus: ihre Stapel bezahlte das Haus, wer sie schlug, hat
+    // also Chips gedruckt. Poker gibt es jetzt nur noch Mensch gegen Mensch.
 
     socket.on("poker:join", ({ code } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
@@ -404,7 +404,7 @@ function setupPoker(io, accounts) {
 
       const idx = table.sit(socket.data.account, acc.name, amount);
       if (idx === -1) {
-        accounts.adjustChips(socket.data.account, amount); // refund — table full
+        accounts.adjustChips(socket.data.account, amount); // zurück, Tisch voll
         return ack && ack({ ok: false, error: "Tisch ist voll." });
       }
       socket.emit("account:update", { account: deduct.account });
@@ -431,8 +431,8 @@ function setupPoker(io, accounts) {
     socket.on("poker:start", (ack) => {
       const entry = currentEntry(socket);
       if (!entry) return;
-      // Only the lobby leader (table creator) may start the first hand. Bot
-      // tables have no human host gate (the solo player runs the show).
+      // Die erste Hand darf nur der Lobby-Leiter (wer den Tisch erstellt hat) starten.
+      // An Bot-Tischen gibt es diese Sperre nicht, da bestimmt der Solo-Spieler.
       if (!entry.vsBots && entry.hostKey && entry.hostKey !== socket.data.account)
         return ack && ack({ ok: false, error: "Nur der Anführer kann starten." });
       if (entry.table.startHand()) {

@@ -5,7 +5,7 @@
  *
  * In Mines, Towers, Crash und Pinco stand der Einsatz als nacktes Zahlenfeld
  * da. Auf dem iPad heisst das: Tastatur aufklappen, Zahl loeschen, neue Zahl
- * tippen, Tastatur wegklappen — fuer jede Runde. Wer mit 200.000 Chips spielt,
+ * tippen, Tastatur wegklappen, fuer jede Runde. Wer mit 200.000 Chips spielt,
  * tippt sechs Ziffern.
  *
  * Diese Leiste haengt sich unter ein vorhandenes Zahlenfeld und macht daraus
@@ -59,7 +59,7 @@
         case "min": return setze(min);
         case "half": return setze(Math.max(min, Math.round(jetzt / 2 / schritt) * schritt));
         case "double": return setze(Math.min(max, jetzt * 2));
-        // Max heisst: so viel wie erlaubt UND vorhanden. Ein Vorschlag, den
+        // Max heisst: so viel wie erlaubt und vorhanden. Ein Vorschlag, den
         // der Server dann ablehnt, waere nur aergerlich.
         case "max": return setze(Math.min(max, guthaben));
       }

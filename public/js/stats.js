@@ -1,10 +1,10 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – stats screen.
-   Shows YOUR stats by default; the leaderboard links here for
-   any player (window.Casino.openStats(name)). Sections: records,
-   city empire, achievements, per-game breakdown.
+   Statistik
+   Zeigt standardmäßig die eigene. Aus der Bestenliste kommt man für jeden
+   Spieler hierher (window.Casino.openStats(name)). Abschnitte: Rekorde,
+   Stadt-Imperium, Achievements, Bilanz je Spiel.
    ============================================================ */
 
 (function () {
@@ -13,7 +13,7 @@
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
   /*
    * Die Kennungen sind dieselben, die `core/icons.js` fuer die Spielkacheln
-   * fuehrt — deshalb steht hier nur noch der Name und, wo die Kennung des
+   * fuehrt, deshalb steht hier nur noch der Name und, wo die Kennung des
    * Spielstands von der des Symbols abweicht, die Uebersetzung. Vorher lag
    * hier eine zweite Emoji-Tabelle fuer genau die Spiele, die in der Lobby
    * laengst gezeichnete Symbole hatten: dasselbe Spiel, zwei Bildsprachen,
@@ -33,7 +33,7 @@
     return window.Casino.icons.icon(m.i || k) || window.Casino.icons.ui("poker-tisch");
   };
 
-  // When set, the next load shows this player instead of yourself.
+  // Ist das gesetzt, zeigt das nächste Laden diesen Spieler statt dich.
   let pendingName = null;
 
   function load() {
@@ -73,7 +73,7 @@
        * nackten Avatar-Emoji und der flachen Namensfarbe. Banner, Namensstil,
        * Rahmen und Titel fehlten also genau dort, wo man am ehesten landet:
        * ueber einen Namen in der Bestenliste. Wer Kosmetik kauft, will sie
-       * gesehen haben — dann muss sie ueberall auftauchen, wo ein Spieler
+       * gesehen haben, dann muss sie ueberall auftauchen, wo ein Spieler
        * dargestellt wird.
        */
       const sp = window.Casino.spieler;
@@ -95,7 +95,7 @@
           ? `<div class="biz-buffs" style="margin-bottom:.75rem"><span class="buff-chip">${cityLine}</span></div>`
           : ""}`;
       /* Chips und Netto-Vermoegen standen hier als Pillen und gleich darunter
-         noch einmal als Kachel — dieselbe Zahl zweimal, zwei Zentimeter
+         noch einmal als Kachel, dieselbe Zahl zweimal, zwei Zentimeter
          auseinander. Die Kacheln sagen es besser, also bleibt hier nur, was
          sie nicht zeigen: das Stadt-Imperium, und auch das nur, wenn es
          eines gibt. */
@@ -113,7 +113,7 @@
     /*
      * Kennzahlen.
      *
-     * Vorher standen hier sieben Zeilen "Label — Wert" untereinander, alle
+     * Vorher standen hier sieben Zeilen "Label: Wert" untereinander, alle
      * gleich gewichtet, und "Größter Einzelgewinn +0" auch bei jemandem, der
      * noch keine Runde gespielt hat. Eine Null, die nie etwas anderes war,
      * ist keine Information; sie sieht nur aus wie eine.
@@ -145,7 +145,7 @@
             "Chips plus Immobilien und Aktien") +
           `</div>` +
           `<p class="sk-leer">${isMe
-            ? "Noch keine Runde gespielt. Sobald du anfängst, steht hier, wie du dich schlägst — je Spiel und über alles."
+            ? "Noch keine Runde gespielt. Sobald du anfängst, steht hier, wie du dich schlägst, je Spiel und über alles."
             : "Hat noch keine Runde gespielt."}</p>`;
       } else {
         const netto = (s.biggestWin || 0) - (s.biggestLoss || 0);
@@ -166,7 +166,7 @@
       }
     }
 
-    /* ── Imperium ──
+    /* --- Imperium ---
        Der Abschnitt stand bisher auch dann da, wenn nichts drin war, mit
        "Noch kein Immobilien-Besitz." als einzigem Inhalt. Eine Ueberschrift
        ueber einer Absage ist verschenkte Hoehe; jetzt bleibt der ganze
@@ -190,10 +190,10 @@
       }
     }
 
-    /* ── Achievements ──
+    /* --- Achievements ---
        Mit Fortschrittsbalken: "3 von 29" sagt allein wenig, der Balken
-       daneben zeigt sofort, wie weit noch zu gehen ist. Die Emoji bleiben —
-       sie sind hier nicht Beiwerk, sondern das Sammelstueck selbst, das man
+       daneben zeigt sofort, wie weit noch zu gehen ist. Die Emoji bleiben.
+       Sie sind hier nicht Beiwerk, sondern das Sammelstueck selbst, das man
        sich in der Bestenliste an den Namen heftet. */
     const achBox = $("#stats-ach");
     if (achBox) {
@@ -203,7 +203,7 @@
         achBox.innerHTML = `<div class="sk-ach-kopf"><b>0 von ${a ? a.total || 0 : 0}</b>` +
           `<div class="sk-balken"><i style="width:0%"></i></div></div>` +
           `<p class="muted small">${isMe
-            ? "Noch keins freigeschaltet. Sie kommen beim Spielen von selbst — der erste Gewinn reicht schon."
+            ? "Noch keins freigeschaltet. Sie kommen beim Spielen von selbst, der erste Gewinn reicht schon."
             : "Noch keine Achievements."}</p>`;
       } else {
         const pct = a.total ? Math.round((100 * a.unlocked.length) / a.total) : 0;
@@ -218,8 +218,8 @@
       }
     }
 
-    /* ── Bilanz je Spiel ──
-       Vorher eine Zeile je Spiel: Emoji, Name, Anzahl, Prozent, Betrag —
+    /* --- Bilanz je Spiel ---
+       Vorher eine Zeile je Spiel: Emoji, Name, Anzahl, Prozent, Betrag,
        alles gleich gross, alles gleich wichtig. Man sah nicht, wo das Geld
        hinging. Jetzt traegt jede Zeile einen Balken, dessen Laenge sich am
        groessten Betrag der Liste misst: das Spiel, das am meisten kostet,
@@ -230,7 +230,7 @@
     const keys = Object.keys(pg).sort((a, b) => Math.abs(pg[b].net) - Math.abs(pg[a].net));
     if (!keys.length) {
       bg.innerHTML = `<p class="muted small">${isMe
-        ? "Noch nichts gespielt. Jede Runde landet hier — mit Einsatz, Trefferquote und dem, was unterm Strich blieb."
+        ? "Noch nichts gespielt. Jede Runde landet hier, mit Einsatz, Trefferquote und dem, was unterm Strich blieb."
         : "Noch keine Spiele gespielt."}</p>`;
       return;
     }
@@ -258,7 +258,7 @@
       `<span>Über alle Spiele</span><b>${window.Casino.betragDelta(gesamt)}</b></div>`;
   }
 
-  // Place a bounty on the viewed player.
+  // Kopfgeld auf den angezeigten Spieler setzen.
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest("#bounty-btn");
     if (!btn) return;
@@ -278,7 +278,7 @@
   });
 
   window.Casino._loadStats = load;
-  /** Leaderboard → inspect any player's stats. */
+  /** Aus der Bestenliste die Statistik jedes Spielers ansehen. */
   window.Casino.openStats = (name) => {
     pendingName = name || null;
     showScreen("stats");

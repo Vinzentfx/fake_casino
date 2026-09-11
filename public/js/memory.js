@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Memory-Duell (client).
-   Turn-based PvP memory. Create a match (buy-in) or join by code /
-   from the open lobby. Server-authoritative board.
+   Memory-Duell
+   Abwechselnd gegeneinander. Match mit Buy-in anlegen oder per Code bzw. über
+   die Lobby beitreten. Das Brett liegt auf dem Server.
    ============================================================ */
 
 (function () {
@@ -29,7 +29,7 @@
     for (const v of views) { const el = $("#" + v); if (el) el.style.display = v === view ? "" : "none"; }
   }
 
-  // ── Board rendering ───────────────────────────────────────
+  // --- Board rendering ---
   function buildGrid(n) {
     const grid = $("#mem-grid");
     if (grid.childElementCount === n) return;
@@ -43,7 +43,7 @@
       /*
        * Zwei Seiten statt eines leeren Vierecks, in dem ein Emoji erscheint.
        * Bei einem Spiel, das Memory heisst, ist das Umdrehen der Karte der
-       * ganze Vorgang — der darf man auch sehen.
+       * ganze Vorgang, der darf man auch sehen.
        */
       b.innerHTML = `<span class="mem-flip"><span class="mem-back"></span><span class="mem-front"></span></span>`;
       b.addEventListener("click", () => flip(i));
@@ -102,7 +102,7 @@
     if (s.state === "waiting") {
       show("mem-wait");
       $("#mem-code-show").textContent = s.code;
-      $("#mem-wait-players").textContent = `${s.playerCount}/2 Spieler · 🧩 ${SIZE_LABELS[s.size] || s.size} · ${s.public ? "🌐 öffentlich" : "🔒 privat (nur per Code)"}`;
+      $("#mem-wait-players").textContent = `${s.playerCount}/2 Spieler · ${SIZE_LABELS[s.size] || s.size} · ${s.public ? "öffentlich" : "privat (nur per Code)"}`;
       $("#mem-start").style.display = (s.isHost && s.playerCount === 2) ? "" : "none";
     } else if (s.state === "playing") {
       show("mem-game");
@@ -113,21 +113,21 @@
       renderResult(s);
       const rm = s.rematch || {};
       $("#mem-rematch").style.display = rm.canRematch ? "" : "none";
-      $("#mem-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "🔁 Gegner will Revanche!" : "");
-      // Walkover: the opponent left mid-game → notify the winner even if they're
-      // no longer on this screen (money is already credited via account:update).
+      $("#mem-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "Dein Gegner will eine Revanche!" : "");
+      // Kampflos: der Gegner ist mitten im Spiel gegangen. Den Gewinner auch dann
+      // benachrichtigen, wenn er woanders ist (die Chips kamen schon über account:update).
       const r = s.result, me = getAccount(), myName = me && me.name;
       if (r && r.walkover && r.winner && myName && r.winner.toLowerCase() === myName.toLowerCase()) {
-        toast(`🏆 Gegner hat das Duell verlassen — du gewinnst ${fmt(r.payout)} Chips!`);
+        toast(`Dein Gegner hat das Duell verlassen, du bekommst ${fmt(r.payout)} Chips.`);
       }
     }
   }
 
-  // ── Actions ───────────────────────────────────────────────
+  // --- Actions ---
   function flip(i) {
     if (!st || !st.yourTurn) return;
     socket.emit("memory:flip", { index: i }, (r) => {
-      if (r && !r.ok && r.error) { /* transient (not your turn / waiting) — ignore quietly */ }
+      if (r && !r.ok && r.error) { /* nur vorübergehend (nicht dran, warten), einfach ignorieren */ }
     });
   }
 
@@ -172,15 +172,15 @@
     socket.emit("memory:rematch", (r) => { if (r && !r.ok) toast(r.error || "Fehler."); else { $("#mem-rematch-status").textContent = "Warte auf Revanche des Gegners…"; } });
   });
 
-  // Leaving the game screen (‹ Lobby) mid-match forfeits → opponent wins the pot.
+  // Wer mitten im Match den Screen verlässt (‹ Lobby), gibt auf, der Gegner bekommt den Topf.
   const memBack = document.querySelector('[data-screen="memory"] .back-btn');
   if (memBack) memBack.addEventListener("click", () => { if (myCode) leave(); });
 
-  // Join straight from the open-lobby browser.
+  // Direkt aus der Lobby-Liste beitreten.
   window.Casino._memoryJoinCode = (code) => { window.Casino.showScreen("memory"); doJoin(code); };
 
   window.Casino._loadMemory = () => {
-    // Fresh visit with no active match → setup view.
+    // Neuer Besuch ohne laufendes Match: Einstellungen zeigen.
     if (!st || st.state === "done") { show("mem-setup"); $("#mem-error").textContent = ""; }
     else apply(st);
   };

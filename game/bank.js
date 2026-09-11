@@ -1,25 +1,25 @@
 "use strict";
 
 /**
- * Bank savings.
+ * Sparkonto.
  *
- * The bank is a modest chip parking place, not a way to mint bankroll.
+ * Die Bank ist ein bescheidener Parkplatz für Chips, keine Gelddruckmaschine.
  */
 
-// Savings: a tiny parking yield, capped so it never out-earns active play.
-const SAVINGS_RATE_PER_DAY = 0.0008;                // 0.08% / day
+// Sparen: ein winziger Zins fürs Parken, gedeckelt, damit er nie mehr bringt als Spielen.
+const SAVINGS_RATE_PER_DAY = 0.0008;                // 0,08 % pro Tag
 const SAVINGS_RATE_PER_HOUR = SAVINGS_RATE_PER_DAY / 24;
 const SAVINGS_RATE_PER_MS = SAVINGS_RATE_PER_HOUR / 3_600_000;
-const SAVINGS_CAP = 25_000_000;                     // max chips on deposit
+const SAVINGS_CAP = 25_000_000;                     // höchstens so viel auf dem Konto
 
-let _accounts = null; // gesetzt in setupBank — für Faucet-Tapering
+let _accounts = null; // gesetzt in setupBank, für Faucet-Tapering
 
-/** Credit accrued interest into the savings balance (compounds on interaction). */
+/** Aufgelaufene Zinsen gutschreiben (verzinst sich bei jeder Aktion mit). */
 function accrueSavings(acc, now = Date.now()) {
   const s = acc.savings;
   if (!s || !s.amount || !s.since) return;
   s.amount = Math.min(SAVINGS_CAP, Math.max(0, Math.floor(s.amount)));
-  // Reiche werden getapert (wie alle anderen Faucets) — Zins ist neu erzeugtes Geld.
+  // Reiche werden getapert (wie alle anderen Faucets), Zins ist neu erzeugtes Geld.
   const f = _accounts && _accounts.faucetFactor ? _accounts.faucetFactor(acc.name) : 1;
   const interest = Math.floor(s.amount * SAVINGS_RATE_PER_MS * Math.max(0, now - s.since) * f);
   if (interest > 0) s.amount = Math.min(SAVINGS_CAP, s.amount + interest);

@@ -9,7 +9,7 @@
  * Lobbys stehen in gar keiner Liste, dort war der einzige Weg bisher, den
  * Code muendlich durchzusagen.
  *
- * In welcher Lobby jemand sitzt, muss KEIN Spiel melden: alle neun stecken
+ * In welcher Lobby jemand sitzt, muss kein Spiel melden: alle neun stecken
  * ihren Socket per socket.join(code) in einen Raum, der genau so heisst wie
  * der Lobby-Code. Der Server liest das direkt aus socket.rooms. Deshalb
  * funktioniert das ohne einen einzigen Eingriff in die Spielmodule.

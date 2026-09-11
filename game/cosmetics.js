@@ -1,14 +1,15 @@
 "use strict";
 
 /**
- * Cosmetics shop — a pure chip SINK for status (helps against inflation).
+ * Kosmetik-Laden. Schluckt Chips für Status und hilft so gegen Inflation.
  *
- * Buy avatars (the emoji next to your name) and name colours with chips; own
- * them forever, equip one of each. Nothing gameplay-affecting — just flex.
+ * Avatare (das Emoji neben dem Namen), Namensfarben und alles Weitere kauft man
+ * mit Chips, behält es für immer und legt je Art eins an. Nichts davon ändert
+ * etwas am Spiel, es geht nur ums Angeben.
  *
- * State on the account: acc.avatar (emoji), acc.nameColor (hex|null),
- * acc.cosOwned = { avatars:[ids], colors:[ids] }. Equipped values are stored
- * resolved so they flow to the leaderboard/chat without catalog lookups.
+ * Am Konto: acc.avatar (Emoji), acc.nameColor (Hex oder null),
+ * acc.cosOwned = { avatars:[ids], colors:[ids] }. Angelegtes wird aufgelöst
+ * gespeichert, damit Bestenliste und Chat ohne Katalog auskommen.
  */
 
 const AVATARS = [
@@ -24,7 +25,7 @@ const AVATARS = [
   { id: "crown",  emoji: "👑", cost: 100000 },
   { id: "dragon", emoji: "🐉", cost: 150000 },
   { id: "money",  emoji: "🤑", cost: 250000 },
-  // Nur ueber den Season-Pass. cost: null heisst "nicht kaeuflich" — genau
+  // Nur ueber den Season-Pass. cost: null heisst "nicht kaeuflich". Genau
   // das macht sie zum Statussymbol: man sieht, dass jemand die Season
   // durchgespielt hat, und kann es sich nicht einfach kaufen.
   { id: "s2_joker",  emoji: "🃏", label: "Joker",  cost: null, season: "porta-herbst-2" },
@@ -43,7 +44,7 @@ const COLORS = [
   { id: "s2_amber", color: "#ff9f43", cost: null, season: "porta-herbst-2" },
 ];
 
-/* ── Namens-Stile ─────────────────────────────────────────────────────────
+/* --- Namens-Stile ---
  *
  * Der eigentliche Grund fuer diesen Umbau. Bisher gab es genau zwei Regler:
  * ein Emoji und eine flache Schriftfarbe. Beides sieht bei allen gleich aus
@@ -77,7 +78,7 @@ const STYLES = [
   { id: "splitter", label: "Splitter",      cost: 1800000, preview: ["#9be7ff", "#ffffff"], motion: true },
   // Nicht kaeuflich: kommt, wenn man in der Stadt Boss eines Ortsteils wird.
   { id: "krone",    label: "Krone",         cost: null, via: "Boss eines Ortsteils werden", preview: ["#fff1b8", "#d4a017"], motion: true },
-  // Season 2. Die alte Belohnung auf Stufe 10 war eine flache orange Farbe —
+  // Season 2. Die alte Belohnung auf Stufe 10 war eine flache orange Farbe,
   // dasselbe, was man sich fuer 20.000 Chips kaufen kann. Etwas, wofuer man
   // acht Wochen spielt, muss anders aussehen als alles Kaufbare.
   { id: "s2_bernstein", label: "Bernstein", cost: null, via: "Season 2, Stufe 10", season: "porta-herbst-2", preview: ["#ffb347", "#7a3d00"], motion: true },
@@ -94,7 +95,7 @@ const STYLES = [
   { id: "auk_hologramm", label: "Hologramm", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", preview: ["#7ef9ff", "#ff5ecb"], motion: true },
 ];
 
-/* ── Rahmen ums Bild ──────────────────────────────────────────────────────
+/* --- Rahmen ums Bild ---
  * Das Emoji bleibt, bekommt aber einen Ring. Kostet keinen Platz und wirkt
  * ueberall dort, wo Spieler nebeneinander stehen (Online-Liste, Bestenliste,
  * Pokertisch).
@@ -111,7 +112,7 @@ const FRAMES = [
   { id: "rad_fortuna", label: "Fortunas Rad", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad", motion: true },
 ];
 
-/* ── Titel ────────────────────────────────────────────────────────────────
+/* --- Titel ---
  * Eine kurze Zeile unter dem Namen. Das ist die einzige Kosmetik, mit der man
  * etwas ueber sich SAGEN kann, statt nur bunt zu sein.
  */
@@ -132,13 +133,13 @@ const TITLES = [
   { id: "s2_phoenix",     text: "Phönix von Porta", cost: null, via: "Season 2, Stufe 20", season: "porta-herbst-2" },
   /*
    * Nur fuer die, die zur Wiedereroeffnung da waren. Danach gibt es ihn nie
-   * wieder — weder zu kaufen noch zu verdienen. Genau das macht ihn wertvoll:
+   * wieder, weder zu kaufen noch zu verdienen. Genau das macht ihn wertvoll:
    * er sagt nichts ueber Koennen oder Kontostand, sondern nur, dass man dabei
    * war, als das Casino wieder aufmachte.
    */
   { id: "rueckkehrer",    text: "Rückkehrer", cost: null, via: "Zur Wiedereröffnung dabei gewesen", limitiert: "comeback" },
   { id: "rad_fortuna",    text: "Big Yahus Liebling", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad" },
-  /* Zwei Insider aus der Runde. Standen erst bei 6,7 und 2,5 Millionen — das
+  /* Zwei Insider aus der Runde. Standen erst bei 6,7 und 2,5 Millionen. Das
      waren 71 Prozent des gesamten fluessigen Geldes im Haus, und genau drei
      Konten lagen ueberhaupt ueber einer Million. Ein Preis, den niemand je
      zahlen kann, ist kein Statussymbol, sondern eine Zahl zum Angucken.
@@ -148,10 +149,10 @@ const TITLES = [
   { id: "auk_meistbietend", text: "Meistbietend", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion" },
 ];
 
-/* ── Gewinn-Effekt ────────────────────────────────────────────────────────
+/* --- Gewinn-Effekt ---
  * Was auf dem Bildschirm passiert, wenn du gross gewinnst. Bisher sah das bei
  * allen gleich aus. Der Effekt gehoert zu den Sachen, die man am haeufigsten
- * von seiner eigenen Kosmetik sieht — jedes Mal, wenn es sich gelohnt hat.
+ * von seiner eigenen Kosmetik sieht, jedes Mal, wenn es sich gelohnt hat.
  */
 const EFFEKTE = [
   { id: "konfetti", label: "Konfetti",   cost: 0 },
@@ -162,7 +163,7 @@ const EFFEKTE = [
   { id: "sterne",   label: "Sternenfall", cost: 800000 },
   /*
    * Nur aus dem Wiedereroeffnungs-Paket. Vorher lag dort das Feuerwerk, das
-   * man sich auch fuer 350.000 kaufen kann — ein Geschenk, das im Laden steht,
+   * man sich auch fuer 350.000 kaufen kann, ein Geschenk, das im Laden steht,
    * ist kein besonderes Geschenk. Der Salut ist ausschliesslich darueber zu
    * bekommen und danach nie wieder.
    */
@@ -171,9 +172,9 @@ const EFFEKTE = [
   { id: "auk_tresor", label: "Tresorsprengung", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
-/* ── Eintritts-Spruch ─────────────────────────────────────────────────────
+/* --- Eintritts-Spruch ---
  * Eine Zeile im Chat, wenn du reinkommst. Das ist die einzige Kosmetik, die
- * die anderen sehen, ohne dich anzutippen — und in einer Runde, die versetzt
+ * die anderen sehen, ohne dich anzutippen, und in einer Runde, die versetzt
  * spielt, ist "wer ist gerade aufgetaucht" die interessanteste Nachricht
  * ueberhaupt.
  */
@@ -187,7 +188,7 @@ const SPRUECHE = [
   { id: "legende",  text: "Eine Legende betritt den Raum: {name}.", cost: 600000 },
   /*
    * Selbst geschrieben. Teuerstes Stueck im Laden, und mit Absicht so gebaut,
-   * dass daraus kein Aerger werden kann: der eigene Name steht IMMER vorne
+   * dass daraus kein Aerger werden kann: der eigene Name steht immer vorne
    * und laesst sich nicht wegschreiben, der Rest ist auf 60 Zeichen begrenzt
    * und wird beim Anzeigen escaped. Man kann sich also einen Satz ausdenken,
    * aber niemandem etwas in den Mund legen.
@@ -197,7 +198,7 @@ const SPRUECHE = [
 
 const SPRUCH_MAX = 60;
 
-/* ── Profil-Banner ────────────────────────────────────────────────────────
+/* --- Profil-Banner ---
  * Der Streifen hinter deinem Namen im Profil. Reine Flaeche, aber es ist das
  * Erste, was jemand sieht, der dich antippt.
  */
@@ -212,7 +213,7 @@ const BANNER = [
   { id: "auk_gewitter", label: "Gewitter", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
-/* ── Namensschild ─────────────────────────────────────────────────────────
+/* --- Namensschild ---
  * Der Hintergrund der Zeile, in der du in der Online-Liste und in der
  * Bestenliste stehst. Der Rahmen ums Bild war nur ein Ring um ein Emoji; das
  * Schild faerbt die ganze Plakette und faellt deshalb viel staerker auf.
@@ -230,10 +231,10 @@ const SCHILDER = [
   { id: "auk_tresor", label: "Tresortür", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
-/* ── Aura ─────────────────────────────────────────────────────────────────
+/* --- Aura ---
  *
- * Neue Art. Der Rahmen ist ein Ring AM Bild, der Gewinn-Effekt passiert einmal
- * und ist wieder weg — die Aura ist das, was um dich herum IMMER läuft:
+ * Neue Art. Der Rahmen ist ein Ring am Bild, der Gewinn-Effekt passiert einmal
+ * und ist wieder weg. Die Aura ist das, was um dich herum immer läuft:
  * in der Online-Liste, in der Bestenliste, am Pokertisch, im Chat. Damit ist
  * sie die einzige Kosmetik, die man auch dann sieht, wenn gerade nichts
  * passiert, und deshalb gehört sie ins Auktionshaus und nicht in den Laden.
@@ -244,7 +245,7 @@ const AUREN = [
   { id: "auk_leere",     label: "Schwarzes Loch", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
-/* ── Kartenrücken ─────────────────────────────────────────────────────────
+/* --- Kartenrücken ---
  *
  * Neue Art. Das Blatt, mit dem DU spielst: die verdeckten Karten in Poker,
  * Blackjack, Solitär und Memory. Vier Spiele haben dafür bisher vier
@@ -253,7 +254,7 @@ const AUREN = [
  *
  * Absichtlich nur auf dem eigenen Bildschirm. Das Blatt der anderen mit
  * fremden Rücken zu zeigen hiesse, in jeder Kartenrunde zu jeder Karte den
- * Besitzer mitzuschicken — für ein Aussehen ist das zu viel Umbau.
+ * Besitzer mitzuschicken, für ein Aussehen ist das zu viel Umbau.
  */
 const KARTEN = [
   { id: "haus", label: "Haus-Standard", cost: 0 },
@@ -362,7 +363,7 @@ function setupCosmetics(io, accounts) {
       const owned = ensureOwned(acc);
       if (!owned.sprueche.includes("eigen")) return ack({ ok: false, error: "Eigenen Spruch zuerst kaufen." });
       const spruch = saubererSpruch(text);
-      // Der Spruch geht bei jedem Eintritt in den Chat — dort steht er
+      // Der Spruch geht bei jedem Eintritt in den Chat, dort steht er
       // haeufiger als jeder Name.
       const wf = require("./wortfilter").pruefe(spruch, "Der Spruch");
       if (!wf.ok) return ack({ ok: false, error: wf.error });
@@ -459,9 +460,9 @@ function saubererSpruch(roh) {
     .slice(0, SPRUCH_MAX);
 }
 
-/* ── Fortuna: sieben Stueck, mehr nicht ────────────────────────────────────
+/* --- Fortuna: sieben Stueck, mehr nicht ---
  *
- * Bewusst OHNE eigene Datei. Wie viele vergeben sind, steht schon in den
+ * Bewusst ohne eigene Datei. Wie viele vergeben sind, steht schon in den
  * Konten: es ist die Anzahl derer, die den Stil besitzen. Ein zweiter Zaehler
  * koennte davon abweichen, und dann waere die Frage, welcher stimmt.
  */

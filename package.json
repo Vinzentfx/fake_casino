@@ -1,7 +1,7 @@
 {
   "name": "fake-casino",
   "version": "0.1.0",
-  "description": "Browser-based play-money casino (Texas Hold'em, Slots & more) with a lobby/homescreen.",
+  "description": "Spielgeld-Casino im Browser für einen Freundeskreis",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

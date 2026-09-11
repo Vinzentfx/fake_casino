@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Bank client (savings)
+   Bank: Sparkonto
    ============================================================ */
 
 (function () {
@@ -45,7 +45,7 @@
     socket.emit(ev, payload, (res) => {
       if (!res || !res.ok) { if (err) err.textContent = (res && res.error) || "Fehler."; return; }
       applyAccount(res.account); state = res; render();
-      toast(ev === "savings:deposit" ? "💰 Eingezahlt." : "💸 Abgehoben.");
+      toast(ev === "savings:deposit" ? "Eingezahlt." : "Abgehoben.");
     });
   }
 
@@ -55,6 +55,6 @@
     if (ownerLine) ownerLine.textContent = "Park Chips sicher auf dem Sparkonto. Geld kommt weiterhin aus den Spielen.";
   }
 
-  // app.js's showScreen calls this when the bank screen opens.
+  // Ruft der Router auf, wenn der Bank-Screen aufgeht.
   window.Casino._loadBank = loadBank;
 })();

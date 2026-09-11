@@ -1,12 +1,12 @@
 "use strict";
 
 /**
- * Play-money account store, shared by the HTTP API (server.js) and the poker
- * tables (buy-in / cash-out). Single source of truth — both must go through
- * this module so chip balances never diverge.
+ * Kontenverwaltung für das Spielgeld. Die HTTP-API (server.js) und die
+ * Pokertische (Buy-in, Auszahlung) gehen beide hierüber, damit es nur einen
+ * Kontostand gibt und nicht zwei, die auseinanderlaufen.
  *
- * Persisted to data/accounts.json. PINs are stored as salted scrypt hashes.
- * This is play money for friends, not real security.
+ * Gespeichert in data/accounts.json, Passwörter als gesalzene scrypt-Hashes.
+ * Ist Spielgeld unter Freunden, kein Hochsicherheitstrakt.
  */
 
 const path = require("path");
@@ -17,68 +17,68 @@ const DATA_DIR = path.join(__dirname, "..", "data");
 const ACCOUNTS_FILE = path.join(DATA_DIR, "accounts.json");
 const SECRET_FILE = path.join(DATA_DIR, ".secret");
 
-const STARTING_CHIPS = 5000; // ein erster Abend Spielgeld — weit unter jedem Hauspreis
-// Hard anti-cheat ceiling: no account may hold more than this. Enforced on every
-// chip change AND swept periodically (see startChipCapSweep), so old exploited
-// balances (the bot-faucet trillions) get clamped down automatically and forever.
-const MAX_CHIPS = 100_000_000_000; // 100 Mrd. — far above any legit balance
-// HOURLY bonus — the economy's "salary". Hourly instead of daily so active
-// players progress fast (user request): an evening of play funds a house, the
-// games themselves stay <100% RTP. (Export names keep the legacy DAILY_ prefix
-// for API stability.)
-const DAILY_BONUS = 1000;                    // per claim (1×/hour)
+const STARTING_CHIPS = 5000; // ein erster Abend Spielgeld, weit unter jedem Hauspreis
+// Harte Obergrenze gegen Cheats: kein Konto darf mehr haben. Wird bei jeder
+// Buchung geprüft und regelmäßig abgefegt (startChipCapSweep), damit alte
+// ausgenutzte Stände (die Billionen aus dem Bot-Fehler) dauerhaft gekappt bleiben.
+const MAX_CHIPS = 100_000_000_000; // 100 Mrd., weit über jedem ehrlichen Stand
+// Stunden-Bonus, sozusagen das Gehalt. Stündlich statt täglich, damit man
+// schneller vorankommt (war ein Wunsch aus der Runde): ein Abend reicht für
+// ein Haus, die Spiele selbst bleiben unter 100 % RTP. Die Exporte heißen aus
+// Kompatibilität weiter DAILY_.
+const DAILY_BONUS = 1000;                    // je Abholung (1× pro Stunde)
 const DAILY_BONUS_COOLDOWN_MS = 60 * 60 * 1000; // 1h
 
-// Claim streak: each consecutive hourly claim (within the grace window) adds
-// STREAK_STEP, capped at STREAK_MAX extra claims → max +2.500.
+// Serie: jede Abholung in Folge (innerhalb der Frist) gibt STREAK_STEP drauf,
+// höchstens STREAK_MAX mal, also maximal +2.500.
 const STREAK_STEP = 250;
 const STREAK_MAX = 10;
-// Grace window to keep the streak alive: claim at least once every ~26h.
-// (Was tied to the old 20h cooldown → after the hourly switch it was only 2h,
-// so streaks silently reset overnight.)
+// Frist für die Serie: mindestens einmal in ~26 h abholen. (Hing früher am
+// 20-h-Cooldown und war nach der Umstellung auf stündlich nur noch 2 h lang,
+// die Serie riss also jede Nacht.)
 const STREAK_GRACE_HOURS = 26;
 
-// Street tribute: each complete street monopoly adds to every hourly bonus.
-// The weekly GOLDEN street counts double.
+// Straßen-Tribut: jede komplette Straße gibt etwas auf jeden Stunden-Bonus.
+// Die Goldene Straße der Woche zählt doppelt.
 const STREET_TRIBUTE = 2000;
-const STREET_TRIBUTE_CAP = 10; // at most 10 streets pay tribute (max +20.000/h)
+const STREET_TRIBUTE_CAP = 10; // höchstens 10 Straßen zahlen (max. +20.000/h)
 
-// House tribute: EVERY owned building pays a little rent with the hourly
-// bonus — capped so hoarding thousands of cheap houses isn't a money printer.
+// Haus-Tribut: jedes Gebäude zahlt mit dem Stunden-Bonus etwas Miete.
+// Gedeckelt, sonst druckt man mit tausend billigen Häusern Geld.
 const HOUSE_TRIBUTE = 200;
-const HOUSE_TRIBUTE_CAP = 100; // max 100 houses count (→ +20.000/h)
+const HOUSE_TRIBUTE_CAP = 100; // höchstens 100 Häuser zählen (+20.000/h)
 
-// Cashback (like a real casino's loyalty program): a cut of your house-game
-// losses since the last claim comes back with the next bonus. Bounded by
-// actual losses → mathematically safe, can't be farmed. The Kirchenpatron
-// trophy upgrades both numbers ("Segen").
+// Cashback wie beim Treueprogramm echter Casinos: ein Teil der Verluste an
+// Hausspielen seit der letzten Abholung kommt mit dem nächsten Bonus zurück.
+// Kann nie mehr sein als tatsächlich verloren wurde, lässt sich also nicht
+// farmen. Die Kirche (Trophäe) hebt beide Werte an ("Segen").
 const CASHBACK_RATE = 0.10;
-const CASHBACK_CAP = 25000;          // per hourly claim
-const CASHBACK_RATE_BLESSED = 0.15;  // ⛪ Kirche
-const CASHBACK_CAP_BLESSED = 50000;  // ⛪ Kirche
-const STREAK_GRACE_MS = STREAK_GRACE_HOURS * 60 * 60 * 1000; // miss this window → streak resets
+const CASHBACK_CAP = 25000;          // je Abholung
+const CASHBACK_RATE_BLESSED = 0.15;  // Kirche
+const CASHBACK_CAP_BLESSED = 50000;  // Kirche
+const STREAK_GRACE_MS = STREAK_GRACE_HOURS * 60 * 60 * 1000; // Frist verpasst, Serie weg
 
-// Pleite-Schutz: keep a broke player in the game without waiting for the bonus.
+// Pleite-Schutz: wer blank ist, soll nicht auf den Bonus warten müssen.
 /*
- * Soforthilfe — der Boden, auf dem man wieder aufstehen kann.
+ * Soforthilfe, der Boden, auf dem man wieder aufstehen kann.
  *
  * Sie griff unter 50 Chips und fuellte auf 150 auf. Der kleinste Einsatz im
  * Haus sind 50: das reichte fuer drei Slot-Drehungen, und danach stand man
  * wieder da. Der Stunden-Bonus allein bringt das Siebenfache.
  *
- * Jetzt so viel, dass man eine Runde spielen kann, statt eine Drehung. Das
- * Bankguthaben zaehlt dabei mit — sonst hoelte sich jemand mit 1,5 Millionen
- * auf der Bank und 1.702 Chips auf der Hand alle halbe Stunde Almosen ab.
+ * Jetzt so viel, dass man eine Runde spielen kann statt einer Drehung. Das
+ * Bankguthaben zählt mit, sonst holt sich jemand mit 1,5 Millionen auf der
+ * Bank und 1.702 Chips auf der Hand jede halbe Stunde Almosen ab.
  */
-const RESCUE_THRESHOLD = 2000;     // nur, wenn Chips UND Bank darunter liegen
+const RESCUE_THRESHOLD = 2000;     // nur, wenn Chips und Bank darunter liegen
 const RESCUE_TO = 2000;            // fuellt bis hierhin auf
 const RESCUE_COOLDOWN_MS = 30 * 60 * 1000; // 30 min, deckelt das Nachfassen
 
-// Brute-force protection on password login — PERSISTED on the account (the old
-// RAM map reset with every deploy, which happens often) and ESCALATING:
-// 5 wrong tries → 15 min lock, each further lock doubles (cap 24h). The same
-// counter also guards the change-pin endpoint (previously an unthrottled
-// side door for guessing). failSince is shown to the owner after login.
+// Schutz gegen Passwort-Raten. Steht am Konto (die alte Map im Speicher war
+// nach jedem Deploy leer) und wird schärfer: 5 Fehlversuche = 15 min Sperre,
+// jede weitere Sperre doppelt so lang (höchstens 24 h). Derselbe Zähler
+// schützt auch das Passwort-Ändern, das vorher ungebremst war. failSince
+// bekommt der Besitzer nach dem Login angezeigt.
 const LOGIN_MAX_FAILS = 5;
 const LOGIN_LOCK_BASE_MS = 15 * 60 * 1000;
 const LOGIN_LOCK_MAX_MS = 24 * 60 * 60 * 1000;
@@ -92,7 +92,7 @@ function lockedMinutes(acc) {
   const s = secOf(acc);
   return s.lockUntil > Date.now() ? Math.ceil((s.lockUntil - Date.now()) / 60000) : 0;
 }
-/** Wrong password attempt → returns lock minutes if this attempt locked the account. */
+/** Falsches Passwort. Gibt die Sperrminuten zurück, falls dieser Versuch gesperrt hat. */
 function recordAuthFail(acc) {
   const s = secOf(acc);
   s.fails += 1;
@@ -108,7 +108,7 @@ function recordAuthFail(acc) {
   save();
   return 0;
 }
-/** Successful auth → reset counters, return how many fails happened since last success. */
+/** Anmeldung geklappt: Zähler zurücksetzen und sagen, wie viele Fehlversuche es seit dem letzten Erfolg gab. */
 function recordAuthSuccess(acc) {
   const s = secOf(acc);
   const warn = s.failSince || 0;
@@ -120,8 +120,8 @@ function recordAuthSuccess(acc) {
 let accounts = load();
 startChipCapSweep(); // permanent anti-cheat chip ceiling
 
-// Server secret for signing session tokens. Persisted in the data volume so
-// tokens survive redeploys; generated once on first run.
+// Geheimnis zum Signieren der Tokens. Liegt im Datenordner, damit Tokens einen
+// Deploy überleben; wird beim ersten Start erzeugt.
 const SECRET = loadSecret();
 
 function loadSecret() {
@@ -137,13 +137,13 @@ function loadSecret() {
   return s;
 }
 
-// How long a session token stays valid. Long enough that a school iPad killing
-// the Safari tab never costs you a login, short enough that a token left behind
-// on a shared device eventually dies. Every resume issues a fresh token, so
-// active players roll the window forward and never hit the wall.
+// So lange gilt ein Token. Lang genug, dass ein Schul-iPad, das den Tab
+// wegwirft, nie einen Login kostet, kurz genug, dass ein vergessenes Token auf
+// einem fremden Gerät irgendwann stirbt. Jedes Resume stellt ein neues aus,
+// wer spielt, schiebt die Frist also immer weiter.
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-/** Issue a signed, stateless session token for an account name. */
+/** Signiertes Token für einen Kontonamen ausstellen, ohne Zustand auf dem Server. */
 function issueToken(name) {
   const payload = `${normalizeName(name)}|${Date.now()}`;
   const sig = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
@@ -151,8 +151,8 @@ function issueToken(name) {
 }
 
 /**
- * Verify a session token. Returns the normalized account key on success,
- * or null if the token is missing, malformed, forged, or the account is gone.
+ * Token prüfen. Gibt den normalisierten Kontonamen zurück, oder null, wenn das
+ * Token fehlt, kaputt oder gefälscht ist oder das Konto nicht mehr existiert.
  */
 function verifyToken(token) {
   if (typeof token !== "string" || !token.includes(".")) return null;
@@ -169,17 +169,17 @@ function verifyToken(token) {
   if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
   const [key, issuedAt] = payload.split("|");
   if (!key || !accounts[key] || accounts[key].banned) return null;
-  // Signature alone isn't enough — the token also has to be recent. Without this
-  // the embedded timestamp was decoration and tokens lived forever.
+  // Die Signatur allein reicht nicht, das Token muss auch frisch sein. Ohne das
+  // war der Zeitstempel darin nur Deko und Tokens galten ewig.
   const age = Date.now() - Number(issuedAt);
   if (!Number.isFinite(age) || age < 0 || age > TOKEN_TTL_MS) return null;
   return key;
 }
 
 /**
- * Resume a session from a stored token: same identity proof as a password
- * login, minus the password. Returns a FRESH token so a player who keeps
- * playing never runs into the TTL.
+ * Sitzung aus einem gespeicherten Token fortsetzen. Gleicher Nachweis wie beim
+ * Login, nur ohne Passwort. Gibt ein neues Token zurück, damit niemand beim
+ * Weiterspielen an die Ablaufzeit stößt.
  */
 function resumeSession(token) {
   const key = verifyToken(token);
@@ -193,9 +193,9 @@ function resumeSession(token) {
 /*
  * Konten laden.
  *
- * Die alte Fassung fing JEDEN Fehler ab und gab ein leeres Objekt zurueck.
+ * Die alte Fassung fing jeden Fehler ab und gab ein leeres Objekt zurueck.
  * Fehlt die Datei, ist das richtig: frisches Haus. Ist sie aber da und laesst
- * sich nicht lesen, waeren damit alle Konten weg — und der naechste save()
+ * sich nicht lesen, waeren damit alle Konten weg, und der naechste save()
  * haette die kaputte Datei mit dem leeren Stand ueberschrieben. Aus einem
  * Lesefehler waere so ein endgueltiger Datenverlust geworden.
  *
@@ -236,7 +236,7 @@ function load() {
  * glaubwuerdig, und "127 Haende, 73 gewonnen" ist mehr wert als gar nichts.
  */
 function raeumeStatistik(roh) {
-  /* Steht bewusst IN der Funktion: als const weiter unten waere sie beim
+  /* Steht bewusst in der Funktion: als const weiter unten waere sie beim
      Aufruf aus load() heraus noch nicht initialisiert gewesen. */
   const STAT_UNMOEGLICH = 50_000_000;
   let bereinigt = 0;
@@ -259,9 +259,9 @@ function save() {
   fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2));
 }
 
-// Permanently-active anti-cheat: every few minutes, clamp any account over the
-// ceiling (catches direct chip mutations like casino rake, and cleans up old
-// exploited balances even if the player is offline).
+// Läuft immer: alle paar Minuten jedes Konto über der Obergrenze kappen
+// (fängt direkte Buchungen wie den Rake ab und räumt alte ausgenutzte Stände
+// auch bei Spielern auf, die gerade offline sind).
 function startChipCapSweep() {
   setInterval(() => {
     let changed = false;
@@ -284,7 +284,7 @@ function get(name) {
   return accounts[normalizeName(name)] || null;
 }
 
-// Net worth = liquid chips + value of everything owned in the shared city.
+// Vermögen = Chips plus alles, was man in der Stadt besitzt.
 const city = require("./city");
 const stocks = require("./stocks");
 
@@ -292,8 +292,8 @@ const stocks = require("./stocks");
  * Was jemand insgesamt hat. Nur zum Anzeigen.
  *
  * Das Bankguthaben fehlte hier. Bei einem Konto mit 1.702 Chips auf der Hand
- * und 1,5 Millionen auf der Bank stand als Vermoegen der Immobilienwert allein
- * — und der Spieler galt als arm.
+ * und 1,5 Millionen auf der Bank stand als Vermögen nur der Immobilienwert,
+ * und der Spieler galt als arm.
  */
 function _netWorth(acc) {
   const key = normalizeName(acc.name);
@@ -303,19 +303,19 @@ function _netWorth(acc) {
 const _bank = (acc) => Math.floor((acc && acc.savings && acc.savings.amount) || 0);
 
 /*
- * Womit die Vermoegensbremse rechnet — und das ist ausdruecklich NICHT
+ * Womit die Vermoegensbremse rechnet. Ausdrücklich nicht
  * dasselbe wie das angezeigte Vermoegen.
  *
  * Vorher zaehlten Immobilien voll und die Bank gar nicht. Damit traf die
  * Bremse genau die Falschen: wer seine Chips in Gebaeude gesteckt hatte, galt
  * als reich und bekam ein Viertel, obwohl er nichts mehr zum Spielen hatte.
  * Im Spielstand vom 10.9. stand Spender bei 25 Prozent mit 10.062 Chips und
- * CharlieEpstein bei 38 Prozent mit 814 — waehrend jemand mit 780.000 Chips
+ * CharlieEpstein bei 38 Prozent mit 814, waehrend jemand mit 780.000 Chips
  * bar auf der Hand bei 96 Prozent lief.
  *
- * Jetzt zaehlt, was man ausgeben KANN: Chips und Bank voll, Aktien voll (die
+ * Jetzt zaehlt, was man ausgeben kann: Chips und Bank voll, Aktien voll (die
  * lassen sich sofort verkaufen), Immobilien zu einem Viertel. Ein Gebaeude ist
- * Vermoegen, aber keins, mit dem man an den Tisch geht — und der Tribut, den
+ * Vermoegen, aber keins, mit dem man an den Tisch geht, und der Tribut, den
  * es abwirft, ist genau die Einnahme, die die Bremse sonst wegkuerzt.
  */
 const IMMOBILIEN_GEWICHT = 0.25;
@@ -325,10 +325,10 @@ function _bremsWert(acc) {
     + city.ownerValue(key) * IMMOBILIEN_GEWICHT;
 }
 
-// Anti-inflation: guaranteed FREE income (hourly bonus, quests, calendar) is
-// full value while you're still building up, then tapers for the wealthy — so
-// billionaires don't keep minting free chips with nothing to spend them on.
-// New/mid players (< FAUCET_FULL net worth) are completely unaffected.
+// Gegen Inflation: garantierte Gratis-Einnahmen (Stunden-Bonus, Aufträge,
+// Kalender) gibt es voll, solange man noch aufbaut, danach werden sie für die
+// Reichen weniger. Sonst prägen Milliardäre weiter Gratis-Chips, mit denen sie
+// nichts mehr anfangen. Wer unter FAUCET_FULL liegt, merkt davon nichts.
 /*
  * Die Schwellen stammten aus einer Wirtschaft, die es nie gab: die Bremse
  * begann bei zehn Millionen Vermoegen und wirkte voll erst bei einer
@@ -354,11 +354,11 @@ function faucetFactor(name) {
   return 1 - (1 - FAUCET_FLOOR) * t;
 }
 
-// ─── Spieler-Level / XP ─────────────────────────────────────────────────────
-// XP is earned by PLAYING (not by wealth), so a rank reflects experience, not
-// chips. Level L needs 100·(L-1)² total XP → level = floor(√(xp/100)) + 1.
-const XP_PER_HAND = 8;   // per settled hand …
-const XP_PER_WIN = 4;    // … plus this on a win
+// --- Spieler-Level / XP ---
+// XP gibt es fürs SPIELEN, nicht fürs Reichsein. Der Rang zeigt Erfahrung.
+// Level L braucht insgesamt 100·(L-1)² XP, also level = floor(√(xp/100)) + 1.
+const XP_PER_HAND = 8;   // je abgerechneter Hand …
+const XP_PER_WIN = 4;    // … und das bei einem Sieg dazu
 const levelFromXp = (xp) => Math.floor(Math.sqrt(Math.max(0, xp) / 100)) + 1;
 const xpForLevel = (L) => 100 * (L - 1) * (L - 1);
 
@@ -401,8 +401,8 @@ function addXp(name, amount) {
   return publicAccount(acc);
 }
 
-// ─── Buffs (from business products) ─────────────────────────────────────────
-/** Active buffs for an account, with expired ones pruned. { type: {until, mult} } */
+// --- Boni (aus Firmenprodukten) ---
+/** Aktive Boni eines Kontos, abgelaufene fliegen raus. { type: {until, mult} } */
 function activeBuffs(acc) {
   if (!acc || !acc.buffs) return {};
   const now = Date.now();
@@ -419,26 +419,26 @@ function grantBuff(name, type, mins, mult) {
   if (!acc) return;
   acc.buffs = acc.buffs || {};
   const until = Date.now() + mins * 60000;
-  // Refresh/extend: keep the stronger multiplier and the later expiry.
+  // Verlängern: der stärkere Faktor und das spätere Ende gewinnen.
   const cur = acc.buffs[type];
   acc.buffs[type] = { until: Math.max(until, cur ? cur.until : 0), mult: Math.max(mult || 1, cur ? cur.mult || 1 : 1) };
   save();
 }
 
-/** Multiplier for a legacy timed buff (1 if inactive). Ownership no longer
- *  grants buffs — city perks come from unique TROPHY buildings instead
- *  (city.hasTrophy), wired directly where they apply. */
+/** Faktor für einen alten zeitlichen Bonus (1, wenn keiner läuft). Besitz gibt
+ *  keine Boni mehr, die Vorteile in der Stadt kommen von den Trophäen-Gebäuden
+ *  (city.hasTrophy) und werden direkt dort eingerechnet, wo sie wirken. */
 function buffMult(name, type) {
   const acc = get(name);
   const b = acc && acc.buffs && acc.buffs[type];
   return b && b.until > Date.now() ? (b.mult || 1) : 1;
 }
-/** Whether a (legacy timed) buff is currently active. */
+/** Ob ein (alter, zeitlicher) Bonus gerade läuft. */
 function hasBuff(name, type) {
   return buffMult(name, type) > 1;
 }
 
-// ─── Inventory (product items you can use or resell) ────────────────────────
+// --- Inventar (Produkte zum Benutzen oder Weiterverkaufen) ---
 function getInventory(name) {
   const acc = get(name);
   return (acc && acc.inventory) || {};
@@ -486,7 +486,7 @@ function publicAccount(acc) {
 /**
  * Merkt, wann jemand zuletzt da war.
  *
- * Bis jetzt hat das niemand aufgeschrieben — man konnte nicht sehen, wer heute
+ * Bis jetzt hat das niemand aufgeschrieben, man konnte nicht sehen, wer heute
  * schon gespielt hat oder wer seit Wochen weg ist. Fuer eine Freundesrunde ist
  * das die naheliegendste Information ueberhaupt.
  *
@@ -507,16 +507,16 @@ function bonusAvailable(acc) {
   return Date.now() - (acc.lastBonusAt || 0) >= DAILY_BONUS_COOLDOWN_MS;
 }
 
-/** Create or authenticate. Returns { ok, created, account, token } or { ok:false, error }. */
+/** Anlegen oder anmelden. Gibt { ok, created, account, token } oder { ok:false, error } zurück. */
 function login(name, pin) {
   name = String(name || "").trim();
   pin = String(pin || "").trim();
   const key = normalizeName(name);
 
   if (!key || name.length < 2 || name.length > 16) {
-    return { ok: false, error: "Name muss 2–16 Zeichen lang sein." };
+    return { ok: false, error: "Name muss 2 bis 16 Zeichen lang sein." };
   }
-  /* Nur bei NEUEN Konten. Wer schon da ist, behaelt seinen Namen — sonst
+  /* Nur bei neuen Konten. Wer schon da ist, behält seinen Namen, sonst
      sperrt eine spaeter ergaenzte Wortliste jemanden aus seinem eigenen
      Account aus. Bestehende Namen listet der Admin-Bildschirm auf. */
   if (!accounts[key]) {
@@ -524,12 +524,12 @@ function login(name, pin) {
     if (!wf.ok) return { ok: false, error: "Dieser Name geht hier nicht. Such dir einen anderen aus." };
   }
   if (pin.length < 4 || pin.length > PASS_MAX) {
-    return { ok: false, error: `Passwort muss 4–${PASS_MAX} Zeichen haben.` };
+    return { ok: false, error: `Passwort muss 4 bis ${PASS_MAX} Zeichen haben.` };
   }
 
   let acc = accounts[key];
   if (!acc) {
-    // Neue Accounts brauchen ein richtiges Passwort — Namen sind öffentlich
+    // Neue Accounts brauchen ein richtiges Passwort, die Namen sind öffentlich
     // (Bestenliste), eine 4-stellige PIN wäre in Tagen durchprobiert.
     if (pin.length < PASS_MIN_NEW) {
       return { ok: false, error: `Neues Konto: Passwort braucht mindestens ${PASS_MIN_NEW} Zeichen (gern Wörter statt Zahlen).` };
@@ -563,7 +563,7 @@ function login(name, pin) {
   return { ok: true, created: false, account: publicAccount(acc), token: issueToken(acc.name), warnFails };
 }
 
-/** Claim daily bonus. Returns { ok, amount, streak, account } or { ok:false, error, msLeft }. */
+/** Stunden-Bonus abholen. Gibt { ok, amount, streak, account } oder { ok:false, error, msLeft } zurück. */
 function claimDailyBonus(name) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
@@ -576,35 +576,35 @@ function claimDailyBonus(name) {
   }
   const now = Date.now();
   const key = normalizeName(acc.name);
-  // Schulleiter trophy: education sticks — the streak NEVER expires and each
-  // streak step counts double.
+  // Schulleiter (Trophäe): Bildung bleibt. Die Serie verfällt nie und jeder
+  // Schritt zählt doppelt.
   const schule = city.hasTrophy(key, "schule");
   const onTime = schule || (acc.lastBonusAt && now - acc.lastBonusAt <= STREAK_GRACE_MS);
   acc.bonusStreak = onTime ? (acc.bonusStreak || 1) + 1 : 1;
   const streakBonus = Math.min(acc.bonusStreak - 1, STREAK_MAX) * STREAK_STEP * (schule ? 2 : 1);
-  // Bahnhofs-Baron trophy: commuters bring money — hourly bonus ×1.5.
+  // Bahnhofs-Baron (Trophäe): Pendler bringen Geld, Stunden-Bonus ×1,5.
   const pendler = city.hasTrophy(key, "bahnhof") ? 1.5 : 1;
   const base = Math.round((DAILY_BONUS + streakBonus) * pendler);
-  // Street tribute: complete streets pay when you show up; the weekly GOLDEN
-  // street pays double.
+  // Straßen-Tribut: komplette Straßen zahlen, wenn man vorbeikommt. Die
+  // Goldene Straße der Woche zahlt doppelt.
   const streets = Math.min(city.streetCount(key), STREET_TRIBUTE_CAP);
   const golden = city.ownsGolden(key) ? STREET_TRIBUTE : 0;
   const tribute = streets * STREET_TRIBUTE + golden;
-  // House tribute: every owned building pays a little (capped).
+  // Haus-Tribut: jedes Gebäude zahlt ein bisschen (gedeckelt).
   const housesOwned = city.houseCount(key);
   const houses = Math.min(housesOwned, HOUSE_TRIBUTE_CAP) * HOUSE_TRIBUTE;
-  // Collection sets (Stadtbekannt, Kaffee-Kartell …).
+  // Sammel-Sets (Stadtbekannt, Kaffee-Kartell …).
   const setList = city.setsOf(key);
   const sets = setList.reduce((s, x) => s + x.tribute, 0);
-  // Loss cashback since the last claim — blessed players (⛪) get more back.
+  // Cashback seit der letzten Abholung, wer den Segen der Kirche hat, bekommt mehr.
   const blessed = city.hasTrophy(key, "kirche");
   const cashback = Math.min(
     blessed ? CASHBACK_CAP_BLESSED : CASHBACK_CAP,
     Math.floor((acc.lossSince || 0) * (blessed ? CASHBACK_RATE_BLESSED : CASHBACK_RATE))
   );
   acc.lossSince = 0;
-  // Anti-inflation taper for the wealthy (cashback excluded — it's already
-  // bounded by your own losses, not free money).
+  // Bremse für die Reichen (ohne Cashback, das ist durch die eigenen Verluste
+  // begrenzt und kein Gratisgeld).
   const f = faucetFactor(acc.name);
   const tBase = Math.round(base * f), tTribute = Math.round(tribute * f);
   const tHouses = Math.round(houses * f), tSets = Math.round(sets * f);
@@ -620,16 +620,16 @@ function claimDailyBonus(name) {
 }
 
 /**
- * Pleite-Schutz: top a nearly-broke balance back up so the player can keep
- * playing instead of waiting out the bonus cooldown. Rate-limited to bound abuse.
- * Returns { ok, amount, account } or { ok:false, error, msLeft }.
+ * Pleite-Schutz: einen fast leeren Stand wieder auffüllen, damit man
+ * weiterspielen kann statt auf den Bonus zu warten. Mit Wartezeit gegen
+ * Ausnutzen. Gibt { ok, amount, account } oder { ok:false, error, msLeft } zurück.
  */
 function rescue(name) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
   if (acc.chips + _bank(acc) >= RESCUE_THRESHOLD)
     return { ok: false, error: "Du hast noch genug Chips." };
-  // Kirchenpatron trophy: blessed — double top-up, half cooldown.
+  // Kirche (Trophäe): Segen, doppelte Hilfe, halbe Wartezeit.
   const blessed = city.hasTrophy(normalizeName(acc.name), "kirche");
   const cooldown = blessed ? RESCUE_COOLDOWN_MS / 2 : RESCUE_COOLDOWN_MS;
   const since = Date.now() - (acc.lastRescueAt || 0);
@@ -644,29 +644,30 @@ function rescue(name) {
 }
 
 /**
- * Add `delta` chips to an account (negative to deduct, e.g. table buy-in).
- * Returns { ok, account } or { ok:false, error }. Never goes below 0.
+ * `delta` Chips auf ein Konto buchen (negativ zum Abziehen, z. B. Buy-in).
+ * Gibt { ok, account } oder { ok:false, error } zurück. Nie unter 0.
  */
 function adjustChips(name, delta) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
   if (acc.chips + delta < 0) return { ok: false, error: "Nicht genug Chips." };
   acc.chips += delta;
-  if (acc.chips > MAX_CHIPS) acc.chips = MAX_CHIPS; // anti-cheat ceiling
+  if (acc.chips > MAX_CHIPS) acc.chips = MAX_CHIPS; // Obergrenze gegen Cheats
   save();
   return { ok: true, account: publicAccount(acc) };
 }
 
-const CASINO_RAKE = 0.05; // 5% of a player's house-game losses go to the casino owner
+const CASINO_RAKE = 0.05; // 5 % der Verluste an Hausspielen gehen an den Casino-Besitzer
 
 /**
- * Record a hand result for stats (winnings = net chips won/lost in a single round).
- * For house games (slots/roulette/blackjack — `house` true), 5% of any loss is
- * raked to whoever owns the Casino in the shared city. Pass house=false for
- * player-vs-player games (poker, PvP slots) so they stay zero-sum.
+ * Ergebnis einer Runde für die Statistik verbuchen (winnings = Netto dieser
+ * Runde). Bei Hausspielen (Slots, Roulette, Blackjack, `house` true) gehen 5 %
+ * jedes Verlusts an den, dem in der Stadt das Casino gehört. Spiele gegen
+ * andere Spieler (Poker, PvP-Slots) übergeben house=false und bleiben
+ * Nullsummenspiele.
  */
-// Listeners fired after every recorded hand (achievements etc.) — registered
-// via onHand() to avoid a circular require.
+// Wird nach jeder verbuchten Runde aufgerufen (Achievements usw.). Anmeldung
+// über onHand(), sonst gibt es einen Kreis beim require.
 const handListeners = [];
 const onHand = (cb) => handListeners.push(cb);
 
@@ -678,12 +679,12 @@ function recordHand(name, winnings, house = true, game = null, meta = null) {
   if (acc.stats.biggestLoss === undefined) acc.stats.biggestLoss = 0;
   acc.stats.gamesPlayed += 1;
   acc.weeklyNet = (acc.weeklyNet || 0) + winnings; // Spieler-der-Woche race (weekly.js resets)
-  // XP for playing (level up = experience, not wealth).
+  // XP fürs Spielen (Aufstieg heißt Erfahrung, nicht Reichtum).
   const lvlBefore = levelFromXp(acc.xp || 0);
   acc.xp = (acc.xp || 0) + XP_PER_HAND + (winnings > 0 ? XP_PER_WIN : 0);
   const lvlAfter = levelFromXp(acc.xp);
-  if (lvlAfter > lvlBefore) acc._justLeveled = lvlAfter; // picked up by setupLevel
-  // Per-game breakdown (plays / wins / net) for the stats screen.
+  if (lvlAfter > lvlBefore) acc._justLeveled = lvlAfter; // holt setupLevel ab
+  // Aufschlüsselung je Spiel (Runden, Siege, Netto) für die Statistik.
   if (game) {
     acc.stats.perGame = acc.stats.perGame || {};
     const g = acc.stats.perGame[game] || (acc.stats.perGame[game] = { plays: 0, wins: 0, net: 0 });
@@ -696,13 +697,13 @@ function recordHand(name, winnings, house = true, game = null, meta = null) {
     const loss = -winnings;
     if (loss > acc.stats.biggestLoss) acc.stats.biggestLoss = loss;
     if (house) {
-      acc.lossSince = (acc.lossSince || 0) + loss; // feeds the daily cashback
-      // Casino owner's house edge: a cut of the loss materialises as their income.
+      acc.lossSince = (acc.lossSince || 0) + loss; // daraus wird das Cashback
+      // Hausvorteil für den Casino-Besitzer: ein Teil des Verlusts wird sein Einkommen.
       const owner = city.casinoOwner();
       if (owner && owner !== normalizeName(name)) {
         const rake = Math.floor(loss * CASINO_RAKE);
         const o = accounts[owner];
-        if (rake > 0 && o) o.chips += rake; // save() below persists it
+        if (rake > 0 && o) o.chips += rake; // save() weiter unten speichert es
       }
     }
   }
@@ -713,7 +714,7 @@ function recordHand(name, winnings, house = true, game = null, meta = null) {
 const LEADERBOARD_CATS = {
   rich:    { sort: (a) => a.chips,                    label: "Reichste", icon: "chip" },
   level:   { sort: (a) => levelFromXp(a.xp || 0),      label: "Höchstes Level", icon: "level" },
-  week:    { sort: (a) => a.weeklyNet || 0,           label: "🔥 Spieler der Woche" },
+  week:    { sort: (a) => a.weeklyNet || 0,           label: "Spieler der Woche", icon: "season" },
   estate:  { sort: (a) => city.ownerValue(normalizeName(a.name)), label: "Immobilien-Mogul", icon: "businesses" },
   streets: { sort: (a) => city.streetCount(normalizeName(a.name)), label: "Straßenkönig", icon: "krone" },
   bigwin:  { sort: (a) => (a.stats && a.stats.biggestWin) || 0,  label: "Größter Einzelgewinn", icon: "slots" },
@@ -734,11 +735,11 @@ function recordHorseResult(name, pos) {
   save();
 }
 
-/** One ranked list for a single category. */
+/** Eine Rangliste für eine Kategorie. */
 function leaderboardBy(cat, limit = 10) {
   const c = LEADERBOARD_CATS[cat];
   if (!c) return [];
-  // Lazy requires: achievements holds the title emoji, weekly the champ crown.
+  // Späte requires: achievements kennt das Titel-Emoji, weekly die Krone.
   const achievements = require("./achievements");
   const weekly = require("./weekly");
   const champ = weekly.champName();
@@ -756,12 +757,12 @@ function leaderboardBy(cat, limit = 10) {
     .slice(0, limit);
 }
 
-/** Raw account objects (weekly.js needs weeklyNet of everyone). */
+/** Die rohen Kontoobjekte (weekly.js braucht das weeklyNet von allen). */
 function rawAll() {
   return Object.values(accounts);
 }
 
-/** All leaderboard categories at once (one fetch, client switches tabs). */
+/** Alle Bestenlisten auf einmal (eine Abfrage, der Client wechselt nur die Reiter). */
 function leaderboard(limit = 10) {
   const out = {};
   for (const cat of Object.keys(LEADERBOARD_CATS)) {
@@ -779,7 +780,7 @@ function leaderboard(limit = 10) {
 function changePin(name, oldPin, newPin) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
-  // Gleiche Fehlversuchs-Sperre wie beim Login — dieser Endpoint war sonst
+  // Gleiche Fehlversuchs-Sperre wie beim Login, dieser Endpoint war sonst
   // eine ungebremste Hintertür zum Passwort-Raten.
   const lockMin = lockedMinutes(acc);
   if (lockMin) return { ok: false, error: `Zu viele Fehlversuche. Account für ${lockMin} Min gesperrt.` };
@@ -791,15 +792,15 @@ function changePin(name, oldPin, newPin) {
   recordAuthSuccess(acc);
   const next = String(newPin || "").trim();
   if (next.length < PASS_MIN_NEW || next.length > PASS_MAX)
-    return { ok: false, error: `Neues Passwort: ${PASS_MIN_NEW}–${PASS_MAX} Zeichen.` };
+    return { ok: false, error: `Neues Passwort: ${PASS_MIN_NEW} bis ${PASS_MAX} Zeichen.` };
   acc.pinHash = hashPin(next, acc.salt);
   save();
   return { ok: true };
 }
 
-// ─── Shadowban ("Pechvogel-Modus") ──────────────────────────────────────────
-// A shadowbanned player silently loses every rigged-capable game (slots,
-// solo roulette). They see normal play — the RNG just hates them.
+// --- Shadowban ("Pechvogel-Modus") ---
+// Wer im Pechvogel-Modus ist, verliert still jedes Spiel, das sich steuern
+// lässt (Slots, Solo-Roulette). Sieht aus wie normal, der Zufall hasst ihn nur.
 function setShadowban(name, on) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
@@ -828,8 +829,8 @@ function unban(name) {
   return { ok: true };
 }
 
-const TRANSFER_MIN_AGE_MS = 24 * 60 * 60 * 1000; // account must be 24h old to send
-const TRANSFER_MIN_GAMES = 25;    // Absender muss echt gespielt haben — blockt Faucet-Mules
+const TRANSFER_MIN_AGE_MS = 24 * 60 * 60 * 1000; // Konto muss 24 h alt sein, um zu senden
+const TRANSFER_MIN_GAMES = 25;    // Absender muss echt gespielt haben, blockt Faucet-Mules
 const TRANSFER_DAILY_CAP = 100_000; // max. gesendete Chips pro Absender & Tag
 
 function transfer(fromName, toName, amount) {
@@ -854,7 +855,7 @@ function transfer(fromName, toName, amount) {
   if (from.transferDay !== day) { from.transferDay = day; from.transferSent = 0; }
   const left = TRANSFER_DAILY_CAP - (from.transferSent || 0);
   if (amount > left)
-    return { ok: false, error: `Tageslimit ${TRANSFER_DAILY_CAP.toLocaleString("de-DE")} Chips — heute kannst du noch ${Math.max(0, left).toLocaleString("de-DE")} senden.` };
+    return { ok: false, error: `Tageslimit ${TRANSFER_DAILY_CAP.toLocaleString("de-DE")} Chips, heute kannst du noch ${Math.max(0, left).toLocaleString("de-DE")} senden.` };
   if (from.chips < amount) return { ok: false, error: "Nicht genug Chips." };
   from.chips -= amount;
   to.chips = Math.min(MAX_CHIPS, to.chips + amount);
@@ -900,9 +901,9 @@ function listAll() {
    nicht mehr nur Chips, sondern auch Lose, Season-XP und Kosmetik, und dafuer
    braucht es Zugriff auf halbe Casino. Am Konto bleibt nur `lastWheelAt`. */
 
-// ─── Rivalen / Kopfgeld ─────────────────────────────────────────────────────
-// Put chips on a rival's head; whoever takes over one of their buildings
-// collects the whole pool. Escrowed from the setter immediately.
+// --- Rivalen / Kopfgeld ---
+// Chips auf einen Rivalen setzen. Wer eines seiner Gebäude übernimmt,
+// bekommt den ganzen Topf. Der Einsatz wird sofort einbehalten.
 const MIN_BOUNTY = 1000;
 
 function placeBounty(fromName, targetName, amount) {
@@ -917,21 +918,21 @@ function placeBounty(fromName, targetName, amount) {
   if (from.chips < amount) return { ok: false, error: "Nicht genug Chips." };
   from.chips -= amount;
   target.bounty = (target.bounty || 0) + amount;
-  // Track who funded how much → so self-funded bounties (alt-account farming)
-  // don't grant the claimant the "Kopfgeldjäger" achievement.
+  // Merken, wer wie viel eingezahlt hat, damit selbst finanzierte Kopfgelder
+  // (Zweitkonto-Farming) kein "Kopfgeldjäger"-Achievement bringen.
   target.bountyBy = target.bountyBy || {};
   target.bountyBy[fromKey] = (target.bountyBy[fromKey] || 0) + amount;
   save();
   return { ok: true, bounty: target.bounty, targetName: target.name, account: publicAccount(from) };
 }
 
-/** A takeover claimant collects the target's whole bounty pool. Returns amount. */
+/** Wer übernimmt, bekommt den ganzen Kopfgeld-Topf. Gibt den Betrag zurück. */
 function claimBounty(targetName, claimantName) {
   const target = get(targetName);
   const claimantKey = normalizeName(claimantName);
   if (!target || !target.bounty) return 0;
   const amount = target.bounty;
-  // Portion funded by OTHERS (not the claimant themselves).
+  // Anteil, den andere eingezahlt haben (nicht der Abholer selbst).
   const selfFunded = (target.bountyBy && target.bountyBy[claimantKey]) || 0;
   const external = amount - selfFunded;
   target.bounty = 0;
@@ -939,18 +940,18 @@ function claimBounty(targetName, claimantName) {
   const res = adjustChips(claimantKey, amount);
   if (res.ok) {
     const c = accounts[claimantKey];
-    if (c && external > 0) c.bountyClaims = (c.bountyClaims || 0) + 1; // only "real" claims count
+    if (c && external > 0) c.bountyClaims = (c.bountyClaims || 0) + 1; // nur "echte" Abholungen zählen
     save();
     return amount;
   }
-  target.bounty = amount; // refund on failure
+  target.bounty = amount; // bei Fehler zurück
   return 0;
 }
 const bountyOn = (name) => { const a = get(name); return (a && a.bounty) || 0; };
 
-// ─── Login-Kalender (7-Tage-Belohnungsreihe) ────────────────────────────────
-// Claim once per calendar day; consecutive days climb the ladder, a missed day
-// resets to day 1. Separate from the hourly bonus — a "show up daily" reward.
+// --- Login-Kalender (7-Tage-Belohnungsreihe) ---
+// Einmal pro Kalendertag abholen. Tage in Folge steigen die Leiter hoch, ein
+// verpasster Tag setzt auf Tag 1 zurück. Unabhängig vom Stunden-Bonus.
 const CAL_REWARDS = [2000, 3000, 5000, 8000, 12000, 20000, 50000];
 const dayIndex = () => Math.floor(Date.now() / 86400000);
 
@@ -960,7 +961,7 @@ function calendarState(name) {
   const today = dayIndex();
   const cal = acc.calendar || { idx: 0, lastDay: -999 };
   const claimedToday = cal.lastDay === today;
-  // If they didn't claim yesterday or today, the ladder has reset to day 1.
+  // Weder gestern noch heute abgeholt: zurück auf Tag 1.
   const idx = (cal.lastDay === today || cal.lastDay === today - 1) ? cal.idx : 0;
   // Ausgezahlt wird mit Vermoegensbremse, angezeigt wurde bisher der volle
   // Wert. Wer 20.000 gelesen und 13.000 bekommen hat, musste das fuer einen
@@ -982,22 +983,22 @@ function claimCalendar(name) {
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
   const today = dayIndex();
   const cal = acc.calendar || { idx: 0, lastDay: -999 };
-  if (cal.lastDay === today) return { ok: false, error: "Heute schon abgeholt — komm morgen wieder!" };
-  const idx = (cal.lastDay === today - 1) ? cal.idx : 0; // consecutive? else reset
+  if (cal.lastDay === today) return { ok: false, error: "Heute schon abgeholt, morgen wieder." };
+  const idx = (cal.lastDay === today - 1) ? cal.idx : 0; // in Folge? sonst von vorn
   /* Glückstag vom Rad: die naechste Kalender-Abholung zaehlt doppelt. Der
-     Merker wird hier verbraucht, egal auf welcher Sprosse man steht — wer ihn
+     Merker wird hier verbraucht, egal auf welcher Sprosse man steht, wer ihn
      aufhebt, bis er auf Tag 7 steht, hat das verdient. */
   const glueckstag = !!acc.glueckstag;
   if (glueckstag) delete acc.glueckstag;
   const reward = Math.round(CAL_REWARDS[idx] * faucetFactor(name)) * (glueckstag ? 2 : 1);
   acc.chips += reward;
   acc.calendar = { idx: (idx + 1) % CAL_REWARDS.length, lastDay: today };
-  if ((idx + 1) > (acc.calBest || 0)) acc.calBest = idx + 1; // for achievements
+  if ((idx + 1) > (acc.calBest || 0)) acc.calBest = idx + 1; // für die Achievements
   save();
   return { ok: true, reward, day: idx + 1, glueckstag, account: publicAccount(acc) };
 }
 
-// ─── Wohnsitz (residence — pure social flavour, free) ──────────────────────
+// --- Wohnsitz (reine Deko, kostet nichts) ---
 function setResidence(name, buildingId) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
@@ -1008,7 +1009,7 @@ function setResidence(name, buildingId) {
   return { ok: true, residence: acc.residence };
 }
 
-/** Map buildingId -> [names] of everyone who set their residence there. */
+/** buildingId -> [Namen] aller, die dort ihren Wohnsitz haben. */
 function residentsByBuilding() {
   const out = {};
   for (const acc of Object.values(accounts)) {
@@ -1018,7 +1019,7 @@ function residentsByBuilding() {
   return out;
 }
 
-/** Whether a machine is unlocked for this account (lucky7 is always free). */
+/** Ob ein Automat für das Konto freigeschaltet ist (lucky7 ist immer frei). */
 function isUnlocked(name, machineId) {
   if (machineId === "lucky7") return true;
   const acc = get(name);
@@ -1026,7 +1027,7 @@ function isUnlocked(name, machineId) {
   return (acc.unlocked || ["lucky7"]).includes(machineId);
 }
 
-/** Buy an unlock. Returns { ok, account } or { ok:false, error }. */
+/** Freischaltung kaufen. Gibt { ok, account } oder { ok:false, error } zurück. */
 function unlock(name, machineId, cost) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };

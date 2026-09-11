@@ -1,20 +1,20 @@
 "use strict";
 
 /**
- * Slot machines — server-authoritative.
+ * Slots, komplett auf dem Server.
  *
- * The server owns the RNG and the chip balance: the client asks for a spin
- * with a bet, the server rolls the grid, evaluates wins, updates the account,
- * and returns a structured result for the client to animate.
+ * Zufall und Kontostand liegen beim Server: der Client schickt einen Einsatz,
+ * der Server würfelt das Raster, wertet aus, bucht und schickt ein fertiges
+ * Ergebnis zurück, das der Client nur noch animiert.
  *
- * Config-driven machines share four evaluators:
- *   - "lines"    : fixed paylines, left-aligned, wild substitutes
- *   - "anywhere" : N+ of a symbol anywhere on the grid pays (wild substitutes)
- *   - "ways"     : N-ways (product of matching symbols per consecutive reel)
- *   - "cluster"  : connected groups of 5+ with cascading/tumbling reels
+ * Die Automaten sind Konfiguration und teilen sich vier Auswertungen:
+ *   lines     feste Gewinnlinien von links, Wild ersetzt
+ *   anywhere  ab N gleichen Symbolen irgendwo im Raster (Wild ersetzt)
+ *   ways      N-Ways (Produkt der Treffer je Walze in Folge)
+ *   cluster   zusammenhängende Gruppen ab 5, mit nachrutschenden Walzen
  *
- * Internally every win is `unit * payMultiplier`, where unit = bet / 20.
- * This keeps payouts comparable across machines regardless of line count.
+ * Intern ist jeder Gewinn `unit * payMultiplier` mit unit = Einsatz / 20.
+ * So bleiben die Automaten vergleichbar, egal wie viele Linien sie haben.
  */
 
 const crypto = require("crypto");
@@ -26,12 +26,12 @@ const liveops = require("./liveops");
 
 const BET_LEVELS = [10, 20, 50, 100, 250, 500];
 
-// Paylines for the 3x3 machine (row index per column).
+// Gewinnlinien für den 3x3-Automaten (Zeile je Spalte).
 const LINES_3x3 = [
   [1, 1, 1], [0, 0, 0], [2, 2, 2], [0, 1, 2], [2, 1, 0],
 ];
 
-// 20 paylines for the 5x3 machine.
+// 20 Gewinnlinien für den 5x3-Automaten.
 const LINES_5x3 = [
   [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
   [0, 0, 1, 2, 2], [2, 2, 1, 0, 0], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [0, 1, 1, 1, 0],
@@ -39,13 +39,13 @@ const LINES_5x3 = [
   [1, 1, 0, 1, 1], [1, 1, 2, 1, 1], [0, 0, 1, 0, 0], [2, 2, 1, 2, 2], [0, 2, 0, 2, 0],
 ];
 
-// 10 paylines for the 5x4 machine (rows 0-3).
+// 10 Gewinnlinien für den 5x4-Automaten (Zeilen 0 bis 3).
 const LINES_5x4 = [
   [1, 1, 1, 1, 1], [2, 2, 2, 2, 2], [0, 0, 0, 0, 0], [3, 3, 3, 3, 3], [0, 1, 2, 3, 3],
   [3, 2, 1, 0, 0], [1, 2, 3, 2, 1], [2, 1, 0, 1, 2], [0, 1, 1, 1, 0], [3, 2, 2, 2, 3],
 ];
 
-const CASCADE_MULT = [1, 2, 3, 5, 8, 12]; // multiplier per cascade step (base game)
+const CASCADE_MULT = [1, 2, 3, 5, 8, 12]; // Multiplikator je Kaskadenschritt (Grundspiel)
 
 const MACHINES = [
   {
@@ -62,8 +62,8 @@ const MACHINES = [
     unlockCost: 0,
     bets: [50, 100, 500, 1000, 5000, 25000],
     payScale: 3.12, // ~98% RTP incl. jackpot expectation (small buff)
-    // "Pays anywhere": 3+ of the same symbol ANYWHERE on the grid wins. Tons of
-    // small, frequent wins → constant flashing (the casino-parody dopamine drip).
+    // "Pays anywhere": 3 gleiche Symbole irgendwo im Raster gewinnen. Viele
+    // kleine, häufige Gewinne, also ständig Geblinke (die Casino-Parodie).
     symbols: {
       cherry: { emoji: "🍒", weight: 28 },
       lemon: { emoji: "🍋", weight: 24 },
@@ -100,7 +100,7 @@ const MACHINES = [
     bets: [100, 500, 1000, 5000, 25000, 100000],
     payScale: 1.36, // ~98% RTP incl. scaling free spins + jackpot expectation (small buff)
     freeSpins: { trigger: 3, count: 10, multiplier: 2 },
-    buyBonus: 18, // cost to buy free spins = 18× bet
+    buyBonus: 18, // Freispiele kaufen kostet 18× Einsatz
     symbols: {
       blue: { emoji: "💙", weight: 28 },
       green: { emoji: "💚", weight: 24 },
@@ -168,15 +168,15 @@ const MACHINES = [
       M: { emoji: "🌿", asset: "/assets/slots/algae/symbols/algae.webp", weight: 2 },
       G: { emoji: "🦈", asset: "/assets/slots/algae/symbols/golden-shark.webp", weight: 0 },
     },
-    // Unisono-Reveal: ALLE Mystery-Zellen eines Spins decken DASSELBE Symbol
-    // auf — oder der ganze Stack wird zu Golden Sharks (goldenChance in %).
+    // Unisono-Reveal: alle Mystery-Zellen eines Spins decken dasselbe Symbol
+    // auf, oder der ganze Stack wird zu Golden Sharks (goldenChance in %).
     unisonReveals: [
       ["anchor", 24], ["puffer", 22], ["crystal", 18], ["pearl", 12],
       ["helmet", 8], ["chest", 5], ["shark", 3], ["W", 2],
     ],
     goldenChance: 7,
     // Golden-Shark-Münzen: [Wert in ×Einsatz, Gewicht]. Bronze <10, Silber
-    // 10–50, Gold 100+ (Tier = reine Optik, der Wert zählt).
+    // 10-50, Gold 100+ (Tier = reine Optik, der Wert zählt).
     coinValues: [
       [1, 20000], [2, 6000], [3, 2500], [5, 1200], [10, 380], [25, 120],
       [50, 45], [100, 12], [250, 5], [500, 2], [1000, 1], [2500, 1],
@@ -184,7 +184,7 @@ const MACHINES = [
     minWin: 0.25, // jeder Treffer zahlt mindestens 0,25× Einsatz (Anti-Krümel)
     coinScatterChance: 6, // % je Golden-Position (nur 1. Welle): Scatter statt Münze
     // Low-Symbole zahlen bei 3 Walzen nur symbolisch (der minWin-Floor hebt
-    // das auf 0,25× an) — so fühlt sich ein Reveal mit 3er-Treffer nie "leer"
+    // das auf 0,25× an). So fühlt sich ein Reveal mit 3er-Treffer nie "leer"
     // an, ohne dass Krümel-Beträge angezeigt werden.
     pays: {
       anchor: { 3: 3, 4: 10, 5: 30 },
@@ -221,14 +221,14 @@ const MACHINES = [
     mode: "lines",
     lines: LINES_5x3.slice(0, 10),
     minMatch: 3,
-    // Das 📖 BUCH ist Wild UND Scatter zugleich: Es ersetzt jedes Symbol,
+    // Das BUCH ist Wild und Scatter zugleich: Es ersetzt jedes Symbol,
     // zahlt ab 2 Stück irgendwo (bookPays × Gesamteinsatz) und 3+ starten
     // die Freispiele mit expandierendem Bonussymbol.
     wild: "B",
     scatter: "B",
     unlockCost: 120000,
     bets: [500, 1000, 5000, 25000, 100000, 250000],
-    payScale: 4.85, // ~98,5% RTP (2M-Spin-Sim) — User-Wunsch: großzügigster Slot-Tier
+    payScale: 4.85, // ~98,5 % RTP (2 Mio. Drehs simuliert), der großzügigste Automat im Haus
     freeSpins: { trigger: 3, count: 10, extra: 0 },
     expandingSpecial: true, // Freispiele mit zufälligem expandierendem Symbol
     gamble: { maxSteps: 5 }, // Risiko: Gewinn auf Kartenfarbe verdoppeln
@@ -264,7 +264,7 @@ const MACHINES = [
 
 const MACHINE_BY_ID = Object.fromEntries(MACHINES.map((m) => [m.id, m]));
 
-/** Public, client-safe view of all machines (no internal weights needed, but harmless). */
+/** Sicht auf alle Automaten für den Client (ohne Gewichte, die wären aber auch harmlos). */
 function publicMachines() {
   return MACHINES.map((m) => ({
     id: m.id,
@@ -287,7 +287,7 @@ function publicMachines() {
     gamble: m.gamble ? { maxSteps: m.gamble.maxSteps || 5 } : null,
     lineCount: m.lines ? m.lines.length : 0,
     payKeys: Object.keys(m.pays || m.clusterPays || {}),
-    // Payouts expressed as a multiple of the total bet (for the in-game paytable).
+    // Auszahlungen als Vielfaches des Gesamteinsatzes (für die Gewinntabelle im Spiel).
     pays: m.pays || null,
     clusterPays: m.clusterPays || null,
     payScale: m.payScale || 1,
@@ -360,7 +360,7 @@ function coinTier(value) {
 }
 
 /** Expandierendes Bonussymbol ziehen: gewichtet nach Symbol-Häufigkeit
- *  (häufige Lows öfter, das Top-Symbol selten — so bleibt der Traum-Bonus
+ *  (häufige Lows öfter, das Top-Symbol selten, so bleibt der Traum-Bonus
  *  selten und wertvoll). */
 function pickSpecial(machine) {
   const entries = Object.keys(machine.pays)
@@ -370,10 +370,10 @@ function pickSpecial(machine) {
 
 /**
  * Unisono-Reveal + Nudge & Reveal.
- * ALLE Mystery-Zellen eines Spins decken gemeinsam EIN Symbol auf — oder
+ * alle Mystery-Zellen eines Spins decken gemeinsam ein Symbol auf, oder
  * (goldenChance) der ganze Stack wird zu Golden Sharks. Golden Sharks laufen
  * dann als Nudge-Sequenz: pro Welle deckt jede sichtbare Golden-Position eine
- * Münze (Wert × Einsatz × aktueller Multiplikator) oder — nur in Welle 1 —
+ * Münze (Wert × Einsatz × aktueller Multiplikator) oder (nur in Welle 1)
  * einen Scatter auf; danach rutscht der Stack eine Zeile nach unten und der
  * Multiplikator steigt um +1, bis der Stack aus dem Bild ist.
  * Rückgabe: { grid, displayGrid, reveal, instantWin, nudges }.
@@ -409,7 +409,7 @@ function applyReveal(machine, grid, bet, startMult) {
   let nudges = 0;
   const waves = [];
 
-  // Beim Aufdecken des Stacks können einzelne Positionen Scatter zeigen —
+  // Beim Aufdecken des Stacks können einzelne Positionen Scatter zeigen,
   // sie verlassen den Golden-Stack und bleiben als Scatter liegen.
   const scatters0 = [];
   for (const [c, rs] of live) {
@@ -423,9 +423,9 @@ function applyReveal(machine, grid, bet, startMult) {
     }
   }
 
-  // Nudge-Wellen: Jeder Golden Shark trägt EINE Münze. Pro Nudge zahlt die
+  // Nudge-Wellen: Jeder Golden Shark trägt eine Münze. Pro Nudge zahlt die
   // unterste Reihe (Wert × Einsatz × aktueller Multiplikator), dann rutscht
-  // der Stack ab und der Multiplikator steigt um +1 — die oberen Münzen sind
+  // der Stack ab und der Multiplikator steigt um +1, die oberen Münzen sind
   // also mehr wert.
   while ([...live.values()].some((rs) => rs.length)) {
     const coins = [];
@@ -469,10 +469,10 @@ function spinGrid(machine) {
   return grid;
 }
 
-// ── Progressiver Gemeinschafts-Jackpot ──────────────────────────────────────
-// 0,5% of every paid base-game spin feeds a shared pot; every paid spin has a
-// bet-proportional chance to hit it (expected: one hit per ~50M wagered → pot
-// averages ~250k). Fed by bets → overall RTP stays below 100%.
+// --- Progressiver Gemeinschafts-Jackpot ---
+// 0,5 % jedes bezahlten Drehs im Grundspiel gehen in einen gemeinsamen Topf, und
+// jeder bezahlte Dreh hat eine Chance proportional zum Einsatz (im Schnitt ein
+// Treffer je ~50 Mio. Einsatz, der Topf liegt dann um 250k). Kommt aus den Einsätzen, die RTP bleibt unter 100 %.
 const path = require("path");
 const fs = require("fs");
 const JP_FILE = path.join(__dirname, "..", "data", "jackpot.json");
@@ -485,7 +485,7 @@ let jackpot = (() => {
 function saveJackpot() {
   try { fs.mkdirSync(path.dirname(JP_FILE), { recursive: true }); fs.writeFileSync(JP_FILE, JSON.stringify(jackpot)); } catch {}
 }
-/** Feed the pot and roll for a hit. Returns the payout (0 = no hit). */
+/** Topf füllen und auf Treffer würfeln. Gibt die Auszahlung zurück (0 = nichts). */
 function jackpotSpin(bet) {
   jackpot.pot += bet * JP_FEED;
   let win = 0;
@@ -498,11 +498,11 @@ function jackpotSpin(bet) {
 }
 const jackpotPot = () => Math.round(jackpot.pot);
 
-// ── Admin: force the maximum possible roll (animation showcase) ────────────
-// The owner can arm a one-shot flag; the NEXT base-game spin comes up as a
-// full grid of the machine's best-paying symbol → every line/way/cluster hits
-// its top tier at once (thresholdPay pays the highest tier on overshoot).
-const forcedWin = new Set(); // account keys with an armed force-win
+// --- Admin: den größtmöglichen Wurf erzwingen (zum Vorführen der Animationen) ---
+// Der Besitzer kann eine einmalige Markierung setzen. Der nächste Dreh im
+// Grundspiel ist dann ein volles Raster mit dem besten Symbol, jede Linie trifft
+// auf einmal ihre höchste Stufe (thresholdPay zahlt bei Überschuss die oberste).
+const forcedWin = new Set(); // Konten mit scharf gestelltem Maximalgewinn
 
 function armForceWin(key) {
   forcedWin.add(String(key).toLowerCase());
@@ -511,20 +511,20 @@ function consumeForceWin(key) {
   return forcedWin.delete(String(key).toLowerCase());
 }
 
-/** Shadowban: roll grids until one pays NOTHING (no win, no free spins). */
+/** Pechvogel-Modus: so lange würfeln, bis ein Raster gar nichts zahlt (kein Gewinn, keine Freispiele). */
 function losingGrid(machine, bet) {
   for (let i = 0; i < 300; i++) {
     const g = spinGrid(machine);
-    const probe = evaluateSpin(machine, bet, null, g); // session null → no side effects
+    const probe = evaluateSpin(machine, bet, null, g); // ohne Session, also ohne Nebenwirkungen
     if (probe.totalWin === 0 && probe.result.freeSpinsAwarded === 0) return cloneGrid(probe.result.grid);
   }
   return null;
 }
 
-/** Shadowban near-miss: bias the grid toward the RAREST high-paying symbols
- *  (e.g. lots of 7s on Lucky 7s) but never quite enough to trigger a win — the
- *  classic tantalising "so close" cold streak. Among many biased losing
- *  candidates, keep the one showing the most of the top symbol. */
+/** Pechvogel-Modus mit Beinahe-Treffer: das Raster Richtung der seltensten
+ *  teuren Symbole schieben (z. B. viele 7en bei Lucky 7s), aber nie so weit,
+ *  dass es zahlt. Die typische "so knapp"-Pechsträhne. Von vielen solchen
+ *  Nieten bleibt die mit den meisten Top-Symbolen. */
 function teaseGrid(machine, bet) {
   const payTable = machine.pays || machine.clusterPays || {};
   const ranked = Object.keys(payTable)
@@ -543,7 +543,7 @@ function teaseGrid(machine, bet) {
       g.push(col);
     }
     const probe = evaluateSpin(machine, bet, null, g);
-    if (probe.totalWin !== 0 || probe.result.freeSpinsAwarded !== 0) continue; // must not pay
+    if (probe.totalWin !== 0 || probe.result.freeSpinsAwarded !== 0) continue; // darf nichts zahlen
     let score = 0;
     for (const col of g) for (const s of col) if (s === bestSym) score++;
     if (score > bestScore) { best = cloneGrid(probe.result.grid); bestScore = score; }
@@ -551,7 +551,7 @@ function teaseGrid(machine, bet) {
   return best || losingGrid(machine, bet);
 }
 
-/** Full grid of the best-paying symbol (scatter excluded). */
+/** Volles Raster mit dem bestbezahlten Symbol (ohne Scatter). */
 function bestGrid(machine) {
   const pays = machine.pays || machine.clusterPays || {};
   let best = null, bestPay = -1;
@@ -580,7 +580,7 @@ function evaluateLines(machine, grid, unit) {
   const wins = [];
   machine.lines.forEach((line, idx) => {
     const cells = line.map((row, col) => grid[col][row]);
-    // Determine the paying symbol: first non-wild, or wild itself.
+    // Das zahlende Symbol: das erste, das kein Wild ist, sonst das Wild selbst.
     let symbol = cells.find((s) => s !== wild && s !== machine.scatter);
     if (symbol === undefined) symbol = wild;
     if (symbol === machine.scatter || !machine.pays[symbol]) return;
@@ -604,15 +604,15 @@ function evaluateLines(machine, grid, unit) {
   return wins;
 }
 
-// Highest pay tier whose threshold is <= count (so 6 of a kind still pays the "5+" tier).
+// Höchste Stufe, deren Schwelle <= Anzahl ist (6 gleiche zahlen also die "5+"-Stufe).
 function thresholdPay(table, count) {
   let pay = 0;
   for (const k of Object.keys(table).map(Number).sort((a, b) => a - b)) if (count >= k) pay = table[k];
   return pay;
 }
 
-// "Pays anywhere" — N+ of the same symbol ANYWHERE on the grid pays, regardless
-// of position. Wild substitutes for every symbol. Generous & flashy by design.
+// "Pays anywhere": ab N gleichen Symbolen irgendwo im Raster, egal wo. Wild
+// ersetzt jedes Symbol. Soll großzügig und laut sein.
 function evaluateAnywhere(machine, grid, unit) {
   const wild = machine.wild;
   const wildPos = [];
@@ -626,7 +626,7 @@ function evaluateAnywhere(machine, grid, unit) {
     }
   const wins = [];
   for (const sym of Object.keys(machine.pays)) {
-    if (sym === wild) continue; // wild only substitutes here
+    if (sym === wild) continue; // Wild ersetzt hier nur
     const base = symPos[sym] || [];
     const count = base.length + wildPos.length;
     if (count < machine.minMatch) continue;
@@ -669,7 +669,7 @@ function evaluateWays(machine, grid, unit) {
   return wins;
 }
 
-/** Find connected same-symbol clusters (orthogonal), wild substitutes into any cluster. */
+/** Zusammenhängende Gruppen gleicher Symbole finden (waagerecht/senkrecht), Wild zählt überall mit. */
 function findClusters(machine, grid) {
   const cols = machine.cols, rows = machine.rows, wild = machine.wild;
   const seen = Array.from({ length: cols }, () => new Array(rows).fill(false));
@@ -679,7 +679,7 @@ function findClusters(machine, grid) {
     for (let r = 0; r < rows; r++) {
       const sym = grid[c][r];
       if (seen[c][r] || sym === wild || sym === machine.scatter || !machine.clusterPays[sym]) continue;
-      // BFS over cells matching sym or wild.
+      // Breitensuche über Felder mit sym oder Wild.
       const stack = [[c, r]];
       const cells = [];
       seen[c][r] = true;
@@ -711,7 +711,7 @@ function clusterPay(machine, symbol, size) {
   return pay;
 }
 
-/** Evaluate a cluster machine with cascades. Returns { totalWin, cascades, endMultiplier }. */
+/** Cluster-Automat mit Nachrutschen auswerten. Gibt { totalWin, cascades, endMultiplier } zurück. */
 function evaluateCluster(machine, grid, unit, startMultiplier) {
   const cascades = [];
   let totalWin = 0;
@@ -734,7 +734,7 @@ function evaluateCluster(machine, grid, unit, startMultiplier) {
     });
     totalWin += stepWin;
 
-    // Remove winning cells, tumble remaining down, refill from top.
+    // Gewinnfelder raus, Rest nach unten rutschen lassen, oben auffüllen.
     const removed = new Set();
     for (const cl of clusters) for (const [c, r] of cl.positions) removed.add(c + ":" + r);
     const newGrid = grid.map((col) => col.slice());
@@ -744,7 +744,7 @@ function evaluateCluster(machine, grid, unit, startMultiplier) {
         if (!removed.has(c + ":" + r)) survivors.push(grid[c][r]);
       }
       const col = new Array(machine.rows);
-      // survivors fill from bottom
+      // Übrige rutschen von unten nach
       for (let i = 0; i < survivors.length; i++) col[machine.rows - 1 - i] = survivors[i];
       for (let r = machine.rows - 1 - survivors.length; r >= 0; r--) col[r] = weightedPick(machine);
       newGrid[c] = col;
@@ -754,16 +754,16 @@ function evaluateCluster(machine, grid, unit, startMultiplier) {
     grid = newGrid;
     step++;
     if (machine.freeSpins && machine.freeSpins.persistentMultiplier) multiplier++;
-    if (step > 30) break; // safety
+    if (step > 30) break; // Notbremse
   }
 
   return { totalWin, cascades, endMultiplier: multiplier };
 }
 
 // ---------------------------------------------------------------------------
-// Core spin (no account / no balance side effects) — shared by single-player
-// slots and PvP. `session` is the free-spins session for THIS machine (or null).
-// Returns { result, session, spinBet, totalWin, inFree }.
+// Der eigentliche Dreh, ohne Konto und ohne Buchung. Nutzen Einzelspieler-Slots
+// und PvP gemeinsam. `session` sind die Freispiele für diesen Automaten (oder null).
+// Gibt { result, session, spinBet, totalWin, inFree } zurück.
 // ---------------------------------------------------------------------------
 
 function evaluateSpin(machine, bet, session, forceGrid = null) {
@@ -773,7 +773,7 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   if (inFree) session.remaining -= 1;
 
   const rawGrid = prepareMysteryGrid(machine, forceGrid || spinGrid(machine), session, inFree);
-  // Multiplikator VOR dem Reveal (Freispiele: persistenter Session-Wert) —
+  // Multiplikator vor dem Reveal (Freispiele: persistenter Session-Wert),
   // Golden-Nudges erhöhen ihn innerhalb der Sequenz weiter.
   const startMult = isAlgae(machine) && inFree && session.multiplier ? session.multiplier : 1;
   const mystery = applyReveal(machine, rawGrid, spinBet, startMult);
@@ -812,7 +812,7 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
     }
   }
   // … und in den Freispielen expandiert das Bonussymbol: Landet es auf genug
-  // Walzen, füllt es sie komplett und zahlt scatter-artig auf ALLEN Linien.
+  // Walzen, füllt es sie komplett und zahlt scatter-artig auf allen Linien.
   if (machine.expandingSpecial && inFree && session.special) {
     const special = session.special;
     const reels = [];
@@ -828,14 +828,14 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   }
 
   const fsMult = inFree && machine.freeSpins && machine.freeSpins.multiplier ? machine.freeSpins.multiplier : 1;
-  // Algen: In den Freispielen zahlen Liniengewinne mit dem Multiplikator NACH
+  // Algen: In den Freispielen zahlen Liniengewinne mit dem Multiplikator nach
   // der Nudge-Sequenz; im Basisspiel bleiben sie unmultipliziert (die Nudges
   // pumpen dort nur die Münzen). Münzen sind in instantWin bereits Welle für
   // Welle multipliziert.
   const algaeMult = isAlgae(machine) && inFree ? startMult + mystery.nudges : 1;
   let totalWin = Math.round(baseWin * fsMult * algaeMult) + mystery.instantWin;
   // Mindestgewinn: Ways-Krümel (z. B. 0,01× Einsatz) werden auf minWin×Einsatz
-  // angehoben — nie wieder "+10" bei 1.000 Einsatz. Die Einzelgewinne werden
+  // angehoben. Nie wieder "+10" bei 1.000 Einsatz. Die Einzelgewinne werden
   // mitskaliert, damit der Client-Zähler sauber auf den Endbetrag hochläuft
   // statt am Ende auf den Floor zu springen.
   if (machine.minWin && totalWin > 0 && totalWin < spinBet * machine.minWin) {
@@ -849,11 +849,11 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   let freeSpinsAwarded = 0;
   let newSession = session;
   if (isAlgae(machine) && inFree) {
-    // In den Freispielen zählt JEDER Scatter: +1 Spin (Stack rutscht wieder hoch).
+    // In den Freispielen zählt jeder Scatter: +1 Spin (Stack rutscht wieder hoch).
     freeSpinsAwarded = scatters.count;
     session.remaining += freeSpinsAwarded;
   } else if (machine.freeSpins && scatters.count >= machine.freeSpins.trigger) {
-    // More scatters than required → more free spins (e.g. 3→10, 4→15, 5→20…).
+    // Mehr Scatter als nötig geben mehr Freispiele (z. B. 3→10, 4→15, 5→20 …).
     const fs = machine.freeSpins;
     const extra = fs.extra != null ? fs.extra : Math.round(fs.count / 2);
     freeSpinsAwarded = fs.count + Math.max(0, scatters.count - fs.trigger) * extra;
@@ -865,15 +865,15 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
         remaining: freeSpinsAwarded,
         bet: spinBet,
         multiplier: machine.freeSpins.persistentMultiplier ? 1 : machine.freeSpins.multiplier,
-        // Book of Rah: EIN zufälliges Bonussymbol für die ganze Freispiel-
-        // Serie (gewichtet nach Häufigkeit — Lows öfter, Explorer selten).
+        // Book of Rah: ein zufälliges Bonussymbol für die ganze Freispiel-
+        // Serie (gewichtet nach Häufigkeit: Lows öfter, Explorer selten).
         special: machine.expandingSpecial ? pickSpecial(machine) : undefined,
       };
     }
   }
   if (isAlgae(machine) && inFree && newSession) {
     // Persistenter Bonus-Multiplikator: +1 pro Spin (die Stacks nudgen) plus
-    // die Golden-Nudges der Sequenz. Kein Cap — das ist der Razor-Kick.
+    // die Golden-Nudges der Sequenz. Kein Cap. Das ist der Razor-Kick.
     newSession.multiplier = startMult + mystery.nudges + 1;
   }
   if (newSession && newSession.remaining <= 0) newSession = null;
@@ -910,7 +910,7 @@ function setupSlots(io, accounts) {
   io.on("connection", (socket) => {
     socket.on("slots:machines", (ack) => ack && ack({ machines: publicMachines(), jackpot: jackpotPot() }));
 
-    // Unlock a machine for the logged-in account.
+    // Automaten für das angemeldete Konto freischalten.
     socket.on("slots:unlock", ({ machineId } = {}, ack) => {
       if (!ack) return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
@@ -937,15 +937,15 @@ function setupSlots(io, accounts) {
 
       const spinBet = inFree ? session.bet : bet;
 
-      // Charge the bet (base game only).
+      // Einsatz abbuchen (nur im Grundspiel).
       if (!inFree) {
         const deduct = accounts.adjustChips(socket.data.account, -spinBet);
         if (!deduct.ok) return ack({ ok: false, error: "Nicht genug Chips." });
       }
 
-      // Admin showcase: an armed force-win turns this spin into the maximum
-      // roll — it pays chips but stays INVISIBLE to stats/rake/leaderboards.
-      // Shadowban: the RNG hates this player — the grid always comes up empty.
+      // Vorführung: ein scharf gestellter Maximalgewinn macht diesen Dreh zum
+      // größtmöglichen Wurf. Zahlt Chips, taucht aber in Statistik, Rake und
+      // Bestenlisten nicht auf. Pechvogel-Modus: das Raster bleibt immer leer.
       const showcase = consumeForceWin(socket.data.account);
       let forced = showcase ? bestGrid(machine) : null;
       if (!forced && accounts.isShadowbanned(socket.data.account)) {
@@ -954,8 +954,8 @@ function setupSlots(io, accounts) {
       let { result, session: newSession, totalWin } = evaluateSpin(machine, bet, session, forced);
       socket.data.slots = newSession;
 
-      // Glücksklee / Goldbarren: boost wins. Scale the result figures too so the
-      // count-up animation matches the credited amount.
+      // Glücksklee / Goldbarren: Gewinne erhöhen. Die Zahlen im Ergebnis mit
+      // skalieren, damit die Hochzähl-Animation zum gebuchten Betrag passt.
       const boost = accounts.buffMult(socket.data.account, "winBoost");
       if (boost > 1 && totalWin > 0) {
         totalWin = Math.round(totalWin * boost);
@@ -967,8 +967,8 @@ function setupSlots(io, accounts) {
         });
       }
 
-      // Progressive jackpot: paid base-game spins feed the pot & may hit it.
-      // Showcase spins stay out of it entirely.
+      // Jackpot: bezahlte Drehs im Grundspiel füllen den Topf und können ihn treffen.
+      // Vorführ-Drehs bleiben komplett draußen.
       let jackpotWin = 0;
       if (!inFree && !showcase) {
         jackpotWin = jackpotSpin(spinBet);
@@ -977,13 +977,13 @@ function setupSlots(io, accounts) {
           result.totalWin = totalWin;
           result.jackpot = jackpotWin;
           const acc = accounts.get(socket.data.account);
-          require("./chat").announce(io, `💰💥 JACKPOT! ${acc ? acc.name : "?"} knackt den Gemeinschafts-Jackpot: +${jackpotWin.toLocaleString("de-DE")} Chips!`);
+          require("./chat").announce(io, `Jackpot! ${acc ? acc.name : "?"} knackt den Gemeinschafts-Jackpot: +${jackpotWin.toLocaleString("de-DE")} Chips!`);
         }
       }
 
-      // Pay out the win (incl. jackpot) & record it.
-      // Showcase (force-win) spins pay chips but never touch recordHand — no
-      // fake leaderboard records, achievements, weekly net or quest progress.
+      // Gewinn (samt Jackpot) auszahlen und verbuchen. Vorführ-Drehs zahlen
+      // Chips, gehen aber nie durch recordHand: keine falschen Rekorde,
+      // Achievements, Wochenbilanz oder Auftragsfortschritte.
       let balance = accounts.get(socket.data.account).chips;
       if (totalWin > 0) {
         const credit = accounts.adjustChips(socket.data.account, totalWin);
@@ -991,7 +991,7 @@ function setupSlots(io, accounts) {
           balance = credit.account.chips;
           if (!showcase) {
             accounts.recordHand(socket.data.account, totalWin - (inFree ? 0 : spinBet), true, "slots", { free: inFree, einsatz: inFree ? 0 : spinBet });
-            liveops.recordTourneyWin(socket.data.account, totalWin, spinBet); // ranked by win multiple
+            liveops.recordTourneyWin(socket.data.account, totalWin, spinBet); // gewertet nach dem Vielfachen
           }
         }
       } else if (!showcase) {
@@ -1000,7 +1000,7 @@ function setupSlots(io, accounts) {
 
       // Risiko-Feature: Nach einem Basisspiel-Gewinn (ohne laufende Freispiele)
       // darf der Gewinn auf Kartenfarbe verdoppelt werden. Jeder Spin setzt
-      // den Anspruch neu — nur der letzte Gewinn ist riskierbar.
+      // den Anspruch neu. Nur der letzte Gewinn ist riskierbar.
       socket.data.gamble = machine.gamble && !inFree && !showcase && totalWin > 0 && !result.freeSpins.active
         ? { machineId, amount: totalWin, steps: 0 }
         : null;
@@ -1046,7 +1046,7 @@ function setupSlots(io, accounts) {
       });
     });
 
-    // Bonus-Buy: pay a multiple of the bet to start free spins immediately.
+    // Bonus kaufen: ein Vielfaches des Einsatzes zahlen und sofort Freispiele starten.
     socket.on("slots:buyBonus", ({ machineId, bet } = {}, ack) => {
       if (!ack) return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
@@ -1061,8 +1061,8 @@ function setupSlots(io, accounts) {
       if (!acc || acc.chips < cost) return ack({ ok: false, error: "Nicht genug Chips für den Bonus-Kauf." });
       const deduct = accounts.adjustChips(socket.data.account, -cost);
       if (!deduct.ok) return ack({ ok: false, error: deduct.error });
-      // The buy-in is a real loss: feeds stats, casino rake, cashback & weekly
-      // net (the free spins then record their wins as pure gains).
+      // Der Kauf ist ein echter Verlust: zählt für Statistik, Rake, Cashback und
+      // Wochenbilanz (die Freispiele verbuchen ihre Gewinne danach als reinen Gewinn).
       accounts.recordHand(socket.data.account, -cost, true, "slots");
       socket.data.gamble = null; // alter Risiko-Anspruch verfällt
       socket.data.slots = {
@@ -1077,7 +1077,7 @@ function setupSlots(io, accounts) {
 
 module.exports = { setupSlots, evaluateSpin, MACHINE_BY_ID, MACHINES, publicMachines, BET_LEVELS, armForceWin };
 
-// Exposed for offline RTP simulation / tests.
+// Für die RTP-Simulation und Tests.
 module.exports._internals = {
   MACHINE_BY_ID,
   spinGrid,

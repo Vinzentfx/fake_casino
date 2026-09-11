@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Team-Tresorkampf (client overlay).
-   Red vs. blue: both teams hammer their own vault, the faster
-   team splits the pot by hits. Server-authoritative.
+   Team-Tresorkampf (Overlay)
+   Rot gegen Blau: beide hauen auf ihren eigenen Tresor, das schnellere Team
+   teilt den Topf nach Treffern. Entschieden wird auf dem Server.
    ============================================================ */
 
 (function () {
@@ -80,10 +80,10 @@
       const won = myTeam === d.winner;
       box.innerHTML =
         `<div class="${won ? "heist-win" : "heist-fail"}">${d.winner === "red" ? "🔴 TEAM ROT" : "🔵 TEAM BLAU"} GEWINNT!</div>` +
-        (mine ? `<div>Dein Anteil: <b>+${fmt(mine.share)}<i class=mk></i></b> (${mine.hits} Treffer)</div>` : won ? "" : `<div class="muted small">Knapp daneben — nächstes Mal!</div>`) +
+        (mine ? `<div>Dein Anteil: <b>+${fmt(mine.share)}<i class=mk></i></b> (${mine.hits} Treffer)</div>` : won ? "" : `<div class="muted small">Knapp daneben, nächstes Mal.</div>`) +
         `<div class="heist-crooks">${(d.results || []).slice(0, 6).map((r) => `${escapeHtml(r.name)}: +${fmt(r.share)}`).join(" · ")}</div>`;
     } else if (d && d.draw) {
-      box.innerHTML = '<div class="heist-fail">🤝 Unentschieden — der Pot bleibt im Tresor!</div>';
+      box.innerHTML = '<div class="heist-fail">Unentschieden, der Topf bleibt im Tresor.</div>';
     } else {
       box.innerHTML = '<div class="heist-fail">Tresorkampf beendet.</div>';
     }
@@ -104,13 +104,13 @@
   });
 
   socket.on("vault:start", (s) => {
-    // The broadcast has no per-player team — fetch it, then show.
+    // Im Broadcast steht das Team nicht, also nachfragen und dann zeigen.
     socket.emit("vault:state", (st) => { show(st && st.active ? st : s); });
     toast("⚔️ TEAM-TRESORKAMPF! Rot gegen Blau!");
   });
   socket.on("vault:progress", update);
   socket.on("vault:end", end);
-  // Join a running fight on (re)connect.
+  // Bei (Wieder-)Verbindung in einen laufenden Kampf einsteigen.
   socket.on("connect", () => socket.emit("vault:state", (s) => { if (s && s.active) show(s); }));
   socket.emit("vault:state", (s) => { if (s && s.active) show(s); });
 })();

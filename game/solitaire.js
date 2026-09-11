@@ -1,17 +1,17 @@
 "use strict";
 
 /**
- * Solitaire (Klondike) — two modes over the shared engine (solitaireEngine.js):
+ * Solitär (Klondike), zwei Modi auf derselben Engine (solitaireEngine.js):
  *
- *  • Solo vs. house ("sol:*"): pay a stake, play a HARD deal (draw-3, limited
- *    recycles). Clear the board → payout stake × WIN_MULT. Give up / disconnect
- *    → lose the stake. Low max bet + hard deal keep RTP < 100% and cap abuse.
- *    House game → recordHand feeds weekly net / quests like Mines.
+ *  Solo gegen das Haus ("sol:*"): Einsatz zahlen, ein SCHWERES Spiel. Alles
+ *    abgeräumt heißt Einsatz × WIN_MULT, Aufgeben oder Verbindungsabbruch heißt
+ *    Einsatz weg. Kleiner Höchsteinsatz und schweres Spiel halten die RTP unter
+ *    100 % und begrenzen Missbrauch. Hausspiel, zählt über recordHand wie Mines.
  *
- *  • PvP race ("solrace:*"): both players get the SAME deal and race. First to
- *    clear wins the pot (both buy-ins) minus rake; on the time limit the higher
- *    foundation count wins, a tie refunds. Chips only move between players
- *    (rake is the sink) → not farmable. Mirrors memory.js / sudoku.js.
+ *  Rennen ("solrace:*"): beide bekommen dieselben Karten. Wer zuerst abräumt,
+ *    bekommt den Topf (beide Buy-ins) minus Rake. Bei Zeitablauf gewinnt, wer
+ *    mehr auf den Zielstapeln hat, Gleichstand gibt die Einsätze zurück. Chips
+ *    wandern nur zwischen den Spielern, also nicht farmbar. Wie memory.js und sudoku.js.
  */
 
 const E = require("./solitaireEngine");
@@ -19,10 +19,10 @@ const lobby = require("./lobby");
 
 // Solo (vs house)
 const SOLO_MIN_BET = 20;
-const SOLO_MAX_BET = 500;   // deliberately LOW — skill game, keep exposure small
-const WIN_MULT = 2;         // clear the board → stake × 2 (draw-1 is winnable → lower payout keeps RTP < 100%)
-const SOLO_DRAW = 1;        // draw-1 → intuitive (one card at a time) AND winnable
-const SOLO_RECYCLES = 2;    // limited waste recycles → still a challenge, keeps the house edge
+const SOLO_MAX_BET = 500;   // absichtlich NIEDRIG, Geschicklichkeitsspiel, das Risiko bleibt klein
+const WIN_MULT = 2;         // abgeräumt = Einsatz × 2 (mit 1er-Ziehen ist es schaffbar, deshalb weniger, RTP bleibt unter 100 %)
+const SOLO_DRAW = 1;        // 1 Karte ziehen: verständlich und schaffbar
+const SOLO_RECYCLES = 2;    // begrenztes Umdrehen, bleibt eine Herausforderung und hält den Hausvorteil
 
 // PvP race
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -49,12 +49,12 @@ function applyMove(state, m = {}) {
 function setupSolitaire(io, accounts) {
   const acc = (s) => (s.data.account ? accounts.get(s.data.account) : null);
 
-  // ───────────────────────── Solo (vs house + free) ─────────────────
+  // --- Solo (vs house + free) ---
   function soloView(g, extra = {}) {
     return { ok: true, mode: "solo", free: !!g.free, bet: g.bet, over: g.over, winMult: g.free ? 0 : WIN_MULT, ...E.publicView(g.state), ...extra };
   }
 
-  // ───────────────────────── PvP race ──────────────────────────────
+  // --- PvP race ---
   const matches = new Map();
   function makeCode() {
     let code;
@@ -150,7 +150,7 @@ function setupSolitaire(io, accounts) {
     for (const p of match.players.values()) {
       accounts.adjustChips(p.id, -match.buyIn);
       match.pot += match.buyIn;
-      p.state = E.deal({ deck, draw: RACE_DRAW }); // identical deal for both
+      p.state = E.deal({ deck, draw: RACE_DRAW }); // gleiche Karten für beide
       if (p.socket) { const a = accounts.get(p.id); p.socket.emit("account:update", { account: accounts.publicAccount(a) }); }
     }
     match.state = "playing";
@@ -162,13 +162,13 @@ function setupSolitaire(io, accounts) {
   }
 
   io.on("connection", (socket) => {
-    // ── Solo vs house ──
+    // --- Solo vs house ---
     socket.on("sol:start", ({ bet, free } = {}, ack) => {
       if (typeof ack !== "function") return;
       const a = acc(socket);
       if (!a) return ack({ ok: false, error: "Nicht eingeloggt." });
       if (free) {
-        // Free solo: no stake, easy deal (draw-1), UNLIMITED recycles → winnable.
+        // Frei spielen: kein Einsatz, leichtes Spiel (1er-Ziehen), UNBEGRENZT umdrehen, schaffbar.
         socket.data.solitaire = { state: E.deal({ draw: 1, recycles: Infinity }), bet: 0, free: true, over: false };
         return ack({ ...soloView(socket.data.solitaire) });
       }
@@ -192,7 +192,7 @@ function setupSolitaire(io, accounts) {
         g.over = true;
         const wacc = accounts.get(socket.data.account); if (wacc) wacc.solitaireClears = (wacc.solitaireClears || 0) + 1;
         if (g.free) {
-          accounts.recordHand(socket.data.account, 0, true, "solitaire"); // stats/achievements, no payout
+          accounts.recordHand(socket.data.account, 0, true, "solitaire"); // für Statistik und Achievements, ohne Auszahlung
           return ack({ ...soloView(g, { won: true, payout: 0 }) });
         }
         const payout = g.bet * WIN_MULT;
@@ -208,16 +208,16 @@ function setupSolitaire(io, accounts) {
       const g = socket.data.solitaire;
       if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
       g.over = true;
-      if (!g.free) accounts.recordHand(socket.data.account, -g.bet, true, "solitaire"); // forfeit → loss (paid only)
+      if (!g.free) accounts.recordHand(socket.data.account, -g.bet, true, "solitaire"); // aufgegeben = verloren (nur mit Einsatz)
       ack({ ...soloView(g, { gaveUp: true }) });
     });
 
-    // ── PvP race ──
+    // --- PvP race ---
     socket.on("solrace:create", ({ buyIn, isPublic = true } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < RACE_MIN_BUYIN || buyIn > RACE_MAX_BUYIN)
-        return ack && ack({ ok: false, error: `Buy-in ${RACE_MIN_BUYIN}–${RACE_MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
+        return ack && ack({ ok: false, error: `Buy-in zwischen ${RACE_MIN_BUYIN} und ${RACE_MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       const a = acc(socket);
       if (!a || a.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
       raceLeave(socket);

@@ -25,7 +25,7 @@ const DEFAULTS = {
   // Zuletzt gelesener Update-Eintrag. Gehoert an den Account und nicht nur in
   // den localStorage: Safari raeumt bei Seiten, die man laenger nicht besucht
   // hat, nach sieben Tagen allen lokalen Speicher weg. Wer zwei Monate Pause
-  // macht, kommt also ohne Merkwert zurueck — und genau der soll dann sein
+  // macht, kommt also ohne Merkwert zurueck, und genau der soll dann sein
   // Comeback-Fenster sehen.
   seenUpdate: null,
   // Rundgang durch die Neuerungen: laeuft einmal, dann nur noch auf Zuruf.

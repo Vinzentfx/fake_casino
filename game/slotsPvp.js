@@ -1,10 +1,10 @@
 "use strict";
 
 /**
- * Slots PvP — two players, equal starting match-chips, each spins their own
- * allotment with their own luck; whoever has more match-chips at the end wins
- * the pot (both buy-ins). Match-chips are separate from the account balance;
- * only the buy-in (at start) and the pot (at end) touch real account chips.
+ * Slots-Duell: zwei Spieler, gleiche Start-Chips fürs Match, jeder dreht mit
+ * seinem eigenen Glück. Wer am Ende mehr Match-Chips hat, bekommt den Topf
+ * (beide Buy-ins). Die Match-Chips sind vom Konto getrennt, nur das Buy-in am
+ * Anfang und der Topf am Ende berühren echte Chips.
  */
 
 const { evaluateSpin, MACHINE_BY_ID, MACHINES, BET_LEVELS } = require("./slots");
@@ -16,15 +16,15 @@ function randomMachineId() {
 }
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const START_CHIPS = 1000; // match-chips each player starts with
-const SPINS = 20; // paid spins each (free spins don't count)
-const MIN_BUYIN = 10; // free-form buy-in, this is just the floor
-const MAX_BUYIN = 1000000; // ceiling (the bot is fair 50/50, but bound stakes anyway)
-const RAKE = 0.15; // 15% of the pot is removed (economy sink); winner gets the rest
+const START_CHIPS = 1000; // Match-Chips, mit denen jeder anfängt
+const SPINS = 20; // bezahlte Drehs je Spieler (Freispiele zählen nicht)
+const MIN_BUYIN = 10; // Buy-in frei wählbar, das ist nur die Untergrenze
+const MAX_BUYIN = 1000000; // Obergrenze (der Bot ist fair 50/50, trotzdem gedeckelt)
+const RAKE = 0.15; // 15 % des Topfs verschwinden, der Gewinner bekommt den Rest
 const MIN_BET = BET_LEVELS[0];
 
 function setupPvp(io, accounts) {
-  const matches = new Map(); // code -> match
+  const matches = new Map(); // Code -> Match
 
   function makeCode() {
     let code;
@@ -66,13 +66,13 @@ function setupPvp(io, accounts) {
     }
   }
 
-  // Public lobby descriptor for the shared browser (only open friend duels).
+  // Öffentlicher Eintrag für die Lobby-Liste (nur offene Duelle unter Freunden).
   function describe(match) {
     const host = match.players.get(match.host);
     return {
       code: match.code,
       game: "pvp",
-      label: "🎰 Slots-Duell",
+      label: "Slots-Duell",
       host: host ? host.name : "?",
       players: [...match.players.values()].filter((p) => p.socket).length,
       max: 2,
@@ -97,16 +97,16 @@ function setupPvp(io, accounts) {
     socket.leave(match.code);
     socket.data.pvpCode = null;
 
-    // Tear the match down once no human (socket-bearing) player remains. This
-    // also reaps finished bot matches, whose socketless bot would otherwise
-    // keep players.size > 0 and leak the match object forever.
+    // Das Match abbauen, sobald kein Mensch (mit Socket) mehr drin ist. Das räumt
+    // auch fertige Bot-Matches weg, deren Bot ohne Socket sonst players.size > 0
+    // halten würde, dann bliebe das Match für immer im Speicher.
     const humansLeft = [...match.players.values()].some((p) => p.socket);
     if (!humansLeft) {
       matches.delete(match.code);
       lobby.remove(match.code);
       return;
     }
-    // Walkover: someone left mid-match → remaining player wins the pot.
+    // Kampflos: jemand ist mitten im Match gegangen, der andere bekommt den Topf.
     if (wasPlaying && match.players.size === 1) {
       settle(match);
     } else {
@@ -128,8 +128,8 @@ function setupPvp(io, accounts) {
       else if (b.chips > a.chips) winner = b;
     }
 
-    // 15% of the pot is raked (removed from circulation); winner gets the rest.
-    // Bot duels are house-funded and rake-free (see pvp:createBot).
+    // 15 % des Topfs werden einbehalten (raus aus dem Umlauf), der Gewinner bekommt den Rest.
+    // Bot-Duelle bezahlt das Haus, dort gibt es keinen Rake (siehe pvp:createBot).
     let rake = 0;
     let payout = 0;
     if (winner) {
@@ -137,7 +137,7 @@ function setupPvp(io, accounts) {
       payout = match.pot - rake;
       accounts.adjustChips(winner.id, payout);
     } else {
-      // tie → refund buy-ins, no rake
+      // unentschieden: Buy-ins zurück, kein Rake
       players.forEach((p) => accounts.adjustChips(p.id, match.buyIn));
     }
 
@@ -164,7 +164,7 @@ function setupPvp(io, accounts) {
     socket.on("pvp:create", ({ buyIn } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
-      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
+      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return ack && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
@@ -191,27 +191,27 @@ function setupPvp(io, accounts) {
       broadcast(code);
     });
 
-    // Play a duel against a bot — no rake, FAIR 50/50 (no handicap, so it isn't a
-    // money faucet). Bot spins are pre-simulated but revealed one at a time
-    // (800ms after each player spin) so the duel feels live rather than instant.
+    // Duell gegen einen Bot, ohne Rake und FAIR 50/50 (kein Handicap, sonst wäre
+    // es eine Gelddruckmaschine). Die Bot-Drehs sind vorher simuliert, werden aber
+    // einzeln aufgedeckt (800 ms nach jedem Dreh des Spielers), damit es sich live anfühlt.
     socket.on("pvp:createBot", ({ buyIn } = {}, ack) => {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
-      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
+      if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return ack && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
       leaveCurrent(socket);
       const code = makeCode();
-      // Random machine (regardless of unlocks); fixed bet = its minimum.
+      // Zufälliger Automat (Freischaltungen egal), fester Einsatz = sein Minimum.
       const machineId = randomMachineId();
       const m = MACHINE_BY_ID[machineId];
       const bet = m.bets[0];
       const startChips = bet * SPINS;
 
-      // Pre-simulate bot's 20 paid spins; store chip count after each paid spin
-      // (including any free spins that spin triggered, so the bot plays free spins
-      // just like a real player would — they just happen instantly in the simulation).
+      // Die 20 bezahlten Drehs des Bots vorab simulieren und nach jedem den
+      // Chipstand merken. Ausgelöste Freispiele laufen mit, der Bot spielt sie also
+      // wie ein echter Spieler, nur passiert es in der Simulation sofort.
       const botSimSpins = [];
       let simChips = startChips;
       let botFreeSession = null;
@@ -221,7 +221,7 @@ function setupPvp(io, accounts) {
         const { result, session: s1 } = evaluateSpin(m, bet, null);
         botFreeSession = s1;
         simChips += Math.floor(result.totalWin);
-        // Play out any earned free spins immediately (no chip cost).
+        // Gewonnene Freispiele sofort durchspielen (kosten nichts).
         while (botFreeSession && botFreeSession.remaining > 0) {
           const { result: fr, session: s2 } = evaluateSpin(m, bet, botFreeSession);
           botFreeSession = s2;
@@ -235,16 +235,16 @@ function setupPvp(io, accounts) {
         machineId, bet, startChips,
         host: socket.data.account, players: new Map(), result: null,
       };
-      // Human pays the buy-in; bot's stake is house-funded.
+      // Der Mensch zahlt das Buy-in, den Einsatz des Bots zahlt das Haus.
       accounts.adjustChips(socket.data.account, -buyIn);
       socket.emit("account:update", { account: accounts.publicAccount(accounts.get(socket.data.account)) });
       match.players.set(socket.data.account, {
         id: socket.data.account, name: acc.name, socket,
         chips: startChips, spinsLeft: SPINS, session: null, done: false,
       });
-      // Bot starts with full chips; reveals one spin per player spin.
+      // Der Bot startet mit vollen Chips und deckt je Spielerdreh einen Dreh auf.
       const bot = {
-        id: "bot", name: "🤖 Bot", socket: null,
+        id: "bot", name: "Bot", socket: null,
         chips: startChips, spinsLeft: SPINS,
         simSpins: botSimSpins, revealedSpins: 0,
         session: null, done: false,
@@ -287,13 +287,13 @@ function setupPvp(io, accounts) {
       if (match.state !== "waiting") return;
       if (match.players.size !== 2) return ack && ack && ack({ ok: false, error: "Warte auf 2 Spieler." });
 
-      // Both must afford the buy-in; deduct into the pot.
+      // Beide müssen sich das Buy-in leisten können, es geht in den Topf.
       const players = [...match.players.values()];
       for (const p of players) {
         const acc = accounts.get(p.id);
         if (!acc || acc.chips < match.buyIn) return ack && ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` });
       }
-      // Random machine for both (regardless of unlocks); fixed bet = its minimum.
+      // Zufälliger Automat für beide (Freischaltungen egal), fester Einsatz = sein Minimum.
       match.machineId = randomMachineId();
       match.bet = MACHINE_BY_ID[match.machineId].bets[0];
       match.startChips = match.bet * SPINS;
@@ -315,7 +315,7 @@ function setupPvp(io, accounts) {
       match.result = null;
       ack && ack && ack({ ok: true });
       broadcast(match.code);
-      lobby.changed(); // now playing → drops out of the open-lobby list
+      lobby.changed(); // läuft jetzt, fällt aus der Liste der offenen Lobbys
     });
 
     socket.on("pvp:spin", (_payload, ack) => {
@@ -325,7 +325,7 @@ function setupPvp(io, accounts) {
       const player = match.players.get(socket.data.account);
       if (!player || player.done) return ack({ ok: false, error: "Du bist fertig." });
 
-      // Machine & bet are fixed by the match (randomly assigned) — client choice is ignored.
+      // Automat und Einsatz legt das Match fest (zufällig), was der Client schickt, zählt nicht.
       const machine = MACHINE_BY_ID[match.machineId];
       const bet = match.bet;
 
@@ -348,8 +348,8 @@ function setupPvp(io, accounts) {
       ack({ ...result, chips: player.chips, spinsLeft: player.spinsLeft, done: player.done });
       broadcast(match.code);
 
-      // For bot matches: reveal the next bot spin 800 ms after the player's PAID
-      // spin only — free spins don't count toward the bot's reveal cadence.
+      // Bei Bot-Matches den nächsten Bot-Dreh 800 ms nach dem bezahlten Dreh des
+      // Spielers aufdecken. Freispiele zählen dafür nicht.
       if (match.vsBot && !inFree) {
         const bot = match.players.get("bot");
         if (bot && !bot.done) {

@@ -1,12 +1,12 @@
 "use strict";
 
 /**
- * Fake-Casino server.
+ * Server vom Fake Casino.
  *
- * Serves the static frontend (public/), exposes the play-money account API,
- * and runs the real-time poker tables over Socket.IO.
+ * Liefert das Frontend aus (public/), stellt die Konto-API fürs Spielgeld
+ * bereit und betreibt über Socket.IO alles, was live läuft.
  *
- * Play money only — see game/accounts.js for the storage/security note.
+ * Nur Spielgeld, zur Speicherung und Sicherheit siehe game/accounts.js.
  */
 
 const path = require("path");
@@ -73,7 +73,7 @@ const build = require("./game/buildinfo");
 /**
  * Bau-Kennung, die der Client zu sehen bekommt.
  *
- * Es gibt bewusst nur DIESE eine Quelle. Ein frueherer Versuch hatte den
+ * Es gibt bewusst nur diese eine Quelle. Ein frueherer Versuch hatte den
  * Socket die Kennung vom Serverstart melden lassen und die API die aktuelle.
  * Beim Entwickeln laufen die auseinander, und der Client haelt den Unterschied
  * fuer ein Update: er laedt neu, bekommt wieder beide Werte, laedt wieder neu.
@@ -83,7 +83,7 @@ const build = require("./game/buildinfo");
 const appVersion = () => build.current();
 
 // ---------------------------------------------------------------------------
-// HTTP / account API
+// HTTP und Konto-API
 // ---------------------------------------------------------------------------
 
 const app = express();
@@ -170,12 +170,12 @@ app.get("/api/version", (_req, res) => {
   res.json({ version: build.current() });
 });
 
-// Anti-multi-account faucet: cap how many NEW accounts one IP can create per day
-// (each new account is free start chips). Generous enough for friends sharing a
-// network, tight enough to stop mass account farming.
+// Gegen Gratis-Chips über Zweitkonten: pro IP nur eine begrenzte Zahl NEUER
+// Konten am Tag (jedes neue Konto bringt Startchips mit). Reicht locker für
+// Freunde im selben WLAN, bremst aber Massen-Anlegen.
 const ACCOUNTS_PER_IP_PER_DAY = 8;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const ipCreations = new Map(); // ip -> [timestamps]
+const ipCreations = new Map(); // IP -> [Zeitpunkte]
 function recentCreations(ip) {
   const now = Date.now();
   const list = (ipCreations.get(ip) || []).filter((t) => now - t < DAY_MS);
@@ -186,7 +186,7 @@ function recentCreations(ip) {
 app.post("/api/login", (req, res) => {
   const name = req.body.name;
   const ip = req.ip || "unknown";
-  // If this login would CREATE a new account, enforce the per-IP creation cap.
+  // Würde dieser Login ein neues Konto anlegen, gilt die Grenze pro IP.
   const willCreate = name && !accounts.get(name);
   if (willCreate && recentCreations(ip).length >= ACCOUNTS_PER_IP_PER_DAY) {
     return res.status(429).json({ error: "Zu viele neue Accounts aus diesem Netzwerk. Bitte später erneut versuchen." });
@@ -204,9 +204,9 @@ app.post("/api/login", (req, res) => {
 });
 
 /**
- * Resume a stored session. The client keeps its token in localStorage so that
- * an iPad discarding the Safari tab doesn't force a re-login (and, with the
- * escalating lockout, risk locking someone out over a mistyped password).
+ * Gespeicherte Sitzung fortsetzen. Der Client hält sein Token im localStorage,
+ * damit ein iPad, das den Safari-Tab wegwirft, keinen neuen Login erzwingt
+ * (und mit der wachsenden Sperre niemand wegen eines Tippfehlers ausgesperrt wird).
  */
 app.post("/api/session", (req, res) => {
   const result = accounts.resumeSession(req.body && req.body.token);
@@ -218,7 +218,7 @@ app.post("/api/session", (req, res) => {
   });
 });
 
-/** Bonus/Soforthilfe act on an account → the caller must prove it's theirs. */
+/** Bonus und Soforthilfe wirken auf ein Konto, der Aufrufer muss also beweisen, dass es seins ist. */
 function requireOwnAccount(req, res) {
   const key = accounts.verifyToken(req.body.token);
   if (!key || key !== String(req.body.name || "").trim().toLowerCase()) {
@@ -253,8 +253,8 @@ app.post("/api/rescue", (req, res) => {
 app.get("/api/account/:name", (req, res) => {
   const acc = accounts.get(req.params.name);
   if (!acc) return res.status(404).json({ error: "Account nicht gefunden." });
-  // Full public stats: account + city empire + achievements (viewable by anyone
-  // — it's a friends game, the leaderboard links here).
+  // Komplette öffentliche Statistik: Konto, Stadt-Imperium, Achievements. Kann
+  // jeder ansehen, ist ein Spiel unter Freunden und die Bestenliste verlinkt hierher.
   const key = req.params.name.trim().toLowerCase();
   const cityMe = city.publicOverview(key).me;
   const achList = achievements.listFor(key);
@@ -285,8 +285,8 @@ app.post("/api/change-pin", (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Owner-Backup: der komplette data/-Ordner (Accounts, Pferde, Stadt, …) als
-// EIN JSON-Bundle zum Herunterladen — und als Upload zum Wiederherstellen,
+// Backup für den Besitzer: der komplette data/-Ordner (Accounts, Pferde, Stadt, …) als
+// ein JSON-Bundle zum Herunterladen, und als Upload zum Wiederherstellen,
 // z.B. beim Umzug auf einen neuen Host, wenn der Datenordner leer startet.
 // ---------------------------------------------------------------------------
 
@@ -330,7 +330,7 @@ app.get("/bilder/:datei", (req, res) => {
 app.post("/api/admin/backup", (req, res) => {
   if (!requireOwner(req, res)) return;
   const files = {};   // Textdateien, wie bisher
-  const binaer = {};  // Bilder, base64 — seit es hochgeladene Wappen gibt
+  const binaer = {};  // Bilder als base64, seit es hochgeladene Wappen gibt
   try {
     for (const name of fs.readdirSync(DATA_DIR)) {
       const p = path.join(DATA_DIR, name);
@@ -340,7 +340,7 @@ app.post("/api/admin/backup", (req, res) => {
         continue;
       }
       /* Ein Unterordner. Bis hierher las das Backup nur flache Dateien und
-         nur als UTF-8 — hochgeladene Bilder waeren also gar nicht erst
+         nur als UTF-8, hochgeladene Bilder waeren also gar nicht erst
          mitgekommen, und nach dem ersten Wiederherstellen haetten alle
          Clans ihr Wappen verloren. Genau ein Ordner ist vorgesehen, und
          die Dateinamen darin sind vom Server selbst vergeben. */
@@ -369,13 +369,13 @@ app.post("/api/admin/restore", (req, res) => {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     let written = 0;
     for (const [name, content] of Object.entries(files)) {
-      // Nur flache Dateinamen — keine Pfad-Tricks ins Dateisystem.
+      // Nur flache Dateinamen, keine Pfad-Tricks ins Dateisystem.
       if (!/^[\w.\-]+$/.test(name) || name.includes("..")) continue;
       if (typeof content !== "string") continue;
       fs.writeFileSync(path.join(DATA_DIR, name), content);
       written += 1;
     }
-    /* Bilder aus aelteren Backups fehlen einfach — dann bleibt der Ordner
+    /* Bilder aus aelteren Backups fehlen einfach, dann bleibt der Ordner
        leer und die Clans stehen ohne Wappen da, statt dass das Einspielen
        scheitert. */
     const binaer = req.body.binaer;
@@ -399,17 +399,17 @@ app.post("/api/admin/restore", (req, res) => {
   // Alle Module halten ihren Zustand im RAM und würden die frisch geschriebenen
   // Dateien beim nächsten save() wieder überschreiben → sauber neu starten.
   // systemd (und lokal ein Prozess-Manager) startet den Server automatisch neu.
-  console.log("💾 Backup eingespielt — Server startet neu, um die Daten zu laden.");
+  console.log("Backup eingespielt, Server startet neu, um die Daten zu laden.");
   setTimeout(() => process.exit(0), 800);
 });
 
 // ---------------------------------------------------------------------------
-// Server + Socket.IO
+// Server und Socket.IO
 // ---------------------------------------------------------------------------
 
 const server = http.createServer(app);
 const io = new Server(server);
-io.sockets.setMaxListeners(50); // many game modules each add a connection listener
+io.sockets.setMaxListeners(50); // viele Spielmodule hängen je einen connection-Listener an
 io.on("connection", (socket) => {
   socket.setMaxListeners(80);
   // IP-Bann-Gate: gesperrte IPs werden sofort getrennt.
@@ -490,7 +490,7 @@ comeback.setup(io, accounts);
 quests.setupQuests(io, accounts);
 liveops.setup(io, accounts, heist);
 
-// Level-ups: recordHand flags acc._justLeveled → notify the player's socket.
+// Aufstieg: recordHand setzt acc._justLeveled, dann bekommt der Spieler Bescheid.
 accounts.onHand((name) => {
   const key = String(name).trim().toLowerCase();
   const acc = accounts.get(key);
@@ -503,10 +503,10 @@ accounts.onHand((name) => {
   }
 });
 
-// Chip-Transfer zwischen Spielern (socket-auth required)
+// Chip-Transfer zwischen Spielern (nur mit Anmeldung am Socket)
 io.on("connection", (socket) => {
   socket.on("account:transfer", ({ to, amount } = {}, ack) => {
-    // Zaehler fuer das Achievement "Spendabel" — hochgezaehlt wird erst, wenn
+    // Zaehler fuer das Achievement "Spendabel", hochgezaehlt wird erst, wenn
     // die Ueberweisung unten tatsaechlich geklappt hat.
     if (!ack) return;
     if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
@@ -516,7 +516,7 @@ io.on("connection", (socket) => {
     if (abs) { abs.transfersSent = (abs.transfersSent || 0) + 1; accounts.save(); }
     // Update sender
     socket.emit("account:update", { account: res.fromAccount });
-    // Notify recipient if online
+    // Empfänger benachrichtigen, falls online
     io.of("/").sockets.forEach((s) => {
       if (s.data.account === String(to).trim().toLowerCase()) {
         s.emit("account:update", { account: res.toAccount });
@@ -528,19 +528,19 @@ io.on("connection", (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🎰 Fake-Casino läuft auf http://localhost:${PORT}`);
+  console.log(`Fake Casino läuft auf http://localhost:${PORT}`);
 });
 
-// On a graceful shutdown (e.g. a redeploy), refund open sports bets so
-// no stake is lost when the in-memory match state resets.
+// Beim geordneten Herunterfahren (z. B. Deploy) offene Sportwetten sichern,
+// damit kein Einsatz verloren geht, wenn der Spielstand im Speicher weg ist.
 let shuttingDown = false;
 function gracefulShutdown(sig) {
   if (shuttingDown) return;
   shuttingDown = true;
   try {
-    persistSports(); // save open bets/combos so they survive the redeploy
-    console.log("[shutdown] sports bets persisted");
-  } catch (e) { console.error("[shutdown] persist failed:", e.message); }
+    persistSports(); // offene Wetten und Kombis sichern, damit sie den Deploy überleben
+    console.log("[shutdown] Sportwetten gesichert");
+  } catch (e) { console.error("[shutdown] Sichern fehlgeschlagen:", e.message); }
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 2500).unref();
 }

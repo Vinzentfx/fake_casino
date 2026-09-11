@@ -1,9 +1,9 @@
 "use strict";
 
 /**
- * IP-Bans — Owner-Tool, um eine IP-Adresse komplett auszusperren (unabhängig
- * vom Account). Persistiert in data/ipbans.json (überlebt Neustarts im
- * Datenordner). Gesperrte IPs werden bei jeder neuen Verbindung getrennt.
+ * IP-Sperren: Werkzeug für den Besitzer, um eine IP-Adresse komplett auszusperren (unabhängig
+ * vom Konto). Liegt in data/ipbans.json und übersteht damit Neustarts.
+ * Gesperrte IPs werden bei jeder neuen Verbindung sofort getrennt.
  */
 
 const fs = require("fs");

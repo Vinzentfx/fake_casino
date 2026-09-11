@@ -1,12 +1,12 @@
 "use strict";
 
 /**
- * A single Texas Hold'em table (No-Limit, cash-game style).
+ * Ein Texas-Hold'em-Tisch (No-Limit, wie ein Cash Game).
  *
- * Knows nothing about accounts — it manages seats that each hold a chip stack.
- * Buy-in / cash-out (moving chips between an account and a seat) is the
- * caller's job (tableManager). The table only deals cards, runs betting rounds,
- * handles all-ins with side pots, and resolves showdowns.
+ * Weiß nichts von Konten, er verwaltet nur Plätze mit Chipstapeln. Buy-in und
+ * Auszahlung (Chips zwischen Konto und Platz verschieben) macht der Aufrufer
+ * (tableManager). Der Tisch gibt nur Karten, führt die Setzrunden, kümmert sich
+ * um All-ins mit Nebentöpfen und wertet den Showdown aus.
  */
 
 const { makeDeck, shuffle, cardStr } = require("./cards");
@@ -33,7 +33,7 @@ class PokerTable {
     this.log = [];
     this.lastResult = null; // { board, reveals:[{seat,name,hole,handName}], winners:[{name,amount}] }
 
-    // Hook set by manager: called whenever a hand fully ends.
+    // Setzt der Manager: wird aufgerufen, sobald eine Hand komplett vorbei ist.
     this.onHandComplete = null;
   }
 
@@ -49,7 +49,7 @@ class PokerTable {
     return this.seats.findIndex((s) => s && s.id === id);
   }
 
-  /** Seat a player. Returns seat index or -1 if full / already seated. */
+  /** Spieler hinsetzen. Gibt den Platz zurück oder -1, wenn voll oder schon da. */
   sit(id, name, chips) {
     if (this.findSeat(id) !== -1) return this.findSeat(id);
     const idx = this.seats.findIndex((s) => s === null);
@@ -71,13 +71,13 @@ class PokerTable {
     return idx;
   }
 
-  /** Remove a player. Returns the chips they take with them (0 if mid-hand & folded already counted). */
+  /** Spieler entfernen. Gibt die Chips zurück, die er mitnimmt (0, wenn er mitten in der Hand schon gefoldet hat). */
   stand(id) {
     const idx = this.findSeat(id);
     if (idx === -1) return 0;
     const seat = this.seats[idx];
     const chips = seat.chips;
-    // If they were active in a live hand, treat as fold first.
+    // Wer in einer laufenden Hand noch drin war, foldet zuerst.
     if (this.handActive && seat.inHand && !seat.folded) {
       seat.folded = true;
       seat.inHand = false;
@@ -110,7 +110,7 @@ class PokerTable {
     this.lastResult = null;
     this.deck = shuffle(makeDeck());
 
-    // Reset seats; only players with chips join the hand.
+    // Plätze zurücksetzen, nur wer Chips hat, spielt mit.
     for (const s of this.seats) {
       if (!s) continue;
       s.hole = [];
@@ -122,7 +122,7 @@ class PokerTable {
       s.inHand = s.chips > 0 && !s.sittingOut;
     }
 
-    // Move button to next eligible seat.
+    // Button zum nächsten Platz, der mitspielt.
     this.buttonIndex = this.nextOccupied(this.buttonIndex, (s) => s.inHand);
 
     const players = this.inHandSeats();
@@ -131,7 +131,7 @@ class PokerTable {
     // Blind positions
     let sbIdx, bbIdx;
     if (hebsUp) {
-      sbIdx = this.buttonIndex; // button posts SB heads-up
+      sbIdx = this.buttonIndex; // heads-up setzt der Button den Small Blind
       bbIdx = this.nextOccupied(sbIdx, (s) => s.inHand);
     } else {
       sbIdx = this.nextOccupied(this.buttonIndex, (s) => s.inHand);
@@ -143,7 +143,7 @@ class PokerTable {
     this.currentBet = this.bigBlind;
     this.minRaise = this.bigBlind;
 
-    // Deal two hole cards each, starting left of button.
+    // Jeder bekommt zwei Karten, links vom Button angefangen.
     for (let round = 0; round < 2; round++) {
       let i = this.nextOccupied(this.buttonIndex, (s) => s.inHand);
       for (let n = 0; n < players.length; n++) {
@@ -154,9 +154,9 @@ class PokerTable {
 
     this.stage = "preflop";
     this.handActive = true;
-    // First to act preflop = first who still needs to act after the big blind.
+    // Preflop fängt an, wer nach dem Big Blind als Erster noch handeln muss.
     this.toAct = this.nextToAct(bbIdx);
-    this.pushLog(`Neue Hand — Blinds ${this.smallBlind}/${this.bigBlind}.`);
+    this.pushLog(`Neue Hand, Blinds ${this.smallBlind}/${this.bigBlind}.`);
     return true;
   }
 
@@ -175,12 +175,12 @@ class PokerTable {
     return pay;
   }
 
-  /** Whether a seat still needs to act in this betting round. */
+  /** Ob ein Platz in dieser Setzrunde noch handeln muss. */
   needsToAct(s) {
     return s && s.inHand && !s.folded && !s.allIn && (!s.acted || s.bet < this.currentBet);
   }
 
-  /** Whether a seat is able to voluntarily act at all. */
+  /** Ob ein Platz überhaupt noch freiwillig handeln kann. */
   canAct(s) {
     return s && s.inHand && !s.folded && !s.allIn;
   }
@@ -213,9 +213,9 @@ class PokerTable {
   }
 
   /**
-   * Apply a player action. action ∈ "fold" | "check" | "call" | "raise".
-   * For "raise", `amount` is the total bet-to value for this round.
-   * Returns { ok } or { ok:false, error }.
+   * Aktion eines Spielers ausführen: "fold" | "check" | "call" | "raise".
+   * Bei "raise" ist `amount` der Gesamtbetrag, auf den in dieser Runde erhöht wird.
+   * Gibt { ok } oder { ok:false, error } zurück.
    */
   act(id, action, amount) {
     if (!this.handActive) return { ok: false, error: "Keine aktive Hand." };
@@ -247,7 +247,7 @@ class PokerTable {
       if (target > maxTo) return { ok: false, error: "So viele Chips hast du nicht." };
       const isAllIn = target === maxTo;
       const raiseSize = target - this.currentBet;
-      // A short all-in that is smaller than a full raise does not reopen betting.
+      // Ein kurzes All-in unter einem vollen Raise öffnet die Setzrunde nicht neu.
       if (raiseSize < this.minRaise && !isAllIn) {
         return { ok: false, error: `Mindesterhöhung auf ${this.currentBet + this.minRaise}.` };
       }
@@ -255,7 +255,7 @@ class PokerTable {
       const fullRaise = raiseSize >= this.minRaise;
       if (fullRaise) this.minRaise = raiseSize;
       this.currentBet = Math.max(this.currentBet, target);
-      // Re-open action for everyone else on a full raise.
+      // Bei einem vollen Raise müssen alle anderen wieder handeln.
       if (fullRaise) {
         for (const other of this.seats) {
           if (other && other !== s && this.canAct(other)) other.acted = false;
@@ -272,7 +272,7 @@ class PokerTable {
     return { ok: true };
   }
 
-  /** After an action (or a player leaving), decide what happens next. */
+  /** Nach einer Aktion (oder wenn jemand geht) entscheiden, wie es weitergeht. */
   checkHandProgress(fromIndex) {
     if (this.contenders().length === 1) {
       this.awardUncontested();
@@ -288,7 +288,7 @@ class PokerTable {
   }
 
   advanceStage() {
-    // Reset per-round betting state.
+    // Einsätze der Runde zurücksetzen.
     for (const s of this.seats) {
       if (s) {
         s.bet = 0;
@@ -312,7 +312,7 @@ class PokerTable {
       return;
     }
 
-    // If at most one player can still act, no more betting — run out the board.
+    // Kann höchstens noch einer handeln, wird nicht mehr gesetzt, das Board läuft durch.
     if (this.countCanAct() <= 1) {
       this.advanceStage();
       return;
@@ -327,7 +327,7 @@ class PokerTable {
   }
 
   // ----------------------------------------------------------------------
-  // Resolving the pot
+  // Topf auflösen
   // ----------------------------------------------------------------------
 
   awardUncontested() {
@@ -346,7 +346,7 @@ class PokerTable {
     this.endHand();
   }
 
-  /** Build (side) pots from each seat's committed chips. */
+  /** (Neben-)Töpfe aus den gesetzten Chips jedes Platzes bauen. */
   buildPots() {
     const players = this.seats
       .filter((s) => s && s.committed > 0)
@@ -367,9 +367,9 @@ class PokerTable {
       if (prev && sameSeatSet(prev.eligible, eligible)) prev.amount += amount;
       else pots.push({ amount, eligible });
     }
-    // Chips committed by players who left mid-hand are no longer on any seat,
-    // so the layered pots above sum to less than this.pot. Fold that orphaned
-    // "dead money" into the main pot so it's still awarded (chip conservation).
+    // Chips von Spielern, die mitten in der Hand gegangen sind, liegen auf keinem
+    // Platz mehr, die Töpfe oben ergeben also weniger als this.pot. Dieses "tote
+    // Geld" kommt in den Haupttopf, damit es trotzdem vergeben wird.
     const built = pots.reduce((sum, p) => sum + p.amount, 0);
     const orphan = this.pot - built;
     if (orphan > 0 && pots.length) pots[0].amount += orphan;
@@ -391,7 +391,7 @@ class PokerTable {
     const winnersDisplay = [];
 
     for (const pot of pots) {
-      // Best hand(s) among this pot's eligible contenders.
+      // Beste Hand (oder Hände) unter den Berechtigten dieses Topfs.
       let best = null;
       let winners = [];
       for (const s of pot.eligible) {
@@ -405,7 +405,7 @@ class PokerTable {
       }
       const share = Math.floor(pot.amount / winners.length);
       let remainder = pot.amount - share * winners.length;
-      // Award share; odd chip(s) go to the earliest winner left of the button.
+      // Anteil vergeben, übrige Chips gehen an den ersten Gewinner links vom Button.
       const ordered = this.orderFromButton(winners);
       for (const s of ordered) {
         let won = share;
@@ -434,13 +434,13 @@ class PokerTable {
       uncontested: false,
     };
     const summary = winnersDisplay.map((w) => `${w.name} +${w.amount}`).join(", ");
-    this.pushLog(`Showdown — ${summary}.`);
+    this.pushLog(`Showdown: ${summary}.`);
 
     this.recordResults(this.alleErgebnisse(winningsById));
     this.endHand();
   }
 
-  /** Order seats by position starting left of the button. */
+  /** Plätze nach Position sortieren, links vom Button angefangen. */
   orderFromButton(seatList) {
     const order = [];
     let i = this.buttonIndex;
@@ -453,13 +453,13 @@ class PokerTable {
   }
 
   /*
-   * Ergebnis JEDES Spielers, der Chips in der Hand hatte.
+   * Ergebnis jedes Spielers, der Chips in der Hand hatte.
    *
    * Vorher gingen nur die Spieler in die Wertung, die es bis zum Showdown
    * geschafft haben (oder als Einziger uebrig blieben). Wer gepasst hat,
    * verlor seinen Einsatz still: kein Eintrag in der Statistik, kein XP fuer
    * die Hand, und im Wochen-Netto fehlte der Verlust. Dadurch sah Poker in
-   * der Bilanz dauerhaft profitabler aus, als es ist — bei einem Spiel, bei
+   * der Bilanz dauerhaft profitabler aus, als es ist, bei einem Spiel, bei
    * dem Passen der haeufigste Ausgang ueberhaupt ist.
    *
    * @param {Record<string, number>} gewinne Auszahlung je Spieler-id
@@ -495,7 +495,7 @@ class PokerTable {
     if (this.log.length > 30) this.log.shift();
   }
 
-  /** Public state from one viewer's perspective (only their hole cards). */
+  /** Öffentlicher Stand aus Sicht eines Zuschauers (nur seine eigenen Karten). */
   getStateFor(viewerId) {
     const yourSeat = this.findSeat(viewerId);
     const seats = this.seats.map((s, i) => {
@@ -540,7 +540,7 @@ class PokerTable {
       log: this.log.slice(-12),
     };
 
-    // Action options when it's the viewer's turn.
+    // Mögliche Aktionen, wenn der Betrachter dran ist.
     if (yourSeat !== -1 && yourSeat === this.toAct) {
       const s = this.seats[yourSeat];
       const toCall = this.currentBet - s.bet;

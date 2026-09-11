@@ -1,14 +1,14 @@
 "use strict";
 
 /**
- * Wuerfelpoker — Oberflaeche.
+ * Würfelpoker, Oberfläche.
  *
  * Ein Wurf, halten, ein Nachwurf. Die Wuerfel sind gezeichnet und nicht als
  * Emoji gesetzt: Wuerfel-Emoji sehen auf jedem Geraet anders aus und tragen
  * ihre eigene Farbe mit, was in keinem der drei Designs passt.
  *
  * Der Vorschlag, welche Wuerfel sich zu halten lohnen, kommt vom Server.
- * Er ist ein Hinweis, keine Vorgabe — er existiert, damit der Unterschied
+ * Er ist ein Hinweis, keine Vorgabe, er existiert, damit der Unterschied
  * zwischen gutem und naivem Spiel nicht daran haengt, ob jemand die
  * Wahrscheinlichkeiten auswendig kennt.
  */
@@ -48,7 +48,7 @@
   function zeichneVerlauf() {
     const box = $("#wp-history"); if (!box) return;
     box.innerHTML = ladeVerlauf().map((e) =>
-      `<span class="rv-chip ${e.zahlt ? "up" : "down"}">${e.zahlt ? mx(e.zahlt) + "×" : "—"}</span>`).join("");
+      `<span class="rv-chip ${e.zahlt ? "up" : "down"}">${e.zahlt ? mx(e.zahlt) + "×" : "-"}</span>`).join("");
   }
 
   function zeichneTabelle() {
@@ -131,7 +131,7 @@
       Casino.fx.bigWin(r.payout, { label: r.ergebnisName, faktor: r.payout / r.bet });
     } else {
       Casino.sound?.play("lose");
-      toast(`${r.ergebnisName} — das zahlt leider nichts.`);
+      toast(`${r.ergebnisName}, das zahlt leider nichts.`);
     }
   }
 

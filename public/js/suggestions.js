@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Vorschläge (client).
-   Players send suggestions to the owner (rate-limited server-side).
-   The owner ("vincent") sees an inbox with all received suggestions.
+   Vorschläge
+   Spieler schicken Ideen an den Besitzer (der Server bremst die Anzahl).
+   Der Besitzer sieht hier alle eingegangenen Vorschläge.
    ============================================================ */
 
 (function () {
@@ -57,11 +57,11 @@
       $("#suggest-text").value = "";
       $("#suggest-thanks").style.display = "";
       renderRemaining({ remaining: r.remaining, perHour: 5 });
-      toast("💡 Vorschlag gesendet — danke!");
+      toast("Vorschlag ist raus, danke!");
     });
   });
 
-  // Live ping for the owner when a new suggestion arrives.
+  // Kommt ein neuer Vorschlag rein, bekommt der Besitzer sofort Bescheid.
   socket.on("suggest:new", (d) => {
     toast(`💡 Neuer Vorschlag von ${d && d.name ? d.name : "jemandem"}!`);
     const inbox = $("#suggest-inbox");

@@ -1,10 +1,10 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Pinco Ball (Plinko) client.
-   Server decides the fair drop path (game/pinco.js); the client
-   runs a REAL physics animation — gravity per frame, the ball
-   bounces off each peg, steered to the server's decided slot.
+   Pinco Ball (Plinko)
+   Den fairen Weg nach unten bestimmt der Server (game/pinco.js). Hier läuft
+   eine echte Physik-Animation mit Schwerkraft pro Bild, der Ball prallt an
+   jedem Nagel ab und wird ins Fach gelenkt, das der Server bestimmt hat.
    ============================================================ */
 
 (function () {
@@ -22,8 +22,8 @@
   let drops = [];
   let balls = [];          // active physics balls
   let particles = [];      // landing bursts
-  const pegHits = new Map(); // "r,i" → timestamp of last hit (for flash)
-  const bucketFlash = [];  // per-bucket flash timestamps
+  const pegHits = new Map(); // "r,i" -> Zeitpunkt des letzten Treffers (fürs Aufblitzen)
+  const bucketFlash = [];  // Aufblitzen je Fach
   let looping = false;
   let ballSeq = 0;
   let lastT = 0;
@@ -44,7 +44,7 @@
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
   }
 
-  // Peg geometry. Row r has r+2 pegs; buckets = rows+1.
+  // Nagel-Geometrie. Reihe r hat r+2 Nägel, Fächer = Reihen+1.
   function geom(b = board()) {
     const c = canvas();
     const w = c.width, h = c.height;
@@ -75,9 +75,9 @@
     return best;
   };
 
-  // Build a real-physics ball. The ball bounces from PEG to PEG (never through
-  // the gaps): pegC[r] is the actual peg it lands on at row r, derived from the
-  // server's decided left/right path. onLand fires when it settles in the slot.
+  // Ball mit echter Physik bauen. Er springt von Nagel zu Nagel (nie durch die
+  // Lücken): pegC[r] ist der Nagel, auf dem er in Reihe r landet, abgeleitet aus
+  // dem Links/Rechts-Weg, den der Server festgelegt hat. onLand feuert, wenn er im Fach liegt.
   function makeBall(drop, onLand) {
     const b = boards[drop.size] || board();
     const gm = geom(b);
@@ -125,20 +125,20 @@
     if (ball.row < ball.b.rows) {
       const pegX = ball.pegC[ball.row];
       const pegY = gm.top + ball.row * gm.rowGap;
-      // Bounce the instant the ball's underside reaches the peg it lands on.
+      // Abprallen, sobald die Unterseite des Balls den Nagel berührt.
       if (ball.y + gm.ballR >= pegY - gm.pegR && ball.vy > 0) {
-        ball.y = pegY - gm.pegR - gm.ballR;          // rest on top of the peg
+        ball.y = pegY - gm.pegR - gm.ballR;          // liegt oben auf dem Nagel
         const nextX = ball.row + 1 < ball.b.rows ? ball.pegC[ball.row + 1] : ball.bucketX;
         ball.vy = -ball.bounceUp * (0.92 + Math.random() * 0.14);
         const tFall = timeToReach(ball.vy, ball.g, gm.rowGap);
-        ball.vx = (nextX - pegX) / tFall;            // arc to the next peg
+        ball.vx = (nextX - pegX) / tFall;            // Bogen zum nächsten Nagel
         ball.x = pegX + Math.sign(ball.vx || 1) * gm.pegR * 0.4;
         pegHits.set(ball.row + ":" + pegX.toFixed(1), performance.now());
         ball.squash = performance.now();
         ball.row++;
       }
     } else if (!ball.settled) {
-      // Below the last peg row: ease into the slot centre, settle on the floor.
+      // Unter der letzten Reihe: weich in die Mitte des Fachs, dann auf den Boden.
       ball.vx += (ball.bucketX - ball.x) * 8 * dt;
       ball.vx *= 0.86;
       if (ball.y + gm.ballR >= ball.floorY) {
@@ -168,7 +168,7 @@
     }
   }
 
-  // ── Drawing ────────────────────────────────────────────────────────────────
+  // --- Drawing ---
   function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
   function heatColor(mult) {
     // center (mult≈0.5) cold blue → 1 neutral → high mult hot gold/red.
@@ -294,7 +294,7 @@
     if (!lastT) lastT = now;
     let dt = (now - lastT) / 1000; lastT = now;
     dt = Math.min(dt, 0.032);
-    // substep for stable collisions
+    // Zwischenschritte, damit die Kollisionen stabil bleiben
     const steps = 2;
     for (const ball of balls) for (let s = 0; s < steps && !ball.done; s++) stepBall(ball, dt / steps);
     balls = balls.filter((b) => !b.done);
@@ -316,7 +316,7 @@
     startLoop();
   }
 
-  // Win/loss stays hidden until the ball actually lands.
+  // Gewinn oder Verlust bleibt verborgen, bis der Ball wirklich unten ist.
   const pendingWin = new Map(); // drop.id → final server account
   function revealDrop(drop) {
     const acc = pendingWin.get(drop.id);
@@ -326,7 +326,7 @@
     renderFeed();
   }
 
-  // ── UI ───────────────────────────────────────────────────────────────────
+  // --- UI ---
   function renderMultipliers() {
     const b = board(), box = $("#pinco-mults");
     if (!box) return;
@@ -375,7 +375,7 @@
     const bet = parseInt($("#pinco-bet").value, 10);
     socket.emit("pinco:drop", { size: selectedSize, bet }, (res) => {
       if (!res || !res.ok) { setError((res && res.error) || "Fehler."); return; }
-      // Deduct the stake right away for feedback; reveal the WIN only on landing.
+      // Einsatz sofort abziehen, damit man etwas sieht. Den GEWINN erst bei der Landung zeigen.
       if (Number.isFinite(bet) && bet > 0) window.Casino.adjustChips(-bet);
       if (res.account && res.drop) pendingWin.set(res.drop.id, res.account);
       // Solo: animate here. In a lobby the broadcast animates for everyone (incl. me).
@@ -409,7 +409,7 @@
 
   socket.on("pinco:drop", (drop) => {
     if (!drop || !drop.id) return;
-    // Reveal the result (feed row + my balance) only when the ball lands.
+    // Ergebnis (Feed-Zeile und Kontostand) erst zeigen, wenn der Ball landet.
     animateDrop(drop, () => {
       revealDrop(drop);
       // Nur die eigenen Baelle klingen. In einer vollen Lobby waere jeder

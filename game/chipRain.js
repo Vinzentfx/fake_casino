@@ -1,20 +1,20 @@
 "use strict";
 
 /**
- * Chip-Regen — admin event: for a short while chips rain down everyone's
- * screen; tapping one claims it (first come, first served). The total pot is
- * fixed up front and pre-split across the chips, so the event can never pay
- * out more than the owner armed it with.
+ * Chip-Regen, ein Admin-Event: kurz regnet es bei allen Chips über den
+ * Bildschirm, wer einen antippt, bekommt ihn (wer zuerst kommt ...). Der Topf
+ * steht vorher fest und ist auf die Chips verteilt, das Event kann also nie
+ * mehr auszahlen, als der Besitzer eingestellt hat.
  *
- * Server-authoritative: chip values live only here, grabs are rate-limited
- * per account and every chip can be claimed exactly once.
+ * Alles auf dem Server: die Werte liegen nur hier, Zugriffe sind je Konto
+ * gebremst und jeder Chip lässt sich genau einmal einsammeln.
  */
 
 const chat = require("./chat");
 
-const GRAB_MAX = 5, GRAB_WINDOW = 1000; // ≤5 grabs/s per account
-const CHIP_TTL = 7000;                  // claimable window after spawn (fall ~4.5s + grace)
-const GOLD_CHANCE = 0.08;               // golden chips are worth 5 shares
+const GRAB_MAX = 5, GRAB_WINDOW = 1000; // höchstens 5 pro Sekunde und Konto
+const CHIP_TTL = 7000;                  // so lange einsammelbar (Fall ~4,5 s plus Puffer)
+const GOLD_CHANCE = 0.08;               // goldene Chips zählen fünffach
 
 function setupChipRain(io, accounts) {
   let state = null; // { endsAt, pot, chips:Map(id->{value,gold,at,taken}), collected:{key:{n,sum}} }
@@ -36,9 +36,9 @@ function setupChipRain(io, accounts) {
       .sort((a, b) => b.sum - a.sum);
     const total = rows.reduce((s, r) => s + r.sum, 0);
     if (rows.length) {
-      chat.announce(io, `💸 Chip-Regen vorbei — ${rows.length} Sammler haben zusammen ${total.toLocaleString("de-DE")} Chips aufgelesen. Fleißigster: ${rows[0].name} (+${rows[0].sum.toLocaleString("de-DE")})!`);
+      chat.announce(io, `Chip-Regen vorbei, ${rows.length} Leute haben zusammen ${total.toLocaleString("de-DE")} Chips aufgelesen. Am meisten hat ${rows[0].name} (+${rows[0].sum.toLocaleString("de-DE")})!`);
     } else {
-      chat.announce(io, "💸 Chip-Regen vorbei — und niemand hat sich gebückt?!");
+      chat.announce(io, "Chip-Regen vorbei, und keiner hat sich gebückt?");
     }
     io.emit("rain:end", { results: rows.slice(0, 8), total });
     cleanup();
@@ -49,7 +49,7 @@ function setupChipRain(io, accounts) {
     pot = Math.max(1000, Math.floor(pot) || 250000);
     seconds = Math.max(10, Math.min(180, Math.floor(seconds) || 30));
 
-    // Pre-roll every chip so the values sum to exactly the pot.
+    // Jeden Chip vorab auswürfeln, damit die Summe genau den Topf ergibt.
     const n = Math.max(12, Math.round(seconds * 2));
     const weights = [];
     for (let i = 0; i < n; i++) weights.push(Math.random() < GOLD_CHANCE ? 5 : 1);
@@ -57,8 +57,8 @@ function setupChipRain(io, accounts) {
     const plan = weights.map((w) => ({ value: Math.max(1, Math.floor((pot * w) / wSum)), gold: w > 1 }));
 
     state = { endsAt: Date.now() + seconds * 1000, pot, chips: new Map(), collected: {} };
-    const prefix = opts.auto ? "ZUFÄLLIGER " : "";
-    chat.announce(io, `💸 ${prefix}CHIP-REGEN! ${seconds} Sekunden lang fallen ${pot.toLocaleString("de-DE")} Chips vom Himmel — schnell auftippen!`);
+    const prefix = opts.auto ? "Zufälliger " : "";
+    chat.announce(io, `${prefix}Chip-Regen! ${seconds} Sekunden lang fallen ${pot.toLocaleString("de-DE")} Chips vom Himmel, schnell antippen!`);
     io.emit("rain:start", snapshot());
 
     let spawned = 0;
@@ -69,7 +69,7 @@ function setupChipRain(io, accounts) {
       state.chips.set(id, { value: p.value, gold: p.gold, at: Date.now(), taken: false });
       io.emit("rain:chip", {
         id,
-        x: 0.04 + Math.random() * 0.92,      // horizontal spot (fraction of screen width)
+        x: 0.04 + Math.random() * 0.92,      // waagerechte Position (Anteil der Bildschirmbreite)
         dur: 3800 + Math.random() * 1400,     // fall duration ms
         gold: p.gold,
       });
@@ -103,7 +103,7 @@ function setupChipRain(io, accounts) {
     });
   });
 
-  // `zustand` gibt Restzeit und Topf nach aussen — der Admin-Bildschirm
+  // `zustand` gibt Restzeit und Topf nach aussen, der Admin-Bildschirm
   // zeigt damit einen Countdown statt nur "laeuft".
   return { start, stop, active, zustand: snapshot };
 }

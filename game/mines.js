@@ -1,18 +1,19 @@
 "use strict";
 
 /**
- * Mines — single-player, server-authoritative.
+ * Mines, allein gegen das Haus, entschieden auf dem Server.
  *
- * A 5×5 grid hides `mines` bombs. Reveal safe tiles one by one; each one raises
- * your multiplier. Hit a bomb and you lose the bet. Cash out any time (after ≥1
- * safe tile) to bank bet × current multiplier.
+ * Im 5×5-Raster liegen `mines` Bomben. Man deckt sichere Felder eins nach dem
+ * anderen auf, jedes erhöht den Multiplikator. Wer eine Bombe trifft, verliert
+ * den Einsatz. Auszahlen geht jederzeit (ab einem sicheren Feld), dann gibt es
+ * Einsatz × aktuellen Multiplikator.
  *
- * Fair multiplier after k safe reveals on n tiles with m mines:
+ * Fairer Multiplikator nach k sicheren Feldern bei n Feldern und m Minen:
  *   mult(k) = (1 − edge) · Π_{i=0..k-1} (n − i) / (n − m − i)
- * so cashing out is worth exactly (1 − edge) in EV → house edge = HOUSE_EDGE.
+ * Auszahlen ist also im Erwartungswert genau (1 − edge) wert, Hausvorteil = HOUSE_EDGE.
  *
- * Mine positions are decided at start (crypto RNG) and never sent to the client
- * until the game ends.
+ * Wo die Minen liegen, steht beim Start fest (crypto-Zufall) und geht erst am
+ * Ende an den Client.
  */
 
 const crypto = require("crypto");
@@ -20,7 +21,7 @@ const crypto = require("crypto");
 const TILES = 25;
 const HOUSE_EDGE = 0.02; // 98% RTP
 /* Die Obergrenze stand seit dem ersten Tag bei 10.000, was zu wenig war. Ich
- * hatte sie daraufhin auf 250.000 gesetzt — nach den Testdaten auf meinem
+ * hatte sie daraufhin auf 250.000 gesetzt, nach den Testdaten auf meinem
  * Rechner, in denen Konten mit Milliarden herumliegen. Der echte Spielstand
  * sieht voellig anders aus: 8,6 Millionen Chips insgesamt, mittleres Guthaben
  * 25.000, groesstes 1,7 Millionen. 250.000 waeren also das Zehnfache dessen
@@ -34,8 +35,8 @@ const MIN_BET = 50, MAX_BET = 50_000;
  *
  * Der hoehere Einsatz hat ein Problem sichtbar gemacht, das vorher schon da
  * war: bei 15 Minen zahlt das Leerraeumen aller zehn sicheren Felder rund
- * 3,2 Millionen mal den Einsatz. Mit 50.000 waeren das 160 Milliarden Chips
- * — ein einziger Treffer wuerde die ganze Wirtschaft erledigen. Die Chance
+ * 3,2 Millionen mal den Einsatz. Mit 50.000 waeren das 160 Milliarden Chips,
+ * und ein einziger Treffer wuerde die ganze Wirtschaft erledigen. Die Chance
  * liegt bei etwa 1 zu 3,3 Millionen, das passiert also praktisch nie; aber
  * "praktisch nie" mal "zerstoert alles" ist trotzdem ein schlechtes Geschaeft.
  *
@@ -57,7 +58,7 @@ function multiplier(mines, safe) {
 }
 
 /**
- * Was die naechsten Schritte bringen wuerden — fuer die Vorschau, bevor
+ * Was die naechsten Schritte bringen wuerden, fuer die Vorschau, bevor
  * ueberhaupt ein Einsatz steht.
  *
  * Bisher tippte man eine Minenzahl ein, ohne zu wissen, was sie zahlt. Zwei
@@ -75,12 +76,12 @@ function pickMines(m) {
   return new Set(idx.slice(0, m));
 }
 
-// Shadowban ("Pechvogel"): outcomes are decided per reveal, ignoring the real
-// mine layout — the player hits bombs far more often, may uncover 1–2 diamonds
-// (the tease), but never more than 2 before a guaranteed bomb.
-const SHADOW_BOMB_CHANCE = 65; // % chance each reveal is a bomb (≈5× häufiger als normal)
-const SHADOW_MAX_GEMS = 2;      // hard cap: never more than 2 diamonds before a bomb
-/** Build a believable bomb layout for a shadowban bust (clicked tile + fill). */
+// Pechvogel-Modus: entschieden wird bei jedem Aufdecken neu, das echte Minenfeld
+// zählt nicht. Man trifft viel öfter Bomben, findet vielleicht 1 bis 2 Diamanten
+// (als Köder), aber nie mehr als 2 vor einer sicheren Bombe.
+const SHADOW_BOMB_CHANCE = 65; // % Chance, dass ein Feld eine Bombe ist (etwa 5× so oft wie normal)
+const SHADOW_MAX_GEMS = 2;      // feste Grenze: nie mehr als 2 Diamanten vor einer Bombe
+/** Glaubwürdiges Minenfeld für einen Pechvogel-Treffer bauen (angeklicktes Feld plus Rest). */
 function fakeMineSet(g, tile) {
   const set = new Set([tile]);
   const free = [...Array(TILES).keys()].filter((i) => i !== tile && !g.revealed.includes(i));
@@ -92,9 +93,9 @@ function fakeMineSet(g, tile) {
 const IDLE_SETTLE_MS = 30 * 60_000; // verlassene Spiele nach 30 Min auto-abrechnen
 
 function setupMines(io, accounts) {
-  // Spiele am ACCOUNT statt am Socket — Reload/Abriss kostet keinen Einsatz
+  // Spiele am Account statt am Socket, Reload/Abriss kostet keinen Einsatz
   // mehr; der Client nimmt das laufende Spiel per mines:state wieder auf.
-  const games = new Map(); // accountKey → game
+  const games = new Map(); // Kontoschlüssel -> Spiel
 
   // Verlassene Spiele: ≥1 Feld aufgedeckt → Auto-Cashout, sonst Einsatz zurück.
   setInterval(() => {
@@ -157,7 +158,7 @@ function setupMines(io, accounts) {
       mines = Math.floor(Number(mines));
       if (!Number.isFinite(bet) || bet < MIN_BET) return ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
       if (bet > MAX_BET) return ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
-      if (!Number.isFinite(mines) || mines < 1 || mines > 24) return ack({ ok: false, error: "1–24 Minen." });
+      if (!Number.isFinite(mines) || mines < 1 || mines > 24) return ack({ ok: false, error: "Zwischen 1 und 24 Minen." });
       if (a.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
       const res = accounts.adjustChips(socket.data.account, -bet);
       if (!res.ok) return ack({ ok: false, error: res.error });
@@ -178,7 +179,7 @@ function setupMines(io, accounts) {
       if (!Number.isFinite(tile) || tile < 0 || tile >= TILES) return ack({ ok: false, error: "Ungültiges Feld." });
       if (g.revealed.includes(tile)) return ack({ ok: false, error: "Schon aufgedeckt." });
 
-      // Pechvogel: bomb far more often + hard cap of 2 uncovered diamonds.
+      // Pechvogel: viel öfter Bomben, höchstens 2 Diamanten.
       const shadow = accounts.isShadowbanned(socket.data.account);
       const hitBomb = shadow
         ? (g.revealed.length >= SHADOW_MAX_GEMS || crypto.randomInt(100) < SHADOW_BOMB_CHANCE)
@@ -191,7 +192,7 @@ function setupMines(io, accounts) {
         return ack({ ...view(g, { bust: true, tile, mineSet }) });
       }
       g.revealed.push(tile);
-      // Cleared the whole board → auto cash-out at the max multiplier.
+      // Alles leergeräumt: automatisch zum Höchstfaktor auszahlen.
       if (g.revealed.length >= TILES - g.mines) {
         const payout = Math.min(MAX_WIN, Math.floor(g.bet * multiplier(g.mines, g.revealed.length)));
         g.over = true;
@@ -211,7 +212,7 @@ function setupMines(io, accounts) {
 
     // Ein zufaelliges noch verdecktes Feld aufdecken. Auf dem iPad trifft man
     // die kleinen Kacheln schlecht, und beim Aufdecken gibt es ohnehin nichts
-    // zu koennen — jedes verdeckte Feld ist gleich wahrscheinlich.
+    // zu koennen, jedes verdeckte Feld ist gleich wahrscheinlich.
     socket.on("mines:revealRandom", (ack) => {
       if (typeof ack !== "function") return;
       const g = socket.data.account ? games.get(socket.data.account) : null;

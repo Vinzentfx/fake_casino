@@ -1,179 +1,153 @@
-# 🎰 Fake Casino — Cheat-Paper
+# Spickzettel
 
-Alles Wissenswerte zu jedem Spiel: Regeln, Auszahlungsquote (RTP), Gewinnchancen,
-Einsätze und Strategie. **Spielgeld** (🪙), kein echtes Geld.
+Regeln, Auszahlungsquoten und Grenzen der Spiele, damit man nicht jedes Mal im
+Code nachsehen muss. Alles Spielgeld. Die Zahlen stehen so im Code (Stand
+September 2026). Wenn sich dort etwas ändert, bitte hier mitziehen.
 
-> **RTP** = Auszahlungsquote: Anteil der Einsätze, der langfristig zurückfließt.
-> 96 % heißt: das Haus behält im Schnitt 4 %. **Kurzfristig kann alles passieren** —
-> RTP gilt über sehr viele Spiele.
-> **Volatilität** = wie schwankend: niedrig = viele kleine Gewinne, hoch = selten, aber dick.
+**RTP** heißt Auszahlungsquote: welcher Anteil der Einsätze auf lange Sicht
+zurückkommt. 98 % bedeutet, dass das Haus im Schnitt 2 % behält. Über ein paar
+Runden kann trotzdem alles passieren.
 
----
+## Grundsätzliches
 
-## 🆕 Basics
-- **Start:** 5.000 🪙. **Stunden-Bonus:** 1.000 🪙 + Serie/Tribut/Cashback, jede Stunde abholbar. **Pleite-Hilfe:** Soforthilfe wenn blank.
-- **Netto-Vermögen** = Chips + Stadt-Besitz + Aktien-Portfolio − Kreditschuld.
-- **Casino-Besitzer** kassiert **5 % Rake** auf alle Haus-Spiel-Verluste der Spieler (Slots, Blackjack, Roulette, Sportwetten — nicht Poker).
+- Neues Konto: 5.000 Chips.
+- Stunden-Bonus: 1.000 Chips pro Stunde, dazu Serie (bis +2.500), Straßen-Tribut,
+  Haus-Miete und Cashback.
+- Soforthilfe: unter 2.000 Chips (Bank zählt mit) wird auf 2.000 aufgefüllt,
+  alle 30 Minuten.
+- Wer in der Stadt das Casino besitzt, bekommt 5 % aller Verluste an
+  Hausspielen. Spiele gegen andere Spieler sind davon ausgenommen.
+- Reiche Konten bekommen weniger Gratis-Chips (Vermögensbremse). Gerechnet wird
+  mit Chips, Bank und Aktien voll, Immobilien zu einem Viertel.
 
----
+## Slots
 
-## 🎰 Slots — die 4 Automaten
+| Automat | Raster | RTP | Einsatz | Freischalten |
+|---|---|---|---|---|
+| Lucky 7s | 3×3, zahlt überall | ~98 % | 50 bis 25.000 | frei |
+| Gem Storm | 5×3, 20 Linien | ~98 % | 100 bis 100.000 | 10.000 |
+| Algen Abyss | 5×4, Ways | | 500 bis 250.000 | 120.000 |
+| Book of Rah | 5×3, 10 Linien | ~98,5 % | 500 bis 250.000 | 120.000 |
 
-| Automat | RTP | Trefferquote | Freispiel-Chance | Top-Gewinn* | Einsatz | Freischalten | Volatilität |
-|---|---|---|---|---|---|---|---|
-| 🍒 **Lucky 7s** | **98,8 %** | **90 %** | — | ~100× | 50–25.000 | gratis | niedrig |
-| 💎 **Gem Storm** | 95,6 % | 47 % | 2,2 % | ~175× | 100–100.000 | 10.000 🪙 | mittel |
-| 🐲 **Dragon's Hoard** | 97,6 % | 39 % | 5,1 % | ~225× | 500–250.000 | 50.000 🪙 | hoch |
-| 🌌 **Cosmic Cluster** | 95,2 % | 41 % | 2,2 % | ~1.440× | 1.000–1.000.000 | 200.000 🪙 | sehr hoch |
+- **Lucky 7s:** drei gleiche Symbole irgendwo im Raster gewinnen, Wild ersetzt
+  alles. Viele kleine Treffer, keine Freispiele.
+- **Gem Storm:** klassische Gewinnlinien von links. Scatter startet Freispiele,
+  mehr Scatter geben mehr Freispiele (3 = 10, 4 = 15, 5 = 20).
+- **Algen Abyss:** Mystery-Algen decken alle zusammen dasselbe Symbol auf oder
+  werden zu Golden Sharks. Jeder Shark trägt eine Münze, der Stapel rutscht
+  Reihe für Reihe nach unten und der Multiplikator steigt mit jedem Schritt.
+  Freispiele gibt es nur durchs Spielen, nicht zu kaufen.
+- **Book of Rah:** das Buch ist Wild und Scatter. In den Freispielen gibt es ein
+  Bonussymbol, das sich über ganze Walzen ausbreitet und auf allen Linien zahlt.
+- **Jackpot:** 0,5 % jedes bezahlten Drehs gehen in einen gemeinsamen Topf, jeder
+  Dreh kann ihn treffen. Die Chance hängt am Einsatz.
+- **Slots-Duell:** zwei Spieler, gleicher Automat, je 20 Drehs. Mehr Match-Chips
+  am Ende gewinnt den Topf, 15 % Rake. Gegen den Bot ohne Rake.
 
-\* Top-Gewinn = höchster in ~600k Spins beobachteter Gewinn (× Einsatz). Theoretisch geht mehr.
+## Blackjack
 
-**Freispiel-Regel (neu):** Mehr Scatter-Symbole als nötig = **mehr Freispiele** —
-z. B. 3 → 10, 4 → 15, 5 → 20 Freispiele. Während Freispielen kann erneut ausgelöst werden.
+- 6 Decks, der Dealer zieht auf Soft 17. Blackjack zahlt 3:2.
+- Verdoppeln auf die ersten zwei Karten, einmal teilen, keine Versicherung.
+- Einsatz 10 bis 2.000.000. Bester RTP im Haus, knapp unter 100 %.
+- Faustregeln: ab 17 stehen, gegen eine schwache Dealerkarte (2 bis 6) früher
+  stehen, Asse und Achten teilen, mit 10 oder 11 gegen schwache Karten verdoppeln.
+- Die Lobby ist nur zum Zusammensitzen, jeder spielt weiter gegen seinen Dealer.
 
-### 🍒 Lucky 7s — *„zahlt überall", 3×3*
-- **Modus:** 3+ gleiche Symbole **irgendwo** auf dem Feld = Gewinn (keine Linien). Sehr viele kleine Treffer → Dauer-Action.
-- **Wild ⭐** ersetzt alle Symbole. **Keine** Freispiele.
-- **Symbol-Rang (schwach → stark):** 🍒 < 🍋 < 🍊 < 🍇 < 🔔 < 💎 < 7️⃣
-- **Auszahlung 7-of-a-kind (Relativ-Faktor):** 🍒 40 · 🍋 50 · 🍊 70 · 🍇 100 · 🔔 180 · 💎 350 · 7️⃣ **777**
+## Roulette
 
-### 💎 Gem Storm — *5×3, 20 Linien, Freispiele ×2*
-- **Linien-Slot:** Symbole müssen auf einer Gewinnlinie von links liegen. **Wild 💎**, **Scatter 🌟** löst Freispiele aus (×2 Gewinn).
-- **Symbol-Rang:** 💙 < 💚 < 🧡 < 💜 < ❤️ < 👑 < 💎(Wild)
-- **5-of-a-kind:** 💙 25 · 💚 30 · 🧡 40 · 💜 55 · ❤️ 80 · 👑 190 · 💎 **400**
+Europäischer Kessel mit einer Null. Die Quoten sind etwas schlechter als im
+echten Casino, sonst war Roulette mit Abstand das großzügigste Spiel.
 
-### 🐲 Dragon's Hoard — *5×4, 10 Linien, Freispiele ×3, hochvolatil*
-- **Linien-Slot, hohe Volatilität:** kleine Treffer zahlen wenig, 5er-Reihen sind riesig. **Scatter 🔥** → Freispiele mit **×3**.
-- **Symbol-Rang:** 🪙 < 🗡️ < 🛡️ < 💍 < 💰 < 🐲 < 🐉(Wild)
-- **5-of-a-kind:** 🪙 45 · 🗡️ 60 · 🛡️ 90 · 💍 140 · 💰 240 · 🐲 600 · 🐉 **900**
+| Wette | Zahlt | Chance | RTP |
+|---|---|---|---|
+| Einzelne Zahl | 34× | 2,7 % | 91,9 % |
+| Dutzend oder Kolonne | 2,85× | 32,4 % | 92,4 % |
+| Rot/Schwarz, Gerade/Ungerade, 1-18/19-36 | 1,95× | 48,6 % | 94,9 % |
 
-### 🌌 Cosmic Cluster — *6×5, Cluster-Pays, Kaskaden, persistenter Multiplikator*
-- **Cluster:** **5+ gleiche** Symbole, die **zusammenhängen** (waagrecht/senkrecht). Gewinn-Symbole verschwinden, neue fallen nach (**Kaskade**) — Ketten möglich.
-- **Kaskaden-Multiplikator** im Basisspiel: ×1 → ×2 → ×3 → ×5 → ×8 → ×12. In **Freispielen** wächst der Multiplikator **dauerhaft** weiter → die dicken Gewinne. **Scatter 🌌** (4 nötig).
-- **Symbol-Rang:** 🪐 < 🌙 < ☄️ < 🌍 < 👽 < 🛸
-- **Cluster ab 12 Symbolen:** 🪐 18 · 🌙 24 · ☄️ 35 · 🌍 45 · 👽 60 · 🛸 **120** (× Multiplikator!)
+- Mindesteinsatz 50, zusammen höchstens 50.000 pro Dreh.
+- Die Heiß/Kalt-Tafel ist Aberglaube, jede Zahl kommt gleich oft.
+- In der Lobby setzen alle auf denselben Kessel und der Host dreht einmal für alle.
 
-### ⚔️ Slots-Duell (PvP)
-- Zwei Spieler, gleicher Einsatz & gleiche Maschine (zufällig), je 20 Spins — wer mehr Match-Chips hat, gewinnt den Pot. **15 % Rake** auf den Pot. Gegen Bot: kein Rake.
+## Kleine Hausspiele
 
----
+| Spiel | RTP | Einsatz | Deckel je Runde |
+|---|---|---|---|
+| Mines | 98 % | 50 bis 50.000 | 2 Mio |
+| Towers | 98 % | 50 bis 50.000 | 2 Mio |
+| Higher/Lower | 98 % je Schritt | 50 bis 50.000 | 2 Mio |
+| Crash | 97 % | 50 bis 250.000 | |
+| Pinco Ball | ~98 % | 50 bis 100.000 | |
+| Würfelpoker | bis 96,7 % bei gutem Spiel | | 2 Mio |
 
-## ♠️ Blackjack — RTP ~99,5 % (bestes Spiel im Haus)
-- **Ziel:** näher an 21 als der Dealer, ohne zu überkaufen. **6 Decks.**
-- **Regeln:** Dealer zieht bis 17 (zieht auf Soft 17). **Blackjack zahlt 3:2.** Verdoppeln auf 2 Karten. Einmal splitten. Keine Versicherung.
-- **Einsatz:** 10 – 2.000.000 🪙.
-- **Strategie-Kurz:** Bei 17+ stehen. Gegen Dealer-2…6 (schwach) früher stehen. Asse/8er splitten. Bei 10/11 gegen schwachen Dealer verdoppeln. **Nie** versichern (gibt's hier eh nicht).
-- **Lobby:** Sozialer Tisch — jeder spielt gegen den Dealer, alle sehen Gewinne/Verluste live (kein Spielunterschied).
+- **Mines:** 5×5 Felder, Minenzahl frei wählbar. Jedes sichere Feld erhöht den
+  Faktor, Auszahlen geht jederzeit.
+- **Towers:** 9 Ebenen, auf jeder ein Feld wählen. Fünf Stufen von Leicht (3 von
+  4 sicher) bis Meister (1 von 4 sicher).
+- **Crash:** eine Runde für alle. Die Rakete steigt, man muss vor dem Crash
+  aussteigen. Auto-Auszahlung lässt sich vorher einstellen.
+- **Würfelpoker:** fünf Würfel, zweimal nachwerfen. Wer gezielt auf Straßen
+  oder Gruppen spielt, kommt deutlich weiter als mit Zufall.
+- **Lotterie:** vier Zahlen aus 16, ein Los kostet 2.000, höchstens 10 Lose pro
+  Ziehung. Gezogen wird um 20 Uhr. 40 % jedes Loses gehen in den Jackpot, der
+  bei 3 Mio gedeckelt ist.
 
----
+## Sportwetten
 
-## 🎡 Roulette — RTP 97,3 % (europäisch, eine 0)
-37 Fächer (0–36). Die **grüne 0** lässt alle Außenwetten verlieren → Hausvorteil 2,7 %.
+- Echte Spiele aus Bundesliga, Premier League und La Liga (es zählt das echte
+  Ergebnis), dazu simulierte Ligen, damit immer etwas läuft.
+- Märkte: Sieger (1X2), über/unter 2,5 Tore, beide treffen.
+- 8 % Marge in den Quoten, also rund 92 % RTP. Einsatz 50 bis 500.000.
+- Kombis: alle Tipps müssen stimmen, die Quoten werden multipliziert. Tipps aus
+  demselben Spiel bekommen je 10 % Abschlag. Mit jedem Tipp wächst auch der
+  Vorteil des Hauses.
 
-| Wette | Zahlt | Trefferchance |
+Die Stärke der Teams kommt aus den echten Abschlusstabellen der letzten Saison
+(Punkte und Tordifferenz pro Spiel), nicht aus dem Ruf. Aufsteiger liegen knapp
+unter dem schwächsten Team, das drin geblieben ist.
+
+| Stufe | Beispiele | Siegchance daheim gegen Durchschnitt |
 |---|---|---|
-| Einzelne Zahl | **36×** (35:1) | 2,7 % |
-| Dutzend / Reihe (12 Zahlen) | 3× (2:1) | 32,4 % |
-| Rot/Schwarz, Gerade/Ungerade, 1–18/19–36 | 2× (1:1) | 48,6 % |
+| Weltklasse (88 bis 95) | Bayern, Barça, Real Madrid | ~55 bis 57 % |
+| Top (80 bis 87) | Arsenal, Dortmund, Man City, Leipzig, Villarreal | ~49 bis 53 % |
+| Stark (72 bis 79) | Man United, Stuttgart, Atleti, Leverkusen, Liverpool | ~43 bis 48 % |
+| Mittel (65 bis 71) | Chelsea, Freiburg, Frankfurt, Tottenham | ~39 bis 42 % |
+| Schwach (bis 64) | Bremen, Hull City, Schalke, Elversberg | ~34 bis 35 % |
 
-- **Einsatz:** ab 50 🪙, Gesamteinsatz bis 100 Mio. Mehrere Wetten gleichzeitig möglich.
-- **Hot/Cold-Tafel** ist reiner Aberglaube — jede Zahl ist **immer** gleich wahrscheinlich.
-- **Lobby:** Geteilter Kessel — alle setzen, der Anführer dreht **einmal**, ein Ergebnis für alle.
+## Gegeneinander
 
----
-
-## 🃏 Texas Hold'em Poker — Spieler gegen Spieler (kein Hausvorteil)
-- **PvP:** du spielst gegen andere/Bots, **nicht** gegen das Haus → **kein Rake, kein Hausvorteil**. Skill entscheidet.
-- Blinds, Setzrunden, All-in/Side-Pots, Showdown (beste 5 aus 7). Tische per Code oder über den **Lobby-Browser**; mit Bots auffüllbar.
-- **Hand-Reihenfolge (stark → schwach):** Royal Flush > Straight Flush > Vierling > Full House > Flush > Straße > Drilling > Zwei Paare > Paar > High Card.
-
----
-
-## ⚽ Sportwetten — RTP 92,6 % (8 % Marge)
-- **🌍 Echte Spiele aus Bundesliga, Premier League und La Liga** (echtes Ergebnis zählt!) **+ simulierte Ligen** für Dauer-Action. Du siehst, worauf andere tippen.
-- **Märkte je Spiel:** Sieger (1X2), Über/Unter 2,5 Tore, Beide treffen.
-- **Quoten** aus Team-Stärke (siehe Tabelle unten) + Marge. **Einsatz:** 50 – 5.000.000 🪙. Mehrere Wetten pro Spiel möglich.
-- **🎟️ Kombi (Parlay):** mehrere Tipps in den Wettschein → **alle müssen stimmen**, dafür **multiplizieren** sich die Quoten = viel mehr Geld. Tipps aus demselben Spiel bekommen einen kleinen Korrelations-Abschlag (×0,90 je Extra-Tipp). **Tipp:** Kombis sind riesig auszahlbar, aber jeder Fehltipp killt alles — der Hausvorteil wächst mit jedem Leg.
-
-### 🌍 Team-Stärken (Beispiel-Siegchance daheim gegen Ø-Gegner)
-Die Stärken kommen aus den **echten Abschlusstabellen der letzten Saison**
-(Punkte und Tordifferenz pro Spiel), nicht aus dem Bauch. Aufsteiger starten
-knapp unter dem schwächsten verbliebenen Team.
-
-| Stärke-Tier | Beispiele | grobe Heim-Siegchance |
-|---|---|---|
-| Weltklasse (88–95) | Bayern, Barça, Real Madrid | ~55–57 % |
-| Top (80–87) | Arsenal, Dortmund, Man City, Leipzig, Villarreal | ~49–53 % |
-| Stark (72–79) | Man United, Stuttgart, Atleti, Leverkusen, Liverpool | ~43–48 % |
-| Mittel (65–71) | Chelsea, Freiburg, Frankfurt, Tottenham | ~39–42 % |
-| Schwach (≤64) | Bremen, Hull City, Schalke, Elversberg | ~34–35 % |
-
-Überraschung beim Lesen? Die Tabelle bildet ab, wie die Teams **letzte Saison
-wirklich abgeschnitten haben**, nicht ihren Ruf. Deshalb steht Liverpool unter
-Man United und Tottenham im Mittelfeld.
-
----
-
-## 💼 Wirtschaft (geteilte Welt)
-
-**Grundprinzip:** Geld kommt aus den **Spielen** (+ Stunden-Bonus/Cashback/Achievements). Die Stadt ist **kein** Geld-Automat — sie ist das, **wofür** du deine Gewinne ausgibst: Territorium, Status, Trophäen, Spekulation.
-
-### 💰 Woher kommen Chips?
-| Quelle | Betrag |
+| Spiel | Rake |
 |---|---|
-| Startguthaben | 5.000 |
-| ⏰ Stunden-Bonus | 1.000/Std + Serie (bis +2.500) |
-| 👑 Straßen-Tribut | +2.000 je kompletter Straße (max. 10 → +20.000/Std) — mit jedem Stunden-Bonus |
-| 💸 Verlust-Cashback | 10 % deiner Hausspiel-Verluste seit letztem Bonus (Cap 25.000/Std) |
-| 🏆 Achievements | einmalig 1.000 … 1.000.000 (19 Stück) |
-| Klick-Job | gedeckelte Starthilfe |
-| Spiele | Varianz: RTP 93–99 %, die großen Sprünge kommen von Big Wins & Poker |
+| Poker (Texas Hold'em) | keiner |
+| Schach-Duell | 10 % |
+| Memory-Duell | 10 % |
+| Sudoku-Race | 10 % |
+| Solitär-Rennen | 10 % |
+| Kniffel-Duell | 5 % |
+| Slots-Duell | 15 % |
 
-### 🏙️ Stadt — echte Karte von Porta Westfalica
-8 echte Ortsteile (Eisbergen, Hausberge, Holzhausen, Kleinenbremen, Lerbeck, Nammen, Neesen, Veltheim) mit **11.131 echten Häusern** aus OpenStreetMap, inkl. Straßen & Adressen. Übersicht → Ortsteil antippen → Haus kaufen. **Kein Einkommen, kein Einsammeln** — Besitz gibt Status & Perks:
+- Poker läuft nur noch Mensch gegen Mensch. Die Bots sind raus, weil ihre Stapel
+  vom Haus kamen und man mit ihnen Chips drucken konnte.
+- Sudoku und die anderen Rätsel gehen auch versetzt: Herausforderung aufmachen,
+  sofort spielen, das Ergebnis wartet bis zu 48 Stunden. Nimmt keiner an, gibt es
+  den Einsatz zurück.
 
-- **👑 Straßen-Monopol:** Alle Häuser einer Straße (ab 3) besitzen → die Straße färbt sich für alle in deiner Farbe („👑 vincents Bergstraße") + täglicher Tribut.
-- **🥇 Stadtteil-Boss:** höchster Immobilienwert im Ortsteil → Name auf der Karte + **10 % Rabatt** auf Käufe dort.
-- **🏆 Trophäen** (einzigartig, je ~5 Mio): 🚉 Bahnhof = Stunden-Bonus ×1,5 · ⛪ Kirche = 15 % Cashback mit doppeltem Limit + Soforthilfe ×2 · 🏫 Schule = Serien-Bonus ×2 & Serie verfällt nie + Klicks ×3 · 🏛️ Wahrzeichen (größtes Gebäude je Ort, bis 500 Mio) = Prestige.
-- **📰 Spekulation:** Jeder Ortsteil hat einen Preis-Index (0,55–1,9), bewegt von Orts-News (Schützenfest 📈, Hochwasser 📉 …). Billig kaufen, teuer verkaufen — Verkauf bringt 90 %.
-- **⚔️ Übernahme:** fremdes Haus für 150 % schnappen — der Vorbesitzer bekommt 100 % (Marktwert) erstattet.
-- **🛏️ Wohnsitz:** kostenlos in jedes Haus „einziehen" — reiner Spaß.
+## Stadt, Bank, Börse
 
-| Objekt | Preis (je nach Größe/Lage/Index) |
-|---|---|
-| 🏠 Wohnhaus | ~15.000–75.000 |
-| 🏛️ Öffentlich | ~80.000–350.000 |
-| 🏪 Kiosk | ~0,3–1 Mio |
-| ☕ Café | ~1,5–5 Mio |
-| 🛍️ Laden | ~7–25 Mio |
-| 🏨 Hotel | ~35–120 Mio |
-| 🏭 Fabrik | ~150–600 Mio |
-| 🏆 Trophäen | ~5 Mio (Wahrzeichen bis 500 Mio) |
-| 🏦 Bank | 600 Mio — kassiert alle Kredit-Zinsen |
-| 🎰 Casino | 1,2 Mrd — kassiert 5 % Haus-Rake |
+Geld verdient man in den Spielen. Die Stadt ist das, wofür man es ausgibt.
 
-### 🏦 Bank — Kredite & Sparkonto
-- Kredit: **5 % Zinsen/Std** (einfach), einer gleichzeitig, Limit 50 % vom Netto-Vermögen. Zinsen an den **Bank-Besitzer**.
-- Sparkonto: ~2,9 %/Tag, Cap 25 Mio — sicher, aber schlägt nie aktives Spielen.
-
-### 📈 Börse — Aktien
-- Simulierter Markt: NPC-Aktien + Spieler-**IPOs** (eigene Betriebe listen). **Long & Short** mit **Hebel 1–5**; bei zu großem Verlust **Liquidation**. Kurse: Zufall + News + Insolvenzen (Short zahlt sich aus).
-
----
-
-## 🏆 RTP-Vergleich (Hausvorteil)
-| Spiel | RTP | Hausvorteil |
-|---|---|---|
-| Blackjack | ~99,5 % | ~0,5 % |
-| Lucky 7s | 98,8 % | 1,2 % |
-| Dragon's Hoard | 97,6 % | 2,4 % |
-| Roulette | 97,3 % | 2,7 % |
-| Gem Storm | 95,6 % | 4,4 % |
-| Cosmic Cluster | 95,2 % | 4,8 % |
-| Sportwetten (Einzel) | 92,6 % | 7,4 % |
-| Sportwetten-Kombi | niedriger | wächst je Leg |
-| Poker / Slots-Duell | — | kein Hausvorteil (PvP)** |
-
-\** Slots-Duell mit Freunden: 15 % Rake auf den Pot.
-
-**Bestes Wett-EV:** Blackjack & Lucky 7s. **Größte Träume:** Cosmic Cluster (×1.000+) & Kombi-Wetten. **Skill statt Glück:** Poker.
+- **Häuser:** echte Gebäude aus Porta Westfalica (OpenStreetMap). Verkaufen
+  bringt 90 % zurück.
+- **Straßen-Monopol:** alle Häuser einer Straße (ab 3) gehören dir, dann färbt
+  sie sich in deiner Farbe und zahlt 2.000 pro Stunden-Bonus (höchstens 10
+  Straßen). Die Goldene Straße der Woche zahlt doppelt.
+- **Stadtteil-Boss:** höchster Immobilienwert im Ortsteil, kauft dort 10 % billiger.
+- **Übernahme:** ein fremdes Haus für 150 % übernehmen. Der Vorbesitzer bekommt
+  den Marktwert, der Rest verbrennt.
+- **Trophäen:** Bahnhof (Stunden-Bonus ×1,5), Kirche (15 % Cashback mit doppeltem
+  Limit, Soforthilfe ×2), Schule (Serie ×2 und verfällt nie, Klicks ×3),
+  Wahrzeichen (nur Prestige).
+- **Spekulation:** jeder Ortsteil hat einen Preisindex, den Lokalnachrichten
+  bewegen.
+- **Bank:** Sparkonto mit 0,08 % pro Tag, höchstens 25 Mio. Kredite gibt es nicht.
+- **Börse:** ausgedachte Firmen und Börsengänge von Spielern. Long und Short mit
+  Hebel, bei zu viel Verlust wird liquidiert.

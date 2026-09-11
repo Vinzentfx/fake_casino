@@ -1,12 +1,12 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Mines (client).
+   Mines
 
    Server-autoritativ (game/mines.js); hier wird nur gezeichnet.
 
    Was hier neu ist und warum:
-   • Die Auszahlungstabelle steht VOR dem Einsatz da. Vorher tippte man eine
+   • Die Auszahlungstabelle steht vor dem Einsatz da. Vorher tippte man eine
      Minenzahl in ein Zahlenfeld, ohne zu wissen, was zwei Minen gegenüber
      zwanzig überhaupt bringen.
    • Minen sind eine Knopfreihe statt eines Zahlenfelds. "17" hat nie jemand
@@ -36,7 +36,7 @@
   let grenzen = { minBet: 50, maxBet: 250000 };
   let autoLaeuft = false;
 
-  // ── Verlauf ──────────────────────────────────────────────────────────────
+  // --- Verlauf ---
   // Bewusst lokal: das ist Sitzungsgedaechtnis, kein Besitz, und muss nicht
   // ueber Geraete hinweg stimmen.
   function verlauf() {
@@ -58,7 +58,7 @@
       : "";
   }
 
-  // ── Aufbau ───────────────────────────────────────────────────────────────
+  // --- Aufbau ---
   /*
    * Jede Kachel hat zwei Seiten und dreht sich beim Aufdecken um.
    *
@@ -92,7 +92,7 @@
    * Die Auszahlungstabelle stand als eine einzige gequetschte Zeile da, in der
    * Ueberschrift, fuenf Stufen und der Deckel um denselben Platz kaempften.
    * Jetzt drei Ebenen: Ueberschrift, ein Raster mit Luft dazwischen, und der
-   * Deckel als eigene Zeile darunter — der gehoert nicht in die Leiter, er
+   * Deckel als eigene Zeile darunter, der gehoert nicht in die Leiter, er
    * begrenzt sie.
    */
   function renderPay(tabelle) {
@@ -120,7 +120,7 @@
     });
   }
 
-  // ── Zeichnen ─────────────────────────────────────────────────────────────
+  // --- Zeichnen ---
   function setActive(active) {
     $("#mines-setup").style.display = active ? "none" : "";
     $("#mines-cashout").style.display = active ? "" : "none";
@@ -129,10 +129,10 @@
 
   function renderTop(v) {
     $("#mines-mult").textContent = mx(v.multiplier || 1) + "×";
-    $("#mines-cashval").textContent = v.cashout ? fmt(v.cashout) + " Chips" : "—";
-    $("#mines-next").textContent = v.nextMultiplier ? mx(v.nextMultiplier) + "×" : "—";
-    if (v.cashout) $("#mines-cashout").textContent = `💸 Auszahlen — ${fmt(v.cashout)} Chips (${mx(v.multiplier)}×)`;
-    else $("#mines-cashout").textContent = "💸 Auszahlen";
+    $("#mines-cashval").textContent = v.cashout ? fmt(v.cashout) + " Chips" : "-";
+    $("#mines-next").textContent = v.nextMultiplier ? mx(v.nextMultiplier) + "×" : "-";
+    if (v.cashout) $("#mines-cashout").textContent = `Auszahlen: ${fmt(v.cashout)} Chips (${mx(v.multiplier)}×)`;
+    else $("#mines-cashout").textContent = "Auszahlen";
     $("#mines-cashout").disabled = !v.cashout;
   }
 
@@ -163,19 +163,19 @@
   function apply(v) {
     game = v;
     renderTop(v.bust ? { ...v, multiplier: v.multiplier, cashout: 0, nextMultiplier: null } : v);
-    if (v.bust) { $("#mines-cashval").textContent = "verloren"; $("#mines-next").textContent = "—"; }
+    if (v.bust) { $("#mines-cashval").textContent = "verloren"; $("#mines-next").textContent = "-"; }
     paint(v);
     if (v.over) {
       autoLaeuft = false;
       setActive(false);
       if (v.account) applyAccount(v.account);
-      if (v.bust) { toast("💥 Bombe! Einsatz weg."); merke({ gewonnen: false, mult: 0 }); }
-      else if (v.cashedOut) { toast(`💸 +${fmt(v.payout)} Chips (${mx(v.mult)}×)!`); merke({ gewonnen: true, mult: v.mult }); }
-      else if (v.cleared) { toast(`🏆 Feld leergeräumt! +${fmt(v.payout)} Chips`); merke({ gewonnen: true, mult: v.multiplier }); }
+      if (v.bust) { toast("Bombe. Einsatz weg."); merke({ gewonnen: false, mult: 0 }); }
+      else if (v.cashedOut) { toast(`+${fmt(v.payout)} Chips (${mx(v.mult)}×)`); merke({ gewonnen: true, mult: v.mult }); }
+      else if (v.cleared) { toast(`Alles leergeräumt! +${fmt(v.payout)} Chips`); merke({ gewonnen: true, mult: v.multiplier }); }
     } else setActive(true);
   }
 
-  // ── Züge ─────────────────────────────────────────────────────────────────
+  // --- Züge ---
   function tonFuerAufdecken(v) {
     if (v.bust) return snd.play("bust");
     // Jeder sichere Stein klingt eine Stufe hoeher. Das baut die Spannung
@@ -242,7 +242,7 @@
     });
   }
 
-  // ── Verdrahtung ──────────────────────────────────────────────────────────
+  // --- Verdrahtung ---
   $("#mines-mine-row").addEventListener("click", (e) => {
     const b = e.target.closest("[data-minen]");
     if (!b) return;

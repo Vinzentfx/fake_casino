@@ -1,18 +1,18 @@
 "use strict";
 
 /**
- * Achievements & badges — one-time milestones with chip rewards.
+ * Achievements: einmalige Meilensteine mit Chip-Belohnung.
  *
- * Server-authoritative: progress is derived from data the server already owns
- * (acc.stats, chip balance, city territory), never from the client. Unlocks
- * pay out instantly via adjustChips, notify the player (socket "ach:unlocked")
- * and announce big ones (reward ≥ 100k) in the global chat.
+ * Alles auf dem Server: der Fortschritt kommt aus Daten, die der Server ohnehin
+ * hat (acc.stats, Kontostand, Besitz in der Stadt), nie vom Client. Wer eins
+ * freischaltet, bekommt sofort Chips über adjustChips und eine Nachricht
+ * ("ach:unlocked"), die großen (ab 100k Belohnung) stehen auch im Chat.
  *
- * Unlocked ids live on the account: acc.ach = { [id]: timestamp }.
+ * Was freigeschaltet ist, steht am Konto: acc.ach = { [id]: Zeitpunkt }.
  *
- * These payouts are the "career income" of the economy — together with the
- * daily bonus they fund a new player's first houses while the games keep a
- * house edge (<100% RTP).
+ * Die Belohnungen sind so etwas wie das Karriere-Einkommen. Zusammen mit dem
+ * Bonus bezahlen sie einem neuen Spieler die ersten Häuser, während die Spiele
+ * selbst einen Hausvorteil behalten (unter 100 % RTP).
  */
 
 const city = require("./city");
@@ -26,7 +26,7 @@ const CASINO_SPIELE = ["slots", "blackjack", "roulette", "crash", "mines", "towe
  * Ein Achievement ist ein ZIEL und ein WERT, nicht eine Ja/Nein-Pruefung.
  *
  * Vorher stand hier `check: (a) => a.stats.gamesPlayed >= 100`. Damit gab es
- * keine Moeglichkeit zu zeigen, wie weit jemand ist — man sah nur "zu" oder
+ * keine Moeglichkeit zu zeigen, wie weit jemand ist, man sah nur "zu" oder
  * "offen", und das ist bei "Spiele 1.000 Runden" ziemlich entmutigend.
  *
  * Jetzt liefert jede Zeile `wert(acc, key)` und `ziel`. Die Freischaltung ist
@@ -36,7 +36,7 @@ const CASINO_SPIELE = ["slots", "blackjack", "roulette", "crash", "mines", "towe
  * `ziel: 1` mit einem Wert von 0 oder 1 ist der Ja/Nein-Fall.
  */
 const DEFS = [
-  // ── Casino ────────────────────────────────────────────────────────────────
+  // --- Casino ---
   { id: "first_win",   emoji: "🎉", label: "Erster Gewinn",   desc: "Gewinne deine erste Runde",   reward: 1000,
     ziel: 1,        wert: (a) => (a.stats && a.stats.handsWon) || 0 },
   { id: "plays_100",   emoji: "🎲", label: "Stammgast",       desc: "Spiele 100 Runden",           reward: 10000,
@@ -66,7 +66,7 @@ const DEFS = [
   { id: "level_50",    emoji: "🌟", label: "Veteran",         desc: "Erreiche Level 50",           reward: 200000,
     ziel: 50,       wert: (a) => Math.floor(Math.sqrt(Math.max(0, a.xp || 0) / 100)) + 1 },
 
-  // ── Die einzelnen Spiele ──────────────────────────────────────────────────
+  // --- Die einzelnen Spiele ---
   { id: "alle_spiele", emoji: "🎡", label: "Alles probiert",  desc: "Spiel jedes Casino-Spiel mindestens einmal", reward: 75000,
     ziel: CASINO_SPIELE.length, wert: (a) => {
       const pg = (a.stats && a.stats.perGame) || {};
@@ -89,7 +89,7 @@ const DEFS = [
   { id: "horse_win_25", emoji: "🏅", label: "Rennstall",      desc: "Gewinn 25 Rennen",            reward: 120000,
     ziel: 25,       wert: (a) => a.horseWins || 0 },
 
-  // ── Stadt ────────────────────────────────────────────────────────────────
+  // --- Stadt ---
   { id: "first_house", emoji: "🏠", label: "Eigenheim",       desc: "Kauf dein erstes Haus",       reward: 2500,
     ziel: 1,        wert: (a, k) => cityStats(k).houses },
   { id: "houses_10",   emoji: "🏘️", label: "Häuslebauer",     desc: "Besitze 10 Häuser",           reward: 25000,
@@ -113,13 +113,13 @@ const DEFS = [
   { id: "casino_king", emoji: "🎰", label: "Casino-König",    desc: "Besitze das Casino",          reward: 1000000,
     ziel: 1,        wert: (a, k) => (city.casinoOwner() === k ? 1 : 0) },
 
-  // ── Wirtschaft ───────────────────────────────────────────────────────────
+  // --- Wirtschaft ---
   { id: "sparer",      emoji: "🐷", label: "Sparbuch",        desc: "Leg 100.000 aufs Sparkonto",  reward: 15000,
     ziel: 100000,   wert: (a) => (a.savings && a.savings.amount) || 0 },
   { id: "sparer_gross", emoji: "🏛️", label: "Vermögensverwalter", desc: "Leg 1 Million aufs Sparkonto", reward: 80000,
     ziel: 1000000,  wert: (a) => (a.savings && a.savings.amount) || 0 },
 
-  // ── Miteinander ──────────────────────────────────────────────────────────
+  // --- Miteinander ---
   { id: "im_clan",     emoji: "🛡️", label: "Im Clan",         desc: "Tritt einem Clan bei",        reward: 5000,
     ziel: 1,        wert: (a) => (a.clan ? 1 : 0) },
   { id: "spendabel",   emoji: "🤝", label: "Spendabel",       desc: "Schick jemandem Chips",       reward: 5000,
@@ -127,7 +127,7 @@ const DEFS = [
   { id: "gastgeber",   emoji: "📣", label: "Gastgeber",       desc: "Lade jemanden in deine Lobby ein", reward: 5000,
     ziel: 1,        wert: (a) => a.einladungen || 0 },
 
-  // ── Aussehen ─────────────────────────────────────────────────────────────
+  // --- Aussehen ---
   { id: "stil_10",     emoji: "🎨", label: "Angezogen",       desc: "Besitze 10 Kosmetik-Stücke",  reward: 20000,
     ziel: 10,       wert: (a) => {
       const o = a.cosOwned || {};
@@ -139,7 +139,7 @@ const DEFS = [
       return Object.values(o).reduce((s, l) => s + (Array.isArray(l) ? l.length : 0), 0);
     } },
 
-  // ── Meta / Events ─────────────────────────────────────────────────────────
+  // --- Meta / Events ---
   { id: "cal_week",    emoji: "📅", label: "Treuer Gast",     desc: "Hol Tag 7 im Login-Kalender", reward: 25000,
     ziel: 7,        wert: (a) => a.calBest || 0 },
   { id: "tourney_win", emoji: "🏁", label: "Turniersieger",   desc: "Gewinne ein Slot-Turnier",    reward: 50000,
@@ -153,7 +153,7 @@ const DEFS = [
       try { return require("./season").levelVonXp((a.season && a.season.xp) || 0); } catch { return 0; }
     } },
 
-  // ── Denkspiele (PvP-Duelle & Solitär) ─────────────────────────────────────
+  // --- Denkspiele (PvP-Duelle & Solitär) ---
   { id: "duel_win_1",  emoji: "🤝", label: "Erstes Duell",    desc: "Gewinne dein erstes PvP-Duell", reward: 2500,
     ziel: 1,        wert: (a) => a.pvpWins || 0 },
   { id: "duel_win_25", emoji: "⚔️", label: "Duellmeister",    desc: "Gewinne 25 PvP-Duelle",       reward: 50000,
@@ -182,7 +182,7 @@ function fortschritt(d, acc, key) {
 
 const erreicht = (d, acc, key) => fortschritt(d, acc, key).roh >= (d.ziel || 1);
 
-// Cheap city aggregates for the checks above.
+// Günstige Stadt-Zahlen für die Prüfungen oben.
 function cityStats(key) {
   const ov = city.publicOverview(key);
   return { houses: ov.me ? ov.me.houses : 0, boss: ov.me ? ov.me.bossOf.length : 0 };
@@ -190,7 +190,7 @@ function cityStats(key) {
 
 let _io = null, _accounts = null;
 
-/** Evaluate all definitions for one player; unlock, pay & notify new ones. */
+/** Alle Definitionen für einen Spieler prüfen, neue freischalten, auszahlen, Bescheid geben. */
 function check(name) {
   if (!_accounts) return;
   const acc = _accounts.get(name);
@@ -208,13 +208,13 @@ function check(name) {
       _io.emit("ach:unlocked", { user: acc.name, id: d.id, emoji: d.emoji, label: d.label, reward: d.reward });
       if (d.reward >= 100000) {
         const chat = require("./chat");
-        chat.announce(_io, `🏆 ${acc.name} hat „${d.emoji} ${d.label}“ freigeschaltet!`);
+        chat.announce(_io, `${acc.name} hat „${d.label}“ freigeschaltet.`);
       }
     }
   }
 }
 
-/** All definitions with the player's unlock state (profile badges). */
+/** Alle Definitionen mit dem Stand des Spielers (Abzeichen im Profil). */
 function listFor(name) {
   const acc = _accounts && _accounts.get(name);
   const ach = (acc && acc.ach) || {};
@@ -229,7 +229,7 @@ function listFor(name) {
   });
 }
 
-/** Emoji of one achievement id (leaderboard title badge), or null. */
+/** Emoji eines Achievements (Abzeichen in der Bestenliste) oder null. */
 function emojiOf(id) {
   const d = DEFS.find((x) => x.id === id);
   return d ? d.emoji : null;
@@ -238,7 +238,7 @@ function emojiOf(id) {
 function setupAchievements(io, accounts) {
   _io = io;
   _accounts = accounts;
-  // Every recorded hand may complete a casino achievement.
+  // Jede verbuchte Runde kann ein Casino-Achievement abschließen.
   accounts.onHand((name) => check(name));
 
   io.on("connection", (socket) => {
@@ -258,8 +258,8 @@ function setupAchievements(io, accounts) {
       ack({ ok: true, list: listFor(socket.data.account), badge: (acc && acc.badge) || null });
     });
 
-    // Pick ONE unlocked achievement as the title emoji shown behind your name
-    // in the leaderboard (id = null clears it).
+    // ein freigeschaltetes Achievement als Abzeichen hinter dem Namen in der
+    // Bestenliste wählen (id = null nimmt es wieder weg).
     socket.on("ach:setBadge", ({ id } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });

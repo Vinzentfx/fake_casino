@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Sudoku-Race (client).
-   Real-time PvP: both players fill the SAME puzzle; first correct
-   full solution wins. Server-authoritative validation.
+   Sudoku-Race
+   Live gegeneinander: beide lösen dasselbe Rätsel, die erste richtige volle
+   Lösung gewinnt. Geprüft wird auf dem Server.
    ============================================================ */
 
 (function () {
@@ -23,7 +23,7 @@
   let puzzle = null;      // given cells (0 = blank)
   let grid = null;        // my working grid (81)
   let selected = -1;      // selected cell index
-  let sendTimer = null;   // throttle for sudoku:update
+  let sendTimer = null;   // bremst sudoku:update
   let timerInt = null;
   let endsAt = 0;
 
@@ -58,7 +58,7 @@
       if (m === "duell") ladeDuelle();
     }));
 
-  // ── Grid ──────────────────────────────────────────────────
+  // --- Grid ---
   function buildGrid() {
     const g = $("#sdk-grid");
     if (g.childElementCount === 81) return;
@@ -117,7 +117,7 @@
   }
 
   function selectCell(i) {
-    if (puzzle[i] !== 0) return; // givens not selectable
+    if (puzzle[i] !== 0) return; // Vorgaben lassen sich nicht wählen
     selected = i;
     renderGrid();
   }
@@ -158,14 +158,14 @@
     show("sdk-result");
     $("#sdk-result-emoji").textContent = "🏆";
     $("#sdk-result-title").textContent = "Gelöst! 🎉";
-    $("#sdk-result-sub").innerHTML = "Sauber gelöst — zählt für deine Achievements & Statistik.";
+    $("#sdk-result-sub").innerHTML = "Sauber gelöst. Zählt für Achievements und Statistik.";
     $("#sdk-rematch").style.display = "none"; $("#sdk-rematch-status").textContent = "";
   }
 
   // Number pad
   document.querySelectorAll("#sdk-pad .sdk-key").forEach((b) =>
     b.addEventListener("click", () => setNumber(parseInt(b.dataset.n, 10))));
-  // Keyboard support while on the sudoku screen
+  // Tastatur, solange man auf dem Sudoku-Screen ist
   document.addEventListener("keydown", (e) => {
     const active = duellId ? true : soloMode ? soloPlaying : (st && st.state === "playing");
     if (!active) return;
@@ -174,7 +174,7 @@
     else if (e.key === "Backspace" || e.key === "Delete" || e.key === "0") setNumber(0);
   });
 
-  // ── Timer ─────────────────────────────────────────────────
+  // --- Timer ---
   function startTimer() {
     stopTimer();
     timerInt = setInterval(() => {
@@ -186,7 +186,7 @@
   }
   function stopTimer() { if (timerInt) { clearInterval(timerInt); timerInt = null; } }
 
-  // ── State ─────────────────────────────────────────────────
+  // --- State ---
   function renderProgress(s) {
     const you = s.you || { name: "Du", progress: 0 }, opp = s.opponent || { name: "Gegner", progress: 0 };
     $("#sdk-you-name").textContent = you.name;
@@ -221,7 +221,7 @@
       soloMode = false; soloPlaying = false;
       $("#sdk-topbar").style.display = ""; $("#sdk-opp-row").style.display = ""; // race layout
       show("sdk-game");
-      // First transition into playing → set up my grid from the puzzle.
+      // Erster Wechsel auf "läuft": das eigene Raster aus dem Rätsel bauen.
       if (prevState !== "playing" || !grid) {
         puzzle = s.puzzle.slice();
         grid = s.puzzle.slice();
@@ -239,10 +239,10 @@
       const rm = s.rematch || {};
       $("#sdk-rematch").style.display = rm.canRematch ? "" : "none";
       $("#sdk-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "🔁 Gegner will Revanche!" : "");
-      // Walkover: opponent left mid-race → notify the winner (money already credited).
+      // Kampflos: der Gegner ist mitten im Rennen gegangen, den Gewinner benachrichtigen (Chips sind schon gutgeschrieben).
       const r = s.result, me = getAccount(), myName = me && me.name;
       if (r && r.walkover && r.winner && myName && r.winner.toLowerCase() === myName.toLowerCase()) {
-        toast(`🏆 Gegner hat das Race verlassen — du gewinnst ${fmt(r.payout)} Chips!`);
+        toast(`Dein Gegner hat das Rennen verlassen, du bekommst ${fmt(r.payout)} Chips.`);
       }
     }
   }
@@ -250,7 +250,7 @@
   socket.on("sudoku:state", (s) => { if (s) apply(s); });
   socket.on("account:update", (d) => { if (d && d.account) applyAccount(d.account); });
 
-  // ── Actions ───────────────────────────────────────────────
+  // --- Actions ---
   $("#sdk-create").addEventListener("click", () => {
     const err = $("#sdk-error"); err.textContent = "";
     const buyIn = parseInt($("#sdk-buyin").value, 10);
@@ -274,7 +274,7 @@
     doJoin(code);
   });
 
-  // Solo (no timer, no stake)
+  // Solo (ohne Uhr, ohne Einsatz)
   $("#sdk-solo-start").addEventListener("click", () => {
     $("#sdk-error").textContent = "";
     socket.emit("sudoku:soloStart", { difficulty: chosenDiff }, (r) => {
@@ -282,8 +282,8 @@
       soloMode = true; soloPlaying = true; myCode = null; st = null;
       puzzle = r.puzzle.slice(); grid = r.puzzle.slice(); selected = -1;
       buildGrid(); renderGrid();
-      $("#sdk-topbar").style.display = "none";   // no timer
-      $("#sdk-opp-row").style.display = "none";  // no opponent
+      $("#sdk-topbar").style.display = "none";   // keine Uhr
+      $("#sdk-opp-row").style.display = "none";  // kein Gegner
       $("#sdk-you-name").textContent = "Ausgefüllt"; setProgress("you", progressCount());
       show("sdk-game");
     });
@@ -308,7 +308,7 @@
   });
 
 
-  // ── Duell ohne Gleichzeitigkeit ───────────────────────────
+  // --- Duell ohne Gleichzeitigkeit ---
   /*
    * Der Live-Race verlangt zwei Leute im selben Moment. Das passiert hier fast
    * nie, also stand er still. Fuer die Aufgabe selbst ist Gleichzeitigkeit
@@ -357,13 +357,13 @@
       $("#sdk-duell-archiv").innerHTML = archiv.length ? archiv.map((d) => {
         const sieger = d.sieger === "ersteller" ? d.erstellerName : d.sieger === "gegner" ? d.gegnerName : null;
         const kopf = d.ausgang === "abgelaufen"
-          ? `${escapeHtml(d.erstellerName)} — niemand hat angenommen, Einsatz zurück`
+          ? `${escapeHtml(d.erstellerName)}: niemand hat angenommen, Einsatz zurück`
           : sieger ? `<b>${escapeHtml(sieger)}</b> schlägt ${escapeHtml(sieger === d.erstellerName ? d.gegnerName : d.erstellerName)}`
             : `${escapeHtml(d.erstellerName)} und ${escapeHtml(d.gegnerName)} unentschieden`;
         return `<div class="duell-zeile">
           <div class="duell-info">
             <span>${kopf}</span>
-            <small class="muted">${escapeHtml((d.erstellerErgebnis && d.erstellerErgebnis.text) || "—")} · ${escapeHtml((d.gegnerErgebnis && d.gegnerErgebnis.text) || "—")}</small>
+            <small class="muted">${escapeHtml((d.erstellerErgebnis && d.erstellerErgebnis.text) || "-")} · ${escapeHtml((d.gegnerErgebnis && d.gegnerErgebnis.text) || "-")}</small>
           </div>
           ${d.auszahlung ? `<b class="duell-pot">${fmt(d.auszahlung)}<i class=mk></i></b>` : ""}
         </div>`;
@@ -393,7 +393,7 @@
   /*
    * Ein Duell laeuft dreissig Minuten. Auf dem iPad raeumt Safari den Tab in
    * der Zeit regelmaessig weg, und beim Zurueckkommen stand vorher wieder ein
-   * leeres Raetsel da — die halbe Stunde Arbeit war weg, der Einsatz aber
+   * leeres Raetsel da, die halbe Stunde Arbeit war weg, der Einsatz aber
    * bezahlt. Der Zwischenstand liegt deshalb lokal, gebunden an die Kennung
    * des Duells.
    */
@@ -460,8 +460,8 @@
         $("#sdk-result-title").textContent = r.siegerName ? (gewonnen ? "Gewonnen!" : `${r.siegerName} war besser`) : "Unentschieden";
         const e = r.eintrag || {};
         $("#sdk-result-sub").textContent =
-          `${e.erstellerName}: ${(e.erstellerErgebnis || {}).text || "—"} · ${e.gegnerName}: ${(e.gegnerErgebnis || {}).text || "—"}`
-          + (gewonnen ? ` — +${fmt(r.auszahlung)}<i class=mk></i>` : "");
+          `${e.erstellerName}: ${(e.erstellerErgebnis || {}).text || "-"} · ${e.gegnerName}: ${(e.gegnerErgebnis || {}).text || "-"}`
+          + (gewonnen ? `, +${fmt(r.auszahlung)}<i class=mk></i>` : "");
         if (gewonnen) window.Casino.fx.bigWin(r.auszahlung, { label: "Duell gewonnen" });
       }
       ladeDuelle();
@@ -503,7 +503,7 @@
     if (document.querySelector('[data-screen="sudoku"]')?.classList.contains("active")) ladeDuelle();
   });
 
-  // Leaving the game screen (‹ Lobby) mid-race forfeits → opponent wins the pot.
+  // Wer mitten im Rennen den Screen verlässt (‹ Lobby), gibt auf, der Gegner bekommt den Topf.
   const sdkBack = document.querySelector('[data-screen="sudoku"] .back-btn');
   if (sdkBack) sdkBack.addEventListener("click", () => { if (myCode || soloPlaying) leave(); });
 

@@ -1,14 +1,14 @@
 "use strict";
 
 /**
- * Texas Hold'em hand evaluation.
+ * Texas Hold'em: Hände bewerten.
  *
- * evaluateBest7(cards) takes up to 7 cards and returns the best 5-card hand:
+ * evaluateBest7(cards) nimmt bis zu 7 Karten und gibt die beste 5er-Hand zurück:
  *   { value: number[], name: string, cards: card[] }
  *
- * `value` is a comparable array: first element is the category (8 = straight
- * flush ... 0 = high card), followed by tiebreaker ranks (high to low).
- * Compare two hands with compareValue(a, b).
+ * `value` ist ein vergleichbares Array: zuerst die Kategorie (8 = Straight Flush
+ * ... 0 = High Card), danach die Ränge für den Gleichstand (von hoch nach niedrig).
+ * Zwei Hände vergleicht compareValue(a, b).
  */
 
 const { RANK_LABEL } = require("./cards");
@@ -37,7 +37,7 @@ const CATEGORY_NAME = {
   0: "Höchste Karte",
 };
 
-/** Lexicographic compare of two value arrays. >0 if a is better. */
+/** Zwei value-Arrays der Reihe nach vergleichen. >0, wenn a besser ist. */
 function compareValue(a, b) {
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
     const x = a[i] || 0;
@@ -47,16 +47,16 @@ function compareValue(a, b) {
   return 0;
 }
 
-/** Find the high card of a straight from a set of distinct ranks (handles wheel A-2-3-4-5). */
+/** Höchste Karte einer Straße aus einer Menge verschiedener Ränge (auch A-2-3-4-5). */
 function straightHigh(distinctRanksDesc) {
-  // Add Ace as low (1) if present, to detect the wheel.
+  // Ass zusätzlich als 1 dazunehmen, damit A-2-3-4-5 erkannt wird.
   const ranks = distinctRanksDesc.slice();
   if (ranks.includes(14)) ranks.push(1);
   let run = 1;
   for (let i = 1; i < ranks.length; i++) {
     if (ranks[i] === ranks[i - 1] - 1) {
       run++;
-      if (run >= 5) return ranks[i - 4]; // high card of the straight
+      if (run >= 5) return ranks[i - 4]; // höchste Karte der Straße
     } else {
       run = 1;
     }
@@ -72,7 +72,7 @@ function evaluate5(cards) {
   // Count ranks
   const counts = {};
   for (const r of ranks) counts[r] = (counts[r] || 0) + 1;
-  // Groups sorted by (count desc, rank desc)
+  // Gruppen sortiert nach (Anzahl absteigend, Rang absteigend)
   const groups = Object.keys(counts)
     .map(Number)
     .sort((a, b) => counts[b] - counts[a] || b - a);
@@ -94,7 +94,7 @@ function evaluate5(cards) {
   return [CATEGORY.HIGH_CARD, ...ranks];
 }
 
-/** All 5-card combinations of an array. */
+/** Alle 5er-Kombinationen eines Arrays. */
 function combinations5(arr) {
   const res = [];
   const n = arr.length;
@@ -107,7 +107,7 @@ function combinations5(arr) {
   return res;
 }
 
-/** Best 5-card hand from up to 7 cards. */
+/** Beste 5er-Hand aus bis zu 7 Karten. */
 function evaluateBest7(cards) {
   let best = null;
   const combos = cards.length <= 5 ? [cards] : combinations5(cards);

@@ -1,9 +1,9 @@
 "use strict";
 
 /**
- * 🐎 Porta-Rennbahn — geteilte Live-Pferderennen mit Besitz, Training & Wetten.
+ * Porta-Rennbahn: geteilte Live-Pferderennen mit Besitz, Training und Wetten.
  *
- * Rhythmus wie Crash: EIN globales Rennen für alle im festen Takt
+ * Rhythmus wie Crash: ein globales Rennen für alle im festen Takt
  * (Wettfenster → Live-Rennen, server-getickt → Auswertung). Spieler besitzen
  * Pferde (Markt → kaufen → trainieren → anmelden → Preisgeld), NPC-Pferde
  * füllen leere Bahnen, damit immer gewettet werden kann.
@@ -25,7 +25,7 @@ const path = require("path");
 
 const HORSES_FILE = path.join(__dirname, "..", "data", "horses.json");
 
-// ── Balance-Konstanten ───────────────────────────────────────────────────────
+// --- Balance-Konstanten ---
 const FIELD_SIZE = 8;
 const BET_WINDOW_MS = 90_000;   // Wetten offen
 const RESULT_LINGER_MS = 22_000; // Ergebnis-Anzeige, dann nächste Runde
@@ -33,13 +33,13 @@ const TICK_MS = 250;            // Simulationstakt (Broadcast jeden 2. Tick)
 const RACE_TICKS = { 1000: 120, 1600: 168, 2400: 220 }; // Renndauer in Ticks
 
 const MIN_BET = 50;
-const MAX_PER_HORSE = 50_000;   // max. Gesamteinsatz auf EIN Pferd (pro Rennen)
+const MAX_PER_HORSE = 50_000;   // max. Gesamteinsatz auf ein Pferd (pro Rennen)
 const MAX_PER_RACE = 100_000;   // max. Gesamteinsatz über alle Wetten (pro Rennen)
 const WIN_MARGIN = 0.15;        // Hausvorteil Siegwette (Favoriten-Bucket blieb sonst zu heiß)
 const PLACE_MARGIN = 0.15;      // Hausvorteil Platzwette (Top 3)
 const MC_RUNS = 1500;           // Monte-Carlo-Läufe für die Quoten
 
-const DAILY_PRIZES = [300_000, 200_000, 100_000]; // 🐎 Renn-Champion des Tages, feste Grundpreise Platz 1-3
+const DAILY_PRIZES = [300_000, 200_000, 100_000]; // Renn-Champion des Tages, feste Grundpreise Platz 1-3
 const BET_POT_CUT = 0.05;             // 5% jedes Wetteinsatzes wandern in den Tages-Wett-Topf
 const POT_SPLIT = [0.5, 0.3, 0.2];    // Aufteilung des Wett-Topfs auf Platz 1-3
 const ENTRY_FEE = 2_000;        // Startgeld pro Anmeldung
@@ -51,7 +51,7 @@ const MARKET_SIZE = 6;          // Angebote im Markt
 const MARKET_REFRESH_MS = 30 * 60_000;
 const SELL_FACTOR = 0.4;        // Rückverkauf ans Haus
 const TRAIN_PER_DAY = 3;        // Trainingseinheiten pro Pferd pro Tag
-const TRAIN_DURATION_MS = 20 * 60_000; // Training dauert 20 Min — Pferd solange gesperrt
+const TRAIN_DURATION_MS = 20 * 60_000; // Training dauert 20 Min, so lange ist das Pferd gesperrt
 const TRAIN_BASE_COST = 5_000; // teurer als vorher (echter Chip-Sink)
 const RACE_CONDITION_COST = 30; // Kondition pro Rennen
 const CONDITION_REGEN_PER_H = 5;
@@ -62,7 +62,7 @@ const SPRINT_BOOST = 0.09;      // +9% Tempo während des Boosts
 const SPRINT_EARLY_PENALTY = 0.035; // Einbruch danach, wenn zu früh gezündet
 const SPRINT_SAFE_PROGRESS = 0.62;  // ab hier gilt der Sprint als "gut getimt"
 
-// ── Pferde-Store ─────────────────────────────────────────────────────────────
+// --- Pferde-Store ---
 let store = { seq: 1, horses: {}, market: [], marketAt: 0 };
 try {
   const raw = JSON.parse(fs.readFileSync(HORSES_FILE, "utf8"));
@@ -130,7 +130,7 @@ function newHorse(quality) {
 }
 
 function horsePrice(h) {
-  // Preis nach Stärke — Markt-Kauf ist ein reiner Chip-Sink.
+  // Preis nach Stärke, Markt-Kauf ist ein reiner Chip-Sink.
   const power = h.speed + h.stamina + h.potential * 0.5;
   return Math.round(power * power * 2.2 / 100) * 100;
 }
@@ -197,14 +197,14 @@ function publicHorse(h, opts = {}) {
     id: h.id, name: h.name, owner: h.owner || null, npc: !h.owner,
     ownerName: ownerAcc ? ownerAcc.name : (h.owner || null),
     speed: h.speed, stamina: h.stamina, temperament: h.temperament,
-    // Form nur als grobe Tendenz — der genaue Wert bleibt geheim (Wett-Spannung).
+    // Form nur als grobe Tendenz, der genaue Wert bleibt geheim (Wett-Spannung).
     formHint: h.form >= 3 ? "up" : h.form <= -3 ? "down" : "mid",
     condition: Math.round(h.condition),
     races: h.races, wins: h.wins, podiums: h.podiums, earnings: h.earnings,
     career: Math.min(1, h.races / h.careerLimit), retired: !!h.retired,
     event: activeEvent(h) ? { label: h.event.label, hoursLeft: Math.ceil((h.event.until - Date.now()) / 3_600_000), block: !!h.event.block } : null,
     training: h.trainingUntil && h.trainingUntil > Date.now() ? { minsLeft: Math.ceil((h.trainingUntil - Date.now()) / 60_000) } : null,
-    handicap: (h.recentWins || 0) >= 0.9, // 🏋️ trägt gerade Sieger-Zusatzgewicht
+    handicap: (h.recentWins || 0) >= 0.9, // trägt gerade Sieger-Zusatzgewicht
     price: opts.withPrice ? horsePrice(h) : undefined,
     trainsLeft: opts.own ? trainsLeft(h) : undefined,
     potentialHint: opts.own ? (h.speed + 6 < h.potential || h.stamina + 6 < h.potential ? "viel Luft" : "nah am Limit") : undefined,
@@ -216,16 +216,16 @@ function trainsLeft(h) {
   return h.trainedDay === day ? Math.max(0, TRAIN_PER_DAY - h.trainedCount) : TRAIN_PER_DAY;
 }
 
-// ── Zufalls-Events (nur Spieler-Pferde) ──────────────────────────────────────
+// --- Zufalls-Events (nur Spieler-Pferde) ---
 // block = kann nicht antreten, formDelta = Leistung während des Events,
 // condPlus = Sofort-Effekt. Alles zeitlich begrenzt, nichts permanent.
 const HORSE_EVENTS = [
   { id: "preg", label: "🤰 Schwanger!", hours: 20, weight: 5, block: true,
-    msg: (n) => `${n} ist schwanger und pausiert — mal sehen, was daraus wird … 👀` },
+    msg: (n) => `${n} ist schwanger und pausiert. Mal sehen, was daraus wird.` },
   { id: "leg", label: "🦴 Beinbruch", hours: 30, weight: 7, block: true,
-    msg: (n) => `${n} hat sich das Bein gebrochen und fällt aus! Gute Besserung. 🏥` },
+    msg: (n) => `${n} hat sich das Bein gebrochen und fällt aus! Gute Besserung.` },
   { id: "colic", label: "🤢 Möhren-Kolik", hours: 8, weight: 10, block: true,
-    msg: (n) => `${n} hat zu viele Möhren gefressen und liegt flach. 🥕🥕🥕` },
+    msg: (n) => `${n} hat zu viele Möhren gefressen und liegt flach.` },
   { id: "diva", label: "💅 Diva-Phase", hours: 10, weight: 9, block: true,
     msg: (n) => `${n} verweigert den Stall-Ausgang. Diven eben.` },
   { id: "bee", label: "🐝 Wespenstich", hours: 12, weight: 10, formDelta: -3,
@@ -233,9 +233,9 @@ const HORSE_EVENTS = [
   { id: "lovesick", label: "💘 Verliebt", hours: 16, weight: 8, formDelta: -4,
     msg: (n) => `${n} hat sich in ein Kutschpferd verliebt und träumt statt zu galoppieren.` },
   { id: "zoomies", label: "⚡ Zoomies", hours: 12, weight: 9, formDelta: 4,
-    msg: (n) => `${n} hat die Zoomies — rennt wie von der Tarantel gestochen!` },
+    msg: (n) => `${n} hat die Zoomies und rennt wie von der Tarantel gestochen!` },
   { id: "fans", label: "🥕 Fan-Möhren", hours: 0, weight: 10, condPlus: 30,
-    msg: (n) => `Fans haben ${n} mit Möhren verwöhnt — Kondition getankt!` },
+    msg: (n) => `Fans haben ${n} mit Möhren verwöhnt, die Kondition ist wieder oben.` },
 ];
 
 function activeEvent(h) {
@@ -261,7 +261,7 @@ function weightedPickIdx(weights) {
 }
 
 // Abgelaufene Events aufräumen; Schwangerschaft kann ein FOHLEN bringen:
-// schwache Start-Werte, aber hohes Potential — der Zucht-Mini-Loop.
+// schwache Start-Werte, aber hohes Potential, der Zucht-Mini-Loop.
 function sweepEvents() {
   const now = Date.now();
   for (const h of Object.values(store.horses)) {
@@ -276,20 +276,20 @@ function sweepEvents() {
         foal.owner = h.owner;
         foal.name = (h.name.length > 10 ? h.name.slice(0, 10) : h.name) + " Junior";
         foal.potential = 88 + crypto.randomInt(8); // Fohlen: schwach, aber Rohdiamant
-        try { require("./chat").announce(io, `🐣🐎 Nachwuchs! ${h.name} (Stall ${acc ? acc.name : "?"}) hat ein Fohlen: ${foal.name}!`); } catch {}
+        try { require("./chat").announce(io, `Nachwuchs! ${h.name} (Stall ${acc ? acc.name : "?"}) hat ein Fohlen: ${foal.name}!`); } catch {}
       } else {
-        try { require("./feed").add("horses", `🐣 ${h.name} hat ein Fohlen bekommen — aber der Stall${acc ? ` von ${acc.name}` : ""} ist voll. Es hüpft davon. 🌈`); } catch {}
+        try { require("./feed").add("horses", `${h.name} hat ein Fohlen bekommen, aber der Stall${acc ? ` von ${acc.name}` : ""} ist voll. Es hüpft davon.`); } catch {}
       }
     }
   }
   save();
 }
 
-// ── Renn-Modell ──────────────────────────────────────────────────────────────
-// Effektive Stärke eines Pferds für DIESES Rennen (Distanz + Bahn + Form +
-// Alter + Erfolgs-Handicap + Event). Wird von Quoten-MC UND Live-Rennen
-// benutzt — Änderungen hier bleiben dadurch automatisch fair eingepreist.
-// Konditions-Malus (identisch in Live-Rennen UND Quoten-MC — sonst sind die
+// --- Renn-Modell ---
+// Effektive Stärke eines Pferds für dieses Rennen (Distanz + Bahn + Form +
+// Alter + Erfolgs-Handicap + Event). Wird von Quoten-MC und Live-Rennen
+// benutzt, Änderungen hier bleiben dadurch automatisch fair eingepreist.
+// Konditions-Malus (identisch in Live-Rennen und Quoten-MC, sonst sind die
 // Quoten blind für müde Pferde und Wetten auf fitte Pferde werden +EV).
 function condFactor(h) {
   return h.condition < 70 ? 0.985 - (70 - h.condition) * 0.0012 : 1;
@@ -300,7 +300,7 @@ function effective(h, distance, going) {
   let base = h.speed * distT + h.stamina * (1 - distT);
   base *= ageFactor(h);
   base += (h.form || 0) * 1.1;
-  // Erfolgs-Handicap: Sieger tragen Zusatzgewicht (klingt ab) — verhindert,
+  // Erfolgs-Handicap: Sieger tragen Zusatzgewicht (klingt ab), verhindert,
   // dass ein austrainiertes Pferd die Freunde dauerhaft dominiert.
   base -= Math.min(7, (h.recentWins || 0) * 2.4);
   // Aktives Event kann die Leistung drücken/heben (z. B. verliebt/Zoomies).
@@ -309,9 +309,9 @@ function effective(h, distance, going) {
   return base;
 }
 
-// Analytische Zielzeit mit DEMSELBEN Streckenmodell wie der Live-Tick
+// Analytische Zielzeit mit demselben Streckenmodell wie der Live-Tick
 // (Taktik-Segmente, Konditions-Malus, Besitzer-Sprint als gut getimt).
-// Wichtig: Ein reiner Score-Vergleich reicht NICHT — bei "wer zuerst im Ziel
+// Wichtig: Ein reiner Score-Vergleich reicht nicht. Bei "wer zuerst im Ziel
 // ist" nützt eine frontlastige Tempokurve schnellen Pferden systematisch
 // (sie sind durch, bevor die langsame Schlussphase greift); das hatte
 // Selbstwetten auf front+Sprint-Pferde auf ~115% RTP gehoben.
@@ -321,7 +321,7 @@ function finishTime(f, distance, going, noise) {
   if (base <= 0) return 99;
   const tactic = f.tactic || "stayer";
   // Sprint der Besitzer-Pferde: als gut getimt annehmen (t≈0.68). Wer nicht
-  // (oder zu früh) sprintet, bleibt hinter seiner Quote zurück — haus-günstig.
+  // (oder zu früh) sprintet, bleibt hinter seiner Quote zurück, haus-günstig.
   const sprS = f.h.owner ? 0.68 : Infinity;
   const sprE = sprS + SPRINT_TICKS / ticks;
   // Segmentgrenzen: Taktikwechsel (0.35/0.5/0.75/0.8) + Sprintfenster.
@@ -371,7 +371,7 @@ function computeOdds(field, distance, going) {
   });
 }
 
-// ── Renn-Zustand ─────────────────────────────────────────────────────────────
+// --- Renn-Zustand ---
 const race = {
   phase: "betting",        // betting | running | done
   no: 0,
@@ -380,7 +380,7 @@ const race = {
   field: [],               // { lane, h, tactic, sprintAt, sprintUsed, progress, finished, finishTick, silk }
   odds: [],
   bets: [],                // { key, name, lane, type: win|place, amount, odds, paid }
-  entries: [],             // Anmelde-Queue fürs NÄCHSTE Rennen: { horseId, tactic }
+  entries: [],             // Anmelde-Queue fürs nächste Rennen: { horseId, tactic }
   endsAt: 0,
   tick: 0,
   raceTicks: 168,
@@ -401,7 +401,7 @@ function fieldForClient() {
 }
 
 // Tages-Rangliste (Top 3 + Rang je Spieler). Wird gecacht und nur neu berechnet,
-// wenn sich die Siege ändern (nach jedem Rennen) — nicht bei jedem Broadcast.
+// wenn sich die Siege ändern (nach jedem Rennen), nicht bei jedem Broadcast.
 /**
  * Preisanteile bei Gleichstand.
  *
@@ -410,7 +410,7 @@ function fieldForClient() {
  * exakt gleich (durch das Abrunden eher minimal kleiner), es entstehen also
  * keine Chips aus dem Nichts.
  *
- * EIN Helfer fuer beides: die Anzeige im Banner und die echte Auszahlung um
+ * ein Helfer fuer beides: die Anzeige im Banner und die echte Auszahlung um
  * Mitternacht. Zwei Rechnungen waeren zwei Wahrheiten.
  *
  * @param {{name: string, wins: number}[]} sortiert absteigend nach wins
@@ -482,7 +482,7 @@ function stateFor(key) {
   };
 }
 
-// ── Rennschleife ─────────────────────────────────────────────────────────────
+// --- Rennschleife ---
 let io = null;
 let accounts = null;
 
@@ -514,7 +514,7 @@ function checkDailyChamp() {
      * nichts. Jetzt bilden gleiche Siegzahlen eine Gruppe, die Preise der
      * belegten Plaetze werden zusammengelegt und gleichmaessig geteilt.
      *
-     * Die Gesamtausschuettung bleibt dabei EXAKT gleich (durch das Abrunden
+     * Die Gesamtausschuettung bleibt dabei exakt gleich (durch das Abrunden
      * eher minimal kleiner), es entstehen also keine Chips aus dem Nichts.
      */
     // Preise inklusive Wett-Topf, geteilt ueber denselben Helfer wie die Anzeige.
@@ -534,7 +534,7 @@ function checkDailyChamp() {
     const racers = alle;
     store.lastChamp = { name: racers[0].name, wins: racers[0].dailyHorseWins, prize: DAILY_PRIZES[0] + Math.floor(pot * POT_SPLIT[0]) };
     const potNote = pot > 0 ? ` (inkl. Wett-Topf ${pot.toLocaleString("de-DE")} Chips)` : "";
-    try { require("./chat").announce(io, `🐎🏆 RENN-CHAMPION DES TAGES: ${parts.join(" · ")}${potNote}`); } catch {}
+    try { require("./chat").announce(io, `Renn-Champions des Tages: ${parts.join(" · ")}${potNote}`); } catch {}
   } else {
     store.lastChamp = null;
   }
@@ -578,15 +578,15 @@ function startBetting() {
     if (h.retired || (ev && ev.block) || h.condition < ENTER_MIN_CONDITION) {
       if (h.owner) {
         accounts.adjustChips(h.owner, ENTRY_FEE);
-        try { require("./feed").add("horses", `↩️ ${h.name} fällt aus (${ev ? ev.label : "nicht fit"}) und startet nicht — Startgeld zurück.`); } catch {}
+        try { require("./feed").add("horses", `${h.name} fällt aus (${ev ? ev.label : "nicht fit"}) und startet nicht, das Startgeld gibt es zurück.`); } catch {}
       }
       continue;
     }
     seen.add(h.id);
     field.push({ h, tactic: e.tactic });
   }
-  // Klassen-Rennen: NPCs werden nach Stärke passend zum Feld gewählt —
-  // enge Felder = spannendere Rennen UND keine chancenlosen 200:1-Krücken,
+  // Klassen-Rennen: NPCs werden nach Stärke passend zum Feld gewählt,
+  // enge Felder = spannendere Rennen und keine chancenlosen 200:1-Krücken,
   // die von der Quoten-Obergrenze systematisch unterbezahlt würden.
   const power = (h) => h.speed + h.stamina;
   const npcs = npcPool().filter((h) => !seen.has(h.id));
@@ -601,7 +601,7 @@ function startBetting() {
   race.field = field.map((f, lane) => ({
     ...f, lane, silk: lane, progress: 0, finished: false, finishTick: null,
     sprintAt: null, sprintUsed: false,
-    // EIN Tagesleistungs-Wurf pro Rennen — exakt dieselbe Streuung wie im
+    // ein Tagesleistungs-Wurf pro Rennen, exakt dieselbe Streuung wie im
     // Quoten-Monte-Carlo (quickRace). Ohne ihn mittelt sich Pro-Tick-Rauschen
     // über ~170 Ticks weg und Favoriten gewinnen viel öfter, als die Quoten
     // einpreisen (wäre +EV-farmbar; Sim: 115% RTP auf Favoriten).
@@ -614,7 +614,7 @@ function startBetting() {
   setTimeout(startRunning, BET_WINDOW_MS);
 }
 
-// Integrale der Taktik-Kurven — zum Normieren auf EXAKT gleiche Gesamtleistung.
+// Integrale der Taktik-Kurven, zum Normieren auf exakt gleiche Gesamtleistung.
 // Vorher: front ∫=1.00725, closer ∫=0.996 → "front" war strikt +1,1% besser
 // (gratis Edge, den das Quoten-MC nicht kannte).
 const TACTIC_NORM = {
@@ -634,7 +634,7 @@ function startRunning() {
   race.phase = "running";
   race.endsAt = Date.now() + race.raceTicks * TICK_MS + 4000;
   const names = race.field.map((f) => f.h.name).join(", ");
-  say(`🏁 Und sie sind unterwegs! Am Start: ${names}.`);
+  say(`Und sie sind unterwegs! Am Start: ${names}.`);
   io.emit("horses:round", stateFor(null));
 
   const iv = setInterval(() => {
@@ -646,7 +646,7 @@ function startRunning() {
       if (f.finished) continue;
       const eff = effective(f.h, race.distance, race.going) + f.raceNoise;
       let pace = (eff / 68) * tacticPace(f.tactic, t);
-      // Kondition unter 70 kostet spürbar Tempo (müde Pferde) — selbe Formel
+      // Kondition unter 70 kostet spürbar Tempo (müde Pferde), selbe Formel
       // wie im Quoten-MC (condFactor), damit die Quoten das einpreisen.
       pace *= condFactor(f.h);
       // Sprint-Boost + Erschöpfungs-Malus bei zu frühem Zünden.
@@ -655,7 +655,7 @@ function startRunning() {
         if (since >= 0 && since < SPRINT_TICKS) pace *= 1 + SPRINT_BOOST;
         else if (since >= SPRINT_TICKS && f.sprintEarly) pace *= 1 - SPRINT_EARLY_PENALTY;
       }
-      // Kleines Pro-Tick-Zittern — rein fürs Auge, entscheidet nichts.
+      // Kleines Pro-Tick-Zittern, rein fürs Auge, entscheidet nichts.
       pace *= 1 + (crypto.randomInt(2000) / 1000 - 1) * 0.008;
       f.progress += pace / race.raceTicks;
       if (f.progress >= 1 && !f.finished) {
@@ -667,7 +667,7 @@ function startRunning() {
     if (prevLeader != null && newLeader !== prevLeader && race.tick > 8 && !race.field[newLeader].finished) {
       leaderSwap = race.field[newLeader].h.name;
     }
-    if (leaderSwap && race.tick % 6 === 0) say(`💨 ${leaderSwap} übernimmt die Führung!`);
+    if (leaderSwap && race.tick % 6 === 0) say(`${leaderSwap} übernimmt die Führung!`);
     if (race.tick % 2 === 0) io.emit("horses:tick", { tick: race.tick, t: +t.toFixed(3), field: race.field.map((f) => ({ lane: f.lane, p: +f.progress.toFixed(4), fin: !!f.finished, spr: f.sprintAt != null && race.tick - f.sprintAt < SPRINT_TICKS })) });
 
     if (race.field.every((f) => f.finished) || race.tick > race.raceTicks * 1.6) {
@@ -728,8 +728,8 @@ function finishRace() {
   // Verschleiß + Statistik + Erfolgs-Handicap + Events + Rente.
   for (const f of race.field) {
     const h = f.h;
-    // Kondition ist eine SPIELER-Mechanik (Ruhe-Management). NPC-Pferde laufen
-    // rund um die Uhr (~24 Rennen/h auf 14 Pool-Pferde) — mit Verschleiß wären
+    // Kondition ist eine Spieler-Mechanik (Ruhe-Management). NPC-Pferde laufen
+    // rund um die Uhr (~24 Rennen/h auf 14 Pool-Pferde), mit Verschleiß wären
     // sie dauerhaft bei Kondition ~2 und jedes frische Pferd schlüge das Feld
     // weit über seine Quote (live gemessen; Platz-Wetten bis 260% RTP).
     if (h.owner) {
@@ -751,7 +751,7 @@ function finishRace() {
       h.retired = true;
       if (h.owner) {
         const acc = accounts.get(h.owner);
-        require("./chat").announce(io, `🐎👋 ${h.name} (Stall ${acc ? acc.name : h.owner}) geht nach ${h.races} Rennen und ${h.wins} Siegen in Rente!`);
+        require("./chat").announce(io, `${h.name} (Stall ${acc ? acc.name : h.owner}) geht nach ${h.races} Rennen und ${h.wins} Siegen in Rente!`);
       }
     }
   }
@@ -760,9 +760,9 @@ function finishRace() {
 
   const w = order[0];
   const wOdds = race.odds[w.lane] ? race.odds[w.lane].win : 0;
-  say(photo ? `📸 FOTO-FINISH! ${w.h.name} gewinnt um eine Nasenlänge!` : `🏆 ${w.h.name} gewinnt Rennen #${race.no}!`);
+  say(photo ? `Fotofinish! ${w.h.name} gewinnt um eine Nasenlänge!` : `${w.h.name} gewinnt Rennen #${race.no}!`);
   if (wOdds >= 8 && race.bets.some((b) => b.won && b.type === "win")) {
-    require("./chat").announce(io, `🐎💥 Außenseiter-Sieg! ${w.h.name} (Quote ${wOdds.toFixed(1)}) gewinnt auf der Porta-Rennbahn!`);
+    require("./chat").announce(io, `Außenseiter-Sieg! ${w.h.name} (Quote ${wOdds.toFixed(1)}) gewinnt auf der Porta-Rennbahn!`);
   }
   io.emit("horses:round", stateFor(null));
   setTimeout(startBetting, RESULT_LINGER_MS);
@@ -775,7 +775,7 @@ function pushAccount(key, account) {
   }
 }
 
-// ── Socket-API ───────────────────────────────────────────────────────────────
+// --- Socket-API ---
 function setupHorses(_io, _accounts) {
   io = _io;
   accounts = _accounts;
@@ -803,7 +803,7 @@ function setupHorses(_io, _accounts) {
     socket.on("horses:bet", ({ lane, type, amount } = {}, ack) => {
       if (!ack) return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
-      if (race.phase !== "betting") return ack({ ok: false, error: "Wetten sind zu — Rennen läuft." });
+      if (race.phase !== "betting") return ack({ ok: false, error: "Wetten sind zu, das Rennen läuft." });
       lane = Math.floor(Number(lane));
       amount = Math.floor(Number(amount));
       if (!race.field[lane]) return ack({ ok: false, error: "Unbekanntes Pferd." });
@@ -820,7 +820,7 @@ function setupHorses(_io, _accounts) {
       const bet = { key: key(), name: me().name, lane, type, amount, odds: +odds.toFixed(2) };
       race.bets.push(bet);
       // Ein kleiner Teil jedes Einsatzes fließt in den Tages-Wett-Topf (wird beim
-      // Tageswechsel auf die Top-3-Champions verteilt) — finanziert aus dem
+      // Tageswechsel auf die Top-3-Champions verteilt), finanziert aus dem
       // Haus-Rand, kein zusätzlicher Abzug für den Wettenden.
       store.dailyBetPot = (store.dailyBetPot || 0) + Math.floor(amount * BET_POT_CUT);
       io.emit("horses:bets", { bets: race.bets.map((b) => ({ name: b.name, lane: b.lane, type: b.type, amount: b.amount, odds: b.odds })) });
@@ -860,7 +860,7 @@ function setupHorses(_io, _accounts) {
       if (!ack) return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       if (race.phase !== "running") return ack({ ok: false, error: "Kein Rennen im Gange." });
-      // Erstes eigenes Pferd, das noch sprinten KANN — mit 2+ eigenen Pferden
+      // Erstes eigenes Pferd, das noch sprinten kann, mit 2+ eigenen Pferden
       // im Rennen blockierte sonst das bereits gesprintete Pferd alle weiteren.
       const f = race.field.find((x) => x.h.owner === key() && !x.finished && !x.sprintUsed);
       if (!f) {
@@ -870,7 +870,7 @@ function setupHorses(_io, _accounts) {
       f.sprintUsed = true;
       f.sprintAt = race.tick;
       f.sprintEarly = f.progress < SPRINT_SAFE_PROGRESS;
-      say(`⚡ ${f.h.name} zündet den Sprint${f.sprintEarly ? " — sehr früh!" : "!"}`);
+      say(`${f.h.name} zündet den Sprint${f.sprintEarly ? ", sehr früh!" : "!"}`);
       ack({ ok: true, early: f.sprintEarly });
     });
 
@@ -891,7 +891,7 @@ function setupHorses(_io, _accounts) {
       const acc = accounts.get(key());
       // Zaehler fuer das Achievement "Eigenes Pferd".
       if (acc) { acc.horsesOwned = (acc.horsesOwned || 0) + 1; accounts.save(); }
-      try { require("./feed").add("horses", `🐎 ${acc.name} kauft ${h.name} für ${price.toLocaleString("de-DE")} Chips.`, { user: acc.name }); } catch {}
+      try { require("./feed").add("horses", `${acc.name} kauft ${h.name} für ${price.toLocaleString("de-DE")} Chips.`, { user: acc.name }); } catch {}
       ack({ ok: true, account: deduct.account, horse: publicHorse(h, { own: true }) });
     });
 
@@ -900,7 +900,7 @@ function setupHorses(_io, _accounts) {
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const h = store.horses[horseId];
       if (!h || h.owner !== key()) return ack({ ok: false, error: "Nicht dein Pferd." });
-      // Bereinigen: Steuerzeichen raus, Whitespace zusammenfassen, Länge 2–18.
+      // Bereinigen: Steuerzeichen raus, Whitespace zusammenfassen, Länge 2 bis 18.
       const clean = String(name || "").replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 18);
       if (clean.length < 2) return ack({ ok: false, error: "Name braucht mindestens 2 Zeichen." });
       {

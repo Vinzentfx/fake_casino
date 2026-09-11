@@ -1,18 +1,19 @@
 "use strict";
 
 /**
- * Team-Tresorkampf — admin event: everyone online is split into team Rot and
- * team Blau; both teams hammer their own vault. The first team to crack its
- * vault (or the one with more damage when time runs out) splits the pot among
- * its members in proportion to their hits.
+ * Team-Tresorkampf, ein Admin-Event: alle, die online sind, werden auf Rot und
+ * Blau verteilt, beide Teams hauen auf ihren eigenen Tresor ein. Wer seinen
+ * zuerst knackt (oder bei Zeitablauf mehr Schaden gemacht hat), teilt den Topf
+ * unter seinen Leuten auf, je nach Anzahl der Treffer.
  *
- * Vault HP scales with team size so uneven teams stay fair. Latecomers are
- * assigned to the smaller team on their first hit (without changing HP).
+ * Die Lebenspunkte des Tresors wachsen mit der Teamgröße, ungleiche Teams
+ * bleiben also fair. Wer später dazukommt, landet beim ersten Treffer im
+ * kleineren Team (ohne dass sich die Lebenspunkte ändern).
  */
 
 const chat = require("./chat");
 
-const HIT_MAX = 8, HIT_WINDOW = 1000; // ≤8 hits/s per account
+const HIT_MAX = 8, HIT_WINDOW = 1000; // höchstens 8 Treffer pro Sekunde und Konto
 const HP_PER_PLAYER = 180;
 const MIN_HP = 350;
 
@@ -57,19 +58,19 @@ function setupTeamVault(io, accounts) {
   function finish(winner) {
     if (!state) return;
     if (!winner) {
-      // Timeout: more damage (as a fraction of max HP) wins; dead tie splits nothing fancy — red/blue by raw damage, else draw.
+      // Zeit um: mehr Schaden (als Anteil der Lebenspunkte) gewinnt, sonst unentschieden.
       const dmg = (t) => (state.teams[t].max - state.teams[t].hp) / state.teams[t].max;
       if (dmg("red") > dmg("blue")) winner = "red";
       else if (dmg("blue") > dmg("red")) winner = "blue";
     }
     if (!winner) {
-      chat.announce(io, "⚔️ Tresorkampf vorbei — exakt unentschieden, der Pot bleibt im Tresor!");
+      chat.announce(io, "Tresorkampf vorbei, genau unentschieden. Der Topf bleibt im Tresor.");
       io.emit("vault:end", { draw: true });
       cleanup();
       return;
     }
     const results = payout(winner);
-    chat.announce(io, `⚔️ ${LABEL[winner]} gewinnt den Tresorkampf und teilt sich ${state.pot.toLocaleString("de-DE")} Chips!` + (results[0] ? ` MVP: ${results[0].name} (+${results[0].share.toLocaleString("de-DE")})` : ""));
+    chat.announce(io, `${LABEL[winner]} gewinnt den Tresorkampf und teilt sich ${state.pot.toLocaleString("de-DE")} Chips!` + (results[0] ? ` MVP: ${results[0].name} (+${results[0].share.toLocaleString("de-DE")})` : ""));
     io.emit("vault:end", { winner, pot: state.pot, results });
     cleanup();
   }
@@ -81,7 +82,7 @@ function setupTeamVault(io, accounts) {
     const keys = onlineKeys();
     if (keys.length < 2) return { ok: false, error: "Mindestens 2 Spieler müssen online sein." };
 
-    // Shuffle & alternate into two teams.
+    // Mischen und abwechselnd auf zwei Teams verteilen.
     for (let i = keys.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [keys[i], keys[j]] = [keys[j], keys[i]]; }
     const teams = {};
     for (const t of TEAMS) teams[t] = { members: new Set(), hits: {}, hp: 0, max: 0 };
@@ -93,8 +94,8 @@ function setupTeamVault(io, accounts) {
     }
 
     state = { endsAt: Date.now() + seconds * 1000, pot, teams, assign };
-    const prefix = opts.auto ? "ZUFÄLLIGER " : "";
-    chat.announce(io, `⚔️ ${prefix}TEAM-TRESORKAMPF! Rot gegen Blau — wer seinen Tresor zuerst knackt, teilt sich ${pot.toLocaleString("de-DE")} Chips. ${seconds} Sekunden, los!`);
+    const prefix = opts.auto ? "Zufälliger " : "";
+    chat.announce(io, `${prefix}Tresorkampf! Rot gegen Blau, wer seinen Tresor zuerst knackt, teilt sich ${pot.toLocaleString("de-DE")} Chips. ${seconds} Sekunden, los!`);
     io.emit("vault:start", snapshot());
     ticker = setInterval(() => {
       if (!state) return;
@@ -106,7 +107,7 @@ function setupTeamVault(io, accounts) {
 
   function stop() {
     if (!state) return;
-    chat.announce(io, "⚔️ Tresorkampf abgebrochen.");
+    chat.announce(io, "Tresorkampf abgebrochen.");
     io.emit("vault:end", { aborted: true });
     cleanup();
   }
@@ -129,7 +130,7 @@ function setupTeamVault(io, accounts) {
       times.push(now); hitTimes.set(key, times);
 
       let team = state.assign[key];
-      if (!team) { // latecomer → smaller team
+      if (!team) { // Nachzügler ins kleinere Team
         team = state.teams.red.members.size <= state.teams.blue.members.size ? "red" : "blue";
         state.assign[key] = team;
         state.teams[team].members.add(key);
@@ -142,7 +143,7 @@ function setupTeamVault(io, accounts) {
     });
   });
 
-  // `zustand` gibt Restzeit, Topf und beide Mannschaften nach aussen — der Admin-Bildschirm
+  // `zustand` gibt Restzeit, Topf und beide Mannschaften nach aussen, der Admin-Bildschirm
   // zeigt damit einen Countdown statt nur "laeuft".
   return { start, stop, active, zustand: snapshot };
 }

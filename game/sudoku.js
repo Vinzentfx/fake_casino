@@ -1,15 +1,17 @@
 "use strict";
 
 /**
- * Sudoku-Race — real-time PvP. Both players get the SAME puzzle at the same
- * moment and race to fill it in. The first to submit a structurally VALID full
- * solution wins the pot (both buy-ins) minus a rake. If the time limit runs out
- * first, whoever has more correct cells wins; an exact tie refunds both stakes.
+ * Sudoku-Race, live gegeneinander. Beide bekommen im selben Moment dasselbe
+ * Rätsel und füllen um die Wette. Wer zuerst eine GÜLTIGE volle Lösung abgibt,
+ * bekommt den Topf (beide Buy-ins) minus Rake. Läuft vorher die Zeit ab,
+ * gewinnt, wer mehr richtige Felder hat, bei genau gleich vielen gibt es die
+ * Einsätze zurück.
  *
- * PvP only (chips move between players; rake is the sink) → not farmable. The
- * server holds the solution and validates submissions; the client never sees it.
+ * Nur gegeneinander (Chips wandern zwischen den Spielern, der Rake
+ * verschwindet), also nicht farmbar. Die Lösung liegt auf dem Server und prüft
+ * die Abgaben, der Client sieht sie nie.
  *
- * Mirrors memory.js for match/lobby lifecycle. Difficulty = number of givens.
+ * Match und Lobby wie in memory.js. Schwierigkeit = Anzahl vorgegebener Zahlen.
  */
 
 const crypto = require("crypto");
@@ -19,12 +21,12 @@ const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const RAKE = 0.10;
 const MIN_BUYIN = 50;
 const MAX_BUYIN = 1_000_000;
-const TIME_MS = 15 * 60 * 1000; // race time limit → tie-break by correct cells
+const TIME_MS = 15 * 60 * 1000; // Zeitlimit, danach entscheiden die richtigen Felder
 
 const DIFFICULTIES = { easy: 45, medium: 34, hard: 28 }; // givens (clues) shown
 const DEFAULT_DIFF = "medium";
 
-// ── Sudoku generation ──────────────────────────────────────
+// --- Sudoku generation ---
 const rint = (n) => crypto.randomInt(n);
 function shuffled(arr) {
   const a = arr.slice();
@@ -58,14 +60,14 @@ function makePuzzle(diff) {
   }
   return { puzzle, solution };
 }
-/** A grid is a winning solution iff every cell is 1–9, givens are untouched, and
- * every row/column/3×3 box is a permutation of 1–9. */
+/** Ein Raster ist gelöst, wenn jedes Feld 1 bis 9 ist, die Vorgaben unverändert sind
+ * und jede Zeile, Spalte und jeder 3×3-Block jede Zahl genau einmal hat. */
 function isSolved(grid, puzzle) {
   if (!Array.isArray(grid) || grid.length !== 81) return false;
   for (let i = 0; i < 81; i++) {
     const v = grid[i];
     if (!Number.isInteger(v) || v < 1 || v > 9) return false;
-    if (puzzle[i] !== 0 && grid[i] !== puzzle[i]) return false; // givens must remain
+    if (puzzle[i] !== 0 && grid[i] !== puzzle[i]) return false; // Vorgaben bleiben
   }
   const groupsOk = (idxOf) => {
     for (let gI = 0; gI < 9; gI++) {
@@ -75,9 +77,9 @@ function isSolved(grid, puzzle) {
     }
     return true;
   };
-  if (!groupsOk((r, k) => r * 9 + k)) return false;             // rows
-  if (!groupsOk((c, k) => k * 9 + c)) return false;             // cols
-  if (!groupsOk((bx, k) => (3 * ((bx / 3) | 0) + ((k / 3) | 0)) * 9 + (3 * (bx % 3) + (k % 3)))) return false; // boxes
+  if (!groupsOk((r, k) => r * 9 + k)) return false;             // Zeilen
+  if (!groupsOk((c, k) => k * 9 + c)) return false;             // Spalten
+  if (!groupsOk((bx, k) => (3 * ((bx / 3) | 0) + ((k / 3) | 0)) * 9 + (3 * (bx % 3) + (k % 3)))) return false; // Blöcke
   return true;
 }
 function correctCount(grid, solution) {
@@ -143,7 +145,7 @@ function setupSudoku(io, accounts) {
     const host = match.players.get(match.host);
     const label = { easy: "leicht", medium: "mittel", hard: "schwer" }[match.difficulty] || match.difficulty;
     return {
-      code: match.code, game: "sudoku", label: `🔢 Sudoku-Race (${label})`,
+      code: match.code, game: "sudoku", label: `Sudoku-Race (${label})`,
       host: host ? host.name : "?", players: [...match.players.values()].filter((p) => p.socket).length,
       max: 2, buyIn: match.buyIn, joinable: match.state === "waiting" && match.players.size < 2,
     };
@@ -169,9 +171,9 @@ function setupSudoku(io, accounts) {
     else { broadcast(match.code); lobby.changed(); }
   }
 
-  // settle(match) → decide by correct-cell count (timeout).
-  // settle(match, { winner })          → that player won the race (rake applies).
-  // settle(match, { winner, walkover }) → opponent left; winner takes the pot, no rake.
+  // settle(match)                    : Zeit abgelaufen, die richtigen Felder entscheiden.
+  // settle(match, { winner })          : dieser Spieler hat gewonnen (mit Rake).
+  // settle(match, { winner, walkover }) : der Gegner ist weg, ganzer Topf ohne Rake.
   function settle(match, opts = {}) {
     if (match.state === "done") return;
     match.state = "done";
@@ -188,7 +190,7 @@ function setupSudoku(io, accounts) {
 
     let rake = 0, payout = 0;
     if (winner) {
-      rake = walkover ? 0 : Math.floor(match.pot * RAKE); // rake on every real win; walkover takes full pot
+      rake = walkover ? 0 : Math.floor(match.pot * RAKE); // Rake bei jedem echten Sieg, kampflos gibt es den ganzen Topf
       payout = match.pot - rake;
       accounts.adjustChips(winner.id, payout);
       if (!walkover) { try { require("./clans").recordPvpWin(winner.id, "sudoku"); } catch {} }
@@ -227,7 +229,7 @@ function setupSudoku(io, accounts) {
   }
 
   io.on("connection", (socket) => {
-    // ── Solo (no timer, no stake — counts for stats/achievements) ──
+    // --- Solo (ohne Uhr, ohne Einsatz, zählt für Statistik und Achievements) ---
     socket.on("sudoku:soloStart", ({ difficulty = DEFAULT_DIFF } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
@@ -258,7 +260,7 @@ function setupSudoku(io, accounts) {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN)
-        return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
+        return ack && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       if (!DIFFICULTIES[difficulty]) difficulty = DEFAULT_DIFF;
       const a = acc(socket);
       if (!a || a.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
@@ -313,7 +315,7 @@ function setupSudoku(io, accounts) {
       startGame(match);
     });
 
-    // Live grid update: validate for a win, else refresh hidden tie-break score.
+    // Live-Stand: auf Sieg prüfen, sonst die versteckte Punktzahl für den Gleichstand aktualisieren.
     socket.on("sudoku:update", ({ grid } = {}, ack) => {
       const match = currentMatch(socket);
       if (!match || match.state !== "playing") return ack && ack({ ok: false, error: "Kein laufendes Match." });
@@ -325,7 +327,7 @@ function setupSudoku(io, accounts) {
       if (isSolved(g, match.puzzle)) {
         me.finished = true;
         ack && ack({ ok: true, solved: true });
-        settle(match, { winner: me }); // first valid full solution wins the race (rake applies)
+        settle(match, { winner: me }); // die erste gültige volle Lösung gewinnt (mit Rake)
         return;
       }
       ack && ack({ ok: true, progress: me.filled });
@@ -351,7 +353,7 @@ function setupSudoku(io, accounts) {
 }
 
 /**
- * Dasselbe Sudoku als Duell, das NICHT gleichzeitig gespielt werden muss.
+ * Dasselbe Sudoku als Duell, das nicht gleichzeitig gespielt werden muss.
  *
  * Der Race-Modus verlangt, dass zwei Leute im selben Moment da sind. Genau das
  * passiert in dieser Runde fast nie, weshalb er praktisch tot war. Fuer die

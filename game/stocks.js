@@ -1,17 +1,18 @@
 "use strict";
 
 /**
- * Simulated stock market (shared world).
+ * Simulierte Börse, für alle dieselbe.
  *
- * A handful of fictional companies whose prices random-walk every tick, with
- * occasional news shocks and the risk of BANKRUPTCY (price → 0; long holders
- * lose their stake, a fresh company relists in its place).
+ * Eine Handvoll ausgedachter Firmen, deren Kurse sich bei jedem Takt zufällig
+ * bewegen, ab und zu mit Nachrichten-Schocks und dem Risiko einer PLEITE
+ * (Kurs auf 0, wer long ist, verliert seinen Einsatz, und eine neue Firma
+ * rückt nach).
  *
- * Players open LONG or SHORT positions with margin and leverage (day-trading or
- * hold). Equity = margin + direction × (price − entry) × shares; if equity hits
- * 0 the position is LIQUIDATED (margin lost). P&L is created/destroyed against
- * the market (a money source/sink, like the casino games). Persisted to
- * data/stocks.json.
+ * Man eröffnet LONG- oder SHORT-Positionen mit Einschuss und Hebel (Daytrading
+ * oder halten). Wert = Einschuss + Richtung × (Kurs − Einstieg) × Stückzahl.
+ * Fällt der Wert auf 0, wird die Position LIQUIDIERT (Einschuss weg). Gewinn
+ * und Verlust entstehen gegen den Markt, wie bei den Casinospielen. Gespeichert
+ * in data/stocks.json.
  */
 
 const path = require("path");
@@ -69,13 +70,13 @@ function generate() {
   return { stocks, positions: {}, nextId: 1, news: [] };
 }
 
-// ─── Trading helpers ────────────────────────────────────────────────────────
+// --- Trading helpers ---
 function priceOf(sym) {
   const s = market.stocks[sym];
   return s ? s.price : 0;
 }
 
-/** Equity (chips you'd get back) of a position at the current price. */
+/** Wert einer Position zum aktuellen Kurs (was man zurückbekäme). */
 function equity(pos) {
   const price = priceOf(pos.sym);
   const pnl = pos.dir * (price - pos.entry) * pos.shares;
@@ -87,9 +88,9 @@ function pushNews(text) {
   if (market.news.length > 8) market.news.pop();
 }
 
-// ─── Market tick ──────────────────────────────────────────────────────────
-// Returns { liquidated: [{owner, sym, margin}], bankruptcies: [sym] } for the
-// caller to notify players.
+// --- Markttakt ---
+// Gibt { liquidated: [{owner, sym, margin}], bankruptcies: [sym] } zurück,
+// damit der Aufrufer die Spieler benachrichtigen kann.
 function tick() {
   const liquidated = [];
   const bankruptcies = [];
@@ -108,26 +109,26 @@ function tick() {
       pushNews(`${up ? "📈" : "📉"} ${s.name} (${sym}) ${up ? "+" : "−"}${Math.round(mag * 100)} %`);
     }
 
-    // Bankruptcy: crashed far below base, or a rare bolt from the blue.
+    // Pleite: weit unter den Grundwert gefallen, oder einfach Pech aus heiterem Himmel.
     const crashed = s.price < s.basePrice * 0.12;
     if (!s.bankrupt && (crashed || Math.random() < 0.0025)) {
       s.bankrupt = true;
       s.price = 0;
-      pushNews(`💥 ${s.name} (${sym}) hat Insolvenz angemeldet!`);
+      pushNews(`${s.name} (${sym}) ist pleite.`);
       bankruptcies.push(sym);
     }
     s.history.push(Math.round(s.price * 100) / 100);
     if (s.history.length > HISTORY_LEN) s.history.shift();
   }
 
-  // Resolve positions: liquidate on bankruptcy or zero/negative equity.
+  // Positionen auflösen: bei Pleite oder Wert <= 0 liquidieren.
   for (const id of Object.keys(market.positions)) {
     const pos = market.positions[id];
     const s = market.stocks[pos.sym];
     if (!s) { delete market.positions[id]; continue; }
     if (s.bankrupt) {
-      // Short positions profit from a bankruptcy and are auto-closed at the gain;
-      // longs lose their margin.
+      // Shorts verdienen an einer Pleite und werden mit Gewinn geschlossen,
+      // Longs verlieren ihren Einschuss.
       if (pos.dir < 0) liquidated.push({ owner: pos.owner, sym: pos.sym, payout: Math.max(0, pos.margin + pos.margin * pos.lev), margin: pos.margin });
       else liquidated.push({ owner: pos.owner, sym: pos.sym, payout: 0, margin: pos.margin });
       delete market.positions[id];
@@ -139,7 +140,7 @@ function tick() {
     }
   }
 
-  // After a bankruptcy: relist NPC companies fresh; delist player-IPO stocks.
+  // Nach einer Pleite: ausgedachte Firmen neu listen, Börsengänge von Spielern streichen.
   for (const sym of bankruptcies) {
     if (market.stocks[sym] && market.stocks[sym].ipo) delete market.stocks[sym];
     else {
@@ -152,7 +153,7 @@ function tick() {
   return { liquidated, bankruptcies };
 }
 
-// ─── Public views ───────────────────────────────────────────────────────────
+// --- Public views ---
 function publicStocks() {
   return Object.values(market.stocks).map((s) => {
     const prev = s.history.length > 1 ? s.history[s.history.length - 2] : s.price;
@@ -179,21 +180,21 @@ function positionsFor(key) {
     }));
 }
 
-/** Total chip value tied up in a player's open positions (for net worth). */
+/** Wie viele Chips in den offenen Positionen eines Spielers stecken (fürs Vermögen). */
 function portfolioValue(key) {
   let v = 0;
   for (const p of Object.values(market.positions)) if (p.owner === key) v += Math.max(0, equity(p));
   return Math.round(v);
 }
 
-// ─── Mutations ──────────────────────────────────────────────────────────────
+// --- Mutations ---
 function open(key, sym, dir, margin, lev) {
   const s = market.stocks[sym];
   if (!s || s.bankrupt) return { ok: false, error: "Aktie nicht handelbar." };
   margin = Math.floor(Number(margin));
   lev = Math.floor(Number(lev));
   if (!Number.isFinite(margin) || margin < 1000) return { ok: false, error: "Mindest-Einsatz 1.000 Chips." };
-  if (!Number.isFinite(lev) || lev < 1 || lev > MAX_LEVERAGE) return { ok: false, error: `Hebel 1–${MAX_LEVERAGE}.` };
+  if (!Number.isFinite(lev) || lev < 1 || lev > MAX_LEVERAGE) return { ok: false, error: `Hebel zwischen 1 und ${MAX_LEVERAGE}.` };
   dir = dir < 0 ? -1 : 1;
   const shares = (margin * lev) / s.price;
   const id = String(market.nextId++);
@@ -212,7 +213,7 @@ function close(key, id) {
   return { ok: true, payout, margin: pos.margin };
 }
 
-// ─── Socket wiring ────────────────────────────────────────────────────────
+// --- Socket wiring ---
 function setupStocks(io, accounts) {
   function snapshot(key) {
     return { stocks: publicStocks(), positions: positionsFor(key), news: market.news.slice(0, 6), maxLeverage: MAX_LEVERAGE };
@@ -248,12 +249,12 @@ function setupStocks(io, accounts) {
     });
   });
 
-  // Market lives: tick prices, pay out short-bankruptcy windfalls, notify
-  // liquidated players, and push a fresh market to everyone.
+  // Der Markt lebt: Kurse bewegen, Gewinne aus Short-Pleiten auszahlen,
+  // Liquidierte benachrichtigen und allen den neuen Stand schicken.
   setInterval(() => {
     const { liquidated } = tick();
     for (const ev of liquidated) {
-      if (ev.payout > 0) accounts.adjustChips(ev.owner, ev.payout); // short cashed out on a bankruptcy
+      if (ev.payout > 0) accounts.adjustChips(ev.owner, ev.payout); // Short wird bei der Pleite ausgezahlt
     }
     for (const s of io.of("/").sockets.values()) {
       const k = s.data && s.data.account;
@@ -268,7 +269,7 @@ function setupStocks(io, accounts) {
   }, 6000);
 }
 
-/** List a player's company as a tradeable stock. Returns { ok, sym }. */
+/** Firma eines Spielers an die Börse bringen. Gibt { ok, sym } zurück. */
 function ipo(key, name, seedPrice) {
   const base = (name || "CO").replace(/[^A-Za-z]/g, "").toUpperCase();
   let sym = (base.slice(0, 4) || "CO");
@@ -280,7 +281,7 @@ function ipo(key, name, seedPrice) {
     vol: 0.05, drift: 0.0012, history: [price], bankrupt: false,
     ipo: true, founder: key,
   };
-  pushNews(`🚀 ${name} (${sym}) ist an die Börse gegangen!`);
+  pushNews(`${name} (${sym}) ist an die Börse gegangen.`);
   save();
   return { ok: true, sym };
 }

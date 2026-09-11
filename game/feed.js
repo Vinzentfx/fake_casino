@@ -1,10 +1,10 @@
 "use strict";
 
 /**
- * Global live feed for the lobby.
+ * Live-Feed für die Lobby.
  *
- * Ephemeral and compact: it highlights notable moments without replacing chat
- * or revealing admin-only mechanics.
+ * Flüchtig und knapp: zeigt, was gerade passiert, ersetzt aber weder den Chat
+ * noch verrät er, was nur der Admin wissen soll.
  */
 
 const HISTORY = 30;
@@ -25,7 +25,7 @@ function push(type, text, meta = {}) {
   if (items.length > HISTORY) items.length = HISTORY;
   if (_io) _io.emit("feed:update", item);
   /* Derselbe Moment noch einmal auf die Platte, fuer den Tagesbericht. Der
-     Feed haelt nur dreissig Eintraege und ist nach jedem Deploy leer — wer
+     Feed haelt nur dreissig Eintraege und ist nach jedem Deploy leer, wer
      drei Tage weg war, hat sonst nichts zum Nachlesen. */
   try {
     require("./chronik").notiere(CHRONIK_ART[type] || type, text, {

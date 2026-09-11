@@ -1,6 +1,6 @@
 /* ============================================================
-   Fake Casino – Styles
-   Dunkles Casino-Grün + Gold. Responsive & touch-tauglich (iPad).
+   Stylesheet
+   Dunkles Casino-Grün mit Gold. Muss auf dem iPad mit dem Finger gehen.
    ============================================================ */
 
 /* Palette, Radien, Abstände, Schrift und Schatten stehen in tokens.css
@@ -12,7 +12,7 @@
 
 /* Das hidden-Attribut muss staerker sein als jede Layout-Regel.
    Der Browser bringt zwar [hidden] { display: none } mit, aber das steht im
-   Browser-Stylesheet und verliert deshalb gegen JEDE eigene display-Regel.
+   Browser-Stylesheet und verliert deshalb gegen jede eigene display-Regel.
    Konkret: .sheet-item setzt display:grid, damit blieb der Menue-Eintrag
    "Willkommens-Paket" sichtbar, obwohl el.hidden = true gesetzt war. */
 [hidden] { display: none !important; }
@@ -25,12 +25,12 @@ html {
 }
 html, body {
   margin: 0;
-  min-height: 100dvh; /* dvh = dynamic viewport height, respects iOS address bar */
+  min-height: 100dvh; /* dvh rechnet die Adressleiste von iOS mit ein */
   font-family: var(--font);
   color: var(--text);
   -webkit-text-size-adjust: 100%;
 }
-/* Layered casino background; theme classes (.bg-*) swap the palette. */
+/* Hintergrund in Schichten, die .bg-*-Klassen tauschen die Farben. */
 body {
   /* Standard = die Farben des gewählten Themes. Die .bg-*-Klassen der
      Spielautomaten überschreiben sie, solange eine Maschine offen ist. */
@@ -46,7 +46,7 @@ body {
     linear-gradient(165deg, var(--bg1), var(--bg2) 58%, var(--bg3));
   transition: background 0.6s ease;
 }
-/* drifting spotlight + faint pattern */
+/* wandernder Scheinwerfer und ein schwaches Muster */
 body::before {
   content: ""; position: fixed; inset: -12%; z-index: -2; pointer-events: none;
   background:
@@ -55,20 +55,20 @@ body::before {
   animation: bgdrift 18s ease-in-out infinite alternate;
 }
 @keyframes bgdrift { from { transform: translate(-2.5%, -1.5%); } to { transform: translate(2.5%, 1.5%); } }
-/* vignette */
+/* Vignette */
 body::after {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background: radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(0,0,0,0.5) 100%);
 }
 
-/* Per-theme palettes (set on <body> while a slot machine is open) */
+/* Farben je Automat (hängen am <body>, solange ein Slot offen ist) */
 body.bg-classic { --bg1:#48121d; --bg2:#280b12; --bg3:#170509; --bgGlow:rgba(214,58,46,0.42); --bgGlow2:rgba(255,180,120,0.10); }
 body.bg-gems    { --bg1:#0e2c47; --bg2:#081a2e; --bg3:#040f1d; --bgGlow:rgba(74,160,255,0.42); --bgGlow2:rgba(120,220,255,0.10); }
 body.bg-dragon  { --bg1:#43200a; --bg2:#271306; --bg3:#150a03; --bgGlow:rgba(255,140,40,0.40); --bgGlow2:rgba(255,90,30,0.12); }
 body.bg-cosmic  { --bg1:#281259; --bg2:#150b32; --bg3:#090520; --bgGlow:rgba(154,91,255,0.45); --bgGlow2:rgba(90,200,255,0.10); }
 body.bg-algae   { --bg1:#06263c; --bg2:#031522; --bg3:#010912; --bgGlow:rgba(20,180,220,0.46); --bgGlow2:rgba(var(--accent-rgb), 0.10); }
 
-/* Cosmic starfield */
+/* Sternenhimmel */
 body.bg-cosmic::before {
   background:
     radial-gradient(1.5px 1.5px at 20px 30px, #fff, transparent),
@@ -82,15 +82,15 @@ body.bg-cosmic::before {
   animation: bgdrift 26s ease-in-out infinite alternate, twinkle 4s ease-in-out infinite alternate;
 }
 @keyframes twinkle { from { opacity: 0.55; } to { opacity: 1; } }
-/* Der opake Body-Verlauf würde das ::before (z-index -2, malt UNTER
-   Block-Hintergründen) komplett verdecken — fürs Algen-Theme wird der Body
+/* Der opake Body-Verlauf würde das ::before (z-index -2, malt unter
+   Block-Hintergründen) komplett verdecken, fürs Algen-Theme wird der Body
    deshalb durchsichtig und die Unterwasser-Szene übernimmt den Hintergrund. */
 body.bg-algae {
   background:
     radial-gradient(1100px 820px at 50% -12%, rgba(20,180,220,0.16), transparent 62%);
 }
 body.bg-algae::before {
-  /* Nur die (schachbrettfreie) Szene — light-rays/bubbles haben eingebackene
+  /* Nur die (schachbrettfreie) Szene. Light-rays/bubbles haben eingebackene
      Fake-Transparenz und kommen hier nicht mehr rein. */
   background:
     linear-gradient(rgba(2,10,18,0.10), rgba(2,10,18,0.32)),
@@ -101,14 +101,14 @@ body.bg-algae::before {
 }
 @keyframes algaeGlow { from { opacity: 0.86; } to { opacity: 1; } }
 
-/* Book of Rah: gleicher Stacking-Fix — Body durchsichtig, Tempel-Szene im
+/* Book of Rah: gleicher Stacking-Fix: Body durchsichtig, Tempel-Szene im
    ::before, darüber Gold-Strahlen und Staub (echte Alpha-Overlays). */
 body.bg-pharaoh {
   background:
     radial-gradient(1100px 820px at 50% -12%, rgba(255,190,80,0.14), transparent 62%);
 }
 body.bg-pharaoh::before {
-  /* Nur die (schachbrettfreie) Szene — god-rays/dust haben eingebackene
+  /* Nur die (schachbrettfreie) Szene. God-rays/dust haben eingebackene
      Fake-Transparenz, der Gold-Schimmer kommt stattdessen per Gradient. */
   background:
     linear-gradient(rgba(12,6,2,0.10), rgba(12,6,2,0.34)),
@@ -123,8 +123,8 @@ button { font-family: inherit; cursor: pointer; }
 
 /* iOS Safari ignoriert seit iOS 10 user-scalable=no → schnelles Doppel-Tippen
    (z. B. Ball droppen, Heist-Hämmern) löste einen Zoom aus. touch-action:
-   manipulation unterbindet NUR den Doppel-Tipp-Zoom; Scrollen und Pinch-Zoom
-   bleiben erhalten. Global auf ALLES, damit auch tippbare Nicht-Buttons
+   manipulation unterbindet nur den Doppel-Tipp-Zoom; Scrollen und Pinch-Zoom
+   bleiben erhalten. Global auf alles, damit auch tippbare Nicht-Buttons
    (Wett-Zellen, Karten, leere Flächen) betroffen sind. Die Drag-/Pan-Flächen
    (Hebel, Stadtkarte) behalten ihr eigenes touch-action:none dank höherer
    Spezifität und bleiben voll bedienbar. */
@@ -134,7 +134,7 @@ button { font-family: inherit; cursor: pointer; }
 .muted { color: var(--text-dim); }
 .small { font-size: 0.85rem; }
 
-/* ---------------- Top bar ---------------- */
+/* ---------------- Kopfzeile ---------------- */
 .topbar {
   position: sticky;
   top: 0;
@@ -215,7 +215,7 @@ button { font-family: inherit; cursor: pointer; }
   #bonus-btn { padding: 7px 9px; font-size: var(--fs-sm); }
 }
 
-/* ---------------- Screen system ---------------- */
+/* ---------------- Screens ---------------- */
 #app { padding: 16px; max-width: var(--app-max); margin: 0 auto; }
 /* Die Spieltische (Poker-Filz, Roulette-Tableau) sind auf die schmale Spalte
    ausgelegt und bleiben dabei. Die Lobby ist eine Liste und darf im
@@ -228,7 +228,7 @@ button { font-family: inherit; cursor: pointer; }
 .screen.active { display: block; }
 @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-/* ---------------- Login ---------------- */
+/* ---------------- Anmeldung ---------------- */
 .screen[data-screen="login"] { min-height: 80vh; display: none; }
 .screen[data-screen="login"].active { display: flex; align-items: center; justify-content: center; }
 .login-card {
@@ -698,7 +698,7 @@ body.sheet-open { overflow: hidden; }
 .sheet-item b { font-weight: 700; font-size: var(--fs-md); }
 .sheet-item small { color: var(--text-dim); font-size: var(--fs-xs); }
 
-/* ---------------- Placeholder & Panels ---------------- */
+/* ---------------- Platzhalter und Panels ---------------- */
 .placeholder, .panel {
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(var(--accent-rgb), 0.22);
@@ -729,7 +729,7 @@ body.sheet-open { overflow: hidden; }
   margin-bottom: 8px;
 }
 
-/* ---------------- Leaderboard ---------------- */
+/* ---------------- Bestenliste ---------------- */
 .leaderboard { list-style: none; padding: 0; margin: 8px 0 0; counter-reset: rank; }
 .leaderboard li {
   counter-increment: rank;
@@ -749,11 +749,10 @@ body.sheet-open { overflow: hidden; }
   min-width: 1.4em;
 }
 .leaderboard li b { color: var(--gold-strong); }
-/* Player leaderboard supplies its own rank (medals + numbers) in JS, so hide the
-   CSS counter here (the admin list still uses it). */
+/* Die Bestenliste setzt ihre Platzierung (Medaillen, Zahlen) selbst per JS,
+   deshalb hier kein CSS-Zähler. Die Admin-Liste braucht ihn noch. */
 #leaderboard-list li::before { content: none; }
 
-/* ---------------- Profile ---------------- */
 /* ---------------- Profil ---------------- */
 .pf-card {
   display: grid;
@@ -858,7 +857,7 @@ body.sheet-open { overflow: hidden; }
 .btn-secondary:active { transform: translateY(1px); }
 .btn-secondary:disabled { opacity: 0.5; cursor: default; }
 
-/* ---------------- Settings ---------------- */
+/* ---------------- Einstellungen ---------------- */
 .toggle-row {
   display: flex;
   align-items: center;
@@ -1011,7 +1010,7 @@ html.reduce-motion .screen { animation: none; }
   font-weight: 700; font-size: 0.8rem; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
 }
 
-/* Bots config (poker lobby) */
+/* Bots einstellen (Poker-Lobby) */
 .bots-panel { margin-bottom: 14px; }
 .bots-config { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
 .bots-config label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; font-weight: 600; }
@@ -1049,7 +1048,7 @@ html.reduce-motion .screen { animation: none; }
   white-space: nowrap;
   padding: 0;
 }
-/* Ohne Pot bleibt nichts stehen — vorher war dort ein leeres graues Oval. */
+/* Ohne Pot bleibt nichts stehen, vorher war dort ein leeres graues Oval. */
 .pot.has-pot {
   background: rgba(0, 0, 0, 0.42);
   border: 1px solid rgba(var(--accent-rgb), 0.3);
@@ -1075,7 +1074,7 @@ html.reduce-motion .screen { animation: none; }
 }
 .table-banner.show { opacity: 1; }
 
-/* Cards */
+/* Karten */
 .card {
   width: 42px; height: 60px; border-radius: 7px; background: #fff; color: #1a1a1a;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1092,7 +1091,7 @@ html.reduce-motion .screen { animation: none; }
 .card.mini .cr { font-size: 0.8rem; }
 .card.mini .cs { font-size: 0.75rem; }
 
-/* Seats */
+/* Plätze */
 .seat {
   position: absolute; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -1111,7 +1110,7 @@ html.reduce-motion .screen { animation: none; }
   border-radius: var(--r-sm); padding: 5px 8px; min-width: 84px;
 }
 /* Zug-Uhr direkt am Sitz. Vorher lief sie nur als Text im Banner ueber dem
-   Tisch — man schaut aber auf den Sitz, nicht auf das Banner, und merkte
+   Tisch, man schaut aber auf den Sitz, nicht auf das Banner, und merkte
    deshalb erst am Auto-Fold, dass die Zeit weg war. */
 .seat.active-turn .seat-plate::after {
   content: "";
@@ -1153,7 +1152,7 @@ html.reduce-motion .screen { animation: none; }
 }
 .hand-name { font-size: 0.68rem; color: var(--text-dim); }
 
-/* Controls */
+/* Knöpfe */
 .table-controls { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .action-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: flex-start; width: 100%; }
 .action-row > button, .raise-wrap .act-raise {
@@ -1192,7 +1191,7 @@ html.reduce-motion .screen { animation: none; }
    ============================================================ */
 .ph-icon { font-size: 3.4rem; }
 
-/* Machine select */
+/* Automatenauswahl */
 .machine-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 8px; }
 .machine-card {
   display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
@@ -1279,7 +1278,7 @@ html.reduce-motion .screen { animation: none; }
   margin-right: -2px; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.46));
 }
 
-/* Machine view */
+/* Automat */
 .slots-mtopbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .machine-title { font-weight: 800; font-size: 1.15rem; color: var(--gold-strong); }
 .paytable-btn {
@@ -1292,7 +1291,7 @@ html.reduce-motion .screen { animation: none; }
 #slots-machine.theme-dragon { --machine-accent: #ffa53a; --glow: #ff7a18; --metal1:#925115; --metal2:#251004; }
 #slots-machine.theme-cosmic { --machine-accent: #b98cff; --glow: #9a5bff; --metal1:#5930a2; --metal2:#110725; }
 #slots-machine.theme-algae { --machine-accent: #21d7ff; --glow: #19bdf0; --metal1:#0b637c; --metal2:#031521;
-  /* Kein Panel-Verlauf über der Unterwasser-Szene — die generische
+  /* Kein Panel-Verlauf über der Unterwasser-Szene, die generische
      .theme-algae-Regel (für Karten) soll hier nicht durchschlagen. */
   background: none;
 }
@@ -1307,7 +1306,7 @@ html.reduce-motion .screen { animation: none; }
 }
 #slots-machine.theme-algae .reels-window,
 #slots-machine.theme-pharaoh .reels-window {
-  /* box-shadow statt filter:drop-shadow — Filter zwingen iOS, das ganze
+  /* box-shadow statt filter:drop-shadow, Filter zwingen iOS, das ganze
      animierende Walzenfenster jeden Frame offscreen zu rendern (Lag). */
   box-shadow: 0 18px 30px rgba(0,0,0,0.55);
 }
@@ -1319,7 +1318,7 @@ html.reduce-motion .screen { animation: none; }
 #slots-machine.theme-algae .slot-stage > * { position: relative; z-index: 1; }
 #slots-machine.theme-algae .slot-stage::after { content: "ALGEN ABYSS"; z-index: 3; }
 /* Gold-Rahmen als 9-Slice DIREKT auf dem Walzenfenster: Innenkante = Fenster,
-   Ecken unverzerrt, Bänder strecken sich mit — passt bei jeder Größe.
+   Ecken unverzerrt, Bänder strecken sich mit, passt bei jeder Größe.
    Slices = Fensterkanten im Asset (1448×1086: oben 279, seitlich 167, unten 226). */
 #slots-machine.theme-algae .reels-window {
   border: solid transparent;
@@ -1351,7 +1350,7 @@ html.reduce-motion .screen { animation: none; }
   box-shadow: 0 0 18px rgba(33,215,255,0.55), 0 4px 10px rgba(0,0,0,0.5);
 }
 
-/* ── Book of Rah ──────────────────────────────────────────────────────── */
+/* --- Book of Rah --- */
 .theme-pharaoh { background: linear-gradient(160deg, #6b4a12, #241404); }
 .machine-card.theme-pharaoh {
   background:
@@ -1471,7 +1470,7 @@ html.reduce-motion .screen { animation: none; }
   60%{transform:translate(10px,5px) rotate(1deg)} 75%{transform:translate(-7px,4px) rotate(-0.5deg)} 90%{transform:translate(7px,-4px)}
 }
 
-/* Machine body = reel stage + lever side by side */
+/* Gehäuse: Walzen und Hebel nebeneinander */
 .machine-body { display: flex; align-items: center; gap: 10px; }
 .machine-body .slot-stage { flex: 1; margin: 14px 0; }
 
@@ -1496,7 +1495,7 @@ html.reduce-motion .screen { animation: none; }
   pointer-events: none;
   border-radius: 12px;
   /* Ohne mix-blend-mode: Blend-Modes über den rollenden Walzen erzwingen
-     teures Neu-Compositing pro Frame auf iOS — der Alpha-Verlauf wirkt fast
+     teures Neu-Compositing pro Frame auf iOS, der Alpha-Verlauf wirkt fast
      identisch und ist gratis. */
   background:
     linear-gradient(180deg, rgba(255,255,255,0.16), transparent 18%, transparent 72%, rgba(0,0,0,0.22)),
@@ -1532,7 +1531,7 @@ html.reduce-motion .screen { animation: none; }
 .reel.bump { animation: bump 0.22s ease; }
 @keyframes bump { 0%{transform:translateY(-6px)} 55%{transform:translateY(3px)} 100%{transform:none} }
 
-/* Center payline marker */
+/* Gewinnlinie in der Mitte */
 .payline {
   position: absolute; left: -4px; right: -4px;
   pointer-events: none; z-index: 6;
@@ -1647,7 +1646,7 @@ html.reduce-motion .screen { animation: none; }
 .cell.win span { animation: winpulse 0.5s ease infinite alternate; }
 @keyframes winpulse { from { transform: scale(1); } to { transform: scale(1.22); } }
 
-/* Radiating light beams behind a winning symbol. */
+/* Lichtstrahlen hinter einem Gewinnsymbol */
 .cell.win::before {
   content: "";
   position: absolute; left: 50%; top: 50%;
@@ -1664,7 +1663,7 @@ html.reduce-motion .screen { animation: none; }
   animation: rays 4s linear infinite, raysfade 0.5s ease;
   pointer-events: none;
 }
-/* Bright glow halo on the winning cell. */
+/* Heller Schein um das Gewinnfeld */
 .cell.win::after {
   content: "";
   position: absolute; inset: -3px;
@@ -1723,7 +1722,7 @@ html.reduce-motion .screen { animation: none; }
   80%{opacity:1;transform:translate(-50%,-50%) scale(1)}
   100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}
 }
-/* Win tiers — escalate size & colour */
+/* Gewinnstufen: Größe und Farbe steigen mit */
 .slot-banner.t-big { font-size: 2.4rem; color: #ffe08a; }
 .slot-banner.t-mega {
   font-size: 2.9rem;
@@ -1748,7 +1747,7 @@ html.reduce-motion .screen { animation: none; }
   90%{transform:translate(-11px,-6px)}
 }
 
-/* Lever — fixed size, independent of the reel grid */
+/* Hebel: feste Größe, unabhängig vom Walzenraster */
 .lever {
   flex: 0 0 58px; position: relative; height: 210px;
   display: flex; align-items: flex-start; justify-content: center;
@@ -1786,7 +1785,7 @@ html.reduce-motion .screen { animation: none; }
 }
 @keyframes hintbob { 0%,100%{transform:translate(-50%,0);opacity:0.6} 50%{transform:translate(-50%,3px);opacity:1} }
 
-/* Controls */
+/* Knöpfe */
 .slot-controls {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   margin-top: 4px;
@@ -1843,7 +1842,7 @@ html.reduce-motion .screen { animation: none; }
   .spin-hint { order: 3; width: 100%; }
 }
 
-/* Central win celebration (counts up in the middle of the screen) */
+/* Gewinnanzeige in der Mitte, zählt hoch */
 .win-celebration {
   position: fixed; inset: 0; z-index: 180; pointer-events: none;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1852,10 +1851,10 @@ html.reduce-motion .screen { animation: none; }
 .win-celebration.show { opacity: 1; }
 .win-celebration::before {
   content: ""; position: absolute; inset: 0; z-index: -1;
-  /* light focus glow only — reels & win markers stay visible while counting */
+  /* nur ein leichter Fokus-Schein, Walzen und Gewinnmarken bleiben beim Hochzählen sichtbar */
   background: radial-gradient(circle at 50% 46%, rgba(0,0,0,0.34), transparent 46%);
 }
-/* "+amount" flying from a win into the central total */
+/* "+Betrag" fliegt vom Gewinn in die Summe in der Mitte */
 .fly-add {
   position: fixed; z-index: 190; pointer-events: none;
   font-weight: 900; font-size: clamp(1.3rem, 5.5vw, 2.2rem); color: #fff;
@@ -1918,7 +1917,7 @@ html.reduce-motion .screen { animation: none; }
   87%  { opacity: .7;  background: #fff; }
   100% { opacity: 0;   background: #ff2e88; }
 }
-/* Expanding shockwave rings */
+/* Druckwellen-Ringe */
 #shockwave, #shockwave2 {
   position: fixed; left: 50%; top: 44%; width: 24px; height: 24px; border-radius: 50%;
   border: 8px solid var(--accent-strong); z-index: 185; pointer-events: none; opacity: 0;
@@ -1930,7 +1929,7 @@ html.reduce-motion .screen { animation: none; }
   0%   { opacity: 0.9; transform: translate(-50%,-50%) scale(0); border-width: 10px; }
   100% { opacity: 0;   transform: translate(-50%,-50%) scale(38); border-width: 1px; }
 }
-/* Full-screen rainbow pulse */
+/* Regenbogen über den ganzen Bildschirm */
 #screen-rainbow {
   position: fixed; inset: 0; z-index: 173; pointer-events: none; opacity: 0; mix-blend-mode: overlay;
   background: linear-gradient(45deg, #ff004c, #ffb300, #00e676, #00b0ff, #d500f9, #ff004c);
@@ -1939,7 +1938,7 @@ html.reduce-motion .screen { animation: none; }
 #screen-rainbow.go { animation: scrainbow 0.4s linear infinite, scrainbowfade 0.8s ease-in-out infinite alternate; }
 @keyframes scrainbow { to { background-position: 400% 0; } }
 @keyframes scrainbowfade { from { opacity: 0.18; } to { opacity: 0.5; } }
-/* Side light blasts and fake jackpot sirens */
+/* Lichtblitze von der Seite und falsche Jackpot-Sirenen */
 #slot-side-lights {
   position: fixed; inset: 0; z-index: 176; pointer-events: none; opacity: 0;
 }
@@ -2048,7 +2047,7 @@ html.reduce-motion .screen { animation: none; }
 /* Zoom-Punch auf die Bühne */
 .slot-stage.zoompunch { animation: zoompunch 0.42s ease; }
 @keyframes zoompunch { 0%{transform:scale(1)} 28%{transform:scale(1.07)} 100%{transform:scale(1)} }
-/* Satirisches "Glücks"-Popup – rein kosmetisch */
+/* Satirisches "Glücks"-Popup: rein kosmetisch */
 #luck-popup {
   position: fixed; left: 50%; bottom: 92px; z-index: 178; pointer-events: none; opacity: 0;
   background: linear-gradient(135deg, #2a1a4a, #3a2a1a); border: 1px solid var(--gold, var(--accent));
@@ -2063,16 +2062,16 @@ html.reduce-motion .screen { animation: none; }
   85%  { opacity: 1; transform: translateX(-50%) translateY(0); }
   100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
 }
-/* Pop when a cell lights up during the sequential win "trace" */
+/* Feld springt kurz, wenn es beim Nachzeichnen des Gewinns aufleuchtet */
 .cell.trace-pop { animation: tracepop 0.32s ease; }
 @keyframes tracepop { 0%{transform:scale(1)} 35%{transform:scale(1.18)} 100%{transform:scale(1)} }
-/* Combo counter that climbs as more connected wins reveal in sequence */
+/* Kombozähler, steigt mit jedem weiteren verbundenen Gewinn */
 #combo-badge {
   position: fixed; left: 50%; top: 21%; z-index: 196; pointer-events: none; opacity: 0;
   font-weight: 900; font-size: clamp(1.4rem, 6vw, 2.7rem); color: #fff;
   text-shadow: 0 0 16px var(--gold-strong, var(--accent-strong)), 0 2px 6px #000;
   transform: translate(-50%, 0) scale(0.5);
-  transition: opacity 0.35s ease; /* fades out when .go (and its animation) is removed */
+  transition: opacity 0.35s ease; /* blendet aus, sobald .go samt Animation weg ist */
 }
 #combo-badge.go { animation: combopop 0.6s cubic-bezier(0.2,1.7,0.4,1) forwards; }
 @keyframes combopop {
@@ -2080,7 +2079,7 @@ html.reduce-motion .screen { animation: none; }
   30%  { opacity: 1; transform: translate(-50%,0) scale(1.25); }
   100% { opacity: 1; transform: translate(-50%,0) scale(1); }
 }
-/* Rapid screen flicker on EVERY win — the constant-flashing casino-parody drip */
+/* Bei jedem Gewinn flackert der Bildschirm kurz, als Casino-Parodie */
 #win-flash {
   position: fixed; inset: 0; z-index: 174; pointer-events: none; opacity: 0;
   background: radial-gradient(circle at 50% 46%, rgba(255,240,180,0.5), transparent 62%);
@@ -2090,11 +2089,11 @@ html.reduce-motion .screen { animation: none; }
   0%{opacity:0} 12%{opacity:.75} 24%{opacity:0} 38%{opacity:.6}
   52%{opacity:0} 66%{opacity:.45} 80%{opacity:0} 100%{opacity:0}
 }
-/* Quick brightness pop on the reel window with each win */
+/* Walzenfenster blitzt bei jedem Gewinn kurz auf */
 #reels-window.flickwin { animation: reelflick 0.4s steps(1) 1; }
 @keyframes reelflick { 0%{filter:brightness(1)} 20%{filter:brightness(1.6)} 40%{filter:brightness(1)} 60%{filter:brightness(1.4)} 100%{filter:brightness(1)} }
 
-/* Slots auto-roll toggle */
+/* Schalter für Auto-Dreh */
 .auto-roll-btn {
   margin-left: 8px; padding: 3px 9px; border-radius: 999px; cursor: pointer;
   font-size: 0.72rem; font-weight: 800;
@@ -2105,7 +2104,7 @@ html.reduce-motion .screen { animation: none; }
   border-color: var(--good); box-shadow: 0 0 10px rgba(var(--good-rgb), 0.5);
 }
 
-/* Shared city map */
+/* Gemeinsame Stadtkarte */
 .city-wrap { max-width: 640px; margin: 0 auto; padding: 12px; }
 .city-map-box {
   margin: 12px 0; border-radius: 14px; overflow: hidden;
@@ -2115,7 +2114,7 @@ html.reduce-motion .screen { animation: none; }
 }
 #city-map { width: 100%; height: auto; display: block; touch-action: none; min-height: 320px; }
 
-/* Overlay controls on the real-city map. */
+/* Knöpfe über der echten Stadtkarte */
 .city-back-btn {
   position: absolute; top: 10px; left: 10px; z-index: 2;
   background: rgba(0,0,0,0.55); color: var(--accent-strong); border: 1px solid rgba(var(--accent-rgb), 0.4);
@@ -2160,7 +2159,7 @@ html.reduce-motion .screen { animation: none; }
 .cd-prod-head { font-size: 0.85rem; margin-bottom: 8px; font-weight: 800; }
 .cd-prodbtn { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; margin-bottom: 6px; text-align: left; }
 .cd-prodbtn small { font-weight: 600; font-size: 0.68rem; opacity: 0.8; }
-/* Active-buff strip in the topbar */
+/* Aktive Boni in der Kopfzeile */
 .buff-strip { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; justify-content: center; }
 .buff-chip {
   font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 999px; white-space: nowrap;
@@ -2199,7 +2198,7 @@ html.reduce-motion .screen { animation: none; }
 .bank-input-row input { flex: 1; max-width: 60%; padding: 9px 12px; border-radius: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 1rem; }
 .stat-row .neg { color: var(--bad-text); }
 
-/* Börse / stock market */
+/* Börse */
 .stk-news { margin: 8px 0; min-height: 0; }
 .stk-news-item { font-size: 0.78rem; opacity: 0.85; padding: 2px 0; }
 .stk-list { display: flex; flex-direction: column; gap: 6px; }
@@ -2246,7 +2245,7 @@ html.reduce-motion .screen { animation: none; }
 .stk-close { display: flex; flex-direction: column; align-items: center; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.8rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); color: #e8f0ea; }
 .stk-close small { font-size: 0.62rem; opacity: 0.7; }
 
-/* Floating "+N" when clicking the work button */
+/* "+N" beim Klick auf Arbeiten */
 .click-float {
   position: fixed; z-index: 195; pointer-events: none; transform: translate(-50%, 0);
   font-weight: 900; font-size: 1.3rem; color: var(--good); text-shadow: 0 2px 5px rgba(0,0,0,0.6);
@@ -2254,7 +2253,7 @@ html.reduce-motion .screen { animation: none; }
 }
 @keyframes clickfloat { from { opacity: 1; transform: translate(-50%, 0) scale(1); } to { opacity: 0; transform: translate(-50%, -60px) scale(1.3); } }
 
-/* Leaderboard category tabs */
+/* Reiter der Bestenliste */
 .lb-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .lb-tab {
   flex: 1 1 auto; padding: 7px 10px; border-radius: 8px; cursor: pointer;
@@ -2266,7 +2265,7 @@ html.reduce-motion .screen { animation: none; }
   color: #1a1209; border-color: var(--gold-strong, var(--accent-strong));
 }
 
-/* Slots session strip — win/loss streak + recent-spin dots */
+/* Slots-Leiste: Gewinn-/Verlustserie und Punkte für die letzten Drehs */
 .slots-session {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 2px 14px 0; min-height: 18px;
@@ -2282,7 +2281,7 @@ html.reduce-motion .screen { animation: none; }
 .ss-dot.ss-partial { background: var(--accent); }
 .ss-dot.ss-loss { background: rgba(255,255,255,0.14); }
 
-/* Paytable modal */
+/* Gewinntabelle */
 .paytable-modal {
   position: fixed; inset: 0; z-index: 150;
   background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -2355,7 +2354,7 @@ html.reduce-motion .screen { animation: none; }
 .pvp-win-msg { color: var(--good-text); font-weight: 800; font-size: 1.25rem; margin-top: 10px; }
 .pvp-lose-msg { color: var(--bad-text); font-weight: 700; margin-top: 10px; }
 
-/* PvP mode-select grid */
+/* PvP: Modus wählen */
 .pvp-mode-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2383,7 +2382,7 @@ html.reduce-motion .screen { animation: none; }
 .pvp-mode-name { font-weight: 800; font-size: 1.05rem; }
 .pvp-mode-sub { font-size: 0.78rem; color: var(--text-dim); line-height: 1.4; }
 
-/* Bot chip update flash */
+/* Bot-Chips blinken bei Änderung */
 @keyframes pvpChipFlash {
   0%   { color: var(--gold-strong); transform: scale(1); }
   30%  { color: var(--good-text); transform: scale(1.18); }
@@ -2614,14 +2613,14 @@ html.reduce-motion .bj-card { animation: none; }
 }
 .bj-message.show { opacity: 1; }
 
-/* Controls wrapper */
+/* Hülle um die Knöpfe */
 .bj-controls-wrap {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* Action buttons row */
+/* Zeile mit den Aktionen */
 .bj-actions {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
@@ -2643,11 +2642,11 @@ html.reduce-motion .bj-card { animation: none; }
 .bj-btn-double { background: linear-gradient(180deg, var(--gold-strong), var(--gold)); color: var(--accent-ink); }
 .bj-btn-split  { background: linear-gradient(180deg, #5b8cde, #2d5fa8); color: #fff; }
 
-/* Done / play-again row */
+/* Fertig / nochmal */
 .bj-done { text-align: center; }
 .bj-btn-again { width: 100%; }
 
-/* Bet area */
+/* Einsatzbereich */
 .bj-betting { display: flex; flex-direction: column; gap: 10px; }
 .bj-bet-row {
   display: flex;
@@ -2705,10 +2704,10 @@ html.reduce-motion .bj-card { animation: none; }
 }
 
 /* ============================================================
-   Wirtschaft – Arbeiten & Unternehmen
+   Wirtschaft: Arbeiten und Unternehmen
    ============================================================ */
 
-/* ── Arbeiten (Klicker) ── */
+/* --- Arbeiten (Klicker) --- */
 .work-wrap {
   max-width: 480px;
   margin: 0 auto;
@@ -2973,7 +2972,7 @@ html.reduce-motion .bj-card { animation: none; }
   font-weight: 600;
 }
 
-/* Floating "+N" popup on click */
+/* "+N" beim Klicken */
 .clicker-popup {
   position: fixed;
   pointer-events: none;
@@ -2991,7 +2990,7 @@ html.reduce-motion .bj-card { animation: none; }
   100% { opacity: 0; transform: translate(calc(-50% + var(--drift, 0px)), -130%) scale(0.9); }
 }
 
-/* ── Unternehmen ── */
+/* --- Unternehmen --- */
 .biz-wrap {
   max-width: 540px;
   margin: 0 auto;
@@ -3099,7 +3098,7 @@ html.reduce-motion .bj-card { animation: none; }
   box-shadow: 0 6px 28px rgba(0,0,0,0.6);
 }
 
-/* Result banner */
+/* Ergebnis-Banner */
 .rt-result {
   display: flex;
   align-items: center;
@@ -3121,12 +3120,12 @@ html.reduce-motion .bj-card { animation: none; }
 .rt-win  { color: var(--good); }
 .rt-lose { color: #f87171; }
 
-/* Colors for numbers */
+/* Farben der Zahlen */
 .rt-hist-red   { background: #b52e2e; color: #fff; }
 .rt-hist-black { background: #181818; color: #fff; }
 .rt-hist-green { background: #1a8c3c; color: #fff; }
 
-/* History row */
+/* Verlauf */
 .rt-history-row {
   display: flex; align-items: center; gap: 6px;
   margin-bottom: 8px; overflow-x: auto;
@@ -3138,7 +3137,7 @@ html.reduce-motion .bj-card { animation: none; }
   font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
 }
 
-/* Hot/Cold board — satirical nod to the gambler's fallacy */
+/* Heiß/Kalt-Tafel, ein Seitenhieb auf den Spielerfehlschluss */
 .rt-hotcold {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
   margin-bottom: 10px; padding: 8px 12px;
@@ -3152,7 +3151,7 @@ html.reduce-motion .bj-card { animation: none; }
 .rt-hc-nums { display: flex; gap: 4px; }
 .rt-hc-note { flex-basis: 100%; font-size: 0.66rem; opacity: 0.55; font-style: italic; }
 
-/* Placed bets strip */
+/* Gesetzte Wetten */
 .rt-placed-bets {
   min-height: 34px;
   display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
@@ -3307,7 +3306,7 @@ html.reduce-motion .bj-card { animation: none; }
     0 8px 18px rgba(0, 0, 0, 0.55);
 }
 
-/* ===================== Floating chat dock (bottom-left) ===================== */
+/* ===================== Chat-Dock (unten links) ===================== */
 .chat-dock {
   position: fixed;
   left: max(12px, env(safe-area-inset-left));
@@ -3318,11 +3317,11 @@ html.reduce-motion .bj-card { animation: none; }
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  pointer-events: none; /* container never blocks the screen behind it */
+  pointer-events: none; /* die Hülle blockiert nie, was dahinter liegt */
 }
 .chat-dock.hidden { display: none; }
 
-/* Message log — faded & click-through by default; revealed on .show. */
+/* Nachrichtenverlauf: blass und durchklickbar, erst mit .show richtig sichtbar */
 .chat-dock .chat-log {
   width: 100%;
   max-height: 34vh;
@@ -3358,7 +3357,7 @@ html.reduce-motion .bj-card { animation: none; }
 .chat-row .chat-text { color: var(--text); word-break: break-word; }
 .chat-empty { align-self: flex-start; background: rgba(0, 0, 0, 0.5); border-radius: 12px; padding: 8px 12px; }
 
-/* Input row — only visible when the dock is open. */
+/* Eingabezeile, nur bei offenem Dock sichtbar */
 .chat-dock .chat-input { width: 100%; display: none; gap: 6px; pointer-events: auto; }
 .chat-dock.open .chat-input { display: flex; }
 .chat-input input {
@@ -3381,7 +3380,7 @@ html.reduce-motion .bj-card { animation: none; }
   color: #2a1d05; font-size: 1rem; font-weight: 700; cursor: pointer;
 }
 
-/* Always-tappable bubble. */
+/* Die Blase ist immer antippbar. */
 .chat-fab {
   pointer-events: auto;
   width: 48px; height: 48px;
@@ -3395,7 +3394,7 @@ html.reduce-motion .bj-card { animation: none; }
 }
 .chat-room-tag { position: absolute; top: 3px; right: 7px; color: var(--gold-strong); font-size: 0.7rem; }
 
-/* ===================== Open-lobby browser (home screen) ===================== */
+/* ===================== Offene Lobbys (Startseite) ===================== */
 .open-lobbies-head { display: flex; align-items: center; justify-content: space-between; }
 .open-lobbies-head .section-title { margin-bottom: 6px; }
 #lobby-refresh { font-size: 1.1rem; line-height: 1; }
@@ -3411,7 +3410,7 @@ html.reduce-motion .bj-card { animation: none; }
 .lobby-card-title { font-weight: 600; color: var(--text); }
 .lobby-join { flex: 0 0 auto; padding: 10px 18px; }
 
-/* ===================== Blackjack lobby panel ===================== */
+/* ===================== Blackjack-Lobby ===================== */
 .bj-top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .bj-lobby-panel {
   background: rgba(0, 0, 0, 0.28);
@@ -3429,40 +3428,40 @@ html.reduce-motion .bj-card { animation: none; }
 .bj-lobby-panel .pos { color: var(--good-text); }
 .bj-lobby-panel .neg { color: var(--bad-text); }
 
-/* ===================== Roulette lobby panel ===================== */
+/* ===================== Roulette-Lobby ===================== */
 .rt-lobby-bets-head { margin-top: 2px; }
 .rt-lobby-bets { display: flex; flex-wrap: wrap; gap: 6px; }
 .rt-lobby-bets .rt-bet-tag { font-size: 0.78rem; }
 
-/* ===================== City location-factor tags ===================== */
+/* ===================== Standortfaktoren in der Stadt ===================== */
 .cd-boost { display: inline-block; margin-left: 6px; font-size: 0.72rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; }
 .cd-boost.hot  { background: rgba(255, 138, 60, 0.22); color: #ffb074; }
 .cd-boost.cold { background: rgba(120, 160, 200, 0.18); color: #a9c2d6; }
 .cd-build { position: relative; }
-/* Buff label pill inside a build button (default, when no hot/cold variant). */
+/* Bonus-Schild im Bauen-Knopf (Standard, wenn weder heiß noch kalt) */
 .cd-build .cd-boost { display: block; margin: 4px 0 0; white-space: normal; line-height: 1.2;
   background: rgba(var(--info-rgb), 0.16); color: var(--info-text); }
 
-/* Active-buffs panel on the city screen. */
+/* Aktive Boni im Stadt-Screen */
 .biz-buffs { display: flex; flex-wrap: wrap; gap: 8px; }
 .buff-chip { display: inline-block; font-size: 0.78rem; font-weight: 700; padding: 4px 10px;
   border-radius: 999px; background: rgba(var(--info-rgb), 0.14); color: var(--info-text);
   border: 1px solid rgba(var(--info-rgb), 0.3); }
 
-/* Info block (address, type, size) at the top of the building detail. */
+/* Adresse, Art und Größe oben im Gebäude */
 .cd-info {
   margin: 6px 0 10px; padding: 9px 11px; border-radius: 10px;
   background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
 }
 .cd-info .cd-row { margin: 2px 0; }
 
-/* "what owning this gives you" row in the lot detail. */
+/* Zeile "was dir das bringt" im Grundstück */
 .cd-buff { margin-top: 6px; padding: 6px 9px; border-radius: 9px; font-size: 0.82rem;
   background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); }
 .cd-buff.on { background: rgba(var(--good-rgb), 0.12); border-color: rgba(var(--good-rgb), 0.35); }
 .cd-buff .pos { color: var(--good); font-weight: 800; }
 
-/* Street-monopoly progress row + trophy tag + news feed. */
+/* Straßen-Monopol: Fortschritt, Pokal, Meldungen */
 .cd-street { margin-top: 6px; padding: 6px 9px; border-radius: 9px; font-size: 0.82rem;
   background: rgba(var(--accent-rgb), 0.08); border: 1px solid rgba(var(--accent-rgb), 0.25); }
 .cd-trophy-tag { font-size: 0.62rem; font-weight: 900; letter-spacing: 0.08em; vertical-align: middle;
@@ -3471,7 +3470,7 @@ html.reduce-motion .bj-card { animation: none; }
 .news-up { color: var(--good-text); }
 .news-down { color: #e89a9a; }
 
-/* Achievements grid (profile). */
+/* Achievements im Profil */
 .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; }
 .badge-grid > p { grid-column: 1 / -1; }
 .badge {
@@ -3550,7 +3549,7 @@ html.reduce-motion .bj-card { animation: none; }
   background: rgba(var(--accent-rgb), 0.12); border: 1px solid rgba(var(--accent-rgb), 0.28);
 }
 
-/* Quest board (Aufträge). */
+/* Aufträge */
 .quest { padding: 10px 12px; border-radius: 12px; margin-bottom: 8px;
   background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
 .quest.done { opacity: 0.6; border-color: rgba(var(--good-rgb), 0.4); }
@@ -3615,7 +3614,7 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .clan-war-actions button { flex: 1; }
 .clan-war-btn { color: var(--bad-text) !important; }
 
-/* Casino-Heist overlay. */
+/* Heist */
 .heist-overlay { position: fixed; inset: 0; z-index: 210; display: flex; align-items: center; justify-content: center;
   background: rgba(10,4,4,0.82); backdrop-filter: blur(4px); padding: 16px; }
 .heist-overlay.hidden { display: none; }
@@ -3662,7 +3661,7 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 @keyframes evPillPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 .ev-pill.hidden { display: none; }
 
-/* Chip-Regen: click-through layer, only the chips catch taps. */
+/* Chip-Regen: die Ebene lässt Klicks durch, nur die Chips fangen sie */
 #rain-layer { position: fixed; inset: 0; z-index: 205; pointer-events: none; overflow: hidden; }
 #rain-hud { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 206;
   background: rgba(10, 24, 18, 0.85); border: 1px solid rgba(255, 214, 110, 0.5); border-radius: 999px;
@@ -3717,7 +3716,7 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .vault-hit:active { transform: translateY(4px); box-shadow: 0 2px 0 #3c414d; }
 
 /* Glücksrad. */
-/* ── Glücksrad ─────────────────────────────────────────────────────────── */
+/* --- Glücksrad --- */
 .gr-tafel { max-width: 460px; }
 .gr-intro, .gr-bremse { margin: 0 auto 4px; max-width: 34ch; }
 
@@ -3731,7 +3730,7 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .gr-strich { stroke: rgba(0, 0, 0, 0.45); stroke-width: 1; }
 .gr-stift { fill: var(--accent-ink); opacity: 0.75; }
 
-/* Die Farbe sagt, was ein Feld wert ist — vier Stufen statt acht Zufallstoene. */
+/* Die Farbe sagt, was ein Feld wert ist: vier Stufen statt acht Zufallstoene. */
 .gr-grund { fill: var(--surface-solid); }
 .gr-feld { transition: filter 0.25s ease; }
 /* Zwei Familien, damit man ohne Lesen sieht, was ein Feld ist: Gold bedeutet
@@ -3744,7 +3743,7 @@ html.reduce-motion .hero-btn-bonus.ready { animation: none; }
 .gr-treffer { filter: brightness(1.4) saturate(1.15); }
 
 .gr-schrift { font-size: 13px; font-weight: 800; fill: var(--text); letter-spacing: 0.02em; }
-/* Nur das Fortuna-Feld ist voll gold — nur dort ist dunkle Schrift lesbar. */
+/* Nur das Fortuna-Feld ist voll gold, nur dort ist dunkle Schrift lesbar. */
 .gr-schrift-fortuna { fill: var(--accent-ink); font-size: 10px; letter-spacing: 0.1em; }
 .gr-schrift-sonder { fill: var(--info-text); }
 .gr-schrift-lang { font-size: 10px; }
@@ -3812,7 +3811,7 @@ html:not(.reduce-motion) .fo-rad { animation: pl-spin 9s linear infinite; }
 .level-fill { height: 100%; border-radius: 999px; transition: width 0.5s; }
 .lb-level { font-size: 0.7rem; font-weight: 800; opacity: 0.7; }
 
-/* Update / changelog modal. */
+/* Update-Fenster */
 .update-modal { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); padding: 16px; }
 .update-modal.hidden { display: none; }
@@ -4342,7 +4341,7 @@ html.reduce-motion .mt-flip { transition: none; }
 .mem-pot { text-align: center; margin-bottom: 8px; }
 .mem-grid { display: grid; gap: 8px; margin: 8px 0; }
 /* Memory: echte Karten mit Rückseite und Umdrehen. Vorher ein leeres Viereck,
-   in dem beim Antippen ein Emoji erschien — bei einem Spiel, dessen ganzer
+   in dem beim Antippen ein Emoji erschien, bei einem Spiel, dessen ganzer
    Vorgang das Umdrehen ist. */
 .mem-card {
   aspect-ratio: 1;
@@ -4613,7 +4612,7 @@ html.reduce-motion .mem-flip { transition: none; }
 .crash-prow { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.04); font-size: 0.9rem; }
 .crash-prow .pos { color: var(--good); } .crash-prow .neg { color: var(--bad-text); }
 
-/* Login calendar. */
+/* Login-Kalender */
 .calendar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
 .cal-day { padding: 12px 6px; border-radius: 12px; text-align: center;
   background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
@@ -4624,7 +4623,7 @@ html.reduce-motion .mem-flip { transition: none; }
 .cal-mark { font-size: 1.1rem; color: var(--good); min-height: 1.2em; }
 .cal-day.next .cal-mark { color: var(--accent-strong); }
 
-/* Live-Ops banner (lobby) + slot-of-the-day badge. */
+/* Live-Ops-Banner in der Lobby und Slot des Tages */
 .liveops-banner { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .liveops-banner.hidden { display: none; }
 .lo-chip { padding: 8px 14px; border-radius: 999px; font-weight: 800; font-size: 0.85rem; }
@@ -4633,16 +4632,16 @@ html.reduce-motion .mem-flip { transition: none; }
 .machine-card.sotd { box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.55), 0 0 18px rgba(var(--accent-rgb), 0.3); position: relative; }
 .mc-sotd { font-size: 0.7rem; font-weight: 800; color: var(--accent-strong); margin-bottom: 4px; }
 
-/* Shared progressive jackpot (slots lobby). */
+/* Gemeinsamer Jackpot (Slots-Lobby) */
 .jackpot-line { margin: 6px 0 0; font-size: 0.95rem; color: #ffd700; }
 .jackpot-line b { font-size: 1.05rem; }
 
-/* Leaderboard: chosen achievement emoji + clickable rows. */
+/* Bestenliste: gewähltes Achievement und anklickbare Zeilen */
 .lb-badge { font-size: 1rem; }
 .lb-clickable { cursor: pointer; }
 .lb-clickable:hover { background: rgba(255,255,255,0.06); border-radius: 8px; }
 
-/* "Meine Immobilien" list inside the empire panel. */
+/* "Meine Immobilien" im Imperium */
 .empire-list { width: 100%; margin-top: 8px; }
 .empire-list summary { cursor: pointer; font-weight: 800; font-size: 0.85rem; opacity: 0.85; }
 .empire-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 8px; max-height: 220px; overflow-y: auto; }
@@ -4742,23 +4741,23 @@ html.reduce-motion .mem-flip { transition: none; }
 .sb-match .pos { color: var(--good-text); }
 .sb-match .neg { color: var(--bad-text); }
 
-/* Real-fixture badge in sportsbook */
+/* Marke für echte Spiele */
 .sb-real { display: inline-block; margin-left: 6px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 999px; background: rgba(var(--good-rgb), 0.18); color: var(--good-text); vertical-align: middle; }
 .sb-real-match { border-color: rgba(var(--good-rgb), 0.35); }
 
-/* Sportsbook free amount entry */
+/* Freier Betrag im Wettschein */
 .sb-amount-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .sb-amount { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.3); color: var(--text); font-size: 1rem; }
 .sb-amount:focus { outline: 2px solid var(--gold); }
 
-/* Sportsbook section headers (real WC vs simulated) */
+/* Überschriften: echte WM-Spiele und simulierte */
 .sb-section-head { margin: 14px 2px 8px; font-weight: 700; color: var(--gold-strong); font-size: 1rem; }
 .sb-section-head:first-child { margin-top: 0; }
 
 .sb-pending { color: #d9c463; font-weight: 600; }
 
-/* ===================== Sportwetten bet slip + combos ===================== */
-/* Der Wettschein bleibt beim Scrollen stehen — aber UNTER der Topbar, nicht
+/* ===================== Sportwetten: Wettschein und Kombis ===================== */
+/* Der Wettschein bleibt beim Scrollen stehen, aber unter der Topbar, nicht
    darunter durchrutschend. Vorher klebte er bei top:8px und verschwand halb
    hinter der Leiste. Die Farben kamen aus einem fest verdrahteten Gruen und
    sahen in den anderen beiden Themes falsch aus. */
@@ -4791,7 +4790,7 @@ html.reduce-motion .mem-flip { transition: none; }
 .sb-combo .pos, .sb-combos .pos { color: var(--good-text); }
 .sb-combo .neg, .sb-combos .neg { color: var(--bad-text); }
 
-/* ===================== Slots: blue lightning + shockwave ===================== */
+/* ===================== Slots: blauer Blitz und Druckwelle ===================== */
 #slot-bolts { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 62; overflow: visible; }
 #slot-zap-flash { position: fixed; inset: 0; pointer-events: none; z-index: 61; opacity: 0; background: radial-gradient(circle at 50% 45%, rgba(90,180,255,0.30), transparent 62%); }
 #slot-zap-flash.go { animation: zapflash 0.34s ease-out; }
@@ -4804,14 +4803,14 @@ html.reduce-motion .mem-flip { transition: none; }
 }
 @keyframes slotShock { 0% { transform: scale(0.3); opacity: 0.95; } 100% { transform: scale(7.5); opacity: 0; } }
 
-/* Slots: auto-spin count selector */
+/* Slots: Anzahl Auto-Drehs */
 .auto-count-sel { background: rgba(0,0,0,0.35); color: var(--text); border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 4px 6px; font-size: 0.8rem; }
 
-/* Stats screen accent colors */
+/* Farben im Statistik-Screen */
 #stats-overview .pos, #stats-by-game .pos { color: var(--good-text); }
 #stats-overview .neg, #stats-by-game .neg { color: var(--bad-text); }
 
-/* Blackjack lobby: live hands (scoped so roulette roster keeps its row) */
+/* Blackjack-Lobby: laufende Hände (eingegrenzt, damit die Roulette-Liste ihre Zeile behält) */
 #bj-lobby-players .bj-lp { flex-direction: column; align-items: stretch; gap: 4px; }
 .bj-lp-top { display: flex; align-items: center; justify-content: space-between; }
 .bj-lp-dealer { margin-top: 2px; }
@@ -4819,20 +4818,20 @@ html.reduce-motion .mem-flip { transition: none; }
 .bj-mini { display: inline-block; background: #f5f5f5; color: #111; border-radius: 4px; padding: 0 4px; margin: 0 1px; font-weight: 700; font-size: 0.78rem; }
 .bj-mini.red { color: var(--card-red); }
 
-/* Sportsbook cash-out button */
+/* Auszahlen-Knopf bei Sportwetten */
 .sb-cashout { margin-left: 6px; padding: 2px 8px; border-radius: 8px; border: 1px solid var(--gold); background: rgba(var(--accent-rgb), 0.14); color: var(--gold-strong); font-size: 0.72rem; font-weight: 700; cursor: pointer; }
 
-/* Admin: per-account leaderboard reset */
+/* Admin: Bestenliste für ein Konto zurücksetzen */
 .admin-acc { display: block; }
 .admin-acc-top { display: flex; align-items: center; justify-content: space-between; }
 .admin-acc-lb { margin-top: 4px; font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .admin-acc-lb .chip-btn { padding: 2px 6px; font-size: 0.72rem; }
 
-/* Poker turn-timer countdown */
+/* Countdown für den Zug beim Poker */
 .pk-timer { color: var(--gold-strong); font-weight: 700; margin-left: 6px; }
 .pk-timer.low { color: #ff7a7a; }
 
-/* ===================== 🐎 Rennbahn ===================== */
+/* ===================== Rennbahn ===================== */
 .horses-wrap { max-width: 760px; margin: 0 auto; }
 .horses-tabs { display: flex; gap: 8px; margin: 10px 0; }
 .horses-tab {
@@ -4931,7 +4930,7 @@ html.reduce-motion .mem-flip { transition: none; }
   background: rgba(var(--accent-rgb), 0.12); border: 1px solid rgba(var(--accent-rgb), 0.35); color: var(--gold-strong);
 }
 
-/* ── Rennbahn: Champion-Banner, Wettschein & schönere Karten ── */
+/* --- Rennbahn: Champion-Banner, Wettschein & schönere Karten --- */
 .champ-banner {
   margin: 6px 0 12px; padding: 10px 12px; border-radius: 14px;
   background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.03));
@@ -4943,7 +4942,7 @@ html.reduce-motion .mem-flip { transition: none; }
    Praefix chb- statt cb-: cb- gehoert der Besitzliste in der Stadt
    (.city-board weiter unten). Beide hatten .cb-row und .cb-name, die
    spaetere Regel gewann, und ihr Raster gab dem Namen eine 10px breite
-   Spalte — im Banner stand dann nur noch "V" statt "Vincent". */
+   Spalte. Im Banner stand dann nur noch "V" statt "Vincent". */
 .chb-list { display: flex; flex-direction: column; gap: 3px; }
 .chb-row {
   display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px;
@@ -5035,7 +5034,7 @@ html.reduce-motion .mem-flip { transition: none; }
 .horse-card { transition: border-color 0.15s; }
 .horse-card:hover { border-color: rgba(var(--accent-rgb), 0.28); }
 
-/* ===================== 🗼 Towers ===================== */
+/* ===================== Towers ===================== */
 .towers-wrap { max-width: 520px; margin: 0 auto; }
 .towers-board {
   position: relative;
@@ -5047,7 +5046,7 @@ html.reduce-motion .mem-flip { transition: none; }
   border: 1px solid #4a3f68; border-top: none;
   box-shadow: inset 0 0 46px rgba(0, 0, 0, 0.55), 0 8px 26px rgba(0, 0, 0, 0.4);
 }
-/* Zinnen oben — der Turm ist eine Burg. */
+/* Zinnen oben, der Turm ist eine Burg. */
 .towers-board::before {
   content: ""; position: absolute; top: -11px; left: -1px; right: -1px; height: 12px;
   background: repeating-linear-gradient(90deg, #4a3f68 0 20px, transparent 20px 34px);
@@ -5289,7 +5288,7 @@ html.reduce-motion .tw-flip { transition: none; }
 .online-player.last-player { opacity: 0.72; }
 
 /* ============================================================
-   "Wem gehört Porta" — Besitzliste in der Stadt
+   "Wem gehört Porta": Besitzliste in der Stadt
    Zeilen statt Karten: auf dem iPad soll eine Freundesrunde von
    sechs bis acht Leuten ohne Scrollen komplett zu sehen sein.
    ============================================================ */
@@ -5361,9 +5360,9 @@ html.reduce-motion .tw-flip { transition: none; }
    Alle Stile faerben den Text ueber einen Verlauf mit
    background-clip. Safari braucht dafuer zwingend
    -webkit-text-fill-color: transparent, sonst bleibt der Name
-   einfarbig — und auf dem iPad ist Safari der Normalfall.
+   einfarbig, und auf dem iPad ist Safari der Normalfall.
 
-   Jede Bewegung steht in EINER Regel am Ende, hinter
+   Jede Bewegung steht in einer Regel am Ende, hinter
    html:not(.reduce-motion). Wer in den Einstellungen Bewegung
    reduziert hat, sieht dieselben Farben, nur still.
    ============================================================ */
@@ -5413,11 +5412,11 @@ html.reduce-motion .tw-flip { transition: none; }
 .hat-rahmen,
 .pl-ava[class*="fr-"] {
   border-radius: 50%;
-  /* Die Farbe kommt ueber eine eigene Variable, NICHT ueber border-color.
+  /* Die Farbe kommt ueber eine eigene Variable, nicht ueber border-color.
      Vorher stand hier `border: 2px solid transparent`, und diese Regel hat
      zwei Treffer (Klasse + Attribut), `.fr-gold` nur einen. Damit hat das
      transparente Grundgeruest jedes einfarbige `border-color` ueberstimmt:
-     Silber und Gold waren gekauft, angelegt — und unsichtbar. Aufgefallen ist
+     Silber und Gold waren gekauft, angelegt und unsichtbar. Aufgefallen ist
      es nicht, weil Neon zusaetzlich leuchtet und die bewegten Rahmen ihren
      Ring als eigene Ebene malen. */
   border: 2px solid var(--rahmen-farbe, transparent);
@@ -5433,7 +5432,7 @@ html.reduce-motion .tw-flip { transition: none; }
 .fr-neon   { --rahmen-farbe: #22d3ee; box-shadow: 0 0 6px rgba(34, 211, 238, 0.75); }
 /* Die bunten Ringe liegen als eigene Ebene ueber dem Bild und werden in der
    Mitte ausgestanzt. Nur so kann sich der Ring drehen, ohne das Emoji
-   mitzudrehen — mit einem echten border haette die Figur auf dem Kopf
+   mitzudrehen. Mit einem echten border haette die Figur auf dem Kopf
    gestanden. */
 .fr-rotierend, .fr-flamme, .fr-sterne { --rahmen-farbe: transparent; position: relative; }
 .fr-rotierend::before, .fr-flamme::before, .fr-sterne::before {
@@ -5854,8 +5853,8 @@ html:not(.reduce-motion) .pf-card[data-banner="nordlicht"]::before {
 /* ============================================================
    Kachel-Umschlag
    Der Favoriten-Stern ist eine eigene Schaltfläche und darf deshalb
-   nicht IN der Kachel stehen, die selbst eine Schaltfläche ist —
-   der Browser hebt sie sonst heraus und macht ein zweites Rasterfeld
+   nicht in der Kachel stehen, die selbst eine Schaltfläche ist.
+   Der Browser hebt sie sonst heraus und macht ein zweites Rasterfeld
    daraus. Der Umschlag hält beide nebeneinander und ist das, was im
    Raster zählt.
    ============================================================ */
@@ -5936,7 +5935,7 @@ html:not(.reduce-motion) .sch-prisma { animation: pl-sweep 4.5s linear infinite;
    Benutzt dieselben Bausteine wie das eigene Profil (pf-card,
    pf-stats, badge-grid), nur enger, weil es in einem Fenster
    steckt. Ohne das wäre jede gekaufte Kosmetik für andere
-   unsichtbar — und genau dafür kauft man sie.
+   unsichtbar. Und genau dafür kauft man sie.
    ============================================================ */
 .player-profile-card { max-height: 86vh; overflow-y: auto; }
 .pp-card { margin-top: var(--sp-2); }
@@ -6199,7 +6198,7 @@ html:not(.reduce-motion) .menu-count { animation: se-pulsen 1.8s ease-in-out inf
    nimmt Farbe weg statt welche zu geben, Splitter zerlegt den Namen. */
 
 /* Tiefschwarz mit einer Kante, die um den Text wandert. Auf dunklem Grund
-   liest man ihn nur an der Kante — das ist der Reiz. */
+   liest man ihn nur an der Kante, das ist der Reiz. */
 .nm-vanta {
   background-image: linear-gradient(100deg, #0a0a0c, #16161a 45%, #0a0a0c);
   filter:
@@ -6537,7 +6536,7 @@ html:not(.reduce-motion) .gs-item {
   border-color: var(--line-strong);
   background: var(--accent-soft);
 }
-/* Was abzuholen ist, leuchtet — der Eintrag traegt ja auch die Zahl. */
+/* Was abzuholen ist, leuchtet, der Eintrag traegt ja auch die Zahl. */
 .sheet-item:has(.sheet-count) .si-icon {
   color: var(--accent);
   border-color: var(--line-strong);
@@ -6564,7 +6563,7 @@ html:not(.reduce-motion) .gs-item {
 .balance .ui-icon { width: 15px; height: 15px; opacity: 0.75; }
 .menu-btn .ui-icon { width: 20px; height: 20px; }
 /* Symbol und Wort in einer Zeile. `justify-content` zentriert dabei auch
-   den Fall, in dem gar kein Wort dabei ist — dafuer braucht es keine eigene
+   den Fall, in dem gar kein Wort dabei ist, dafuer braucht es keine eigene
    Regel. */
 .chip-btn:has(.ui-icon) {
   display: inline-flex;
@@ -6578,7 +6577,7 @@ html:not(.reduce-motion) .gs-item {
 
 /* Diese Regel gab es hier einmal:
      .chip-btn:has(> .ui-icon:only-child) { display: inline-grid; ... }
-   Sie war falsch. `:only-child` zaehlt Elemente, nicht Textknoten — bei
+   Sie war falsch. `:only-child` zaehlt Elemente, nicht Textknoten. Bei
    `<button><svg></svg> Bonus</button>` ist das SVG sehr wohl das einzige
    Element-Kind, und das Wort daneben landete als zweite Rasterzelle unter
    dem Symbol. Der Bonus-Knopf in der Kopfzeile war dadurch zweizeilig.
@@ -6586,7 +6585,7 @@ html:not(.reduce-motion) .gs-item {
 
 /* --- Symbol-Knopf mit Beschriftung -----------------------------------------
    Auf dem iPad gibt es kein Hover, also auch kein title. Wo ein Symbol allein
-   nicht traegt — Kicken, Degradieren, Befoerdern — steht das Wort daneben.
+   nicht traegt (Kicken, Degradieren, Befoerdern) steht das Wort daneben.
    Auf schmalen Schirmen bleibt nur das Symbol, aber dann mit aria-label und
    in einer Reihe, in der die Bedeutung aus dem Zusammenhang kommt. */
 .icon-btn {
@@ -6668,7 +6667,7 @@ h2 > i[data-icon] .ui-icon { width: 23px; height: 23px; opacity: 0.9; }
    Statistik
    ----------------------------------------------------------------------------
    Vorher: eine Visitenkarte, darunter sieben gleich aussehende Zeilen
-   "Label — Wert". Alles gleich laut, nichts hervorgehoben, und bei einem
+   "Label: Wert". Alles gleich laut, nichts hervorgehoben, und bei einem
    frischen Konto sechs Nullen untereinander.
    ========================================================================== */
 .sk-raster {
@@ -6740,7 +6739,7 @@ h2 > i[data-icon] .ui-icon { width: 23px; height: 23px; opacity: 0.9; }
 
 /* --- Bilanz je Spiel -------------------------------------------------------
    Der Balken misst sich am groessten Betrag der Liste. Damit sieht man in
-   einem Blick, welches Spiel die Kasse traegt und welches sie leert — das
+   einem Blick, welches Spiel die Kasse traegt und welches sie leert, das
    ging aus einer Spalte gleich langer Zahlen nicht hervor. */
 .sk-spiele {
   border: 1px solid var(--line);
@@ -7136,7 +7135,7 @@ h2 > i[data-icon] .ui-icon { width: 23px; height: 23px; opacity: 0.9; }
 .cs-xp { font-family: var(--font-num); font-size: var(--fs-xs); color: var(--text-mute); }
 
 /* --- Platzziffern in den Ranglisten ----------------------------------------
-   Vorher 🥇🥈🥉 und ab Platz vier eine nackte "4." — drei Bildchen und dann
+   Vorher 🥇🥈🥉 und ab Platz vier eine nackte "4.", drei Bildchen und dann
    Text, in drei verschiedenen Groessen. */
 .platz, .cl-platz {
   display: inline-grid; place-items: center;
@@ -7177,7 +7176,7 @@ h2 > i[data-icon] .ui-icon { width: 23px; height: 23px; opacity: 0.9; }
    aus dem CSS-Zaehler, einmal aus dem Markup. */
 .leaderboard.cl-liste li::before { content: none; }
 .leaderboard.cl-liste li { gap: var(--sp-2); }
-/* Die Ziffer ist selbst ein span und stand deshalb als erstes im Zugriff —
+/* Die Ziffer ist selbst ein span und stand deshalb als erstes im Zugriff,
    sie bekam das flex:1 und wuchs zu einem goldenen Balken quer durch die
    Zeile. Gemeint war der Name daneben. */
 .leaderboard.cl-liste li > span:not(.cl-platz):first-of-type { flex: 1; min-width: 0; }
@@ -7189,7 +7188,7 @@ h2 > i[data-icon] .ui-icon { width: 23px; height: 23px; opacity: 0.9; }
    bestehenden Stellen, an denen eine fertige Zahl und dahinter ein 🪙 stand,
    gibt es diese Klasse: ein reiner Textausch, kein Umbau der Aufrufe.
 
-   Gezeichnet wird per mask, damit die Marke `currentColor` erbt — in einer
+   Gezeichnet wird per mask, damit die Marke `currentColor` erbt, in einer
    roten Verlustzahl ist sie rot, in einer gruenen gruen. Das Emoji war immer
    gelb, auch wenn die Zahl daneben einen Verlust meinte. */
 .mk {
@@ -7289,12 +7288,12 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .update-item .ui-punkt .ui-icon { width: 21px; height: 21px; color: var(--accent); }
 
 /* ============================================================================
-   Tafel — der Nachfolger von .panel
+   Tafel, der Nachfolger von .panel
    ----------------------------------------------------------------------------
    `.panel` war ein Rahmen um den ganzen Screen: Zurueck-Knopf, Ueberschrift
    und Inhalt lagen gemeinsam darin. Das kostete auf dem iPad links und rechts
    22 Pixel Polsterung fuer nichts und liess jeden dieser Screens gleich
-   aussehen — ein Kasten mit Sachen drin.
+   aussehen. Ein Kasten mit Sachen drin.
 
    Die Tafel umschliesst nur noch den Inhalt. Zurueck-Knopf und Ueberschrift
    stehen darueber, so wie in den Spielen und im Profil, die den Schritt
@@ -7332,7 +7331,7 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 }
 #land-price .ui-icon { width: 16px; height: 16px; opacity: 0.85; }
 .empire-list summary { cursor: pointer; }
-/* Das grosse Symbol ueber einem Spiel-Titel. Vorher ein Emoji auf 3,4rem —
+/* Das grosse Symbol ueber einem Spiel-Titel. Vorher ein Emoji auf 3,4rem,
    auf jedem Geraet ein anderes Bild und in keinem der drei Designs richtig. */
 .ph-icon[data-icon] { display: grid; place-items: center; font-size: 0; margin: var(--sp-2) 0; }
 .ph-icon[data-icon] .ui-icon { width: 54px; height: 54px; color: var(--accent); opacity: 0.9; }
@@ -7351,17 +7350,17 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .hc-temp { letter-spacing: 1px; color: var(--accent); }
 .hc-buy { display: inline-flex; align-items: center; gap: 7px; }
 
-/* Das Logo auf dem Anmeldebildschirm — die erste Flaeche, die jemand vom
+/* Das Logo auf dem Anmeldebildschirm, die erste Flaeche, die jemand vom
    Haus sieht. Dort stand ein 🎰 auf 3rem: auf dem iPad ein anderes Bild als
    auf dem Mac, und in Mitternacht und Neon fehl am Platz. */
 .login-card .logo[data-icon] { display: grid; place-items: center; font-size: 0; margin-bottom: var(--sp-2); }
 .login-card .logo[data-icon] .ui-icon { width: 56px; height: 56px; color: var(--accent); }
 /* Die Punkte im Willkommens-Fenster stehen fest im HTML, nicht aus
-   changelog.js — dieselbe Darstellung, andere Herkunft. */
+   changelog.js, dieselbe Darstellung, andere Herkunft. */
 .update-item .ui-punkt[data-icon] { display: grid; place-items: center; font-size: 0; }
 
 /* ============================================================================
-   Ansage an alle — die Zeile beim Spieler
+   Ansage an alle: die Zeile beim Spieler
    ----------------------------------------------------------------------------
    Sie hatte einen Ton: Gold, immer. Eine Wartungsansage sah damit aus wie
    eine Einladung zum Turnier.
@@ -7379,7 +7378,7 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .announcement-strip[data-art="info"] .announcement-icon { color: var(--accent); }
 
 /* ============================================================================
-   Ansage an alle — der Admin-Bereich
+   Ansage an alle: der Admin-Bereich
    ========================================================================== */
 .admin-h { display: flex; align-items: center; gap: 8px; }
 .admin-h .ui-icon { width: 18px; height: 18px; opacity: 0.85; }
@@ -7393,7 +7392,7 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
   background: var(--surface);
 }
 
-/* Was gerade oben steht. Vorher wusste man das nicht — der Wegnehmen-Knopf
+/* Was gerade oben steht. Vorher wusste man das nicht, der Wegnehmen-Knopf
    war auch dann aktiv, wenn gar nichts stand. */
 .an-steht {
   display: flex;
@@ -7461,7 +7460,7 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .an-push b { display: block; font-size: var(--fs-sm); }
 .an-push small { display: block; font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.45; }
 
-/* Vorschau — zeigt dieselbe Zeile, die die Spieler bekommen. Vorher schrieb
+/* Vorschau. Zeigt dieselbe Zeile, die die Spieler bekommen. Vorher schrieb
    man blind und sah das Ergebnis erst, nachdem es alle gesehen hatten. */
 .an-vorschau-wrap { display: grid; gap: 5px; }
 .an-label {
@@ -7488,7 +7487,7 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 
 .an-knoepfe { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 
-/* Verlauf. Antippen uebernimmt den Text — wiederkehrende Ansagen
+/* Verlauf. Antippen uebernimmt den Text. Wiederkehrende Ansagen
    ("gleich Neustart") tippt man sonst jedes Mal neu. */
 .an-verlauf summary { cursor: pointer; font-size: var(--fs-sm); color: var(--text-dim); }
 .an-verlauf.hidden { display: none; }
@@ -7514,7 +7513,7 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
    Events (Admin)
    ----------------------------------------------------------------------------
    Vorher sechs Zeilen aus nackten Zahlenfeldern, deren Bedeutung nur im
-   title-Attribut stand. Auf dem iPad — dem Geraet, auf dem gespielt wird —
+   title-Attribut stand. Auf dem iPad (dem Geraet, auf dem gespielt wird)
    war damit nicht zu erfahren, ob die 60 Sekunden oder Minuten meint.
    ========================================================================== */
 .ev-raster {
@@ -7606,7 +7605,7 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
   scrollbar-width: none;
   /* Die Leiste ist breiter als der Schirm und hat keine Rollbalken. Ohne
      einen Hinweis sieht der letzte Reiter aus wie abgeschnitten statt wie
-     weitergehend — die weiche Kante rechts sagt: hier geht es weiter. */
+     weitergehend. Die weiche Kante rechts sagt: hier geht es weiter. */
   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
   mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
   padding-right: 20px;
@@ -7657,7 +7656,7 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 .ev-feld-vorlauf select { width: 100%; }
 
 /* --- Kopfzeile auf schmalen Schirmen ---------------------------------------
-   Fünf Dinge nebeneinander — Marke, Bonus, Guthaben, Spieler, Menü — passen
+   Fünf Dinge nebeneinander (Marke, Bonus, Guthaben, Spieler, Menü) passen
    auf ein iPad, auf ein Telefon nicht mehr, sobald das Guthaben siebenstellig
    wird. Das größte Konto im Haus liegt bei 1,7 Millionen, das passiert also.
    Weggelassen wird, was doppelt da ist: der eigene Name steht im Profil, und
@@ -7807,7 +7806,7 @@ a.sheet-item { text-decoration: none; color: inherit; }
 /* --- Mitspieler einladen ----------------------------------------------------
    Sitzt ueber dem Chat-Knopf, nicht daneben: das Chat-Dock liegt unten rechts,
    und auf dem iPad duerfen Overlays keine Spielknoepfe verdecken. Der Knopf
-   erscheint ausserdem nur, wenn man wirklich in einer Lobby sitzt UND jemand
+   erscheint ausserdem nur, wenn man wirklich in einer Lobby sitzt und jemand
    da ist, den man holen koennte. */
 .einladen-fab {
   position: fixed;
@@ -8053,7 +8052,7 @@ html:not(.reduce-motion) .hilo-rein { animation: hilo-rein 0.4s cubic-bezier(0.2
 .kn-feld em { font-style: normal; font-size: 0.68rem; color: var(--text-mute); }
 .kn-wert { text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
 .kn-leer { text-align: center; color: var(--text-mute); }
-/* Eintragen ist die eigentliche Entscheidung — der Knopf zeigt, was es brächte. */
+/* Eintragen ist die eigentliche Entscheidung, der Knopf zeigt, was es brächte. */
 .kn-setzen { width: 100%; padding: 5px 0; border-radius: var(--r-sm); font-weight: 800;
   background: rgba(var(--good-rgb), .18); border: 1px solid rgba(var(--good-rgb), .45);
   color: var(--good-text); cursor: pointer; font-variant-numeric: tabular-nums; }
@@ -8069,7 +8068,7 @@ html:not(.reduce-motion) .hilo-rein { animation: hilo-rein 0.4s cubic-bezier(0.2
   .kn-w { width: 46px; height: 46px; }
 }
 
-/* ── Tagesbericht ──────────────────────────────────────────────────────── */
+/* --- Tagesbericht --- */
 .tb-card { max-width: 520px; text-align: left; }
 .tb-card h2, .tb-card .update-emoji { text-align: center; }
 .tb-card .update-emoji { display: block; margin: 0 auto; }
@@ -8100,16 +8099,16 @@ button.tb-zeile:hover { border-color: var(--line-strong); background: var(--surf
 .tb-nichts { margin: 0; }
 
 /* ============================================================
-   Fortuna — sieben Stück im ganzen Casino, nur am Glücksrad
+   Fortuna, sieben Stück im ganzen Casino, nur am Glücksrad
 
-   Bewusst KEIN weiterer Streifenverlauf: die drei Stücke zeigen
+   Bewusst kein weiterer Streifenverlauf: die drei Stücke zeigen
    dasselbe Rad, aus dem sie kommen. Zwölf Goldsegmente wie das
    Glücksrad zwölf Felder hat, und sie drehen sich.
    ============================================================ */
 
 /* Der Winkel muss als <angle> angemeldet sein, sonst kann er nicht animiert
    werden (ein unbekanntes Custom Property ist für den Browser nur Text).
-   Wo @property fehlt, steht das Rad still — auch dann ist es das einzige
+   Wo @property fehlt, steht das Rad still, auch dann ist es das einzige
    Stück im Laden, das kein Streifenverlauf ist. */
 @property --fo-winkel {
   syntax: "<angle>";
@@ -8159,14 +8158,14 @@ html:not(.reduce-motion) .fr-rad_fortuna::before { animation: pl-spin 7s linear 
 
    Einzeln versteigert, nicht im Laden zu haben. Jedes Stueck sitzt
    auf einer Flaeche, auf der bisher nichts war, oder macht etwas,
-   das kein anderes Stueck macht — sonst waere es nur ein weiterer
+   das kein anderes Stueck macht, sonst waere es nur ein weiterer
    Verlauf mit hoeherem Preis.
    ============================================================ */
 
 .cos-marke-auktion { background: rgba(var(--accent-rgb), 0.24); color: var(--accent-strong);
   border: 1px solid rgba(var(--accent-rgb), 0.6); }
 
-/* ── Aura: laeuft dauerhaft ums Bild, ueberall ──────────────────────────── */
+/* --- Aura: laeuft dauerhaft ums Bild, ueberall --- */
 .pl-aura {
   position: relative;
   display: inline-flex;
@@ -8174,12 +8173,12 @@ html:not(.reduce-motion) .fr-rad_fortuna::before { animation: pl-spin 7s linear 
   justify-content: center;
   isolation: isolate;
   /* Die Aura ist groesser als das Bild und ragt darueber hinaus. Ohne diesen
-     Abstand liegt sie in einer Zeile auf dem Namen daneben — im Profil faellt
+     Abstand liegt sie in einer Zeile auf dem Namen daneben, im Profil faellt
      das nicht auf, weil dort viel Platz ist, in der Online-Liste sofort. */
   margin: 0 0.3em;
 }
 /* Traeger sind zwei: die Huelle aus core/player.js und die Kachel im Laden.
-   Bewusst als Liste und nicht als [class*="au-"] — so ein Teilstueck steckt
+   Bewusst als Liste und nicht als [class*="au-"], so ein Teilstueck steckt
    auch in fremden Klassennamen und wuerde irgendwann etwas Falsches treffen. */
 .pl-aura > .pl-ava,
 .cos-aura-demo > .pl-ava { position: relative; z-index: 1; }
@@ -8194,12 +8193,12 @@ html:not(.reduce-motion) .fr-rad_fortuna::before { animation: pl-spin 7s linear 
 }
 
 /*
- * Goldstaub. Ein einzelnes Pseudo-Element kann nur EINEN Punkt zeichnen —
- * mehrere Punkte kommen deshalb als box-shadow-Kopien desselben Punkts. Zwei
+ * Goldstaub. Ein einzelnes Pseudo-Element kann nur einen Punkt zeichnen.
+ * Mehrere Punkte kommen deshalb als box-shadow-Kopien desselben Punkts. Zwei
  * Ebenen mit verschobener Zeit ergeben zwei Wellen, und das reicht, damit es
  * nicht nach Blinken aussieht.
  */
-/* Der Schein liegt als box-shadow AM BILD, nicht als Hintergrund der Huelle:
+/* Der Schein liegt als box-shadow am BILD, nicht als Hintergrund der Huelle:
    die Huelle ist genau so gross wie das Bild, ein Hintergrund waere also
    vollstaendig davon verdeckt. Beim kleinen Bild ist das nicht aufgefallen,
    beim grossen im Profil war die Aura dann plötzlich weg. */
@@ -8265,7 +8264,7 @@ html:not(.reduce-motion) .au-auk_leere::after { animation: pl-spin 2.4s linear i
   50%      { transform: scale(0.88); opacity: 1; }
 }
 
-/* ── Namensstil Hologramm ───────────────────────────────────────────────── */
+/* --- Namensstil Hologramm --- */
 /* Zwei Ebenen: waagerechte Zeilen, die nach unten wandern, darunter der
    Farbverlauf, der zur Seite wandert. Dazu versetzte Farbkanten wie bei einem
    schlecht justierten Beamer. */
@@ -8281,7 +8280,7 @@ html:not(.reduce-motion) .au-auk_leere::after { animation: pl-spin 2.4s linear i
 html:not(.reduce-motion) .nm-auk_hologramm { animation: nm-holo 2.8s linear infinite; }
 @keyframes nm-holo { to { background-position: 0 8px, 200% 50%; } }
 
-/* ── Namensschild Tresortür ─────────────────────────────────────────────── */
+/* --- Namensschild Tresortür --- */
 /* Als Einziges kein Farbverlauf, sondern Metall: gebuerstete Flaeche, vier
    Nieten in den Ecken, und ein Glanz, der darueber wandert. */
 .sch-auk_tresor {
@@ -8301,9 +8300,9 @@ html:not(.reduce-motion) .nm-auk_hologramm { animation: nm-holo 2.8s linear infi
 html:not(.reduce-motion) .sch-auk_tresor { animation: sch-tresor 5s linear infinite; }
 @keyframes sch-tresor { to { background-position: 200% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; } }
 
-/* ── Profil-Banner Gewitter ─────────────────────────────────────────────── */
+/* --- Profil-Banner Gewitter --- */
 /* Ein Banner braucht vier Eintraege (eigenes Profil, Fremdprofil, Laden-Kachel,
-   Vorschau). Die stehen hier bewusst in EINEM Selektor statt vier Mal
+   Vorschau). Die stehen hier bewusst in einem Selektor statt vier Mal
    untereinander wie bei den aelteren. */
 .pf-card[data-banner="auk_gewitter"]::before,
 .player-profile-head[data-banner="auk_gewitter"]::before,
@@ -8336,9 +8335,9 @@ html:not(.reduce-motion) .cos-banner-demo[data-banner="auk_gewitter"] {
   93.5% { filter: brightness(1); }
 }
 
-/* ── Kartenrücken ───────────────────────────────────────────────────────────
+/* --- Kartenrücken ---
    Vier Spiele hatten ihre Rueckseite fest eingebaut. Wer hier etwas anlegt,
-   ueberschreibt alle vier — aber nur auf dem EIGENEN Bildschirm. */
+   ueberschreibt alle vier, aber nur auf dem eigenen Bildschirm. */
 html[data-karte] .card.back,
 html[data-karte] .bj-card.face-down,
 html[data-karte] .sol-card.down,
@@ -8369,7 +8368,7 @@ html[data-karte="auk_spiegel"]:not(.reduce-motion) .mem-back {
   animation: pl-sweep 3.4s linear infinite;
 }
 
-/* ── Laden: Kacheln fuer die zwei neuen Arten ───────────────────────────── */
+/* --- Laden: Kacheln fuer die zwei neuen Arten --- */
 .cos-aura-demo { display: grid; place-items: center; height: 46px; pointer-events: none; }
 .cos-aura-demo .pl-ava { font-size: 1.15rem; }
 /* In der Kachel steht die Aura ohne die Huelle aus core/player.js, deshalb
@@ -8400,7 +8399,7 @@ html[data-karte="auk_spiegel"]:not(.reduce-motion) .mem-back {
 }
 html:not(.reduce-motion) .cos-karte-demo[data-karte="auk_spiegel"] { animation: pl-sweep 3.4s linear infinite; }
 
-/* ── Auktionshaus ───────────────────────────────────────────────────────── */
+/* --- Auktionshaus --- */
 .auk-los, .auk-kommt, .auk-archiv, .auk-leer { max-width: 540px; margin: 0 auto 14px; }
 .auk-los { text-align: center; }
 
@@ -8413,7 +8412,7 @@ html:not(.reduce-motion) .cos-karte-demo[data-karte="auk_spiegel"] { animation: 
 .auk-art { color: var(--text-dim); font-weight: 700; }
 
 /*
- * Die Buehne. Ein Scheinwerferkegel von oben und ein Podest darunter — das
+ * Die Buehne. Ein Scheinwerferkegel von oben und ein Podest darunter, das
  * Stueck soll ausgestellt aussehen und nicht wie eine Zeile in einer Liste.
  * Beides sind reine Flaechen, sie fangen keine Tipps ab.
  */
@@ -8535,8 +8534,8 @@ html:not(.reduce-motion) .auk-band-warn { animation: se-pulsen 2s ease-in-out in
   .auk-wann { display: none; }
 }
 
-/* Die rote Marke: ein neues Los oder ein ueberbotenes Gebot. Bewusst KEINE
-   Zahl — es gibt nichts zu zaehlen, es gibt nur "sieh nach". */
+/* Die rote Marke: ein neues Los oder ein ueberbotenes Gebot. Bewusst keine
+   Zahl, es gibt nichts zu zaehlen, es gibt nur "sieh nach". */
 .menu-btn.hat-auktion::before {
   content: "";
   position: absolute;
@@ -8552,7 +8551,7 @@ html:not(.reduce-motion) .auk-band-warn { animation: se-pulsen 2s ease-in-out in
 html:not(.reduce-motion) .menu-btn.hat-auktion::before { animation: se-pulsen 1.6s ease-in-out infinite; }
 /* Beide Punkte sitzen an derselben Ecke. Wenn die Auktion ruft, hat sie
    Vorrang: dort laeuft eine Uhr, ein ungelesenes Update wartet auch morgen
-   noch — und im Menue steht bei den Updates ohnehin die Zahl daneben. */
+   noch, und im Menue steht bei den Updates ohnehin die Zahl daneben. */
 .menu-btn.hat-auktion.has-news::after { display: none; }
 .sheet-item.hat-auktion { position: relative; }
 .sheet-item.hat-auktion::after {
@@ -8577,7 +8576,7 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 
    Der Admin-Bildschirm hat die grossen Knoepfe aus dem Spiel
    geerbt. Dort ist "Einsatz verdoppeln" die eine Sache, die man
-   tut — hier stehen zwoelf Schalter nebeneinander, und in dieser
+   tut, hier stehen zwoelf Schalter nebeneinander, und in dieser
    Groesse wird jeder Reiter zu einem Bildschirmkilometer.
    ============================================================ */
 .ad-tafel .btn-primary,
@@ -8703,7 +8702,7 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 .ad-kachel .chip-btn { margin-top: 8px; }
 .ad-listen-kopf { margin-bottom: 4px; }
 .ad-mini { margin: 0; }
-/* Bei den groessten Einzelrunden stehen ZWEI Betraege rechts. Nebeneinander
+/* Bei den groessten Einzelrunden stehen zwei Betraege rechts. Nebeneinander
    sprengen sie die schmale Kachel und der Name rutscht in die naechste Zeile. */
 .ad-mini li { gap: 8px; align-items: center; }
 .ad-mini b { display: flex; flex-direction: column; align-items: flex-end;

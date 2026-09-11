@@ -3,14 +3,14 @@
 /**
  * Wiedereroeffnung.
  *
- * Das Casino war zwei Monate weg, weil die Seite lag — nicht, weil jemand
+ * Das Casino war zwei Monate weg, weil die Seite lag, nicht, weil jemand
  * aufgehoert hat. Alle einundsiebzig Konten kommen also gleichzeitig zurueck,
  * in ein Spiel, das inzwischen fast ueberall anders aussieht.
  *
  * Dieses Modul macht daraus einen Moment statt eines stillen Neustarts:
  *
  *   GESCHENK  Ein einmaliges Paket je Konto, abholbar solange das Fenster
- *             offen ist. Chips laufen durch die Vermoegensbremse — es ist
+ *             offen ist. Chips laufen durch die Vermoegensbremse, es ist
  *             Gratisgeld, und der Median liegt bei 25.000, waehrend die
  *             Spitze das Siebzigfache hat. Dazu zwei Kosmetik-Stuecke, die
  *             es danach nie wieder gibt: nur wer zur Wiedereroeffnung da war,
@@ -18,7 +18,7 @@
  *
  *   GALA      Ein Zeitfenster, in dem doppelte Season-XP laufen und am Ende
  *             ein Topf unter allen verlost wird, die dabei mitgespielt haben,
- *             gewichtet nach Runden. Das ist der Grund, JETZT zu kommen und
+ *             gewichtet nach Runden. Das ist der Grund, jetzt zu kommen und
  *             nicht irgendwann.
  *
  * Beides startet der Besitzer von Hand. Ein Fest, das von selbst losgeht,
@@ -40,12 +40,12 @@ const GESCHENK_TAGE = 14;
 /*
  * 150.000. Das ist bewusst viel: der Median liegt bei 25.000, das Paket ist
  * also fuer die meisten das Sechsfache ihres Guthabens. Genau das ist der
- * Zweck — es soll ein Ereignis sein, kein Trostpflaster.
+ * Zweck. Es soll ein Ereignis sein, kein Trostpflaster.
  *
  * Wirkung auf die Wirtschaft: rund 8 Mio neu bei 8,6 Mio im Umlauf. Weil es
- * ALLE bekommen und die Vermoegensbremse die Spitze kuerzt, verschiebt es die
+ * alle bekommen und die Vermoegensbremse die Spitze kuerzt, verschiebt es die
  * Rangfolge kaum, drueckt aber den Abstand zwischen Mitte und Spitze deutlich
- * zusammen — ein weicher Neuanfang, ohne jemandem etwas wegzunehmen.
+ * zusammen: ein weicher Neuanfang, ohne jemandem etwas wegzunehmen.
  */
 const GESCHENK_CHIPS = 150000;
 const GESCHENK_XP = 250;
@@ -86,7 +86,7 @@ const xpFaktor = () => (galaLaeuft() ? GALA_XP_FAKTOR : 1);
 
 /**
  * Runden waehrend der Gala mitzaehlen. Gewichtet die Verlosung: wer mehr
- * gespielt hat, hat mehr Lose — aber jeder, der ueberhaupt da war, hat eine
+ * gespielt hat, hat mehr Lose, aber jeder, der ueberhaupt da war, hat eine
  * Chance. Reine Anwesenheit reicht nicht, reines Vermoegen zaehlt gar nicht.
  */
 function zaehleRunde(key) {
@@ -109,7 +109,7 @@ function speichereBald() {
 }
 
 /*
- * Was im Paket steckt, an EINER Stelle.
+ * Was im Paket steckt, an einer Stelle.
  *
  * Zweimal gebraucht: die Lobby-Karte nennt es vor dem Abholen (sonst kauft
  * niemand eine Katze im Sack), die Auspack-Animation zeigt jedes Stueck
@@ -148,7 +148,7 @@ function holeGeschenk(key) {
   _accounts.save();
 
   if (_io) {
-    try { chat.announce(_io, `🎉 ${acc.name} ist zurück im Casino!`); } catch {}
+    try { chat.announce(_io, `${acc.name} ist wieder da!`); } catch {}
   }
   return { ok: true, chips, xp: GESCHENK_XP, stuecke, account: _accounts.publicAccount(acc) };
 }
@@ -191,11 +191,11 @@ function starte({ galaMinuten, topf } = {}) {
 
   if (_io) {
     try {
-      chat.announce(_io, `🎊 WIEDERERÖFFNUNG! Das Casino ist zurück. Holt euch euer Willkommens-Paket, und für die nächsten ${min} Minuten läuft die Eröffnungsgala: doppelte Season-XP und am Ende werden ${pot.toLocaleString("de-DE")} Chips unter allen verlost, die mitgespielt haben.`);
+      chat.announce(_io, `Wiedereröffnung! Das Casino ist zurück. Holt euch euer Willkommens-Paket, und für die nächsten ${min} Minuten läuft die Eröffnungsgala: doppelte Season-XP und am Ende werden ${pot.toLocaleString("de-DE")} Chips unter allen verlost, die mitgespielt haben.`);
     } catch {}
     try {
       require("./push").anAlle("live", {
-        title: "🎊 Das Casino hat wieder auf",
+        title: "Das Casino hat wieder auf",
         body: `Wiedereröffnung: Willkommens-Paket abholen, ${min} Minuten Gala mit doppelter Season-XP und ${pot.toLocaleString("de-DE")} Chips im Topf.`,
         url: "/",
       });
@@ -231,7 +231,7 @@ function rechneGalaAb() {
     for (let i = 0; i < anzahl; i++) lose.push(key);
   }
   if (!lose.length) {
-    if (_io) chat.announce(_io, "🎊 Eröffnungsgala vorbei — es hat niemand mitgespielt, der Topf bleibt im Haus.");
+    if (_io) chat.announce(_io, "Die Eröffnungsgala ist vorbei. Mitgespielt hat niemand, der Topf bleibt im Haus.");
     sende();
     return;
   }
@@ -241,12 +241,12 @@ function rechneGalaAb() {
   const teilnehmer = Object.keys(g.runden).length;
   if (_io) {
     try {
-      chat.announce(_io, `🎊 Eröffnungsgala vorbei! ${teilnehmer} ${teilnehmer === 1 ? "Spieler war" : "Spieler waren"} dabei, gewonnen hat ${acc ? acc.name : gewinner} und nimmt ${g.topf.toLocaleString("de-DE")} Chips mit.`);
+      chat.announce(_io, `Eröffnungsgala vorbei! ${teilnehmer} ${teilnehmer === 1 ? "Spieler war" : "Spieler waren"} dabei, gewonnen hat ${acc ? acc.name : gewinner} und nimmt ${g.topf.toLocaleString("de-DE")} Chips mit.`);
     } catch {}
     try { require("./feed").add("event", `${acc ? acc.name : gewinner} gewinnt die Eröffnungs-Verlosung: ${g.topf.toLocaleString("de-DE")} Chips.`); } catch {}
     try {
       require("./push").an(gewinner, "live", {
-        title: "🎊 Du hast die Eröffnungs-Verlosung gewonnen",
+        title: "Du hast die Eröffnungs-Verlosung gewonnen",
         body: `${g.topf.toLocaleString("de-DE")} Chips sind auf deinem Konto.`,
         url: "/",
       });

@@ -1,19 +1,19 @@
 "use strict";
 
 /**
- * Klondike solitaire engine — pure, server-authoritative game logic.
+ * Klondike-Solitär, reine Spiellogik, entschieden auf dem Server.
  *
- * Card: { r: 1..13, s: 0..3 }  suits 0=♠ 1=♥ 2=♦ 3=♣  (♥♦ red, ♠♣ black).
- * State:
- *   stock:       face-down draw pile (array, top = last)
- *   waste:       face-up pile (array, top = last)
- *   foundations: 4 piles built up by suit (A→K)
- *   tableau:     7 piles of { card, up } (bottom → top)
- *   draw:        1 or 3 cards flipped per stock draw
- *   recycles:    remaining times the waste may be recycled into the stock
+ * Karte: { r: 1..13, s: 0..3 }, Farben 0=♠ 1=♥ 2=♦ 3=♣ (♥♦ rot, ♠♣ schwarz).
+ * Zustand:
+ *   stock        verdeckter Nachziehstapel (Array, oben = letztes)
+ *   waste        offener Ablagestapel (Array, oben = letztes)
+ *   foundations  4 Zielstapel, je Farbe aufsteigend (A bis K)
+ *   tableau      7 Stapel aus { card, up } (von unten nach oben)
+ *   draw         1 oder 3 Karten je Nachziehen
+ *   recycles     wie oft der Ablagestapel noch zurück auf den Nachziehstapel darf
  *
- * The engine only exposes legal moves; every mutation validates Klondike rules.
- * A public view hides face-down cards so the client never learns them early.
+ * Nach außen gibt es nur erlaubte Züge, jede Änderung prüft die Klondike-Regeln.
+ * Die öffentliche Sicht versteckt verdeckte Karten, der Client kennt sie also nie vorher.
  */
 
 const crypto = require("crypto");
@@ -31,7 +31,7 @@ function makeDeck(seedShuffle) {
   return deck;
 }
 
-/** Deal a fresh game. `deck` optional (for identical PvP deals); otherwise random. */
+/** Neues Spiel geben. `deck` optional (für gleiche Karten im PvP), sonst zufällig. */
 function deal(opts = {}) {
   const deck = opts.deck ? opts.deck.map((c) => ({ ...c })) : makeDeck();
   const tableau = [[], [], [], [], [], [], []];
@@ -54,21 +54,21 @@ const topOf = (pile) => (pile.length ? pile[pile.length - 1] : null);
 
 function canToFoundation(card, foundation) {
   const t = topOf(foundation);
-  if (!t) return card.r === 1;            // empty → Ace only
+  if (!t) return card.r === 1;            // leer: nur ein Ass
   return t.s === card.s && card.r === t.r + 1;
 }
 function foundationForSuit(state, s) {
-  // Each suit uses a fixed foundation index = suit (keeps it simple & stable).
+  // Jede Farbe hat einen festen Zielstapel = Farbe (einfach und stabil).
   return state.foundations[s];
 }
 function canOntoTableau(card, pile) {
   const t = topOf(pile);
-  if (!t) return card.r === 13;           // empty → King only
+  if (!t) return card.r === 13;           // leer: nur ein König
   return t.up && !sameColor(card, t.card) && card.r === t.card.r - 1;
 }
 
-// ── Moves ──────────────────────────────────────────────────
-/** Draw from stock to waste (or recycle waste when stock is empty). */
+// --- Züge ---
+/** Vom Nachziehstapel ziehen (oder den Ablagestapel umdrehen, wenn der leer ist). */
 function drawStock(state) {
   if (state.stock.length === 0) {
     if (state.waste.length === 0) return { ok: false, error: "Stapel leer." };
@@ -85,7 +85,7 @@ function drawStock(state) {
   return { ok: true };
 }
 
-/** Move the top waste card to a foundation. */
+/** Oberste Karte der Ablage auf einen Zielstapel. */
 function wasteToFoundation(state) {
   const card = topOf(state.waste);
   if (!card) return { ok: false, error: "Ablage leer." };
@@ -96,7 +96,7 @@ function wasteToFoundation(state) {
   return { ok: true };
 }
 
-/** Move the top waste card onto a tableau pile. */
+/** Oberste Karte der Ablage auf einen Tableau-Stapel. */
 function wasteToTableau(state, col) {
   const pile = state.tableau[col];
   if (!pile) return { ok: false, error: "Ungültige Spalte." };
@@ -108,7 +108,7 @@ function wasteToTableau(state, col) {
   return { ok: true };
 }
 
-/** Move the top card of a tableau pile to its foundation. */
+/** Oberste Karte eines Tableau-Stapels auf ihren Zielstapel. */
 function tableauToFoundation(state, col) {
   const pile = state.tableau[col];
   if (!pile || !pile.length) return { ok: false, error: "Leer." };
@@ -122,7 +122,7 @@ function tableauToFoundation(state, col) {
   return { ok: true };
 }
 
-/** Move a run of face-up cards from one tableau pile onto another. */
+/** Eine Folge offener Karten von einem Tableau-Stapel auf einen anderen. */
 function tableauToTableau(state, from, to, count) {
   const src = state.tableau[from], dst = state.tableau[to];
   if (!src || !dst || from === to) return { ok: false, error: "Ungültiger Zug." };
@@ -130,7 +130,7 @@ function tableauToTableau(state, from, to, count) {
   if (count < 1 || count > src.length) return { ok: false, error: "Ungültige Anzahl." };
   const slice = src.slice(src.length - count);
   if (!slice.every((c) => c.up)) return { ok: false, error: "Verdeckte Karte im Stapel." };
-  // The slice must itself be a valid descending alternating-color run.
+  // Das Stück muss selbst eine gültige absteigende Folge mit wechselnden Farben sein.
   for (let i = 0; i < slice.length - 1; i++) {
     const a = slice[i].card, b = slice[i + 1].card;
     if (sameColor(a, b) || b.r !== a.r - 1) return { ok: false, error: "Ungültige Kartenfolge." };
@@ -142,7 +142,7 @@ function tableauToTableau(state, from, to, count) {
   return { ok: true };
 }
 
-/** Move a foundation's top card back onto a tableau pile. */
+/** Oberste Karte eines Zielstapels zurück auf einen Tableau-Stapel. */
 function foundationToTableau(state, s, to) {
   const f = state.foundations[s], dst = state.tableau[to];
   if (!f || !f.length || !dst) return { ok: false, error: "Ungültig." };
@@ -165,8 +165,8 @@ function isWon(state) {
   return foundationCount(state) === 52;
 }
 
-/** Auto-move every card that can safely go to a foundation (the "auto-finish").
- * Only runs when the board is already fully unpacked (no face-down cards). */
+/** Alles, was sicher auf einen Zielstapel kann, automatisch hochlegen ("Auto-Finish").
+ * Läuft nur, wenn keine verdeckten Karten mehr liegen. */
 function autoComplete(state) {
   const hasHidden = state.tableau.some((p) => p.some((c) => !c.up)) || state.stock.length || state.waste.length;
   if (hasHidden) return { ok: false, error: "Noch nicht bereit für Auto-Ablage." };
@@ -181,11 +181,11 @@ function autoComplete(state) {
   return { ok: true, moved, won: isWon(state) };
 }
 
-/** Client-safe view: face-down cards are masked to null. */
+/** Sicht für den Client: verdeckte Karten sind null. */
 function publicView(state) {
   return {
     stockCount: state.stock.length,
-    waste: state.waste.slice(-3), // only the visible top few matter
+    waste: state.waste.slice(-3), // es zählen nur die paar sichtbaren oben
     wasteCount: state.waste.length,
     foundations: state.foundations.map((f) => (f.length ? f[f.length - 1] : null)),
     foundationCounts: state.foundations.map((f) => f.length),

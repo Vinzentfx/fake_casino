@@ -1,5 +1,5 @@
 /* ============================================================
-   Fake Casino – Effekte
+   Effekte
    Gehoert zu js/core/fx.js. Konfetti, Muenzen, Gewinnfeier und
    Ladeplatzhalter. Alles rein visuell, nichts hier traegt
    Information, deshalb faellt es bei "Bewegung reduzieren"
@@ -211,7 +211,7 @@ html.reduce-motion .fx-skeleton { animation: none; }
    Was hier steht, sind die Teile, die es erst ab Stufe 3 gibt.
    ============================================================ */
 
-/* Farbschwall über den ganzen Bildschirm. Läuft ab Stufe 3 bei JEDEM Effekt
+/* Farbschwall über den ganzen Bildschirm. Läuft ab Stufe 3 bei jedem Effekt
    mit, damit ein großer Gewinn groß wirkt, egal welchen man gekauft hat. */
 .fx-schwall {
   position: absolute;
@@ -227,7 +227,7 @@ html.reduce-motion .fx-skeleton { animation: none; }
   100% { opacity: 0; transform: scale(1.02); }
 }
 
-/* Münzen, die von OBEN fallen (zweite Richtung ab Stufe 3). */
+/* Münzen, die von oben fallen (zweite Richtung ab Stufe 3). */
 .fx-muenze-fall {
   top: -50px;
   bottom: auto;
@@ -277,7 +277,7 @@ html.reduce-motion .fx-beben { animation: none; }
  *
  * Vorher gab es nur Anfang und Ende, und das Ende lag bei `--dy + 70vh`. `--dy`
  * ist rund minus 300 Pixel (schraeg nach oben), 70vh sind mehr als doppelt so
- * viel nach unten — die Bänder starten also unter dem Bildrand und wandern von
+ * viel nach unten, die Bänder starten also unter dem Bildrand und wandern von
  * dort aus noch weiter nach unten. Der Salut hat gefeuert, man hat nur nie
  * etwas gesehen. Jetzt: bis 45 % hoch bis zum Scheitel, danach fallen.
  */

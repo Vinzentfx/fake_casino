@@ -1,14 +1,14 @@
 "use strict";
 
 /**
- * Chronik — was passiert ist, waehrend niemand hingesehen hat.
+ * Chronik: was passiert ist, waehrend niemand hingesehen hat.
  *
  * Der Live-Feed (game/feed.js) haelt dreissig Eintraege im Speicher und ist
  * nach jedem Deploy leer. Genau das, was ein Tagesbericht braucht, ist damit
  * weg: die Tage, an denen man selbst nicht da war. Hier stehen dieselben
  * Momente auf der Platte, mit Zeitstempel.
  *
- * Bewusst KEIN zweites Anzeigesystem: die Chronik zeigt nichts an, sie hebt
+ * Bewusst kein zweites Anzeigesystem: die Chronik zeigt nichts an, sie hebt
  * nur auf. Gelesen wird sie ausschliesslich vom Tagesbericht
  * (game/bericht.js).
  *

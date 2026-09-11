@@ -1,10 +1,10 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Solitär / Klondike (client).
-   Two modes: Solo vs house (sol:*) and PvP race (solrace:*).
-   Click a card to select its run, click a destination to move.
-   Double-click sends a card to its foundation. Server-authoritative.
+   Solitär (Klondike)
+   Zwei Modi: solo gegen das Haus (sol:*) und Rennen gegeneinander (solrace:*).
+   Karte antippen wählt ihre Folge, Ziel antippen legt sie ab. Doppelklick
+   schickt eine Karte auf ihren Zielstapel. Entschieden wird auf dem Server.
    ============================================================ */
 
 (function () {
@@ -26,7 +26,7 @@
   const views = ["sol-setup", "sol-wait", "sol-game", "sol-result"];
   function show(v) { for (const x of views) { const e = $("#" + x); if (e) e.style.display = x === v ? "" : "none"; } }
 
-  // ── Mode tabs ─────────────────────────────────────────────
+  // --- Mode tabs ---
   document.querySelectorAll(".sol-mode-tab").forEach((t) =>
     t.addEventListener("click", () => {
       document.querySelectorAll(".sol-mode-tab").forEach((x) => x.classList.toggle("active", x === t));
@@ -36,7 +36,7 @@
       $("#sol-race-panel").style.display = m === "race" ? "" : "none";
     }));
 
-  // ── Card element ──────────────────────────────────────────
+  // --- Card element ---
   function cardEl(c, opts = {}) {
     const el = document.createElement("div");
     el.className = "sol-card";
@@ -52,7 +52,7 @@
     socket.emit(ev, m, cb || (() => {}));
   }
 
-  // ── Board rendering ───────────────────────────────────────
+  // --- Board rendering ---
   function renderBoard(b) {
     board = b;
     const root = $("#sol-board");
@@ -119,7 +119,7 @@
     root.appendChild(tab);
   }
 
-  // ── Interaction ───────────────────────────────────────────
+  // --- Interaction ---
   function clearSel() { sel = null; }
   function reRender() { if (mode === "race" && raceSt && raceSt.board) renderBoard(raceSt.board); else if (board) renderBoard(board); }
 
@@ -128,7 +128,7 @@
     if (res.account) applyAccount(res.account);
     if (res.moveError) flash(res.moveError);
     if (res.board) renderBoard(res.board);            // race move ack
-    else if (res.tableau) renderBoard(res);           // solo view is the board itself
+    else if (res.tableau) renderBoard(res);           // solo ist die Ansicht das Brett selbst
     if (mode === "solo" && res.won) { over = true; endSolo(true, res.payout); return; }
     if (mode === "solo" && board && !over) renderSoloHud();
   }
@@ -151,7 +151,7 @@
       else flash("Nur die oberste Karte kann auf die Basis.");
       return;
     }
-    // no selection → select this foundation as a source
+    // nichts gewählt: diesen Zielstapel als Quelle wählen
     const b = curBoard();
     if (b && b.foundations[fi]) { sel = { kind: "f", s: fi }; reRender(); }
   }
@@ -161,7 +161,7 @@
     const pile = b.tableau[col];
     const c = pile[idx];
     if (sel) {
-      // attempt a move to this column; if it fails and we clicked a face-up card, reselect it
+      // Zug auf diese Spalte versuchen. Klappt das nicht und es war eine offene Karte, sie neu wählen
       attemptMoveToColumn(col, () => { if (c && c.up !== false) selectRun(col, idx); });
       return;
     }
@@ -207,7 +207,7 @@
     flashTimer = setTimeout(() => { el.textContent = ""; }, 1600);
   }
 
-  // ── Solo HUD / lifecycle ──────────────────────────────────
+  // --- Solo HUD / lifecycle ---
   function renderSoloHud() {
     if (board.free) {
       $("#sol-hud").innerHTML = `<div class="sol-hud-item"><span>Modus</span><b>🎯 Frei</b></div>
@@ -226,15 +226,15 @@
   function endSolo(won, payout) {
     stopTimer();
     show("sol-result");
-    $("#sol-rematch").style.display = "none"; $("#sol-rematch-status").textContent = ""; // solo has no rematch
+    $("#sol-rematch").style.display = "none"; $("#sol-rematch-status").textContent = ""; // solo gibt es keine Revanche
     const free = board && board.free;
     $("#sol-result-emoji").textContent = won ? "🏆" : "🙈";
     $("#sol-result-title").textContent = won ? "Abgeräumt!" : (free ? "Beendet" : "Aufgegeben");
     if (won) $("#sol-result-sub").innerHTML = free ? "🎉 Geschafft! Zählt für deine Achievements." : `+${fmt(payout)}<i class=mk></i> (Einsatz ×${board.winMult || 3})!`;
-    else $("#sol-result-sub").innerHTML = free ? "Kein Verlust — jederzeit neu starten." : "Einsatz weg. Nächstes Mal!";
+    else $("#sol-result-sub").innerHTML = free ? "Kein Verlust, du kannst jederzeit neu anfangen." : "Einsatz weg. Nächstes Mal!";
   }
 
-  // ── Race lifecycle ────────────────────────────────────────
+  // --- Race lifecycle ---
   function startTimer() {
     stopTimer();
     timerInt = setInterval(() => {
@@ -249,7 +249,7 @@
   function renderRaceHud(s) {
     const you = s.you || { name: "Du", foundations: 0 }, opp = s.opponent || { name: "Gegner", foundations: 0 };
     $("#sol-hud").innerHTML = `<div class="sol-hud-item"><span>${escapeHtml(you.name)}</span><b>${you.foundations}/52</b></div>
-      <div class="sol-hud-item sol-hud-timer"><span>Zeit</span><b id="sol-race-timer">–</b></div>
+      <div class="sol-hud-item sol-hud-timer"><span>Zeit</span><b id="sol-race-timer">-</b></div>
       <div class="sol-hud-item"><span>${escapeHtml(opp.name)}</span><b>${opp.foundations}/52</b></div>`;
     $("#sol-auto").style.display = "";
     $("#sol-giveup").style.display = "none";
@@ -266,7 +266,7 @@
       const line = r.players.map((p) => `${escapeHtml(p.name)}: ${p.foundations}/52`).join(" · ");
       sub.innerHTML = (iWon ? `+${fmt(r.payout)}<i class=mk></i> (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)}<i class=mk></i> an ${escapeHtml(r.winner)}`) +
         `<br>${line}` + (r.walkover ? "<br><span class='muted'>Gegner hat aufgegeben.</span>" : "");
-      if (r.walkover && iWon) toast(`🏆 Gegner hat das Race verlassen — du gewinnst ${fmt(r.payout)} Chips!`);
+      if (r.walkover && iWon) toast(`Dein Gegner hat das Rennen verlassen, du bekommst ${fmt(r.payout)} Chips.`);
     }
   }
 
@@ -294,7 +294,7 @@
   socket.on("solrace:state", (s) => { if (s) applyRace(s); });
   socket.on("account:update", (d) => { if (d && d.account) applyAccount(d.account); });
 
-  // ── Buttons ───────────────────────────────────────────────
+  // --- Buttons ---
   $("#sol-free-start").addEventListener("click", () => {
     mode = "solo"; over = false; clearSel();
     socket.emit("sol:start", { free: true }, (res) => {

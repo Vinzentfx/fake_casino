@@ -1,12 +1,12 @@
 "use strict";
 
 /**
- * Duelle, die man NICHT gleichzeitig spielen muss.
+ * Duelle, die man nicht gleichzeitig spielen muss.
  *
  * Das Casino hat fuenf Spiele, die ausschliesslich gegeneinander laufen:
  * Sudoku-Race, Memory-Duell, Schach, Solitaer-Race und Poker. Alle verlangen,
  * dass zwei Leute im selben Moment vor dem Bildschirm sitzen. In einer
- * Freundesrunde, die in Schueben spielt, passiert das fast nie — die Spiele
+ * Freundesrunde, die in Schueben spielt, passiert das fast nie, die Spiele
  * standen deshalb monatelang still.
  *
  * Bei den Raetselspielen ist das aber gar nicht noetig. Beide bekommen
@@ -20,7 +20,7 @@
  *
  * Der Einsatz beider liegt vom Moment des Annehmens an fest; der Pot wird
  * abzueglich Rake ausgezahlt. Nimmt niemand an, bekommt der Ersteller nach
- * Ablauf seinen Einsatz zurueck — Warten darf nichts kosten.
+ * Ablauf seinen Einsatz zurueck. Warten darf nichts kosten.
  *
  * Spielabhaengiges steckt in ADAPTER. Das Modul selbst kennt nur Aufgabe,
  * Ergebnis und Vergleich, damit spaeter Memory und Solitaer dazukommen
@@ -46,14 +46,14 @@ const ARCHIV_MAX = 30;
 
 let _io = null, _accounts = null;
 
-// ─── Spiel-Adapter ──────────────────────────────────────────────────────────
+// --- Spiel-Adapter ---
 // erzeuge(opts)          → { aufgabe, geheim, label }
 // bewerte(geheim, einsendung, ms) → { punkte, ms, text }   höhere punkte gewinnen
 const ADAPTER = {};
 
 function registriere(adapter) { ADAPTER[adapter.id] = adapter; }
 
-// ─── Stand ──────────────────────────────────────────────────────────────────
+// --- Stand ---
 let state = load();
 
 function load() {
@@ -115,7 +115,7 @@ function archiviere(eintrag) {
   if (state.archiv.length > ARCHIV_MAX) state.archiv.length = ARCHIV_MAX;
 }
 
-// ─── Ablauf ─────────────────────────────────────────────────────────────────
+// --- Ablauf ---
 /**
  * Herausforderung aufmachen. Der Einsatz wird sofort abgebucht, damit niemand
  * eine Herausforderung stehen lassen kann, die er gar nicht bezahlen koennte.
@@ -212,7 +212,7 @@ function gibAb(key, id, einsendung) {
 
 /**
  * Abrechnen. `opts.aufgabe` heisst: der Gegner hat die Spielzeit verstreichen
- * lassen, ohne abzugeben — dann gewinnt der andere kampflos.
+ * lassen, ohne abzugeben, dann gewinnt der andere kampflos.
  */
 function entscheide(id, opts = {}) {
   const d = state.offen[id];
@@ -255,17 +255,17 @@ function entscheide(id, opts = {}) {
       const adapter = ADAPTER[d.spiel];
       const spielName = adapter ? adapter.label : d.spiel;
       chat.announce(_io, siegerName
-        ? `⚔️ ${spielName}-Duell: ${siegerName} gewinnt gegen ${siegerName === d.erstellerName ? d.gegnerName : d.erstellerName} und holt ${auszahlung.toLocaleString("de-DE")} Chips.`
-        : `⚔️ ${spielName}-Duell zwischen ${d.erstellerName} und ${d.gegnerName} endet unentschieden.`);
+        ? `${spielName}-Duell: ${siegerName} gewinnt gegen ${siegerName === d.erstellerName ? d.gegnerName : d.erstellerName} und holt ${auszahlung.toLocaleString("de-DE")} Chips.`
+        : `${spielName}-Duell zwischen ${d.erstellerName} und ${d.gegnerName} endet unentschieden.`);
     } catch {}
-    // Der Verlierer ist fast immer der, der NICHT gerade davorsitzt.
+    // Der Verlierer ist fast immer der, der nicht gerade davorsitzt.
     try {
       const push = require("./push");
       const verlierer = sieger === "ersteller" ? d.gegner : d.ersteller;
       const gewinner = sieger === "ersteller" ? d.ersteller : d.gegner;
       if (sieger && verlierer) {
         push.an(verlierer, "tisch", {
-          title: "⚔️ Dein Duell ist entschieden",
+          title: "Dein Duell ist entschieden",
           body: `${nameVon(gewinner)} war besser. Revanche?`,
           url: "/",
         });
@@ -282,7 +282,7 @@ function oeffentlichesErgebnis(e) {
   return { punkte: e.punkte, ms: e.ms, text: e.text || "" };
 }
 
-// ─── Sicht für den Client ───────────────────────────────────────────────────
+// --- Sicht für den Client ---
 function publicState(key) {
   raeumeAuf();
   const offen = [], meine = [], laufend = [];

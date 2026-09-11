@@ -1,27 +1,28 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Sportwetten (simulated + real WC) client.
-   Match board + a bet slip: tap selections to add legs. 1 leg = single bet,
-   2+ legs = combo/parlay (odds multiply, ALL must win). See what others back.
+   Sportwetten (simuliert und echte Spiele)
+   Spieltafel und Wettschein: Tipps antippen, um sie einzusammeln. Ein Tipp
+   ist eine Einzelwette, ab zwei eine Kombi (Quoten multiplizieren sich, alle
+   müssen treffen). Man sieht, worauf die anderen setzen.
    ============================================================ */
 
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
   const $ = (id) => document.getElementById(id);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
-  const SAME_GAME_HAIRCUT = 0.90; // mirror of the server
+  const SAME_GAME_HAIRCUT = 0.90; // derselbe Wert wie auf dem Server
 
   let data = { matches: [], feed: [], myCombos: [] };
   let betAmount = 100;
-  let slip = []; // legs: { matchId, market, selection, odds, label }
+  let slip = []; // Tipps: { matchId, market, selection, odds, label }
 
   /* ---------------------------------------------------------------------
      Filter und Aufklappen.
 
-     Vorher stand jedes Spiel mit ALLEN sechs Maerkten offen da. Bei siebzig
+     Vorher stand jedes Spiel mit allen sechs Maerkten offen da. Bei siebzig
      Spielen waren das 714 Wettknoepfe und eine Seite von ueber 34.000 Pixeln
-     Hoehe — rund vierunddreissig Bildschirme Scrollen, um ans Ende zu kommen.
+     Hoehe, rund vierunddreissig Bildschirme Scrollen, um ans Ende zu kommen.
 
      Jetzt steht nur der Hauptmarkt (Sieger) offen, der Rest kommt auf Tipp.
      Dazu ein Liga-Filter und eine Grundmenge, die sich nachladen laesst.
@@ -64,7 +65,7 @@
      *
      * Vorher wurde nur nach Zustand sortiert, und "live" stand oben. Die
      * simulierten Partien laufen aber im Dauerbetrieb (eine komprimierte
-     * Halbzeit alle paar Sekunden), sind also fast immer live — und
+     * Halbzeit alle paar Sekunden), sind also fast immer live, und
      * besetzten damit dauerhaft die Spitze der Liste. Die 67 echten Spiele
      * standen darunter und wurden schlicht nie gesehen. Genau deshalb kam
      * die Meldung, es gaebe gar keine echten.
@@ -85,13 +86,13 @@
     socket.emit("sports:state", (res) => {
       if (!res || !res.ok) return;
       data = res;
-      // Drop slip legs whose match is no longer open.
+      // Tipps rauswerfen, deren Spiel nicht mehr offen ist.
       slip = slip.filter((l) => { const m = data.matches.find((x) => x.id === l.matchId); return m && m.state === "open"; });
       render();
     });
   }
 
-  // ── Labels ──────────────────────────────────────────────────────────────
+  // --- Beschriftungen ---
   function selLabel(m, market, sel) {
     if (market === "1x2") return sel === "home" ? m.home : sel === "away" ? m.away : "Unent.";
     if (market === "dc") return sel === "hd" ? "1X" : sel === "ha" ? "12" : "X2";
@@ -116,15 +117,15 @@
     return `<span class="sb-kick">⏱ Anpfiff ${mm}:${String(ss).padStart(2, "0")}</span>`;
   }
 
-  // ── Bet slip ────────────────────────────────────────────────────────────
+  // --- Wettschein ---
   const legIn = (matchId, market, selection) => slip.find((l) => l.matchId === matchId && l.market === market && l.selection === selection);
   function toggleLeg(m, market, selection) {
     const odds = m.markets[market].sels[selection];
     const i = slip.findIndex((l) => l.matchId === m.id && l.market === market);
-    if (i >= 0 && slip[i].selection === selection) { slip.splice(i, 1); return; } // tap again → remove
+    if (i >= 0 && slip[i].selection === selection) { slip.splice(i, 1); return; } // noch mal tippen entfernt ihn
     if (slip.length >= 6 && i < 0) { toast("Maximal 6 Tipps pro Kombi."); return; }
-    const leg = { matchId: m.id, market, selection, odds, label: `${m.home}–${m.away}: ${selLabel(m, market, selection)}` };
-    if (i >= 0) slip[i] = leg; else slip.push(leg); // one leg per match+market
+    const leg = { matchId: m.id, market, selection, odds, label: `${m.home} vs ${m.away}: ${selLabel(m, market, selection)}` };
+    if (i >= 0) slip[i] = leg; else slip.push(leg); // ein Tipp je Spiel und Markt
   }
   function comboOdds() {
     const per = {};
@@ -184,7 +185,7 @@
     }
   }
 
-  // ── Match board ─────────────────────────────────────────────────────────
+  // --- Spieltafel ---
   function render() { renderSlip(); renderMatches(); renderCombos(); renderHistory(); renderFeed(); }
 
   function renderHistory() {
@@ -210,7 +211,7 @@
       out += `<button class="sb-sel${on}" data-id="${m.id}" data-mk="${mk}" data-sel="${sel}">
         <span class="sb-sel-name">${escapeHtml(selLabel(m, mk, sel))}</span>
         <b class="sb-odds">${od.toFixed(2)}</b>
-        <span class="sb-book">${c.backers ? `${c.backers}·${fmt(c.stake)}` : "—"}</span>
+        <span class="sb-book">${c.backers ? `${c.backers}·${fmt(c.stake)}` : "-"}</span>
         <span class="sb-bar" style="width:${share}%"></span></button>`;
     }
     return out + `</div></div>`;

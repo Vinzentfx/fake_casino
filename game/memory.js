@@ -1,36 +1,37 @@
 "use strict";
 
 /**
- * Memory-Duell — turn-based PvP memory (pairs).
+ * Memory-Duell, Paare suchen gegeneinander, abwechselnd.
  *
- * Two players share ONE shuffled board of face-down pairs. On your turn you flip
- * two cards: a match scores a pair and you go again; a miss flips them back and
- * passes the turn. Whoever has the most pairs when the board is cleared wins the
- * pot (both buy-ins) minus a rake. A tie refunds both buy-ins.
+ * Beide spielen auf einem gemischten Brett mit verdeckten Paaren. Wer dran ist,
+ * dreht zwei Karten um: ein Paar zählt und man darf noch mal, sonst werden sie
+ * wieder umgedreht und der andere ist dran. Wer am Ende die meisten Paare hat,
+ * bekommt den Topf (beide Buy-ins) minus Rake. Unentschieden gibt beiden das
+ * Buy-in zurück.
  *
- * PvP only (no bot) — memory is a skill game, so a random bot would be farmable.
- * Chips only move between the two players; the rake is the economy sink. Server-
- * authoritative: the board layout lives here and unmatched card faces are never
- * sent to the client until they're flipped.
+ * Nur gegen Menschen, kein Bot: Memory ist ein Geschicklichkeitsspiel, einen
+ * Zufallsbot könnte man abfarmen. Chips wandern nur zwischen den beiden, der
+ * Rake verschwindet. Das Brett liegt auf dem Server, Kartenseiten gehen erst
+ * an den Client, wenn sie umgedreht werden.
  *
- * Closely mirrors slotsPvp.js for match/lobby lifecycle.
+ * Match und Lobby laufen fast wie in slotsPvp.js.
  */
 
 const crypto = require("crypto");
 const lobby = require("./lobby");
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const RAKE = 0.10;            // 10% of the pot is removed (sink); winner gets the rest
+const RAKE = 0.10;            // 10 % des Topfs verschwinden, der Gewinner bekommt den Rest
 const MIN_BUYIN = 50;
 const MAX_BUYIN = 1_000_000;
-const FLIP_BACK_MS = 1100;    // how long a mismatched pair stays visible before flipping back
+const FLIP_BACK_MS = 1100;    // so lange bleibt ein falsches Paar offen, bevor es sich zurückdreht
 
-// Board sizes (number of PAIRS). small 12 cards, medium 20 cards, large 30 cards.
+// Brettgrößen (Anzahl Paare): klein 12 Karten, mittel 20, groß 30.
 const SIZES = { small: 6, medium: 10, large: 15 };
 const DEFAULT_SIZE = "medium";
 const sizePairs = (size) => SIZES[size] || SIZES[DEFAULT_SIZE];
 
-// Card faces — one emoji per pair id (index 0..pairs-1). Must cover the largest board.
+// Kartenmotive, ein Emoji je Paar (Index 0..pairs-1). Muss fürs größte Brett reichen.
 const FACES = ["🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🎲", "👑", "🚀", "🐬",
   "🦄", "🎁", "🌈", "🍉", "🦋", "🐱", "🎈", "🍩"];
 
@@ -45,7 +46,7 @@ function shuffledBoard(pairs) {
 }
 
 function setupMemory(io, accounts) {
-  const matches = new Map(); // code -> match
+  const matches = new Map(); // Code -> Match
 
   function makeCode() {
     let code;
@@ -61,7 +62,7 @@ function setupMemory(io, accounts) {
     return code ? matches.get(code) : null;
   };
 
-  // Public board: reveal only matched cards and the currently flipped ones.
+  // Öffentliches Brett: nur gefundene Paare und die gerade umgedrehten Karten zeigen.
   function publicBoard(match) {
     const flipped = new Set(match.flipped);
     return match.board.map((c, i) => {
@@ -117,7 +118,7 @@ function setupMemory(io, accounts) {
     return {
       code: match.code,
       game: "memory",
-      label: `🧠 Memory-Duell (${match.pairs * 2} Karten)`,
+      label: `Memory-Duell (${match.pairs * 2} Karten)`,
       host: host ? host.name : "?",
       players: [...match.players.values()].filter((p) => p.socket).length,
       max: 2,
@@ -144,7 +145,7 @@ function setupMemory(io, accounts) {
       lobby.remove(match.code);
       return;
     }
-    // Walkover: someone left mid-match → remaining player wins the pot.
+    // Kampflos: jemand ist mitten im Match gegangen, der andere bekommt den Topf.
     if (wasPlaying && match.players.size === 1) {
       settle(match, [...match.players.values()][0]);
     } else {
@@ -168,10 +169,10 @@ function setupMemory(io, accounts) {
 
     let rake = 0, payout = 0;
     if (winner) {
-      rake = forcedWinner ? 0 : Math.floor(match.pot * RAKE); // walkover: no rake, take the pot
+      rake = forcedWinner ? 0 : Math.floor(match.pot * RAKE); // kampflos: kein Rake, ganzer Topf
       payout = match.pot - rake;
       accounts.adjustChips(winner.id, payout);
-      // Real win (not a walkover) counts toward the clan league / war.
+      // Ein echter Sieg (nicht kampflos) zählt für Clan-Liga und Krieg.
       if (!forcedWinner) { try { require("./clans").recordPvpWin(winner.id, "memory"); } catch {} }
     } else {
       players.forEach((p) => accounts.adjustChips(p.id, match.buyIn)); // tie → refund
@@ -214,7 +215,7 @@ function setupMemory(io, accounts) {
     match.state = "playing";
     match.result = null;
     broadcast(match.code);
-    lobby.changed(); // now playing → drops out of the open-lobby list
+    lobby.changed(); // läuft jetzt, fällt aus der Liste der offenen Lobbys
   }
 
   io.on("connection", (socket) => {
@@ -222,7 +223,7 @@ function setupMemory(io, accounts) {
       if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN)
-        return ack && ack({ ok: false, error: `Buy-in ${MIN_BUYIN}–${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
+        return ack && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       if (!SIZES[size]) size = DEFAULT_SIZE;
       const a = acc(socket);
       if (!a || a.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
@@ -238,7 +239,7 @@ function setupMemory(io, accounts) {
       matches.set(code, match);
       socket.join(code);
       socket.data.memoryCode = code;
-      // Public matches show up in the open-lobby browser; private ones are code-only.
+      // Öffentliche Matches stehen in der Lobby-Liste, private gehen nur per Code.
       if (match.public) registerLobby(code);
       ack && ack({ ok: true, code, public: match.public });
       broadcast(code);
@@ -305,10 +306,10 @@ function setupMemory(io, accounts) {
         match.board[j].matchedBy = match.turn;
         me.pairs += 1;
         match.flipped = [];
-        broadcast(match.code); // matcher keeps the turn
+        broadcast(match.code); // wer ein Paar findet, bleibt dran
         if (match.board.every((c) => c.matchedBy != null)) settle(match);
       } else {
-        // Show both, then flip back + pass turn after a beat.
+        // Beide zeigen, dann nach kurzer Pause zurückdrehen und abgeben.
         match.locked = true;
         broadcast(match.code);
         match.flipTimer = setTimeout(() => {

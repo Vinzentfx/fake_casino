@@ -1,9 +1,9 @@
 "use strict";
 
 /* ============================================================
-   Fake Casino – Poker (Texas Hold'em) client
-   Renders the table from server state and sends player actions.
-   Depends on window.Casino (socket, showScreen, toast, getAccount).
+   Poker (Texas Hold'em)
+   Zeichnet den Tisch aus dem Stand vom Server und schickt die Aktionen.
+   Braucht window.Casino (socket, showScreen, toast, getAccount).
    ============================================================ */
 
 (function () {
@@ -15,13 +15,13 @@
   const tableView = $("#poker-table-view");
   const felt = $("#felt");
 
-  let state = null; // latest table state from server
+  let state = null; // letzter Tischstand vom Server
   let joined = false;
 
-  // Visual slots around the felt; index 0 = bottom (always the viewer).
+  // Plätze rund um den Tisch, Index 0 = unten (immer man selbst).
   // [left%, top%]
   const SLOTS = [
-    [50, 90], // 0 bottom center (you)
+    [50, 90], // 0 unten Mitte (du)
     [12, 72], // 1
     [12, 26], // 2
     [50, 8], // 3 top center
@@ -82,8 +82,8 @@
     if (window.Casino.chat) window.Casino.chat.leaveLobby();
   }
 
-  // Joined from the home-screen lobby browser → open the poker screen; the
-  // poker:state broadcast then drops us into the table view automatically.
+  // Über die Lobby-Liste beigetreten: Poker öffnen, der Broadcast von
+  // poker:state setzt uns dann von selbst an den Tisch.
   window.Casino._pokerJoinCode = (code) => {
     window.Casino.showScreen("poker");
     socket.emit("poker:join", { code }, (res) => {
@@ -96,7 +96,7 @@
     exitToLobby();
   });
 
-  // Leave the table automatically when navigating away from the poker screen.
+  // Beim Wegnavigieren vom Poker-Screen den Tisch automatisch verlassen.
   const pokerScreen = document.querySelector('[data-screen="poker"]');
   new MutationObserver(() => {
     if (joined && !pokerScreen.classList.contains("active")) {
@@ -111,7 +111,7 @@
   socket.on("poker:state", (s) => {
     state = s;
     if (!joined) enterTable();
-    // Friend tables get their own chat channel; solo bot tables stay on global.
+    // Tische unter Freunden bekommen einen eigenen Chat, Solo-Tische gegen Bots bleiben im allgemeinen.
     if (window.Casino.chat && state.code && !state.vsBots)
       window.Casino.chat.enterLobby(state.code);
     render();
@@ -121,7 +121,7 @@
 
   // Zug-Uhr. Der Server foldet am Ende automatisch; hier laeuft die Anzeige.
   // Zwei Orte: der Text im Banner und der Balken am Sitz des Spielers, der
-  // dran ist. Der Balken ist der wichtigere — dorthin schaut man.
+  // dran ist. Der Balken ist der wichtigere, dorthin schaut man.
   setInterval(() => {
     const els = document.querySelectorAll(".pk-timer");
     const sitz = document.querySelector(".seat.active-turn");
@@ -223,7 +223,7 @@
         !state.handActive;
       if (isWinner) el.classList.add("winner");
 
-      // Hole cards (your own face-up, others face-down unless revealed)
+      // Eigene Karten offen, die der anderen verdeckt, außer sie wurden aufgedeckt
       let cardsHtml = "";
       if (seat.hole) {
         cardsHtml = '<div class="hole">' +
@@ -255,7 +255,7 @@
     const banner = $("#table-banner");
     if (!state.handActive && state.lastResult) {
       const w = state.lastResult.winners.map((x) => `${escapeHtml(x.name)} +${x.amount}`).join(", ");
-      banner.innerHTML = `🏆 ${w}`;
+      banner.innerHTML = `Gewonnen: ${w}`;
       banner.classList.add("show");
     } else if (state.handActive) {
       banner.textContent = state.stageLabel;
@@ -280,7 +280,7 @@
       const def = Math.min(max, state.bigBlind * 50);
       c.innerHTML = `
         <div class="buyin">
-          <span>Platz nehmen — Buy-in:</span>
+          <span>Hinsetzen, Buy-in:</span>
           <input id="buyin-input" type="number" min="${state.bigBlind}" max="${max}" value="${def}" />
           <button class="btn-primary" id="sit-btn">Setzen</button>
         </div>
@@ -294,7 +294,7 @@
       return;
     }
 
-    // Seated. Action row depends on whose turn it is.
+    // Man sitzt. Welche Knöpfe es gibt, hängt davon ab, wer dran ist.
     const myTurn = state.options && state.yourSeat === state.toAct && state.handActive;
 
     if (myTurn) {
@@ -310,8 +310,8 @@
       div.innerHTML = who ? `Am Zug: ${escapeHtml(who.name)} <span class="pk-timer"></span>` : "Warte…";
       c.appendChild(div);
     } else {
-      // No active hand → start / waiting. Only the lobby leader may start;
-      // bot tables (solo) have no leader gate.
+      // Keine laufende Hand: starten oder warten. Starten darf nur der Lobby-Leiter,
+      // an Bot-Tischen (solo) gibt es diese Sperre nicht.
       const row = document.createElement("div");
       row.className = "start-row";
       const canIStart = state.vsBots || state.isHost;
@@ -327,7 +327,7 @@
       if (startBtn) startBtn.addEventListener("click", () => socket.emit("poker:start"));
     }
 
-    // Stand-up button (always available while seated)
+    // Aufstehen geht immer, solange man sitzt
     const stand = document.createElement("button");
     stand.className = "stand-btn";
     stand.textContent = "Aufstehen";
@@ -377,8 +377,8 @@
         amount.value = v;
       };
       range.addEventListener("input", () => sync(range.value));
-      // While typing, only move the slider — don't rewrite the field (so a custom
-      // amount can be typed freely). Clamp the field once on blur.
+      // Beim Tippen nur den Regler bewegen und das Feld in Ruhe lassen (sonst kann
+      // man keinen eigenen Betrag eingeben). Erst beim Verlassen wird begrenzt.
       amount.addEventListener("input", () => { range.value = clamp(amount.value); });
       amount.addEventListener("change", () => sync(amount.value));
       raiseWrap.querySelector("#raise-btn").addEventListener("click", () =>

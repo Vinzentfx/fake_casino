@@ -1,25 +1,26 @@
 "use strict";
 
 /**
- * Generic real-time chat — a global room (the lobby/home screen) plus optional
- * per-room channels (one per game lobby, keyed by that lobby's code). Messages
- * are ephemeral: only the last N per room are kept in memory for late joiners.
+ * Chat in Echtzeit: ein allgemeiner Raum (Lobby und Startseite) und dazu je
+ * Spiel-Lobby ein eigener Kanal (Schlüssel ist der Code der Lobby). Nachrichten
+ * sind flüchtig, pro Raum bleiben nur die letzten N im Speicher für Nachzügler.
  *
- * Rooms:
- *   "global"        → everyone online, shown on the home screen.
- *   "<CODE>"        → a single game lobby; only sockets that joined the
- *                     Socket.IO room <CODE> (poker/slots-pvp/blackjack) receive it.
+ * Räume:
+ *   "global"   alle, die online sind, auf der Startseite zu sehen.
+ *   "<CODE>"   eine einzelne Lobby. Das bekommen nur Sockets, die im
+ *              Socket.IO-Raum <CODE> sind (Poker, Slots-PvP, Blackjack).
  *
- * Text is stored raw (trimmed + length-capped); clients MUST escape on render.
+ * Der Text wird roh gespeichert (getrimmt, gekürzt), die Clients MÜSSEN beim
+ * Anzeigen escapen.
  */
 
 const wortfilter = require("./wortfilter");
 
-const HISTORY = 40;          // messages kept per room
-const MAX_LEN = 280;         // characters per message
-const MIN_INTERVAL_MS = 600; // per-socket flood guard
+const HISTORY = 40;          // Nachrichten je Raum
+const MAX_LEN = 280;         // Zeichen je Nachricht
+const MIN_INTERVAL_MS = 600; // Flutschutz je Socket
 
-const rooms = new Map();     // room -> [{ name, text, ts }]
+const rooms = new Map();     // Raum -> [{ name, text, ts }]
 
 function history(room) {
   return rooms.get(room) || [];
@@ -32,14 +33,14 @@ function push(room, msg) {
   if (list.length > HISTORY) list.splice(0, list.length - HISTORY);
 }
 
-/** Drop a lobby channel when its lobby is torn down. */
+/** Kanal einer Lobby wegwerfen, wenn die Lobby abgebaut wird. */
 function clearRoom(room) {
   rooms.delete(room);
 }
 
-/** System announcement into the global chat (conquests, achievements …). */
+/** Ansage des Systems im allgemeinen Chat (Eroberungen, Achievements …). */
 function announce(io, text) {
-  const msg = { name: "📣 Stadt", text: String(text).slice(0, MAX_LEN), ts: Date.now(), system: true };
+  const msg = { name: "Stadt", text: String(text).slice(0, MAX_LEN), ts: Date.now(), system: true };
   push("global", msg);
   io.emit("chat:msg", { room: "global", msg });
 }
@@ -59,7 +60,7 @@ function setupChat(io, accounts) {
       if (!text) return ack && ack({ ok: false, error: "Leere Nachricht." });
       /* Im Chat wird maskiert, nicht abgelehnt: eine verschluckte Nachricht
          erzeugt Nachfragen ("kam das an?"), eine maskierte erklaert sich
-         selbst. Gefiltert wird vor dem Speichern — die Verlaufsliste soll
+         selbst. Gefiltert wird vor dem Speichern, die Verlaufsliste soll
          das Wort gar nicht erst enthalten. */
       text = wortfilter.entschaerfe(text).text;
 
@@ -68,8 +69,8 @@ function setupChat(io, accounts) {
         return ack && ack({ ok: false, error: "Etwas langsamer." });
       socket.data.lastChatTs = now;
 
-      // For a lobby channel, only allow posting if the socket is actually in that
-      // Socket.IO room (i.e. they joined that lobby). "global" is open to all.
+      // In einem Lobby-Kanal nur schreiben, wenn der Socket wirklich in diesem
+      // Socket.IO-Raum ist (also der Lobby beigetreten ist). "global" ist offen.
       if (room !== "global" && !socket.rooms.has(room))
         return ack && ack({ ok: false, error: "Du bist nicht in dieser Lobby." });
 
