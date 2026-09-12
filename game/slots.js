@@ -18,6 +18,7 @@
  */
 
 const crypto = require("crypto");
+const regie = require("./regie");
 const liveops = require("./liveops");
 
 // ---------------------------------------------------------------------------
@@ -499,16 +500,17 @@ function jackpotSpin(bet) {
 const jackpotPot = () => Math.round(jackpot.pot);
 
 // --- Admin: den größtmöglichen Wurf erzwingen (zum Vorführen der Animationen) ---
-// Der Besitzer kann eine einmalige Markierung setzen. Der nächste Dreh im
-// Grundspiel ist dann ein volles Raster mit dem besten Symbol, jede Linie trifft
-// auf einmal ihre höchste Stufe (thresholdPay zahlt bei Überschuss die oberste).
-const forcedWin = new Set(); // Konten mit scharf gestelltem Maximalgewinn
-
+// Der nächste Dreh im Grundspiel ist dann ein volles Raster mit dem besten
+// Symbol, jede Linie trifft auf einmal ihre höchste Stufe (thresholdPay zahlt
+// bei Überschuss die oberste).
+//
+// Hier lag mal ein eigenes Set. Seit es die Regie gibt (game/regie.js), wäre
+// das ein zweiter Ort für dieselbe Sache: der Admin-Bildschirm könnte einen
+// Maximalgewinn scharf stellen, der in der Regie-Liste nicht auftaucht, und
+// niemand wüsste, warum der nächste Dreh alles zahlt. Der alte Knopf heißt
+// weiter so und legt denselben Zettel hin.
 function armForceWin(key) {
-  forcedWin.add(String(key).toLowerCase());
-}
-function consumeForceWin(key) {
-  return forcedWin.delete(String(key).toLowerCase());
+  return regie.setze(key, "slots", "max");
 }
 
 /** Pechvogel-Modus: so lange würfeln, bis ein Raster gar nichts zahlt (kein Gewinn, keine Freispiele). */
@@ -908,11 +910,11 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
 
 function setupSlots(io, accounts) {
   io.on("connection", (socket) => {
-    socket.on("slots:machines", (ack) => ack && ack({ machines: publicMachines(), jackpot: jackpotPot() }));
+    socket.on("slots:machines", (ack) => typeof ack === "function" && ack({ machines: publicMachines(), jackpot: jackpotPot() }));
 
     // Automaten für das angemeldete Konto freischalten.
     socket.on("slots:unlock", ({ machineId } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const machine = MACHINE_BY_ID[machineId];
       if (!machine) return ack({ ok: false, error: "Unbekannter Automat." });
@@ -922,7 +924,7 @@ function setupSlots(io, accounts) {
     });
 
     socket.on("slots:spin", ({ machineId, bet } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const machine = MACHINE_BY_ID[machineId];
       if (!machine) return ack({ ok: false, error: "Unbekannter Automat." });
@@ -946,9 +948,10 @@ function setupSlots(io, accounts) {
       // Vorführung: ein scharf gestellter Maximalgewinn macht diesen Dreh zum
       // größtmöglichen Wurf. Zahlt Chips, taucht aber in Statistik, Rake und
       // Bestenlisten nicht auf. Pechvogel-Modus: das Raster bleibt immer leer.
-      const showcase = consumeForceWin(socket.data.account);
+      const anweisung = regie.nimm(socket.data.account, "slots");
+      const showcase = anweisung === "max";
       let forced = showcase ? bestGrid(machine) : null;
-      if (!forced && accounts.isShadowbanned(socket.data.account)) {
+      if (!forced && (anweisung === "niete" || accounts.pechTrifft(socket.data.account))) {
         forced = teaseGrid(machine, inFree ? session.bet : bet);
       }
       let { result, session: newSession, totalWin } = evaluateSpin(machine, bet, session, forced);
@@ -1011,7 +1014,7 @@ function setupSlots(io, accounts) {
     // Risiko / Gamble: 50/50 auf Rot oder Schwarz, Gewinn verdoppelt sich,
     // Fehlgriff löscht ihn. Max. Stufen pro Gewinn begrenzt; EV-neutral.
     socket.on("slots:gamble", ({ guess } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const g = socket.data.gamble;
       if (!g || !(g.amount > 0)) return ack({ ok: false, error: "Kein Gewinn zum Riskieren." });
@@ -1048,7 +1051,7 @@ function setupSlots(io, accounts) {
 
     // Bonus kaufen: ein Vielfaches des Einsatzes zahlen und sofort Freispiele starten.
     socket.on("slots:buyBonus", ({ machineId, bet } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const machine = MACHINE_BY_ID[machineId];
       if (!machine || !machine.buyBonus || !machine.freeSpins) return ack({ ok: false, error: "Kein Bonus-Kauf hier." });

@@ -66,6 +66,8 @@ const comeback = require("./game/comeback");
 const feed = require("./game/feed");
 const liveops = require("./game/liveops");
 const ipbans = require("./game/ipbans");
+const strafen = require("./game/strafen");
+const wartung = require("./game/wartung");
 
 const PORT = process.env.PORT || 3000;
 const build = require("./game/buildinfo");
@@ -186,6 +188,12 @@ function recentCreations(ip) {
 app.post("/api/login", (req, res) => {
   const name = req.body.name;
   const ip = req.ip || "unknown";
+  /* Wartung: das Haus ist zu, der Besitzer kommt rein. 503 und nicht 403,
+     damit man auf den Blick in die Netzwerkkonsole nicht "verboten" liest:
+     es ist nichts verboten, es ist nur gerade geschlossen. */
+  if (!wartung.darfRein(name, OWNER_KEY)) {
+    return res.status(503).json({ error: wartung.text() });
+  }
   // Würde dieser Login ein neues Konto anlegen, gilt die Grenze pro IP.
   const willCreate = name && !accounts.get(name);
   if (willCreate && recentCreations(ip).length >= ACCOUNTS_PER_IP_PER_DAY) {
@@ -210,6 +218,9 @@ app.post("/api/login", (req, res) => {
  */
 app.post("/api/session", (req, res) => {
   const result = accounts.resumeSession(req.body && req.body.token);
+  if (result.ok && !wartung.darfRein(result.account && result.account.name, OWNER_KEY)) {
+    return res.status(503).json({ error: wartung.text() });
+  }
   if (!result.ok) return res.status(401).json({ error: result.error });
   res.json({
     account: result.account,
@@ -426,8 +437,21 @@ io.on("connection", (socket) => {
   socket.on("auth", ({ token } = {}) => {
     const key = accounts.verifyToken(token);
     if (key) { const acc = accounts.get(key); if (acc) { acc.lastIp = socket.data.ip; } }
+    /* Beim Verbinden steht noch kein Konto am Socket, deshalb kann das
+       Wartungs-Tor erst hier zuschlagen. Wer ein gueltiges Token hat und
+       nicht der Besitzer ist, geht mit derselben Meldung raus, die auch im
+       Login steht. */
+    if (key && !wartung.darfRein(key, OWNER_KEY)) {
+      socket.emit("admin:kicked", { reason: wartung.text() });
+      socket.disconnect(true);
+    }
   });
 });
+
+/* Spielverbot und Einsatzdeckel greifen an EINER Stelle fuer alle Spiele
+   (game/strafen.js). Muss vor den Spielmodulen stehen, damit die Zwischen-
+   schicht am Socket haengt, bevor irgendein Handler antwortet. */
+strafen.bremse(io, accounts);
 
 setupPoker(io, accounts);
 setupSlots(io, accounts);

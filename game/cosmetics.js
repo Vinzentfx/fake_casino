@@ -409,6 +409,61 @@ function grant(acc, type, id) {
   return true;
 }
 
+/* ---------------------------------------------------------------------------
+   Admin: Stuecke von Hand geben und wegnehmen
+
+   Gebraucht als Ausgleich (etwas ist schiefgegangen), als Preis fuer etwas,
+   das ausserhalb des Casinos passiert ist, und zum Zuruecknehmen, wenn ein
+   Stueck durch einen Fehler bei jemandem landete.
+
+   Wichtig beim Wegnehmen: was angelegt ist, muss auch abgelegt werden. Sonst
+   traegt jemand weiter einen Rahmen, den er nicht mehr besitzt, und beim
+   naechsten Speichern steht am Konto eine Kennung, die zu keinem Besitz passt.
+--------------------------------------------------------------------------- */
+
+/** Der ganze Katalog, nach Art gruppiert, fuer die Auswahl im Admin. */
+function adminKatalog() {
+  const out = {};
+  for (const [art, tabelle] of Object.entries(KATALOG)) {
+    out[art] = Object.keys(tabelle).map((id) => ({
+      id,
+      label: label(art, id),
+      limitiert: tabelle[id].limitiert || null,
+      kaeuflich: tabelle[id].cost != null,
+    }));
+  }
+  return out;
+}
+
+/** Welches Feld am Konto haelt die angelegte Kennung dieser Art? */
+const ANGELEGT = { avatar: "avatar", color: "nameColor", style: "nameStyle", frame: "frame",
+  title: "title", effect: "winEffect", spruch: "spruch", banner: "banner", schild: "schild",
+  aura: "aura", karte: "karte" };
+
+function adminGib(acc, art, id) {
+  if (!KATALOG[art] || !KATALOG[art][id]) return { ok: false, error: "Kein solches Stück." };
+  const neu = grant(acc, art, id);
+  return { ok: true, neu, label: label(art, id) };
+}
+
+function adminNimm(acc, art, id) {
+  if (!KATALOG[art] || !KATALOG[art][id]) return { ok: false, error: "Kein solches Stück." };
+  const liste = ensureOwned(acc)[TOPF[art]];
+  const i = liste.indexOf(id);
+  if (i < 0) return { ok: false, error: "Hat er nicht." };
+  liste.splice(i, 1);
+  /* Bild und Namensfarbe stehen am Konto als Wert und nicht als Kennung
+     (acc.avatar ist das Emoji selbst). Ein Vergleich mit der id trifft dort
+     also nie, und das angelegte Stueck waere hängengeblieben. */
+  const item = KATALOG[art][id];
+  const feld = ANGELEGT[art];
+  const angelegt = art === "avatar" ? acc.avatar === item.emoji
+    : art === "color" ? acc.nameColor === item.color
+    : acc[feld] === id;
+  if (feld && angelegt) delete acc[feld];
+  return { ok: true, label: label(art, id) };
+}
+
 /** Anzeigename fuer Belohnungslisten. */
 function label(type, id) {
   const item = KATALOG[type] ? KATALOG[type][id] : null;
@@ -502,4 +557,4 @@ function gibFortuna(acc) {
   return erhalten;
 }
 
-module.exports = { setupCosmetics, grant, label, publicLook, eintrittsSpruch, saubererSpruch, SPRUCH_MAX, AVATARS, COLORS, STYLES, FRAMES, TITLES, EFFEKTE, SPRUECHE, BANNER, SCHILDER, AUREN, KARTEN, FORTUNA_MAX, FORTUNA_STUECKE, fortunaVergeben, hatFortuna, gibFortuna };
+module.exports = { setupCosmetics, grant, label, adminKatalog, adminGib, adminNimm, publicLook, eintrittsSpruch, saubererSpruch, SPRUCH_MAX, AVATARS, COLORS, STYLES, FRAMES, TITLES, EFFEKTE, SPRUECHE, BANNER, SCHILDER, AUREN, KARTEN, FORTUNA_MAX, FORTUNA_STUECKE, fortunaVergeben, hatFortuna, gibFortuna };

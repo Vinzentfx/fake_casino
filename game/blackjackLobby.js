@@ -114,7 +114,7 @@ function setupBlackjackLobby(io, accounts) {
     };
 
     socket.on("bjlobby:create", (ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       leave(socket);
       const code = makeCode();
       const name = nameOf();
@@ -124,23 +124,23 @@ function setupBlackjackLobby(io, accounts) {
       socket.join(code);
       socket.data.bjRoom = code;
       register(code);
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(room);
     });
 
     socket.on("bjlobby:join", ({ code } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       code = String(code || "").trim().toUpperCase();
       const room = rooms.get(code);
-      if (!room) return ack && ack({ ok: false, error: "Lobby nicht gefunden." });
+      if (!room) return typeof ack === "function" && ack({ ok: false, error: "Lobby nicht gefunden." });
       if (room.players.size >= MAX_PLAYERS && !room.players.has(socket.data.account))
-        return ack && ack({ ok: false, error: "Lobby ist voll." });
+        return typeof ack === "function" && ack({ ok: false, error: "Lobby ist voll." });
       leave(socket);
       if (!room.players.has(socket.data.account))
         room.players.set(socket.data.account, { key: socket.data.account, name: nameOf(), net: 0, hands: 0 });
       socket.join(code);
       socket.data.bjRoom = code;
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(room);
       lobby.changed();
     });

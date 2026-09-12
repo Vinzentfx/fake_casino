@@ -257,13 +257,13 @@ function setupSudoku(io, accounts) {
     socket.on("sudoku:soloLeave", () => { delete socket.data.sudokuSolo; });
 
     socket.on("sudoku:create", ({ buyIn, isPublic = true, difficulty = DEFAULT_DIFF } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN)
-        return ack && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
+        return typeof ack === "function" && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       if (!DIFFICULTIES[difficulty]) difficulty = DEFAULT_DIFF;
       const a = acc(socket);
-      if (!a || a.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      if (!a || a.chips < buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
       leaveCurrent(socket);
       const code = makeCode();
@@ -277,72 +277,72 @@ function setupSudoku(io, accounts) {
       socket.join(code);
       socket.data.sudokuCode = code;
       if (match.public) registerLobby(code);
-      ack && ack({ ok: true, code, public: match.public });
+      typeof ack === "function" && ack({ ok: true, code, public: match.public });
       broadcast(code);
     });
 
     socket.on("sudoku:join", ({ code } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       code = String(code || "").trim().toUpperCase();
       const match = matches.get(code);
-      if (!match) return ack && ack({ ok: false, error: "Match nicht gefunden." });
-      if (match.state !== "waiting") return ack && ack({ ok: false, error: "Match läuft bereits." });
+      if (!match) return typeof ack === "function" && ack({ ok: false, error: "Match nicht gefunden." });
+      if (match.state !== "waiting") return typeof ack === "function" && ack({ ok: false, error: "Match läuft bereits." });
       if (match.players.size >= 2 && !match.players.has(socket.data.account))
-        return ack && ack({ ok: false, error: "Match ist voll." });
+        return typeof ack === "function" && ack({ ok: false, error: "Match ist voll." });
       const a = acc(socket);
-      if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
       leaveCurrent(socket);
       match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, correct: 0, filled: 0, finished: false });
       socket.join(code);
       socket.data.sudokuCode = code;
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(code);
       lobby.changed();
     });
 
     socket.on("sudoku:start", (ack) => {
       const match = currentMatch(socket);
-      if (!match) return ack && ack({ ok: false, error: "Kein Match." });
-      if (match.host !== socket.data.account) return ack && ack({ ok: false, error: "Nur der Host startet." });
-      if (match.state !== "waiting") return ack && ack({ ok: false, error: "Läuft bereits." });
-      if (match.players.size !== 2) return ack && ack({ ok: false, error: "Warte auf 2 Spieler." });
+      if (!match) return typeof ack === "function" && ack({ ok: false, error: "Kein Match." });
+      if (match.host !== socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Nur der Host startet." });
+      if (match.state !== "waiting") return typeof ack === "function" && ack({ ok: false, error: "Läuft bereits." });
+      if (match.players.size !== 2) return typeof ack === "function" && ack({ ok: false, error: "Warte auf 2 Spieler." });
       for (const p of match.players.values()) {
         const a = accounts.get(p.id);
-        if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` });
+        if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` });
       }
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
       startGame(match);
     });
 
     // Live-Stand: auf Sieg prüfen, sonst die versteckte Punktzahl für den Gleichstand aktualisieren.
     socket.on("sudoku:update", ({ grid } = {}, ack) => {
       const match = currentMatch(socket);
-      if (!match || match.state !== "playing") return ack && ack({ ok: false, error: "Kein laufendes Match." });
+      if (!match || match.state !== "playing") return typeof ack === "function" && ack({ ok: false, error: "Kein laufendes Match." });
       const me = match.players.get(socket.data.account);
-      if (!me) return ack && ack({ ok: false, error: "Nicht im Match." });
+      if (!me) return typeof ack === "function" && ack({ ok: false, error: "Nicht im Match." });
       const g = Array.isArray(grid) ? grid.map((v) => Math.floor(Number(v)) || 0) : [];
       me.correct = correctCount(g, match.solution);
       me.filled = filledCount(g, match.puzzle);
       if (isSolved(g, match.puzzle)) {
         me.finished = true;
-        ack && ack({ ok: true, solved: true });
+        typeof ack === "function" && ack({ ok: true, solved: true });
         settle(match, { winner: me }); // die erste gültige volle Lösung gewinnt (mit Rake)
         return;
       }
-      ack && ack({ ok: true, progress: me.filled });
+      typeof ack === "function" && ack({ ok: true, progress: me.filled });
       broadcast(match.code);
     });
 
     socket.on("sudoku:rematch", (ack) => {
       const match = currentMatch(socket);
-      if (!match || match.state !== "done") return ack && ack({ ok: false, error: "Kein beendetes Spiel." });
+      if (!match || match.state !== "done") return typeof ack === "function" && ack({ ok: false, error: "Kein beendetes Spiel." });
       const connected = [...match.players.values()].filter((p) => p.socket);
-      if (connected.length !== 2) return ack && ack({ ok: false, error: "Gegner ist nicht mehr da." });
-      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      if (connected.length !== 2) return typeof ack === "function" && ack({ ok: false, error: "Gegner ist nicht mehr da." });
+      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
       match.rematchWant = match.rematchWant || [];
       if (!match.rematchWant.includes(socket.data.account)) match.rematchWant.push(socket.data.account);
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
       if (connected.every((p) => match.rematchWant.includes(p.id))) { match.rematchWant = []; startGame(match); }
       else broadcast(match.code);
     });

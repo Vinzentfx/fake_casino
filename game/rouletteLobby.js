@@ -143,7 +143,7 @@ function setupRouletteLobby(io, accounts) {
     const curRoom = () => rooms.get(socket.data.rouletteRoom);
 
     socket.on("rlobby:create", (ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       leave(socket);
       const code = makeCode();
       const name = nameOf();
@@ -157,64 +157,64 @@ function setupRouletteLobby(io, accounts) {
       socket.join(code);
       socket.data.rouletteRoom = code;
       register(code);
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(room);
     });
 
     socket.on("rlobby:join", ({ code } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       code = String(code || "").trim().toUpperCase();
       const room = rooms.get(code);
-      if (!room) return ack && ack({ ok: false, error: "Lobby nicht gefunden." });
+      if (!room) return typeof ack === "function" && ack({ ok: false, error: "Lobby nicht gefunden." });
       if (room.players.size >= MAX_PLAYERS && !room.players.has(socket.data.account))
-        return ack && ack({ ok: false, error: "Lobby ist voll." });
+        return typeof ack === "function" && ack({ ok: false, error: "Lobby ist voll." });
       leave(socket);
       if (!room.players.has(socket.data.account))
         room.players.set(socket.data.account, { key: socket.data.account, name: nameOf(), bets: [], staked: 0, net: 0 });
       room.sockets.add(socket);
       socket.join(code);
       socket.data.rouletteRoom = code;
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(room);
       lobby.changed();
     });
 
     socket.on("rlobby:bet", (payload = {}, ack) => {
       const room = curRoom();
-      if (!room) return ack && ack({ ok: false, error: "Keine Lobby." });
-      if (room.spinning) return ack && ack({ ok: false, error: "Der Kessel dreht noch, kurz warten." });
+      if (!room) return typeof ack === "function" && ack({ ok: false, error: "Keine Lobby." });
+      if (room.spinning) return typeof ack === "function" && ack({ ok: false, error: "Der Kessel dreht noch, kurz warten." });
       const player = room.players.get(socket.data.account);
-      if (!player) return ack && ack({ ok: false, error: "Nicht am Tisch." });
+      if (!player) return typeof ack === "function" && ack({ ok: false, error: "Nicht am Tisch." });
       const bet = validateBet(payload);
-      if (!bet) return ack && ack({ ok: false, error: "Ungültige Wette." });
-      if (player.staked + bet.amount > MAX_TOTAL) return ack && ack({ ok: false, error: "Max. 50.000 Chips Gesamteinsatz." });
+      if (!bet) return typeof ack === "function" && ack({ ok: false, error: "Ungültige Wette." });
+      if (player.staked + bet.amount > MAX_TOTAL) return typeof ack === "function" && ack({ ok: false, error: "Max. 50.000 Chips Gesamteinsatz." });
       const acc = accounts.get(socket.data.account);
-      if (!acc || acc.chips < bet.amount) return ack && ack({ ok: false, error: "Nicht genug Chips." });
+      if (!acc || acc.chips < bet.amount) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips." });
       const r = accounts.adjustChips(socket.data.account, -bet.amount);
       socket.emit("account:update", { account: r.account });
       player.bets.push(bet);
       player.staked += bet.amount;
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
       broadcast(room);
     });
 
     socket.on("rlobby:clear", (ack) => {
       const room = curRoom();
-      if (!room) return ack && ack && ack({ ok: false });
-      if (room.spinning) return ack && ack && ack({ ok: false, error: "Kessel dreht." });
+      if (!room) return ack && typeof ack === "function" && ack({ ok: false });
+      if (room.spinning) return ack && typeof ack === "function" && ack({ ok: false, error: "Kessel dreht." });
       const player = room.players.get(socket.data.account);
       if (player) refund(room, player);
-      ack && ack && ack({ ok: true });
+      ack && typeof ack === "function" && ack({ ok: true });
       broadcast(room);
     });
 
     socket.on("rlobby:spin", (ack) => {
       const room = curRoom();
-      if (!room) return ack && ack && ack({ ok: false, error: "Keine Lobby." });
-      if (room.hostKey !== socket.data.account) return ack && ack && ack({ ok: false, error: "Nur der Anführer dreht." });
-      if (room.spinning) return ack && ack && ack({ ok: false, error: "Dreht bereits." });
+      if (!room) return ack && typeof ack === "function" && ack({ ok: false, error: "Keine Lobby." });
+      if (room.hostKey !== socket.data.account) return ack && typeof ack === "function" && ack({ ok: false, error: "Nur der Anführer dreht." });
+      if (room.spinning) return ack && typeof ack === "function" && ack({ ok: false, error: "Dreht bereits." });
       const anyBets = [...room.players.values()].some((p) => p.bets.length);
-      if (!anyBets) return ack && ack && ack({ ok: false, error: "Noch keine Wetten am Tisch." });
+      if (!anyBets) return ack && typeof ack === "function" && ack({ ok: false, error: "Noch keine Wetten am Tisch." });
 
       room.spinning = true;
       broadcast(room);
@@ -244,7 +244,7 @@ function setupRouletteLobby(io, accounts) {
       room.history.unshift({ number, color });
       if (room.history.length > HISTORY_MAX) room.history.pop();
 
-      ack && ack && ack({ ok: true });
+      ack && typeof ack === "function" && ack({ ok: true });
       ioRef.to(room.code).emit("rlobby:result", { number, color, wheelIdx, perPlayer });
       // Erst nach der Animation abrechnen, damit Kontostand und Wetten gleichzeitig verschwinden.
       setTimeout(() => {

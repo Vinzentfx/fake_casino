@@ -267,13 +267,13 @@ function setupChess(io, accounts) {
 
   io.on("connection", (socket) => {
     socket.on("chess:create", ({ buyIn, isPublic = true, tc = DEFAULT_TC } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN)
-        return ack && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
+        return typeof ack === "function" && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       if (!TIME_CONTROLS[tc]) tc = DEFAULT_TC;
       const a = acc(socket);
-      if (!a || a.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      if (!a || a.chips < buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
       leaveCurrent(socket);
       const code = makeCode();
       ensureChessStats(a);
@@ -286,35 +286,35 @@ function setupChess(io, accounts) {
       matches.set(code, match);
       socket.join(code); socket.data.chessCode = code;
       if (match.public) registerLobby(code);
-      ack && ack({ ok: true, code, public: match.public });
+      typeof ack === "function" && ack({ ok: true, code, public: match.public });
       broadcast(code);
     });
 
     socket.on("chess:join", ({ code } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       code = String(code || "").trim().toUpperCase();
       const match = matches.get(code);
-      if (!match) return ack && ack({ ok: false, error: "Match nicht gefunden." });
-      if (match.state !== "waiting") return ack && ack({ ok: false, error: "Match läuft bereits." });
-      if (match.players.size >= 2 && !match.players.has(socket.data.account)) return ack && ack({ ok: false, error: "Match ist voll." });
+      if (!match) return typeof ack === "function" && ack({ ok: false, error: "Match nicht gefunden." });
+      if (match.state !== "waiting") return typeof ack === "function" && ack({ ok: false, error: "Match läuft bereits." });
+      if (match.players.size >= 2 && !match.players.has(socket.data.account)) return typeof ack === "function" && ack({ ok: false, error: "Match ist voll." });
       const a = acc(socket);
-      if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
       leaveCurrent(socket);
       ensureChessStats(a);
       match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, color: null, rating: a.chessRating });
       socket.join(code); socket.data.chessCode = code;
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(code); lobby.changed();
     });
 
     socket.on("chess:start", (ack) => {
       const match = currentMatch(socket);
-      if (!match) return ack && ack({ ok: false, error: "Kein Match." });
-      if (match.host !== socket.data.account) return ack && ack({ ok: false, error: "Nur der Host startet." });
-      if (match.state !== "waiting") return ack && ack({ ok: false, error: "Läuft bereits." });
-      if (match.players.size !== 2) return ack && ack({ ok: false, error: "Warte auf 2 Spieler." });
-      for (const p of match.players.values()) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
-      ack && ack({ ok: true });
+      if (!match) return typeof ack === "function" && ack({ ok: false, error: "Kein Match." });
+      if (match.host !== socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Nur der Host startet." });
+      if (match.state !== "waiting") return typeof ack === "function" && ack({ ok: false, error: "Läuft bereits." });
+      if (match.players.size !== 2) return typeof ack === "function" && ack({ ok: false, error: "Warte auf 2 Spieler." });
+      for (const p of match.players.values()) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      typeof ack === "function" && ack({ ok: true });
       startGame(match);
     });
 
@@ -333,10 +333,10 @@ function setupChess(io, accounts) {
 
     socket.on("chess:move", ({ from, to, promotion } = {}, ack) => {
       const match = currentMatch(socket);
-      if (!match || match.state !== "playing") return ack && ack({ ok: false, error: "Kein laufendes Spiel." });
+      if (!match || match.state !== "playing") return typeof ack === "function" && ack({ ok: false, error: "Kein laufendes Spiel." });
       const me = match.players.get(socket.data.account);
-      if (!me) return ack && ack({ ok: false, error: "Nicht im Match." });
-      if (me.color !== match.game.turn()) return ack && ack({ ok: false, error: "Nicht am Zug." });
+      if (!me) return typeof ack === "function" && ack({ ok: false, error: "Nicht im Match." });
+      if (me.color !== match.game.turn()) return typeof ack === "function" && ack({ ok: false, error: "Nicht am Zug." });
       // Erst die verbrauchte Bedenkzeit abziehen, ist sie aus, ist das Spiel verloren.
       const now = Date.now();
       const turn = match.game.turn();
@@ -344,16 +344,16 @@ function setupChess(io, accounts) {
       if (match.clocks[turn] <= 0) {
         const winnerP = [...match.players.values()].find((p) => p.color !== turn);
         finish(match, { winner: winnerP, reason: "timeout" });
-        return ack && ack({ ok: false, error: "Zeit abgelaufen." });
+        return typeof ack === "function" && ack({ ok: false, error: "Zeit abgelaufen." });
       }
       let mv;
       try { mv = match.game.move({ from, to, promotion: promotion || "q" }); }
       catch { mv = null; }
-      if (!mv) return ack && ack({ ok: false, error: "Ungültiger Zug." });
+      if (!mv) return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Zug." });
       match.clocks[turn] += match.inc; // Zeitgutschrift
       match.turnStart = now;
       match.lastMove = { from: mv.from, to: mv.to };
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
 
       // Vorbei?
       if (match.game.isCheckmate()) {
@@ -369,22 +369,22 @@ function setupChess(io, accounts) {
 
     socket.on("chess:resign", (ack) => {
       const match = currentMatch(socket);
-      if (!match || match.state !== "playing") return ack && ack({ ok: false, error: "Kein laufendes Spiel." });
+      if (!match || match.state !== "playing") return typeof ack === "function" && ack({ ok: false, error: "Kein laufendes Spiel." });
       const me = match.players.get(socket.data.account);
       const opp = [...match.players.values()].find((p) => p.id !== socket.data.account);
       if (me && opp) finish(match, { winner: opp, reason: "resign" });
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
     });
 
     socket.on("chess:rematch", (ack) => {
       const match = currentMatch(socket);
-      if (!match || match.state !== "done") return ack && ack({ ok: false, error: "Kein beendetes Spiel." });
+      if (!match || match.state !== "done") return typeof ack === "function" && ack({ ok: false, error: "Kein beendetes Spiel." });
       const connected = [...match.players.values()].filter((p) => p.socket);
-      if (connected.length !== 2) return ack && ack({ ok: false, error: "Gegner ist nicht mehr da." });
-      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      if (connected.length !== 2) return typeof ack === "function" && ack({ ok: false, error: "Gegner ist nicht mehr da." });
+      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
       match.rematchWant = match.rematchWant || [];
       if (!match.rematchWant.includes(socket.data.account)) match.rematchWant.push(socket.data.account);
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
       if (connected.every((p) => match.rematchWant.includes(p.id))) { match.rematchWant = []; startGame(match); }
       else broadcast(match.code);
     });
@@ -393,14 +393,14 @@ function setupChess(io, accounts) {
     socket.on("chess:spectate", ({ code } = {}, ack) => {
       code = String(code || "").trim().toUpperCase();
       const match = matches.get(code);
-      if (!match) return ack && ack({ ok: false, error: "Match nicht gefunden." });
-      if (match.players.has(socket.data.account)) return ack && ack({ ok: false, error: "Du spielst dieses Match." });
+      if (!match) return typeof ack === "function" && ack({ ok: false, error: "Match nicht gefunden." });
+      if (match.players.has(socket.data.account)) return typeof ack === "function" && ack({ ok: false, error: "Du spielst dieses Match." });
       chessUnspectate(socket);        // alte Partie nicht mehr zuschauen
       leaveCurrent(socket);           // spielen und zuschauen gleichzeitig geht nicht
       match.spectators.add(socket);
       socket.data.chessSpectate = code;
       socket.join(code);
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       socket.emit("chess:state", specState(match));
     });
     socket.on("chess:unspectate", () => chessUnspectate(socket));

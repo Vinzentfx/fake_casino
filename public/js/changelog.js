@@ -25,6 +25,21 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-22-e",
+      datum: "12. September 2026",
+      titel: "Zwei neue Events, Post vom Casino und ein Loch im Server",
+      items: [
+        { icon: "geschenk", titel: "Verlosung",
+          text: "Ein Knopf, ein Gewinner: der Topf geht an einen von allen, die gerade da sind. Ohne Spiel, ohne Wartezeit. Wer gewinnt, bekommt ein Fenster und der Chat erfährt es." },
+        { icon: "bank", titel: "Kassensturz",
+          text: "Das erste Event, das Chips aus dem Spiel NIMMT statt neue zu machen: eine Abgabe auf Bargeld über einer Freigrenze. Was auf der Bank liegt, bleibt unberührt, und unter der Freigrenze zahlt niemand. Damit ein Haus in zwei Jahren noch etwas wert ist." },
+        { icon: "ansage", titel: "Nachricht vom Casino",
+          text: "Es gab nur die Ansage an alle. Für „deinen doppelt gebuchten Einsatz habe ich zurückgelegt“ war das das falsche Werkzeug. Jetzt kommt so etwas als Fenster bei genau einem an, und wer offline ist, bekommt es als Benachrichtigung." },
+        { icon: "sperre", titel: "Ein Fehler, mit dem man das Casino hätte abschalten können",
+          text: "Eine falsch aufgebaute Anfrage an den Server hat ihn abstürzen lassen, und das konnte jeder Eingeloggte auslösen. An 271 Stellen nachgezogen. Gemerkt hätte man es nur daran, dass plötzlich alle rausfliegen." },
+      ],
+    },
+    {
       id: "2026-09-22-d",
       datum: "12. September 2026",
       titel: "Auktion: nur ein Los aussetzen, und überall steht jetzt das Zeichen",

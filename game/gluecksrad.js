@@ -24,6 +24,8 @@
  */
 
 const crypto = require("crypto");
+const regie = require("./regie");
+const strafen = require("./strafen");
 const chat = require("./chat");
 const cosmetics = require("./cosmetics");
 
@@ -114,10 +116,15 @@ function ziehe() {
 function drehe(key) {
   const acc = _accounts && _accounts.get(key);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  const ohne = strafen.aktiv(acc, "keinBonus");
+  if (ohne) return { ok: false, error: `Für dich gerade keine Geschenke (${strafen.restText(ohne)})${ohne.grund ? `: ${ohne.grund}` : "."}` };
   const seit = Date.now() - (acc.lastWheelAt || 0);
   if (seit < ABSTAND_MS) return { ok: false, error: "Heute schon gedreht, morgen wieder.", msLeft: ABSTAND_MS - seit };
 
-  const idx = ziehe();
+  /* Regie: ein von Hand gesetztes Feld gilt genau einmal. Der Tagesabstand
+     gilt weiter, sonst waere der Zettel ein zweiter Dreh. */
+  const gesetzt = regie.nimm(key, "rad");
+  const idx = gesetzt != null && FELDER[gesetzt] ? gesetzt : ziehe();
   const feld = FELDER[idx];
   const faktor = _accounts.faucetFactor(acc.name);
   acc.lastWheelAt = Date.now();

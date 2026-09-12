@@ -12,6 +12,7 @@
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
+const strafen = require("./strafen");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const ACCOUNTS_FILE = path.join(DATA_DIR, "accounts.json");
@@ -151,10 +152,25 @@ function issueToken(name) {
 }
 
 /**
- * Token prüfen. Gibt den normalisierten Kontonamen zurück, oder null, wenn das
- * Token fehlt, kaputt oder gefälscht ist oder das Konto nicht mehr existiert.
+ * Der Kontoname aus einem Token, ohne zu pruefen, ob das Konto gerade spielen
+ * darf. Nur fuer Fehlermeldungen: wer wegen einer Zeitsperre nicht reinkommt,
+ * soll das lesen und nicht "Sitzung abgelaufen".
  */
-function verifyToken(token) {
+function _keyRoh(token) {
+  return verifyToken(token, { ohneStrafe: true });
+}
+
+/** Text fuer eine Zeitsperre, mit Restzeit und Grund. */
+function sperrText(s) {
+  return `Du bist gesperrt (${strafen.restText(s)})${s.grund ? `: ${s.grund}` : "."}`;
+}
+
+/**
+ * Token prüfen. Gibt den normalisierten Kontonamen zurück, oder null, wenn das
+ * Token fehlt, kaputt oder gefälscht ist, das Konto nicht mehr existiert oder
+ * eine Zeitsperre laeuft.
+ */
+function verifyToken(token, { ohneStrafe = false } = {}) {
   if (typeof token !== "string" || !token.includes(".")) return null;
   const [b64, sig] = token.split(".");
   let payload;
@@ -169,6 +185,9 @@ function verifyToken(token) {
   if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
   const [key, issuedAt] = payload.split("|");
   if (!key || !accounts[key] || accounts[key].banned) return null;
+  // Eine laufende Zeitsperre gilt auch fuer ein gueltiges Token, sonst kaeme
+  // jeder mit gespeicherter Sitzung weiter rein.
+  if (!ohneStrafe && strafen.aktiv(accounts[key], "sperre")) return null;
   // Die Signatur allein reicht nicht, das Token muss auch frisch sein. Ohne das
   // war der Zeitstempel darin nur Deko und Tokens galten ewig.
   const age = Date.now() - Number(issuedAt);
@@ -183,7 +202,12 @@ function verifyToken(token) {
  */
 function resumeSession(token) {
   const key = verifyToken(token);
-  if (!key) return { ok: false, error: "Sitzung abgelaufen." };
+  if (!key) {
+    const roh = _keyRoh(token);
+    const gesperrt = roh && accounts[roh] && strafen.aktiv(accounts[roh], "sperre");
+    if (gesperrt) return { ok: false, error: sperrText(gesperrt) };
+    return { ok: false, error: "Sitzung abgelaufen." };
+  }
   const acc = accounts[key];
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
   acc.lastSeen = Date.now();
@@ -258,6 +282,11 @@ function save() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2));
 }
+
+/* Strafen haengen am Konto, gespeichert wird hier. Das Strafen-Modul darf
+   accounts nicht selbst holen (Kreis beim require), deshalb bekommt es die
+   Speicherfunktion gereicht. */
+strafen.setSpeichern(save);
 
 // Läuft immer: alle paar Minuten jedes Konto über der Obergrenze kappen
 // (fängt direkte Buchungen wie den Rake ab und räumt alte ausgenutzte Stände
@@ -551,6 +580,8 @@ function login(name, pin) {
   }
 
   if (acc.banned) return { ok: false, error: "Dein Account wurde gesperrt." };
+  const zeitsperre = strafen.aktiv(acc, "sperre");
+  if (zeitsperre) return { ok: false, error: sperrText(zeitsperre) };
   const lockMin = lockedMinutes(acc);
   if (lockMin) return { ok: false, error: `Zu viele Fehlversuche. Account für ${lockMin} Min gesperrt.` };
   if (acc.pinHash !== hashPin(pin, acc.salt)) {
@@ -567,6 +598,8 @@ function login(name, pin) {
 function claimDailyBonus(name) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  const ohne = strafen.aktiv(acc, "keinBonus");
+  if (ohne) return { ok: false, error: geschenkText(ohne) };
   if (!bonusAvailable(acc)) {
     return {
       ok: false,
@@ -627,6 +660,8 @@ function claimDailyBonus(name) {
 function rescue(name) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  const ohne = strafen.aktiv(acc, "keinBonus");
+  if (ohne) return { ok: false, error: geschenkText(ohne) };
   if (acc.chips + _bank(acc) >= RESCUE_THRESHOLD)
     return { ok: false, error: "Du hast noch genug Chips." };
   // Kirche (Trophäe): Segen, doppelte Hilfe, halbe Wartezeit.
@@ -798,19 +833,39 @@ function changePin(name, oldPin, newPin) {
   return { ok: true };
 }
 
-// --- Shadowban ("Pechvogel-Modus") ---
-// Wer im Pechvogel-Modus ist, verliert still jedes Spiel, das sich steuern
-// lässt (Slots, Solo-Roulette). Sieht aus wie normal, der Zufall hasst ihn nur.
-function setShadowban(name, on) {
+/* --- Pechvogel ---
+   Wohnt seit dem Strafen-Umbau in game/strafen.js und hat dort eine Staerke
+   und eine Ablaufzeit. Die beiden Funktionen hier bleiben, weil fuenf
+   Spielmodule sie rufen, und weil der alte Ja/Nein-Schalter an alten Konten
+   weiterhin gilt (strafen.aktiv kennt ihn).
+
+   Unterschied, auf den es ankommt: `isShadowbanned` sagt, DASS jemand
+   Pechvogel ist (fuer Anzeige und Listen), `pechTrifft` wuerfelt, ob es
+   DIESE Runde zuschlaegt. Bei 100 Prozent ist beides dasselbe. */
+function setShadowban(name, on, opts = {}) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
-  if (on) acc.shadowban = true; else delete acc.shadowban;
-  save();
-  return { ok: true, shadowban: !!on };
+  if (!on) { strafen.hebeAuf(acc, "pech"); return { ok: true, shadowban: false }; }
+  const r = strafen.setze(acc, "pech", {
+    minuten: opts.minuten || 0,
+    wert: opts.wert || 100,
+    grund: opts.grund || "",
+  });
+  return r.ok ? { ok: true, shadowban: true } : r;
 }
 function isShadowbanned(name) {
   const acc = get(name);
-  return !!(acc && acc.shadowban);
+  return !!(acc && strafen.aktiv(acc, "pech"));
+}
+/** Wuerfelt, ob der Pechvogel diese Runde zuschlaegt (Staerke in Prozent). */
+function pechTrifft(name) {
+  const acc = get(name);
+  return !!(acc && strafen.pechTrifft(acc));
+}
+
+/** Text fuer eine Geschenk-Sperre. */
+function geschenkText(s) {
+  return `Für dich gerade keine Geschenke (${strafen.restText(s)})${s.grund ? `: ${s.grund}` : "."}`;
 }
 
 function ban(name) {
@@ -893,7 +948,9 @@ function listAll() {
     biggestWin: Math.floor((a.stats && a.stats.biggestWin) || 0),
     biggestLoss: Math.floor((a.stats && a.stats.biggestLoss) || 0),
     banned: !!a.banned,
-    shadowban: !!a.shadowban,
+    shadowban: !!strafen.aktiv(a, "pech"),
+    strafen: strafen.marken(a),
+    lastSeen: Math.floor(a.lastSeen || 0),
   }));
 }
 
@@ -981,6 +1038,8 @@ function calendarState(name) {
 function claimCalendar(name) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  const ohne = strafen.aktiv(acc, "keinBonus");
+  if (ohne) return { ok: false, error: geschenkText(ohne) };
   const today = dayIndex();
   const cal = acc.calendar || { idx: 0, lastDay: -999 };
   if (cal.lastDay === today) return { ok: false, error: "Heute schon abgeholt, morgen wieder." };
@@ -1081,6 +1140,7 @@ module.exports = {
   rawAll,
   setShadowban,
   isShadowbanned,
+  pechTrifft,
   calendarState,
   claimCalendar,
   levelInfo,

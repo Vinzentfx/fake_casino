@@ -240,7 +240,7 @@ function setupPinco(io, accounts) {
     });
 
     socket.on("pinco:create", (ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       leave(socket);
       const code = makeCode();
       const name = nameOf(socket);
@@ -255,21 +255,21 @@ function setupPinco(io, accounts) {
       rooms.set(code, room);
       addPlayer(room, socket);
       register(code);
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(room);
       lobby.changed();
     });
 
     socket.on("pinco:join", ({ code } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       code = String(code || "").trim().toUpperCase();
       const room = rooms.get(code);
-      if (!room) return ack && ack({ ok: false, error: "Lobby nicht gefunden." });
+      if (!room) return typeof ack === "function" && ack({ ok: false, error: "Lobby nicht gefunden." });
       if (room.players.size >= MAX_PLAYERS && !room.players.has(socket.data.account))
-        return ack && ack({ ok: false, error: "Lobby ist voll." });
+        return typeof ack === "function" && ack({ ok: false, error: "Lobby ist voll." });
       leave(socket);
       addPlayer(room, socket);
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(room);
       lobby.changed();
     });

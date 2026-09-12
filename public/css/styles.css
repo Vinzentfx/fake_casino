@@ -8721,3 +8721,88 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
    laeuft (Einsatz und Gewinn am Automaten). Ohne die Zeile stuende das
    Zeichen unter der Zahl. */
 .wert-mit-marke { display: inline-flex; align-items: baseline; justify-content: center; }
+
+/* =========================================================================
+   ADMIN: Strafen, Regie, Wartung
+   -------------------------------------------------------------------------
+   Drei Zustaende lassen sich versehentlich anlassen: eine laufende Wartung,
+   eine Strafe und ein Regie-Zettel. Alle drei sind deshalb sichtbar gefaerbt
+   und nicht nur eine Zeile Text: was man uebersieht, laesst man an.
+   ========================================================================= */
+
+/* Das Haus ist zu. Steht ganz oben in der Uebersicht, mit dem Weg zurueck. */
+.ad-alarm {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 11px 13px; border-radius: 12px;
+  background: rgba(var(--bad-rgb), 0.12); border: 1px solid rgba(var(--bad-rgb), 0.45);
+}
+.ad-alarm > b { color: var(--bad-text); }
+.ad-alarm > span { color: var(--text-dim); font-size: var(--fs-sm); flex: 1 1 200px; }
+
+/* Leisere Notiz: offene Strafen und liegende Regie-Zettel. */
+.ad-notiz {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  padding: 8px 12px; border-radius: 10px;
+  background: var(--surface-sunken); border: 1px solid var(--line);
+  font-size: var(--fs-sm); color: var(--text-dim);
+}
+
+.ad-zustand {
+  font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: var(--r-pill);
+  background: var(--good-soft); color: var(--good-text);
+}
+.ad-zustand.zu { background: var(--bad-soft); color: var(--bad-text); }
+#ad-wartung-karte.an { border-color: rgba(var(--bad-rgb), 0.45); }
+
+/* --- Strafen --- */
+.ad-straf { margin-top: 16px; }
+.ad-strafliste { display: flex; flex-direction: column; gap: 7px; margin: 8px 0; }
+
+/* Eine geltende Strafe: was, wie lange, warum, und das Kreuz zum Aufheben.
+   Alles in einer Zeile, weil man sie im Vorbeigehen liest. */
+.ad-strafchip {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  padding: 7px 10px; border-radius: 10px;
+  background: rgba(var(--bad-rgb), 0.08); border: 1px solid rgba(var(--bad-rgb), 0.28);
+}
+.ad-strafchip > b { font-size: 0.86rem; color: var(--bad-text); }
+.ad-strafchip > span { font-size: var(--fs-sm); color: var(--text-dim); }
+.ad-strafchip > small { font-size: var(--fs-xs); color: var(--text-mute); }
+.ad-strafweg {
+  margin-left: auto; border: 0; background: transparent; cursor: pointer;
+  color: var(--text-mute); font-size: 1rem; line-height: 1; padding: 4px 6px; border-radius: 8px;
+}
+.ad-strafweg:hover { color: var(--bad-text); background: var(--bad-soft); }
+
+/* Die Liste aller Bestraften im Reiter „Spieler“. */
+.ad-strafzeile {
+  display: grid; gap: 2px; text-align: left; width: 100%; cursor: pointer; font: inherit;
+  padding: 8px 11px; border-radius: 10px;
+  background: var(--surface-sunken); border: 1px solid var(--line); color: var(--text);
+}
+.ad-strafzeile:hover { border-color: var(--line-strong); }
+.ad-strafzeile > span { font-size: var(--fs-sm); color: var(--text-dim); }
+
+.ad-straf-form { margin-top: 4px; }
+.ad-straf-spiele { margin-top: 10px; }
+/* Alle Spiele auf einmal, ohne eigenen Rollbereich. Mit max-height schnitt
+   die letzte Reihe mitten durch die Knoepfe, und ein Formular, in dem man
+   innerhalb eines Feldes scrollen muss, findet auf dem iPad niemand. */
+.ad-spielwahl { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 4px; }
+.ad-haken {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  padding: 5px 9px; border-radius: var(--r-pill);
+  background: var(--surface-sunken); border: 1px solid var(--line);
+  font-size: 0.8rem; color: var(--text-dim);
+}
+.ad-haken:has(input:checked) { border-color: var(--accent); color: var(--text); }
+
+/* --- Regie --- */
+.ad-regie {
+  padding: 10px 11px; border-radius: 10px; margin-bottom: 9px;
+  background: var(--surface-sunken); border: 1px solid var(--line);
+}
+.ad-regie-kopf { display: grid; gap: 2px; }
+.ad-regie-kopf small { font-size: var(--fs-xs); color: var(--text-mute); }
+.ad-regie .ad-felder { margin-top: 7px; align-items: end; }

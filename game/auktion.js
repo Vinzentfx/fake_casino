@@ -16,8 +16,10 @@
  *   Schlusssekunde online ist, und das ist keine Auktion, sondern eine
  *   Anwesenheitspraemie.
  *
- *   Eine Woche Pause nach einem Zuschlag. Sonst raeumen die zwei groessten
- *   Konten alles ab und die Stuecke sagen nur noch, wer reich ist.
+ *   Ein Los aussetzen nach einem Zuschlag. Wer gewinnt, darf beim naechsten
+ *   Los nicht mitbieten, ab dem darauf wieder. Eine ganze Woche Pause stand
+ *   hier vorher und war zu viel: bei einem Los am Tag hiess das, dass ein
+ *   Sieger sieben Stuecke nicht einmal anschauen durfte.
  *
  * Geboten wird mit echten Chips: der Betrag geht sofort vom Konto und kommt
  * sofort zurueck, sobald jemand ueberbietet. Ohne diese Hinterlegung bietet
@@ -30,6 +32,7 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const chat = require("./chat");
+const strafen = require("./strafen");
 const cosmetics = require("./cosmetics");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
@@ -243,6 +246,10 @@ function bieten(key, betrag) {
   if (!acc) return { ok: false, error: "Nicht eingeloggt." };
   if (Date.now() >= los.endet) return { ok: false, error: "Zu spät, der Zuschlag ist durch." };
 
+  const verbot = strafen.aktiv(acc, "keineAuktion");
+  if (verbot) {
+    return { ok: false, error: `Du darfst gerade nicht mitbieten (${strafen.restText(verbot)})${verbot.grund ? `: ${verbot.grund}` : "."}` };
+  }
   if (gesperrtFuer(acc, los)) {
     return { ok: false, error: "Du hast das letzte Los gewonnen. Dieses eine setzt du aus, ab dem nächsten bist du wieder dabei." };
   }

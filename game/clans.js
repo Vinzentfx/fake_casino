@@ -1016,10 +1016,10 @@ function setupClans(io, accounts) {
 
     // Nur Besitzer: alle offenen Kriege sofort abrechnen (Admin, Testen).
     socket.on("clan:adminSettleWars", (ack) => {
-      if (socket.data.account !== "vincent") return ack && ack({ ok: false, error: "Kein Zugriff." });
+      if (socket.data.account !== "vincent") return typeof ack === "function" && ack({ ok: false, error: "Kein Zugriff." });
       for (const w of wars) if (w.state === "active" || w.state === "pending") settleWar(io, w, "admin");
       io.emit("clan:update");
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
     });
   });
 }

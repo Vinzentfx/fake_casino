@@ -419,16 +419,16 @@ function setupSportsbook(io, accounts) {
     });
 
     socket.on("sports:bet", ({ matchId, market, selection, amount } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       const m = matches.get(Number(matchId));
-      if (!m || m.state !== "open") return ack && ack({ ok: false, error: "Wetten geschlossen." });
+      if (!m || m.state !== "open") return typeof ack === "function" && ack({ ok: false, error: "Wetten geschlossen." });
       const mk = m.markets[market];
-      if (!mk || !(selection in mk.sels)) return ack && ack({ ok: false, error: "Ungültiger Markt." });
+      if (!mk || !(selection in mk.sels)) return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Markt." });
       amount = Math.floor(Number(amount));
-      if (!Number.isFinite(amount) || amount < MIN_BET) return ack && ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
-      if (amount > MAX_BET) return ack && ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
+      if (!Number.isFinite(amount) || amount < MIN_BET) return typeof ack === "function" && ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
+      if (amount > MAX_BET) return typeof ack === "function" && ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
       const acc = accounts.get(socket.data.account);
-      if (!acc || acc.chips < amount) return ack && ack({ ok: false, error: "Nicht genug Chips." });
+      if (!acc || acc.chips < amount) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips." });
 
       const r = accounts.adjustChips(socket.data.account, -amount);
       const odds = mk.sels[selection];
@@ -436,45 +436,45 @@ function setupSportsbook(io, accounts) {
       feed.unshift({ name: acc.name, match: `${m.home} vs ${m.away}`, sel: selLabel(market, selection, m), amount, odds });
       if (feed.length > FEED_MAX) feed.length = FEED_MAX;
       require("./quests").track(socket.data.account, "bet_sport"); // der Auftrag zählt beim SETZEN
-      ack && ack({ ok: true, account: r.account });
+      typeof ack === "function" && ack({ ok: true, account: r.account });
       io.emit("sports:update");
     });
 
     // Auszahlen: eine eigene offene oder laufende Einzelwette vorzeitig zum
     // aktuellen Wert abrechnen. Hoch, wenn sie vorne liegt, niedrig, wenn nicht.
     socket.on("sports:cashout", ({ matchId, betId } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Nicht eingeloggt." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Nicht eingeloggt." });
       const m = matches.get(Number(matchId));
-      if (!m || (m.state !== "open" && m.state !== "live")) return ack && ack({ ok: false, error: "Cash-out gerade nicht möglich." });
+      if (!m || (m.state !== "open" && m.state !== "live")) return typeof ack === "function" && ack({ ok: false, error: "Cash-out gerade nicht möglich." });
       const i = m.bets.findIndex((b) => b.id === betId && b.user === socket.data.account);
-      if (i < 0) return ack && ack({ ok: false, error: "Wette nicht gefunden." });
+      if (i < 0) return typeof ack === "function" && ack({ ok: false, error: "Wette nicht gefunden." });
       const b = m.bets[i];
       const refund = liveCashout(m, b);
       const r = accounts.adjustChips(socket.data.account, refund);
       accounts.recordHand(socket.data.account, refund - b.amount, true, "sportwetten"); // Gewinn/Verlust verbuchen
       m.bets.splice(i, 1);
-      ack && ack({ ok: true, refund, account: r.account });
+      typeof ack === "function" && ack({ ok: true, refund, account: r.account });
       io.emit("sports:update");
     });
 
     // Kombi: ab 2 Tipps, alle müssen treffen, die Quoten multiplizieren sich (mehr Risiko, mehr Geld).
     socket.on("sports:combo", ({ legs, amount } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
-      if (!Array.isArray(legs) || legs.length < 2) return ack && ack({ ok: false, error: "Kombi braucht mind. 2 Tipps." });
-      if (legs.length > MAX_LEGS) return ack && ack({ ok: false, error: `Max. ${MAX_LEGS} Tipps pro Kombi.` });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!Array.isArray(legs) || legs.length < 2) return typeof ack === "function" && ack({ ok: false, error: "Kombi braucht mind. 2 Tipps." });
+      if (legs.length > MAX_LEGS) return typeof ack === "function" && ack({ ok: false, error: `Max. ${MAX_LEGS} Tipps pro Kombi.` });
       amount = Math.floor(Number(amount));
-      if (!Number.isFinite(amount) || amount < MIN_BET) return ack && ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
-      if (amount > MAX_BET) return ack && ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
+      if (!Number.isFinite(amount) || amount < MIN_BET) return typeof ack === "function" && ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
+      if (amount > MAX_BET) return typeof ack === "function" && ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
 
       const seen = new Set();
       const clean = [];
       for (const leg of legs || []) {
         const m = matches.get(Number(leg && leg.matchId));
-        if (!m || m.state !== "open") return ack && ack({ ok: false, error: "Ein Spiel nimmt keine Wetten mehr an." });
+        if (!m || m.state !== "open") return typeof ack === "function" && ack({ ok: false, error: "Ein Spiel nimmt keine Wetten mehr an." });
         const mk = m.markets[leg.market];
-        if (!mk || !(leg.selection in mk.sels)) return ack && ack({ ok: false, error: "Ungültiger Tipp in der Kombi." });
+        if (!mk || !(leg.selection in mk.sels)) return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Tipp in der Kombi." });
         const key = m.id + ":" + leg.market;
-        if (seen.has(key)) return ack && ack({ ok: false, error: "Pro Spiel & Markt nur ein Tipp." });
+        if (seen.has(key)) return typeof ack === "function" && ack({ ok: false, error: "Pro Spiel & Markt nur ein Tipp." });
         seen.add(key);
         clean.push({ matchId: m.id, market: leg.market, selection: leg.selection, odds: mk.sels[leg.selection],
                      label: `${m.home} vs ${m.away}: ${selLabel(leg.market, leg.selection, m)}` });
@@ -487,13 +487,13 @@ function setupSportsbook(io, accounts) {
       comboOdds = Math.round(comboOdds * 100) / 100;
 
       const acc = accounts.get(socket.data.account);
-      if (!acc || acc.chips < amount) return ack && ack({ ok: false, error: "Nicht genug Chips." });
+      if (!acc || acc.chips < amount) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips." });
       const r = accounts.adjustChips(socket.data.account, -amount);
       combos.push({ id: crypto.randomUUID(), user: socket.data.account, name: acc.name, legs: clean, amount, comboOdds, settled: false, won: null, payout: 0 });
       feed.unshift({ name: acc.name, match: `${clean.length}er-Kombi`, sel: `${clean.length} Tipps`, amount, odds: comboOdds });
       if (feed.length > FEED_MAX) feed.length = FEED_MAX;
       require("./quests").track(socket.data.account, "bet_sport");
-      ack && ack({ ok: true, account: r.account, comboOdds });
+      typeof ack === "function" && ack({ ok: true, account: r.account, comboOdds });
       io.emit("sports:update");
     });
 

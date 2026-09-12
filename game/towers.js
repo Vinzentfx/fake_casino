@@ -169,7 +169,7 @@ function setupTowers(io, accounts) {
       if (g.level >= ROWS) return ack({ ok: false, error: "Turm bereits erklommen." });
 
       // Pechvogel (Shadowban): jeder Zug ist eine Falle, egal wo geklickt wird.
-      const shadow = accounts.isShadowbanned(socket.data.account);
+      const shadow = accounts.pechTrifft(socket.data.account);
       const hitTrap = shadow ? true : g.traps[g.level].has(tile);
 
       if (hitTrap) {

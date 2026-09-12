@@ -16,6 +16,7 @@
  */
 
 const crypto = require("crypto");
+const regie = require("./regie");
 
 const BET_MS = 7000;        // betting window
 const PAUSE_MS = 4500;      // Pause nach dem Crash bis zur nächsten Runde
@@ -86,7 +87,11 @@ function setupCrash(io, accounts) {
   function startFlight() {
     state.phase = "flying";
     state.startAt = Date.now();
-    state.crashPoint = nextCrashPoint();
+    /* Crash ist eine Runde fuer alle: einen Crashpunkt kann man nur fuer die
+       ganze Runde setzen, nicht fuer eine Person. Deshalb liegt der Zettel
+       global und gilt genau fuer die naechste Runde. */
+    const gesetzt = regie.nimm(regie.GLOBAL, "crash");
+    state.crashPoint = gesetzt != null ? Math.max(1, Math.min(MAX_CRASH, gesetzt)) : nextCrashPoint();
     broadcast("crash:flying");
   }
   function crash() {

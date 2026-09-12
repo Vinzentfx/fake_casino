@@ -95,7 +95,8 @@ function adminReiter() {
       if (ziel === "ansage") ladeAnsage();
       if (ziel === "filter") wfLade();
       // Die Stadt hat 1292 Grundstuecke. Die baut niemand auf Verdacht auf.
-      if (ziel === "werkzeug") loadAdminLots();
+      if (ziel === "werkzeug") { loadAdminLots(); ladeRegie(); ladeKosKatalog(); }
+      if (ziel === "spieler") ladeStrafen();
     });
   });
 }
@@ -1680,6 +1681,20 @@ socket.on("account:received", ({ from, amount }) => {
 });
 
 // Admin-Panel (nur für Vincent)
+/* Eine Nachricht vom Casino an genau einen Spieler. Als Fenster und nicht als
+   Toast: ein Toast ist nach vier Sekunden weg, und wer gerade eine Runde dreht,
+   haette sie nie gesehen. */
+socket.on("admin:nachricht", ({ titel, text } = {}) => {
+  if (!text) return;
+  window.Casino.dialog.hinweis(String(text), { titel: titel || "Nachricht vom Casino", okText: "Gelesen" });
+});
+
+socket.on("chat:geleert", ({ room } = {}) => {
+  if (room && room !== "global") return;
+  document.querySelectorAll("[data-chat-log]").forEach((el) => { el.innerHTML = ""; });
+  toast("Der Chat wurde geleert.");
+});
+
 socket.on("admin:kicked", ({ reason }) => {
   toast(reason || "Du wurdest gesperrt.");
   state.account = null;
@@ -1708,6 +1723,7 @@ let adGewaehlt = null;    // Name der geöffneten Person
 function loadAdminAccounts() {
   loadAdminDashboard();
   loadIpBans();
+  ladeStrafen();
   socket.emit("announcement:get", (res) => {
     if (res && res.ok && res.announcement && $("#admin-announcement-text")) {
       $("#admin-announcement-text").value = res.announcement.text || "";
@@ -1748,17 +1764,141 @@ function zeichneKontenListe() {
       <span class="ad-platz">${suche ? "" : i + 1}</span>
       <span class="ad-name">${escapeHtml(p.name)}</span>
       ${p.banned ? '<span class="ad-flag ad-flag-bad">gesperrt</span>' : ""}
-      ${p.shadowban ? '<span class="ad-flag">Pechvogel</span>' : ""}
+      ${(p.strafen || []).map((st) => `<span class="ad-flag">${escapeHtml(st.kurz)}</span>`).join("")}
       <b>${Math.floor(p.chips || 0).toLocaleString("de-DE")}<i class=mk></i></b>
     </button>`).join("")
     + (!suche && treffer.length > zeigen.length
       ? `<div class="muted small ad-mehr">… und ${treffer.length - zeigen.length} weitere. Zum Finden oben tippen.</div>` : "");
 }
 
+/* =========================================================================
+   Strafen (Admin)
+   -------------------------------------------------------------------------
+   Vorher gab es zwei Knoepfe: Konto sperren (fuer immer) und Pechvogel (fuer
+   immer). Beides musste jemand von Hand zuruecknehmen und beides ohne Grund,
+   also stand am Konto nur, DASS etwas ist, nicht warum. Wer nach zwei Wochen
+   nachsah, fand einen Pechvogel und keine Erklaerung.
+
+   Jetzt sieben Strafen, jede mit Ablaufzeit und Grund. Der Katalog kommt vom
+   Server (`admin:strafen`), damit eine neue Strafe nicht an zwei Stellen
+   beschrieben werden muss.
+   ========================================================================= */
+let adStrafArten = null;    // { art: {name, was, wert?, spiele?} }
+let adStrafSpiele = null;   // { id: name }
+
+const AD_DAUERN = [
+  { v: 15, t: "15 Minuten" }, { v: 60, t: "1 Stunde" }, { v: 180, t: "3 Stunden" },
+  { v: 720, t: "12 Stunden" }, { v: 1440, t: "1 Tag" }, { v: 4320, t: "3 Tage" },
+  { v: 10080, t: "7 Tage" }, { v: 0, t: "unbefristet" },
+];
+
+function adStrafRest(bis) {
+  if (!bis) return "unbefristet";
+  const ms = bis - Date.now();
+  if (ms <= 0) return "abgelaufen";
+  const min = Math.ceil(ms / 60000);
+  if (min < 60) return `noch ${min} min`;
+  const std = Math.round(min / 60);
+  return std < 48 ? `noch ${std} h` : `noch ${Math.round(std / 24)} Tage`;
+}
+
+/** Was gilt, und das Formular fuer eine neue Strafe. */
+function strafenBlock(p) {
+  const offen = p.strafen || [];
+  const arten = adStrafArten || {};
+  const artListe = Object.keys(arten);
+  return `
+    <div class="ad-straf">
+      <div class="cd-sub">Strafen</div>
+      ${offen.length ? `<div class="ad-strafliste">${offen.map((s) => `
+        <div class="ad-strafchip">
+          <b>${escapeHtml(s.kurz)}${s.art === "deckel" ? ` ${Number(s.wert || 0).toLocaleString("de-DE")}` : ""}${s.art === "pech" && s.wert < 100 ? ` ${s.wert} %` : ""}</b>
+          <span>${adStrafRest(s.bis)}</span>
+          ${s.spiele ? `<small>${escapeHtml(s.spiele.map((g) => (adStrafSpiele || {})[g] || g).join(", "))}</small>` : ""}
+          ${s.grund ? `<small>${escapeHtml(s.grund)}</small>` : ""}
+          <button class="ad-strafweg" type="button" data-straf-weg="${escapeHtml(s.art)}" aria-label="Aufheben">✕</button>
+        </div>`).join("")}</div>
+        <button class="chip-btn" type="button" data-straf-weg="*">Alle aufheben</button>`
+        : `<p class="hint">Nichts offen.</p>`}
+
+      ${artListe.length ? `
+      <div class="ad-felder ad-straf-form">
+        <label class="ad-feld"><span>Strafe</span>
+          <select id="ad-straf-art">${artListe.map((a) => `<option value="${a}">${escapeHtml(arten[a].name)}</option>`).join("")}</select></label>
+        <label class="ad-feld"><span>Dauer</span>
+          <select id="ad-straf-dauer">${AD_DAUERN.map((d) => `<option value="${d.v}"${d.v === 1440 ? " selected" : ""}>${d.t}</option>`).join("")}</select></label>
+        <label class="ad-feld hidden" id="ad-straf-wert-feld"><span id="ad-straf-wert-label">Wert</span>
+          <input id="ad-straf-wert" type="number" inputmode="numeric" /></label>
+      </div>
+      <div class="ad-straf-spiele hidden" id="ad-straf-spiele">
+        <span class="muted small">Welche Spiele?</span>
+        <div class="ad-spielwahl">${Object.entries(adStrafSpiele || {}).map(([id, n]) =>
+          `<label class="ad-haken"><input type="checkbox" value="${id}" /><span>${escapeHtml(n)}</span></label>`).join("")}</div>
+      </div>
+      <p class="hint" id="ad-straf-was"></p>
+      <div class="ad-zeile">
+        <input id="ad-straf-grund" type="text" maxlength="120" placeholder="Grund (liest er selbst)" />
+        <button class="btn-danger ad-knopf" type="button" data-person-tun="straf">Strafe setzen</button>
+      </div>` : `<p class="hint">Katalog lädt…</p>`}
+    </div>`;
+}
+
+/** Die Felder zur gewaehlten Strafe zeigen: Wert nur beim Deckel und beim Pechvogel. */
+function strafFormular() {
+  const art = $("#ad-straf-art")?.value;
+  const def = (adStrafArten || {})[art];
+  if (!def) return;
+  const wertFeld = $("#ad-straf-wert-feld");
+  const spieleBox = $("#ad-straf-spiele");
+  const was = $("#ad-straf-was");
+  if (was) was.textContent = def.was || "";
+  if (wertFeld) {
+    wertFeld.classList.toggle("hidden", !def.wert);
+    if (def.wert) {
+      $("#ad-straf-wert-label").textContent = def.wert.label;
+      const i = $("#ad-straf-wert");
+      i.min = def.wert.min; i.max = def.wert.max;
+      if (!i.dataset.art || i.dataset.art !== art) { i.value = def.wert.vorgabe; i.dataset.art = art; }
+    }
+  }
+  if (spieleBox) spieleBox.classList.toggle("hidden", !def.spiele);
+}
+
+/** Alles, was gerade irgendwo gilt. */
+function zeichneOffeneStrafen(liste) {
+  const box = $("#ad-strafen-offen");
+  if (!box) return;
+  if (!liste || !liste.length) { box.innerHTML = '<div class="muted small">Nichts offen. Ruhiges Haus.</div>'; return; }
+  box.innerHTML = liste.map((p) => `
+    <button class="ad-strafzeile" type="button" data-konto="${escapeHtml(p.name)}">
+      <b>${escapeHtml(p.name)}</b>
+      <span>${p.strafen.map((s) => `${escapeHtml(s.kurz)} (${adStrafRest(s.bis)})`).join(" · ")}</span>
+    </button>`).join("");
+}
+
+function ladeStrafen() {
+  socket.emit("admin:strafen", (r) => {
+    if (!r || !r.ok) return;
+    adStrafArten = r.arten; adStrafSpiele = r.spiele;
+    /* Die Kontenliste ist die Quelle fuer die Personenkarte, und sie wurde
+       geladen, bevor die Strafe gesetzt wurde. Ohne diesen Abgleich stuende
+       eine Strafe in der Uebersicht und in der Karte derselben Person nicht. */
+    const nach = new Map((r.offen || []).map((p) => [String(p.name).toLowerCase(), p.strafen]));
+    adKonten.forEach((k) => { k.strafen = nach.get(String(k.name).toLowerCase()) || []; });
+    zeichneOffeneStrafen(r.offen);
+    zeichneKontenListe();
+    if (adGewaehlt) { zeichnePerson(adGewaehlt); strafFormular(); }
+  });
+}
+
 /** Alles zu einer Person an einer Stelle. */
 function zeichnePerson(name) {
   const box = $("#ad-person");
   if (!box) return;
+  /* Solange die Kontenliste noch unterwegs ist, bleibt die Karte stehen, wie
+     sie ist. Sonst schliesst sich die gerade geoeffnete Person wieder, weil
+     die Strafen-Antwort vor der Kontenliste da war. */
+  if (!adKonten.length) return;
   const p = adKonten.find((x) => x.name === name);
   if (!p) { box.classList.add("hidden"); adGewaehlt = null; return; }
   adGewaehlt = p.name;
@@ -1779,10 +1919,12 @@ function zeichnePerson(name) {
       <div class="ad-flags">
         <button class="ad-schalter${p.banned ? " an" : ""}" type="button" data-person-tun="${p.banned ? "unban" : "ban"}">
           ${p.banned ? "Sperre aufheben" : "Konto sperren"}</button>
-        <button class="ad-schalter${p.shadowban ? " an" : ""}" type="button" data-person-tun="${p.shadowban ? "schattenaus" : "schattenan"}">
-          ${p.shadowban ? "Pechvogel beenden" : "Pechvogel"}</button>
+        <button class="ad-schalter" type="button" data-person-tun="kick">Rauswerfen</button>
+        <button class="ad-schalter" type="button" data-person-tun="schreiben">Anschreiben</button>
       </div>
-      <p class="hint">Pechvogel verliert still jeden Slot-Spin und jede Solo-Roulette-Runde. Es sieht aus wie Pech, nicht wie eine Strafe.</p>
+      <p class="hint">„Konto sperren“ gilt für immer, bis jemand sie aufhebt. Alles mit Ablaufzeit steht darunter. Rauswerfen trennt nur die Verbindung, er kann sofort wieder rein.</p>
+
+      ${strafenBlock(p)}
 
       <div class="ad-feld ad-feld-breit">
         <span>Chips setzen</span>
@@ -1794,7 +1936,7 @@ function zeichnePerson(name) {
 
       <div class="ad-knopfreihe">
         <button class="chip-btn" type="button" data-person-tun="bank">Bank leeren</button>
-        <button class="chip-btn" type="button" data-person-tun="bonus">Bonus wieder frei</button>
+        <button class="chip-btn" type="button" data-person-tun="bonus">Geschenke wieder frei</button>
         <button class="chip-btn" type="button" data-person-tun="ipban">IP sperren</button>
       </div>
 
@@ -1816,6 +1958,10 @@ function zeichnePerson(name) {
       </div>
       <div class="form-error" id="ad-person-error"></div>
     </div>`;
+
+  // Die Felder haengen an der gewaehlten Strafe, nicht alle sind immer sinnvoll.
+  $("#ad-straf-art")?.addEventListener("change", strafFormular);
+  strafFormular();
 }
 
 /** Ein Klick in der Personenkarte. Alles läuft über dieselbe Rückmeldung. */
@@ -1840,10 +1986,44 @@ async function personTun(tun, name) {
       melde(r, tun === "ban" ? `${name} gesperrt.` : `${name} entsperrt.`));
     return;
   }
-  if (tun === "schattenan" || tun === "schattenaus") {
-    const an = tun === "schattenan";
-    socket.emit("admin:shadowban", { target: name, on: an }, (r) =>
-      melde(r, an ? `${name} ist jetzt Pechvogel.` : `${name} hat wieder normales Glück.`));
+  if (tun === "straf") {
+    const art = $("#ad-straf-art")?.value;
+    const def = (adStrafArten || {})[art];
+    if (!def) return;
+    const minuten = parseInt($("#ad-straf-dauer")?.value, 10) || 0;
+    const grund = ($("#ad-straf-grund")?.value || "").trim();
+    const wert = def.wert ? parseInt($("#ad-straf-wert")?.value, 10) : undefined;
+    const spiele = def.spiele
+      ? Array.from(document.querySelectorAll("#ad-straf-spiele input:checked")).map((i) => i.value)
+      : undefined;
+    /* Rueckfrage, obwohl es sich zuruecknehmen laesst: eine Zeitsperre wirft
+       jemanden mitten aus dem Spiel, und der Deckel trifft jede Runde. Wer es
+       versehentlich tippt, merkt es erst an der Nachfrage des Bestraften. */
+    const dauerText = AD_DAUERN.find((d) => d.v === minuten)?.t || `${minuten} min`;
+    if (!await window.Casino.dialog.frage(
+      `${name}: ${def.name}${def.wert ? ` (${wert})` : ""} für ${dauerText}?` +
+      (grund ? `\n\nGrund: ${grund}` : "\n\nOhne Grund. Er liest dann nur, DASS etwas gilt."),
+      { titel: def.name, okText: "Setzen", gefahr: true })) return;
+    socket.emit("admin:strafeSetzen", { target: name, art, minuten, wert, spiele, grund }, (r) => {
+      if (!melde(r, `${name}: ${def.name} gesetzt${r && r.getrennt ? `, ${r.getrennt} Verbindung${r.getrennt === 1 ? "" : "en"} getrennt` : ""}.`)) return;
+      ladeStrafen();
+    });
+    return;
+  }
+  if (tun === "kick") {
+    const grund = await window.Casino.dialog.eingabe(`${name} rauswerfen. Was soll er lesen?`,
+      { titel: "Rauswerfen", wert: "", platzhalter: "Grund (kann leer bleiben)", okText: "Rauswerfen" });
+    if (grund === null) return;
+    socket.emit("admin:kick", { target: name, grund }, (r) =>
+      melde(r, r && r.getrennt ? `${name}: ${r.getrennt} Verbindung${r.getrennt === 1 ? "" : "en"} getrennt.` : `${name} war nicht online.`));
+    return;
+  }
+  if (tun === "schreiben") {
+    const text = await window.Casino.dialog.eingabe(`Nachricht an ${name}:`,
+      { titel: "Anschreiben", platzhalter: "Text", okText: "Schicken" });
+    if (!text) return;
+    socket.emit("admin:nachricht", { target: name, text, auchPush: true }, (r) =>
+      melde(r, r && r.gesehen ? `${name} hat es gerade gelesen.` : `${name} ist offline, Benachrichtigung ist raus.`));
     return;
   }
   if (tun === "bank") {
@@ -1853,7 +2033,7 @@ async function personTun(tun, name) {
     return;
   }
   if (tun === "bonus") {
-    socket.emit("admin:resetBonus", { target: name }, (r) => melde(r, `${name}: Bonus und Soforthilfe wieder frei.`));
+    socket.emit("admin:resetBonus", { target: name }, (r) => melde(r, `${name}: Bonus, Soforthilfe, Rad und Kalender wieder frei.`));
     return;
   }
   if (tun === "ipban") {
@@ -1894,6 +2074,15 @@ document.addEventListener("click", (e) => {
     adGewaehlt = null;
     $("#ad-person")?.classList.add("hidden");
     zeichneKontenListe();
+    return;
+  }
+  const weg = e.target.closest("[data-straf-weg]");
+  if (weg && adGewaehlt) {
+    const art = weg.dataset.strafWeg;
+    socket.emit("admin:strafeAufheben", { target: adGewaehlt, art }, (r) => {
+      toast(r && r.ok ? "Aufgehoben." : ((r && r.error) || "Fehler."));
+      ladeStrafen();
+    });
     return;
   }
   const stat = e.target.closest("[data-person-stat]");
@@ -1945,10 +2134,26 @@ function loadAdminDashboard() {
       vault: ev.vault || { active: !!ev.vaultActive },
     };
     const laufen = Object.entries(evZustand).filter(([, z]) => z.active).length;
+    // Verlosung und Kassensturz haben keinen Zustand, den man zaehlen koennte.
     const miniList = (items, valFn, empty) => items.length
       ? items.map((p) => `<li><span>${escapeHtml(p.name)}</span><b>${valFn(p)}</b></li>`).join("")
       : `<li class="muted">${empty}</li>`;
+    /* Drei Zustaende lassen sich versehentlich anlassen: die Wartung, eine
+       Strafe und ein Regie-Zettel. Alle drei stehen deshalb ganz oben und
+       nicht nur in ihrem Reiter. */
+    adWartung = d.wartung || adWartung;
+    zeichneWartung();
+    const strafenZahl = (d.strafen || []).reduce((n, p) => n + p.strafen.length, 0);
+    const regieZahl = (d.regie || []).length;
     box.innerHTML = `
+      ${d.wartung && d.wartung.an ? `<div class="ad-alarm">
+        <b>Das Casino ist geschlossen.</b>
+        <span>${escapeHtml(d.wartung.text || "")}</span>
+        <button class="chip-btn" id="ad-alarm-auf">Wieder aufmachen</button></div>` : ""}
+      ${strafenZahl || regieZahl ? `<div class="ad-notiz">
+        ${strafenZahl ? `<span><b>${strafenZahl}</b> offene ${strafenZahl === 1 ? "Strafe" : "Strafen"}: ${escapeHtml((d.strafen || []).map((p) => p.name).join(", "))}</span>` : ""}
+        ${regieZahl ? `<span><b>${regieZahl}</b> ${regieZahl === 1 ? "Regie-Zettel liegt" : "Regie-Zettel liegen"} bereit</span>` : ""}
+      </div>` : ""}
       <div class="ad-kopf ad-lage-kopf">
         <h3>Lage im Haus</h3>
         <button class="chip-btn" id="admin-dash-refresh">Aktualisieren</button>
@@ -1982,6 +2187,7 @@ function loadAdminDashboard() {
         <div><div class="muted small ad-listen-kopf">Größte Einzelrunden</div><ol class="leaderboard ad-mini">${miniList(alerts, (p) => `<span class="ad-gut">+${adminMoney(p.biggestWin)}</span> <span class="ad-schlecht">−${adminMoney(p.biggestLoss)}</span>`, "Nichts Auffälliges.")}</ol></div>
       </div>`;
     $("#admin-dash-refresh")?.addEventListener("click", loadAdminDashboard);
+    $("#ad-alarm-auf")?.addEventListener("click", () => wartungSetzen(false));
     /* Die sieben Sofort-Knoepfe sind weg. Sie feuerten ohne Rueckfrage mit
        fest eingebauten Werten, die ausserdem von den Feldern weiter unten
        abwichen, zwei Wahrheiten fuer dieselbe Sache, und ein Fehlklick auf
@@ -2317,6 +2523,198 @@ $("#admin-comeback-off-btn")?.addEventListener("click", () => {
   socket.emit("admin:comeback", { on: false }, (r) => toast(r?.ok ? "Gala abgerechnet." : (r?.error || "Fehler.")));
 });
 
+/* =========================================================================
+   Wartung
+   -------------------------------------------------------------------------
+   Zwischen "laeuft" und "Server aus" gab es nichts, und deshalb wurde an der
+   Wirtschaft im laufenden Betrieb geschraubt, waehrend Leute spielen.
+   ========================================================================= */
+let adWartung = { an: false, text: "", standardText: "" };
+
+function zeichneWartung() {
+  const z = $("#ad-wartung-zustand");
+  if (z) {
+    z.textContent = adWartung.an ? "geschlossen" : "offen";
+    z.classList.toggle("zu", !!adWartung.an);
+  }
+  $("#ad-wartung-karte")?.classList.toggle("an", !!adWartung.an);
+  const feld = $("#ad-wartung-text");
+  if (feld) {
+    if (adWartung.standardText) feld.placeholder = adWartung.standardText;
+    if (!feld.value && adWartung.an) feld.value = adWartung.text || "";
+  }
+}
+
+function wartungSetzen(zu) {
+  const text = ($("#ad-wartung-text")?.value || "").trim();
+  socket.emit("admin:wartung", { on: !!zu, text }, (r) => {
+    if (!r || !r.ok) { toast((r && r.error) || "Fehler."); return; }
+    adWartung = { an: r.an, text: r.text, standardText: r.standardText || adWartung.standardText };
+    zeichneWartung();
+    toast(zu
+      ? `Casino geschlossen${r.getrennt ? `, ${r.getrennt} rausgeschickt` : ""}.`
+      : "Casino ist wieder offen.");
+    loadAdminDashboard();
+  });
+}
+
+$("#ad-wartung-zu")?.addEventListener("click", async () => {
+  if (!await window.Casino.dialog.frage(
+    "Das Casino für alle schließen? Wer gerade spielt, wird getrennt. Du selbst kommst weiter rein.",
+    { titel: "Wartung", okText: "Schließen", gefahr: true })) return;
+  wartungSetzen(true);
+});
+$("#ad-wartung-auf")?.addEventListener("click", () => wartungSetzen(false));
+
+/* =========================================================================
+   Regie: das naechste Ergebnis setzen
+   -------------------------------------------------------------------------
+   Ein Formular je Ziel, weil die Ziele nichts gemeinsam haben: Slots braucht
+   eine Auswahl, das Rad ein Feld, Roulette eine Zahl, Crash eine Kommazahl
+   und keinen Spieler.
+   ========================================================================= */
+let adRegieZiele = null, adRadFelder = [];
+
+function zeichneRegie(liegt) {
+  const box = $("#ad-regie-formulare");
+  if (box && adRegieZiele) {
+    box.innerHTML = Object.entries(adRegieZiele).map(([id, z]) => `
+      <div class="ad-regie" data-regie="${id}">
+        <div class="ad-regie-kopf"><b>${escapeHtml(z.name)}</b><small>${escapeHtml(z.was || "")}</small></div>
+        <div class="ad-felder">
+          ${z.global ? "" : `<label class="ad-feld"><span>Spieler</span>
+            <input type="text" maxlength="24" data-regie-wer placeholder="Name" autocomplete="off" /></label>`}
+          <label class="ad-feld"><span>Ergebnis</span>
+            ${z.art === "wahl"
+              ? `<select data-regie-wert>${Object.entries(z.optionen).map(([w, t]) => `<option value="${escapeHtml(w)}">${escapeHtml(t)}</option>`).join("")}</select>`
+              : z.art === "feld"
+                ? `<select data-regie-wert>${adRadFelder.map((f) => `<option value="${f.i}">${escapeHtml(f.label)}</option>`).join("")}</select>`
+                : `<input type="number" inputmode="decimal" data-regie-wert value="${z.vorgabe != null ? z.vorgabe : 0}" min="${z.min}" max="${z.max}"${z.schritt ? ` step="${z.schritt}"` : ""} />`}
+          </label>
+          <button class="btn-secondary ad-knopf" type="button" data-regie-setzen>Setzen</button>
+        </div>
+      </div>`).join("");
+  }
+  const liste = $("#ad-regie-liste");
+  if (!liste) return;
+  liste.innerHTML = (liegt || []).length
+    ? liegt.map((l) => `
+      <div class="ad-strafchip">
+        <b>${escapeHtml(l.name)}</b>
+        <span>${escapeHtml(l.text)}</span>
+        <small>${l.wer === "*" ? "für alle" : escapeHtml(l.wer)}</small>
+        <button class="ad-strafweg" type="button" data-regie-weg="${escapeHtml(l.ziel)}" data-regie-wer="${escapeHtml(l.wer)}" aria-label="Wegnehmen">✕</button>
+      </div>`).join("")
+    : '<div class="muted small">Nichts. Alle Spiele würfeln ehrlich.</div>';
+}
+
+function ladeRegie() {
+  socket.emit("admin:regie", (r) => {
+    if (!r || !r.ok) return;
+    adRegieZiele = r.ziele;
+    adRadFelder = r.radFelder || [];
+    zeichneRegie(r.liegt);
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const setzen = e.target.closest("[data-regie-setzen]");
+  if (setzen) {
+    const karte = setzen.closest("[data-regie]");
+    const ziel = karte.dataset.regie;
+    const fehler = $("#ad-regie-error");
+    if (fehler) fehler.textContent = "";
+    const wer = karte.querySelector("[data-regie-wer]")?.value || "";
+    const wert = karte.querySelector("[data-regie-wert]")?.value;
+    socket.emit("admin:regieSetzen", { target: wer, ziel, wert }, (r) => {
+      if (!r || !r.ok) { if (fehler) fehler.textContent = (r && r.error) || "Fehler."; return; }
+      toast("Zettel liegt. Gilt genau einmal.");
+      ladeRegie();
+    });
+    return;
+  }
+  const weg = e.target.closest("[data-regie-weg]");
+  if (weg) {
+    socket.emit("admin:regieLoeschen", { target: weg.dataset.regieWer, ziel: weg.dataset.regieWeg }, (r) => {
+      toast(r && r.ok ? "Weggenommen." : ((r && r.error) || "Fehler."));
+      ladeRegie();
+    });
+  }
+});
+
+/* =========================================================================
+   Nachricht an einen Spieler
+   ========================================================================= */
+$("#ad-nachricht-senden")?.addEventListener("click", () => {
+  const fehler = $("#ad-nachricht-error");
+  if (fehler) fehler.textContent = "";
+  const target = ($("#ad-nachricht-wer")?.value || "").trim();
+  const text = ($("#ad-nachricht-text")?.value || "").trim();
+  if (!target || !text) { if (fehler) fehler.textContent = "Name und Text ausfüllen."; return; }
+  socket.emit("admin:nachricht", { target, text, auchPush: !!$("#ad-nachricht-push")?.checked }, (r) => {
+    if (!r || !r.ok) { if (fehler) fehler.textContent = (r && r.error) || "Fehler."; return; }
+    $("#ad-nachricht-text").value = "";
+    toast(r.gesehen ? "Angekommen, er ist online." : "Er ist offline, Benachrichtigung ist raus.");
+  });
+});
+
+/* =========================================================================
+   Kosmetik von Hand geben und wegnehmen
+   ========================================================================= */
+let adKosKatalog = null;
+
+function ladeKosKatalog() {
+  if (adKosKatalog) return;
+  socket.emit("admin:kosmetikKatalog", (r) => {
+    if (!r || !r.ok) return;
+    adKosKatalog = r.katalog;
+    const art = $("#ad-kos-art");
+    if (!art) return;
+    const NAMEN = { avatar: "Bild", color: "Namensfarbe", style: "Namensstil", frame: "Rahmen",
+      title: "Titel", effect: "Gewinn-Effekt", spruch: "Eintritts-Spruch", banner: "Profil-Streifen",
+      schild: "Schild", aura: "Aura", karte: "Kartenrücken" };
+    art.innerHTML = Object.keys(adKosKatalog).map((a) => `<option value="${a}">${escapeHtml(NAMEN[a] || a)}</option>`).join("");
+    kosStuecke();
+    art.addEventListener("change", kosStuecke);
+  });
+}
+
+function kosStuecke() {
+  const art = $("#ad-kos-art")?.value;
+  const sel = $("#ad-kos-id");
+  if (!sel || !adKosKatalog || !adKosKatalog[art]) return;
+  sel.innerHTML = adKosKatalog[art].map((it) =>
+    `<option value="${escapeHtml(it.id)}">${escapeHtml(it.label)}${it.limitiert ? " (limitiert)" : ""}</option>`).join("");
+}
+
+function kosTun(weg) {
+  const fehler = $("#ad-kos-error");
+  if (fehler) fehler.textContent = "";
+  const target = ($("#ad-kos-wer")?.value || "").trim();
+  const art = $("#ad-kos-art")?.value, id = $("#ad-kos-id")?.value;
+  if (!target) { if (fehler) fehler.textContent = "Spielername fehlt."; return; }
+  socket.emit("admin:kosmetik", { target, art, id, weg }, (r) => {
+    if (!r || !r.ok) { if (fehler) fehler.textContent = (r && r.error) || "Fehler."; return; }
+    toast(weg ? `${r.label} weggenommen.` : (r.neu ? `${r.label} geschenkt.` : `Hatte ${r.label} schon.`));
+  });
+}
+
+$("#ad-kos-geben")?.addEventListener("click", () => kosTun(false));
+$("#ad-kos-nehmen")?.addEventListener("click", async () => {
+  if (!await window.Casino.dialog.frage("Stück wirklich wegnehmen? Es wird auch abgelegt, falls er es gerade trägt.",
+    { okText: "Wegnehmen", gefahr: true })) return;
+  kosTun(true);
+});
+
+/* =========================================================================
+   Chat leeren
+   ========================================================================= */
+$("#ad-chat-leeren")?.addEventListener("click", async () => {
+  if (!await window.Casino.dialog.frage("Den allgemeinen Chat bei allen leeren?",
+    { okText: "Leeren", gefahr: true })) return;
+  socket.emit("admin:chatLeeren", (r) => toast(r?.ok ? "Chat geleert." : (r?.error || "Fehler.")));
+});
+
 /* ===========================================================================
    Wortfilter (Admin)
    ---------------------------------------------------------------------------
@@ -2525,6 +2923,26 @@ const EVENTS = [
       { k: "pot", label: "Topf", wert: 500000, min: 1000, schritt: 50000, geld: true },
     ],
   },
+  /* Die beiden Letzten LAUFEN nicht, sie PASSIEREN: ein Knopf, ein Ergebnis,
+     fertig. Deshalb haben sie keinen Zustand, keine Restzeit und keinen
+     Abbrechen-Knopf, und die Rueckfrage sagt genau, was danach anders ist. */
+  {
+    id: "verlosung", name: "Verlosung", icon: "geschenk", ev: "admin:verlosung",
+    was: "Einer von allen, die gerade online sind, bekommt den Topf. Sofort, ohne Spiel.",
+    einmal: true, braucht: 1,
+    felder: [{ k: "pot", label: "Topf", wert: 100000, min: 1000, schritt: 25000, geld: true }],
+    frage: (w) => `${evGeld(w.pot)} Chips unter den ${evOnline} Anwesenden verlosen? Einer bekommt alles.`,
+  },
+  {
+    id: "steuer", name: "Kassensturz", icon: "bank", ev: "admin:steuer",
+    was: "Abgabe auf Bargeld über der Freigrenze. Nimmt Chips aus dem Spiel, statt neue zu machen. Die Bank bleibt unberührt.",
+    einmal: true,
+    felder: [
+      { k: "prozent", label: "Prozent", wert: 5, min: 1, max: 25 },
+      { k: "freigrenze", label: "Freigrenze", wert: 50000, min: 0, schritt: 10000, geld: true },
+    ],
+    frage: (w) => `${w.prozent} % von allem über ${evGeld(w.freigrenze)} Chips auf der Hand einziehen?\n\nBetrifft jedes Konto, auch die, die gerade nicht da sind. Das lässt sich nicht zurückdrehen.`,
+  },
 ];
 
 let evZustand = {};       // id -> Zustand vom Server
@@ -2588,7 +3006,8 @@ function renderAdminEvents() {
         <div><b>${escapeHtml(e.name)}</b><small>${escapeHtml(e.was)}</small></div>
       </div>
       ${zeile}${planZeile}
-      ${zuWenig && !laeuft && !angekuendigt ? `<p class="ev-hinweis">Braucht mindestens ${e.braucht} Leute, gerade sind ${evOnline} online.${e.vorlauf ? " Mit Vorlauf ankündigen, dann können welche dazukommen." : ""}</p>` : ""}
+      ${zuWenig && !laeuft && !angekuendigt ? `<p class="ev-hinweis">${
+        e.braucht === 1 ? "Dafür muss jemand online sein, gerade ist niemand da." : `Braucht mindestens ${e.braucht} Leute, gerade ${evOnline === 1 ? "ist einer" : `sind ${evOnline}`} online.`}${e.vorlauf ? " Mit Vorlauf ankündigen, dann können welche dazukommen." : ""}</p>` : ""}
       <div class="ev-felder">
         ${e.felder.map((f) => `<label class="ev-feld">
           <span>${escapeHtml(f.label)}</span>
@@ -2610,8 +3029,8 @@ function renderAdminEvents() {
       ${e.vorlauf ? `<p class="ev-hinweis ev-leise">Mit Vorlauf wird es sofort im Chat und per Benachrichtigung angekündigt und startet erst danach. Ohne Vorlauf erreicht es nur, wer gerade da ist: für eine Benachrichtigung wäre es zu kurz.</p>` : ""}
       <div class="ev-knoepfe">
         <button class="btn-primary ev-start"${laeuft || angekuendigt ? " disabled" : ""}>${
-          laeuft ? "Läuft bereits" : angekuendigt ? "Angekündigt" : "Starten"}</button>
-        <button class="btn-danger ev-stop"${laeuft || angekuendigt ? "" : " disabled"}>${angekuendigt ? "Absagen" : "Abbrechen"}</button>
+          e.einmal ? "Auslösen" : laeuft ? "Läuft bereits" : angekuendigt ? "Angekündigt" : "Starten"}</button>
+        ${e.einmal ? "" : `<button class="btn-danger ev-stop"${laeuft || angekuendigt ? "" : " disabled"}>${angekuendigt ? "Absagen" : "Abbrechen"}</button>`}
       </div>
     </div>`;
   }).join("");
@@ -2636,6 +3055,23 @@ function renderAdminEvents() {
       /* Rueckfrage vor allem, was Chips ins Spiel bringt. Das war der
          eigentliche Mangel: die Schnellknoepfe im Dashboard feuerten sofort,
          und ein Topf ist mit einem Klick draussen und nicht zurueckzuholen. */
+      if (e.einmal) {
+        // Eigene Rueckfrage: bei diesen beiden steht das Ergebnis sofort fest,
+        // "starten" waere das falsche Wort.
+        const ok = await window.Casino.dialog.frage(e.frage(w), {
+          titel: e.name, okText: "Auslösen", gefahr: e.id === "steuer",
+        });
+        if (!ok) return;
+        socket.emit(e.ev, w, (r) => {
+          if (!r || !r.ok) { toast((r && r.error) || "Fehler."); return; }
+          toast(e.id === "verlosung"
+            ? `${r.gewinner} gewinnt ${evGeld(r.topf)} Chips.`
+            : `${evGeld(r.summe)} Chips aus ${r.betroffen} Konten eingezogen.`);
+          loadAdminDashboard();
+        });
+        return;
+      }
+
       if (e.chips) {
         const geld = e.felder.find((f) => f.geld);
         const betrag = geld ? w[geld.k] : 0;

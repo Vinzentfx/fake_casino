@@ -187,7 +187,7 @@ function startHand(session, bet, accounts) {
   session.dealerCards = [deal(session), deal(session)];
 
   // Pechvogel: kein natürlicher Blackjack für den Spieler (3:2 wäre ein Gewinn).
-  if (accounts.isShadowbanned(session.name)) {
+  if (accounts.pechTrifft(session.name)) {
     let guard = 0;
     while (isBlackjack(session.playerHands[0].cards) && guard++ < 25) {
       session.playerHands[0].cards[1] = deal(session);
@@ -278,7 +278,7 @@ function advanceHand(session, accounts) {
 function dealerPlay(session, accounts) {
   session.phase = "dealer";
   // Pechvogel: der Dealer ist so gelegt, dass er gewinnt.
-  if (accounts.isShadowbanned(session.name)) {
+  if (accounts.pechTrifft(session.name)) {
     rigDealerToWin(session);
     return settleAll(session, accounts);
   }
@@ -430,20 +430,20 @@ function setupBlackjack(io, accounts) {
     socket.on("bj:deal", ({ bet } = {}, cb) => {
       const session = getSession();
       if (socket.data.account) session.name = socket.data.account;
-      if (!session.name) return cb && cb({ ok: false, error: "Nicht eingeloggt." });
+      if (!session.name) return typeof cb === "function" && cb({ ok: false, error: "Nicht eingeloggt." });
       const betN = Math.round(Number(bet));
       const result = startHand(session, betN, accounts);
       push();
-      cb && cb(result);
+      typeof cb === "function" && cb(result);
     });
 
     socket.on("bj:action", ({ action } = {}, cb) => {
       const session = getSession();
       if (socket.data.account) session.name = socket.data.account;
-      if (!session.name) return cb && cb({ ok: false, error: "Nicht eingeloggt." });
+      if (!session.name) return typeof cb === "function" && cb({ ok: false, error: "Nicht eingeloggt." });
       const result = playerAction(session, action, accounts);
       push();
-      cb && cb(result);
+      typeof cb === "function" && cb(result);
     });
   });
 }

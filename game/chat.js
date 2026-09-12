@@ -15,6 +15,7 @@
  */
 
 const wortfilter = require("./wortfilter");
+const strafen = require("./strafen");
 
 const HISTORY = 40;          // Nachrichten je Raum
 const MAX_LEN = 280;         // Zeichen je Nachricht
@@ -54,25 +55,38 @@ function setupChat(io, accounts) {
     });
 
     socket.on("chat:send", ({ room, text } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Nicht eingeloggt." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Nicht eingeloggt." });
       room = String(room || "global");
       text = String(text || "").replace(/\s+/g, " ").trim().slice(0, MAX_LEN);
-      if (!text) return ack && ack({ ok: false, error: "Leere Nachricht." });
+      if (!text) return typeof ack === "function" && ack({ ok: false, error: "Leere Nachricht." });
       /* Im Chat wird maskiert, nicht abgelehnt: eine verschluckte Nachricht
          erzeugt Nachfragen ("kam das an?"), eine maskierte erklaert sich
          selbst. Gefiltert wird vor dem Speichern, die Verlaufsliste soll
          das Wort gar nicht erst enthalten. */
       text = wortfilter.entschaerfe(text).text;
 
+      /* Maulkorb: darf spielen, aber nicht schreiben. Abgelehnt wird mit
+         Grund und Restzeit, nicht stumm verschluckt: eine Nachricht, die
+         einfach nicht erscheint, sieht wie ein Fehler aus und erzeugt genau
+         die Nachfragen, die man vermeiden wollte. */
+      const acc0 = accounts.get(socket.data.account);
+      const maulkorb = acc0 && strafen.aktiv(acc0, "stumm");
+      if (maulkorb) {
+        return typeof ack === "function" && ack({
+          ok: false,
+          error: `Du darfst gerade nicht schreiben (${strafen.restText(maulkorb)})${maulkorb.grund ? `: ${maulkorb.grund}` : "."}`,
+        });
+      }
+
       const now = Date.now();
       if (now - (socket.data.lastChatTs || 0) < MIN_INTERVAL_MS)
-        return ack && ack({ ok: false, error: "Etwas langsamer." });
+        return typeof ack === "function" && ack({ ok: false, error: "Etwas langsamer." });
       socket.data.lastChatTs = now;
 
       // In einem Lobby-Kanal nur schreiben, wenn der Socket wirklich in diesem
       // Socket.IO-Raum ist (also der Lobby beigetreten ist). "global" ist offen.
       if (room !== "global" && !socket.rooms.has(room))
-        return ack && ack({ ok: false, error: "Du bist nicht in dieser Lobby." });
+        return typeof ack === "function" && ack({ ok: false, error: "Du bist nicht in dieser Lobby." });
 
       const acc = accounts.get(socket.data.account);
       // Der Chat zeigte Namen bisher als nackten Text: wer sich eine Farbe
@@ -92,7 +106,7 @@ function setupChat(io, accounts) {
       if (room === "global") io.emit("chat:msg", { room, msg });
       else io.to(room).emit("chat:msg", { room, msg });
 
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
     });
   });
 }

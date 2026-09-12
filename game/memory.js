@@ -220,13 +220,13 @@ function setupMemory(io, accounts) {
 
   io.on("connection", (socket) => {
     socket.on("memory:create", ({ buyIn, isPublic = true, size = DEFAULT_SIZE } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN)
-        return ack && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
+        return typeof ack === "function" && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       if (!SIZES[size]) size = DEFAULT_SIZE;
       const a = acc(socket);
-      if (!a || a.chips < buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      if (!a || a.chips < buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
       leaveCurrent(socket);
       const code = makeCode();
@@ -241,59 +241,59 @@ function setupMemory(io, accounts) {
       socket.data.memoryCode = code;
       // Öffentliche Matches stehen in der Lobby-Liste, private gehen nur per Code.
       if (match.public) registerLobby(code);
-      ack && ack({ ok: true, code, public: match.public });
+      typeof ack === "function" && ack({ ok: true, code, public: match.public });
       broadcast(code);
     });
 
     socket.on("memory:join", ({ code } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       code = String(code || "").trim().toUpperCase();
       const match = matches.get(code);
-      if (!match) return ack && ack({ ok: false, error: "Match nicht gefunden." });
-      if (match.state !== "waiting") return ack && ack({ ok: false, error: "Match läuft bereits." });
+      if (!match) return typeof ack === "function" && ack({ ok: false, error: "Match nicht gefunden." });
+      if (match.state !== "waiting") return typeof ack === "function" && ack({ ok: false, error: "Match läuft bereits." });
       if (match.players.size >= 2 && !match.players.has(socket.data.account))
-        return ack && ack({ ok: false, error: "Match ist voll." });
+        return typeof ack === "function" && ack({ ok: false, error: "Match ist voll." });
       const a = acc(socket);
-      if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
 
       leaveCurrent(socket);
       match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, pairs: 0 });
       socket.join(code);
       socket.data.memoryCode = code;
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(code);
       lobby.changed();
     });
 
     socket.on("memory:start", (ack) => {
       const match = currentMatch(socket);
-      if (!match) return ack && ack({ ok: false, error: "Kein Match." });
-      if (match.host !== socket.data.account) return ack && ack({ ok: false, error: "Nur der Host startet." });
-      if (match.state !== "waiting") return ack && ack({ ok: false, error: "Läuft bereits." });
-      if (match.players.size !== 2) return ack && ack({ ok: false, error: "Warte auf 2 Spieler." });
+      if (!match) return typeof ack === "function" && ack({ ok: false, error: "Kein Match." });
+      if (match.host !== socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Nur der Host startet." });
+      if (match.state !== "waiting") return typeof ack === "function" && ack({ ok: false, error: "Läuft bereits." });
+      if (match.players.size !== 2) return typeof ack === "function" && ack({ ok: false, error: "Warte auf 2 Spieler." });
       for (const p of match.players.values()) {
         const a = accounts.get(p.id);
-        if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` });
+        if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` });
       }
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
       startGame(match);
     });
 
     socket.on("memory:flip", ({ index } = {}, ack) => {
       const match = currentMatch(socket);
-      if (!match || match.state !== "playing") return ack && ack({ ok: false, error: "Kein laufendes Match." });
-      if (match.locked) return ack && ack({ ok: false, error: "Kurz warten…" });
-      if (match.turn !== socket.data.account) return ack && ack({ ok: false, error: "Nicht dein Zug." });
+      if (!match || match.state !== "playing") return typeof ack === "function" && ack({ ok: false, error: "Kein laufendes Match." });
+      if (match.locked) return typeof ack === "function" && ack({ ok: false, error: "Kurz warten…" });
+      if (match.turn !== socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Nicht dein Zug." });
       index = Math.floor(Number(index));
       if (!Number.isFinite(index) || index < 0 || index >= match.board.length)
-        return ack && ack({ ok: false, error: "Ungültige Karte." });
+        return typeof ack === "function" && ack({ ok: false, error: "Ungültige Karte." });
       const card = match.board[index];
       if (card.matchedBy != null || match.flipped.includes(index))
-        return ack && ack({ ok: false, error: "Karte schon offen." });
-      if (match.flipped.length >= 2) return ack && ack({ ok: false, error: "Kurz warten…" });
+        return typeof ack === "function" && ack({ ok: false, error: "Karte schon offen." });
+      if (match.flipped.length >= 2) return typeof ack === "function" && ack({ ok: false, error: "Kurz warten…" });
 
       match.flipped.push(index);
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
 
       if (match.flipped.length < 2) { broadcast(match.code); return; }
 
@@ -327,13 +327,13 @@ function setupMemory(io, accounts) {
 
     socket.on("memory:rematch", (ack) => {
       const match = currentMatch(socket);
-      if (!match || match.state !== "done") return ack && ack({ ok: false, error: "Kein beendetes Spiel." });
+      if (!match || match.state !== "done") return typeof ack === "function" && ack({ ok: false, error: "Kein beendetes Spiel." });
       const connected = [...match.players.values()].filter((p) => p.socket);
-      if (connected.length !== 2) return ack && ack({ ok: false, error: "Gegner ist nicht mehr da." });
-      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return ack && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      if (connected.length !== 2) return typeof ack === "function" && ack({ ok: false, error: "Gegner ist nicht mehr da." });
+      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
       match.rematchWant = match.rematchWant || [];
       if (!match.rematchWant.includes(socket.data.account)) match.rematchWant.push(socket.data.account);
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
       if (connected.every((p) => match.rematchWant.includes(p.id))) { match.rematchWant = []; startGame(match); }
       else broadcast(match.code);
     });

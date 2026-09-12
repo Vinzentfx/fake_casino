@@ -1,6 +1,7 @@
 "use strict";
 
 const crypto = require("crypto");
+const regie = require("./regie");
 
 const RED_NUMS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const WHEEL_SEQ = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
@@ -36,7 +37,7 @@ const MAX_TOTAL = 50000;
 function setupRoulette(io, accounts) {
   io.on("connection", (socket) => {
     socket.on("roulette:spin", ({ bets } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       if (!Array.isArray(bets) || !bets.length) return ack({ ok: false, error: "Keine Wetten gesetzt." });
       if (bets.length > 50) return ack({ ok: false, error: "Zu viele Wetten." });
@@ -68,9 +69,13 @@ function setupRoulette(io, accounts) {
       accounts.adjustChips(socket.data.account, -totalBet);
 
       let number = crypto.randomInt(37);
+      // Regie: eine von Hand gesetzte Zahl gilt vor allem anderen, auch vor
+      // dem Pechvogel. Sie ist ein einzelner Zettel und danach verbraucht.
+      const gesetzt = regie.nimm(socket.data.account, "roulette");
+      if (gesetzt != null) number = Math.max(0, Math.min(36, Math.floor(gesetzt)));
       // Pechvogel-Modus: die Kugel landet auf einer Zahl, die keine Wette trifft
       // (zufällig unter den freien Zahlen; wer alle 37 belegt hat, bekommt einen ehrlichen Dreh).
-      if (accounts.isShadowbanned(socket.data.account)) {
+      else if (accounts.pechTrifft(socket.data.account)) {
         const losers = [];
         for (let n = 0; n <= 36; n++) {
           if (clean.every((b) => payoutFactor(b.type, b.value, n) === 0)) losers.push(n);

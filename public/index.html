@@ -1857,6 +1857,15 @@
           <div class="form-error" id="admin-ipban-error"></div>
           <ol class="leaderboard ad-ipliste" id="admin-ipban-list"><li class="muted">-</li></ol>
         </div>
+
+        <!-- Wer hat gerade etwas offen? Eine Strafe, die man vergisst, läuft
+             sonst wochenlang weiter, und der Bestrafte hält es irgendwann für
+             einen Fehler im Spiel. -->
+        <div class="ad-karte">
+          <div class="ad-kopf"><b>Offene Strafen</b></div>
+          <p class="hint">Alles, was gerade gilt. Antippen öffnet die Person.</p>
+          <div id="ad-strafen-offen" class="ad-strafliste"><div class="muted small">-</div></div>
+        </div>
       </section>
 
       <section class="ad-tafel hidden" data-ad-tafel="events">
@@ -1966,6 +1975,77 @@
           </div>
           <p class="hint">Einspielen überschreibt <b>alles</b> und startet den Server neu. Vorher ein frisches Backup ziehen.</p>
           <div class="form-error" id="admin-backup-error"></div>
+        </div>
+
+        <!-- ===== Wartung =====
+             Zwischen "läuft" und "Server aus" gab es nichts. -->
+        <div class="ad-karte" id="ad-wartung-karte">
+          <div class="ad-kopf"><b>Wartung</b><span class="ad-zustand" id="ad-wartung-zustand">offen</span></div>
+          <p class="hint">Macht das Haus zu: niemand kommt rein, wer drin ist, fliegt raus. Du selbst kommst weiter rein. Der Zustand übersteht einen Neustart, ein Update macht also nicht versehentlich wieder auf.</p>
+          <label class="ad-feld ad-feld-breit"><span>Was die Spieler lesen</span>
+            <input id="ad-wartung-text" type="text" maxlength="200" placeholder="Das Casino ist gerade kurz zu. Wir sind gleich wieder da." /></label>
+          <div class="ad-knopfreihe">
+            <button class="btn-danger ad-knopf" id="ad-wartung-zu">Casino schließen</button>
+            <button class="btn-primary ad-knopf" id="ad-wartung-auf">Wieder aufmachen</button>
+          </div>
+        </div>
+
+        <!-- ===== Regie =====
+             Das nächste Ergebnis von Hand setzen. Gilt genau einmal. -->
+        <div class="ad-karte">
+          <div class="ad-kopf"><b>Regie</b></div>
+          <p class="hint">Setzt das <b>nächste</b> Ergebnis und ist danach verbraucht. Für Vorführungen, zum Nachstellen einer Runde und für ein Geschenk mit Ansage. Ein Serverneustart wirft alle Zettel weg.</p>
+          <div id="ad-regie-formulare"></div>
+          <div class="cd-sub">Was gerade liegt</div>
+          <div id="ad-regie-liste" class="ad-strafliste"><div class="muted small">Nichts.</div></div>
+          <div class="form-error" id="ad-regie-error"></div>
+        </div>
+
+        <!-- ===== Nachricht an einen Spieler ===== -->
+        <div class="ad-karte">
+          <div class="ad-kopf"><b>Nachricht an einen Spieler</b></div>
+          <p class="hint">Kommt als Fenster bei genau dieser Person an. Wer nicht online ist, bekommt auf Wunsch eine Benachrichtigung.</p>
+          <div class="ad-zeile">
+            <input id="ad-nachricht-wer" type="text" maxlength="24" placeholder="Spielername" autocomplete="off" />
+          </div>
+          <label class="ad-feld ad-feld-breit"><span>Text</span>
+            <textarea id="ad-nachricht-text" maxlength="400" rows="3" placeholder="z. B. Deinen doppelt gebuchten Einsatz habe ich zurückgelegt."></textarea></label>
+          <label class="an-push">
+            <input type="checkbox" id="ad-nachricht-push" />
+            <span><b>Wenn offline, als Benachrichtigung schicken</b></span>
+          </label>
+          <div class="ad-knopfreihe">
+            <button class="btn-primary ad-knopf" id="ad-nachricht-senden">Schicken</button>
+          </div>
+          <div class="form-error" id="ad-nachricht-error"></div>
+        </div>
+
+        <!-- ===== Kosmetik von Hand ===== -->
+        <div class="ad-karte">
+          <div class="ad-kopf"><b>Kosmetik geben oder wegnehmen</b></div>
+          <p class="hint">Als Ausgleich, als Preis für etwas außerhalb des Casinos, oder zum Zurücknehmen. Wegnehmen legt das Stück auch ab, falls es getragen wird.</p>
+          <div class="ad-felder">
+            <label class="ad-feld"><span>Spieler</span>
+              <input id="ad-kos-wer" type="text" maxlength="24" placeholder="Name" autocomplete="off" /></label>
+            <label class="ad-feld"><span>Art</span>
+              <select id="ad-kos-art"></select></label>
+            <label class="ad-feld"><span>Stück</span>
+              <select id="ad-kos-id"></select></label>
+          </div>
+          <div class="ad-knopfreihe">
+            <button class="btn-primary ad-knopf" id="ad-kos-geben">Geben</button>
+            <button class="btn-danger ad-knopf" id="ad-kos-nehmen">Wegnehmen</button>
+          </div>
+          <div class="form-error" id="ad-kos-error"></div>
+        </div>
+
+        <!-- ===== Chat ===== -->
+        <div class="ad-karte">
+          <div class="ad-kopf"><b>Chat</b></div>
+          <p class="hint">Leert den allgemeinen Verlauf bei allen. Der Verlauf liegt nur im Speicher, es ist also nichts zu retten und nichts kaputt zu machen.</p>
+          <div class="ad-knopfreihe">
+            <button class="btn-danger ad-knopf" id="ad-chat-leeren">Chat leeren</button>
+          </div>
         </div>
 
         <div class="ad-karte">

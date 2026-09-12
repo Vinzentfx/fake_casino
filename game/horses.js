@@ -791,7 +791,7 @@ function setupHorses(_io, _accounts) {
     const me = () => key() && accounts.get(key());
 
     socket.on("horses:state", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       const s = stateFor(key());
       s.stable = key() ? Object.values(store.horses).filter((h) => h.owner === key()).map((h) => publicHorse(h, { own: true })) : [];
       refreshMarket(false);
@@ -801,7 +801,7 @@ function setupHorses(_io, _accounts) {
     });
 
     socket.on("horses:bet", ({ lane, type, amount } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       if (race.phase !== "betting") return ack({ ok: false, error: "Wetten sind zu, das Rennen läuft." });
       lane = Math.floor(Number(lane));
@@ -828,7 +828,7 @@ function setupHorses(_io, _accounts) {
     });
 
     socket.on("horses:enter", ({ horseId, tactic } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const h = store.horses[horseId];
       if (!h || h.owner !== key()) return ack({ ok: false, error: "Nicht dein Pferd." });
@@ -857,7 +857,7 @@ function setupHorses(_io, _accounts) {
     });
 
     socket.on("horses:sprint", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       if (race.phase !== "running") return ack({ ok: false, error: "Kein Rennen im Gange." });
       // Erstes eigenes Pferd, das noch sprinten kann, mit 2+ eigenen Pferden
@@ -875,7 +875,7 @@ function setupHorses(_io, _accounts) {
     });
 
     socket.on("horses:buy", ({ horseId } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       if (!store.market.includes(horseId)) return ack({ ok: false, error: "Nicht mehr im Angebot." });
       const h = store.horses[horseId];
@@ -896,7 +896,7 @@ function setupHorses(_io, _accounts) {
     });
 
     socket.on("horses:rename", ({ horseId, name } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const h = store.horses[horseId];
       if (!h || h.owner !== key()) return ack({ ok: false, error: "Nicht dein Pferd." });
@@ -916,7 +916,7 @@ function setupHorses(_io, _accounts) {
     });
 
     socket.on("horses:sell", ({ horseId } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const h = store.horses[horseId];
       if (!h || h.owner !== key()) return ack({ ok: false, error: "Nicht dein Pferd." });
@@ -933,7 +933,7 @@ function setupHorses(_io, _accounts) {
     });
 
     socket.on("horses:train", ({ horseId, stat } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const h = store.horses[horseId];
       if (!h || h.owner !== key()) return ack({ ok: false, error: "Nicht dein Pferd." });

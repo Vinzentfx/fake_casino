@@ -180,7 +180,7 @@ function setupMines(io, accounts) {
       if (g.revealed.includes(tile)) return ack({ ok: false, error: "Schon aufgedeckt." });
 
       // Pechvogel: viel öfter Bomben, höchstens 2 Diamanten.
-      const shadow = accounts.isShadowbanned(socket.data.account);
+      const shadow = accounts.pechTrifft(socket.data.account);
       const hitBomb = shadow
         ? (g.revealed.length >= SHADOW_MAX_GEMS || crypto.randomInt(100) < SHADOW_BOMB_CHANCE)
         : g.mineSet.has(tile);

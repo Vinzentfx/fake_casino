@@ -8,6 +8,10 @@ const ipbans = require("./ipbans");
 const chat = require("./chat");
 const wortfilter = require("./wortfilter");
 const bilder = require("./bilder");
+const strafen = require("./strafen");
+const regie = require("./regie");
+const wartung = require("./wartung");
+const cosmetics = require("./cosmetics");
 let _heist = null;
 function setHeist(h) { _heist = h; }
 let _events = {}; // { rain, quiz, vault }, die Admin-Events aus server.js
@@ -95,6 +99,22 @@ function planeEvent(io, { id, name, minuten, text, starte }) {
   return { ok: true, startetUm };
 }
 
+/** Wer hat offene Strafen? Kurzform fuer Uebersicht und Strafen-Reiter. */
+function strafenUebersicht(accounts) {
+  const out = [];
+  for (const a of accounts.rawAll()) {
+    const m = strafen.marken(a);
+    if (m.length) out.push({ name: a.name, strafen: m });
+  }
+  return out.sort((x, y) => x.name.localeCompare(y.name));
+}
+
+/** Alle Sockets eines Kontos. */
+function socketsVon(io, key) {
+  const k = String(key || "").toLowerCase();
+  return Array.from(io.of("/").sockets.values()).filter((s) => s.data && s.data.account === k);
+}
+
 /** Zustand eines Event-Moduls, oder { active: false }, wenn es ihn nicht gibt. */
 function eventZustand(mod) {
   if (!mod) return { active: false };
@@ -112,7 +132,7 @@ function setupAdmin(io, accounts) {
     }
 
     socket.on("admin:dashboard", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const all = accounts.listAll();
       const onlineMap = new Map();
@@ -172,6 +192,12 @@ function setupAdmin(io, accounts) {
           topWinners,
           topLosers,
           alerts,
+          /* Wartung, offene Strafen und liegende Regie-Zettel gehoeren in die
+             Uebersicht und nicht nur in ihren Reiter: es sind genau die drei
+             Zustaende, die man versehentlich anlaesst. */
+          wartung: wartung.state(),
+          strafen: strafenUebersicht(accounts),
+          regie: regie.liste(),
         },
       });
     });
@@ -181,19 +207,19 @@ function setupAdmin(io, accounts) {
        Basisliste im Modul deckt das Grobe ab, alles Weitere kommt hier
        dazu, und Ausnahmen fuer Woerter, die zu Unrecht haengenbleiben. */
     socket.on("admin:filterState", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       ack({ ok: true, ...wortfilter.listeState() });
     });
 
     socket.on("admin:filterAdd", ({ wort, art } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       ack(art === "ausnahme" ? wortfilter.ergaenzeAusnahme(wort) : wortfilter.ergaenze(wort));
     });
 
     socket.on("admin:filterRemove", ({ wort, art } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       ack(art === "ausnahme" ? wortfilter.entferneAusnahme(wort) : wortfilter.entferne(wort));
     });
@@ -203,7 +229,7 @@ function setupAdmin(io, accounts) {
        kann nur ein Mensch beurteilen. Der Admin sieht alle hochgeladenen
        Wappen und die Meldungen dazu. */
     socket.on("admin:bilder", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       let meldungen = [];
       try { meldungen = require("./clans").meldungen(); } catch {}
@@ -211,7 +237,7 @@ function setupAdmin(io, accounts) {
     });
 
     socket.on("admin:bildWeg", ({ art, id, meldungErledigen } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const weg = bilder.loesche(String(art || ""), String(id || ""));
       if (meldungErledigen && art === "clan") {
@@ -222,7 +248,7 @@ function setupAdmin(io, accounts) {
 
     /* Meldung abhaken, ohne das Bild zu entfernen, wenn sie unbegruendet war. */
     socket.on("admin:meldungOk", ({ clanId } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       try { ack(require("./clans").meldungErledigen(String(clanId || ""), false)); }
       catch { ack({ ok: false, error: "Fehler." }); }
@@ -233,7 +259,7 @@ function setupAdmin(io, accounts) {
        Wahrheit. Und genau die wuerde man beim Pflegen der Liste nicht
        merken. */
     socket.on("admin:filterProbe", ({ text } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const roh = String(text || "").slice(0, 200);
       const t = wortfilter.treffer(roh);
@@ -249,7 +275,7 @@ function setupAdmin(io, accounts) {
        aus. Was schon da ist, listen wir hier auf; umbenennen oder stehen
        lassen entscheidet der Besitzer je Fall. */
     socket.on("admin:filterPruefeBestand", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const treffer = [];
       for (const a of accounts.listAll()) {
@@ -270,13 +296,13 @@ function setupAdmin(io, accounts) {
     });
 
     socket.on("admin:listAccounts", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       ack({ ok: true, accounts: accounts.listAll() });
     });
 
     socket.on("admin:setChips", ({ target, amount } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const acc = accounts.get(target);
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
@@ -295,7 +321,7 @@ function setupAdmin(io, accounts) {
     });
 
     socket.on("admin:ban", ({ target } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const res = accounts.ban(String(target).toLowerCase());
       if (res.ok) {
@@ -310,7 +336,7 @@ function setupAdmin(io, accounts) {
     });
 
     socket.on("admin:unban", ({ target } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       ack(accounts.unban(String(target).toLowerCase()));
     });
@@ -318,7 +344,7 @@ function setupAdmin(io, accounts) {
     // IP-Bann: sperrt die IP eines Spielers (per Name → letzte bekannte IP)
     // oder eine direkt angegebene IP; trennt alle Sockets dieser IP sofort.
     socket.on("admin:ipban", ({ target, ip } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       let addr = ip ? ipbans.normIp(ip) : "";
       if (!addr && target) {
@@ -340,7 +366,7 @@ function setupAdmin(io, accounts) {
     });
 
     socket.on("admin:ipunban", ({ ip } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const ok = ipbans.unban(String(ip || ""));
       ack({ ok, ip: ipbans.normIp(ip) });
@@ -357,16 +383,18 @@ function setupAdmin(io, accounts) {
       ack({ ok: true, bans });
     });
 
-    // Pechvogel-Modus: der Spieler verliert still jeden Slot-Dreh und jede
-    // Solo-Roulette-Runde und hält es einfach für Pech.
+    /* Pechvogel als Ja/Nein. Der Bildschirm setzt ihn seit dem Strafen-Umbau
+       über admin:strafeSetzen (mit Stärke und Ablaufzeit); dieses Ereignis
+       bleibt, weil ein alter, offener Tab es noch schicken kann, und landet
+       über setShadowban in derselben Strafe. */
     socket.on("admin:shadowban", ({ target, on } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      ack(accounts.setShadowban(String(target).toLowerCase(), !!on));
+      ack(accounts.setShadowban(String(target).toLowerCase(), !!on, { grund: "ohne Angabe" }));
     });
 
     socket.on("admin:deleteAccount", ({ target } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const key = String(target).toLowerCase();
       // Rauswerfen, falls online
@@ -380,7 +408,7 @@ function setupAdmin(io, accounts) {
     });
 
     socket.on("admin:clearBank", ({ target } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const key = String(target || "").toLowerCase();
       const acc = accounts.get(key);
@@ -393,7 +421,7 @@ function setupAdmin(io, accounts) {
 
     // Einen Spieler aus einer Bestenliste nehmen, indem der Wert dahinter auf null geht.
     socket.on("admin:resetStat", ({ target, stat } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const acc = accounts.get(String(target).toLowerCase());
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
@@ -408,7 +436,7 @@ function setupAdmin(io, accounts) {
 
     // Alle vergebenen Grundstücke auflisten (für "Gebäude freigeben" im Admin).
     socket.on("admin:cityLots", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       ack({ ok: true, lots: city.ownedLots() });
     });
@@ -416,7 +444,7 @@ function setupAdmin(io, accounts) {
     // Einem Besitzer ein Gebäude wegnehmen (zurück an niemanden). Allen Bescheid geben,
     // damit offene Stadt-Screens neu laden.
     socket.on("admin:clearLot", ({ plotId } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const res = city.adminClearLot(plotId);
       if (res.ok) io.emit("city:update");
@@ -425,7 +453,7 @@ function setupAdmin(io, accounts) {
 
     // Die ganze Stadt auf Anfang zurücksetzen (nach einer Preis-Umstellung).
     socket.on("admin:resetCity", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       city.resetCity();
       io.emit("city:update");
@@ -436,7 +464,7 @@ function setupAdmin(io, accounts) {
 
     // Einmaligen MAXIMALGEWINN für den nächsten Slot-Dreh des Besitzers scharf stellen (zum Vorführen).
     socket.on("admin:slotsForceWin", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       slots.armForceWin(socket.data.account);
       ack({ ok: true });
@@ -448,7 +476,7 @@ function setupAdmin(io, accounts) {
      * niemand hinschaut, ist kein Fest.
      */
     socket.on("admin:comeback", ({ on, minutes, pot } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const cb = require("./comeback");
       if (on) return ack(cb.starte({ galaMinuten: minutes, topf: pot }));
@@ -457,14 +485,14 @@ function setupAdmin(io, accounts) {
 
     // --- Live-Ops (nur Besitzer) ---
     socket.on("admin:happyHour", ({ on, minutes } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       if (on) liveops.startHappy(minutes || 60); else liveops.stopHappy();
       ack({ ok: true });
     });
 
     socket.on("admin:tourney", ({ on, minutes, prize } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       if (on) { const r = liveops.startTourney(minutes || 10, prize || 100000); return ack(r); }
       liveops.stopTourney();
@@ -472,7 +500,7 @@ function setupAdmin(io, accounts) {
     });
 
     socket.on("admin:heist", ({ on, loot, seconds, vorlauf } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       if (!_heist) return ack({ ok: false, error: "Heist nicht bereit." });
       if (on) {
@@ -491,7 +519,7 @@ function setupAdmin(io, accounts) {
     });
 
     socket.on("admin:rain", ({ on, pot, seconds, vorlauf } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       if (!_events.rain) return ack({ ok: false, error: "Chip-Regen nicht bereit." });
       if (on) {
@@ -510,7 +538,7 @@ function setupAdmin(io, accounts) {
     });
 
     socket.on("admin:quiz", ({ on, rounds, prize, vorlauf } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       if (!_events.quiz) return ack({ ok: false, error: "Quiz nicht bereit." });
       if (on) {
@@ -529,7 +557,7 @@ function setupAdmin(io, accounts) {
     });
 
     socket.on("admin:teamvault", ({ on, pot, seconds, vorlauf } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       if (!_events.vault) return ack({ ok: false, error: "Tresorkampf nicht bereit." });
       if (on) {
@@ -549,7 +577,7 @@ function setupAdmin(io, accounts) {
 
     // Jetzt eine Stadtnachricht auslösen (zufälliger Ortsteil, wenn keiner angegeben ist).
     socket.on("admin:cityEvent", ({ districtId } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const event = city.fireEvent(districtId || null);
       if (!event) return ack({ ok: false, error: "Kein Event möglich (Karte leer)." });
@@ -560,27 +588,294 @@ function setupAdmin(io, accounts) {
 
     // Reset a player's daily-bonus & rescue cooldowns (faucet testing).
     socket.on("admin:resetBonus", ({ target } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const acc = accounts.get(String(target || "").toLowerCase());
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      /* Auch Rad und Kalender: die drei stehen im Menue nebeneinander, und
+         "Bonus wieder frei" hat vorher nur einen davon freigegeben. Wer die
+         Geschenk-Kette testen wollte, kam bis zum Rad und blieb dort stehen. */
       acc.lastBonusAt = 0;
       acc.lastRescueAt = 0;
+      acc.lastWheelAt = 0;
+      if (acc.calendar) acc.calendar.lastDay = -999;
       accounts.save();
       ack({ ok: true });
     });
 
     // Force the weekly rollover NOW (Spieler der Woche + neue Goldene Straße).
     socket.on("admin:newWeek", (ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       require("./weekly").forceRollover(io, accounts);
       ack({ ok: true });
     });
 
+    /* =====================================================================
+       STRAFEN
+
+       Vorher war die einzige Antwort auf alles "Konto gesperrt". Jetzt gibt es
+       sieben Stufen mit Ablaufzeit und Grund (game/strafen.js). Der Grund ist
+       nicht Deko: er steht in der Meldung, die der Bestrafte liest.
+       ===================================================================== */
+    socket.on("admin:strafen", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      ack({
+        ok: true,
+        arten: strafen.ARTEN,
+        spiele: Object.fromEntries(Object.entries(strafen.SPIELE).map(([id, s]) => [id, s.name])),
+        offen: strafenUebersicht(accounts),
+      });
+    });
+
+    socket.on("admin:strafeSetzen", ({ target, art, minuten, wert, spiele, grund } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = String(target || "").toLowerCase();
+      const acc = accounts.get(key);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      if (key === OWNER) return ack({ ok: false, error: "Dich selbst bestrafen geht nicht." });
+
+      const res = strafen.setze(acc, art, { minuten, wert, spiele, grund });
+      if (!res.ok) return ack(res);
+
+      /* Eine Zeitsperre wirkt erst, wenn sie auch die offene Sitzung trifft.
+         Ohne das spielt der Gesperrte weiter, bis er von selbst neu laedt. */
+      let getrennt = 0;
+      if (art === "sperre") {
+        for (const s of socketsVon(io, key)) {
+          s.emit("admin:kicked", { reason: `Gesperrt (${strafen.restText(res.strafe)})${res.strafe.grund ? `: ${res.strafe.grund}` : "."}` });
+          s.disconnect(true);
+          getrennt++;
+        }
+      } else {
+        // Die anderen Strafen merkt man erst beim naechsten Versuch. Ein Hinweis
+        // sagt sofort, was gilt, und beantwortet das "warum geht das nicht".
+        for (const s of socketsVon(io, key)) {
+          s.emit("admin:nachricht", { titel: "Vom Casino", text: strafen.satz(art, res.strafe) });
+        }
+      }
+      ack({ ok: true, strafe: res.strafe, getrennt, offen: strafen.marken(acc) });
+    });
+
+    socket.on("admin:strafeAufheben", ({ target, art } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const acc = accounts.get(String(target || "").toLowerCase());
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      const res = art === "*" ? strafen.alleAufheben(acc) : strafen.hebeAuf(acc, art);
+      if (res.ok) {
+        for (const s of socketsVon(io, acc.name)) {
+          s.emit("admin:nachricht", { titel: "Vom Casino", text: art === "*" ? "Alle Strafen sind aufgehoben." : `Aufgehoben: ${(strafen.ARTEN[art] || {}).name || art}.` });
+        }
+      }
+      ack({ ...res, offen: strafen.marken(acc) });
+    });
+
+    /* =====================================================================
+       REGIE: das naechste Ergebnis von Hand setzen (game/regie.js)
+       ===================================================================== */
+    socket.on("admin:regie", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      let felder = [];
+      try {
+        felder = require("./gluecksrad").FELDER.map((f, i) => ({ i, label: f.label, art: f.art }));
+      } catch {}
+      ack({ ok: true, ziele: regie.ZIELE, liegt: regie.liste(), radFelder: felder });
+    });
+
+    socket.on("admin:regieSetzen", ({ target, ziel, wert } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const z = regie.ZIELE[ziel];
+      if (!z) return ack({ ok: false, error: "Unbekanntes Ziel." });
+      let key = regie.GLOBAL;
+      if (!z.global) {
+        key = String(target || "").toLowerCase();
+        if (!accounts.get(key)) return ack({ ok: false, error: "Account nicht gefunden." });
+      }
+      ack(regie.setze(key, ziel, wert));
+    });
+
+    socket.on("admin:regieLoeschen", ({ target, ziel } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const weg = regie.loesche(target || regie.GLOBAL, ziel);
+      ack({ ok: weg, error: weg ? undefined : "Da lag nichts." });
+    });
+
+    /* =====================================================================
+       WARTUNG: das Haus zumachen, ohne den Server zu beenden
+       ===================================================================== */
+    socket.on("admin:wartung", ({ on, text } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const res = wartung.setze(!!on, text);
+      let getrennt = 0;
+      if (on) {
+        // Zumachen heisst zumachen: wer drin ist, geht raus, sonst spielt eine
+        // halbe Runde weiter, waehrend man an den Zahlen schraubt.
+        for (const s of io.of("/").sockets.values()) {
+          if (!s.data || !s.data.account || s.data.account === OWNER) continue;
+          s.emit("admin:kicked", { reason: wartung.text() });
+          s.disconnect(true);
+          getrennt++;
+        }
+      } else {
+        try { chat.announce(io, "Das Casino ist wieder offen."); } catch {}
+      }
+      io.emit("wartung:state", wartung.state());
+      ack({ ok: true, ...res, getrennt });
+    });
+
+    /* =====================================================================
+       WERKZEUGE: rauswerfen, anschreiben, Kosmetik geben, Chat leeren
+       ===================================================================== */
+
+    // Trennen ohne Sperre. Fuer den Fall, dass jemand in einer kaputten Runde
+    // haengt oder eine Ansage verpasst hat: er kann sofort wieder rein.
+    socket.on("admin:kick", ({ target, grund } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = String(target || "").toLowerCase();
+      if (!accounts.get(key)) return ack({ ok: false, error: "Account nicht gefunden." });
+      const text = String(grund || "").slice(0, 140) || "Du wurdest vom Casino getrennt. Du kannst sofort wieder rein.";
+      let getrennt = 0;
+      for (const s of socketsVon(io, key)) { s.emit("admin:kicked", { reason: text }); s.disconnect(true); getrennt++; }
+      ack({ ok: true, getrennt });
+    });
+
+    /* Eine Nachricht an genau einen Spieler. Es gab nur die Ansage an alle,
+       und die benutzt niemand fuer "du hast deinen Einsatz doppelt gebucht,
+       ich habe es geradegezogen". Wer offline ist, bekommt sie als
+       Benachrichtigung, sonst waere sie weg. */
+    socket.on("admin:nachricht", ({ target, text, auchPush } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = String(target || "").toLowerCase();
+      const acc = accounts.get(key);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      const t = String(text || "").trim().slice(0, 400);
+      if (!t) return ack({ ok: false, error: "Kein Text." });
+      const sockets = socketsVon(io, key);
+      for (const s of sockets) s.emit("admin:nachricht", { titel: "Nachricht vom Casino", text: t });
+      if (auchPush && !sockets.length) {
+        (async () => {
+          try { await require("./push").an(key, "live", { title: "Nachricht vom Casino", body: t, url: "/" }); } catch {}
+        })();
+      }
+      ack({ ok: true, gesehen: sockets.length });
+    });
+
+    /* Kosmetik von Hand geben oder wegnehmen. Gebraucht wird beides: als
+       Ausgleich, wenn etwas schiefging, als Preis fuer etwas, das ausserhalb
+       des Casinos passiert ist, und zum Zuruecknehmen, wenn ein Stueck durch
+       einen Fehler bei jemandem landete. */
+    socket.on("admin:kosmetikKatalog", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      ack({ ok: true, katalog: cosmetics.adminKatalog() });
+    });
+
+    socket.on("admin:kosmetik", ({ target, art, id, weg } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const acc = accounts.get(String(target || "").toLowerCase());
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      const res = weg ? cosmetics.adminNimm(acc, art, id) : cosmetics.adminGib(acc, art, id);
+      if (res.ok) {
+        accounts.save();
+        for (const s of socketsVon(io, acc.name)) {
+          s.emit("account:update", { account: accounts.publicAccount(acc) });
+          if (!weg) s.emit("admin:nachricht", { titel: "Geschenk vom Casino", text: `Du hast ${res.label} bekommen. Anlegen kannst du es im Aussehen.` });
+        }
+      }
+      ack(res);
+    });
+
+    // Den allgemeinen Chat leeren. Bei einem Streit oder einem Bild, das
+    // niemand mehr lesen soll, ist Nachricht-fuer-Nachricht keine Option:
+    // der Verlauf liegt nur im Speicher und ist nach einem Neustart ohnehin weg.
+    socket.on("admin:chatLeeren", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      chat.clearRoom("global");
+      io.emit("chat:geleert", { room: "global" });
+      ack({ ok: true });
+    });
+
+    /* =====================================================================
+       ZWEI NEUE EVENTS
+
+       Verlosung und Kassensturz sind beide einmalig: sie laufen nicht, sie
+       passieren. Deshalb haben sie keinen Zustand und keinen Abbrechen-Knopf.
+       ===================================================================== */
+
+    // Sofort-Verlosung unter allen, die gerade online sind. Das kuerzeste
+    // Event, das es gibt: ein Knopf, ein Gewinner, eine Zeile im Chat.
+    socket.on("admin:verlosung", ({ pot } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const topf = Math.max(1, Math.min(50_000_000, Math.floor(Number(pot) || 100000)));
+      const drin = [...new Set(Array.from(io.of("/").sockets.values())
+        .map((s) => s.data && s.data.account).filter(Boolean))];
+      if (!drin.length) return ack({ ok: false, error: "Gerade ist niemand online." });
+      const gewinner = drin[Math.floor(Math.random() * drin.length)];
+      const res = accounts.adjustChips(gewinner, topf);
+      if (!res.ok) return ack({ ok: false, error: res.error });
+      const acc = accounts.get(gewinner);
+      for (const s of socketsVon(io, gewinner)) {
+        s.emit("account:update", { account: res.account });
+        s.emit("admin:nachricht", { titel: "Gewonnen!", text: `Die Verlosung geht an dich: ${topf.toLocaleString("de-DE")} Chips.` });
+      }
+      try { chat.announce(io, `Verlosung! ${(acc && acc.name) || gewinner} zieht ${topf.toLocaleString("de-DE")} Chips unter ${drin.length} Anwesenden.`); } catch {}
+      try { require("./chronik").notiere("event", `Verlosung: ${(acc && acc.name) || gewinner} bekommt ${topf.toLocaleString("de-DE")} Chips.`, { user: (acc && acc.name) || gewinner, wert: topf }); } catch {}
+      ack({ ok: true, gewinner: (acc && acc.name) || gewinner, topf, teilnehmer: drin.length });
+    });
+
+    /*
+     * Kassensturz: eine Abgabe auf alles, was bar auf der Hand liegt.
+     *
+     * Das einzige Event, das Chips WEGNIMMT statt sie auszuschuetten. Genau
+     * deshalb gibt es es: alle anderen Knoepfe hier drucken Geld, und wenn
+     * zwei Jahre lang nur gedruckt wird, kostet ein Haus irgendwann nichts
+     * mehr. Die Bank bleibt aussen vor (sonst waere Sparen bestraft) und
+     * kleine Konten auch: unter der Freigrenze zahlt niemand.
+     */
+    socket.on("admin:steuer", ({ prozent, freigrenze, grund } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const satz = Math.max(1, Math.min(25, Math.floor(Number(prozent) || 5)));
+      const frei = Math.max(0, Math.floor(Number(freigrenze) || 50000));
+      let summe = 0, betroffen = 0;
+      for (const a of accounts.rawAll()) {
+        const bar = Math.floor(a.chips || 0);
+        if (bar <= frei) continue;
+        const ab = Math.floor(((bar - frei) * satz) / 100);
+        if (ab <= 0) continue;
+        const res = accounts.adjustChips(String(a.name).toLowerCase(), -ab);
+        if (!res.ok) continue;
+        summe += ab; betroffen++;
+        for (const s of socketsVon(io, a.name)) {
+          s.emit("account:update", { account: res.account });
+          s.emit("admin:nachricht", {
+            titel: "Kassensturz",
+            text: `${satz} % von allem über ${frei.toLocaleString("de-DE")} Chips auf der Hand: ${ab.toLocaleString("de-DE")} Chips.${grund ? ` ${String(grund).slice(0, 140)}` : ""}`,
+          });
+        }
+      }
+      if (!betroffen) return ack({ ok: false, error: "Niemand liegt über der Freigrenze." });
+      const text = `Kassensturz: ${satz} % auf Bargeld über ${frei.toLocaleString("de-DE")} Chips. ${summe.toLocaleString("de-DE")} Chips aus ${betroffen} Konten sind aus dem Spiel.`;
+      try { chat.announce(io, text); } catch {}
+      try { require("./chronik").notiere("event", text, { wert: summe }); } catch {}
+      ack({ ok: true, summe, betroffen, satz, freigrenze: frei });
+    });
+
     // Achievements eines Spielers löschen (zum Testen, ausgezahlte Belohnungen bleiben).
     socket.on("admin:resetAchievements", ({ target } = {}, ack) => {
-      if (!ack) return;
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const acc = accounts.get(String(target || "").toLowerCase());
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });

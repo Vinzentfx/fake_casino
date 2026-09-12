@@ -333,7 +333,7 @@ function setupPoker(io, accounts) {
     socket.on("presence:screen", ({ screen } = {}) => {
       const name = String(screen || "").trim().slice(0, 32);
       if (name && !require("./wortfilter").istSauber(name)) {
-        return ack && ack({ ok: false, error: "Der Tischname geht so nicht." });
+        return typeof ack === "function" && ack({ ok: false, error: "Der Tischname geht so nicht." });
       }
       socket.data.screen = SCREEN_LABELS[name] ? name : "lobby";
       broadcastPresence();
@@ -344,7 +344,7 @@ function setupPoker(io, accounts) {
     });
 
     socket.on("poker:create", ({ smallBlind = 10, bigBlind = 20 } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       leaveCurrent(socket);
       const code = makeCode();
       const sb = clampInt(smallBlind, 1, MAX_BB / 2, 10);
@@ -362,7 +362,7 @@ function setupPoker(io, accounts) {
       socket.join(code);
       socket.data.tableCode = code;
       registerLobby(code);
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(code);
       // Die Benachrichtigung (Chat + Push) macht jetzt lobby.add() fuer alle
       // Spiele. Hier stand sie frueher doppelt, und nur Poker hatte sie.
@@ -372,57 +372,57 @@ function setupPoker(io, accounts) {
     // also Chips gedruckt. Poker gibt es jetzt nur noch Mensch gegen Mensch.
 
     socket.on("poker:join", ({ code } = {}, ack) => {
-      if (!socket.data.account) return ack && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       code = String(code || "").trim().toUpperCase();
       const entry = tables.get(code);
-      if (!entry) return ack && ack({ ok: false, error: "Tisch nicht gefunden." });
+      if (!entry) return typeof ack === "function" && ack({ ok: false, error: "Tisch nicht gefunden." });
       leaveCurrent(socket);
       entry.sockets.add(socket);
       socket.join(code);
       socket.data.tableCode = code;
-      ack && ack({ ok: true, code });
+      typeof ack === "function" && ack({ ok: true, code });
       broadcast(code);
       lobby.changed();
     });
 
     socket.on("poker:sit", ({ buyIn } = {}, ack) => {
       const entry = currentEntry(socket);
-      if (!entry) return ack && ack({ ok: false, error: "Du bist an keinem Tisch." });
+      if (!entry) return typeof ack === "function" && ack({ ok: false, error: "Du bist an keinem Tisch." });
       const { table } = entry;
       if (table.findSeat(socket.data.account) !== -1)
-        return ack && ack({ ok: false, error: "Du sitzt bereits." });
+        return typeof ack === "function" && ack({ ok: false, error: "Du sitzt bereits." });
 
       const acc = accounts.get(socket.data.account);
-      if (!acc) return ack && ack({ ok: false, error: "Account nicht gefunden." });
+      if (!acc) return typeof ack === "function" && ack({ ok: false, error: "Account nicht gefunden." });
       const cap = Math.min(acc.chips, MAX_BUYIN);
       const amount = clampInt(buyIn, table.bigBlind, cap, Math.min(cap, table.bigBlind * 50));
       if (amount < table.bigBlind || amount > acc.chips)
-        return ack && ack({ ok: false, error: "Ungültiger Buy-in." });
+        return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Buy-in." });
 
       const deduct = accounts.adjustChips(socket.data.account, -amount);
-      if (!deduct.ok) return ack && ack({ ok: false, error: deduct.error });
+      if (!deduct.ok) return typeof ack === "function" && ack({ ok: false, error: deduct.error });
 
       const idx = table.sit(socket.data.account, acc.name, amount);
       if (idx === -1) {
         accounts.adjustChips(socket.data.account, amount); // zurück, Tisch voll
-        return ack && ack({ ok: false, error: "Tisch ist voll." });
+        return typeof ack === "function" && ack({ ok: false, error: "Tisch ist voll." });
       }
       socket.emit("account:update", { account: deduct.account });
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
       broadcast(table.code);
     });
 
 
     socket.on("poker:stand", (ack) => {
       const entry = currentEntry(socket);
-      if (!entry) return ack && ack && ack({ ok: false });
+      if (!entry) return ack && typeof ack === "function" && ack({ ok: false });
       const { table } = entry;
       const chips = table.stand(socket.data.account);
       if (chips > 0) {
         const res = accounts.adjustChips(socket.data.account, chips);
         if (res.ok) socket.emit("account:update", { account: res.account });
       }
-      ack && ack && ack({ ok: true });
+      ack && typeof ack === "function" && ack({ ok: true });
       broadcast(table.code);
     });
 
@@ -434,12 +434,12 @@ function setupPoker(io, accounts) {
       // Die erste Hand darf nur der Lobby-Leiter (wer den Tisch erstellt hat) starten.
       // An Bot-Tischen gibt es diese Sperre nicht, da bestimmt der Solo-Spieler.
       if (!entry.vsBots && entry.hostKey && entry.hostKey !== socket.data.account)
-        return ack && ack({ ok: false, error: "Nur der Anführer kann starten." });
+        return typeof ack === "function" && ack({ ok: false, error: "Nur der Anführer kann starten." });
       if (entry.table.startHand()) {
         broadcast(entry.table.code);
         scheduleBots(entry);
       }
-      ack && ack({ ok: true });
+      typeof ack === "function" && ack({ ok: true });
     });
 
     socket.on("poker:action", ({ action, amount } = {}) => {
