@@ -3,7 +3,7 @@
 Ein Casino im Browser für meinen Freundeskreis, mit Spielgeld statt echtem
 Geld. Einzahlen oder auszahlen kann man nichts, die Chips sind nur Punkte.
 
-**Ausprobieren:** <https://chipstadt.de> (Name und Passwort ausdenken, das
+**Ausprobieren:** <https://fakecasino-production-5147.up.railway.app/?v=mtys3xxe#/lobby> (Name und Passwort ausdenken, das
 Konto entsteht beim ersten Anmelden. Gebaut fürs iPad und Handy.)
 
 ## Warum
