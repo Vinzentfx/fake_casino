@@ -1,67 +1,80 @@
-# Betrieb & Deployment
+# Betrieb und Deployment
 
-Stand: 2026-09-05. Das Casino lief bis Juli 2026 auf Railway und liegt seitdem
-auf einem eigenen Server.
+Stand: 12.9.2026. Das Casino läuft auf Railway. Von Juli bis Anfang September
+2026 lag es auf einem eigenen Server bei DigitalOcean. Der ist nicht mehr in
+Betrieb, siehe ganz unten.
 
 ## Wo läuft was
 
 | | |
 |---|---|
-| **Öffentliche Adresse** | https://chipstadt.de |
-| **Weitere Namen** | www.chipstadt.de · fake-casino.duckdns.org · www.fake-casino.duckdns.org · cas-porta.duckdns.org · 206-189-60-121.sslip.io (alle bleiben aktiv) |
-| **Server** | DigitalOcean Droplet, Ubuntu 24.04 LTS, 1 GB RAM / 1 vCPU / 25 GB, Frankfurt |
-| **IP** | 206.189.60.121 |
-| **Kosten** | ca. 6 $/Monat, bezahlt per PayPal-Guthaben (kein Abo, keine Karte hinterlegt) |
+| **Adresse** | https://fakecasino-production-5147.up.railway.app |
+| **Plattform** | Railway, gebaut mit Nixpacks, gestartet mit `npm start` (siehe `railway.json`) |
+| **Node** | ab Version 22 (`engines` in `package.json`) |
+| **Neustart** | `restartPolicyType: ALWAYS`, also auch nach einem sauberen Beenden |
 | **Repo** | https://github.com/Vinzentfx/fake_casino |
 
-Seit 7.9.2026 ist **chipstadt.de** die Hauptadresse, registriert bei INWX für
-rund 6 €/Jahr, bezahlt aus PayPal-Guthaben (Prepaid, keine Karte hinterlegt).
-Drei A-Records (`@`, `www`, `*`) zeigen auf 206.189.60.121, die Nameserver
-bleiben bei INWX.
+## Deployen
 
-**Warum eine eigene Domain, obwohl DuckDNS technisch reichte:** Schulnetze und
-andere gefilterte Netze sperren `duckdns.org` als Dynamic DNS und `sslip.io`
-als Proxy-Werkzeug, beides sind Standardkategorien in Web-Filtern. Die Seite
-war dort entweder gar nicht erreichbar (Verbindung läuft ins Leere) oder warf
-eine Zertifikatswarnung, weil der Filter sich in die TLS-Verbindung klinkt.
-Eine normale Domain fällt in keine dieser Kategorien. Aus demselben Grund
-steht bewusst **kein** "casino" im Namen: Filter kategorisieren auch nach dem
-Domainnamen, und das wäre als Glücksspiel eingestuft worden.
+Ein Push auf `main` reicht. Railway holt den Stand, baut neu und startet den
+Dienst neu. Am 12.9.2026 war ein Push nach wenigen Minuten online.
 
-Alle alten Namen bleiben im Caddyfile stehen, damit verschickte Links und
-Lesezeichen nicht kaputtgehen. Solange nicht bestätigt ist, dass `chipstadt.de`
-in den gefilterten Netzen wirklich durchkommt, bleiben sie auch **direkt**
-erreichbar statt umgeleitet: sie sind der Rückfall, falls die neue Domain
-ebenfalls gesperrt wird.
-
-**Achtung bei einem Domainwechsel:** `localStorage` gehört zur Herkunft
-(Origin). Wer über einen neuen Namen kommt, hat kein Sitzungstoken und muss
-sich einmal neu anmelden. Push-Anmeldungen hängen ebenfalls an der Herkunft;
-wer auf beiden Namen zustimmt, bekommt jede Nachricht doppelt.
-
-Ein weiterer Name kommt so dazu: DNS auf die IP zeigen lassen, den Namen in
-`/etc/caddy/Caddyfile` in die Zeile vor der `{` aufnehmen (kommagetrennt),
-`systemctl reload caddy`. Caddy holt das Let's-Encrypt-Zertifikat dann selbst,
-das dauert rund fünf Sekunden.
-
-**Achtung bei DuckDNS:** die Seite trägt beim Anlegen automatisch die IP ein,
-von der man gerade kommt. Die muss man auf die Server-IP ändern, sonst zeigt
-die Domain auf den eigenen Anschluss.
-
-### Aufbau auf dem Server
-
-```
-/opt/casino/app        Code (git clone), läuft als System-User "casino"
-/opt/casino/app/data   Spielstände (gitignored, NUR hier liegen die echten Daten)
-/opt/casino/backups    tägliche Backups, 14 Tage
-/etc/casino.env        Secrets, chmod 600, gehört root
-/etc/systemd/system/casino.service
-/etc/caddy/Caddyfile
+```bash
+git push origin main
 ```
 
-Node läuft auf Port 3000 und ist nur lokal erreichbar. Caddy nimmt 443 entgegen
-und reicht durch, inklusive WebSocket-Upgrade für Socket.IO. Die Firewall (ufw)
-lässt nur SSH, 80 und 443 zu.
+Ob der neue Stand läuft, sieht man an der Version. Sie ist ein Fingerabdruck
+über den Inhalt und ändert sich mit jedem Deploy, der Code verändert:
+
+```bash
+curl https://fakecasino-production-5147.up.railway.app/api/version
+```
+
+Jeder Push startet das Casino neu, auch einer, der nur Doku ändert. Laufende
+Runden brechen dabei ab, also nicht mitten in einer Pokerrunde pushen.
+
+## Spielstände
+
+Alle Spielstände liegen im Ordner `data/` neben dem Code (`game/accounts.js`
+und die anderen Module schreiben dorthin). Der Ordner ist gitignored, die echten
+Daten gibt es nur auf Railway. Der lokale `data/`-Ordner ist Testmüll und darf
+nie hochgeladen werden.
+
+**Offen: liegt `data/` auf einem Volume?** Ohne Volume ist das Dateisystem bei
+Railway nach jedem Deploy wieder leer, und das Haus startet ohne Konten. Nach
+dem Deploy am 12.9.2026 zeigte die Bestenliste weiter volle Einträge, das
+spricht dafür, dass die Daten überleben. Sicher ist es erst mit einem Blick im
+Railway-Dashboard unter Volumes: dort muss ein Volume auf den `data`-Ordner der
+App zeigen.
+
+In `data/` liegt auch `vapid.json`, der Schlüssel für Benachrichtigungen. Geht
+die Datei verloren, muss sich jedes Gerät neu für Push anmelden.
+
+## Backups
+
+Automatische Backups sind im Repo nicht eingerichtet. Es gibt den
+Owner-Backup-Knopf im Admin-Bildschirm. Er ruft `POST /api/admin/backup` auf
+und lädt den kompletten `data/`-Ordner als eine JSON-Datei herunter, inklusive
+`.secret` und der hochgeladenen Clan-Wappen. Über `POST /api/admin/restore`
+spielt man so eine Datei wieder ein. Beides geht nur mit dem Konto des Besitzers.
+
+Vor größeren Deploys ein Backup ziehen und auf dem Mac aufheben. Genau so
+wurden beim Umzug die 70 Konten wiederhergestellt.
+
+## Umgebungsvariablen
+
+Stehen bei Railway im Projekt unter Variables.
+
+| Variable | Bedeutung |
+|---|---|
+| `FOOTBALL_DATA_TOKEN` | Zugang zu football-data.org für echte Fußballspiele |
+| `FOOTBALL_DATA_COMPS` | Welche Wettbewerbe, auf dem alten Server war es `BL1,PL,PD` |
+| `SPORTS_SIM` | auf `off` setzen, um die simulierten Füllspiele auszublenden |
+| `PORT` | setzt Railway selbst |
+| `APP_VERSION` | optional, ersetzt den Fingerabdruck über den Inhalt |
+| `NODE_ENV` | alles außer `production` gilt als Entwicklung (`game/buildinfo.js`) |
+
+Eine geänderte Variable startet den Dienst bei Railway neu.
 
 ## Lokal entwickeln
 
@@ -69,134 +82,58 @@ lässt nur SSH, 80 und 443 zu.
 cd ~/fake-casino && npm start
 ```
 
-Läuft auf http://localhost:3000. Der lokale `data/`-Ordner ist **Testmüll**
-(Accounts wie `captest` mit Milliarden Chips) und hat nichts mit den echten
-Spielständen zu tun. Zum Testen ist das genau richtig, verwechsle es nur nicht
-mit dem Produktivstand.
+Läuft auf http://localhost:3000. Umgebungsvariablen fürs lokale Testen stehen
+in der lokalen Startkonfiguration (nicht im Repo).
 
-Umgebungsvariablen fürs lokale Testen stehen in der lokalen Startkonfiguration (nicht im Repo).
+## Domain
 
-## Deployen
+`chipstadt.de` ist bei INWX registriert (rund 6 € im Jahr). Die A-Records
+(`@`, `www`, `*`) zeigen noch auf die IP des alten Servers und damit ins Leere.
 
-Erst pushen, dann auf dem Server ausrollen:
+**Offen:** die Domain in Railway als eigene Domain eintragen und die Einträge
+bei INWX so setzen, wie Railway es dann anzeigt.
 
-```bash
-git push origin main
-ssh -i ~/.ssh/id_ed25519_casino root@206.189.60.121 casino-deploy
-```
+Warum überhaupt eine eigene Domain: Schulnetze und andere gefilterte Netze
+sperren Dienste wie DuckDNS oder sslip.io, eine normale Domain fällt in keine
+dieser Kategorien. Aus demselben Grund steht bewusst kein "casino" im Namen,
+Filter sortieren auch nach dem Domainnamen. Die Railway-Adresse enthält das
+Wort, sie kann in solchen Netzen also gesperrt sein.
 
-`casino-deploy` macht ein Backup, holt den Code, installiert Abhängigkeiten und
-startet den Dienst neu.
-
-Seit 6.9.2026 hängt eine neue Abhängigkeit dran (`web-push`), die kommt über den
-Installationsschritt automatisch mit. Beim ersten Start danach legt der Server
-`data/vapid.json` an, den Schlüssel für Benachrichtigungen. Die Datei liegt in
-`data/`, ist also gitignored und wird mitgesichert. Löscht man sie, muss sich
-jedes Gerät neu anmelden. Während des Neustarts sehen Besucher etwa drei Sekunden
-lang einen 502. Nicht mitten in einer Pokerrunde deployen.
-
-## Backups
-
-Automatisch jede Nacht um 04:00 nach `/opt/casino/backups`, 14 Tage
-Aufbewahrung. Zusätzlich läuft vor jedem Deploy eines.
-
-```bash
-# Sofort-Backup
-ssh -i ~/.ssh/id_ed25519_casino root@206.189.60.121 casino-backup
-
-# Backups ansehen
-ssh -i ~/.ssh/id_ed25519_casino root@206.189.60.121 'ls -la /opt/casino/backups'
-
-# Eines auf den Mac holen
-scp -i ~/.ssh/id_ed25519_casino root@206.189.60.121:/opt/casino/backups/data_JJJJ-MM-TT_HHMM.tar.gz ~/Downloads/
-```
-
-Unabhängig davon gibt es im Spiel den Owner-Backup-Knopf, der den kompletten
-`data/`-Ordner als eine JSON-Datei herunterlädt und wieder einspielen kann.
-Genau daraus wurden beim Umzug die 70 Accounts wiederhergestellt.
-
-### Wiederherstellen
-
-```bash
-ssh -i ~/.ssh/id_ed25519_casino root@206.189.60.121
-systemctl stop casino
-tar -xzf /opt/casino/backups/data_JJJJ-MM-TT_HHMM.tar.gz -C /opt/casino/app
-chown -R casino:casino /opt/casino/app/data
-systemctl start casino
-```
-
-## Umgebungsvariablen
-
-Stehen in `/etc/casino.env` (nur für root lesbar, deshalb liegt der API-Token
-nicht in der systemd-Unit, die wäre für alle lesbar).
-
-| Variable | Bedeutung |
-|---|---|
-| `FOOTBALL_DATA_TOKEN` | Zugang zu football-data.org für echte Fußballspiele |
-| `FOOTBALL_DATA_COMPS` | Welche Wettbewerbe, aktuell `BL1,PL,PD` |
-| `SPORTS_SIM` | auf `off` setzen, um die simulierten Füllspiele auszublenden |
-| `PORT` | steht in der systemd-Unit, 3000 |
-
-Nach Änderungen:
-
-```bash
-ssh -i ~/.ssh/id_ed25519_casino root@206.189.60.121 'systemctl restart casino'
-```
-
-## Server-Befehle
-
-```bash
-# Verbinden
-ssh -i ~/.ssh/id_ed25519_casino root@206.189.60.121
-
-# Läuft alles?
-systemctl status casino caddy
-
-# Logs live mitlesen
-journalctl -u casino -f
-
-# Neustart ohne Deploy
-systemctl restart casino
-```
+**Achtung beim Wechsel der Adresse:** `localStorage` gehört zur Herkunft
+(Origin). Wer über eine neue Adresse kommt, hat kein Sitzungstoken und muss
+sich einmal neu anmelden. Push-Anmeldungen hängen ebenfalls an der Herkunft.
 
 ## Wartung, die irgendwann fällig wird
 
 **Team-Stärken jede Saison auffrischen.** Die Werte in `game/sportsbook.js`
 stammen aus der abgeschlossenen Saison 2025/26: Punkte und Tordifferenz pro
 Spiel aus den Abschlusstabellen von football-data.org, linear auf die Skala
-abgebildet (Spitze ~92, Mittelfeld ~70, Schlusslicht ~59). Aufsteiger haben
-keine Erstliga-Bilanz und bekommen zwei Punkte unter dem schwächsten
-verbleibenden Team.
+abgebildet (Spitze etwa 92, Mittelfeld etwa 70, Schlusslicht etwa 59).
+Aufsteiger haben keine Erstliga-Bilanz und bekommen zwei Punkte unter dem
+schwächsten verbleibenden Team.
 
 Warum das wichtig ist: fällt ein Team auf den Standardwert 70 zurück, wird es
 wie ein Durchschnittsteam bepreist. Bayern gegen einen Aufsteiger wäre dann
 ein Münzwurf, und jeder, der Fußball guckt, druckt gegen die Bank Chips.
 
-Zum Auffrischen die Standings der letzten abgeschlossenen Saison ziehen
+Zum Auffrischen die Tabellen der letzten abgeschlossenen Saison ziehen
 (`/v4/competitions/{BL1,PL,PD}/standings?season=JJJJ`) und dasselbe Verfahren
 laufen lassen.
 
-**Achtung Rate-Limit:** football-data.org erlaubt im Free-Tier 10 Anfragen pro
-Minute. Beim Testen mit Abstand abfragen, sonst kommt HTTP 429 zurück. Der
-Poller im Code hält mit 6,5 Sekunden Abstand ein.
+**Rate-Limit:** football-data.org erlaubt im Free-Tier 10 Anfragen pro Minute.
+Beim Testen mit Abstand abfragen, sonst kommt HTTP 429 zurück. Der Poller im
+Code hält 6,5 Sekunden Abstand ein.
 
-**PayPal-Guthaben nachladen.** Bei DigitalOcean liegt keine Karte hinterlegt.
-Läuft das Guthaben leer, wird der Server abgeschaltet. Gelegentlich nachsehen.
+## Der alte Server
 
-## SSH-Zugang
+Das Droplet bei DigitalOcean (IP 206.189.60.121, Frankfurt) antwortet seit dem
+12.9.2026 mit anderen Host-Schlüsseln, und Port 443 ist zu. Es wurde also
+gelöscht oder neu aufgesetzt, möglicherweise gehört die IP inzwischen jemand
+anderem. Deshalb nicht mehr per SSH verbinden.
 
-Der Schlüssel wurde eigens für dieses Droplet erzeugt:
+Auf dem Mac liegen dafür noch Reste, die man aufräumen kann:
 
-* privat: `~/.ssh/id_ed25519_casino` (bleibt auf dem Mac, wird niemals geteilt)
-* öffentlich: `~/.ssh/id_ed25519_casino.pub` (liegt beim Droplet hinterlegt)
+* der Schlüssel `~/.ssh/id_ed25519_casino` und der Eintrag `Host casino` in `~/.ssh/config`
+* der alte Eintrag in `known_hosts`, zu entfernen mit `ssh-keygen -R 206.189.60.121`
 
-Bequemer wird es mit einem Eintrag in `~/.ssh/config`:
-
-```
-Host casino
-    HostName 206.189.60.121
-    User root
-    IdentityFile ~/.ssh/id_ed25519_casino
-```
-
-Danach reicht `ssh casino` und `ssh casino casino-deploy`.
+Im DigitalOcean-Konto nachsehen, ob dort noch etwas läuft und Guthaben verbraucht.
