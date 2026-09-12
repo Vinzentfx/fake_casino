@@ -8712,3 +8712,12 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 .ad-schlecht { color: var(--bad-text); }
 .wf-probe-text { display: block; }
 .wf-probe-treffer { display: block; margin-top: 4px; font-size: 0.74rem; opacity: 0.85; }
+
+/* Der Münzbrunnen hielt bis eben Text, jetzt eine gezeichnete Münze. Die
+   Größe kam über font-size, das gilt für ein SVG nicht mehr. */
+.coin-pop svg { width: 1em; height: 1em; display: block; color: var(--accent-strong); }
+
+/* Zahl und Chip-Zeichen nebeneinander, wenn der Kasten darum in Spalten
+   laeuft (Einsatz und Gewinn am Automaten). Ohne die Zeile stuende das
+   Zeichen unter der Zahl. */
+.wert-mit-marke { display: inline-flex; align-items: baseline; justify-content: center; }

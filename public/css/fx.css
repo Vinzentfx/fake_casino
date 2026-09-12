@@ -346,3 +346,7 @@ html.reduce-motion .fx-beben { animation: none; }
   45%  { transform: translate(calc(var(--dx) * 0.7 - 50%), calc(var(--dy) - 50%)) rotate(var(--rot)) scale(1); }
   100% { opacity: 0; transform: translate(calc(var(--dx) - 50%), calc(var(--dy) - 50% + 46vh)) rotate(calc(var(--rot) * 1.5)) scale(0.85); }
 }
+
+/* Die Münze ist gezeichnet, nicht geschrieben: die Größe kam über font-size,
+   das greift bei einem SVG nicht mehr. */
+.fx-coin svg { width: 1em; height: 1em; display: block; color: var(--accent-strong); }

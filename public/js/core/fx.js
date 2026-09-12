@@ -69,6 +69,17 @@
     }
   }
 
+  /* Dieselbe Muenze, die neben jedem Betrag steht. Hier stand das WORT
+     "Chips" — ein Rest der Aktion, in der die Muenz-Emoji ueberall durch das
+     Wort ersetzt wurden. Im Fliesstext ist das richtig; hier sprang bei jeder
+     Auszahlung Text aus dem Knopf statt Geld. Betrifft Blackjack, Crash,
+     Mines, Towers, Season und das Gluecksrad, die alle diesen einen Effekt
+     benutzen. */
+  const MUENZE = `<svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" fill="none"
+    stroke-width="2" stroke-linecap="round">
+    <circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="3.4" opacity=".65"/>
+    <path d="M12 3.6v2.4M12 18v2.4M3.6 12H6M18 12h2.4"/></svg>`;
+
   /** Muenzen, die aus einem Element herausspringen. Fuer Auszahlungen. */
   function coins(el, { count = 14 } = {}) {
     if (reduziert() || !el) return;
@@ -77,7 +88,7 @@
     for (let i = 0; i < count; i++) {
       const c = document.createElement("i");
       c.className = "fx-coin";
-      c.textContent = "Chips";
+      c.innerHTML = MUENZE;
       c.style.left = box.left + box.width / 2 + "px";
       c.style.top = box.top + box.height / 2 + "px";
       c.style.setProperty("--dx", (Math.random() * 240 - 120) + "px");

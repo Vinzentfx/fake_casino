@@ -1276,13 +1276,34 @@
     el._t = setTimeout(() => el.classList.remove("go"), 1500);
   }
 
+  /*
+   * Der Muenzbrunnen bei einem Gewinn.
+   *
+   * Hier flog bis eben das WORT "Chips" durchs Bild, in 2,4rem Schrift, und
+   * dazwischen ein Edelstein-Emoji. Dasselbe Ueberbleibsel wie beim Chip-Regen:
+   * wir haben die Muenz-Emoji ueberall durch das Wort ersetzt, und im
+   * Fliesstext ist das richtig — hier fiel dadurch Text vom Himmel statt Geld.
+   *
+   * Gezeichnet wird dieselbe Muenze, die auch neben jedem Betrag steht, damit
+   * das Bild im Haus zusammenpasst. Jede achte ist die goldene.
+   */
+  const fxMuenze = () => `<svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" fill="none"
+    stroke-width="2" stroke-linecap="round">
+    <circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="3.4" opacity=".65"/>
+    <path d="M12 3.6v2.4M12 18v2.4M3.6 12H6M18 12h2.4"/></svg>`;
+  const fxGoldMuenze = () => `<svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" fill="none"
+    stroke-width="2" stroke-linecap="round">
+    <circle cx="12" cy="12" r="8.8" fill="currentColor" opacity=".18"/>
+    <circle cx="12" cy="12" r="8.8"/><circle cx="12" cy="12" r="5.2" opacity=".7"/>
+    <path d="M12 8.6l1 2.2 2.4.3-1.8 1.7.5 2.4-2.1-1.2-2.1 1.2.5-2.4-1.8-1.7 2.4-.3z" fill="currentColor" stroke="none"/></svg>`;
+
   function coinFountain(from, count) {
     const active = document.querySelectorAll(".coin-pop").length;
     count = Math.max(0, Math.min(count, FX_LIMITS.fountainNodes - active));
     for (let i = 0; i < count; i++) {
       const el = document.createElement("div");
       el.className = "coin-pop";
-      el.textContent = Math.random() < 0.78 ? "Chips" : "💎";
+      el.innerHTML = Math.random() < 0.88 ? fxMuenze() : fxGoldMuenze();
       el.style.left = from.x + "px";
       el.style.top = from.y + "px";
       el.style.setProperty("--dx", ((Math.random() - 0.5) * 360).toFixed(0) + "px");
