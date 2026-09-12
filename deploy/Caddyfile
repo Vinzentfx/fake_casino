@@ -1,6 +1,0 @@
-# Alle vier Namen zeigen auf dieselbe Seite. Die alte sslip.io-Adresse bleibt
-# bewusst drin, damit vorhandene Lesezeichen weiter funktionieren.
-fake-casino.duckdns.org, www.fake-casino.duckdns.org, cas-porta.duckdns.org, 206-189-60-121.sslip.io {
-	encode zstd gzip
-	reverse_proxy 127.0.0.1:3000
-}
