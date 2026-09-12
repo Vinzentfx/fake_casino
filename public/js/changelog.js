@@ -25,7 +25,7 @@
 (function () {
   const RELEASES = [
     {
-      id: "2026-09-12",
+      id: "2026-09-22-d",
       datum: "12. September 2026",
       titel: "Auktion: nur ein Los aussetzen, und überall steht jetzt das Zeichen",
       items: [
@@ -616,10 +616,31 @@
 
   const NEUESTE = RELEASES[0].id;
 
-  /** Alle Eintraege, die seit `gesehen` dazugekommen sind. */
+  /*
+   * Alle Eintraege, die seit `gesehen` dazugekommen sind.
+   *
+   * Verglichen wird die POSITION in der Liste, nicht die id als Zeichenkette.
+   * Die ids sind laengst keine echten Daten mehr, sondern eine fortlaufende
+   * Reihe ("2026-09-22-b", "-c"), und der Eintrag vom 11. September traegt die
+   * Nummer 2026-09-22-c. Wer sich beim naechsten Eintrag am echten Datum
+   * orientiert, schreibt damit eine id, die KLEINER ist als die darueber
+   * stehenden — und dann zeigt das Menue eine Zahl an, die durch Ansehen nicht
+   * verschwindet, weil der Merker sofort wieder unter den anderen einsortiert.
+   * Genau das war passiert: eine 12, die sich nicht wegklicken liess.
+   *
+   * Die Reihenfolge in RELEASES ist ohnehin die verlaessliche Quelle: neu ist,
+   * was ueber dem zuletzt Gesehenen steht.
+   */
   function neuSeit(gesehen) {
     if (!gesehen) return [];
-    return RELEASES.filter((r) => r.id > gesehen);
+    const i = RELEASES.findIndex((r) => r.id === gesehen);
+    /* Merker unbekannt: das gibt es noch aus der Zeit, als dort Werte wie
+       "2026-07-16-sicherheit-fixes" standen. Fuer die bleibt der alte
+       Zeichenketten-Vergleich, sonst saehen sie auf einen Schlag die ganze
+       Historie als neu. Haengenbleiben kann die Marke trotzdem nicht: beim
+       Ansehen wird der oberste Eintrag gemerkt, und der wird gefunden. */
+    if (i < 0) return RELEASES.filter((r) => r.id > gesehen);
+    return RELEASES.slice(0, i);
   }
 
   window.Casino = window.Casino || {};
