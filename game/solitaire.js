@@ -3,7 +3,7 @@
 /**
  * Solitär (Klondike), zwei Modi auf derselben Engine (solitaireEngine.js):
  *
- *  Solo gegen das Haus ("sol:*"): Einsatz zahlen, ein SCHWERES Spiel. Alles
+ *  Solo gegen das Haus ("sol:*"): Einsatz zahlen, ein schweres Spiel. Alles
  *    abgeräumt heißt Einsatz × WIN_MULT, Aufgeben oder Verbindungsabbruch heißt
  *    Einsatz weg. Kleiner Höchsteinsatz und schweres Spiel halten die RTP unter
  *    100 % und begrenzen Missbrauch. Hausspiel, zählt über recordHand wie Mines.
@@ -19,7 +19,7 @@ const lobby = require("./lobby");
 
 // Solo (vs house)
 const SOLO_MIN_BET = 20;
-const SOLO_MAX_BET = 500;   // absichtlich NIEDRIG, Geschicklichkeitsspiel, das Risiko bleibt klein
+const SOLO_MAX_BET = 500;   // absichtlich niedrig, Geschicklichkeitsspiel, das Risiko bleibt klein
 const WIN_MULT = 2;         // abgeräumt = Einsatz × 2 (mit 1er-Ziehen ist es schaffbar, deshalb weniger, RTP bleibt unter 100 %)
 const SOLO_DRAW = 1;        // 1 Karte ziehen: verständlich und schaffbar
 const SOLO_RECYCLES = 2;    // begrenztes Umdrehen, bleibt eine Herausforderung und hält den Hausvorteil
@@ -30,9 +30,9 @@ const RAKE = 0.10;
 const RACE_MIN_BUYIN = 50;
 const RACE_MAX_BUYIN = 1_000_000;
 const RACE_TIME_MS = 12 * 60 * 1000;
-const RACE_DRAW = 1;        // draw-1 → winnable races
+const RACE_DRAW = 1;        // immer nur eine Karte ziehen, damit Rennen lösbar bleiben
 
-/** Apply one move to an engine state. Returns { ok, error? }. */
+/** Führt einen Zug auf dem Spielstand aus und gibt { ok, error? } zurück. */
 function applyMove(state, m = {}) {
   switch (m.type) {
     case "draw": return E.drawStock(state);
@@ -49,12 +49,12 @@ function applyMove(state, m = {}) {
 function setupSolitaire(io, accounts) {
   const acc = (s) => (s.data.account ? accounts.get(s.data.account) : null);
 
-  // --- Solo (vs house + free) ---
+  // Solo (vs house + free)
   function soloView(g, extra = {}) {
     return { ok: true, mode: "solo", free: !!g.free, bet: g.bet, over: g.over, winMult: g.free ? 0 : WIN_MULT, ...E.publicView(g.state), ...extra };
   }
 
-  // --- PvP race ---
+  // PvP race
   const matches = new Map();
   function makeCode() {
     let code;
@@ -162,13 +162,13 @@ function setupSolitaire(io, accounts) {
   }
 
   io.on("connection", (socket) => {
-    // --- Solo vs house ---
+    // Solo vs house
     socket.on("sol:start", ({ bet, free } = {}, ack) => {
       if (typeof ack !== "function") return;
       const a = acc(socket);
       if (!a) return ack({ ok: false, error: "Nicht eingeloggt." });
       if (free) {
-        // Frei spielen: kein Einsatz, leichtes Spiel (1er-Ziehen), UNBEGRENZT umdrehen, schaffbar.
+        // Frei spielen: kein Einsatz, leichtes Spiel (1er-Ziehen), unbegrenzt umdrehen, schaffbar.
         socket.data.solitaire = { state: E.deal({ draw: 1, recycles: Infinity }), bet: 0, free: true, over: false };
         return ack({ ...soloView(socket.data.solitaire) });
       }
@@ -197,7 +197,7 @@ function setupSolitaire(io, accounts) {
         }
         const payout = g.bet * WIN_MULT;
         const r = accounts.adjustChips(socket.data.account, payout);
-        accounts.recordHand(socket.data.account, payout - g.bet, true, "solitaire"); // → onHand → achievements.check
+        accounts.recordHand(socket.data.account, payout - g.bet, true, "solitaire"); // läuft über onHand weiter bis achievements.check
         return ack({ ...soloView(g, { won: true, payout }), account: r.account });
       }
       ack(soloView(g));
@@ -212,7 +212,7 @@ function setupSolitaire(io, accounts) {
       ack({ ...soloView(g, { gaveUp: true }) });
     });
 
-    // --- PvP race ---
+    // PvP race
     socket.on("solrace:create", ({ buyIn, isPublic = true } = {}, ack) => {
       if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       buyIn = Math.floor(Number(buyIn));

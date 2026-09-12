@@ -94,7 +94,7 @@ function setupRoulette(io, accounts) {
       });
 
       // Kein winBoost auf Roulette: Bei Fast-Münzwurf-Wetten (Rot/Schwarz)
-      // würde jeder Boost >1,05 die Wette +EV machen → farmbar.
+      // würde jeder Boost >1,05 die Wette +EV machen, man könnte sie also farmen.
 
       if (totalReturn > 0) {
         accounts.adjustChips(socket.data.account, totalReturn);

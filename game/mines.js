@@ -95,9 +95,9 @@ const IDLE_SETTLE_MS = 30 * 60_000; // verlassene Spiele nach 30 Min auto-abrech
 function setupMines(io, accounts) {
   // Spiele am Account statt am Socket, Reload/Abriss kostet keinen Einsatz
   // mehr; der Client nimmt das laufende Spiel per mines:state wieder auf.
-  const games = new Map(); // Kontoschlüssel -> Spiel
+  const games = new Map(); // je Kontoschlüssel: Spiel
 
-  // Verlassene Spiele: ≥1 Feld aufgedeckt → Auto-Cashout, sonst Einsatz zurück.
+  // Verlassene Spiele: mindestens ein Feld aufgedeckt, dann automatisch auszahlen, sonst Einsatz zurück.
   setInterval(() => {
     const now = Date.now();
     for (const [key, g] of games) {

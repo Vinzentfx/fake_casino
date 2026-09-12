@@ -5,7 +5,7 @@
  *
  * Der Laden verkauft zu festen Preisen, der Season-Pass verteilt nach
  * Fortschritt, das Glueckrad nach Glueck. Hier entscheidet, wer am meisten
- * dafuer uebrig hat. Ein Los zur Zeit, und was geboten wird, VERBRENNT: es
+ * dafuer uebrig hat. Ein Los zur Zeit, und was geboten wird, verbrennt: es
  * geht an niemanden. Genau das ist der Zweck, dem Casino fehlen Senken.
  *
  * Zwei Regeln machen das fuer eine Runde, die sich nie gleichzeitig trifft,
@@ -45,7 +45,7 @@ const ENDE_STUNDE = 20, ENDE_MINUTE = 30;  // eine halbe Stunde nach der Lotteri
 const MIN_LAUFZEIT_MS = 24 * 60 * 60 * 1000;
 const VERLAENGERUNG_MS = 2 * 60 * 1000;
 /*
- * Nach einem Zuschlag setzt man EIN Los aus, nicht eine Woche.
+ * Nach einem Zuschlag setzt man ein Los aus, nicht eine Woche.
  *
  * Die Wochensperre sollte verhindern, dass die zwei groessten Konten alles
  * abraeumen. Sie hat aber auch verhindert, dass ueberhaupt jemand zweimal
@@ -54,7 +54,7 @@ const VERLAENGERUNG_MS = 2 * 60 * 1000;
  * nicht derselbe zweimal hintereinander zuschlaegt, und laesst danach jeden
  * wieder ran.
  *
- * Gemerkt wird die NUMMER des gewonnenen Loses, nicht die Uhrzeit: die Lose
+ * Gemerkt wird die Nummer des gewonnenen Loses, nicht die Uhrzeit: die Lose
  * wechseln nach Zeitplan, und "ein Los aussetzen" ist damit unabhaengig davon,
  * wie lange ein Los lief.
  */

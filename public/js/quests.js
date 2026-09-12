@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Aufträge
+/* Aufträge
    Für alle dieselben, mit Fortschrittsbalken und automatischer Auszahlung.
-   Die Meldung beim Abschluss kommt über das Ereignis quest:done.
-   ============================================================ */
+   Die Meldung beim Abschluss kommt über das Ereignis quest:done. */
 
 (function () {
   const { socket, toast, escapeHtml } = window.Casino;

@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Sudoku-Race
+/* Sudoku-Race
    Live gegeneinander: beide lösen dasselbe Rätsel, die erste richtige volle
-   Lösung gewinnt. Geprüft wird auf dem Server.
-   ============================================================ */
+   Lösung gewinnt. Geprüft wird auf dem Server. */
 
 (function () {
   const { socket, toast, applyAccount, getAccount, escapeHtml } = window.Casino;
@@ -58,7 +56,7 @@
       if (m === "duell") ladeDuelle();
     }));
 
-  // --- Grid ---
+  // Grid
   function buildGrid() {
     const g = $("#sdk-grid");
     if (g.childElementCount === 81) return;
@@ -157,7 +155,7 @@
     soloPlaying = false;
     show("sdk-result");
     $("#sdk-result-emoji").textContent = "🏆";
-    $("#sdk-result-title").textContent = "Gelöst! 🎉";
+    $("#sdk-result-title").textContent = "Gelöst!";
     $("#sdk-result-sub").innerHTML = "Sauber gelöst. Zählt für Achievements und Statistik.";
     $("#sdk-rematch").style.display = "none"; $("#sdk-rematch-status").textContent = "";
   }
@@ -174,7 +172,7 @@
     else if (e.key === "Backspace" || e.key === "Delete" || e.key === "0") setNumber(0);
   });
 
-  // --- Timer ---
+  // Uhr
   function startTimer() {
     stopTimer();
     timerInt = setInterval(() => {
@@ -186,7 +184,7 @@
   }
   function stopTimer() { if (timerInt) { clearInterval(timerInt); timerInt = null; } }
 
-  // --- State ---
+  // Zustand
   function renderProgress(s) {
     const you = s.you || { name: "Du", progress: 0 }, opp = s.opponent || { name: "Gegner", progress: 0 };
     $("#sdk-you-name").textContent = you.name;
@@ -203,7 +201,7 @@
       const iWon = myName && r.winner && r.winner.toLowerCase() === myName.toLowerCase();
       emoji.textContent = iWon ? "🏆" : "😔";
       title.textContent = iWon ? "Gewonnen!" : `${escapeHtml(r.winner)} gewinnt`;
-      const line = r.players.map((p) => `${escapeHtml(p.name)}: ${p.correct} richtig${p.finished ? " ✅" : ""}`).join(" · ");
+      const line = r.players.map((p) => `${escapeHtml(p.name)}: ${p.correct} richtig${p.finished ? " ✓" : ""}`).join(" · ");
       sub.innerHTML = (iWon ? `+${fmt(r.payout)}<i class=mk></i> (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)}<i class=mk></i> an ${escapeHtml(r.winner)}`) +
         `<br>${line}` + (r.walkover ? "<br><span class='muted'>Gegner hat aufgegeben.</span>" : "");
     }
@@ -215,7 +213,7 @@
     if (s.state === "waiting") {
       show("sdk-wait");
       $("#sdk-code-show").textContent = s.code;
-      $("#sdk-wait-info").textContent = `${s.playerCount}/2 Spieler · ${DIFF_LABELS[s.difficulty] || s.difficulty} · ${s.public ? "🌐 öffentlich" : "🔒 privat (nur per Code)"}`;
+      $("#sdk-wait-info").textContent = `${s.playerCount}/2 Spieler · ${DIFF_LABELS[s.difficulty] || s.difficulty} · ${s.public ? "öffentlich" : "privat (nur per Code)"}`;
       $("#sdk-start").style.display = (s.isHost && s.playerCount === 2) ? "" : "none";
     } else if (s.state === "playing") {
       soloMode = false; soloPlaying = false;
@@ -238,7 +236,7 @@
       renderResult(s);
       const rm = s.rematch || {};
       $("#sdk-rematch").style.display = rm.canRematch ? "" : "none";
-      $("#sdk-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "🔁 Gegner will Revanche!" : "");
+      $("#sdk-rematch-status").textContent = rm.youWant ? "Warte auf Revanche des Gegners…" : (rm.oppWants ? "Gegner will Revanche!" : "");
       // Kampflos: der Gegner ist mitten im Rennen gegangen, den Gewinner benachrichtigen (Chips sind schon gutgeschrieben).
       const r = s.result, me = getAccount(), myName = me && me.name;
       if (r && r.walkover && r.winner && myName && r.winner.toLowerCase() === myName.toLowerCase()) {
@@ -250,7 +248,7 @@
   socket.on("sudoku:state", (s) => { if (s) apply(s); });
   socket.on("account:update", (d) => { if (d && d.account) applyAccount(d.account); });
 
-  // --- Actions ---
+  // Actions
   $("#sdk-create").addEventListener("click", () => {
     const err = $("#sdk-error"); err.textContent = "";
     const buyIn = parseInt($("#sdk-buyin").value, 10);
@@ -308,7 +306,7 @@
   });
 
 
-  // --- Duell ohne Gleichzeitigkeit ---
+  // Duell ohne Gleichzeitigkeit
   /*
    * Der Live-Race verlangt zwei Leute im selben Moment. Das passiert hier fast
    * nie, also stand er still. Fuer die Aufgabe selbst ist Gleichzeitigkeit

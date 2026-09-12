@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Offene Lobbys (Startseite)
+/* Offene Lobbys (Startseite)
    Listet alle Lobbys, denen man beitreten kann, über alle Spiele hinweg, damit
-   niemand Codes austauschen muss. Aktualisiert sich über "lobby:list".
-   ============================================================ */
+   niemand Codes austauschen muss. Aktualisiert sich über "lobby:list". */
 
 (function () {
   const { socket, escapeHtml, toast } = window.Casino;

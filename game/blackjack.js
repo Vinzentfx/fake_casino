@@ -22,9 +22,7 @@ const DECKS = 6;
 const RESHUFFLE_THRESHOLD = 52;
 const BJ_PAYOUT = 1.5; // 3:2
 
-// ---------------------------------------------------------------------------
-// Shoe
-// ---------------------------------------------------------------------------
+// Kartenschlitten
 
 function makeShoe() {
   const cards = [];
@@ -43,9 +41,7 @@ function deal(session) {
   return session.shoe.pop();
 }
 
-// ---------------------------------------------------------------------------
-// Hand value
-// ---------------------------------------------------------------------------
+// Wert einer Hand
 
 function cardValue(card) {
   if (card.rank >= 11 && card.rank <= 13) return 10; // J Q K
@@ -81,10 +77,8 @@ function isSoft(cards) {
 function isBust(cards) { return handValue(cards) > 21; }
 function isBlackjack(cards) { return cards.length === 2 && handValue(cards) === 21; }
 
-// ---------------------------------------------------------------------------
 // Pechvogel-Modus: der Dealer schlägt den Spieler am Ende immer. Die Karten
 // sehen echt aus, es spielt sich nur wie eine üble Pechsträhne.
-// ---------------------------------------------------------------------------
 
 /** Karte mit dem gewünschten Blackjack-Wert (2..10 = dieser Rang, 11 = Ass). */
 function cardOfValue(v) {
@@ -115,9 +109,7 @@ function rigDealerToWin(session) {
   session.dealerCards = cards;
 }
 
-// ---------------------------------------------------------------------------
 // Zustand für den Client (die verdeckte Dealerkarte bleibt verdeckt, bis sie aufgedeckt wird)
-// ---------------------------------------------------------------------------
 
 function clientState(session, accounts) {
   const acc = accounts.get(session.name);
@@ -162,9 +154,7 @@ function handSnapshot(session) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Game logic
-// ---------------------------------------------------------------------------
+// Spielablauf
 
 function startHand(session, bet, accounts) {
   const acc = accounts.get(session.name);
@@ -370,15 +360,13 @@ function buildResultMessage(hands, dealerBust, dealerVal) {
   return `Gewonnen: ${wins}  Unentschieden: ${pushes}  Verloren: ${losses}`;
 }
 
-// ---------------------------------------------------------------------------
 // Socket.IO setup
-// ---------------------------------------------------------------------------
 
 function setupBlackjack(io, accounts) {
   // Sessions hängen am Account, nicht am Socket: Reload/Verbindungsabriss
   // mitten in der Hand kostet den Einsatz nicht mehr, bj:init nach dem
   // Reconnect liefert die laufende Hand einfach wieder aus.
-  const sessions = new Map(); // Kontoschlüssel -> Sitzung
+  const sessions = new Map(); // je Kontoschlüssel: Sitzung
   const IDLE_STAND_MS = 30 * 60_000;
   const freshSession = () => ({ shoe: null, phase: "betting", playerHands: [], dealerCards: [],
                                 activeHand: 0, split: false, message: "", name: null, lastAt: Date.now() });
@@ -403,7 +391,7 @@ function setupBlackjack(io, accounts) {
         s.lastAt = Date.now();
         return s;
       }
-      // Nicht eingeloggt (kann eh nicht setzen) → wegwerfbare Socket-Session.
+      // Nicht eingeloggt (kann eh nicht setzen): eine Socket-Sitzung zum Wegwerfen.
       if (!socket.data.bj) socket.data.bj = freshSession();
       return socket.data.bj;
     }

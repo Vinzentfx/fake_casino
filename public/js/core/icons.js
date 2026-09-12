@@ -222,7 +222,7 @@
    * ueber currentColor. Wer eine Akzentflaeche will, nimmt A.
    */
   const UI = {
-    // --- Menue: Fortschritt ---
+    // Menue: Fortschritt
     // Paket mit Schleife.
     geschenk: `<rect x="3" y="8.5" width="18" height="12.5" rx="1.8" ${S}/>
       <path d="M3 12.5h18" ${S}/>
@@ -267,7 +267,7 @@
       <rect x="16" y="5" width="3.4" height="15.5" rx=".8" ${S}/>
       <path d="M4.8 10.4 9.4 6.6l3.6 2.2 5.4-4.6" ${S} stroke-width="1.4" opacity=".55"/>`,
 
-    // --- Menue: Miteinander ---
+    // Menue: Miteinander
     // Wappenschild mit Zeichen.
     clans: `<path d="M12 2.6 20 5.4v6.1c0 4.6-3.2 8.2-8 9.9-4.8-1.7-8-5.3-8-9.9V5.4Z" ${S}/>
       <path d="M12 7.4 13.4 10.5l3.2.3-2.4 2.2.7 3.2-2.9-1.7-2.9 1.7.7-3.2-2.4-2.2 3.2-.3Z" ${A}/>`,
@@ -279,7 +279,7 @@
       <path d="M4.4 20.4c0-2.4 2.1-4 4.6-4M14.6 20.4c0-2.4 2.1-4 4.6-4" ${S}/>
       <path d="M9.4 14.4h5.2m-1.6-1.8 1.8 1.8-1.8 1.8" ${S}/>`,
 
-    // --- Menue: Das Casino ---
+    // Menue: Das Casino
     // Aufgerollte Urkunde.
     updates: `<path d="M6.4 3h11.2a1.8 1.8 0 0 1 1.8 1.8v14.4a1.8 1.8 0 0 1-1.8 1.8H6.4a1.8 1.8 0 0 1-1.8-1.8V4.8A1.8 1.8 0 0 1 6.4 3Z" ${S}/>
       <path d="M8 7.6h8M8 11.2h8M8 14.8h5" ${S} opacity=".55"/>
@@ -295,7 +295,7 @@
       <path d="M9.6 18.6h4.8M10.4 21h3.2" ${S}/>
       <path d="M10.4 9.4a2.4 2.4 0 0 1 3.2 0" ${A} stroke="hsl(var(--h,45) 70% 62%)" fill="none" stroke-width="1.6" stroke-linecap="round"/>`,
 
-    // --- Menue: Du ---
+    // Menue: Du
     // Kopf und Schultern.
     profil: `<circle cx="12" cy="8.4" r="4.1" ${S}/>
       <path d="M4.4 21c0-4 3.4-6.6 7.6-6.6s7.6 2.6 7.6 6.6" ${S}/>`,
@@ -316,7 +316,7 @@
       <circle cx="9" cy="12" r="2.1" ${S}/>
       <circle cx="15" cy="17" r="2.1" ${S}/>`,
 
-    // --- Kopfzeile ---
+    // Kopfzeile
     // Spielmarke von oben: Rand mit Kerben, Ring, Mitte.
     chip: `<circle cx="12" cy="12" r="9" ${S}/>
       <circle cx="12" cy="12" r="5.4" ${S} opacity=".6"/>
@@ -333,7 +333,7 @@
     // jeder Schrift gleich dick und gleich breit sind.
     menue: `<path d="M4 7h16M4 12h16M4 17h16" ${S} stroke-width="2"/>`,
 
-    // --- Bedienknoepfe ---
+    // Bedienknoepfe
     schliessen: `<path d="M6.4 6.4l11.2 11.2M17.6 6.4 6.4 17.6" ${S} stroke-width="2"/>`,
 
     aktualisieren: `<path d="M20 12a8 8 0 1 1-2.6-5.9" ${S}/>
@@ -424,7 +424,7 @@
       <path d="M2.9 6.8a12.8 12.8 0 0 1 18.2 0" ${S} opacity=".45"/>
       <path d="M12 18.6V21" ${S}/>`,
 
-    // --- Spielhandlungen ---
+    // Spielhandlungen
     // Zwei Koepfe: Lobby, Duell, Mitspieler.
     gruppe: `<circle cx="8.6" cy="8.4" r="3.4" ${S}/>
       <path d="M2.6 20c0-3.3 2.7-5.4 6-5.4s6 2.1 6 5.4" ${S}/>
@@ -490,7 +490,7 @@
     // Doppelpfeil: vorspulen, automatisch weiterlaufen lassen.
     vor: `<path d="M4 5.4 12 12l-8 6.6ZM12.4 5.4 20.4 12l-8 6.6Z" ${S}/>`,
 
-    // --- Werte eines Rennpferds ---
+    // Werte eines Rennpferds
     // Herzschlag: Ausdauer.
     ausdauer: `<path d="M2.6 12.6h4l1.8-4.4 3 9.6 2.6-7 1.6 3.4h5.8" ${S} stroke-width="2"/>
       <circle cx="20.4" cy="14.2" r="1.4" ${A}/>`,
@@ -510,7 +510,7 @@
       <path d="M8.4 20.6l2.6-4.6-2-3.4 1.6-4 3.4-1 3 2.4 2.6 1" ${S}/>
       <path d="M11 12.6 7 11.4l-2.6 2.4M13 16l2.4 1.4 1 3.2" ${S}/>`,
 
-    // --- Rangstufen ---
+    // Rangstufen
     // Sechs Stufen vom Neuling zur Ikone. Vorher 🌱🎲🎯🦈🌟👑, sechs
     // Bildchen aus sechs verschiedenen Welten, die nebeneinander keine
     // Reihe ergaben. Gezeichnet steigern sie sich sichtbar.

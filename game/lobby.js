@@ -2,7 +2,7 @@
 
 /**
  * Gemeinsame Lobby-Liste: eine Übersicht aller offenen Lobbys über alle Spiele,
- * damit man jede SEHEN und ihr beitreten kann, ohne Codes auszutauschen. Jedes
+ * damit man jede sehen und ihr beitreten kann, ohne Codes auszutauschen. Jedes
  * Spiel (Poker, Slots-PvP, …) meldet je offener Lobby eine `describe()`-Funktion
  * an, die Liste holt sich beim Aufbauen den aktuellen Stand.
  *
@@ -13,7 +13,7 @@
  */
 
 let ioRef = null;
-const providers = new Map(); // Code -> () => Eintrag|null
+const providers = new Map(); // je Code: () => Eintrag|null
 
 function publicList() {
   const out = [];
@@ -65,7 +65,7 @@ function melde(beschreibe) {
   /*
    * Kein Code in der Nachricht.
    *
-   * Gemeldet werden ohnehin nur OEFFENTLICHE Lobbys: die privaten landen
+   * Gemeldet werden ohnehin nur oeffentliche Lobbys: die privaten landen
    * gar nicht erst hier, die Spiele rufen registerLobby() nur bei
    * `match.public` auf. Oeffentliche stehen in der Liste "Offene Lobbys"
    * und werden per Antippen betreten. Der Code ist dort also ueberfluessig,

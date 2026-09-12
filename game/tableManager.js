@@ -55,7 +55,7 @@ function meldeEintritt(acc) {
     const jetzt = Date.now();
     if (jetzt - (acc.letzterEintritt || 0) < EINTRITT_ABSTAND_MS) return;
     acc.letzterEintritt = jetzt;
-    require("./chat").announce(_io, `👋 ${spruch}`);
+    require("./chat").announce(_io, `${spruch}`);
   } catch {}
 }
 
@@ -63,7 +63,7 @@ let _io = null;
 
 function setupPoker(io, accounts) {
   _io = io;
-  /** Code -> { table, sockets:Set<Socket>, timer } */
+  /** je Code: { table, sockets:Set<Socket>, timer } */
   const tables = new Map();
 
   function makeCode() {

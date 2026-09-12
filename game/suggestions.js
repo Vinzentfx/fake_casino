@@ -28,7 +28,7 @@ function save() {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(FILE, JSON.stringify(items)); } catch {}
 }
 
-const rate = new Map(); // Konto -> [Zeitpunkte]
+const rate = new Map(); // je Konto: [Zeitpunkte]
 function recent(key) {
   const now = Date.now();
   const list = (rate.get(key) || []).filter((t) => now - t < HOUR_MS);

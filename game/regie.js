@@ -10,7 +10,7 @@
  * ein Gewinn falsch verbucht wurde und man die Runde nachstellen muss, oder
  * wenn man jemandem zum Geburtstag die grosse Zahl zuschieben will.
  *
- * Eine Regie-Anweisung gilt genau EINMAL. Sie wird beim Ziehen verbraucht, wie
+ * Eine Regie-Anweisung gilt genau einmal. Sie wird beim Ziehen verbraucht, wie
  * ein hingelegter Zettel, den der Croupier danach wegwirft. Das ist die
  * wichtigste Eigenschaft: eine Anweisung, die bleibt, waere ein manipuliertes
  * Spiel, und wer sie setzt, vergisst sie garantiert.
@@ -57,7 +57,7 @@ const ZIELE = {
   },
 };
 
-const zettel = new Map();   // "key|ziel" -> { wert, seit }
+const zettel = new Map();   // je "key|ziel": { wert, seit }
 
 const norm = (key) => (key === GLOBAL ? GLOBAL : String(key || "").toLowerCase());
 const id = (key, ziel) => `${norm(key)}|${ziel}`;
@@ -89,7 +89,7 @@ function setze(key, ziel, wert) {
 }
 
 /**
- * Anweisung holen UND verbrauchen. Gibt `undefined` zurueck, wenn keine da
+ * Anweisung holen und verbrauchen. Gibt `undefined` zurueck, wenn keine da
  * ist; die Spielmodule wuerfeln dann normal.
  */
 function nimm(key, ziel) {

@@ -9,7 +9,7 @@
   const MAX_TOTAL = 50000;
 
   let chipValue = 100;
-  let bets = {};       // betKey → amount
+  let bets = {};       // je betKey: Betrag
   let spinning = false;
   let wheelAngle = 0;
   let history = [];
@@ -19,7 +19,7 @@
     red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1-18", high: "19-36",
   };
 
-  // --- Sound: Kugelrattern, Aufsetzen, Gewinn/Verlust, Chip-Klick ---
+  // Sound: Kugelrattern, Aufsetzen, Gewinn/Verlust, Chip-Klick
   // Die Bausteine stehen in core/sound.js, hier nur die Klangfarbe.
   const { tone, click } = window.Casino.sound;
 
@@ -43,7 +43,7 @@
     return () => { stopped = true; if (id) clearTimeout(id); };
   }
 
-  // --- Canvas wheel ---
+  // Canvas wheel
   const canvas = $("#roulette-canvas");
   const ctx    = canvas.getContext("2d");
 
@@ -151,7 +151,7 @@
     setTimeout(abschliessen, duration + 1500);
   }
 
-  // --- Betting table ---
+  // Wetttisch
   /**
    * Das Tableau.
    *
@@ -188,7 +188,7 @@
       board.appendChild(cell);
     }
 
-    // Kolonnen. Wert 1 trifft 1,4,7… und liegt damit in der UNTERSTEN Reihe.
+    // Kolonnen. Wert 1 trifft 1,4,7… und liegt damit in der untersten Reihe.
     for (let v = 1; v <= 3; v++) {
       const c = makeCell("column", String(v), "rt-col");
       c.textContent = "2,85×";
@@ -293,7 +293,7 @@
       `<span class="rt-bet-total">= ${tot.toLocaleString("de-DE")}<i class=mk></i></span>`;
   }
 
-  // --- History ---
+  // Verlauf
   const freq = new Array(37).fill(0);   // wie oft jede Zahl in dieser Sitzung kam
   const lastSeen = new Array(37).fill(-1); // spin index a number was last seen (-1 = never)
   let spinCount = 0;
@@ -320,7 +320,7 @@
     if (spinCount < 3) { box.classList.add("hidden"); return; }
     box.classList.remove("hidden");
     const nums = Array.from({ length: 37 }, (_, n) => n);
-    // Hot: most frequent (ties → most recent). Cold: longest unseen (never seen is coldest).
+    // Heiß: am häufigsten (bei Gleichstand die zuletzt gefallene). Kalt: am längsten nicht gefallen (nie gefallen ist am kältesten).
     const hot = [...nums].sort((a, b) => freq[b] - freq[a] || lastSeen[b] - lastSeen[a])
       .filter((n) => freq[n] > 0).slice(0, 4);
     const cold = [...nums].sort((a, b) => lastSeen[a] - lastSeen[b] || freq[a] - freq[b]).slice(0, 4);
@@ -329,7 +329,7 @@
     $("#rt-cold").innerHTML = cold.map(chip).join("");
   }
 
-  // --- Spin ---
+  // Drehen
   function showResult(number, color, netWin) {
     const numEl = $("#rt-result-num");
     numEl.textContent = number;
@@ -431,7 +431,7 @@
     return 0;
   }
 
-  // --- Chip buttons ---
+  // Chip buttons
   // Die ueblichen Casino-Farben je Wert, damit man den Chip an der Farbe
   // erkennt und nicht erst die Zahl lesen muss.
   const CHIP_FARBEN = { 100: "#ecf0f1", 1000: "#2980b9", 10000: "#27ae60", 50000: "#2c3e50" };
@@ -454,7 +454,7 @@
     });
   }
 
-  // ---- Rueckgaengig und Wiederholen ----------------------------------------
+  // Rueckgaengig und Wiederholen
   // Beim Roulette setzt man viele kleine Wetten hintereinander. Ein Fehlgriff
   // hiess bisher: alles loeschen und von vorn. Und wer dieselbe Kombination
   // noch einmal spielen will, musste sie Feld fuer Feld neu antippen.
@@ -523,7 +523,7 @@
   $("#rt-undo").addEventListener("click", rueckgaengig);
   $("#rt-repeat").addEventListener("click", wiederholen);
 
-  // --- Gemeinsamer Lobby-Tisch (gesteuert von public/js/rouletteLobby.js) ---
+  // Gemeinsamer Lobby-Tisch (gesteuert von public/js/rouletteLobby.js)
   const RT_LBL = { red: "Rot", black: "Schwarz", odd: "Ungerade", even: "Gerade", low: "1-18", high: "19-36" };
 
   function renderLobbyPanel(state) {
@@ -588,7 +588,7 @@
     },
   };
 
-  // --- Start beim Betreten des Screens ---
+  // Start beim Betreten des Screens
   const screen = document.querySelector('[data-screen="roulette"]');
   let built = false;
   new MutationObserver(() => {

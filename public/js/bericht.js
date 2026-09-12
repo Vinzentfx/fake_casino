@@ -1,7 +1,6 @@
 "use strict";
 
-/* ============================================================
-   Tagesbericht
+/* Tagesbericht
 
    Was war, waehrend du weg warst. Oeffnet sich beim ersten
    Reinkommen am Tag von selbst, wenn etwas drinsteht, und ist
@@ -9,8 +8,7 @@
 
    Der Server (game/bericht.js) liefert fertige Zeilen. Hier
    wird nur gezeichnet und navigiert, damit die Texte an einer
-   Stelle stehen und nicht doppelt gepflegt werden muessen.
-   ============================================================ */
+   Stelle stehen und nicht doppelt gepflegt werden muessen. */
 
 (function () {
   const Casino = window.Casino;

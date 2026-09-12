@@ -5,22 +5,21 @@
  *
  * Zwei Anwendungen mit verschiedener Haerte:
  *
- *   ENTSCHAERFEN  Chat. Die Nachricht geht durch, das Wort wird zu ***.
+ *   Entschaerfen  Chat. Die Nachricht geht durch, das Wort wird zu ***.
  *                 Eine geloeschte Nachricht erzeugt Nachfragen, eine
  *                 maskierte erklaert sich selbst.
  *
- *   ABLEHNEN      Namen, Mottos, Pferdenamen, Tischnamen. Was dauerhaft
+ *   Ablehnen      Namen, Mottos, Pferdenamen, Tischnamen. Was dauerhaft
  *                 irgendwo steht, soll gar nicht erst entstehen.
  *
- * ---------------------------------------------------------------------------
  * Die zwei Probleme, an denen solche Filter scheitern
  *
- * UMGEHUNG. "Sch3iße", "S c h e i ß e", "Scheeeiße", "$cheiße": wer will,
+ * Umgehung. "Sch3iße", "S c h e i ß e", "Scheeeiße", "$cheiße": wer will,
  * kommt an einer naiven Wortliste vorbei. Dagegen wird der Text vor der
  * Pruefung normalisiert: Ziffern und Zeichen, die wie Buchstaben aussehen,
  * werden zurueckuebersetzt, lange Wiederholungen gekuerzt.
  *
- * FEHLALARM. Wer nur nach Teilzeichenketten sucht, verbietet irgendwann
+ * Fehlalarm. Wer nur nach Teilzeichenketten sucht, verbietet irgendwann
  * "Fickmuehle" (ein Brettspiel) oder "Sextett". Deshalb zwei Durchgaenge:
  *
  *   1. An Wortgrenzen, auf dem normal geschriebenen Text. Findet die
@@ -40,15 +39,13 @@ const path = require("path");
 const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "wortfilter.json");
 
-/* ---------------------------------------------------------------------------
-   Basisliste.
+/* Basisliste.
 
    Bewusst kurz gehalten und auf das Grobe beschraenkt: Beleidigungen,
    Herabwuerdigungen, Sexuelles. Eine ausufernde Liste erzeugt vor allem
    Fehlalarme, und in einer Runde von Freunden ist ein rauer Ton nicht das
    Problem: ein Name in der Bestenliste, den man niemandem zeigen mag,
-   schon.
---------------------------------------------------------------------------- */
+   schon. */
 
 // Wird an Wortgrenzen geprueft. Beugungen deckt die Endungs-Regel unten ab.
 const BASIS = [
@@ -105,9 +102,7 @@ function speichern() {
   } catch {}
 }
 
-/* ---------------------------------------------------------------------------
-   Normalisierung
---------------------------------------------------------------------------- */
+/* Normalisierung */
 
 // Was wie ein Buchstabe aussieht, aber keiner ist.
 const ERSATZ = {
@@ -187,7 +182,7 @@ const escapeRe = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * Alle Treffer in einem Text.
  *
  * @returns {Array<{wort: string, von: number, bis: number}>} Stellen im
- *   ORIGINALTEXT, damit der Aufrufer genau dort maskieren kann.
+ *   Originaltext, damit der Aufrufer genau dort maskieren kann.
  */
 function treffer(roh) {
   const original = String(roh || "");
@@ -209,9 +204,9 @@ function treffer(roh) {
   const inAusnahme = (von, bis) =>
     ausnahmeStellen.some(([a, b]) => von >= a && bis <= b);
 
-  const gefunden = new Map();   // "von:bis" -> Treffer
+  const gefunden = new Map();   // je "von:bis": Treffer
 
-  // --- Durchgang 1: an Wortgrenzen ---
+  // Durchgang 1: an Wortgrenzen
   const { text: nText, herkunft } = normalisiere(original);
   for (const w of alleWoerter()) {
     const nw = normalisiere(w).text;
@@ -232,7 +227,7 @@ function treffer(roh) {
     }
   }
 
-  // --- Durchgang 2: verdichtet, nur die eindeutigen ---
+  // Durchgang 2: verdichtet, nur die eindeutigen
   const { text: dText, herkunft: dHerkunft } = verdichte(original, true);
   const harte = [...HART, ...eigene.woerter.filter((w) => String(w).length >= 6).map((w) => String(w).toLowerCase())];
   for (const w of harte) {
@@ -295,9 +290,7 @@ function entschaerfe(roh) {
   return { text: out, gefiltert: true };
 }
 
-/* ---------------------------------------------------------------------------
-   Pflege der eigenen Liste
---------------------------------------------------------------------------- */
+/* Pflege der eigenen Liste */
 
 const saeubereEintrag = (w) => String(w || "").trim().toLowerCase().slice(0, 40);
 

@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Roulette-Lobby
+/* Roulette-Lobby
    Socket-Anbindung und Knöpfe für den gemeinsamen Tisch. Brett und Kessel
-   zeichnet roulette.js über window.Casino._roulette.
-   ============================================================ */
+   zeichnet roulette.js über window.Casino._roulette. */
 
 (function () {
   const { socket, toast } = window.Casino;

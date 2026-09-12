@@ -3,7 +3,6 @@
 /**
  * Ein Bild vom Geraet holen und auf ein festes Mass bringen.
  *
- * ---------------------------------------------------------------------------
  * Warum die Verkleinerung hier passiert und nicht auf dem Server
  *
  * Bild-Upload ist der klassische Weg, sich einen Server einzutreten: eine

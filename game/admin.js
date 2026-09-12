@@ -17,8 +17,7 @@ function setHeist(h) { _heist = h; }
 let _events = {}; // { rain, quiz, vault }, die Admin-Events aus server.js
 function setEvents(e) { _events = e || {}; }
 
-/* ---------------------------------------------------------------------------
-   ANGEKUENDIGTE EVENTS
+/* Angekündigte Events
 
    Heist, Chip-Regen, Tresorkampf und Quiz dauern unter zwei Minuten. Genau
    deshalb loesen sie bewusst keine Benachrichtigung aus: die Nachricht kaeme
@@ -35,9 +34,8 @@ function setEvents(e) { _events = e || {}; }
    Gespeichert wird nichts: ein Serverneustart im Vorlauf laesst die
    Ankuendigung fallen, und das ist richtig so: niemand soll nach einem
    Neustart von einem Event ueberrascht werden, das jemand vor Stunden
-   angesetzt hat.
---------------------------------------------------------------------------- */
-const geplant = new Map();   // id -> { startetUm, timer, name, starte, beschreibung }
+   angesetzt hat. */
+const geplant = new Map();   // je id: { startetUm, timer, name, starte, beschreibung }
 
 function planPublic() {
   const out = {};
@@ -202,7 +200,7 @@ function setupAdmin(io, accounts) {
       });
     });
 
-    /* --- Wortfilter ---
+    /* Wortfilter
        Was in einer Runde als schlimm gilt, entscheidet die Runde. Die
        Basisliste im Modul deckt das Grobe ab, alles Weitere kommt hier
        dazu, und Ausnahmen fuer Woerter, die zu Unrecht haengenbleiben. */
@@ -224,7 +222,7 @@ function setupAdmin(io, accounts) {
       ack(art === "ausnahme" ? wortfilter.entferneAusnahme(wort) : wortfilter.entferne(wort));
     });
 
-    /* --- Bilder ---
+    /* Bilder
        Ein Wortfilter hilft hier nicht: was auf einem Bild zu sehen ist,
        kann nur ein Mensch beurteilen. Der Admin sieht alle hochgeladenen
        Wappen und die Meldungen dazu. */
@@ -341,7 +339,7 @@ function setupAdmin(io, accounts) {
       ack(accounts.unban(String(target).toLowerCase()));
     });
 
-    // IP-Bann: sperrt die IP eines Spielers (per Name → letzte bekannte IP)
+    // IP-Bann: sperrt die IP eines Spielers (über den Namen die letzte bekannte IP)
     // oder eine direkt angegebene IP; trennt alle Sockets dieser IP sofort.
     socket.on("admin:ipban", ({ target, ip } = {}, ack) => {
       if (typeof ack !== "function") return;
@@ -460,9 +458,9 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
-    // --- Test-Werkzeuge (nur Besitzer) ---
+    // Test-Werkzeuge (nur Besitzer)
 
-    // Einmaligen MAXIMALGEWINN für den nächsten Slot-Dreh des Besitzers scharf stellen (zum Vorführen).
+    // Einmaligen Maximalgewinn für den nächsten Slot-Dreh des Besitzers scharf stellen (zum Vorführen).
     socket.on("admin:slotsForceWin", (ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -483,7 +481,7 @@ function setupAdmin(io, accounts) {
       ack(cb.stoppeGala());
     });
 
-    // --- Live-Ops (nur Besitzer) ---
+    // Live-Ops (nur Besitzer)
     socket.on("admin:happyHour", ({ on, minutes } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -603,7 +601,7 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
-    // Force the weekly rollover NOW (Spieler der Woche + neue Goldene Straße).
+    // Den Wochenwechsel sofort erzwingen (Spieler der Woche und neue Goldene Straße).
     socket.on("admin:newWeek", (ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -611,13 +609,11 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
-    /* =====================================================================
-       STRAFEN
+    /* Strafen
 
        Vorher war die einzige Antwort auf alles "Konto gesperrt". Jetzt gibt es
        sieben Stufen mit Ablaufzeit und Grund (game/strafen.js). Der Grund ist
-       nicht Deko: er steht in der Meldung, die der Bestrafte liest.
-       ===================================================================== */
+       nicht Deko: er steht in der Meldung, die der Bestrafte liest. */
     socket.on("admin:strafen", (ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -673,9 +669,7 @@ function setupAdmin(io, accounts) {
       ack({ ...res, offen: strafen.marken(acc) });
     });
 
-    /* =====================================================================
-       REGIE: das naechste Ergebnis von Hand setzen (game/regie.js)
-       ===================================================================== */
+    /* Regie: das naechste Ergebnis von Hand setzen (game/regie.js) */
     socket.on("admin:regie", (ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -706,9 +700,7 @@ function setupAdmin(io, accounts) {
       ack({ ok: weg, error: weg ? undefined : "Da lag nichts." });
     });
 
-    /* =====================================================================
-       WARTUNG: das Haus zumachen, ohne den Server zu beenden
-       ===================================================================== */
+    /* Wartung: das Haus zumachen, ohne den Server zu beenden */
     socket.on("admin:wartung", ({ on, text } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -730,9 +722,7 @@ function setupAdmin(io, accounts) {
       ack({ ok: true, ...res, getrennt });
     });
 
-    /* =====================================================================
-       WERKZEUGE: rauswerfen, anschreiben, Kosmetik geben, Chat leeren
-       ===================================================================== */
+    /* Werkzeuge: rauswerfen, anschreiben, Kosmetik geben, Chat leeren */
 
     // Trennen ohne Sperre. Fuer den Fall, dass jemand in einer kaputten Runde
     // haengt oder eine Ansage verpasst hat: er kann sofort wieder rein.
@@ -806,12 +796,10 @@ function setupAdmin(io, accounts) {
       ack({ ok: true });
     });
 
-    /* =====================================================================
-       ZWEI NEUE EVENTS
+    /* Zwei neue Events
 
        Verlosung und Kassensturz sind beide einmalig: sie laufen nicht, sie
-       passieren. Deshalb haben sie keinen Zustand und keinen Abbrechen-Knopf.
-       ===================================================================== */
+       passieren. Deshalb haben sie keinen Zustand und keinen Abbrechen-Knopf. */
 
     // Sofort-Verlosung unter allen, die gerade online sind. Das kuerzeste
     // Event, das es gibt: ein Knopf, ein Gewinner, eine Zeile im Chat.
@@ -838,7 +826,7 @@ function setupAdmin(io, accounts) {
     /*
      * Kassensturz: eine Abgabe auf alles, was bar auf der Hand liegt.
      *
-     * Das einzige Event, das Chips WEGNIMMT statt sie auszuschuetten. Genau
+     * Das einzige Event, das Chips wegnimmt statt sie auszuschuetten. Genau
      * deshalb gibt es es: alle anderen Knoepfe hier drucken Geld, und wenn
      * zwei Jahre lang nur gedruckt wird, kostet ein Haus irgendwann nichts
      * mehr. Die Bank bleibt aussen vor (sonst waere Sparen bestraft) und

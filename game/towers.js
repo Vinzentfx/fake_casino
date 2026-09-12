@@ -83,10 +83,10 @@ function setupTowers(io, accounts) {
   // Spiele hängen am Account, nicht am Socket: Tab-Reload/Verbindungsabriss
   // mitten im Lauf kostet nicht mehr Einsatz + aufgelaufenen Multiplikator,
   // der Client holt das laufende Spiel per towers:state zurück.
-  const games = new Map(); // Kontoschlüssel -> Spiel
+  const games = new Map(); // je Kontoschlüssel: Spiel
 
-  // Verlassene Spiele (30 Min ohne Aktion): Ebene ≥1 → Auto-Cashout zum
-  // aktuellen Multiplikator, Ebene 0 → Einsatz zurück. Kein Vorteil erzielbar
+  // Verlassene Spiele (30 Min ohne Aktion): ab Ebene 1 automatisch auszahlen zum
+  // aktuellen Multiplikator, auf Ebene 0 Einsatz zurück. Kein Vorteil erzielbar
   // (Cashout-EV ist immer 1−Hausvorteil).
   setInterval(() => {
     const now = Date.now();
@@ -101,7 +101,7 @@ function setupTowers(io, accounts) {
         accounts.adjustChips(key, payout);
         accounts.recordHand(key, payout - g.bet, true, "towers", { einsatz: g.bet });
       } else {
-        accounts.adjustChips(key, g.bet); // nichts aufgedeckt → einfach zurück
+        accounts.adjustChips(key, g.bet); // nichts aufgedeckt, einfach zurück
       }
     }
   }, 60_000).unref();
@@ -185,7 +185,7 @@ function setupTowers(io, accounts) {
       g.picks.push(tile);
       g.level += 1;
 
-      // Ganz oben angekommen → automatischer Cash-out beim Maximal-Multiplikator.
+      // Ganz oben angekommen: automatisch zum höchsten Multiplikator auszahlen.
       if (g.level >= ROWS) {
         const payout = Math.min(MAX_WIN, Math.floor(g.bet * multiplier(diff, g.level)));
         g.over = true;

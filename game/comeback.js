@@ -9,14 +9,14 @@
  *
  * Dieses Modul macht daraus einen Moment statt eines stillen Neustarts:
  *
- *   GESCHENK  Ein einmaliges Paket je Konto, abholbar solange das Fenster
+ *   Geschenk  Ein einmaliges Paket je Konto, abholbar solange das Fenster
  *             offen ist. Chips laufen durch die Vermoegensbremse, es ist
  *             Gratisgeld, und der Median liegt bei 25.000, waehrend die
  *             Spitze das Siebzigfache hat. Dazu zwei Kosmetik-Stuecke, die
  *             es danach nie wieder gibt: nur wer zur Wiedereroeffnung da war,
  *             traegt den Titel.
  *
- *   GALA      Ein Zeitfenster, in dem doppelte Season-XP laufen und am Ende
+ *   Gala      Ein Zeitfenster, in dem doppelte Season-XP laufen und am Ende
  *             ein Topf unter allen verlost wird, die dabei mitgespielt haben,
  *             gewichtet nach Runden. Das ist der Grund, jetzt zu kommen und
  *             nicht irgendwann.

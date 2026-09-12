@@ -16,7 +16,7 @@
  * und bringt viel, bei einer Sieben ist beides fast gleich. Das ist der Reiz:
  * man sieht der Karte an, was sie wert ist.
  *
- * Gleicher Rang ist ein PUSH: die Karte wandert weg, der Multiplikator bleibt.
+ * Gleicher Rang ist ein Push: die Karte wandert weg, der Multiplikator bleibt.
  * Deshalb steht im Zaehler (hoeher + tiefer) und nicht 51. Gleichstaende sind
  * aus der Rechnung raus, weil sie weder gewinnen noch verlieren.
  *
@@ -78,7 +78,7 @@ function schritt(deck, karte, richtung) {
    * Bei einer Zwei kann keine Karte tiefer sein: "hoeher" ist damit
    * risikolos, und der rechnerisch faire Faktor waere 0,98, der
    * Hausvorteil auf eine Wette, die man gar nicht verlieren kann. Im Spiel
-   * sah das so aus: richtig getippt, und der Multiplikator FIEL von 1,06
+   * sah das so aus: richtig getippt, und der Multiplikator fiel von 1,06
    * auf 1,04. Das ist zwar korrekt gerechnet, aber niemand akzeptiert es,
    * und zu Recht.
    *
@@ -116,7 +116,7 @@ function setupHilo(io, accounts) {
         accounts.adjustChips(key, payout);
         accounts.recordHand(key, payout - g.bet, true, "hilo", { einsatz: g.bet });
       } else {
-        accounts.adjustChips(key, g.bet); // noch nichts geraten → Einsatz zurück
+        accounts.adjustChips(key, g.bet); // noch nichts geraten, also Einsatz zurück
       }
     }
   }, 60_000).unref();

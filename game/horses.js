@@ -4,15 +4,15 @@
  * Porta-Rennbahn: geteilte Live-Pferderennen mit Besitz, Training und Wetten.
  *
  * Rhythmus wie Crash: ein globales Rennen für alle im festen Takt
- * (Wettfenster → Live-Rennen, server-getickt → Auswertung). Spieler besitzen
- * Pferde (Markt → kaufen → trainieren → anmelden → Preisgeld), NPC-Pferde
+ * (Wettfenster, dann das Live-Rennen im Takt des Servers, dann die Auswertung). Spieler besitzen
+ * Pferde (auf dem Markt kaufen, trainieren, anmelden, Preisgeld holen), NPC-Pferde
  * füllen leere Bahnen, damit immer gewettet werden kann.
  *
  * Anti-Langeweile-Kern:
- *  - Tagesform driftet, Distanz + Bahnzustand wechseln → Favoriten rotieren
- *  - Taktik-Wahl (Frontrunner/Verfolger/Schlussspurt) vor dem Start
- *  - SPRINT-Knopf: 1× pro Rennen, Timing zählt (zu früh = Einbruch am Ende)
- *  - Foto-Finish, Live-Kommentar, fremde Wetten sichtbar
+ *  * Tagesform driftet, Distanz und Bahnzustand wechseln, dadurch rotieren die Favoriten
+ *  * Taktik-Wahl (Frontrunner/Verfolger/Schlussspurt) vor dem Start
+ *  * Sprintknopf: 1× pro Rennen, Timing zählt (zu früh = Einbruch am Ende)
+ *  * Foto-Finish, Live-Kommentar, fremde Wetten sichtbar
  *
  * Balance: Wett-Quoten aus Monte-Carlo + Marge (Haus gewinnt im Schnitt),
  * Preisgeld-Topf ≈ Startgelder + kleiner Haus-Zuschuss, Training/Kauf sind
@@ -25,7 +25,7 @@ const path = require("path");
 
 const HORSES_FILE = path.join(__dirname, "..", "data", "horses.json");
 
-// --- Balance-Konstanten ---
+// Balance-Konstanten
 const FIELD_SIZE = 8;
 const BET_WINDOW_MS = 90_000;   // Wetten offen
 const RESULT_LINGER_MS = 22_000; // Ergebnis-Anzeige, dann nächste Runde
@@ -62,7 +62,7 @@ const SPRINT_BOOST = 0.09;      // +9% Tempo während des Boosts
 const SPRINT_EARLY_PENALTY = 0.035; // Einbruch danach, wenn zu früh gezündet
 const SPRINT_SAFE_PROGRESS = 0.62;  // ab hier gilt der Sprint als "gut getimt"
 
-// --- Pferde-Store ---
+// Pferde-Store
 let store = { seq: 1, horses: {}, market: [], marketAt: 0 };
 try {
   const raw = JSON.parse(fs.readFileSync(HORSES_FILE, "utf8"));
@@ -153,7 +153,7 @@ function driftForm(h) {
 }
 
 function ageFactor(h) {
-  // Karriere-Kurve: jung 0.93 → Peak 1.0 → Spätkarriere 0.90.
+  // Karrierekurve: jung 0.93, auf dem Höhepunkt 1.0, spät in der Karriere 0.90.
   const t = h.races / Math.max(1, h.careerLimit);
   if (t < 0.25) return 0.93 + t * 0.28;
   if (t < 0.7) return 1.0;
@@ -216,7 +216,7 @@ function trainsLeft(h) {
   return h.trainedDay === day ? Math.max(0, TRAIN_PER_DAY - h.trainedCount) : TRAIN_PER_DAY;
 }
 
-// --- Zufalls-Events (nur Spieler-Pferde) ---
+// Zufalls-Events (nur Spieler-Pferde)
 // block = kann nicht antreten, formDelta = Leistung während des Events,
 // condPlus = Sofort-Effekt. Alles zeitlich begrenzt, nichts permanent.
 const HORSE_EVENTS = [
@@ -260,7 +260,7 @@ function weightedPickIdx(weights) {
   return 0;
 }
 
-// Abgelaufene Events aufräumen; Schwangerschaft kann ein FOHLEN bringen:
+// Abgelaufene Events aufräumen; Schwangerschaft kann ein Fohlen bringen:
 // schwache Start-Werte, aber hohes Potential, der Zucht-Mini-Loop.
 function sweepEvents() {
   const now = Date.now();
@@ -285,7 +285,7 @@ function sweepEvents() {
   save();
 }
 
-// --- Renn-Modell ---
+// Renn-Modell
 // Effektive Stärke eines Pferds für dieses Rennen (Distanz + Bahn + Form +
 // Alter + Erfolgs-Handicap + Event). Wird von Quoten-MC und Live-Rennen
 // benutzt, Änderungen hier bleiben dadurch automatisch fair eingepreist.
@@ -371,7 +371,7 @@ function computeOdds(field, distance, going) {
   });
 }
 
-// --- Renn-Zustand ---
+// Renn-Zustand
 const race = {
   phase: "betting",        // betting | running | done
   no: 0,
@@ -415,7 +415,7 @@ function fieldForClient() {
  *
  * @param {{name: string, wins: number}[]} sortiert absteigend nach wins
  * @param {number[]} preise
- * @returns {Map<string, number>} Name -> Betrag
+ * @returns {Map<string, number>} Betrag je Name
  */
 function preisAnteile(sortiert, preise) {
   const out = new Map();
@@ -482,7 +482,7 @@ function stateFor(key) {
   };
 }
 
-// --- Rennschleife ---
+// Rennschleife
 let io = null;
 let accounts = null;
 
@@ -567,7 +567,7 @@ function startBetting() {
 
   // Feld: angemeldete Spieler-Pferde zuerst, NPCs füllen auf. Pferde, die
   // zwischen Anmeldung und Start ausfallen (Verletzung/Event/erschöpft), können
-  // nicht starten → Startgeld zurück.
+  // nicht starten, dann Startgeld zurück.
   const field = [];
   const seen = new Set();
   for (const e of race.entries.splice(0, FIELD_SIZE)) {
@@ -615,7 +615,7 @@ function startBetting() {
 }
 
 // Integrale der Taktik-Kurven, zum Normieren auf exakt gleiche Gesamtleistung.
-// Vorher: front ∫=1.00725, closer ∫=0.996 → "front" war strikt +1,1% besser
+// Vorher: front ∫=1.00725, closer ∫=0.996, "front" war also strikt +1,1% besser
 // (gratis Edge, den das Quoten-MC nicht kannte).
 const TACTIC_NORM = {
   front: 0.35 * 1.06 + 0.40 * 1.0 + 0.25 * 0.945,  // = 1.00725
@@ -756,7 +756,7 @@ function finishRace() {
     }
   }
   save();
-  rebuildDailyCache(); // Siege haben sich geändert → Rangliste neu berechnen
+  rebuildDailyCache(); // Siege haben sich geändert, Rangliste neu berechnen
 
   const w = order[0];
   const wOdds = race.odds[w.lane] ? race.odds[w.lane].win : 0;
@@ -775,7 +775,7 @@ function pushAccount(key, account) {
   }
 }
 
-// --- Socket-API ---
+// Socket-Ereignisse
 function setupHorses(_io, _accounts) {
   io = _io;
   accounts = _accounts;

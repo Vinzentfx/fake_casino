@@ -10,7 +10,7 @@
  * einzige Antwort "Konto gesperrt, komm morgen wieder" oder gar nichts.
  *
  * Jede Strafe hier hat drei Dinge, die eine Dauersperre nicht hat: eine
- * ABLAUFZEIT, einen GRUND und eine Spur im Verlauf. Das ist kein Beiwerk. Eine
+ * Ablaufzeit, einen Grund und eine Spur im Verlauf. Das ist kein Beiwerk. Eine
  * Strafe ohne Ablauf muss jemand von Hand zuruecknehmen und bleibt sonst
  * ewig; eine ohne Grund erklaert dem Bestraften nicht, was er anders machen
  * soll; und ohne Verlauf weiss nach zwei Wochen niemand mehr, warum jemand
@@ -20,7 +20,7 @@
  * Datei. Damit wandern sie automatisch ins Backup, verschwinden mit dem Konto
  * und koennen nicht auf ein geloeschtes Konto verwaisen.
  *
- * Dieses Modul kennt bewusst KEIN accounts: es rechnet nur auf Konto-Objekten,
+ * Dieses Modul kennt bewusst kein accounts: es rechnet nur auf Konto-Objekten,
  * die es uebergeben bekommt. Sonst gaebe es einen Kreis beim require, denn
  * accounts fragt beim Login nach der Zeitsperre.
  */
@@ -32,9 +32,7 @@ const crypto = require("crypto");
 let _speichern = () => {};
 function setSpeichern(fn) { if (typeof fn === "function") _speichern = fn; }
 
-/* ---------------------------------------------------------------------------
-   Die Strafen
---------------------------------------------------------------------------- */
+/* Die Strafen */
 const ARTEN = {
   sperre: {
     name: "Zeitsperre",
@@ -77,16 +75,14 @@ const ARTEN = {
   },
 };
 
-/* ---------------------------------------------------------------------------
-   Spiele und ihre Ereignisse
+/* Spiele und ihre Ereignisse
 
-   Das Spielverbot und der Einsatzdeckel greifen an EINER Stelle (der Bremse
+   Das Spielverbot und der Einsatzdeckel greifen an einer Stelle (der Bremse
    unten) und nicht in zwanzig Spielmodulen. Dafuer braucht es die Zuordnung
    von Ereignis-Vorsilbe zu Spiel und das Feld, in dem der Einsatz steht.
 
    Neues Spiel? Eine Zeile hier, sonst laesst sich es nicht sperren und der
-   Deckel gilt dort nicht.
---------------------------------------------------------------------------- */
+   Deckel gilt dort nicht. */
 const SPIELE = {
   slots:     { name: "Slots",         vor: ["slots:"],              einsatz: { "slots:spin": "bet", "slots:buyBonus": "bet" } },
   crash:     { name: "Crash",         vor: ["crash:"],              einsatz: { "crash:bet": "amount" } },
@@ -112,7 +108,7 @@ const SPIELE = {
   city:      { name: "Stadt",         vor: ["city:"] },
   market:    { name: "Markt",         vor: ["market:", "item:"] },
   clans:     { name: "Clans",         vor: ["clan:"] },
-  /* Das Auktionshaus steht bewusst OHNE Einsatzfeld hier: ein Gebot ist kein
+  /* Das Auktionshaus steht bewusst ohne Einsatzfeld hier: ein Gebot ist kein
      Einsatz, und ein Deckel von 1.000 haette jemanden stillschweigend vom
      ganzen Haus ausgeschlossen, weil das Startgebot darueber liegt. Wer
      jemanden von der Auktion fernhalten will, nimmt das Auktionsverbot. */
@@ -128,7 +124,7 @@ const SPIELE = {
    Fehler. */
 const NUR_LESEN = /:(state|config|machines|init|history|legal|leaderboards|list|zufall)$/;
 
-const spielVon = new Map();   // Vorsilbe -> Spiel-id
+const spielVon = new Map();   // je Vorsilbe: Spiel-id
 for (const [id, s] of Object.entries(SPIELE)) for (const v of s.vor) spielVon.set(v, id);
 
 /** Zu welchem Spiel gehoert dieses Socket-Ereignis? null, wenn zu keinem. */
@@ -138,9 +134,7 @@ function spielZuEvent(ev) {
   return spielVon.get(String(ev).slice(0, i + 1)) || null;
 }
 
-/* ---------------------------------------------------------------------------
-   Lesen und setzen
---------------------------------------------------------------------------- */
+/* Lesen und setzen */
 function topf(acc) {
   if (!acc) return {};
   if (!acc.strafen || typeof acc.strafen !== "object") acc.strafen = {};
@@ -252,9 +246,7 @@ function verlauf(acc, eintrag) {
   if (acc.strafenLog.length > VERLAUF_MAX) acc.strafenLog.length = VERLAUF_MAX;
 }
 
-/* ---------------------------------------------------------------------------
-   Abfragen fuer die Spielmodule
---------------------------------------------------------------------------- */
+/* Abfragen fuer die Spielmodule */
 
 /** Wie lange noch, als Text fuer den Spieler. */
 function restText(s) {
@@ -297,8 +289,7 @@ function spielGesperrt(acc, spielId) {
   return s;
 }
 
-/* ---------------------------------------------------------------------------
-   Die Bremse
+/* Die Bremse
 
    Spielverbot und Einsatzdeckel muessten sonst in jedem einzelnen Spielmodul
    stehen, zwanzig Mal dieselben drei Zeilen, und beim einundzwanzigsten Spiel
@@ -308,12 +299,11 @@ function spielGesperrt(acc, spielId) {
 
    Geantwortet wird ueber den ack des Aufrufers, nicht mit einem Fehler auf dem
    Socket: die Spiele zeigen ihre ack-Fehler schon als Hinweis an, ein
-   Socket-Fehler waere dagegen stumm.
---------------------------------------------------------------------------- */
+   Socket-Fehler waere dagegen stumm. */
 function bremse(io, accounts) {
   io.on("connection", (socket) => {
     socket.use((packet, next) => {
-      /* Diese Zwischenschicht sieht JEDES eingehende Ereignis. Ein Fehler
+      /* Diese Zwischenschicht sieht jedes eingehende Ereignis. Ein Fehler
          darin traefe also nicht ein Spiel, sondern alle auf einmal: lieber
          durchlassen als alles anhalten. */
       try {

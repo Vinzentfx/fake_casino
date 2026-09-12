@@ -7,7 +7,7 @@
  * Spiele). Beim Wochenwechsel gewinnt, wer das höchste positive Netto hat, den
  * Wochen-Pokal: Chips, eine Ansage im Chat und eine Woche lang die Krone neben
  * dem Namen in allen Bestenlisten. Danach gehen alle Zähler auf null und eine
- * neue GOLDENE STRASSE wird gezogen (die zahlt doppelten Tribut).
+ * neue Goldene Straße wird gezogen (die zahlt doppelten Tribut).
  *
  * Stand in data/weekly.json, tick() ruft economy.js jede Minute auf.
  */

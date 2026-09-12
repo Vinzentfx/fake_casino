@@ -31,7 +31,7 @@ const DATA_DIR = path.join(__dirname, "..", "data");
 const STATE_FILE = path.join(DATA_DIR, "city.json");
 const MAP_FILE = path.join(__dirname, "data", "porta.json");
 
-// Die Gebäudeklasse bestimmt nur den PREIS (keine Boni).
+// Die Gebäudeklasse bestimmt nur den Preis (keine Boni).
 const CLASSES = {
   residential: { name: "Wohnhaus",   emoji: "🏠", base: 25000,      refA: 140 },
   civic:       { name: "Öffentlich", emoji: "🏛️", base: 120000,     refA: 400 },
@@ -88,9 +88,9 @@ const EVENT_POOL = [
   { txt: "Der Axtmörder treibt sein unwesen in {d}!", f: 0.82 },
 ];
 
-// --- Karte (Auszug im Repo) ---
+// Karte (Auszug im Repo)
 let MAP = { city: "?", districts: [] };
-const bldIndex = new Map();   // Gebäude-ID -> { b, district }
+const bldIndex = new Map();   // je Gebäude-ID: { b, district }
 let CASINO_ID = null, BANK_ID = null;
 
 function loadMap() {
@@ -105,7 +105,7 @@ function loadMap() {
     for (const b of d.buildings) {
       b._did = d.id;
       // Straßenschlüssel: nur Gebäude mit echter Hausnummer gehören zu einer
-      // Straße ("Zur Porta 88" -> "Zur Porta"), geliehene Straßennamen zählen nicht.
+      // Straße (aus "Zur Porta 88" wird "Zur Porta"), geliehene Straßennamen zählen nicht.
       const m = b.n && b.n.match(/^(.+?)\s+(\d.*)$/);
       b.st = m ? m[1] : null;
       b.lm = 0;
@@ -156,7 +156,7 @@ function loadMap() {
 }
 loadMap();
 
-// --- Besitz (liegt im Datenordner) ---
+// Besitz (liegt im Datenordner)
 let state = loadState();
 
 function loadState() {
@@ -180,7 +180,7 @@ const idxOf = (did) => state.idx[did] || 1;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const round2 = (n) => Math.round(n * 100) / 100;
 
-// --- Marktgeschehen: Drift je Ortsteil und Lokalnachrichten ---
+// Marktgeschehen: Drift je Ortsteil und Lokalnachrichten
 
 /** Eine zufällige Lokalnachricht auslösen (auf Wunsch in einem bestimmten Ortsteil). */
 function fireEvent(districtId) {
@@ -200,7 +200,7 @@ function tickMarket() {
   for (const d of MAP.districts) {
     const i = idxOf(d.id);
     // Schwacher Zug zurück zur Mitte, starkes Rauschen: nach einem Ereignis
-    // braucht der Index unvorhersehbar STUNDEN (vorher 4 %/min, ein Einbruch war
+    // braucht der Index unvorhersehbar Stunden (vorher 4 %/min, ein Einbruch war
     // nach ~30 min erholt, und "jeden Crash kaufen" war risikolos).
     state.idx[d.id] = clamp(i + (1 - i) * 0.006 + (Math.random() * 2 - 1) * 0.02, IDX_MIN, IDX_MAX);
   }
@@ -225,16 +225,16 @@ function priceOf(b) {
 const sellPriceOf = (b) => Math.round(priceOf(b) * SELL_SPREAD);
 const ownerOf = (id) => (state.own[id] ? state.own[id].owner : null);
 
-// --- Abgeleitete Zahlen (zwischengespeichert, nach jeder Änderung neu) ---
+// Abgeleitete Zahlen (zwischengespeichert, nach jeder Änderung neu)
 let derivedDirty = true;
 let derived = null;
 
 function getDerived() {
   if (!derivedDirty && derived) return derived;
-  const monopolies = {};       // Ortsteil -> [{ st, owner, ownerName, color, count }]
-  const streetsByOwner = {};   // Spieler -> Anzahl kompletter Straßen
-  const bossByDistrict = {};   // Ortsteil -> { owner, name, color, value }
-  const valueByOwner = {};     // Spieler -> gesamter Immobilienwert
+  const monopolies = {};       // je Ortsteil: [{ st, owner, ownerName, color, count }]
+  const streetsByOwner = {};   // je Spieler: Anzahl kompletter Straßen
+  const bossByDistrict = {};   // je Ortsteil: { owner, name, color, value }
+  const valueByOwner = {};     // je Spieler: gesamter Immobilienwert
 
   for (const d of MAP.districts) {
     monopolies[d.id] = [];
@@ -285,7 +285,7 @@ function houseCount(key) {
   return n;
 }
 
-// --- Goldene Straße der Woche ---
+// Goldene Straße der Woche
 // Jede Woche zahlt eine zufällige Straße doppelten Tribut, alle wollen sie.
 function rollGoldenStreet() {
   const candidates = [];
@@ -306,7 +306,7 @@ function ownsGolden(key) {
   return list.some((m) => m.st === g.st && m.owner === key);
 }
 
-// --- Haus-Sets (Sammelboni) ---
+// Haus-Sets (Sammelboni)
 /** Sets, die `key` voll hat: [{id, label, emoji, tribute}] */
 function setsOf(key) {
   const out = [];
@@ -348,7 +348,7 @@ const bankOwner = () => (BANK_ID != null ? ownerOf(BANK_ID) : null);
 /** Ist `key` gerade Boss eines Ortsteils? (Der Boss kauft dort 10 % billiger.) */
 const BOSS_DISCOUNT = 0.9;
 
-/* --- Besitzer-Staffel (Anti-Monopol) ---
+/* Besitzer-Staffel (Anti-Monopol)
  *
  * Bisher kostete das dreissigste Haus genauso viel wie das erste. Wer einmal
  * vorne lag, kaufte deshalb immer weiter, und fuer alle anderen war die Stadt
@@ -443,7 +443,7 @@ function ownerBoard(key) {
 }
 
 /**
- * Die Gebaeude EINES Besitzers, mit dem Preis, den der Betrachter fuer eine
+ * Die Gebaeude eines Besitzers, mit dem Preis, den der Betrachter fuer eine
  * Uebernahme zahlen muesste. Bewusst ein eigener Aufruf: die Uebersicht soll
  * nicht bei jedem Laden alle Haeuser aller Spieler mitschleppen.
  */
@@ -471,7 +471,7 @@ function ownerProperties(ownerKey, viewerKey, limit = 60) {
   return out.slice(0, limit);
 }
 
-// --- Ansichten für den Client ---
+// Ansichten für den Client
 function publicOverview(key) {
   const der = getDerived();
   let me = null;
@@ -578,7 +578,7 @@ function publicDistrict(id, key) {
   };
 }
 
-// --- Änderungen ---
+// Änderungen
 function buyBuilding(id, key, name) {
   const e = bldIndex.get(Number(id));
   if (!e) return err("Gebäude nicht gefunden.");

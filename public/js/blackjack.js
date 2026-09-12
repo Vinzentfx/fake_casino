@@ -1,9 +1,7 @@
 "use strict";
 
-/* ============================================================
-   Blackjack Client
-   Kommuniziert über bj:* Socket-Events mit game/blackjack.js.
-   ============================================================ */
+/* Blackjack Client
+   Kommuniziert über bj:* Socket-Events mit game/blackjack.js. */
 
 (function () {
   const socket = window.Casino.socket;
@@ -11,15 +9,15 @@
   const SUIT_SYM   = { h: "♥", d: "♦", s: "♠", c: "♣" };
   const RANK_LBL   = { 2:"2",3:"3",4:"4",5:"5",6:"6",7:"7",8:"8",9:"9",10:"10",11:"J",12:"Q",13:"K",14:"A" };
 
-  // ---- DOM refs ----
+  // DOM refs
   const screen      = () => document.querySelector('[data-screen="blackjack"]');
   const $ = (id) => document.getElementById(id);
 
-  // ---- State ----
+  // Zustand
   let state = null;   // last bj:state payload
   let betAmount = 100;
 
-  // ---- Audio ----
+  // Audio
   // Karten und Chips klingen jetzt im ganzen Haus gleich.
   const snd = window.Casino.sound;
   function sfxCard()  { snd.play("deal"); }
@@ -27,7 +25,7 @@
   function sfxLose()  { snd.play("lose"); }
   function sfxChip()  { snd.play("chip"); }
 
-  // ---- Render ----
+  // Zeichnen
   function cardHTML(card, faceDown = false) {
     if (faceDown || card.hidden) {
       return `<div class="bj-card face-down"><div class="bj-card-inner"></div></div>`;
@@ -92,7 +90,7 @@
         : (s.dealerCards.length ? `${s.dealerValue}` : "");
     }
 
-    // Player hands
+    // Hände der Spieler
     const hArea = $("bj-player-hands");
     if (hArea) {
       hArea.innerHTML = s.playerHands.map((hand, i) => {
@@ -142,7 +140,7 @@
     }
   }
 
-  // ---- Socket events ----
+  // Socket-Ereignisse
   socket.on("bj:state", (s) => {
     const prev = state;
     const wasDealing = !prev || prev.phase === "betting";
@@ -180,7 +178,7 @@
     }
   });
 
-  // ---- Actions ----
+  // Actions
   function doAction(action) {
     socket.emit("bj:action", { action }, (res) => {
       if (res && !res.ok) window.Casino.toast(res.error || "Fehler");
@@ -198,7 +196,7 @@
     sfxChip();
   }
 
-  // ---- Bet controls ----
+  // Bet controls
   const BET_STEPS = [50, 100, 500, 1000, 5000, 10000, 25000, 100000, 250000, 500000, 1000000, 2000000];
   function stepBet(dir) {
     const idx = BET_STEPS.findIndex(v => v >= betAmount);
@@ -212,7 +210,7 @@
     sfxChip();
   }
 
-  // ---- Chip quick-select ----
+  // Chip quick-select
   let chipsSetup = false;
   function setupChipButtons() {
     const bar = $("bj-chip-bar");
@@ -232,7 +230,7 @@
     });
   }
 
-  // ---- Init ----
+  // Start
   function onEnterBlackjack() {
     socket.emit("bj:init");
     setupChipButtons();
@@ -247,7 +245,7 @@
    * Hier stand beides untereinander: ein DOMContentLoaded-Listener und
    * darunter derselbe Block nochmal, "falls DOMContentLoaded schon durch
    * ist". Das Skript laedt aber mit `defer`, und dann ist der Zustand
-   * "interactive" (also nicht mehr "loading"), WAEHREND DOMContentLoaded
+   * "interactive" (also nicht mehr "loading"), waehrend DOMContentLoaded
    * noch aussteht. Beide Zweige liefen, jeder Knopf war doppelt verdrahtet,
    * und ein Tipp auf "Karte" zog zwei Karten.
    *

@@ -1,8 +1,6 @@
 "use strict";
 
-/* ============================================================
-   Markt: Inventar und Handel zwischen Spielern
-   ============================================================ */
+/* Markt: Inventar und Handel zwischen Spielern */
 
 (function () {
   const { socket, toast, applyAccount, showScreen, escapeHtml } = window.Casino;

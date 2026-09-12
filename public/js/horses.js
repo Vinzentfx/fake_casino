@@ -1,11 +1,9 @@
 "use strict";
 
-/* ============================================================
-   Porta-Rennbahn
+/* Porta-Rennbahn
    Geteiltes Live-Rennen: Canvas-Seitenansicht mit animierten
    Pferde-Silhouetten, Wetten mit Live-Quoten, Stall & Markt.
-   Server ist autoritativ (game/horses.js); hier nur Darstellung.
-   ============================================================ */
+   Server ist autoritativ (game/horses.js); hier nur Darstellung. */
 
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
@@ -17,7 +15,7 @@
 
   let st = null;          // letzter Server-State
   let ticks = null;       // letzte Tick-Positionen [{lane,p,fin,spr}]
-  let smooth = {};        // lane -> geglätteter Fortschritt
+  let smooth = {};        // je Bahn: geglätteter Fortschritt
   let betTotal = 0;       // volle Wettfenster-Länge der aktuellen Runde (für den Countdown-Balken)
   let betNo = null;       // Runden-Nr., zu der betTotal gehört
   let config = {};
@@ -25,7 +23,7 @@
   let market = [];
   let raf = false;
 
-  // --- Tabs ---
+  // Tabs
   document.querySelectorAll(".horses-tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".horses-tab").forEach((b) => b.classList.toggle("active", b === btn));
@@ -35,7 +33,7 @@
     });
   });
 
-  // --- Canvas-Rennen ---
+  // Canvas-Rennen
   const canvas = $("#race-canvas");
   const ctx = canvas && canvas.getContext("2d");
 
@@ -105,7 +103,7 @@
     const now = performance.now() / 1000;
     ctx.clearRect(0, 0, w, h);
 
-    // --- Kulisse --- Himmel mit Sonne + driftenden Wolken
+    // Kulisse --- Himmel mit Sonne + driftenden Wolken
     const sky = ctx.createLinearGradient(0, 0, 0, h * 0.42);
     sky.addColorStop(0, "#7db1de"); sky.addColorStop(1, "#cfe4f2");
     ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h * 0.42);
@@ -264,7 +262,7 @@
   }
   function startDraw() { if (!raf) { raf = true; requestAnimationFrame(draw); } }
 
-  // --- Render: Kopf, Feld/Wetten, Ticker, Stall, Markt ---
+  // Render: Kopf, Feld/Wetten, Ticker, Stall, Markt
   let countdownIv = null;
   function renderHead() {
     const el = $("#race-head");
@@ -466,7 +464,7 @@
 
   function renderAll() { renderChamp(); renderHead(); renderField(); renderBets(); renderSprint(); }
 
-  // --- Tages-Champion-Banner ---
+  // Tages-Champion-Banner
   function renderChamp() {
     const el = $("#champ-banner");
     if (!el || !st) return;
@@ -484,7 +482,7 @@
       rows = `<div class="chb-row chb-empty">Heute hat noch niemand gewonnen. Melde ein Pferd an, dem Sieger winken ${fmt(prizes[0])}<i class=mk></i>.</div>`;
     } else {
       /*
-       * Medaille und Preis kommen aus dem RANG, nicht aus der Position in der
+       * Medaille und Preis kommen aus dem Rang, nicht aus der Position in der
        * Liste. Bei einem Gleichstand auf Platz 3 stehen dort drei Zeilen mit
        * Rang 3; ueber den Index gelesen ergab das "undefined" als Medaille
        * und "+0" als Preis. Den Betrag rechnet ohnehin der Server, damit
@@ -508,7 +506,7 @@
     el.innerHTML = head + `<div class="chb-list">${rows}</div>` + potLine + foot;
   }
 
-  // --- Wettschein (Bottom-Sheet) ---
+  // Wettschein (Bottom-Sheet)
   let slip = null; // { lane, type, amount }
   const CHIPS = [100, 500, 1000, 5000, 25000];
 
@@ -577,7 +575,7 @@
     });
   });
 
-  // --- Socket ---
+  // Socket-Ereignisse
   function applyState(s) {
     if (!s) return;
     s._at = Date.now();

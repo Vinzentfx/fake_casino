@@ -3,8 +3,8 @@
 /**
  * Crash (wie Aviator), eine Runde für alle gemeinsam.
  *
- * Ablauf: SETZEN (Einsatz und auf Wunsch Auto-Auszahlung), dann FLUG (die Rakete
- * steigt, der Multiplikator wächst exponentiell), dann CRASH (an einem zufälligen,
+ * Ablauf: Setzen (Einsatz und auf Wunsch Auto-Auszahlung), dann Flug (die Rakete
+ * steigt, der Multiplikator wächst exponentiell), dann Crash (an einem zufälligen,
  * nachprüfbar fairen Punkt explodiert sie). Wer vorher auszahlt, bekommt
  * Einsatz × Multiplikator, wer noch drin ist, verliert.
  *
@@ -34,8 +34,8 @@ const mAt = (elapsedMs) => Math.max(1, Math.floor(Math.exp(GROWTH * elapsedMs) *
 const crashTimeMs = (m) => Math.log(m) / GROWTH;
 
 function nextCrashPoint() {
-  // P(crash ≥ x) = (1 − edge) / x  → house edge exactly `HOUSE_EDGE`. Values
-  // below 1 (prob = edge) are an instant bust (everyone loses).
+  // P(crash ≥ x) = (1 − edge) / x, der Hausvorteil ist also genau `HOUSE_EDGE`.
+  // Werte unter 1 (Wahrscheinlichkeit = edge) crashen sofort, dann verlieren alle.
   const u = crypto.randomInt(1_000_000_000) / 1_000_000_000; // [0,1)
   const c = (1 - HOUSE_EDGE) / (1 - u);
   return c < 1 ? 1.00 : Math.min(MAX_CRASH, Math.floor(c * 100) / 100);
@@ -48,7 +48,7 @@ function setupCrash(io, accounts) {
     endsAt: Date.now() + BET_MS, // wann die aktuelle Phase endet (Setzen oder Pause)
     startAt: 0,           // flight start
     crashPoint: 0,
-    bets: {},             // key → { name, amount, target, cashedAt }
+    bets: {},             // je key: { name, amount, target, cashedAt }
     history: [],
   };
 
@@ -75,7 +75,7 @@ function setupCrash(io, accounts) {
   }
   const broadcast = (ev, extra) => io.emit(ev, { ...snapshot(), ...extra });
 
-  // --- Round state machine ---
+  // Round state machine
   function startBetting() {
     state.phase = "betting";
     state.roundId += 1;

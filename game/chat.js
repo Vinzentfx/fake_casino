@@ -10,7 +10,7 @@
  *   "<CODE>"   eine einzelne Lobby. Das bekommen nur Sockets, die im
  *              Socket.IO-Raum <CODE> sind (Poker, Slots-PvP, Blackjack).
  *
- * Der Text wird roh gespeichert (getrimmt, gekürzt), die Clients MÜSSEN beim
+ * Der Text wird roh gespeichert (getrimmt, gekürzt), die Clients müssen beim
  * Anzeigen escapen.
  */
 
@@ -21,7 +21,7 @@ const HISTORY = 40;          // Nachrichten je Raum
 const MAX_LEN = 280;         // Zeichen je Nachricht
 const MIN_INTERVAL_MS = 600; // Flutschutz je Socket
 
-const rooms = new Map();     // Raum -> [{ name, text, ts }]
+const rooms = new Map();     // je Raum: [{ name, text, ts }]
 
 function history(room) {
   return rooms.get(room) || [];

@@ -46,7 +46,7 @@ function shuffledBoard(pairs) {
 }
 
 function setupMemory(io, accounts) {
-  const matches = new Map(); // Code -> Match
+  const matches = new Map(); // je Code: Match
 
   function makeCode() {
     let code;
@@ -175,7 +175,7 @@ function setupMemory(io, accounts) {
       // Ein echter Sieg (nicht kampflos) zählt für Clan-Liga und Krieg.
       if (!forcedWinner) { try { require("./clans").recordPvpWin(winner.id, "memory"); } catch {} }
     } else {
-      players.forEach((p) => accounts.adjustChips(p.id, match.buyIn)); // tie → refund
+      players.forEach((p) => accounts.adjustChips(p.id, match.buyIn)); // Unentschieden: Einsatz zurück
     }
 
     match.result = {
@@ -297,7 +297,7 @@ function setupMemory(io, accounts) {
 
       if (match.flipped.length < 2) { broadcast(match.code); return; }
 
-      // Second card flipped → resolve.
+      // Zweite Karte umgedreht, jetzt auswerten.
       const [i, j] = match.flipped;
       const isMatch = match.board[i].id === match.board[j].id;
       if (isMatch) {

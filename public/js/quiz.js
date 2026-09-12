@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Blitz-Quiz (Overlay)
+/* Blitz-Quiz (Overlay)
    Ein paar Fragen mit vier Antworten an alle, die schnellste richtige Antwort
-   gewinnt die Runde. Die Lösung bleibt auf dem Server, bis die Runde vorbei ist.
-   ============================================================ */
+   gewinnt die Runde. Die Lösung bleibt auf dem Server, bis die Runde vorbei ist. */
 
 (function () {
   const { socket, toast, escapeHtml } = window.Casino;

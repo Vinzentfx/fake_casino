@@ -1,14 +1,12 @@
 "use strict";
 
-/* ============================================================
-   Wirtschaft
+/* Wirtschaft
    Arbeiten: ein gedeckelter Klicker, nur als Starthilfe.
    Stadt: die echte Karte von Porta Westfalica. Übersicht (Stadtteile mit
      Boss und Index), darunter der Ortsteil mit echten Häusern und Straßen.
      Besitz färbt die Karte in deiner Farbe: Straßen-Monopole, Stadtteil-Boss,
      Trophäen, Spekulation, Wohnsitz. Entschieden wird auf dem Server.
-     Ortsteil-Spekulation, Wohnsitz. Server ist autoritativ.
-   ============================================================ */
+     Ortsteil-Spekulation, Wohnsitz. Server ist autoritativ. */
 
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
@@ -26,7 +24,7 @@
     return task && task.type === "route" ? " → " : " · ";
   }
 
-  // --- Arbeiten (gedeckelter Klicker) ---
+  // Arbeiten (gedeckelter Klicker)
   function applyWorkState(s) {
     if (!s || !s.ok) return;
     const factor = s.hustle && s.hustle.factor ? s.hustle.factor : 1;
@@ -113,7 +111,7 @@
       </button>`;
     }).join("");
     if (jobs.activeShift && !timeLeft(jobs.activeShift.readyAt)) {
-      // Achtung: die ganze Karte ist der Knopf. Nur die Beschriftung
+      // Die ganze Karte ist der Knopf. Nur die Beschriftung
       // austauschen, nicht den Karteninhalt.
       const karte = box.querySelector('[data-job-action="shift"]');
       if (karte) {
@@ -167,7 +165,7 @@
       inner += `<div class="work-route-target">${(task.target || []).map(escapeHtml).join(" → ")}</div>`;
       inner += `<div class="work-task-buttons">${(task.options || []).map((o) =>
         `<button class="btn-secondary work-pick-btn" data-pick="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("")}</div>`;
-      inner += `<div class="work-input-line">Reihenfolge: <b id="work-route-current">${routeAnswer.join(" → ") || "-"}</b></div>`;
+      inner += `<div class="work-input-line">Reihenfolge: <b id="work-route-current">${routeAnswer.join(" → ") || "noch nichts"}</b></div>`;
       inner += `<div class="work-task-actions"><button class="btn-secondary" id="work-task-reset">Zurück</button><button class="btn-primary" id="work-task-submit">Ausliefern</button></div>`;
     } else if (task.zeilen) {
       // Wettscheine pruefen: erst die Zeilen lesen, dann den falschen tippen.
@@ -335,7 +333,7 @@
     setTimeout(() => el.remove(), 800);
   }
 
-  // --- Stadt ---
+  // Stadt
   let view = "overview";
   let overview = null;
   let district = null;
@@ -377,7 +375,7 @@
     });
   }
 
-  // --- "Dein Imperium" ---
+  // "Dein Imperium"
   function renderEmpire(me) {
     const box = $("#biz-buffs");
     if (!box) return;
@@ -402,7 +400,7 @@
     box.innerHTML = chips.join("") + list;
   }
 
-  // --- "Wem gehört Porta" ---
+  // "Wem gehört Porta"
   /*
    * Die Uebernahme gab es schon immer (150 %, der Vorbesitzer bekommt den
    * Marktwert), aber sie stand nur an einem einzelnen Haus tief in einem
@@ -513,7 +511,7 @@
     springeZuGebaeude(item.dataset.gotoD, parseInt(item.dataset.gotoB, 10));
   });
 
-  // --- Geometrie ---
+  // Geometrie
   const pathOf = (pts) => "M" + pts.map((p) => p[0] + " " + p[1]).join("L") + "Z";
   const openPath = (pts) => "M" + pts.map((p) => p[0] + " " + p[1]).join("L");
   function bboxOf(ptsList) {
@@ -530,7 +528,7 @@
   };
   const setViewBox = () => { if (vb) $("#city-map").setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); };
 
-  // --- Übersicht: alle Ortsteile ---
+  // Übersicht: alle Ortsteile
   function renderOverview() {
     const svg = $("#city-map");
     if (!svg || !overview) return;
@@ -577,7 +575,7 @@
     svg.innerHTML = parts.join("");
   }
 
-  // --- Ortsteil: echte Gebäude, Straßen, Farben ---
+  // Ortsteil: echte Gebäude, Straßen, Farben
   function renderDistrict() {
     const svg = $("#city-map");
     if (!svg || !district) return;
@@ -602,7 +600,7 @@
     if (!vb) vb = { ...fitVb };
     setViewBox();
 
-    // Straßenname -> Monopol (färbt die ganze Straße).
+    // Monopol je Straßenname (färbt die ganze Straße).
     const monoBySt = {};
     for (const m of district.monopolies) monoBySt[m.st] = m;
 
@@ -617,7 +615,7 @@
 
     // Straßen: Monopole leuchten in der Farbe des Besitzers, darunter schimmert
     // die Goldene Straße der Woche.
-    const monoLabelAt = {}; // Straße -> Mitte des längsten Stücks, für die Beschriftung
+    const monoLabelAt = {}; // je Straße: Mitte des längsten Stücks, für die Beschriftung
     let goldenLabelAt = null;
     for (const r of district.roads || []) {
       const mono = r.n && monoBySt[r.n];
@@ -673,7 +671,7 @@
     svg.innerHTML = `<defs><filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#f4d782" flood-opacity="0.85"/></filter></defs>` + parts.join("");
   }
 
-  // --- Verschieben und Zoomen (Ortsteil) ---
+  // Verschieben und Zoomen (Ortsteil)
   const mapEl = $("#city-map");
   const pointers = new Map();
   let panStart = null, moved = false, pinchStart = null;
@@ -770,7 +768,7 @@
     if (dEl && view === "overview") loadDistrict(dEl.dataset.d);
   });
 
-  // --- Detailansicht ---
+  // Detailansicht
   const bldById = (id) => district && district.buildings.find((b) => b.id === id);
 
   const OSM_TYPE = {
@@ -941,7 +939,7 @@
     toast(`Achievement: ${a.label} (+${fmt(a.reward)} Chips)`);
   });
 
-  // --- Beim Betreten der Screens (ruft der Router auf) ---
+  // Beim Betreten der Screens (ruft der Router auf)
   window.Casino._loadWork = loadWork;
   window.Casino._loadBusinesses = () => {
     view = "overview"; district = null; selectedId = null; vb = null;

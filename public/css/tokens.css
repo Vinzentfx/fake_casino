@@ -1,11 +1,9 @@
-/* ============================================================
-   Design-Tokens
-   ------------------------------------------------------------
+/* Design-Tokens
    Zwei Schichten:
 
-   1) SKALEN (Radien, Abstände, Schrift, Schatten, Bewegung).
+   1) Skalen (Radien, Abstände, Schrift, Schatten, Bewegung).
       Gelten in jedem Theme gleich.
-   2) PALETTE (Farben). Wird je Theme über html[data-theme="…"]
+   2) Palette (Farben). Wird je Theme über html[data-theme="…"]
       neu gesetzt. Nur Farben, sonst nichts.
 
    Regel: neuer Code benutzt ausschließlich die semantischen
@@ -13,13 +11,12 @@
    der ersten Fassung (--gold, --felt, --text-dim …) bleiben als
    Aliase bestehen, damit die noch nicht migrierten Screens
    weiterlaufen. Sie zeigen auf dieselben Werte und verschwinden,
-   sobald der letzte Screen umgestellt ist.
-   ============================================================ */
+   sobald der letzte Screen umgestellt ist. */
 
 :root {
   color-scheme: dark;
 
-  /* ---------- Radien ---------- */
+  /* Radien */
   --r-xs: 8px;
   --r-sm: 10px;
   --r-md: 14px;
@@ -27,7 +24,7 @@
   --r-xl: 24px;
   --r-pill: 999px;
 
-  /* ---------- Abstände ---------- */
+  /* Abstände */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -37,7 +34,7 @@
   --sp-7: 40px;
   --sp-8: 56px;
 
-  /* ---------- Schrift ---------- */
+  /* Schrift */
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-num: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, sans-serif;
   --fs-xs: 0.72rem;
@@ -50,14 +47,14 @@
   --lh-tight: 1.2;
   --lh: 1.5;
 
-  /* ---------- Bewegung ---------- */
+  /* Bewegung */
   --dur-1: 0.12s;
   --dur-2: 0.22s;
   --dur-3: 0.4s;
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* ---------- Sonstiges ---------- */
+  /* Sonstiges */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --app-max: 960px;
@@ -70,11 +67,9 @@
   :root { --dur-1: 0.01s; --dur-2: 0.01s; --dur-3: 0.01s; }
 }
 
-/* ============================================================
-   Palette 1: KLASSIK (Standard)
+/* Palette 1: Klassik (Standard)
    Filzgrün und Gold, aber tiefer abgestimmt: dunklerer Grund,
-   klarere Kanten, ruhigere Flächen.
-   ============================================================ */
+   klarere Kanten, ruhigere Flächen. */
 :root,
 html[data-theme="klassik"] {
   --bg-1: #0f4029;
@@ -131,11 +126,9 @@ html[data-theme="klassik"] {
   --shadow-color: 0deg 0% 0%;
 }
 
-/* ============================================================
-   Palette 2: MITTERNACHT
+/* Palette 2: Mitternacht
    Tiefes Marineblau mit warmem Gold. Ruhiger und eleganter,
-   weniger Spieltisch, mehr Salon.
-   ============================================================ */
+   weniger Spieltisch, mehr Salon. */
 html[data-theme="mitternacht"] {
   --bg-1: #1c2842;
   --bg-2: #111a2c;
@@ -191,10 +184,8 @@ html[data-theme="mitternacht"] {
   --shadow-color: 220deg 40% 3%;
 }
 
-/* ============================================================
-   Palette 3: NEON
-   Fast schwarz mit Türkis. Der moderne Wett-App-Look.
-   ============================================================ */
+/* Palette 3: Neon
+   Fast schwarz mit Türkis. Der moderne Wett-App-Look. */
 html[data-theme="neon"] {
   --bg-1: #141d2f;
   --bg-2: #0a0e18;
@@ -250,20 +241,16 @@ html[data-theme="neon"] {
   --shadow-color: 210deg 50% 2%;
 }
 
-/* ============================================================
-   Themenunabhängig: Spielkarten
+/* Themenunabhängig: Spielkarten
    Herz und Karo sind rot, Pik und Kreuz schwarz. Das ist Spielregel,
-   keine Designentscheidung, und bleibt in jedem Theme gleich.
-   ============================================================ */
+   keine Designentscheidung, und bleibt in jedem Theme gleich. */
 :root {
   --card-face: #f7f4ec;
   --card-red: #c0392b;
   --card-black: #1c1c1c;
 }
 
-/* ============================================================
-   Schatten, abgeleitet, damit sie zur Palette passen
-   ============================================================ */
+/* Schatten, abgeleitet, damit sie zur Palette passen */
 :root {
   --e-1: 0 1px 2px hsl(var(--shadow-color) / 0.3);
   --e-2: 0 4px 12px hsl(var(--shadow-color) / 0.35);
@@ -272,11 +259,9 @@ html[data-theme="neon"] {
   --glow-accent: 0 0 18px hsl(var(--shadow-color) / 0), 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* ============================================================
-   Aliase auf die alten Namen
+/* Aliase auf die alten Namen
    Damit laufen alle Screens weiter, die noch nicht migriert sind.
-   Werden entfernt, sobald styles.css durch ist.
-   ============================================================ */
+   Werden entfernt, sobald styles.css durch ist. */
 :root {
   --gold: var(--accent);
   --gold-strong: var(--accent-strong);

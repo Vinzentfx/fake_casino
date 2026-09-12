@@ -4,8 +4,8 @@
  * Marktplatz für Firmenprodukte zwischen Spielern.
  *
  * Ein gekauftes Produkt (game/economy.js, city.buyProduct) landet als Gegenstand
- * im Inventar. Von dort kann man es BENUTZEN (verbrauchen, gibt einen Bonus)
- * oder zu einem eigenen Preis ANBIETEN. Käufer kaufen aus den Angeboten, die
+ * im Inventar. Von dort kann man es benutzen (verbrauchen, gibt einen Bonus)
+ * oder zu einem eigenen Preis anbieten. Käufer kaufen aus den Angeboten, die
  * Chips gehen an den Verkäufer. Angebote liegen in data/market.json.
  */
 

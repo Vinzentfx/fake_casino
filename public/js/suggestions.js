@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Vorschläge
+/* Vorschläge
    Spieler schicken Ideen an den Besitzer (der Server bremst die Anzahl).
-   Der Besitzer sieht hier alle eingegangenen Vorschläge.
-   ============================================================ */
+   Der Besitzer sieht hier alle eingegangenen Vorschläge. */
 
 (function () {
   const { socket, toast, escapeHtml } = window.Casino;
@@ -63,7 +61,7 @@
 
   // Kommt ein neuer Vorschlag rein, bekommt der Besitzer sofort Bescheid.
   socket.on("suggest:new", (d) => {
-    toast(`💡 Neuer Vorschlag von ${d && d.name ? d.name : "jemandem"}!`);
+    toast(`Neuer Vorschlag von ${d && d.name ? d.name : "jemandem"}!`);
     const inbox = $("#suggest-inbox");
     if (inbox && inbox.style.display !== "none") load();
   });

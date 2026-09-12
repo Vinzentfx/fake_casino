@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Crash (wie Aviator)
+/* Crash (wie Aviator)
    Eine Runde für alle: die Rakete steigt mit dem Multiplikator und explodiert
-   am Crashpunkt. Rechtzeitig auszahlen!
-   ============================================================ */
+   am Crashpunkt. Rechtzeitig auszahlen! */
 
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
@@ -20,7 +18,7 @@
   let history = [];
   let msLeft = 0, msLeftAt = 0;
 
-  // --- Rocket canvas ---
+  // Rocket canvas
   const canvas = $("#crash-canvas");
   const ctx = canvas && canvas.getContext("2d");
   let needBoom = false;   // Crash kam an, Explosion an der Rakete zeigen
@@ -71,7 +69,7 @@
 
   const lerp = (a, b, t) => a + (b - a) * t;
   function skyGradient(w, h, p) {
-    // Aufstieg: Horizont-Blau → tiefes Weltall, je höher der Multiplikator.
+    // Aufstieg: von Horizontblau bis ins tiefe Weltall, je höher der Multiplikator.
     const g = ctx.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, `rgb(${lerp(10, 3, p) | 0},${lerp(20, 2, p) | 0},${lerp(46, 16, p) | 0})`);
     g.addColorStop(1, `rgb(${lerp(16, 8, p) | 0},${lerp(44, 10, p) | 0},${lerp(78, 30, p) | 0})`);
@@ -160,12 +158,12 @@
     const m = phase === "crashed" ? (crashPoint || dispMult) : dispMult;
 
     // Multiplikator auf eine Position der Rakete auf einer Kurve abbilden (log-Skala).
-    const p = Math.min(1, Math.log(Math.max(1, m)) / Math.log(12)); // 1×→0, 12×→1
+    const p = Math.min(1, Math.log(Math.max(1, m)) / Math.log(12)); // 1× ergibt 0, 12× ergibt 1
     const pad = 34;
     const x = pad + p * (w - pad * 2);
     const y = (h - pad) - p * (h - pad * 1.6);
     const flying = phase === "flying";
-    // Tangente der Flugkurve → Raketen-Neigung & Triebwerksrichtung.
+    // Tangente der Flugkurve, daraus Neigung der Rakete und Richtung des Triebwerks.
     const ang = Math.atan2(y - (h - pad), Math.max(1, (x - pad) * 0.5));
     const col = flying ? "126,200,255" : "214,90,90";
 
@@ -219,7 +217,7 @@
     }
     ctx.restore();
 
-    // Trail mit Verlaufs-Glow (Startrampe → Rakete).
+    // Trail mit Verlaufs-Glow (von der Startrampe bis zur Rakete).
     if (flying || phase === "crashed") {
       const tg = ctx.createLinearGradient(pad, h - pad, x, y);
       tg.addColorStop(0, `rgba(${col},0)`);
@@ -307,7 +305,7 @@
     drawRaf = requestAnimationFrame(draw);
   }
 
-  // --- Render helpers ---
+  // Hilfen zum Zeichnen
   function renderMult() {
     const el = $("#crash-mult");
     if (!el) return;
@@ -372,7 +370,7 @@
     if (phase === "betting") renderStatus();
   }, 120);
 
-  // --- Apply server state ---
+  // Apply server state
   function apply(s) {
     if (!s) return;
     phase = s.phase; bets = s.bets || []; history = s.history || history;
@@ -426,7 +424,7 @@
     if (d.auto) toast(`Automatisch ausgezahlt bei ${d.mult.toFixed(2)}×: +${fmt(d.payout)} Chips`);
   });
 
-  // --- Actions ---
+  // Actions
   $("#crash-action").addEventListener("click", () => {
     const err = $("#crash-error"); err.textContent = "";
     if (phase === "flying" && myBet && !myBet.cashedAt) {
@@ -453,7 +451,7 @@
     });
   });
 
-  // --- Screen hook ---
+  // Screen hook
   window.Casino._loadCrash = () => {
     resize();
     socket.emit("crash:state", (s) => {

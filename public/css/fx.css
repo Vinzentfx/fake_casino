@@ -1,10 +1,8 @@
-/* ============================================================
-   Effekte
+/* Effekte
    Gehoert zu js/core/fx.js. Konfetti, Muenzen, Gewinnfeier und
    Ladeplatzhalter. Alles rein visuell, nichts hier traegt
    Information, deshalb faellt es bei "Bewegung reduzieren"
-   ersatzlos weg.
-   ============================================================ */
+   ersatzlos weg. */
 
 /* Eine Ebene ueber allem, die selbst keine Klicks abfaengt. Sonst wuerde
    herunterfallendes Konfetti den Auszahlen-Knopf blockieren. */
@@ -100,16 +98,14 @@
 }
 html.reduce-motion .fx-skeleton { animation: none; }
 
-/* ============================================================
-   Gekaufte Gewinn-Effekte
+/* Gekaufte Gewinn-Effekte
 
    Jeder hat eine eigene Form und eine eigene Bewegung. Nur die
    Farbe zu tauschen hätte fünf Mal dasselbe Konfetti ergeben.
    Alles hier fällt bei "Bewegung reduzieren" weg (fx.js prüft das,
-   bevor überhaupt ein Teilchen entsteht).
-   ============================================================ */
+   bevor überhaupt ein Teilchen entsteht). */
 
-/* --- Münzflut: springt von unten hoch und fällt zurück --- */
+/* Münzflut: springt von unten hoch und fällt zurück */
 .fx-muenze {
   position: absolute;
   bottom: -40px;
@@ -127,7 +123,7 @@ html.reduce-motion .fx-skeleton { animation: none; }
   100% { opacity: 0; transform: translate(var(--seit), 30px) rotate(calc(var(--dreh) * 1.6)) scale(0.85); }
 }
 
-/* --- Goldregen: dichter Vorhang dünner Streifen, streng senkrecht --- */
+/* Goldregen: dichter Vorhang dünner Streifen, streng senkrecht */
 .fx-strahl {
   position: absolute;
   top: -80px;
@@ -147,7 +143,7 @@ html.reduce-motion .fx-skeleton { animation: none; }
 }
 @keyframes fx-aus { to { opacity: 0; } }
 
-/* --- Feuerwerk: Punkte fliegen radial auseinander --- */
+/* Feuerwerk: Punkte fliegen radial auseinander */
 .fx-funke {
   position: absolute;
   width: 6px;
@@ -161,7 +157,7 @@ html.reduce-motion .fx-skeleton { animation: none; }
   100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 60px)) scale(0.4); }
 }
 
-/* --- Blitzschlag: Aufblitzen plus gezackte Bahn --- */
+/* Blitzschlag: Aufblitzen plus gezackte Bahn */
 .fx-blitz {
   position: absolute;
   inset: 0;
@@ -189,7 +185,7 @@ html.reduce-motion .fx-skeleton { animation: none; }
   38% { opacity: 1; } 60% { opacity: 0; } 100% { opacity: 0; }
 }
 
-/* --- Sternenfall: wenige große Sterne, langsam und schräg, mit Schweif --- */
+/* Sternenfall: wenige große Sterne, langsam und schräg, mit Schweif */
 .fx-stern {
   position: absolute;
   width: 1em;
@@ -206,10 +202,8 @@ html.reduce-motion .fx-skeleton { animation: none; }
   100% { opacity: 0; transform: translate(45vw, 85vh) rotate(220deg) scale(1.1); }
 }
 
-/* ============================================================
-   Wucht: die Effekte werden mit der Größe des Gewinns stärker.
-   Was hier steht, sind die Teile, die es erst ab Stufe 3 gibt.
-   ============================================================ */
+/* Wucht: die Effekte werden mit der Größe des Gewinns stärker.
+   Was hier steht, sind die Teile, die es erst ab Stufe 3 gibt. */
 
 /* Farbschwall über den ganzen Bildschirm. Läuft ab Stufe 3 bei jedem Effekt
    mit, damit ein großer Gewinn groß wirkt, egal welchen man gekauft hat. */
@@ -273,7 +267,7 @@ html.reduce-motion .fx-beben { animation: none; }
   animation: fx-band-flug cubic-bezier(0.15, 0.75, 0.35, 1) forwards;
 }
 /*
- * Der Bogen braucht einen DRITTEN Halt in der Mitte.
+ * Der Bogen braucht einen dritten Halt in der Mitte.
  *
  * Vorher gab es nur Anfang und Ende, und das Ende lag bei `--dy + 70vh`. `--dy`
  * ist rund minus 300 Pixel (schraeg nach oben), 70vh sind mehr als doppelt so
@@ -294,8 +288,8 @@ html.reduce-motion .fx-beben { animation: none; }
    nicht (siehe fx.js). */
 .fx-bigwin b { display: inline-flex; align-items: center; gap: 0.22em; }
 
-/* --- Tresorsprengung: Druckwelle aus der Mitte, dann fliegt das Geld raus ---
-   Als Einziger geht dieser Effekt von INNEN nach aussen. Alles andere faellt
+/* Tresorsprengung: Druckwelle aus der Mitte, dann fliegt das Geld raus
+   Als Einziger geht dieser Effekt von innen nach aussen. Alles andere faellt
    von oben oder knallt oben. */
 .fx-welle {
   position: absolute;

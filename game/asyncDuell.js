@@ -22,7 +22,7 @@
  * abzueglich Rake ausgezahlt. Nimmt niemand an, bekommt der Ersteller nach
  * Ablauf seinen Einsatz zurueck. Warten darf nichts kosten.
  *
- * Spielabhaengiges steckt in ADAPTER. Das Modul selbst kennt nur Aufgabe,
+ * Spielabhaengiges steckt in Adapter. Das Modul selbst kennt nur Aufgabe,
  * Ergebnis und Vergleich, damit spaeter Memory und Solitaer dazukommen
  * koennen, ohne dass es ein zweites Regelwerk gibt.
  *
@@ -46,14 +46,14 @@ const ARCHIV_MAX = 30;
 
 let _io = null, _accounts = null;
 
-// --- Spiel-Adapter ---
-// erzeuge(opts)          → { aufgabe, geheim, label }
-// bewerte(geheim, einsendung, ms) → { punkte, ms, text }   höhere punkte gewinnen
+// Spiel-Adapter
+// erzeuge(opts)          gibt { aufgabe, geheim, label }
+// bewerte(geheim, einsendung, ms) gibt { punkte, ms, text }, höhere Punkte gewinnen
 const ADAPTER = {};
 
 function registriere(adapter) { ADAPTER[adapter.id] = adapter; }
 
-// --- Stand ---
+// Stand
 let state = load();
 
 function load() {
@@ -115,7 +115,7 @@ function archiviere(eintrag) {
   if (state.archiv.length > ARCHIV_MAX) state.archiv.length = ARCHIV_MAX;
 }
 
-// --- Ablauf ---
+// Ablauf
 /**
  * Herausforderung aufmachen. Der Einsatz wird sofort abgebucht, damit niemand
  * eine Herausforderung stehen lassen kann, die er gar nicht bezahlen koennte.
@@ -282,7 +282,7 @@ function oeffentlichesErgebnis(e) {
   return { punkte: e.punkte, ms: e.ms, text: e.text || "" };
 }
 
-// --- Sicht für den Client ---
+// Sicht für den Client
 function publicState(key) {
   raeumeAuf();
   const offen = [], meine = [], laufend = [];

@@ -32,7 +32,7 @@ function normIp(ip) {
   return ip;
 }
 
-/** Echte Client-IP eines Sockets (hinter Caddy → x-forwarded-for). */
+/** Echte Client-IP eines Sockets (hinter Caddy steht sie in x-forwarded-for). */
 function ipOf(socket) {
   const h = socket.handshake || {};
   const xff = h.headers && (h.headers["x-forwarded-for"] || h.headers["X-Forwarded-For"]);

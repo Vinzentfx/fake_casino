@@ -28,7 +28,7 @@
   ];
 
   const GAMES = [
-    // --- Casino: gegen das Haus ---
+    // Casino: gegen das Haus
     { id: "slots",      name: "Slots",          sub: "Vier Automaten, von zahm bis wild", icon: "🎰", cat: "casino", h: 42 },
     { id: "blackjack",  name: "Blackjack",      sub: "21 schlagen. Bester Schnitt im Haus", icon: "♠️", cat: "casino", h: 152 },
     { id: "roulette",   name: "Roulette",       sub: "Europäisch, eine einzige Null",     icon: "🎡", cat: "casino", h: 2 },
@@ -42,7 +42,7 @@
     { id: "wuerfel",    name: "Würfelpoker",    sub: "Fünf Würfel, einmal nachwerfen",    icon: "🎲", cat: "casino", h: 12 },
     { id: "lotterie",   name: "Lotterie",       sub: "Vier aus sechzehn, Ziehung um 20 Uhr", icon: "🎟️", cat: "casino", h: 340 },
 
-    // --- Gegeneinander: kein Hausvorteil, nur Können ---
+    // Gegeneinander: kein Hausvorteil, nur Können
     { id: "poker",      name: "Texas Hold'em",  sub: "Gegen Freunde, ohne Hausvorteil",   icon: "🃏", cat: "pvp", h: 214 },
     { id: "chess",      name: "Schach-Duell",   sub: "Blitz um Chips, mit Wertung",       icon: "♟️", cat: "pvp", h: 240 },
     { id: "memory",     name: "Memory-Duell",   sub: "Paare finden, schneller als er",    icon: "🧠", cat: "pvp", h: 322 },
@@ -50,7 +50,7 @@
     { id: "kniffel",    name: "Kniffel-Duell",  sub: "Sieben Felder, wer mehr Punkte holt", icon: "🎯", cat: "pvp", h: 18 },
     { id: "solitaire",  name: "Solitär",        sub: "Klondike, frei oder gegen das Haus", icon: "🂡", cat: "pvp", h: 354 },
 
-    // --- Wirtschaft: was du mit den Gewinnen machst ---
+    // Wirtschaft: was du mit den Gewinnen machst
     { id: "businesses", name: "Stadt",          sub: "Porta Westfalica Haus für Haus",    icon: "🏙️", cat: "wirtschaft", h: 174 },
     { id: "stocks",     name: "Börse",          sub: "Long und Short mit Hebel",          icon: "📈", cat: "wirtschaft", h: 146 },
     { id: "bank",       name: "Bank",           sub: "Sparkonto und Kredite",             icon: "🏦", cat: "wirtschaft", h: 210 },
@@ -62,12 +62,10 @@
   const LETZTE_KEY = "casino_zuletzt";
 
   let aktiveKategorie = "casino";
-  let spielerProScreen = {};   // screen -> Anzahl
+  let spielerProScreen = {};   // je screen: Anzahl
   let favoriten = [];
 
-  // ---------------------------------------------------------------
   // Favoriten und zuletzt gespielt
-  // ---------------------------------------------------------------
   function ladeFavoriten() {
     const acc = Casino.getAccount();
     favoriten = (acc && acc.prefs && Array.isArray(acc.prefs.favorites)) ? acc.prefs.favorites.slice() : [];
@@ -104,9 +102,7 @@
     try { localStorage.setItem(LETZTE_KEY, JSON.stringify(liste)); } catch {}
   }
 
-  // ---------------------------------------------------------------
   // Zeichnen
-  // ---------------------------------------------------------------
   function karte(g, { klein = false } = {}) {
     const anzahl = spielerProScreen[g.id] || 0;
     const istFavorit = favoriten.includes(g.id);
@@ -183,9 +179,7 @@
     host.innerHTML = liste.map((g) => karte(g, { klein: true })).join("");
   }
 
-  // ---------------------------------------------------------------
   // Wartende Herausforderungen
-  // ---------------------------------------------------------------
   /*
    * Ein Duell wartet, bis jemand vorbeikommt, deshalb steht es hier oben und
    * nicht nur im Spiel selbst. Ohne diesen Hinweis findet es niemand, und
@@ -206,9 +200,7 @@
     });
   }
 
-  // ---------------------------------------------------------------
   // Live-Spielerzahlen aus der Präsenz
-  // ---------------------------------------------------------------
   function setzeAnwesenheit(online) {
     spielerProScreen = {};
     const ich = Casino.getAccount();
@@ -222,9 +214,7 @@
     if (Casino.screens.current() === "lobby") zeichneSpiele();
   }
 
-  // ---------------------------------------------------------------
   // Verdrahtung
-  // ---------------------------------------------------------------
   document.addEventListener("click", (e) => {
     const fav = e.target.closest("[data-fav]");
     if (fav) { e.stopPropagation(); toggleFavorit(fav.dataset.fav); return; }

@@ -69,8 +69,8 @@
     }
   }
 
-  /* Dieselbe Muenze, die neben jedem Betrag steht. Hier stand das WORT
-     "Chips" — ein Rest der Aktion, in der die Muenz-Emoji ueberall durch das
+  /* Dieselbe Muenze, die neben jedem Betrag steht. Hier stand das Wort
+     "Chips", ein Rest der Aktion, in der die Muenz-Emoji ueberall durch das
      Wort ersetzt wurden. Im Fliesstext ist das richtig; hier sprang bei jeder
      Auszahlung Text aus dem Knopf statt Geld. Betrifft Blackjack, Crash,
      Mines, Towers, Season und das Gluecksrad, die alle diesen einen Effekt
@@ -136,7 +136,7 @@
    * geloeschtes Stueck nie einen leeren Bildschirm hinterlaesst.
    */
   /*
-   * Jeder gekaufte Effekt hat eine eigene FORM und eine eigene BEWEGUNG,
+   * Jeder gekaufte Effekt hat eine eigene Form und eine eigene Bewegung,
    * nicht nur andere Farben. Dasselbe Konfetti in Orange statt Gelb waere
    * kein Effekt, sondern ein Farbregler, und genau so hatte ich es zuerst
    * gebaut.
@@ -160,7 +160,7 @@
    * wird deshalb an zwei Groessen, und die groessere gewinnt:
    *
    *   das Vielfache des Einsatzes, falls das Spiel es mitliefert, und
-   *   der Gewinn im VERHAELTNIS zum eigenen Guthaben.
+   *   der Gewinn im Verhaeltnis zum eigenen Guthaben.
    *
    * Damit feiert dieselbe Runde bei einem Neuling lauter als bei jemandem
    * mit drei Millionen, und das ist genau richtig.
@@ -180,7 +180,7 @@
   /**
    * Ein Teilchen auf die Effektebene legen und nach `leben` wieder abraeumen.
    *
-   * Eigene CSS-Variablen (--hoch, --dx, …) MUESSEN ueber setProperty gesetzt
+   * Eigene CSS-Variablen (--hoch, --dx, …) muessen ueber setProperty gesetzt
    * werden. Object.assign auf el.style legt bei unbekannten Namen nur eine
    * JavaScript-Eigenschaft an, die das Stylesheet nie zu sehen bekommt, die
    * Animationen liefen dadurch gegen leere Werte und bewegten sich gar nicht.
@@ -336,7 +336,7 @@
   /**
    * Tresorsprengung: eine Druckwelle aus der Mitte, dann fliegt das Geld raus.
    *
-   * Bewusst als einziger Effekt von INNEN nach aussen. Alles andere im Laden
+   * Bewusst als einziger Effekt von innen nach aussen. Alles andere im Laden
    * faellt von oben (Münzflut, Goldregen, Sternenfall) oder knallt oben
    * (Feuerwerk, Blitz); hier geht in der Bildmitte etwas auf.
    */
@@ -411,7 +411,7 @@
   }
 
   /**
-   * Einen BESTIMMTEN Effekt abspielen, unabhaengig davon, was jemand angelegt
+   * Einen bestimmten Effekt abspielen, unabhaengig davon, was jemand angelegt
    * hat. Gebraucht, wo der Effekt selbst das Thema ist: das Auspacken des
    * Wiedereroeffnungs-Pakets zeigt den Salut, den es damit gerade gibt.
    * @param {string|null} id

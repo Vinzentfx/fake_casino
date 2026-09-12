@@ -1,11 +1,9 @@
 "use strict";
 
-/* ============================================================
-   Pinco Ball (Plinko)
+/* Pinco Ball (Plinko)
    Den fairen Weg nach unten bestimmt der Server (game/pinco.js). Hier läuft
    eine echte Physik-Animation mit Schwerkraft pro Bild, der Ball prallt an
-   jedem Nagel ab und wird ins Fach gelenkt, das der Server bestimmt hat.
-   ============================================================ */
+   jedem Nagel ab und wird ins Fach gelenkt, das der Server bestimmt hat. */
 
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
@@ -22,7 +20,7 @@
   let drops = [];
   let balls = [];          // active physics balls
   let particles = [];      // landing bursts
-  const pegHits = new Map(); // "r,i" -> Zeitpunkt des letzten Treffers (fürs Aufblitzen)
+  const pegHits = new Map(); // je "r,i": Zeitpunkt des letzten Treffers (fürs Aufblitzen)
   const bucketFlash = [];  // Aufblitzen je Fach
   let looping = false;
   let ballSeq = 0;
@@ -90,7 +88,7 @@
     const slotGap = gm.w / b.multipliers.length;
     const bucketX = slotGap * (drop.slot + 0.5);
     const floorY = gm.bottom + gm.rowGap * 1.0;
-    // Gravity tuned so one row-fall ≈ 0.15s → resolution independent.
+    // Schwerkraft so eingestellt, dass der Fall um eine Reihe etwa 0,15 s dauert, unabhängig von der Auflösung.
     const g = (2 * gm.rowGap) / (0.15 * 0.15);
     const bounceUp = Math.sqrt(2 * g * gm.rowGap * 0.42);
     return {
@@ -168,10 +166,10 @@
     }
   }
 
-  // --- Drawing ---
+  // Drawing
   function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
   function heatColor(mult) {
-    // center (mult≈0.5) cold blue → 1 neutral → high mult hot gold/red.
+    // Mitte (Faktor etwa 0,5) kaltes Blau, bei 1 neutral, hohe Faktoren heißes Gold bis Rot.
     if (mult >= 5) return "#ff5a3c";
     if (mult >= 2) return "#ff9d3c";
     if (mult >= 1.2) return "#f4d24a";
@@ -317,7 +315,7 @@
   }
 
   // Gewinn oder Verlust bleibt verborgen, bis der Ball wirklich unten ist.
-  const pendingWin = new Map(); // drop.id → final server account
+  const pendingWin = new Map(); // je drop.id: endgültiger Kontostand vom Server
   function revealDrop(drop) {
     const acc = pendingWin.get(drop.id);
     if (acc) { applyAccount(acc); pendingWin.delete(drop.id); }
@@ -326,7 +324,7 @@
     renderFeed();
   }
 
-  // --- UI ---
+  // UI
   function renderMultipliers() {
     const b = board(), box = $("#pinco-mults");
     if (!box) return;
@@ -375,7 +373,7 @@
     const bet = parseInt($("#pinco-bet").value, 10);
     socket.emit("pinco:drop", { size: selectedSize, bet }, (res) => {
       if (!res || !res.ok) { setError((res && res.error) || "Fehler."); return; }
-      // Einsatz sofort abziehen, damit man etwas sieht. Den GEWINN erst bei der Landung zeigen.
+      // Einsatz sofort abziehen, damit man etwas sieht. Den Gewinn erst bei der Landung zeigen.
       if (Number.isFinite(bet) && bet > 0) window.Casino.adjustChips(-bet);
       if (res.account && res.drop) pendingWin.set(res.drop.id, res.account);
       // Solo: animate here. In a lobby the broadcast animates for everyone (incl. me).

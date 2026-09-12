@@ -9,13 +9,13 @@
  * auf drei von fuenfundzwanzig Spielen.
  *
  * Hier steht das einmal:
- *   - ein einziger AudioContext statt drei
- *   - ein Master-Regler, ueber den die Lautstaerke sofort greift, statt sie in
+ *   * ein einziger AudioContext statt drei
+ *   * ein Master-Regler, ueber den die Lautstaerke sofort greift, statt sie in
  *     jeden einzelnen Aufruf hineinzumultiplizieren
- *   - die Freischaltung durch die erste Berührung (iOS laesst Ton sonst nicht
+ *   * die Freischaltung durch die erste Berührung (iOS laesst Ton sonst nicht
  *     zu, und genau daran scheiterte er auf dem iPad immer wieder beim ersten
  *     Spiel nach dem Laden)
- *   - eine kleine Sammlung fertiger Klaenge, damit ein Gewinn in Mines genauso
+ *   * eine kleine Sammlung fertiger Klaenge, damit ein Gewinn in Mines genauso
  *     klingt wie einer in Towers
  *
  * Die Signaturen von tone(), noise() und click() sind absichtlich dieselben

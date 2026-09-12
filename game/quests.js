@@ -83,7 +83,7 @@ function rotation(pool, count, period, salt) {
   return shuffled(pool, hashSeed(`${salt}:${period}`)).slice(0, count);
 }
 
-/** Deterministic global rotation (same quests for everyone). */
+/** Feste Rotation, alle bekommen dieselben Aufträge. */
 function activeDailies(day = dayNow()) {
   return rotation(DAILY_POOL, DAILIES_PER_DAY, day, "daily");
 }
@@ -176,7 +176,7 @@ function track(name, ev, n = 1, meta = null) {
   if (changed) _accounts.save();
 }
 
-/** Quest board for one player. */
+/** Auftragsbrett für einen Spieler. */
 function listFor(name) {
   const acc = _accounts && _accounts.get(name);
   if (!acc) return null;
@@ -233,7 +233,7 @@ function setupQuests(io, accounts) {
     if (acc) {
       const q = ensureQuests(acc);
       const now = Date.now();
-      const gap = Math.min(now - (q.lastPlayTs || now), 30000); // cap idle gaps
+      const gap = Math.min(now - (q.lastPlayTs || now), 30000); // Pausen deckeln
       q.lastPlayTs = now;
       q.playAccMs = (q.playAccMs || 0) + gap; // accumulate fractional seconds
       const secs = Math.floor(q.playAccMs / 1000);

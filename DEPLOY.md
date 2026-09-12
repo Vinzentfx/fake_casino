@@ -187,8 +187,8 @@ Läuft das Guthaben leer, wird der Server abgeschaltet. Gelegentlich nachsehen.
 
 Der Schlüssel wurde eigens für dieses Droplet erzeugt:
 
-- privat: `~/.ssh/id_ed25519_casino` (bleibt auf dem Mac, wird niemals geteilt)
-- öffentlich: `~/.ssh/id_ed25519_casino.pub` (liegt beim Droplet hinterlegt)
+* privat: `~/.ssh/id_ed25519_casino` (bleibt auf dem Mac, wird niemals geteilt)
+* öffentlich: `~/.ssh/id_ed25519_casino.pub` (liegt beim Droplet hinterlegt)
 
 Bequemer wird es mit einem Eintrag in `~/.ssh/config`:
 

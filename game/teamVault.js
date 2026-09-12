@@ -18,7 +18,7 @@ const HP_PER_PLAYER = 180;
 const MIN_HP = 350;
 
 const TEAMS = ["red", "blue"];
-const LABEL = { red: "🔴 Team Rot", blue: "🔵 Team Blau" };
+const LABEL = { red: "Team Rot", blue: "Team Blau" };
 
 function setupTeamVault(io, accounts) {
   let state = null; // { endsAt, pot, teams:{red:{hp,max,members:Set,hits:{}}, blue:{...}}, assign:{key:team} }

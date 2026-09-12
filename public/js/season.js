@@ -1,9 +1,7 @@
 "use strict";
 
-/* ============================================================
-   Casino Season / Pass.
-   Active-play reward track with capped XP and manual claims.
-   ============================================================ */
+/* Casino Season / Pass.
+   Belohnungsleiste fürs aktive Spielen, mit gedeckelten XP und Abholen von Hand. */
 
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
@@ -72,9 +70,9 @@
    *
    * Jetzt drei Ebenen:
    *   oben   Wie weit bin ich, was kommt als Naechstes, wie lange noch.
-   *   MITTE  Eine Schiene mit allen zwanzig Stufen auf einen Blick, die
+   *   Mitte  Eine Schiene mit allen zwanzig Stufen auf einen Blick, die
    *          besonderen hervorgehoben, die eigene Position markiert.
-   *   UNTEN  Die Belohnungen als waagerechte Bahn, automatisch zur aktuellen
+   *   Unten  Die Belohnungen als waagerechte Bahn, automatisch zur aktuellen
    *          Stufe gescrollt. Abholbares leuchtet.
    */
   function render(s) {
@@ -86,7 +84,7 @@
     const offen = stufen.filter((r) => r.unlocked && !r.claimed);
     const naechste = stufen.find((r) => !r.unlocked) || null;
 
-    // Fortschritt zur NAECHSTEN Stufe, nicht zum Ende. Ein Balken, der bei
+    // Fortschritt zur naechsten Stufe, nicht zum Ende. Ein Balken, der bei
     // 3.000 von 12.140 XP fast leer steht, obwohl vier Stufen offen sind,
     // erzaehlt das Falsche.
     const vorige = stufen.filter((r) => r.unlocked).slice(-1)[0];
@@ -97,7 +95,7 @@
     const zustand = (r) => (r.claimed ? "claimed" : r.unlocked ? "ready" : "locked");
     /*
    * Was eine Stufe gibt, als HTML. Der Server schickt dieselbe Zeile auch als
-   * fertigen Text (`label`) — der ist fuer Chat und Benachrichtigung, wo nur
+   * fertigen Text (`label`), der ist fuer Chat und Benachrichtigung, wo nur
    * Text durchgeht. Hier steht eine Zahl auf dem Bildschirm, und Zahlen
    * tragen im Haus das Zeichen statt das Wort.
    */

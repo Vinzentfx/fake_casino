@@ -1,20 +1,18 @@
 "use strict";
 
-/* ============================================================
-   Glücksrad
+/* Glücksrad
 
    Einmal am Tag gratis. Der Server bestimmt das Feld, hier
    dreht nur das Bild dorthin.
 
-   Vom Server kommt die STUFE eines Feldes (klein, mittel, gross,
+   Vom Server kommt die Stufe eines Feldes (klein, mittel, gross,
    sonder, fortuna), das Aussehen macht das Stylesheet. Gold heisst
    Chips, blau heisst etwas anderes (Lose, XP, Glueckstag), und
-   FORTUNA ist voll gold.
+   Fortuna ist voll gold.
 
-   Was ein Dreh gebracht hat, formuliert der SERVER (titel + text).
+   Was ein Dreh gebracht hat, formuliert der Server (titel + text).
    Der Client zeigt es nur an, sonst muesste jede neue Feldart hier
-   noch einmal beschrieben werden.
-   ============================================================ */
+   noch einmal beschrieben werden. */
 
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
@@ -139,7 +137,7 @@
     const box = $("#gr-ergebnis");
     if (!box) return;
     box.className = `gr-ergebnis${r.art === "fortuna" ? " gr-ergebnis-fortuna" : ""}`;
-    /* Bei Chips steht hier eine ZAHL, und Zahlen tragen im Haus das Zeichen,
+    /* Bei Chips steht hier eine Zahl, und Zahlen tragen im Haus das Zeichen,
        nicht das Wort. Der Server schickt den Betrag getrennt mit, damit der
        Client ihn zeichnen kann statt einen fertigen Satz anzuzeigen. */
     const kopf = r.art === "chips" && r.chips

@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Poker (Texas Hold'em)
+/* Poker (Texas Hold'em)
    Zeichnet den Tisch aus dem Stand vom Server und schickt die Aktionen.
-   Braucht window.Casino (socket, showScreen, toast, getAccount).
-   ============================================================ */
+   Braucht window.Casino (socket, showScreen, toast, getAccount). */
 
 (function () {
   const { socket, toast, getAccount, escapeHtml } = window.Casino;
@@ -33,9 +31,7 @@
   const RANK = { 11: "J", 12: "Q", 13: "K", 14: "A" };
   const rankLabel = (r) => RANK[r] || String(r);
 
-  // ----------------------------------------------------------------
-  // Table lobby: create / join
-  // ----------------------------------------------------------------
+  // Tischlobby: erstellen oder beitreten
   $("#create-table-btn").addEventListener("click", () => {
     const bb = parseInt($("#blind-select").value, 10);
     socket.emit("poker:create", { smallBlind: Math.floor(bb / 2), bigBlind: bb }, (res) => {
@@ -105,9 +101,7 @@
     }
   }).observe(pokerScreen, { attributes: true, attributeFilter: ["class"] });
 
-  // ----------------------------------------------------------------
   // Incoming state
-  // ----------------------------------------------------------------
   socket.on("poker:state", (s) => {
     state = s;
     if (!joined) enterTable();
@@ -140,9 +134,7 @@
     }
   }, 500);
 
-  // ----------------------------------------------------------------
   // Rendering
-  // ----------------------------------------------------------------
   /**
    * Chipstapel fuer den Pot. Die Hoehe waechst logarithmisch mit dem Betrag:
    * linear waere ein Pot von 200.000 eine Saeule bis zum Bildrand.
@@ -199,7 +191,7 @@
     const me = state.yourSeat;
     for (let i = 0; i < state.maxSeats; i++) {
       const seat = state.seats[i];
-      // Visual slot: rotate so the viewer (if seated) sits at the bottom.
+      // Platz auf dem Bildschirm: so drehen, dass man selbst (falls man sitzt) unten sitzt.
       const slotIndex = me >= 0 ? (i - me + state.maxSeats) % state.maxSeats : i;
       const [left, top] = SLOTS[slotIndex];
 
@@ -266,9 +258,7 @@
     }
   }
 
-  // ----------------------------------------------------------------
   // Controls (buy-in / start / actions)
-  // ----------------------------------------------------------------
   function renderControls() {
     const c = $("#table-controls");
     c.innerHTML = "";

@@ -61,7 +61,7 @@
       return;
     }
 
-    // --- Würfel ---
+    // Würfel
     const box = $("#kn-wuerfel");
     box.innerHTML = "";
     (v.wuerfel || []).forEach((a, i) => {
@@ -94,7 +94,7 @@
       }, 1000);
     }
 
-    // --- Zettel ---
+    // Zettel
     const ichKey = v.spieler.find((s) => s.name === (Casino.getAccount() || {}).name);
     const kopf = `<div class="kn-zeile kn-kopf"><span></span>` +
       v.spieler.map((s) => `<span>${escapeHtml(s.name)}</span>`).join("") + `</div>`;

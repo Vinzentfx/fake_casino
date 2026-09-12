@@ -3,7 +3,7 @@
 /**
  * Lotterie: vier Zahlen aus sechzehn, eine Ziehung am Tag.
  *
- * Das ist bewusst kein Spiel gegen das Haus, sondern eine SENKE. Die Stadt
+ * Das ist bewusst kein Spiel gegen das Haus, sondern eine Senke. Die Stadt
  * war bisher die einzige Stelle, an der Chips wirklich verschwinden, und bei
  * den aktiven Spielern ist sie fast ausgereizt. Hier fliesst ein Teil jedes
  * Loses in den Topf, ein Teil geht als feste Gewinne zurueck, und der Rest
@@ -13,11 +13,11 @@
  * wann man will, abends wird gezogen, am naechsten Tag schaut man nach.
  *
  * --- Die Zahlen ---
- * 4 aus 16 → C(16,4) = 1.820 Moeglichkeiten.
+ * 4 aus 16 ergibt C(16,4) = 1.820 Moeglichkeiten.
  *
- *   4 richtig   1 zu 1820   (0,055 %)  → Jackpot
- *   3 richtig   48 zu 1820  (2,64 %)   → 10× Lospreis
- *   2 richtig   396 zu 1820 (21,8 %)   → 1× Lospreis (Einsatz zurueck)
+ *   4 richtig   1 zu 1820   (0,055 %)  Jackpot
+ *   3 richtig   48 zu 1820  (2,64 %)   10× Lospreis
+ *   2 richtig   396 zu 1820 (21,8 %)   1× Lospreis (Einsatz zurueck)
  *
  * Kosten je Los: 0,218·1 + 0,0264·10 = 0,481 Lospreise fuer die festen
  * Gewinne. 40 % wandern in den Jackpot. Bleiben rund 12 % als Senke.

@@ -292,5 +292,5 @@ area(${area})->.d;
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(out));
   const mb = (fs.statSync(OUT).size / 1024 / 1024).toFixed(2);
-  console.log(`✓ geschrieben: ${OUT} (${mb} MB)`);
+  console.log(`geschrieben: ${OUT} (${mb} MB)`);
 })();

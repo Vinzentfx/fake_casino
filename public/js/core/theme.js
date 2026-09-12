@@ -5,9 +5,9 @@
  *
  * Die Palette hängt an html[data-theme]. Gesetzt wird sie an drei Stellen,
  * absichtlich mehrfach:
- *   1. Inline-Skript im <head>  → noch vor dem ersten Zeichnen, kein Aufblitzen
- *   2. localStorage             → sofort verfügbar, auch offline
- *   3. Account (prefs:set)      → folgt dem Spieler auf iPad und Handy
+ *   1. Inline-Skript im <head>: noch vor dem ersten Zeichnen, kein Aufblitzen
+ *   2. localStorage:            sofort verfügbar, auch offline
+ *   3. Account (prefs:set):     folgt dem Spieler auf iPad und Handy
  *
  * Der Account gewinnt beim Login, weil er geräteübergreifend gilt. Danach
  * schreibt jede Änderung in beide Richtungen zurück.

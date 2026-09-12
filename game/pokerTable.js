@@ -37,9 +37,7 @@ class PokerTable {
     this.onHandComplete = null;
   }
 
-  // ----------------------------------------------------------------------
   // Seating
-  // ----------------------------------------------------------------------
 
   seatedPlayers() {
     return this.seats.filter(Boolean);
@@ -88,9 +86,7 @@ class PokerTable {
     return chips;
   }
 
-  // ----------------------------------------------------------------------
   // Hand lifecycle
-  // ----------------------------------------------------------------------
 
   eligibleToPlay() {
     return this.seats.filter((s) => s && s.chips > 0 && !s.sittingOut);
@@ -160,9 +156,7 @@ class PokerTable {
     return true;
   }
 
-  // ----------------------------------------------------------------------
-  // Betting
-  // ----------------------------------------------------------------------
+  // Setzen
 
   postBet(seatIndex, amount) {
     const s = this.seats[seatIndex];
@@ -326,9 +320,7 @@ class PokerTable {
     this.pushLog(`${this.stageLabel()}: ${this.board.map(cardStr).join(" ")}`);
   }
 
-  // ----------------------------------------------------------------------
   // Topf auflösen
-  // ----------------------------------------------------------------------
 
   awardUncontested() {
     const winner = this.contenders()[0];
@@ -480,9 +472,7 @@ class PokerTable {
     if (typeof this.onHandComplete === "function") this.onHandComplete();
   }
 
-  // ----------------------------------------------------------------------
   // Serialization
-  // ----------------------------------------------------------------------
 
   stageLabel() {
     return { preflop: "Preflop", flop: "Flop", turn: "Turn", river: "River", showdown: "Showdown" }[

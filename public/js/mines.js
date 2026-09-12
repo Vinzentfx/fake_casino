@@ -1,7 +1,6 @@
 "use strict";
 
-/* ============================================================
-   Mines
+/* Mines
 
    Server-autoritativ (game/mines.js); hier wird nur gezeichnet.
 
@@ -14,8 +13,7 @@
    • Zufallsfeld und "bis zum Ziel aufdecken": beim Aufdecken gibt es nichts zu
      können, jedes verdeckte Feld ist gleich wahrscheinlich. Zielen auf kleine
      Kacheln ist damit reine Fingerarbeit ohne Entscheidung.
-   • Ein Verlauf der letzten Runden, damit eine Sitzung nicht spurlos bleibt.
-   ============================================================ */
+   • Ein Verlauf der letzten Runden, damit eine Sitzung nicht spurlos bleibt. */
 
 (function () {
   const { socket, toast, applyAccount } = window.Casino;
@@ -36,7 +34,7 @@
   let grenzen = { minBet: 50, maxBet: 250000 };
   let autoLaeuft = false;
 
-  // --- Verlauf ---
+  // Verlauf
   // Bewusst lokal: das ist Sitzungsgedaechtnis, kein Besitz, und muss nicht
   // ueber Geraete hinweg stimmen.
   function verlauf() {
@@ -58,7 +56,7 @@
       : "";
   }
 
-  // --- Aufbau ---
+  // Aufbau
   /*
    * Jede Kachel hat zwei Seiten und dreht sich beim Aufdecken um.
    *
@@ -120,7 +118,7 @@
     });
   }
 
-  // --- Zeichnen ---
+  // Zeichnen
   function setActive(active) {
     $("#mines-setup").style.display = active ? "none" : "";
     $("#mines-cashout").style.display = active ? "" : "none";
@@ -175,7 +173,7 @@
     } else setActive(true);
   }
 
-  // --- Züge ---
+  // Züge
   function tonFuerAufdecken(v) {
     if (v.bust) return snd.play("bust");
     // Jeder sichere Stein klingt eine Stufe hoeher. Das baut die Spannung
@@ -242,7 +240,7 @@
     });
   }
 
-  // --- Verdrahtung ---
+  // Verdrahtung
   $("#mines-mine-row").addEventListener("click", (e) => {
     const b = e.target.closest("[data-minen]");
     if (!b) return;
@@ -274,7 +272,7 @@
     renderMinenWahl();
     renderVerlauf();
     ladeConfig();
-    // Läuft server-seitig noch ein Spiel (z.B. nach Tab-Reload)? → fortsetzen.
+    // Läuft server-seitig noch ein Spiel (z.B. nach Neuladen des Tabs)? Dann fortsetzen.
     socket.emit("mines:state", (v) => {
       if (v && v.ok && !v.none) { apply(v); return; }
       if (!game || game.over) {

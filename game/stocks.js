@@ -4,13 +4,13 @@
  * Simulierte Börse, für alle dieselbe.
  *
  * Eine Handvoll ausgedachter Firmen, deren Kurse sich bei jedem Takt zufällig
- * bewegen, ab und zu mit Nachrichten-Schocks und dem Risiko einer PLEITE
+ * bewegen, ab und zu mit Nachrichten-Schocks und dem Risiko einer Pleite
  * (Kurs auf 0, wer long ist, verliert seinen Einsatz, und eine neue Firma
  * rückt nach).
  *
- * Man eröffnet LONG- oder SHORT-Positionen mit Einschuss und Hebel (Daytrading
+ * Man eröffnet Long oder Short Positionen mit Einschuss und Hebel (Daytrading
  * oder halten). Wert = Einschuss + Richtung × (Kurs − Einstieg) × Stückzahl.
- * Fällt der Wert auf 0, wird die Position LIQUIDIERT (Einschuss weg). Gewinn
+ * Fällt der Wert auf 0, wird die Position liquidiert (Einschuss weg). Gewinn
  * und Verlust entstehen gegen den Markt, wie bei den Casinospielen. Gespeichert
  * in data/stocks.json.
  */
@@ -70,7 +70,7 @@ function generate() {
   return { stocks, positions: {}, nextId: 1, news: [] };
 }
 
-// --- Trading helpers ---
+// Trading helpers
 function priceOf(sym) {
   const s = market.stocks[sym];
   return s ? s.price : 0;
@@ -88,7 +88,7 @@ function pushNews(text) {
   if (market.news.length > 8) market.news.pop();
 }
 
-// --- Markttakt ---
+// Markttakt
 // Gibt { liquidated: [{owner, sym, margin}], bankruptcies: [sym] } zurück,
 // damit der Aufrufer die Spieler benachrichtigen kann.
 function tick() {
@@ -106,7 +106,7 @@ function tick() {
       const up = Math.random() < 0.5;
       const mag = 0.05 + Math.random() * 0.18;
       s.price = Math.max(0.01, s.price * (up ? 1 + mag : 1 - mag));
-      pushNews(`${up ? "📈" : "📉"} ${s.name} (${sym}) ${up ? "+" : "−"}${Math.round(mag * 100)} %`);
+      pushNews(`${up ? "▲" : "▼"}${s.name} (${sym}) ${up ? "+" : "−"}${Math.round(mag * 100)} %`);
     }
 
     // Pleite: weit unter den Grundwert gefallen, oder einfach Pech aus heiterem Himmel.
@@ -153,7 +153,7 @@ function tick() {
   return { liquidated, bankruptcies };
 }
 
-// --- Public views ---
+// Public views
 function publicStocks() {
   return Object.values(market.stocks).map((s) => {
     const prev = s.history.length > 1 ? s.history[s.history.length - 2] : s.price;
@@ -187,7 +187,7 @@ function portfolioValue(key) {
   return Math.round(v);
 }
 
-// --- Mutations ---
+// Mutations
 function open(key, sym, dir, margin, lev) {
   const s = market.stocks[sym];
   if (!s || s.bankrupt) return { ok: false, error: "Aktie nicht handelbar." };
@@ -213,7 +213,7 @@ function close(key, id) {
   return { ok: true, payout, margin: pos.margin };
 }
 
-// --- Socket wiring ---
+// Socket wiring
 function setupStocks(io, accounts) {
   function snapshot(key) {
     return { stocks: publicStocks(), positions: positionsFor(key), news: market.news.slice(0, 6), maxLeverage: MAX_LEVERAGE };

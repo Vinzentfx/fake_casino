@@ -1,7 +1,6 @@
 "use strict";
 
-/* ============================================================
-   Clans
+/* Clans
 
    Der Bildschirm war eine einzige Rolle: Level, Season, Motto, Schatzkammer,
    Auftraege, Mitgliederliste, Anfragen, Protokoll und ganz unten der
@@ -16,8 +15,7 @@
    Die Rollen-Schaltflaechen tragen ihre Bedeutung nicht mehr im
    title-Attribut. Auf dem iPad gibt es kein Hover: dort standen bisher ein
    nacktes ⬇️ und ein nacktes 🚫 nebeneinander, und einer der beiden warf
-   jemanden aus dem Clan.
-   ============================================================ */
+   jemanden aus dem Clan. */
 
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
@@ -58,7 +56,7 @@
     return `noch ${Math.floor(std / 24)} Tage ${std % 24} h`;
   }
 
-  // --- Eintritt: gruenden oder beitreten ---
+  // Eintritt: gruenden oder beitreten
   /*
    * Der leere Zustand sagte bisher nur "Clan gründen (100.000)" und darunter
    * "Noch keine Clans, gründe den ersten!". Wofuer man hunderttausend Chips
@@ -105,7 +103,7 @@
       <ol class="leaderboard cl-liste" id="clan-board"></ol>`;
   }
 
-  // --- Auftraege: das Herzstueck ---
+  // Auftraege: das Herzstueck
   /*
    * Sie standen vorher als vierter Abschnitt zwischen Schatzkammer und
    * Mitgliederliste, als schmale Balken ohne Angabe, wie man sie erfuellt
@@ -153,7 +151,7 @@
       }).join("")}`;
   }
 
-  // --- Krieg ---
+  // Krieg
   /*
    * Der Krieg sah tot aus und war es nicht. Gemessen wird laengst die
    * Season-XP beider Clans ueber mehrere Tage, dafuer muss niemand
@@ -249,7 +247,7 @@
     }, 30000);
   }
 
-  // --- Mitglieder ---
+  // Mitglieder
   function renderMitglieder(c) {
     const founder = isFounder(), manage = canManage();
     const beitragMap = new Map((c.beitrag || []).map((b) => [b.key, b.xp]));
@@ -304,7 +302,7 @@
     return html;
   }
 
-  // --- Kasse ---
+  // Kasse
   function renderKasse(c) {
     const manage = canManage();
     let html = `<div class="cl-kasse">
@@ -336,7 +334,7 @@
     return html;
   }
 
-  // --- Fortschritt (Level + Clan-Season) ---
+  // Fortschritt (Level + Clan-Season)
   function renderFortschritt(c) {
     const lvl = c.level || { level: 1, xpInLevel: 0, xpForNext: 500 };
     const xpPct = lvl.xpForNext ? Math.min(100, Math.round((100 * lvl.xpInLevel) / lvl.xpForNext)) : 100;
@@ -371,7 +369,7 @@
     return html;
   }
 
-  // --- Ranglisten ---
+  // Ranglisten
   function renderRanglisten() {
     const wl = data.weeklyLeague || [];
     const board = data.leaderboard || [];
@@ -407,7 +405,7 @@
     return html;
   }
 
-  // --- Zusammenbau ---
+  // Zusammenbau
   function renderMine() {
     const box = $("#clan-mine");
     if (!box) return;
@@ -467,7 +465,7 @@
     if (c.war && c.war.state === "active") starteUhr();
   }
 
-  // --- Verdrahtung ---
+  // Verdrahtung
   function verdrahteEintritt() {
     $("#clan-create-btn")?.addEventListener("click", () => {
       const name = $("#clan-name").value.trim(), tag = $("#clan-tag").value.trim();

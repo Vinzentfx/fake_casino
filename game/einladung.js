@@ -5,7 +5,7 @@
  *
  * Zwei Luecken schliesst das. Oeffentliche Lobbys stehen zwar in der Liste
  * "Offene Lobbys", die sieht aber nur, wer gerade auf den Startbildschirm
- * schaut; wer selbst in einem Spiel sitzt, bekommt nichts mit. Und PRIVATE
+ * schaut; wer selbst in einem Spiel sitzt, bekommt nichts mit. Und private
  * Lobbys stehen in gar keiner Liste, dort war der einzige Weg bisher, den
  * Code muendlich durchzusagen.
  *
@@ -27,7 +27,7 @@ const FENSTER = 60 * 1000;
 const MAX_JE_FENSTER = 8;    // und insgesamt nicht mehr als acht pro Minute
 
 /*
- * Fallback fuer PRIVATE Lobbys: die stehen in keiner Registrierung, also
+ * Fallback fuer private Lobbys: die stehen in keiner Registrierung, also
  * gibt es dort keinen Steckbrief. Dann muss der Bildschirm herhalten, auf
  * dem der Einladende steht.
  *
@@ -46,8 +46,8 @@ const SCHIRM_ZU_SPIEL = {
   sudoku: "sudoku", solitaire: "solrace", chess: "chess", pinco: "pinco", slots: "pvp", kniffel: "kniffel",
 };
 
-const zuletztAn = new Map();   // "absender>empfaenger" -> Zeitpunkt
-const fenster = new Map();     // absender -> { start, anzahl }
+const zuletztAn = new Map();   // je "absender>empfaenger": Zeitpunkt
+const fenster = new Map();     // je absender: { start, anzahl }
 
 /** Der Lobby-Code, in dem dieser Socket steckt, oder null. */
 function aktuelleLobby(socket) {

@@ -27,12 +27,12 @@ const QUEST_XP_DAILY_CAP = 280;
  * 500 am Tag. Damit war jeder Abend gleich und ab dem Deckel egal. Drei
  * Zutaten aendern das:
  *
- *   TAGES-FOKUS   Ein Spiel gibt heute doppelte XP. Es wechselt taeglich und
+ *   Tagesfokus   Ein Spiel gibt heute doppelte XP. Es wechselt taeglich und
  *                 ist fuer alle dasselbe, damit man darueber reden kann.
- *   TAGESSERIE    Wer an aufeinanderfolgenden Tagen spielt, sammelt schneller
+ *   Tagesserie    Wer an aufeinanderfolgenden Tagen spielt, sammelt schneller
  *                 (+5 % je Tag, hoechstens +50 %). Der Grund, morgen wieder
  *                 reinzuschauen.
- *   CLAN-BONUS    Der Clan-Fortschritt gibt allen Mitgliedern bis zu +25 %.
+ *   Clanbonus    Der Clan-Fortschritt gibt allen Mitgliedern bis zu +25 %.
  *
  * Alle drei wirken vor dem Tagesdeckel. Der Deckel bleibt die harte Grenze,
  * die Boni entscheiden nur, wie schnell man ihn erreicht.
@@ -103,7 +103,7 @@ function ensure(acc) {
 
   const heute = dayNow();
   if (s.day !== heute) {
-    // Die Serie zaehlt nur bei LUECKENLOSEN Tagen weiter. Ein ausgelassener
+    // Die Serie zaehlt nur bei lueckenlosen Tagen weiter. Ein ausgelassener
     // Tag setzt sie zurueck, sonst waere sie keine Serie.
     s.serie = s.day === heute - 1 ? Math.min(999, (s.serie || 0) + 1) : 1;
     s.day = heute;
@@ -208,7 +208,7 @@ function addXp(name, amount, kind = "play", spiel = null) {
   /*
    * "geschenk" geht am Tagesdeckel vorbei, in beide Richtungen: es wird nicht
    * abgeschnitten und es verbraucht nichts vom Deckel. Der Deckel begrenzt,
-   * wie viel man an einem Tag ERSPIELEN kann; ein Geschenk ist nichts
+   * wie viel man an einem Tag erspielen kann; ein Geschenk ist nichts
    * Erspieltes. Ohne diese Ausnahme haette das Glücksrad an einem Abend, an
    * dem man ohnehin schon gespielt hat, gar nichts gebracht.
    */

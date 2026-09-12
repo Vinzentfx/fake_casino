@@ -14,10 +14,10 @@
  * Normalfall, nicht die Ausnahme.
  *
  * Jetzt:
- *   ART      info | warnung | fest: bestimmt Farbe und Ton der Zeile.
- *   ABLAUF   optional. Danach verschwindet sie von selbst.
- *   VERLAUF  die letzten zehn, damit man sich nicht wiederholt.
- *   PUSH     optional, ueber den Anlass "ansage". Wer verbunden ist,
+ *   Art      info | warnung | fest: bestimmt Farbe und Ton der Zeile.
+ *   Ablauf   optional. Danach verschwindet sie von selbst.
+ *   Verlauf  die letzten zehn, damit man sich nicht wiederholt.
+ *   Push     optional, ueber den Anlass "ansage". Wer verbunden ist,
  *            bekommt keinen, der sieht die Zeile ja.
  */
 

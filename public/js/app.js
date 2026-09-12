@@ -1,15 +1,13 @@
 "use strict";
 
-/* ============================================================
-   Frontend: Grundgerüst
+/* Frontend: Grundgerüst
    Screens, Konto und Lobby. Die Spiele hängen sich an dieses Gerüst
-   und an `socket`.
-   ============================================================ */
+   und an `socket`. */
 
-// ---- Verbindung für spätere Echtzeit-Spiele (jetzt nur aufgebaut) ----
+// Verbindung für spätere Echtzeit-Spiele (jetzt nur aufgebaut)
 const socket = io();
 
-// ---- Globaler Zustand ----
+// Globaler Zustand
 const state = {
   account: null, // { name, chips, createdAt, lastBonusAt, stats }
   token: null,   // signiertes Token aus /api/login, weist uns gegenüber dem Socket aus
@@ -18,13 +16,11 @@ const state = {
 let appVersion = null;
 let reloadRequired = false;
 
-// ---- DOM-Helfer ----
+// DOM-Helfer
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-// ============================================================
 // Screen-Manager
-// ============================================================
 // Die Mechanik (Umschalten, Verlauf, Hooks) steckt in core/screens.js.
 // Hier bleibt nur, was den ganzen Bildschirm betrifft: Sperren, Topbar,
 // Praesenz und Chat.
@@ -165,9 +161,7 @@ document.addEventListener("casino:screen", (e) => {
   window.addEventListener("orientationchange", () => setTimeout(messen, 200));
 })();
 
-// ============================================================
 // Menü (alles, was kein Spiel ist)
-// ============================================================
 (function () {
   const sheet = $("#menu-sheet");
   const backdrop = $("#menu-backdrop");
@@ -206,9 +200,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// ============================================================
 // Toast-Hinweise
-// ============================================================
 let toastTimer = null;
 function toast(msg) {
   const t = $("#toast");
@@ -382,9 +374,7 @@ function applyPrefs(prefs) {
   renderThemePicker();
 }
 
-// ============================================================
 // Account / Anzeige
-// ============================================================
 // Das Token liegt im localStorage und nicht nur im Speicher: iPadOS wirft
 // Safari-Tabs im Hintergrund schnell weg, und vorher landete man danach
 // jedes Mal wieder auf der Anmeldung.
@@ -409,9 +399,7 @@ function setAccount(acc, token) {
   renderUpdateBadge();
 }
 
-// ============================================================
 // Update-Historie: Comeback-Fenster und Updates-Tab
-// ============================================================
 const SEEN_KEY = "casino_seen_update";
 // Wie viele Updates das Fenster hoechstens auf einmal zeigt. Wer ein halbes
 // Jahr weg war, soll nicht durch zwoelf Bloecke scrollen muessen; der Rest
@@ -614,7 +602,7 @@ $("#updates-list")?.addEventListener("click", (e) => {
 /**
  * Dieselbe Zahl noch einmal an dem Eintrag, aus dem sie kommt.
  *
- * Die Marke am Menue-Knopf sagt nur DASS etwas wartet. Wer dann aufmacht,
+ * Die Marke am Menue-Knopf sagt nur dass etwas wartet. Wer dann aufmacht,
  * stand vor zwoelf gleich aussehenden Zeilen und musste raten, welche
  * gemeint ist.
  */
@@ -670,7 +658,7 @@ function renderAbholBadge() {
     const eintrag = $("#menu-geschenk");
     if (eintrag) eintrag.hidden = !m.geschenk;
 
-    /* Die Auktion bekommt eine eigene, ROTE Marke: sie ist nichts zum
+    /* Die Auktion bekommt eine eigene, rote Marke: sie ist nichts zum
        Abholen, sondern etwas, das ohne dich zu Ende geht. Ein neues Los
        oder ein ueberbotenes Gebot: beides verschwindet, sobald man
        hinsieht. */
@@ -1045,7 +1033,7 @@ function renderAchievements() {
     if (zaehler) zaehler.textContent = `${offen.length} von ${res.list.length}`;
 
     /*
-     * Die Bedingung stand nur bei den GESPERRTEN in der Karte; bei den
+     * Die Bedingung stand nur bei den gesperrten in der Karte; bei den
      * freigeschalteten stand dort ein Haken. Wofuer man eines bekommen hat,
      * war ausschliesslich im title-Attribut zu sehen, also nur beim
      * Draufzeigen mit der Maus. Auf dem iPad gibt es kein Draufzeigen, dort
@@ -1129,7 +1117,7 @@ const SOCIAL_GAME_LABELS = {
   lobby: "Lobby",
 };
 
-// --- Duell-Herausforderung: Spieler wählt ein Spiel + Einsatz, erstellt ein
+// Duell-Herausforderung: Spieler wählt ein Spiel + Einsatz, erstellt ein
 // privates Match und lädt den Gegner ein; dieser tritt beim Annehmen bei. ---
 const DUEL_GAMES = [
   { key: "memory",  icon: "memory",    label: "Memory-Duell", screen: "memory",    ev: "memory:create",  extra: { size: "medium" } },
@@ -1322,9 +1310,7 @@ $("#profile-badges").addEventListener("click", (e) => {
   });
 });
 
-// ============================================================
 // API-Aufrufe
-// ============================================================
 async function api(path, body) {
   const res = await fetch(path, {
     method: body ? "POST" : "GET",
@@ -1336,7 +1322,7 @@ async function api(path, body) {
   return data;
 }
 
-// ---- Login ----
+// Login
 $("#login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const name = $("#login-name").value.trim();
@@ -1362,7 +1348,7 @@ $("#login-form").addEventListener("submit", async (e) => {
   }
 });
 
-// ---- Login-Kalender ----
+// Login-Kalender
 function renderCalendar(s) {
   const grid = $("#calendar-grid");
   const btn = $("#calendar-claim-btn");
@@ -1394,7 +1380,7 @@ $("#calendar-claim-btn")?.addEventListener("click", () => {
   });
 });
 
-// ---- Live-Ops (Happy Hour / Turnier) Banner ----
+// Live-Ops (Happy Hour / Turnier) Banner
 let liveopsState = null;
 function renderLiveops() {
   const el = $("#liveops-banner");
@@ -1428,7 +1414,7 @@ socket.on("level:up", (d) => {
 });
 setInterval(renderLiveops, 20000);
 
-// ---- Stunden-Bonus: Countdown auf Topbar-Knopf und Hero-Kachel ----
+// Stunden-Bonus: Countdown auf Topbar-Knopf und Hero-Kachel
 function updateBonusUI() {
   const acc = state.account;
   const btn = $("#bonus-btn");
@@ -1456,9 +1442,7 @@ function updateBonusUI() {
 }
 setInterval(updateBonusUI, 1000);
 
-// ============================================================
 // Hero-Bereich der Lobby
-// ============================================================
 /**
  * Guthaben gross, Level-Fortschritt darunter. Das Guthaben zaehlt hoch, wenn
  * es sich geaendert hat: eine Zahl, die von 4.950 auf 128.450 springt, nimmt
@@ -1499,7 +1483,7 @@ function renderHero() {
 }
 window.Casino._renderHero = renderHero;
 
-// ---- Stunden-Bonus ----
+// Stunden-Bonus
 async function claimBonus() {
   if (!state.account) return;
   try {
@@ -1519,7 +1503,7 @@ async function claimBonus() {
 $("#bonus-btn").addEventListener("click", claimBonus);
 $("#hero-bonus")?.addEventListener("click", claimBonus);
 
-// ---- Soforthilfe (Pleite-Schutz) ----
+// Soforthilfe (Pleite-Schutz)
 async function claimRescue() {
   if (!state.account) return;
   try {
@@ -1532,7 +1516,7 @@ async function claimRescue() {
 }
 $("#rescue-btn").addEventListener("click", claimRescue);
 
-// ---- Leaderboard (multi-category, tabbed) ----
+// Leaderboard (multi-category, tabbed)
 const LB_ORDER = ["rich", "level", "horses", "estate", "streets", "bigwin", "bigloss", "games"];
 // Wie der Wert einer Kategorie angezeigt wird (Standard: Chips).
 const LB_UNIT = { level: (v) => `Level ${v}`, streets: (v) => `${v} ${v === 1 ? "Straße" : "Straßen"}`, games: (v) => `${v.toLocaleString("de-DE")} Spiele`, horses: (v) => `${v} ${v === 1 ? "Sieg" : "Siege"}` };
@@ -1605,7 +1589,7 @@ function renderLbList() {
   });
 }
 
-// ---- Logout ----
+// Logout
 $("#logout-btn").addEventListener("click", () => {
   state.account = null;
   state.token = null;
@@ -1619,9 +1603,7 @@ $("#logout-btn").addEventListener("click", () => {
   showScreen("login", { history: "replace" });
 });
 
-// ============================================================
 // Hilfsfunktionen
-// ============================================================
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
@@ -1639,7 +1621,7 @@ try {
 // Bonus-Button-Status regelmäßig auffrischen
 setInterval(refreshBonusButton, 60 * 1000);
 
-// ---- PIN ändern ----
+// PIN ändern
 $("#change-pin-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const errEl = $("#cp-error");
@@ -1658,7 +1640,7 @@ $("#change-pin-form").addEventListener("submit", async (e) => {
 });
 // (Passwort-Felder: kein Ziffern-Filter mehr, 6 bis 24 beliebige Zeichen.)
 
-// ---- Chips senden ----
+// Chips senden
 $("#transfer-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const errEl = $("#tr-error");
@@ -1704,9 +1686,7 @@ socket.on("admin:kicked", ({ reason }) => {
   showScreen("login", { history: "replace" });
 });
 
-/* ===========================================================================
-   Admin: Konten
-   ---------------------------------------------------------------------------
+/* Admin: Konten
    Vorher stand unter jedem der 78 Konten ein rotes "Löschen", eine
    unwiderrufliche Aktion, 78 Mal, einen Fehltipp entfernt. Und wer Chips
    setzen, sperren oder eine IP bannen wollte, tippte den Namen in jeweils ein
@@ -1714,8 +1694,7 @@ socket.on("admin:kicked", ({ reason }) => {
 
    Jetzt: eine schmale Liste zum Suchen, ein Tipp öffnet die Person, und alles
    zu dieser Person steht an einer Stelle. Was sich nicht rückgängig machen
-   lässt, steht unten in einem eigenen Kasten und fragt nach.
-   ========================================================================= */
+   lässt, steht unten in einem eigenen Kasten und fragt nach. */
 
 let adKonten = [];        // zuletzt geladene Liste
 let adGewaehlt = null;    // Name der geöffneten Person
@@ -1771,18 +1750,15 @@ function zeichneKontenListe() {
       ? `<div class="muted small ad-mehr">… und ${treffer.length - zeigen.length} weitere. Zum Finden oben tippen.</div>` : "");
 }
 
-/* =========================================================================
-   Strafen (Admin)
-   -------------------------------------------------------------------------
+/* Strafen (Admin)
    Vorher gab es zwei Knoepfe: Konto sperren (fuer immer) und Pechvogel (fuer
    immer). Beides musste jemand von Hand zuruecknehmen und beides ohne Grund,
-   also stand am Konto nur, DASS etwas ist, nicht warum. Wer nach zwei Wochen
+   also stand am Konto nur, dass etwas ist, nicht warum. Wer nach zwei Wochen
    nachsah, fand einen Pechvogel und keine Erklaerung.
 
    Jetzt sieben Strafen, jede mit Ablaufzeit und Grund. Der Katalog kommt vom
    Server (`admin:strafen`), damit eine neue Strafe nicht an zwei Stellen
-   beschrieben werden muss.
-   ========================================================================= */
+   beschrieben werden muss. */
 let adStrafArten = null;    // { art: {name, was, wert?, spiele?} }
 let adStrafSpiele = null;   // { id: name }
 
@@ -2263,14 +2239,11 @@ $("#admin-reset-city-btn")?.addEventListener("click", async () => {
   });
 });
 
-/* ===========================================================================
-   Ansage an alle (Admin)
-   ---------------------------------------------------------------------------
+/* Ansage an alle (Admin)
    Vorher: ein Textfeld, zwei Knoepfe, fertig. Man sah nicht, ob gerade eine
    Ansage steht, nicht wie sie beim Spieler aussieht, nicht was man zuletzt
    gesagt hat, und sie blieb stehen, bis jemand daran dachte, sie
-   wegzunehmen, bei "heute ab 20 Uhr" ist das der Normalfall.
-   ========================================================================= */
+   wegzunehmen, bei "heute ab 20 Uhr" ist das der Normalfall. */
 
 let anArt = "info";
 let anArten = [{ id: "info", label: "Info" }, { id: "warnung", label: "Achtung" }, { id: "fest", label: "Fest" }];
@@ -2437,13 +2410,13 @@ $("#admin-announcement-clear")?.addEventListener("click", () => {
   });
 });
 
-// ---- Admin: IP-Bann ----
+// Admin: IP-Bann
 $("#admin-ipban-btn")?.addEventListener("click", () => {
   const errEl = $("#admin-ipban-error");
   errEl.textContent = "";
   const raw = $("#admin-ipban-input").value.trim();
   if (!raw) { errEl.textContent = "Spielername oder IP eingeben."; return; }
-  // Enthält Punkte/Doppelpunkte → als IP behandeln, sonst als Spielername.
+  // Enthält Punkte oder Doppelpunkte: als IP behandeln, sonst als Spielername.
   const isIp = /[.:]/.test(raw) && !/\s/.test(raw);
   socket.emit("admin:ipban", isIp ? { ip: raw } : { target: raw }, (res) => {
     if (!res || !res.ok) { errEl.textContent = res?.error || "Fehler."; return; }
@@ -2484,7 +2457,7 @@ function loadIpBans() {
 // Beim Öffnen des Admin-Screens die IP-Bann-Liste mitladen.
 socket.on("ipbanned", () => { window.Casino.dialog.hinweis("Deine IP-Adresse wurde gesperrt."); });
 
-// ---- Admin: Test-Tools ----
+// Admin: Test-Tools
 $("#admin-force-win-btn")?.addEventListener("click", () => {
   socket.emit("admin:slotsForceWin", (r) => {
     if (r && r.ok) toast("Scharf gestellt: dein nächster Slot-Dreh zahlt den Maximalgewinn.");
@@ -2523,12 +2496,9 @@ $("#admin-comeback-off-btn")?.addEventListener("click", () => {
   socket.emit("admin:comeback", { on: false }, (r) => toast(r?.ok ? "Gala abgerechnet." : (r?.error || "Fehler.")));
 });
 
-/* =========================================================================
-   Wartung
-   -------------------------------------------------------------------------
+/* Wartung
    Zwischen "laeuft" und "Server aus" gab es nichts, und deshalb wurde an der
-   Wirtschaft im laufenden Betrieb geschraubt, waehrend Leute spielen.
-   ========================================================================= */
+   Wirtschaft im laufenden Betrieb geschraubt, waehrend Leute spielen. */
 let adWartung = { an: false, text: "", standardText: "" };
 
 function zeichneWartung() {
@@ -2566,13 +2536,10 @@ $("#ad-wartung-zu")?.addEventListener("click", async () => {
 });
 $("#ad-wartung-auf")?.addEventListener("click", () => wartungSetzen(false));
 
-/* =========================================================================
-   Regie: das naechste Ergebnis setzen
-   -------------------------------------------------------------------------
+/* Regie: das naechste Ergebnis setzen
    Ein Formular je Ziel, weil die Ziele nichts gemeinsam haben: Slots braucht
    eine Auswahl, das Rad ein Feld, Roulette eine Zahl, Crash eine Kommazahl
-   und keinen Spieler.
-   ========================================================================= */
+   und keinen Spieler. */
 let adRegieZiele = null, adRadFelder = [];
 
 function zeichneRegie(liegt) {
@@ -2642,9 +2609,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-/* =========================================================================
-   Nachricht an einen Spieler
-   ========================================================================= */
+/* Nachricht an einen Spieler */
 $("#ad-nachricht-senden")?.addEventListener("click", () => {
   const fehler = $("#ad-nachricht-error");
   if (fehler) fehler.textContent = "";
@@ -2658,9 +2623,7 @@ $("#ad-nachricht-senden")?.addEventListener("click", () => {
   });
 });
 
-/* =========================================================================
-   Kosmetik von Hand geben und wegnehmen
-   ========================================================================= */
+/* Kosmetik von Hand geben und wegnehmen */
 let adKosKatalog = null;
 
 function ladeKosKatalog() {
@@ -2706,22 +2669,17 @@ $("#ad-kos-nehmen")?.addEventListener("click", async () => {
   kosTun(true);
 });
 
-/* =========================================================================
-   Chat leeren
-   ========================================================================= */
+/* Chat leeren */
 $("#ad-chat-leeren")?.addEventListener("click", async () => {
   if (!await window.Casino.dialog.frage("Den allgemeinen Chat bei allen leeren?",
     { okText: "Leeren", gefahr: true })) return;
   socket.emit("admin:chatLeeren", (r) => toast(r?.ok ? "Chat geleert." : (r?.error || "Fehler.")));
 });
 
-/* ===========================================================================
-   Wortfilter (Admin)
-   ---------------------------------------------------------------------------
+/* Wortfilter (Admin)
    Die Liste gehoert dem Haus, nicht dem Programm: was in einer Runde als
    schlimm gilt, entscheidet die Runde. Deshalb laesst sich hier beides
-   pflegen: was gefiltert wird und was ausdruecklich nicht.
-   ========================================================================= */
+   pflegen: was gefiltert wird und was ausdruecklich nicht. */
 function wfZeichne(d) {
   const basis = $("#wf-basis");
   if (basis) basis.textContent = `Die Basisliste umfasst ${d.basisAnzahl} Wörter.`;
@@ -2859,9 +2817,7 @@ $("#wf-bestand-btn")?.addEventListener("click", () => {
   });
 });
 
-/* ===========================================================================
-   Events (Admin)
-   ---------------------------------------------------------------------------
+/* Events (Admin)
    Vorher an zwei Orten mit zwei verschiedenen Wahrheiten: oben im Dashboard
    sieben Knoepfe, die sofort und ohne Rueckfrage mit fest eingebauten Werten
    feuerten, und unten sechs Zeilen mit nackten Zahlenfeldern, deren
@@ -2869,8 +2825,7 @@ $("#wf-bestand-btn")?.addEventListener("click", () => {
    Fehlklick auf "Regen" schuettete 250.000 Chips aus.
 
    Jetzt: eine Karte je Event, beschriftete Felder, der Zustand mit Restzeit
-   auf der Karte, und eine Rueckfrage vor allem, was Chips ausschuettet.
-   ========================================================================= */
+   auf der Karte, und eine Rueckfrage vor allem, was Chips ausschuettet. */
 
 const EVENTS = [
   {
@@ -2923,7 +2878,7 @@ const EVENTS = [
       { k: "pot", label: "Topf", wert: 500000, min: 1000, schritt: 50000, geld: true },
     ],
   },
-  /* Die beiden Letzten LAUFEN nicht, sie PASSIEREN: ein Knopf, ein Ergebnis,
+  /* Die beiden Letzten laufen nicht, sie passieren: ein Knopf, ein Ergebnis,
      fertig. Deshalb haben sie keinen Zustand, keine Restzeit und keinen
      Abbrechen-Knopf, und die Rueckfrage sagt genau, was danach anders ist. */
   {
@@ -2945,7 +2900,7 @@ const EVENTS = [
   },
 ];
 
-let evZustand = {};       // id -> Zustand vom Server
+let evZustand = {};       // je id: Zustand vom Server
 let evOnline = 0;
 let evUhr = null;
 
@@ -3134,7 +3089,7 @@ function renderAdminEvents() {
   }
 }
 
-// ---- Daten-Backup (nur Besitzer): ganzen data/-Ordner laden oder zurückspielen ----
+// Daten-Backup (nur Besitzer): ganzen data/-Ordner laden oder zurückspielen
 $("#admin-backup-btn")?.addEventListener("click", async () => {
   const errEl = $("#admin-backup-error");
   errEl.textContent = "";
@@ -3182,9 +3137,7 @@ $("#admin-restore-input")?.addEventListener("change", async (e) => {
   }
 });
 
-// ============================================================
 // Einstellungen: Design, Ton, Bewegung
-// ============================================================
 
 /**
  * Theme-Auswahl zeichnen. Jede Karte zeigt zwei echte Farbtupfer aus der
@@ -3262,7 +3215,7 @@ $("#set-motion")?.addEventListener("change", (e) => {
   }
 })();
 
-// ---- Start ----
+// Start
 // Erst versuchen, die gespeicherte Sitzung wiederherzustellen, damit ein
 // weggeworfener Tab direkt in der Lobby landet. Die Anmeldung ist im HTML
 // schon der Standard, ein Fehlschlag braucht also nichts weiter.

@@ -1,7 +1,6 @@
 "use strict";
 
-/* ============================================================
-   Auktionshaus
+/* Auktionshaus
 
    Ein Los zur Zeit. Geboten wird mit echten Chips, die sofort
    hinterlegt werden; wer ueberboten wird, hat sein Geld sofort
@@ -12,11 +11,10 @@
    laeuft die Uhr auf einem Geraet, das ein paar Sekunden
    danebenliegt, an der echten vorbei.
 
-   Gesetzt wird ueber KNOEPFE, nicht ueber ein Zahlenfeld. Auf
+   Gesetzt wird ueber Knoepfe, nicht ueber ein Zahlenfeld. Auf
    dem iPad ist das Feld eine Tastatur, die den halben Schirm
    verdeckt, und der haeufigste Fall ist ohnehin "genau ein
-   Schritt drueber".
-   ============================================================ */
+   Schritt drueber". */
 
 (function () {
   const Casino = window.Casino;

@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Team-Tresorkampf (Overlay)
+/* Team-Tresorkampf (Overlay)
    Rot gegen Blau: beide hauen auf ihren eigenen Tresor, das schnellere Team
-   teilt den Topf nach Treffern. Entschieden wird auf dem Server.
-   ============================================================ */
+   teilt den Topf nach Treffern. Entschieden wird auf dem Server. */
 
 (function () {
   const { socket, toast, escapeHtml } = window.Casino;
@@ -33,15 +31,15 @@
   function bar(team, s) {
     const pct = Math.max(0, Math.round((100 * s[team].hp) / s[team].max));
     $(`#vault-${team}-fill`).style.width = pct + "%";
-    $(`#vault-${team}-txt`).textContent = `${team === "red" ? "🔴 Rot" : "🔵 Blau"} · Tresor ${pct}%`;
+    $(`#vault-${team}-txt`).textContent = `${team === "red" ? "Rot" : "Blau"} · Tresor ${pct}%`;
     $(`#vault-${team}-roster`).textContent = (s[team].names || []).join(", ");
   }
 
   function setTeamUi() {
     btn.className = "vault-hit" + (myTeam ? " " + myTeam : "");
-    btn.textContent = myTeam ? `💥 DRAUF! (für ${myTeam === "red" ? "ROT" : "BLAU"})` : "💥 MITMACHEN!";
+    btn.textContent = myTeam ? `Drauf! (für ${myTeam === "red" ? "Rot" : "Blau"})` : "Mitmachen!";
     $("#vault-my-team").innerHTML = myTeam
-      ? `Du kämpfst für <b>${myTeam === "red" ? "🔴 Team Rot" : "🔵 Team Blau"}</b>`
+      ? `Du kämpfst für <b>${myTeam === "red" ? "Team Rot" : "Team Blau"}</b>`
       : "Hau drauf und du wirst dem kleineren Team zugelost!";
   }
 
@@ -67,7 +65,7 @@
     if (!active) return;
     const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
     const t = $("#vault-timer");
-    if (t) t.textContent = `⏱️ ${left}s · deine Treffer: ${myHits}`;
+    if (t) t.textContent = `Noch ${left}s · deine Treffer: ${myHits}`;
   }, 200);
 
   function end(d) {
@@ -79,7 +77,7 @@
       const mine = (d.results || []).find((r) => me && r.name.toLowerCase() === me.name.toLowerCase());
       const won = myTeam === d.winner;
       box.innerHTML =
-        `<div class="${won ? "heist-win" : "heist-fail"}">${d.winner === "red" ? "🔴 TEAM ROT" : "🔵 TEAM BLAU"} GEWINNT!</div>` +
+        `<div class="${won ? "heist-win" : "heist-fail"}">${d.winner === "red" ? "Team Rot" : "Team Blau"} gewinnt!</div>` +
         (mine ? `<div>Dein Anteil: <b>+${fmt(mine.share)}<i class=mk></i></b> (${mine.hits} Treffer)</div>` : won ? "" : `<div class="muted small">Knapp daneben, nächstes Mal.</div>`) +
         `<div class="heist-crooks">${(d.results || []).slice(0, 6).map((r) => `${escapeHtml(r.name)}: +${fmt(r.share)}`).join(" · ")}</div>`;
     } else if (d && d.draw) {
@@ -106,7 +104,7 @@
   socket.on("vault:start", (s) => {
     // Im Broadcast steht das Team nicht, also nachfragen und dann zeigen.
     socket.emit("vault:state", (st) => { show(st && st.active ? st : s); });
-    toast("⚔️ TEAM-TRESORKAMPF! Rot gegen Blau!");
+    toast("Tresorkampf: Rot gegen Blau!");
   });
   socket.on("vault:progress", update);
   socket.on("vault:end", end);

@@ -23,7 +23,7 @@ const CASINO_SPIELE = ["slots", "blackjack", "roulette", "crash", "mines", "towe
   "pinco", "horses", "sportwetten", "hilo", "wuerfel"];
 
 /*
- * Ein Achievement ist ein ZIEL und ein WERT, nicht eine Ja/Nein-Pruefung.
+ * Ein Achievement ist ein Ziel und ein Wert, nicht eine Ja/Nein-Pruefung.
  *
  * Vorher stand hier `check: (a) => a.stats.gamesPlayed >= 100`. Damit gab es
  * keine Moeglichkeit zu zeigen, wie weit jemand ist, man sah nur "zu" oder
@@ -36,7 +36,7 @@ const CASINO_SPIELE = ["slots", "blackjack", "roulette", "crash", "mines", "towe
  * `ziel: 1` mit einem Wert von 0 oder 1 ist der Ja/Nein-Fall.
  */
 const DEFS = [
-  // --- Casino ---
+  // Casino
   { id: "first_win",   emoji: "🎉", label: "Erster Gewinn",   desc: "Gewinne deine erste Runde",   reward: 1000,
     ziel: 1,        wert: (a) => (a.stats && a.stats.handsWon) || 0 },
   { id: "plays_100",   emoji: "🎲", label: "Stammgast",       desc: "Spiele 100 Runden",           reward: 10000,
@@ -66,7 +66,7 @@ const DEFS = [
   { id: "level_50",    emoji: "🌟", label: "Veteran",         desc: "Erreiche Level 50",           reward: 200000,
     ziel: 50,       wert: (a) => Math.floor(Math.sqrt(Math.max(0, a.xp || 0) / 100)) + 1 },
 
-  // --- Die einzelnen Spiele ---
+  // Die einzelnen Spiele
   { id: "alle_spiele", emoji: "🎡", label: "Alles probiert",  desc: "Spiel jedes Casino-Spiel mindestens einmal", reward: 75000,
     ziel: CASINO_SPIELE.length, wert: (a) => {
       const pg = (a.stats && a.stats.perGame) || {};
@@ -89,7 +89,7 @@ const DEFS = [
   { id: "horse_win_25", emoji: "🏅", label: "Rennstall",      desc: "Gewinn 25 Rennen",            reward: 120000,
     ziel: 25,       wert: (a) => a.horseWins || 0 },
 
-  // --- Stadt ---
+  // Stadt
   { id: "first_house", emoji: "🏠", label: "Eigenheim",       desc: "Kauf dein erstes Haus",       reward: 2500,
     ziel: 1,        wert: (a, k) => cityStats(k).houses },
   { id: "houses_10",   emoji: "🏘️", label: "Häuslebauer",     desc: "Besitze 10 Häuser",           reward: 25000,
@@ -113,13 +113,13 @@ const DEFS = [
   { id: "casino_king", emoji: "🎰", label: "Casino-König",    desc: "Besitze das Casino",          reward: 1000000,
     ziel: 1,        wert: (a, k) => (city.casinoOwner() === k ? 1 : 0) },
 
-  // --- Wirtschaft ---
+  // Wirtschaft
   { id: "sparer",      emoji: "🐷", label: "Sparbuch",        desc: "Leg 100.000 aufs Sparkonto",  reward: 15000,
     ziel: 100000,   wert: (a) => (a.savings && a.savings.amount) || 0 },
   { id: "sparer_gross", emoji: "🏛️", label: "Vermögensverwalter", desc: "Leg 1 Million aufs Sparkonto", reward: 80000,
     ziel: 1000000,  wert: (a) => (a.savings && a.savings.amount) || 0 },
 
-  // --- Miteinander ---
+  // Miteinander
   { id: "im_clan",     emoji: "🛡️", label: "Im Clan",         desc: "Tritt einem Clan bei",        reward: 5000,
     ziel: 1,        wert: (a) => (a.clan ? 1 : 0) },
   { id: "spendabel",   emoji: "🤝", label: "Spendabel",       desc: "Schick jemandem Chips",       reward: 5000,
@@ -127,7 +127,7 @@ const DEFS = [
   { id: "gastgeber",   emoji: "📣", label: "Gastgeber",       desc: "Lade jemanden in deine Lobby ein", reward: 5000,
     ziel: 1,        wert: (a) => a.einladungen || 0 },
 
-  // --- Aussehen ---
+  // Aussehen
   { id: "stil_10",     emoji: "🎨", label: "Angezogen",       desc: "Besitze 10 Kosmetik-Stücke",  reward: 20000,
     ziel: 10,       wert: (a) => {
       const o = a.cosOwned || {};
@@ -139,7 +139,7 @@ const DEFS = [
       return Object.values(o).reduce((s, l) => s + (Array.isArray(l) ? l.length : 0), 0);
     } },
 
-  // --- Meta / Events ---
+  // Meta / Events
   { id: "cal_week",    emoji: "📅", label: "Treuer Gast",     desc: "Hol Tag 7 im Login-Kalender", reward: 25000,
     ziel: 7,        wert: (a) => a.calBest || 0 },
   { id: "tourney_win", emoji: "🏁", label: "Turniersieger",   desc: "Gewinne ein Slot-Turnier",    reward: 50000,
@@ -153,7 +153,7 @@ const DEFS = [
       try { return require("./season").levelVonXp((a.season && a.season.xp) || 0); } catch { return 0; }
     } },
 
-  // --- Denkspiele (PvP-Duelle & Solitär) ---
+  // Denkspiele (PvP-Duelle & Solitär)
   { id: "duel_win_1",  emoji: "🤝", label: "Erstes Duell",    desc: "Gewinne dein erstes PvP-Duell", reward: 2500,
     ziel: 1,        wert: (a) => a.pvpWins || 0 },
   { id: "duel_win_25", emoji: "⚔️", label: "Duellmeister",    desc: "Gewinne 25 PvP-Duelle",       reward: 50000,

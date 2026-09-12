@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Memory-Duell
+/* Memory-Duell
    Abwechselnd gegeneinander. Match mit Buy-in anlegen oder per Code bzw. über
-   die Lobby beitreten. Das Brett liegt auf dem Server.
-   ============================================================ */
+   die Lobby beitreten. Das Brett liegt auf dem Server. */
 
 (function () {
   const { socket, toast, applyAccount, getAccount, escapeHtml } = window.Casino;
@@ -29,7 +27,7 @@
     for (const v of views) { const el = $("#" + v); if (el) el.style.display = v === view ? "" : "none"; }
   }
 
-  // --- Board rendering ---
+  // Board rendering
   function buildGrid(n) {
     const grid = $("#mem-grid");
     if (grid.childElementCount === n) return;
@@ -123,7 +121,7 @@
     }
   }
 
-  // --- Actions ---
+  // Actions
   function flip(i) {
     if (!st || !st.yourTurn) return;
     socket.emit("memory:flip", { index: i }, (r) => {

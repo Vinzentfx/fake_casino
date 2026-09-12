@@ -2,7 +2,7 @@
 
 /**
  * Sudoku-Race, live gegeneinander. Beide bekommen im selben Moment dasselbe
- * Rätsel und füllen um die Wette. Wer zuerst eine GÜLTIGE volle Lösung abgibt,
+ * Rätsel und füllen um die Wette. Wer zuerst eine gültige volle Lösung abgibt,
  * bekommt den Topf (beide Buy-ins) minus Rake. Läuft vorher die Zeit ab,
  * gewinnt, wer mehr richtige Felder hat, bei genau gleich vielen gibt es die
  * Einsätze zurück.
@@ -26,7 +26,7 @@ const TIME_MS = 15 * 60 * 1000; // Zeitlimit, danach entscheiden die richtigen F
 const DIFFICULTIES = { easy: 45, medium: 34, hard: 28 }; // givens (clues) shown
 const DEFAULT_DIFF = "medium";
 
-// --- Sudoku generation ---
+// Sudoku generation
 const rint = (n) => crypto.randomInt(n);
 function shuffled(arr) {
   const a = arr.slice();
@@ -195,7 +195,7 @@ function setupSudoku(io, accounts) {
       accounts.adjustChips(winner.id, payout);
       if (!walkover) { try { require("./clans").recordPvpWin(winner.id, "sudoku"); } catch {} }
     } else {
-      players.forEach((p) => accounts.adjustChips(p.id, match.buyIn)); // tie → refund
+      players.forEach((p) => accounts.adjustChips(p.id, match.buyIn)); // Unentschieden: Einsatz zurück
     }
 
     match.result = {
@@ -229,7 +229,7 @@ function setupSudoku(io, accounts) {
   }
 
   io.on("connection", (socket) => {
-    // --- Solo (ohne Uhr, ohne Einsatz, zählt für Statistik und Achievements) ---
+    // Solo (ohne Uhr, ohne Einsatz, zählt für Statistik und Achievements)
     socket.on("sudoku:soloStart", ({ difficulty = DEFAULT_DIFF } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
@@ -248,7 +248,7 @@ function setupSudoku(io, accounts) {
         g.done = true;
         const a = accounts.get(socket.data.account);
         if (a) a.sudokuSolved = (a.sudokuSolved || 0) + 1;
-        accounts.recordHand(socket.data.account, 0, true, "sudoku"); // → onHand → achievements/stats
+        accounts.recordHand(socket.data.account, 0, true, "sudoku"); // läuft über onHand weiter bis zu Achievements und Statistik
         return ack({ ok: true, solved: true });
       }
       ack({ ok: true, progress: filledCount(arr, g.puzzle) });

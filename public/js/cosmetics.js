@@ -56,7 +56,7 @@
   function marke(x) {
     if (x.owned || x.cost !== null) return "";
     const f = (stand && stand.fristen) || {};
-    // Zwei Zeilen: oben was es ist, darunter wie LANGE noch. In einer Zeile
+    // Zwei Zeilen: oben was es ist, darunter wie lange noch. In einer Zeile
     // passt der Countdown nicht in die schmale Kachel und wird abgeschnitten.
     const bau = (art, kopf, frist) =>
       `<span class="cos-marke cos-marke-${art}">${kopf}${frist ? `<i>${frist}</i>` : ""}</span>`;
@@ -69,7 +69,7 @@
     /* Auktionsware laeuft gar nicht ab: sie kommt einzeln unter den Hammer,
        und wer sie hat, hat sie von dort. */
     if (x.limitiert === "auktion") return bau("auktion", "Auktion", "einzeln versteigert");
-    /* Fortuna laeuft nicht nach ZEIT ab, sondern nach Stückzahl. Deshalb
+    /* Fortuna laeuft nicht nach Zeit ab, sondern nach Stückzahl. Deshalb
        steht hier kein Countdown, sondern wie viele es noch gibt. */
     if (x.limitiert === "rad") {
       const fo = (stand && stand.fortuna) || {};
@@ -222,7 +222,7 @@
     if (!feld || !vor) return;
     const name = (Casino.getAccount() || {}).name || "Du";
     const text = feld.value.trim();
-    vor.textContent = text ? `👋 ${name} ${text}` : "👋 (noch nichts eingetragen)";
+    vor.textContent = text ? `${name} ${text}` : "(noch nichts eingetragen)";
   }
 
   document.addEventListener("input", (e) => {

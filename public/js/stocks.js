@@ -1,8 +1,6 @@
 "use strict";
 
-/* ============================================================
-   Börse
-   ============================================================ */
+/* Börse */
 
 (function () {
   const { socket, toast, applyAccount, showScreen, escapeHtml } = window.Casino;
@@ -84,11 +82,11 @@
       levBtns.push(`<button class="stk-lev ${lev === i ? "on" : ""}" data-lev="${i}">${i}×</button>`);
     const cls = s.changePct > 0 ? "up" : s.changePct < 0 ? "down" : "";
     const arrow = s.changePct > 0 ? "▲" : s.changePct < 0 ? "▼" : "•";
-    // Your open positions in THIS stock (sell them right here).
+    // Eigene offene Positionen in dieser Aktie, direkt hier verkaufen.
     const mine = (data.positions || []).filter((p) => p.sym === s.sym);
     const posHtml = mine.map((p) => `
       <div class="stk-detpos">
-        <span>${p.dir > 0 ? "📈 Long" : "📉 Short"} ${p.lev}× <span class="muted small">@${fmt(p.entry)}</span></span>
+        <span>${p.dir > 0 ? "Long" : "Short"} ${p.lev}× <span class="muted small">@${fmt(p.entry)}</span></span>
         <b class="${p.pnl >= 0 ? "up" : "down"}">${p.pnl >= 0 ? "+" : ""}${fmt(p.pnl)}<i class=mk></i></b>
         <button class="stk-close" data-id="${p.id}">Verkaufen<small>${fmt(p.equity)}<i class=mk></i></small></button>
       </div>`).join("");
@@ -102,8 +100,8 @@
       <label class="bank-input-row"><span>Einsatz (Margin)</span><input id="stk-margin" type="number" min="1000" value="5000"/></label>
       <div class="stk-lev-row"><span class="muted small">Hebel</span>${levBtns.join("")}</div>
       <div class="stk-actions">
-        <button class="stk-long" id="stk-long">📈 Long (steigt)</button>
-        <button class="stk-short" id="stk-short">📉 Short (fällt)</button>
+        <button class="stk-long" id="stk-long">Long (steigt)</button>
+        <button class="stk-short" id="stk-short">Short (fällt)</button>
       </div>`;
     el.querySelectorAll(".stk-lev").forEach((b) =>
       b.addEventListener("click", () => { lev = +b.dataset.lev; renderTrade(); }));
@@ -141,7 +139,7 @@
       applyAccount(res.account);
       data = res;
       render();
-      toast(`${dir > 0 ? "📈 Long" : "📉 Short"} ${selected} eröffnet (${fmt(margin)} Chips · ${lev}×).`);
+      toast(`${dir > 0 ? "Long" : "Short"} ${selected} eröffnet (${fmt(margin)} Chips · ${lev}×).`);
     });
   }
 
@@ -153,7 +151,7 @@
     el.innerHTML = ps.map((p) => {
       const cls = p.pnl >= 0 ? "up" : "down";
       return `<div class="stk-pos">
-          <div class="stk-pos-id">${p.dir > 0 ? "📈" : "📉"} <b>${p.sym}</b> ${p.lev}× <span class="muted small">@${fmt(p.entry)}</span></div>
+          <div class="stk-pos-id">${p.dir > 0 ? "▲" : "▼"} <b>${p.sym}</b> ${p.lev}× <span class="muted small">@${fmt(p.entry)}</span></div>
           <div class="stk-pos-pnl ${cls}">${p.pnl >= 0 ? "+" : ""}${fmt(p.pnl)}<i class=mk></i></div>
           <button class="stk-close" data-id="${p.id}">Schließen<small>${fmt(p.equity)}<i class=mk></i></small></button>
         </div>`;
@@ -176,8 +174,8 @@
   socket.on("stocks:update", () => { if (onScreen()) load(); });
   socket.on("stocks:liquidated", ({ lost, won, account }) => {
     if (account) applyAccount(account);
-    if (won > 0) toast(`💥 Insolvenz! Dein Short zahlte +${fmt(won)} Chips.`);
-    if (lost > 0) toast(`💥 Liquidiert! −${fmt(lost)} Chips verloren.`);
+    if (won > 0) toast(`Insolvenz! Dein Short zahlte +${fmt(won)} Chips.`);
+    if (lost > 0) toast(`Liquidiert! −${fmt(lost)} Chips verloren.`);
     if (onScreen()) load();
   });
 

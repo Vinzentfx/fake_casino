@@ -1,11 +1,9 @@
 "use strict";
 
-/* ============================================================
-   Statistik
+/* Statistik
    Zeigt standardmäßig die eigene. Aus der Bestenliste kommt man für jeden
    Spieler hierher (window.Casino.openStats(name)). Abschnitte: Rekorde,
-   Stadt-Imperium, Achievements, Bilanz je Spiel.
-   ============================================================ */
+   Stadt-Imperium, Achievements, Bilanz je Spiel. */
 
 (function () {
   const { escapeHtml, showScreen } = window.Casino;
@@ -166,7 +164,7 @@
       }
     }
 
-    /* --- Imperium ---
+    /* Imperium
        Der Abschnitt stand bisher auch dann da, wenn nichts drin war, mit
        "Noch kein Immobilien-Besitz." als einzigem Inhalt. Eine Ueberschrift
        ueber einer Absage ist verschenkte Hoehe; jetzt bleibt der ganze
@@ -190,7 +188,7 @@
       }
     }
 
-    /* --- Achievements ---
+    /* Achievements
        Mit Fortschrittsbalken: "3 von 29" sagt allein wenig, der Balken
        daneben zeigt sofort, wie weit noch zu gehen ist. Die Emoji bleiben.
        Sie sind hier nicht Beiwerk, sondern das Sammelstueck selbst, das man
@@ -218,7 +216,7 @@
       }
     }
 
-    /* --- Bilanz je Spiel ---
+    /* Bilanz je Spiel
        Vorher eine Zeile je Spiel: Emoji, Name, Anzahl, Prozent, Betrag,
        alles gleich gross, alles gleich wichtig. Man sah nicht, wo das Geld
        hinging. Jetzt traegt jede Zeile einen Balken, dessen Laenge sich am

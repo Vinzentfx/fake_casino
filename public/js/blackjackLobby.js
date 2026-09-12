@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Blackjack-Lobby, nur zum Zusammensitzen.
+/* Blackjack-Lobby, nur zum Zusammensitzen.
    Am Spiel ändert sich nichts (jeder gegen seinen Dealer), man sieht aber, wer
-   am Tisch sitzt, wer wie viel gewinnt oder verliert, und hat einen eigenen Chat.
-   ============================================================ */
+   am Tisch sitzt, wer wie viel gewinnt oder verliert, und hat einen eigenen Chat. */
 
 (function () {
   const { socket, escapeHtml, toast } = window.Casino;

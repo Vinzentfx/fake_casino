@@ -24,7 +24,7 @@ const RAKE = 0.15; // 15 % des Topfs verschwinden, der Gewinner bekommt den Rest
 const MIN_BET = BET_LEVELS[0];
 
 function setupPvp(io, accounts) {
-  const matches = new Map(); // Code -> Match
+  const matches = new Map(); // je Code: Match
 
   function makeCode() {
     let code;
@@ -191,7 +191,7 @@ function setupPvp(io, accounts) {
       broadcast(code);
     });
 
-    // Duell gegen einen Bot, ohne Rake und FAIR 50/50 (kein Handicap, sonst wäre
+    // Duell gegen einen Bot, ohne Rake und fair 50/50 (kein Handicap, sonst wäre
     // es eine Gelddruckmaschine). Die Bot-Drehs sind vorher simuliert, werden aber
     // einzeln aufgedeckt (800 ms nach jedem Dreh des Spielers), damit es sich live anfühlt.
     socket.on("pvp:createBot", ({ buyIn } = {}, ack) => {

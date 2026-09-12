@@ -1,8 +1,6 @@
 "use strict";
 
-/* ============================================================
-   Bank: Sparkonto
-   ============================================================ */
+/* Bank: Sparkonto */
 
 (function () {
   const { socket, toast, applyAccount } = window.Casino;

@@ -11,24 +11,24 @@
  *
  * Dieses Modul macht drei Dinge:
  *
- *   REGISTRIERUNG  Ein Screen meldet sich mit register(name, {onEnter, onLeave}).
+ *   Registrierung  Ein Screen meldet sich mit register(name, {onEnter, onLeave}).
  *                  Damit das nicht alle dreissig Spielmodule auf einmal
  *                  umgebaut werden muessen, gilt weiter die alte Konvention:
  *                  gibt es keinen registrierten Eintrag, wird
  *                  Casino._load<Name> aufgerufen, so wie bisher.
  *
- *   VERLAUF        Jeder Wechsel schreibt einen History-Eintrag (#/name).
+ *   Verlauf        Jeder Wechsel schreibt einen History-Eintrag (#/name).
  *                  Damit funktionieren Zurueck-Geste, Zurueck-Taste und
  *                  geteilte Links.
  *
- *   ABSCHIRMUNG    Ein Waechter kann einen Wechsel verhindern, etwa weil der
+ *   Abschirmung    Ein Waechter kann einen Wechsel verhindern, etwa weil der
  *                  Screen gesperrt ist oder niemand eingeloggt ist.
  *
  * app.js haengt sich fuer alles Uebergreifende (Topbar, Praesenz, Chat) an
  * das Ereignis "casino:screen".
  */
 (function () {
-  const handlers = new Map();   // name -> { onEnter, onLeave }
+  const handlers = new Map();   // je name: { onEnter, onLeave }
   let guard = null;             // (name) => true | false
   let fallback = "login";       // wohin, wenn der Waechter ablehnt
   let current = null;
@@ -37,7 +37,7 @@
   const el = (name) => document.querySelector(`.screen[data-screen="${name}"]`);
   const exists = (name) => !!el(name);
 
-  /** "blackjackLobby" -> "_loadBlackjackLobby" */
+  /** aus "blackjackLobby" wird "_loadBlackjackLobby" */
   const legacyHookName = (name) => "_load" + name.charAt(0).toUpperCase() + name.slice(1);
 
   function runEnter(name) {

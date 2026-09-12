@@ -1,8 +1,6 @@
 "use strict";
 
-/* ============================================================
-   Lobby live feed.
-   ============================================================ */
+/* Lobby live feed. */
 
 (function () {
   const { socket, escapeHtml } = window.Casino;

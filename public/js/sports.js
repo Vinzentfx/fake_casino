@@ -1,11 +1,9 @@
 "use strict";
 
-/* ============================================================
-   Sportwetten (simuliert und echte Spiele)
+/* Sportwetten (simuliert und echte Spiele)
    Spieltafel und Wettschein: Tipps antippen, um sie einzusammeln. Ein Tipp
    ist eine Einzelwette, ab zwei eine Kombi (Quoten multiplizieren sich, alle
-   müssen treffen). Man sieht, worauf die anderen setzen.
-   ============================================================ */
+   müssen treffen). Man sieht, worauf die anderen setzen. */
 
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
@@ -17,16 +15,14 @@
   let betAmount = 100;
   let slip = []; // Tipps: { matchId, market, selection, odds, label }
 
-  /* ---------------------------------------------------------------------
-     Filter und Aufklappen.
+  /* Filter und Aufklappen.
 
      Vorher stand jedes Spiel mit allen sechs Maerkten offen da. Bei siebzig
      Spielen waren das 714 Wettknoepfe und eine Seite von ueber 34.000 Pixeln
      Hoehe, rund vierunddreissig Bildschirme Scrollen, um ans Ende zu kommen.
 
      Jetzt steht nur der Hauptmarkt (Sieger) offen, der Rest kommt auf Tipp.
-     Dazu ein Liga-Filter und eine Grundmenge, die sich nachladen laesst.
-  --------------------------------------------------------------------- */
+     Dazu ein Liga-Filter und eine Grundmenge, die sich nachladen laesst. */
   const HAUPTMARKT = "1x2";
   const GRUNDMENGE = 12;
   let filterLiga = "alle";
@@ -61,7 +57,7 @@
     if (filterLiga === "__sim") liste = liste.filter((m) => !m.real);
     else if (filterLiga !== "alle") liste = liste.filter((m) => m.real && m.league === filterLiga);
     /*
-     * ECHTE Spiele zuerst.
+     * Echte Spiele zuerst.
      *
      * Vorher wurde nur nach Zustand sortiert, und "live" stand oben. Die
      * simulierten Partien laufen aber im Dauerbetrieb (eine komprimierte
@@ -92,7 +88,7 @@
     });
   }
 
-  // --- Beschriftungen ---
+  // Beschriftungen
   function selLabel(m, market, sel) {
     if (market === "1x2") return sel === "home" ? m.home : sel === "away" ? m.away : "Unent.";
     if (market === "dc") return sel === "hd" ? "1X" : sel === "ha" ? "12" : "X2";
@@ -103,7 +99,7 @@
     return sel;
   }
   function statusHtml(m) {
-    if (m.state === "live") return `<span class="sb-live">🔴 LIVE${m.minute ? ` ${m.minute}'` : ""}</span>`;
+    if (m.state === "live") return `<span class="sb-live">LIVE${m.minute ? ` ${m.minute}'` : ""}</span>`;
     if (m.state === "pending") return `<span class="sb-pending">⏳ läuft · Ergebnis folgt</span>`;
     if (m.state === "done") {
       const o = m.result ? (m.result.outcome === "home" ? m.home : m.result.outcome === "away" ? m.away : "Unentschieden") : "";
@@ -117,7 +113,7 @@
     return `<span class="sb-kick">⏱ Anpfiff ${mm}:${String(ss).padStart(2, "0")}</span>`;
   }
 
-  // --- Wettschein ---
+  // Wettschein
   const legIn = (matchId, market, selection) => slip.find((l) => l.matchId === matchId && l.market === market && l.selection === selection);
   function toggleLeg(m, market, selection) {
     const odds = m.markets[market].sels[selection];
@@ -144,7 +140,7 @@
     const legs = slip.map((l, i) => `<div class="sb-leg"><span>${escapeHtml(l.label)} <b>@${l.odds.toFixed(2)}</b></span><button class="sb-leg-x" data-i="${i}">✕</button></div>`).join("");
     const title = slip.length === 1 ? "Einzelwette" : `Kombi · ${slip.length} Tipps`;
     el.innerHTML = `
-      <div class="sb-slip-head"><b>🎟️ ${title}</b><span>Gesamtquote <b class="sb-odds">${o.toFixed(2)}</b></span></div>
+      <div class="sb-slip-head"><b>${title}</b><span>Gesamtquote <b class="sb-odds">${o.toFixed(2)}</b></span></div>
       <div class="sb-legs">${legs}</div>
       <div class="sb-amount-row">
         <input type="number" class="sb-amount" min="50" step="50" value="${betAmount}" inputmode="numeric" />
@@ -185,7 +181,7 @@
     }
   }
 
-  // --- Spieltafel ---
+  // Spieltafel
   function render() { renderSlip(); renderMatches(); renderCombos(); renderHistory(); renderFeed(); }
 
   function renderHistory() {
@@ -292,7 +288,7 @@
       socket.emit("sports:cashout", { matchId: +b.dataset.id, betId: b.dataset.bet }, (res) => {
         if (!res || !res.ok) { toast((res && res.error) || "Cash-out fehlgeschlagen."); return; }
         if (res.account) applyAccount(res.account);
-        toast(`💸 Cash-out: +${fmt(res.refund)} Chips`);
+        toast(`Cash-out: +${fmt(res.refund)} Chips`);
         load();
       });
     }));
@@ -317,7 +313,7 @@
     const el = $("sb-combos");
     if (!el) return;
     const cs = data.myCombos || [];
-    if (!cs.length) { el.innerHTML = '<p class="muted small">Noch keine Kombi. Tippe mehrere Spiele an → Wettschein.</p>'; return; }
+    if (!cs.length) { el.innerHTML = '<p class="muted small">Noch keine Kombi. Tippe mehrere Spiele an, sie landen dann im Wettschein.</p>'; return; }
     el.innerHTML = cs.map((c) => {
       const status = !c.settled ? '<span class="muted">offen</span>'
         : c.voided ? `<span class="muted">↩ Erstattet (Spiel abgesagt) ${fmt(c.payout)}<i class=mk></i></span>`

@@ -246,7 +246,7 @@ function load() {
 /*
  * Einmalige Bereinigung kaputter Spielstatistiken.
  *
- * In einem Konto stand bei Poker ein Netto von 5,07 MILLIARDEN und bei Slots
+ * In einem Konto stand bei Poker ein Netto von 5,07 Milliarden und bei Slots
  * 274 Millionen. Im ganzen Haus sind keine zehn Millionen Chips im Umlauf, und
  * eine Pokerhand ist durch den Einkaufsdeckel von 100.000 je Platz nach oben
  * begrenzt: ueber 127 Haende liegt das rechnerische Maximum bei rund 114
@@ -256,7 +256,7 @@ function load() {
  * bezahlt hat (siehe game/tableManager.js). Die Bots sind lange raus, die Zahl
  * stand aber weiter im Statistik-Bildschirm und hat die ganze Seite entwertet.
  *
- * Geloescht wird nur der GELDWERT. Runden und Siege bleiben stehen: die sind
+ * Geloescht wird nur der Geldwert. Runden und Siege bleiben stehen: die sind
  * glaubwuerdig, und "127 Haende, 73 gewonnen" ist mehr wert als gar nichts.
  */
 function raeumeStatistik(roh) {
@@ -361,7 +361,7 @@ function _bremsWert(acc) {
 /*
  * Die Schwellen stammten aus einer Wirtschaft, die es nie gab: die Bremse
  * begann bei zehn Millionen Vermoegen und wirkte voll erst bei einer
- * Milliarde. Im echten Spielstand liegt das GROESSTE Vermoegen bei 5,7
+ * Milliarde. Im echten Spielstand liegt das groesste Vermoegen bei 5,7
  * Millionen. Die Bremse griff damit bei exakt niemandem, und alle
  * Gratis-Einnahmen liefen bei jedem zu hundert Prozent.
  *
@@ -370,8 +370,8 @@ function _bremsWert(acc) {
  * aendert sich damit fuer rund sechzig der einundsiebzig Konten gar nichts;
  * gebremst werden nur die, die ohnehin vorne liegen.
  */
-const FAUCET_FULL = 1_000_000;       // ≤1M Vermögen → 100%
-const FAUCET_MIN_NW = 6_000_000;     // ≥6M Vermögen → FAUCET_FLOOR
+const FAUCET_FULL = 1_000_000;       // bis 1 Mio Vermögen 100 %
+const FAUCET_MIN_NW = 6_000_000;     // ab 6 Mio Vermögen FAUCET_FLOOR
 const FAUCET_FLOOR = 0.25;
 function faucetFactor(name) {
   const acc = get(name);
@@ -383,8 +383,8 @@ function faucetFactor(name) {
   return 1 - (1 - FAUCET_FLOOR) * t;
 }
 
-// --- Spieler-Level / XP ---
-// XP gibt es fürs SPIELEN, nicht fürs Reichsein. Der Rang zeigt Erfahrung.
+// Spieler-Level / XP
+// XP gibt es fürs Spielen, nicht fürs Reichsein. Der Rang zeigt Erfahrung.
 // Level L braucht insgesamt 100·(L-1)² XP, also level = floor(√(xp/100)) + 1.
 const XP_PER_HAND = 8;   // je abgerechneter Hand …
 const XP_PER_WIN = 4;    // … und das bei einem Sieg dazu
@@ -430,7 +430,7 @@ function addXp(name, amount) {
   return publicAccount(acc);
 }
 
-// --- Boni (aus Firmenprodukten) ---
+// Boni (aus Firmenprodukten)
 /** Aktive Boni eines Kontos, abgelaufene fliegen raus. { type: {until, mult} } */
 function activeBuffs(acc) {
   if (!acc || !acc.buffs) return {};
@@ -467,7 +467,7 @@ function hasBuff(name, type) {
   return buffMult(name, type) > 1;
 }
 
-// --- Inventar (Produkte zum Benutzen oder Weiterverkaufen) ---
+// Inventar (Produkte zum Benutzen oder Weiterverkaufen)
 function getInventory(name) {
   const acc = get(name);
   return (acc && acc.inventory) || {};
@@ -833,15 +833,15 @@ function changePin(name, oldPin, newPin) {
   return { ok: true };
 }
 
-/* --- Pechvogel ---
+/* Pechvogel
    Wohnt seit dem Strafen-Umbau in game/strafen.js und hat dort eine Staerke
    und eine Ablaufzeit. Die beiden Funktionen hier bleiben, weil fuenf
    Spielmodule sie rufen, und weil der alte Ja/Nein-Schalter an alten Konten
    weiterhin gilt (strafen.aktiv kennt ihn).
 
-   Unterschied, auf den es ankommt: `isShadowbanned` sagt, DASS jemand
+   Unterschied, auf den es ankommt: `isShadowbanned` sagt, dass jemand
    Pechvogel ist (fuer Anzeige und Listen), `pechTrifft` wuerfelt, ob es
-   DIESE Runde zuschlaegt. Bei 100 Prozent ist beides dasselbe. */
+   diese Runde zuschlaegt. Bei 100 Prozent ist beides dasselbe. */
 function setShadowban(name, on, opts = {}) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
@@ -958,7 +958,7 @@ function listAll() {
    nicht mehr nur Chips, sondern auch Lose, Season-XP und Kosmetik, und dafuer
    braucht es Zugriff auf halbe Casino. Am Konto bleibt nur `lastWheelAt`. */
 
-// --- Rivalen / Kopfgeld ---
+// Rivalen / Kopfgeld
 // Chips auf einen Rivalen setzen. Wer eines seiner Gebäude übernimmt,
 // bekommt den ganzen Topf. Der Einsatz wird sofort einbehalten.
 const MIN_BOUNTY = 1000;
@@ -1006,7 +1006,7 @@ function claimBounty(targetName, claimantName) {
 }
 const bountyOn = (name) => { const a = get(name); return (a && a.bounty) || 0; };
 
-// --- Login-Kalender (7-Tage-Belohnungsreihe) ---
+// Login-Kalender (7-Tage-Belohnungsreihe)
 // Einmal pro Kalendertag abholen. Tage in Folge steigen die Leiter hoch, ein
 // verpasster Tag setzt auf Tag 1 zurück. Unabhängig vom Stunden-Bonus.
 const CAL_REWARDS = [2000, 3000, 5000, 8000, 12000, 20000, 50000];
@@ -1057,7 +1057,7 @@ function claimCalendar(name) {
   return { ok: true, reward, day: idx + 1, glueckstag, account: publicAccount(acc) };
 }
 
-// --- Wohnsitz (reine Deko, kostet nichts) ---
+// Wohnsitz (reine Deko, kostet nichts)
 function setResidence(name, buildingId) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
@@ -1068,7 +1068,7 @@ function setResidence(name, buildingId) {
   return { ok: true, residence: acc.residence };
 }
 
-/** buildingId -> [Namen] aller, die dort ihren Wohnsitz haben. */
+/** Je buildingId die Namen aller, die dort ihren Wohnsitz haben. */
 function residentsByBuilding() {
   const out = {};
   for (const acc of Object.values(accounts)) {

@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Roulette-Lobbys, ein GEMEINSAMER Tisch: alle setzen auf denselben Kessel und
+ * Roulette-Lobbys, ein gemeinsamer Tisch: alle setzen auf denselben Kessel und
  * sehen, worauf die anderen setzen. Der Lobby-Leiter wirft eine Kugel, und
  * dieses eine Ergebnis rechnet alle Wetten auf einmal ab. Jede Lobby hat ihre
  * eigene Tafel mit den letzten Zahlen.
@@ -21,7 +21,7 @@ const HISTORY_MAX = 18;
 
 let ioRef = null;
 let accountsRef = null;
-const rooms = new Map(); // Code -> Raum
+const rooms = new Map(); // je Code: Raum
 
 function makeCode() {
   let code;

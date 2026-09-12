@@ -33,7 +33,7 @@ const TIME_CONTROLS = {
 };
 const DEFAULT_TC = "5+0";
 
-// --- Elo ---
+// Elo
 const K = 24;
 function expected(a, b) { return 1 / (1 + Math.pow(10, (b - a) / 400)); }
 function eloUpdate(ra, rb, scoreA) {
@@ -389,7 +389,7 @@ function setupChess(io, accounts) {
       else broadcast(match.code);
     });
 
-    // --- Zuschauen ---
+    // Zuschauen
     socket.on("chess:spectate", ({ code } = {}, ack) => {
       code = String(code || "").trim().toUpperCase();
       const match = matches.get(code);
@@ -409,7 +409,7 @@ function setupChess(io, accounts) {
     socket.on("disconnect", () => { leaveCurrent(socket); chessUnspectate(socket); });
   });
 
-  // --- Bestenlisten und Clan-Liga ---
+  // Bestenlisten und Clan-Liga
   function allWithChess() {
     const out = [];
     const raw = accounts.rawAll ? accounts.rawAll() : []; // rawAll() liefert ein Array der Kontoobjekte

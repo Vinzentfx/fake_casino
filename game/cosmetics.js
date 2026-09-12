@@ -44,7 +44,7 @@ const COLORS = [
   { id: "s2_amber", color: "#ff9f43", cost: null, season: "porta-herbst-2" },
 ];
 
-/* --- Namens-Stile ---
+/* Namens-Stile
  *
  * Der eigentliche Grund fuer diesen Umbau. Bisher gab es genau zwei Regler:
  * ein Emoji und eine flache Schriftfarbe. Beides sieht bei allen gleich aus
@@ -89,13 +89,13 @@ const STYLES = [
    * zwoelf Goldsegmenten, genau wie das Glueckrad zwoelf Felder hat.
    */
   { id: "rad_fortuna", label: "Fortuna", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad", preview: ["#fff3c4", "#a97c1a"], motion: true },
-  /* Auktionsware. Kein Verlauf, der wandert, sondern ein Bild, das FLIMMERT:
+  /* Auktionsware. Kein Verlauf, der wandert, sondern ein Bild, das flimmert:
      die Farbkanten laufen auseinander wie bei einem schlechten Beamer, und
      waagerechte Zeilen ziehen durch die Schrift. */
   { id: "auk_hologramm", label: "Hologramm", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", preview: ["#7ef9ff", "#ff5ecb"], motion: true },
 ];
 
-/* --- Rahmen ums Bild ---
+/* Rahmen ums Bild
  * Das Emoji bleibt, bekommt aber einen Ring. Kostet keinen Platz und wirkt
  * ueberall dort, wo Spieler nebeneinander stehen (Online-Liste, Bestenliste,
  * Pokertisch).
@@ -112,9 +112,9 @@ const FRAMES = [
   { id: "rad_fortuna", label: "Fortunas Rad", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad", motion: true },
 ];
 
-/* --- Titel ---
+/* Titel
  * Eine kurze Zeile unter dem Namen. Das ist die einzige Kosmetik, mit der man
- * etwas ueber sich SAGEN kann, statt nur bunt zu sein.
+ * etwas ueber sich sagen kann, statt nur bunt zu sein.
  */
 const TITLES = [
   { id: "keiner",     text: null,                  cost: 0 },
@@ -149,7 +149,7 @@ const TITLES = [
   { id: "auk_meistbietend", text: "Meistbietend", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion" },
 ];
 
-/* --- Gewinn-Effekt ---
+/* Gewinn-Effekt
  * Was auf dem Bildschirm passiert, wenn du gross gewinnst. Bisher sah das bei
  * allen gleich aus. Der Effekt gehoert zu den Sachen, die man am haeufigsten
  * von seiner eigenen Kosmetik sieht, jedes Mal, wenn es sich gelohnt hat.
@@ -172,7 +172,7 @@ const EFFEKTE = [
   { id: "auk_tresor", label: "Tresorsprengung", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
-/* --- Eintritts-Spruch ---
+/* Eintritts-Spruch
  * Eine Zeile im Chat, wenn du reinkommst. Das ist die einzige Kosmetik, die
  * die anderen sehen, ohne dich anzutippen, und in einer Runde, die versetzt
  * spielt, ist "wer ist gerade aufgetaucht" die interessanteste Nachricht
@@ -198,7 +198,7 @@ const SPRUECHE = [
 
 const SPRUCH_MAX = 60;
 
-/* --- Profil-Banner ---
+/* Profil-Banner
  * Der Streifen hinter deinem Namen im Profil. Reine Flaeche, aber es ist das
  * Erste, was jemand sieht, der dich antippt.
  */
@@ -213,7 +213,7 @@ const BANNER = [
   { id: "auk_gewitter", label: "Gewitter", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
-/* --- Namensschild ---
+/* Namensschild
  * Der Hintergrund der Zeile, in der du in der Online-Liste und in der
  * Bestenliste stehst. Der Rahmen ums Bild war nur ein Ring um ein Emoji; das
  * Schild faerbt die ganze Plakette und faellt deshalb viel staerker auf.
@@ -231,7 +231,7 @@ const SCHILDER = [
   { id: "auk_tresor", label: "Tresortür", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
-/* --- Aura ---
+/* Aura
  *
  * Neue Art. Der Rahmen ist ein Ring am Bild, der Gewinn-Effekt passiert einmal
  * und ist wieder weg. Die Aura ist das, was um dich herum immer läuft:
@@ -245,7 +245,7 @@ const AUREN = [
   { id: "auk_leere",     label: "Schwarzes Loch", cost: null, via: "Nur im Auktionshaus zu ersteigern", limitiert: "auktion", motion: true },
 ];
 
-/* --- Kartenrücken ---
+/* Kartenrücken
  *
  * Neue Art. Das Blatt, mit dem DU spielst: die verdeckten Karten in Poker,
  * Blackjack, Solitär und Memory. Vier Spiele haben dafür bisher vier
@@ -293,7 +293,7 @@ function setupCosmetics(io, accounts) {
 
     function state(acc) {
       const owned = ensureOwned(acc);
-      // Achtung: cost === 0 ist "gratis fuer alle", cost === null ist
+      // Nicht verwechseln: cost === 0 ist "gratis fuer alle", cost === null ist
       // "nicht kaeuflich, nur ueber Season oder Stadt". Die beiden duerfen
       // nicht in denselben Topf, sonst gehoerte alles jedem.
       const hat = (art, id) => KATALOG[art][id].cost === 0 || owned[TOPF[art]].includes(id);
@@ -409,8 +409,7 @@ function grant(acc, type, id) {
   return true;
 }
 
-/* ---------------------------------------------------------------------------
-   Admin: Stuecke von Hand geben und wegnehmen
+/* Admin: Stuecke von Hand geben und wegnehmen
 
    Gebraucht als Ausgleich (etwas ist schiefgegangen), als Preis fuer etwas,
    das ausserhalb des Casinos passiert ist, und zum Zuruecknehmen, wenn ein
@@ -418,8 +417,7 @@ function grant(acc, type, id) {
 
    Wichtig beim Wegnehmen: was angelegt ist, muss auch abgelegt werden. Sonst
    traegt jemand weiter einen Rahmen, den er nicht mehr besitzt, und beim
-   naechsten Speichern steht am Konto eine Kennung, die zu keinem Besitz passt.
---------------------------------------------------------------------------- */
+   naechsten Speichern steht am Konto eine Kennung, die zu keinem Besitz passt. */
 
 /** Der ganze Katalog, nach Art gruppiert, fuer die Auswahl im Admin. */
 function adminKatalog() {
@@ -489,7 +487,7 @@ function publicLook(acc) {
     schild: acc.schild || null,
     aura: acc.aura || null,
     // Der Kartenrücken wirkt nur auf dem eigenen Bildschirm, muss aber
-    // mitkommen: sonst weiss der Client sein EIGENES Blatt nicht.
+    // mitkommen: sonst weiss der Client sein eigenes Blatt nicht.
     karte: acc.karte || null,
     winEffect: acc.winEffect || null,
   };
@@ -515,7 +513,7 @@ function saubererSpruch(roh) {
     .slice(0, SPRUCH_MAX);
 }
 
-/* --- Fortuna: sieben Stueck, mehr nicht ---
+/* Fortuna: sieben Stueck, mehr nicht
  *
  * Bewusst ohne eigene Datei. Wie viele vergeben sind, steht schon in den
  * Konten: es ist die Anzahl derer, die den Stil besitzen. Ein zweiter Zaehler

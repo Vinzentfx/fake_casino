@@ -3,7 +3,6 @@
 /**
  * Hochgeladene Bilder, zurzeit nur Clan-Wappen.
  *
- * ---------------------------------------------------------------------------
  * Warum das hier so wenig tut
  *
  * Bild-Upload ist der klassische Weg, sich einen Server einzutreten: eine

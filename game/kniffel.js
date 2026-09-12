@@ -14,7 +14,7 @@
  * gespielt wird.
  *
  * Kein Hausvorteil: der Einsatz beider wandert in den Topf, der Gewinner
- * nimmt ihn abzueglich RAKE. Das ist ein Spiel gegeneinander, das Haus
+ * nimmt ihn abzueglich Rake. Das ist ein Spiel gegeneinander, das Haus
  * verdient nur an der Vermittlung.
  */
 
@@ -78,7 +78,7 @@ const gesamt = (blatt) => FELDER.reduce((s, f) => s + (blatt[f.id] || 0), 0);
 const alleGesetzt = (blatt) => FELDER.every((f) => blatt[f.id] != null);
 
 function setupKniffel(io, accounts) {
-  const partien = new Map(); // Code -> Partie
+  const partien = new Map(); // je Code: Partie
 
   function makeCode() {
     let c;
@@ -223,7 +223,7 @@ function setupKniffel(io, accounts) {
     const key = () => socket.data.account;
 
     /*
-     * Die eigene LAUFENDE Partie.
+     * Die eigene laufende Partie.
      *
      * Beendete bleiben absichtlich noch eine Minute liegen, damit beide das
      * Ergebnis sehen koennen. Ohne die Phasen-Pruefung galt man in dieser

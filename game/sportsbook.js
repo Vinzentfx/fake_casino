@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Sportwetten auf SIMULIERTE Fußballspiele. Das ist der Teil, der immer läuft;
+ * Sportwetten auf simulierte Fußballspiele. Das ist der Teil, der immer läuft;
  * echte Spiele kommen dazu, sobald ein API-Schlüssel gesetzt ist.
  *
  * Es gibt ständig eine Handvoll Spiele. Jedes hat ein Wettfenster, dann ist
@@ -9,7 +9,7 @@
  * Stärke beider Teams). Der Spielstand baut sich über ein kurzes, gerafftes
  * Fenster auf, danach wird abgerechnet. Mehrere Märkte je Spiel (1X2, über/unter
  * 2,5, beide treffen), die Quoten kommen aus demselben Modell plus Hausmarge.
- * Jeder SIEHT, worauf die anderen setzen: Einsatz und Anzahl je Tipp und ein
+ * Jeder sieht, worauf die anderen setzen: Einsatz und Anzahl je Tipp und ein
  * Live-Feed der Wetten.
  *
  * Keine Lobby, eine gemeinsame Tafel für alle. Nur Spielgeld; bei der Abrechnung
@@ -55,7 +55,7 @@ const STRENGTH_DEFAULT = 70;
 const TEAM_STRENGTHS = {};
 for (const lg of Object.values(LEAGUES)) for (const [n, s] of lg.teams) TEAM_STRENGTHS[n] = s;
 Object.assign(TEAM_STRENGTHS, {
-  // More top clubs (UCL / other leagues)
+  // Weitere Spitzenclubs (Champions League und andere Ligen)
   "Inter": 86, "Milan": 81, "Juventus": 82, "Napoli": 82, "Roma": 78, "Atalanta": 80,
   "PSG": 89, "Monaco": 76, "Marseille": 74, "Porto": 78, "Benfica": 79, "Sporting": 79,
   "Ajax": 75, "PSV": 77, "Feyenoord": 76, "Celtic": 72, "Galatasaray": 74,
@@ -69,7 +69,7 @@ Object.assign(TEAM_STRENGTHS, {
   "Deutschland": 86, "Frankreich": 91, "Spanien": 89, "England": 88, "Brasilien": 90,
   "Argentinien": 91, "Portugal": 87, "Niederlande": 85, "Italien": 84, "Belgien": 83,
   "Kroatien": 82, "Marokko": 80, "Japan": 78, "Schweiz": 78,
-  // WM-Kader 2026. football-data.org liefert ENGLISCHE shortNames, deshalb stehen die hier.
+  // WM-Kader 2026. football-data.org liefert englische shortNames, deshalb stehen die hier.
   "France": 91, "Argentina": 91, "Brazil": 90, "Spain": 89, "England": 88, "Portugal": 87,
   "Germany": 86, "Netherlands": 85, "Belgium": 84, "Croatia": 82, "Uruguay": 82, "Colombia": 80,
   "Morocco": 80, "Senegal": 79, "Switzerland": 78, "Austria": 78, "Norway": 78, "Japan": 78,
@@ -112,7 +112,7 @@ function strengthOf(name) {
   return STRENGTH_DEFAULT;
 }
 
-// --- Echte Spiele (football-data.org), nur wenn ein Token gesetzt ist ---
+// Echte Spiele (football-data.org), nur wenn ein Token gesetzt ist
 const FD_TOKEN = process.env.FOOTBALL_DATA_TOKEN || "";
 /*
  * Welche Wettbewerbe geholt werden, wenn ein Token gesetzt ist.
@@ -135,11 +135,11 @@ const COMP_META = {
 const NEUTRAL_COMPS = new Set(["WC", "EC", "CL"]); // neutraler Ort, also kein Heimvorteil
 
 let nextId = 1;
-const matches = new Map(); // id -> match
+const matches = new Map(); // je id: match
 const feed = [];           // die letzten Wetten auf der ganzen Tafel
 const combos = [];         // active accumulator (parlay) bets across players
 const betLog = [];         // zuletzt abgerechnete Einzelwetten (Verlauf je Spieler)
-const matchResults = new Map(); // matchId -> { h, a }, bleibt nach dem Spiel, damit Kombis noch abrechnen können
+const matchResults = new Map(); // je matchId: { h, a }, bleibt nach dem Spiel, damit Kombis noch abrechnen können
 const BETLOG_KEEP = 400;
 function logBet(user, entry) {
   betLog.push({ user, ts: Date.now(), ...entry });
@@ -149,7 +149,7 @@ const MAX_LEGS = 6;
 const SAME_GAME_HAIRCUT = 0.90; // Abschlag je weiterem Tipp aus demselben Spiel (die hängen zusammen)
 const RESULTS_KEEP = 400;
 
-// --- Poisson-Rechnung (für Simulation und Quoten) ---
+// Poisson-Rechnung (für Simulation und Quoten)
 function poissonPmf(lambda, k) {
   let p = Math.exp(-lambda);
   for (let i = 1; i <= k; i++) p *= lambda / i;
@@ -164,7 +164,7 @@ function samplePoisson(lambda) {
 
 function lambdas(homeStr, awayStr, neutral = false) {
   const BASE = 1.32;                 // Tore je Team im Schnitt
-  const K = 1.25;                    // strength sensitivity (higher → clearer favourites)
+  const K = 1.25;                    // wie stark die Spielstärke zählt (höher heißt klarere Favoriten)
   const ratio = homeStr / awayStr;
   const homeAdv = neutral ? 1.0 : 1.12;  // kein Heimvorteil bei Turnieren auf neutralem Platz (WM)
   const awayAdv = neutral ? 1.0 : 0.90;
@@ -219,7 +219,7 @@ function createMatch() {
   return m;
 }
 
-// --- Settlement ---
+// Settlement
 function selWins(market, selection, score) {
   const tot = score.h + score.a;
   const oc = score.h > score.a ? "home" : score.h === score.a ? "draw" : "away";
@@ -232,9 +232,9 @@ function selWins(market, selection, score) {
   return false;
 }
 
-// --- Live odds / cash-out ---
+// Live odds / cash-out
 const CASHOUT_FEE = 0.06;
-/** Wahrscheinlichkeit, dass die Wette bei diesem Stand und dieser Restzeit noch GEWINNT. */
+/** Wahrscheinlichkeit, dass die Wette bei diesem Stand und dieser Restzeit noch gewinnt. */
 function liveWinProb(m, market, selection) {
   const remFrac = Math.max(0, (90 - (m.minute || 0)) / 90);
   const rlh = (m.lh || 1.3) * remFrac, rla = (m.la || 1.15) * remFrac;
@@ -291,7 +291,7 @@ function settle(m, accounts, io) {
 // nur echte Spiele (z. B. nur WM). Standard ist an.
 const SIM_ENABLED = process.env.SPORTS_SIM !== "off";
 
-// --- Tick loop ---
+// Taktschleife
 function setupSportsbook(io, accounts) {
   loadSports(accounts); // offene Wetten, Kombis und Ergebnisse von vor dem Neustart zurückholen
   setInterval(persistSports, 60000).unref(); // regelmäßig sichern (ein Absturz kostet höchstens 60 s)
@@ -354,7 +354,7 @@ function setupSportsbook(io, accounts) {
   }
   setInterval(tick, 1000);
 
-  // --- Real fixtures poller (football-data.org) ---
+  // Real fixtures poller (football-data.org)
   async function pollReal() {
     if (!FD_TOKEN) return;
     const today = new Date();
@@ -435,7 +435,7 @@ function setupSportsbook(io, accounts) {
       m.bets.push({ id: crypto.randomUUID(), user: socket.data.account, name: acc.name, market, selection, amount, odds });
       feed.unshift({ name: acc.name, match: `${m.home} vs ${m.away}`, sel: selLabel(market, selection, m), amount, odds });
       if (feed.length > FEED_MAX) feed.length = FEED_MAX;
-      require("./quests").track(socket.data.account, "bet_sport"); // der Auftrag zählt beim SETZEN
+      require("./quests").track(socket.data.account, "bet_sport"); // der Auftrag zählt beim Setzen
       typeof ack === "function" && ack({ ok: true, account: r.account });
       io.emit("sports:update");
     });
@@ -625,7 +625,7 @@ function teamChances(strength, oppStrength = 75) {
   return { win: p.pHome, draw: p.pDraw, loss: p.pAway, homeOdds: odds(p.pHome) };
 }
 
-// --- Persistence: open bets/combos + results survive restarts/deploys ---
+// Persistence: open bets/combos + results survive restarts/deploys
 function persistSports() {
   try {
     const singles = [];

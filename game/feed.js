@@ -15,7 +15,7 @@ let _io = null;
 let _accounts = null;
 const items = [];
 
-/* Feed-Typ -> Chronik-Gruppe. Was hier nicht steht, wandert unter seinem
+/* Chronik-Gruppe je Feed-Typ. Was hier nicht steht, wandert unter seinem
    eigenen Namen in die Chronik. */
 const CHRONIK_ART = { win: "gewinn", loss: "verlust" };
 

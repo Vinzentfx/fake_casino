@@ -1,11 +1,9 @@
 "use strict";
 
-/* ============================================================
-   Towers (wie Dragon Tower)
+/* Towers (wie Dragon Tower)
    Den Turm hochklettern: auf jeder Ebene ein sicheres Feld (Ei) wählen, dann
    steigt der Multiplikator. Fallen (Totenkopf) meiden. Auszahlen geht immer.
-   Entschieden wird auf dem Server (game/towers.js), hier wird nur gezeichnet.
-   ============================================================ */
+   Entschieden wird auf dem Server (game/towers.js), hier wird nur gezeichnet. */
 
 (function () {
   const { socket, toast, applyAccount } = window.Casino;
@@ -92,7 +90,7 @@
     btn.disabled = !v.cashout;
   }
 
-  // Zeichnet den Turm aus einer Server-View. Reihen oben (Ebene 9) → unten (Ebene 1).
+  // Zeichnet den Turm aus einer Server-View. Reihen von oben (Ebene 9) nach unten (Ebene 1).
   // fx: { pop:{row,tile} } markiert die frisch aufgedeckte Kachel für die Animation.
   const sym = (id) => (window.Casino.icons ? window.Casino.icons.spielSymbol(id) : "");
 
@@ -200,7 +198,7 @@
       if (v.bust) {
         board.classList.add("tw-bust");
         setTimeout(() => board.classList.remove("tw-bust"), 900);
-        toast("💀 Falle erwischt! Einsatz weg.");
+        toast("Falle erwischt, Einsatz weg.");
         merke({ gewonnen: false, mult: 0 });
       } else if (v.cashedOut || v.cleared) {
         board.classList.add("tw-win");
@@ -209,7 +207,7 @@
         float.textContent = `+${fmt(v.payout)} Chips`;
         board.appendChild(float);
         setTimeout(() => { board.classList.remove("tw-win"); float.remove(); }, 1600);
-        toast(v.cleared ? `🏆 Turm bezwungen! +${fmt(v.payout)} Chips` : `💸 +${fmt(v.payout)} Chips (${mx(v.mult)}×)!`);
+        toast(v.cleared ? `Turm bezwungen! +${fmt(v.payout)} Chips` : `+${fmt(v.payout)} Chips (${mx(v.mult)}×)!`);
         merke({ gewonnen: true, mult: v.mult || v.multiplier || 1 });
       }
     } else setActive(true);
@@ -264,7 +262,7 @@
   window.Casino._loadTowers = () => {
     renderDiffs();
     renderVerlauf();
-    // Läuft server-seitig noch ein Spiel (z.B. nach Tab-Reload)? → fortsetzen.
+    // Läuft server-seitig noch ein Spiel (z.B. nach Neuladen des Tabs)? Dann fortsetzen.
     socket.emit("towers:state", (v) => {
       if (v && v.minBet) {
         // maxWin muss mit: der Server schickt den Deckel, und ohne ihn

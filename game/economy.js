@@ -19,7 +19,7 @@ const achievements = require("./achievements");
 const quests = require("./quests");
 const weekly = require("./weekly");
 
-// --- Arbeits-Klicker (gedeckelt) ---
+// Arbeits-Klicker (gedeckelt)
 const MAX_CLICK_LEVEL = 5;     // ein paar Stufen, dann ist Schluss
 const CLICK_POWER_BY_LEVEL = [2, 4, 7, 11, 16, 22];
 const clickUpgradeCost = (lvl) => 200 * (lvl + 1); // Stufe 0: 200, 1: 400, … 4: 1000
@@ -146,7 +146,7 @@ function makeWorkTask(id, job, now = Date.now()) {
   const type = taskPool[zufall(taskPool.length)];
   const ende = now + TASK_TTL;
 
-  // --- Kasse: Betrag in moeglichst wenige Chips wechseln ---
+  // Kasse: Betrag in moeglichst wenige Chips wechseln
   if (type === "wechseln") {
     const { betrag, chips } = wechselBetrag();
     return {
@@ -162,7 +162,7 @@ function makeWorkTask(id, job, now = Date.now()) {
     };
   }
 
-  // --- Croupier: was zahlt der Tisch aus? ---
+  // Croupier: was zahlt der Tisch aus?
   if (type === "auszahlung") {
     const { payoutFactor } = require("./roulette");
     const einsatz = (1 + zufall(20)) * 50; // 50 bis 1.000
@@ -173,7 +173,7 @@ function makeWorkTask(id, job, now = Date.now()) {
       faktor = payoutFactor("number", n, n);
       frage = `Jemand setzt ${fmtChips(einsatz)} Chips auf die ${n}. Die ${n} kommt. Was zahlst du aus?`;
     } else if (art === "einfach") {
-      faktor = payoutFactor("red", null, 3); // 3 ist rot -> einfache Chance
+      faktor = payoutFactor("red", null, 3); // 3 ist rot, also einfache Chance
       frage = `${fmtChips(einsatz)} Chips auf Rot, es kommt Rot. Was zahlst du aus?`;
     } else {
       faktor = payoutFactor("dozen", 1, 5); // 5 liegt im ersten Dutzend
@@ -192,7 +192,7 @@ function makeWorkTask(id, job, now = Date.now()) {
     };
   }
 
-  // --- Kasse: Quote ausrechnen ---
+  // Kasse: Quote ausrechnen
   if (type === "quote") {
     const einsatz = (1 + zufall(20)) * 100;
     const quote = Math.round((1.2 + Math.random() * 4) * 100) / 100;
@@ -210,7 +210,7 @@ function makeWorkTask(id, job, now = Date.now()) {
     };
   }
 
-  // --- Croupier: Grundstrategie ---
+  // Croupier: Grundstrategie
   if (type === "strategie") {
     const f = waehle(BJ_FAELLE);
     return {
@@ -225,7 +225,7 @@ function makeWorkTask(id, job, now = Date.now()) {
     };
   }
 
-  // --- Sicherheit: welcher Schein rechnet nicht auf? ---
+  // Sicherheit: welcher Schein rechnet nicht auf?
   if (type === "schein") {
     const scheine = [];
     const falschIdx = zufall(4);
@@ -255,7 +255,7 @@ function makeWorkTask(id, job, now = Date.now()) {
     };
   }
 
-  // --- Kellner: Bestellungen in der richtigen Reihenfolge ---
+  // Kellner: Bestellungen in der richtigen Reihenfolge
   const anzahl = 3 + zufall(2);
   const bestellung = Array.from({ length: anzahl }, () => ({
     tisch: waehle(TISCHE), getraenk: waehle(GETRAENKE),
@@ -463,7 +463,7 @@ function setupEconomy(io, accounts) {
   setInterval(() => stadtKosmetikFuerAlle(io, accounts), 60 * 60 * 1000).unref();
 
   io.on("connection", (socket) => {
-    // --- Arbeits-Klicker ---
+    // Arbeits-Klicker
     socket.on("work:click", (ack) => {
       if (typeof ack !== "function") return;
       const acc = acct(socket);
@@ -613,7 +613,7 @@ function setupEconomy(io, accounts) {
       if (!job) { delete jobs.activeTask; accounts.save(); return ack({ ok: false, error: "Job nicht gefunden.", jobs: publicJobs(acc, e, now) }); }
 
       /* Beim Wechseln soll die Reihenfolge der angetippten Chips egal sein,
-         wichtig ist, WELCHE Chips, nicht in welcher Folge man sie greift. */
+         wichtig ist, welche Chips, nicht in welcher Folge man sie greift. */
       let eingabe = answer;
       if (task.sortAnswer === "desc" && Array.isArray(eingabe)) {
         eingabe = [...eingabe].map(Number).sort((a, b) => b - a);
@@ -673,7 +673,7 @@ function setupEconomy(io, accounts) {
       });
     });
 
-    // --- Gemeinsame Stadt (echte Karte: Ortsteile, dann Gebäude) ---
+    // Gemeinsame Stadt (echte Karte: Ortsteile, dann Gebäude)
     socket.on("city:state", (ack) => {
       if (typeof ack !== "function") return;
       const key = socket.data.account || null;
@@ -787,7 +787,7 @@ function setupEconomy(io, accounts) {
       broadcastCity();
     });
 
-    // --- Rivalen / Kopfgeld ---
+    // Rivalen / Kopfgeld
     socket.on("bounty:place", ({ target, amount } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
@@ -797,7 +797,7 @@ function setupEconomy(io, accounts) {
       ack(r);
     });
 
-    // --- Login-Kalender ---
+    // Login-Kalender
     socket.on("calendar:state", (ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });

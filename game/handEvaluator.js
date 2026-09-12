@@ -64,7 +64,7 @@ function straightHigh(distinctRanksDesc) {
   return 0;
 }
 
-/** Evaluate exactly 5 cards → value array. */
+/** Wertet genau 5 Karten aus und gibt ein Array mit Werten zurück. */
 function evaluate5(cards) {
   const ranks = cards.map((c) => c.rank).sort((a, b) => b - a);
   const suits = cards.map((c) => c.suit);

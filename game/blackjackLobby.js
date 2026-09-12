@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Blackjack-Lobbys, eine rein GESELLIGE Schicht über dem normalen Einzelspiel.
+ * Blackjack-Lobbys, eine rein gesellige Schicht über dem normalen Einzelspiel.
  *
  * An der Mechanik ändert sich nichts: jeder spielt seine Hände gegen seinen
  * eigenen Dealer (die Regeln in game/blackjack.js bleiben unberührt). Die Lobby
@@ -19,7 +19,7 @@ const MAX_PLAYERS = 8;
 const FEED_MAX = 25;
 
 let ioRef = null;
-const rooms = new Map(); // Code -> { code, hostKey, hostName, players: Map(key -> {key,name,net,hands}), feed: [] }
+const rooms = new Map(); // je Code: { code, hostKey, hostName, players: Map(key: {key,name,net,hands}), feed: [] }
 
 function makeCode() {
   let code;

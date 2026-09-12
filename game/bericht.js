@@ -9,7 +9,7 @@
  * Chat weggerollt ist und der Live-Feed nach jedem Deploy leer anfaengt.
  *
  * Der Bericht beantwortet beim Reinkommen drei Fragen in dieser Reihenfolge:
- *   1. Was liegt fuer MICH bereit (Kalender, Rad, Season, Geschenk)?
+ *   1. Was liegt fuer mich bereit (Kalender, Rad, Season, Geschenk)?
  *   2. Was ist passiert, seit ich zuletzt hier war?
  *   3. Wie steht es gerade (Jackpot, Krone, Goldene Strasse, mein Platz)?
  *

@@ -84,12 +84,10 @@ const build = require("./game/buildinfo");
  */
 const appVersion = () => build.current();
 
-// ---------------------------------------------------------------------------
 // HTTP und Konto-API
-// ---------------------------------------------------------------------------
 
 const app = express();
-app.set("trust proxy", true); // hinter Caddy → echte Client-IP steht in x-forwarded-for
+app.set("trust proxy", true); // hinter Caddy steht die echte Client-IP in x-forwarded-for
 app.use(express.json({ limit: "25mb" })); // Restore-Upload = kompletter data/-Ordner als JSON
 
 /**
@@ -172,12 +170,12 @@ app.get("/api/version", (_req, res) => {
   res.json({ version: build.current() });
 });
 
-// Gegen Gratis-Chips über Zweitkonten: pro IP nur eine begrenzte Zahl NEUER
+// Gegen Gratis-Chips über Zweitkonten: pro IP nur eine begrenzte Zahl neuer
 // Konten am Tag (jedes neue Konto bringt Startchips mit). Reicht locker für
 // Freunde im selben WLAN, bremst aber Massen-Anlegen.
 const ACCOUNTS_PER_IP_PER_DAY = 8;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const ipCreations = new Map(); // IP -> [Zeitpunkte]
+const ipCreations = new Map(); // je IP: [Zeitpunkte]
 function recentCreations(ip) {
   const now = Date.now();
   const list = (ipCreations.get(ip) || []).filter((t) => now - t < DAY_MS);
@@ -295,11 +293,9 @@ app.post("/api/change-pin", (req, res) => {
   res.json({ ok: true });
 });
 
-// ---------------------------------------------------------------------------
 // Backup für den Besitzer: der komplette data/-Ordner (Accounts, Pferde, Stadt, …) als
 // ein JSON-Bundle zum Herunterladen, und als Upload zum Wiederherstellen,
 // z.B. beim Umzug auf einen neuen Host, wenn der Datenordner leer startet.
-// ---------------------------------------------------------------------------
 
 const OWNER_KEY = "vincent"; // muss zu OWNER in game/admin.js passen
 const DATA_DIR = path.join(__dirname, "data");
@@ -408,15 +404,13 @@ app.post("/api/admin/restore", (req, res) => {
     return res.status(500).json({ error: "Wiederherstellen fehlgeschlagen: " + e.message });
   }
   // Alle Module halten ihren Zustand im RAM und würden die frisch geschriebenen
-  // Dateien beim nächsten save() wieder überschreiben → sauber neu starten.
+  // Dateien beim nächsten save() wieder überschreiben, also sauber neu starten.
   // systemd (und lokal ein Prozess-Manager) startet den Server automatisch neu.
   console.log("Backup eingespielt, Server startet neu, um die Daten zu laden.");
   setTimeout(() => process.exit(0), 800);
 });
 
-// ---------------------------------------------------------------------------
 // Server und Socket.IO
-// ---------------------------------------------------------------------------
 
 const server = http.createServer(app);
 const io = new Server(server);
@@ -448,7 +442,7 @@ io.on("connection", (socket) => {
   });
 });
 
-/* Spielverbot und Einsatzdeckel greifen an EINER Stelle fuer alle Spiele
+/* Spielverbot und Einsatzdeckel greifen an einer Stelle fuer alle Spiele
    (game/strafen.js). Muss vor den Spielmodulen stehen, damit die Zwischen-
    schicht am Socket haengt, bevor irgendein Handler antwortet. */
 strafen.bremse(io, accounts);

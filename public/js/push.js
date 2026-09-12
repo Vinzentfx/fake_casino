@@ -27,7 +27,7 @@
   let stand = null;
   let swKaputt = false;   // einmal gescheitert reicht, nicht bei jedem Aufruf neu
 
-  // base64url → Uint8Array, das Format verlangt der Browser für den VAPID-Key.
+  // base64url in ein Uint8Array umwandeln, das Format verlangt der Browser für den VAPID-Key.
   function urlB64(base64) {
     const pad = "=".repeat((4 - (base64.length % 4)) % 4);
     const roh = atob((base64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
@@ -58,7 +58,7 @@
   async function anmelden() {
     if (!unterstuetzt) return toast("Dieser Browser kann keine Benachrichtigungen.");
     if (istApple && !installiert) {
-      return toast("Auf dem iPad zuerst über Teilen → „Zum Home-Bildschirm“ installieren.");
+      return toast("Auf dem iPad zuerst über Teilen und „Zum Home-Bildschirm“ installieren.");
     }
     await registriere();
     if (!reg) return toast("Benachrichtigungen konnten nicht eingerichtet werden.");
@@ -148,9 +148,7 @@
     `;
   }
 
-  // ---------------------------------------------------------------
   // Mitspieler rufen
-  // ---------------------------------------------------------------
   function zeigeRufKnopf() {
     const b = $("#ruf-btn");
     if (b) b.hidden = false;
@@ -170,9 +168,7 @@
     }
   }
 
-  // ---------------------------------------------------------------
   // Verdrahtung
-  // ---------------------------------------------------------------
   document.addEventListener("click", async (e) => {
     if (e.target.closest("#push-toggle")) {
       const sub = await meinAbo();

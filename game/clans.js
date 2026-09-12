@@ -9,16 +9,16 @@
  * Gesamtvermögen der Mitglieder), eine Mitgliederliste und einen eigenen Chat.
  *
  * Außerdem:
- *  • SCHATZKAMMER: Mitglieder spenden Chips in eine gemeinsame Kasse.
- *  • CLAN-KRIEGE: ein Clan setzt Chips aus der Schatzkammer und fordert einen
+ *  • Schatzkammer: Mitglieder spenden Chips in eine gemeinsame Kasse.
+ *  • Clankriege: ein Clan setzt Chips aus der Schatzkammer und fordert einen
  *    anderen heraus. Ueber ein paar Tage zaehlt die gemeinsam gesammelte
  *    Season-XP beider Seiten; wer mehr hat, nimmt den Topf minus Rake mit
  *    (unentschieden zahlt zurueck). Chips wandern nur zwischen Clans, der
  *    Rake ist die Senke, also nicht farmbar. Der Tagesdeckel der Season sorgt
  *    dafuer, dass Teilnahme zaehlt und nicht ein einzelner Vielspieler.
- *  • WOCHENLIGA: dasselbe Mass ueber eine Woche; montags wird der beste Clan
+ *  • Wochenliga: dasselbe Mass ueber eine Woche; montags wird der beste Clan
  *    zum "Clan der Woche" gekuert.
- *  • ROLLEN und ANFRAGEN: Gründer und Offiziere verwalten den Clan (Motto,
+ *  • Rollen und Anfragen: Gründer und Offiziere verwalten den Clan (Motto,
  *    Rauswerfen, Befördern, geschlossene Clans mit Beitrittsanfragen).
  *
  * Gespeichert in data/clans.json als { clans, wars }. Die Mitgliedschaft steht
@@ -45,7 +45,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEKLY_TOP_PRIZE = 250000;         // Preis für den "Clan der Woche", geht in die Kasse
 const CLAN_XP_PER_PVP_WIN = 25;
 
-/* BALANCING: vor dem Hochladen gegen den echten Spielstand pruefen.
+/* Balancing: vor dem Hochladen gegen den echten Spielstand pruefen.
  *
  * Was ein Duellsieg im laufenden Krieg wert ist.
  *
@@ -62,10 +62,9 @@ const CLAN_XP_PER_PVP_WIN = 25;
 const WAR_POINTS_PER_PVP_WIN = 150;
 const CLAN_LEVEL_STEP = 500;
 
-/* ---------------------------------------------------------------------------
-   CLAN-SEASON
+/* Clan-Season
 
-   Der Clan-Fortschritt kam bisher AUSSCHLIESSLICH aus PvP-Duellsiegen
+   Der Clan-Fortschritt kam bisher ausschliesslich aus PvP-Duellsiegen
    (25 XP je Sieg). Gemessen an den echten Daten hiess das: alle drei Clans
    standen bei genau 25 XP, also einem einzigen Sieg, seit Monaten. Alles
    andere, was jemand spielte, zaehlte fuer seinen Clan gar nichts.
@@ -77,8 +76,7 @@ const CLAN_LEVEL_STEP = 500;
    nutzen) und einen XP-Bonus fuer alle Mitglieder. Der Bonus ist der Kern:
    er macht es lohnend, Leute zu holen und sie bei der Stange zu halten,
    statt nur selbst zu spielen. Gedeckelt bei +25 %, damit die Rueckkopplung
-   (mehr Bonus -> mehr XP -> mehr Bonus) nicht davonlaeuft.
---------------------------------------------------------------------------- */
+   (mehr Bonus bringt mehr XP, das bringt mehr Bonus) nicht davonlaeuft. */
 const CLAN_SEASON_LEVELS = [
   { level: 1,  xp: 2000,  chips: 25000 },
   { level: 2,  xp: 5000,  bonus: 0.05 },
@@ -193,8 +191,7 @@ function seasonBonusFor(key) {
  * fuehrt der Hauptauftrag ueber normales Spielen, Duelle sind ein Bonus
  * daneben statt die Voraussetzung.
  */
-/* ---------------------------------------------------------------------------
-   CLAN-AUFTRAEGE
+/* Clan-Auftraege
 
    Es waren jahrelang dieselben vier, Woche fuer Woche. Als Herzstueck des
    Clans (und das sind sie, weil sie das Einzige sind, was ohne zwei
@@ -580,7 +577,7 @@ function adminRemoveMember(key) {
   return { ok: true, changed, removedClans: removedClans.size };
 }
 
-// --- Duellsieg (ruft jedes PvP-Spiel bei einem klaren Sieg auf) ---
+// Duellsieg (ruft jedes PvP-Spiel bei einem klaren Sieg auf)
 /** Merkt, dass `winnerKey` ein Duell gewonnen hat: zählt für die Wochenliga und
  *  einen laufenden Krieg, dazu Zähler am Konto für die Achievements. */
 function recordPvpWin(winnerKey, game) {
@@ -613,7 +610,7 @@ function recordPvpWin(winnerKey, game) {
   try { require("./achievements").check(key); } catch {}
 }
 
-// --- Clan-Kriege abrechnen ---
+// Clan-Kriege abrechnen
 function settleWar(io, w, reason) {
   const a = clans[w.aId], b = clans[w.bId];
   if (w.state === "pending") {
@@ -774,7 +771,7 @@ function setupClans(io, accounts) {
       ack({ ok: true });
     });
 
-    // --- Schatzkammer ---
+    // Schatzkammer
     socket.on("clan:donate", ({ amount } = {}, ack) => {
       if (typeof ack !== "function") return;
       const acc = socket.data.account && accounts.get(socket.data.account);
@@ -832,7 +829,7 @@ function setupClans(io, accounts) {
       ack({ ok: true, clan: clanPublic(id), account: accounts.publicAccount(acc) });
     });
 
-    // --- Rollen und Verwaltung (Gründer und Offiziere) ---
+    // Rollen und Verwaltung (Gründer und Offiziere)
     socket.on("clan:setMotto", ({ motto } = {}, ack) => {
       if (typeof ack !== "function") return;
       const id = myClan(socket);
@@ -944,7 +941,7 @@ function setupClans(io, accounts) {
       save(); notifyClan(id); ack({ ok: true, clan: clanPublic(id) });
     });
 
-    // --- Beitrittsanfragen (geschlossene Clans) ---
+    // Beitrittsanfragen (geschlossene Clans)
     socket.on("clan:approveRequest", ({ key } = {}, ack) => {
       if (typeof ack !== "function") return;
       const id = myClan(socket);
@@ -967,7 +964,7 @@ function setupClans(io, accounts) {
       save(); notifyClan(id); ack({ ok: true, clan: clanPublic(id) });
     });
 
-    // --- Clan-Kriege ---
+    // Clan-Kriege
     socket.on("clan:declareWar", ({ targetId, stake, days } = {}, ack) => {
       if (typeof ack !== "function") return;
       const id = myClan(socket);

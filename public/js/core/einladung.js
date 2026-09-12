@@ -20,7 +20,7 @@
   let stand = { aktiv: false };
   let offen = false;
 
-  /* ---------------------------------------------------------------- senden */
+  /* senden */
 
   function knopf() {
     let b = document.getElementById("einladen-fab");
@@ -75,7 +75,7 @@
   };
   const wo = (s) => WO[s] || "online";
 
-  /* -------------------------------------------------------------- empfangen */
+  /* empfangen */
 
   socket.on("einladung:neu", async (e) => {
     if (!e || offen) return;
@@ -84,7 +84,7 @@
       Casino.sound && Casino.sound.play("select");
       const ja = await Casino.dialog.frage(
         `${e.von} lädt dich zu ${e.label} ein.${e.privat ? "\n\nDas ist eine private Runde, ohne Einladung kommst du da nicht rein." : ""}`,
-        { titel: "🎮 Einladung", okText: "Mitmachen", abbruchText: "Später" }
+        { titel: "Einladung", okText: "Mitmachen", abbruchText: "Später" }
       );
       if (ja) beitreten(e.spiel, e.code);
     } finally {
@@ -106,7 +106,7 @@
     else Casino.toast("Diese Runde lässt sich gerade nicht betreten.");
   }
 
-  /* ----------------------------------------------------------------- Status */
+  /* Status */
 
   function hole() {
     if (!socket.connected) return;

@@ -10,7 +10,7 @@
  *
  * Jetzt verschenkt es Sachen, die man für Chips nicht bekommt: Lose für die
  * Lotterie, Season-XP, einen Glückstag für den Kalender. Und auf einem Feld
- * steht FORTUNA. Davon gibt es SIEBEN im ganzen Casino, danach nie wieder;
+ * steht Fortuna. Davon gibt es sieben im ganzen Casino, danach nie wieder;
  * das Feld zahlt dann Chips. Wer eins hat, trägt einen Ring aus zwölf
  * Goldsegmenten um sein Bild, einen Namen, in dem sich ein Rad dreht, und den
  * Titel "Big Yahus Liebling".

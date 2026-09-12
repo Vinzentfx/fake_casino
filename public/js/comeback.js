@@ -68,16 +68,14 @@
     socket.emit("comeback:state", (r) => { stand = r; zeichne(); });
   }
 
-  /* ------------------------------------------------------------------
-   * Auspacken
+  /* Auspacken
    *
    * Vorher lief das Abholen still ab: ein Zahlenflug, ein Toast, weg. Die
    * beiden Kosmetik-Stuecke standen als Nebensatz im Toast und waren nach
    * vier Sekunden fort, man hat also nie gesehen, dass man sie hat, und
    * genau die sind das Besondere am Paket. Jetzt wird es ausgepackt: erst
    * das Paket antippen, dann kommt jedes Stueck als eigene Karte, und die
-   * Kosmetik-Karten sagen dazu, wo man sie anlegt.
-   * ------------------------------------------------------------------ */
+   * Kosmetik-Karten sagen dazu, wo man sie anlegt. */
   const reduziert = () => document.documentElement.classList.contains("reduce-motion");
 
   function schliesseModal() {

@@ -1,12 +1,10 @@
 "use strict";
 
-/* ============================================================
-   Slots
+/* Slots
    Soll sich wie ein echter Automat anfühlen: Hebel ziehen, die Symbole
    laufen von oben nach unten durchs Fenster mit der Mittellinie, danach
    eine Gewinnfeier, die sich steigert (Small, Big, Mega, Ultra mit Geldregen).
-   Entschieden wird auf dem Server (game/slots.js), hier wird nur animiert.
-   ============================================================ */
+   Entschieden wird auf dem Server (game/slots.js), hier wird nur animiert. */
 
 (function () {
   const { socket, toast } = window.Casino;
@@ -40,9 +38,7 @@
   let pvpMode = false;
   let pvp = null; // { code, buyIn, state, isHost, chips, spinsLeft, done, youName, opponent, result }
 
-  // ===============================================================
   // Sound, Klangfarbe bleibt hier, die Mechanik kommt aus core/sound.js
-  // ===============================================================
   const { tone, noise } = window.Casino.sound;
 
   // Ein einzelnes Ratschen-Klicken (Sperrklinke über einen Zahn).
@@ -89,9 +85,7 @@
   };
   const sndCoin = () => tone(1760 + Math.random() * 300, 0.05, "triangle", 0.035, 0, 2400);
 
-  // ===============================================================
   // Machine list
-  // ===============================================================
   function loadMachines() {
     socket.emit("slots:machines", (res) => {
       machines = (res && res.machines) || [];
@@ -122,7 +116,7 @@
         <div class="mc-syms"><span>${sampleSyms}</span></div>
         <div class="mc-name">${m.name}</div>
         <div class="mc-tag">${m.tagline}</div>
-        <div class="mc-bets">Einsatz ${m.bets[0].toLocaleString("de-DE")}-${m.bets[m.bets.length - 1].toLocaleString("de-DE")}<i class=mk></i></div>
+        <div class="mc-bets">Einsatz ${m.bets[0].toLocaleString("de-DE")} bis ${m.bets[m.bets.length - 1].toLocaleString("de-DE")}<i class=mk></i></div>
         ${unlocked
           ? `<div class="mc-feature">${feature}</div>`
           : `<div class="mc-lock">🔒 ${m.unlockCost.toLocaleString("de-DE")}<i class=mk></i></div>`}`;
@@ -147,9 +141,7 @@
     });
   }
 
-  // ===============================================================
   // Automat öffnen und schließen
-  // ===============================================================
   function openMachine(id) {
     const m = machines.find((x) => x.id === id);
     if (!m) return;
@@ -218,9 +210,7 @@
     }
   }).observe(slotsScreen, { attributes: true, attributeFilter: ["class"] });
 
-  // ===============================================================
   // Reels (vertical scrolling strips)
-  // ===============================================================
   const pool = () => Object.keys(machine.emojis).map((sym) => symbolAsset(machine, sym) || machine.emojis[sym]);
   const randSym = () => pool()[Math.floor(Math.random() * pool().length)];
 
@@ -308,9 +298,7 @@
     );
   }
 
-  // ===============================================================
   // Bet controls
-  // ===============================================================
   function updateBet() {
     $("#bet-amount").textContent = machine.bets[betIndex].toLocaleString("de-DE");
     updateBonusBtn();
@@ -341,9 +329,7 @@
     updateBet();
   });
 
-  // ===============================================================
-  // Spin
-  // ===============================================================
+  // Drehen
   async function doSpin() {
     if (spinning) return;
     if (pvpMode && (!pvp || pvp.done || pvp.state !== "playing")) return;
@@ -501,9 +487,7 @@
     $("#lever").classList.toggle("disabled", !on);
   }
 
-  // ===============================================================
   // Risiko / Gamble (Book of Rah): Gewinn auf Rot/Schwarz verdoppeln
-  // ===============================================================
   let gambleBusy = false;
   function showGamble(amount) {
     const bar = $("#gamble-bar");
@@ -606,12 +590,10 @@
     await sleep(120);
   }
 
-  // ===============================================================
   // Ergebnis zeigen, ein Gewinn nach dem anderen: markieren, Betrag in die
   // Summe in der Mitte fliegen lassen, aufaddieren. Die Markierungen bleiben,
   // solange der Zähler läuft. Beim Cluster-Automaten rutscht das Raster erst
   // nach, wenn die Gewinne eines Schritts drin sind.
-  // ===============================================================
   async function resolveResult(res) {
     const fsMult = res.wasFreeSpin && machine.freeSpins && machine.freeSpins.multiplier
       ? machine.freeSpins.multiplier : 1;
@@ -756,7 +738,7 @@
       return;
     }
 
-    // GOLDEN SHARKS: Stack flippt komplett, dann Nudge-Wellen.
+    // Golden Sharks: Stack flippt komplett, dann Nudge-Wellen.
     const goldAsset = (machine.assets && machine.assets.G) || machine.emojis.G || "🦈";
     bigBanner("🦈 GOLDEN SHARKS!", "t-mega");
     jackpotSirens(2200);
@@ -851,7 +833,7 @@
     tone(1600 + Math.random() * 600, 0.08, "sawtooth", 0.05);
     tone(2600 + Math.random() * 800, 0.05, "square", 0.03);
   }
-  // Die Felder eines Gewinns EINZELN aufleuchten lassen, entlang der Verbindung.
+  // Die Felder eines Gewinns einzeln aufleuchten lassen, entlang der Verbindung.
   // Die Tonhöhe steigt über die ganze Folge (comboBase), jeder Gewinn wirkt größer.
   async function traceHighlight(positions, perMs, comboBase) {
     for (let i = 0; i < positions.length; i++) {
@@ -932,7 +914,7 @@
     });
   }
 
-  // ---- Blue electric lightning between connected winning symbols ----
+  // Blue electric lightning between connected winning symbols
   const SVGNS = "http://www.w3.org/2000/svg";
   let boltSvg = null;
   function boltLayer() {
@@ -991,7 +973,7 @@
     setTimeout(() => r.remove(), 620);
   }
 
-  // ---- Central running-total celebration ----
+  // Central running-total celebration
   let wcRunning = 0;
   let wcFired = [];
   let wcBet = 0;
@@ -1078,7 +1060,7 @@
     $("#win-celebration").classList.remove("show", "dopamine-on");
   }
 
-  // Gewinnstufen RELATIV zum Einsatz (groß ist ein Gewinn nur, wenn er den
+  // Gewinnstufen relativ zum Einsatz (groß ist ein Gewinn nur, wenn er den
   // Einsatz um ein ordentliches Vielfaches schlägt).
   const WIN_TIERS = [
     { mult: 3,   name: "BIG WIN",            cls: "t-big",   fx: () => { quake("big"); confettiBurst(180); zoomPunch(); shockwave(); sideLights(1800); moneyTicker("BIG WIN"); sndBig(); hypeWords(4); } },
@@ -1106,9 +1088,7 @@
     b.classList.add("show");
   }
 
-  // ===============================================================
   // Banner
-  // ===============================================================
   let bannerTimer = null;
   function bigBanner(text, cls) {
     let b = $("#slot-banner");
@@ -1124,9 +1104,7 @@
     bannerTimer = setTimeout(() => b.classList.remove("show"), 1700);
   }
 
-  // ===============================================================
   // Canvas effects (shared canvas; later effect takes over)
-  // ===============================================================
   let canvasRaf = null;
   function canvasCtx() {
     const canvas = $("#confetti");
@@ -1169,7 +1147,7 @@
     }
     frame();
   }
-  // Goldmünzen regnen lassen, der Geldregen für ULTRA-Gewinne.
+  // Goldmünzen regnen lassen, der Geldregen für Ultragewinne.
   function coinRain(duration = 2600) {
     const { canvas, ctx } = canvasCtx();
     const coins = [];
@@ -1207,9 +1185,7 @@
     canvasRaf = requestAnimationFrame(frame);
   }
 
-  // ===============================================================
   // Übertriebene Dopamin-Effekte (liebevolle Parodie auf echte Casinos)
-  // ===============================================================
   function dopamineKick(center, delta) {
     sideLights(700);
     moneyTicker("+" + delta.toLocaleString("de-DE"));
@@ -1279,10 +1255,10 @@
   /*
    * Der Muenzbrunnen bei einem Gewinn.
    *
-   * Hier flog bis eben das WORT "Chips" durchs Bild, in 2,4rem Schrift, und
+   * Hier flog bis eben das Wort "Chips" durchs Bild, in 2,4rem Schrift, und
    * dazwischen ein Edelstein-Emoji. Dasselbe Ueberbleibsel wie beim Chip-Regen:
    * wir haben die Muenz-Emoji ueberall durch das Wort ersetzt, und im
-   * Fliesstext ist das richtig — hier fiel dadurch Text vom Himmel statt Geld.
+   * Fliesstext ist das richtig, hier fiel dadurch Text vom Himmel statt Geld.
    *
    * Gezeichnet wird dieselbe Muenze, die auch neben jedem Betrag steht, damit
    * das Bild im Haus zusammenpasst. Jede achte ist die goldene.
@@ -1435,9 +1411,7 @@
     el.classList.add("go");
   }
 
-  // ===============================================================
   // Leiste mit den letzten Drehs und der Gewinn-/Verlustserie (je Besuch am Automaten)
-  // ===============================================================
   let sessionDots = []; // recent base spins: { totalWin, bet, net }
   let streak = 0;       // +N Gewinnserie, -N Serie ohne Gewinn
 
@@ -1471,9 +1445,7 @@
     else { st.textContent = ""; st.className = "ss-streak"; }
   }
 
-  // ===============================================================
   // Hebel: runterziehen zum Drehen
-  // ===============================================================
   (function setupLever() {
     const lever = $("#lever");
     const arm = $("#lever-arm");
@@ -1539,9 +1511,7 @@
     });
   })();
 
-  // ===============================================================
   // PvP duel
-  // ===============================================================
   const esc = window.Casino.escapeHtml;
   const PVP_VIEWS = [
     "slots-select", "slots-machine",
@@ -1707,7 +1677,7 @@
     });
   };
 
-  // ---- PvP entry & navigation ----
+  // PvP entry & navigation
   $("#pvp-entry").addEventListener("click", () => {
     pvp = null; pvpMode = false; setHud(false); prevOppChips = null;
     showSlotsView("pvp-lobby");
@@ -1761,9 +1731,7 @@
     if (pvpMode && !slotsScreen.classList.contains("active") && !spinning && !freeActive) pvpExit();
   }).observe(slotsScreen, { attributes: true, attributeFilter: ["class"] });
 
-  // ===============================================================
   // Paytable modal
-  // ===============================================================
   $("#paytable-btn").addEventListener("click", showPaytable);
   $("#paytable-close").addEventListener("click", () => $("#paytable-modal").classList.add("hidden"));
 

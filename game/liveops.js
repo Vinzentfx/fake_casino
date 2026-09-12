@@ -3,11 +3,11 @@
 /**
  * Live-Ops: Events auf Zeit, damit im Casino etwas los ist.
  *
- *   HAPPY HOUR      alle Auftragsbelohnungen zählen eine Weile doppelt.
- *   SLOT DES TAGES  ein Automat (wechselt täglich) zahlt auf Gewinne einen
+ *   Happy Hour      alle Auftragsbelohnungen zählen eine Weile doppelt.
+ *   Slot des Tages  ein Automat (wechselt täglich) zahlt auf Gewinne einen
  *                   Bonus, je Spieler und Tag gedeckelt, damit die RTP nicht
  *                   davonläuft.
- *   MINI-TURNIER    N Minuten lang holt der größte einzelne Slot-Gewinn einen
+ *   Miniturnier    N Minuten lang holt der größte einzelne Slot-Gewinn einen
  *                   Preis. Mit Live-Tabelle und Ansagen im Chat.
  *
  * Der Besitzer kann alles im Admin starten und stoppen, Happy Hour und
@@ -33,7 +33,7 @@ const AUTO_HEIST_CHANCE = 0.015;
 const AUTO_HAPPY_CHANCE = 0.02;
 const AUTO_CITY_CHANCE = 0.025;
 // Chip-Regen / Blitz-Quiz / Tresorkampf: gleiche faire Chance wie der Heist,
-// mit eigenen langen Cooldowns → im Schnitt grob ein zufälliges Geld-Event
+// mit eigenen langen Cooldowns, im Schnitt grob ein zufälliges Geld-Event
 // alle paar Stunden Online-Zeit, nie zwei gleichzeitig vom selben Typ.
 const AUTO_RAIN_CHANCE = 0.015;
 const AUTO_QUIZ_CHANCE = 0.015;
@@ -85,9 +85,9 @@ function meldePush(titel, text) {
   } catch {}
 }
 
-// --- Happy Hour ---
+// Happy Hour
 const happyActive = () => state.happyUntil > Date.now();
-/** Quest reward multiplier (used by quests.js). */
+/** Multiplikator für Auftragsbelohnungen, benutzt von quests.js. */
 const questMult = () => (happyActive() ? 2 : 1);
 
 function startHappy(minutes) {
@@ -103,14 +103,14 @@ function stopHappy() {
   if (_io) { chat.announce(_io, "Happy Hour ist vorbei."); broadcast(); }
 }
 
-// --- Mini-Turnier ---
+// Mini-Turnier
 const tourneyActive = () => !!(state.tourney && state.tourney.endsAt > Date.now());
 
 function startTourney(minutes, prize, opts = {}) {
   if (tourneyActive()) return { ok: false, error: "Läuft schon ein Turnier." };
   const mins = Math.max(1, Math.min(120, Math.floor(minutes) || 10));
   const pr = Math.max(0, Math.floor(prize) || 100000);
-  state.tourney = { endsAt: Date.now() + mins * 60000, prize: pr, best: {} }; // best: key → {name, win}
+  state.tourney = { endsAt: Date.now() + mins * 60000, prize: pr, best: {} }; // best: je key {name, win}
   autoState().tourneyCooldownUntil = state.tourney.endsAt + randInt(90, 180) * 60000;
   save();
   const prefix = opts.auto ? "Zufälliges " : "";
@@ -156,7 +156,7 @@ function settleTourney() {
 }
 function stopTourney() { if (state.tourney) settleTourney(); }
 
-// --- Public state + wiring ---
+// Public state + wiring
 function publicState() {
   const t = state.tourney;
   let board = null;

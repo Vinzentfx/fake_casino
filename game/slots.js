@@ -21,9 +21,7 @@ const crypto = require("crypto");
 const regie = require("./regie");
 const liveops = require("./liveops");
 
-// ---------------------------------------------------------------------------
 // Machine definitions
-// ---------------------------------------------------------------------------
 
 const BET_LEVELS = [10, 20, 50, 100, 250, 500];
 
@@ -222,7 +220,7 @@ const MACHINES = [
     mode: "lines",
     lines: LINES_5x3.slice(0, 10),
     minMatch: 3,
-    // Das BUCH ist Wild und Scatter zugleich: Es ersetzt jedes Symbol,
+    // Das Buch ist Wild und Scatter zugleich: Es ersetzt jedes Symbol,
     // zahlt ab 2 Stück irgendwo (bookPays × Gesamteinsatz) und 3+ starten
     // die Freispiele mit expandierendem Bonussymbol.
     wild: "B",
@@ -295,9 +293,7 @@ function publicMachines() {
   }));
 }
 
-// ---------------------------------------------------------------------------
 // Spinning & evaluation
-// ---------------------------------------------------------------------------
 
 function weightedPick(machine) {
   const entries = Object.entries(machine.symbols);
@@ -397,7 +393,7 @@ function applyReveal(machine, grid, bet, startMult) {
     return { grid: finalGrid, displayGrid, reveal: { kind: "symbol", symbol, cells }, instantWin: 0, nudges: 0 };
   }
 
-  // Golden Sharks: Stack-Positionen je Spalte (oben → unten sortiert).
+  // Golden Sharks: Stack-Positionen je Spalte (von oben nach unten sortiert).
   const live = new Map();
   for (const [c, r] of cells) {
     if (!live.has(c)) live.set(c, []);
@@ -470,7 +466,7 @@ function spinGrid(machine) {
   return grid;
 }
 
-// --- Progressiver Gemeinschafts-Jackpot ---
+// Progressiver Gemeinschafts-Jackpot
 // 0,5 % jedes bezahlten Drehs im Grundspiel gehen in einen gemeinsamen Topf, und
 // jeder bezahlte Dreh hat eine Chance proportional zum Einsatz (im Schnitt ein
 // Treffer je ~50 Mio. Einsatz, der Topf liegt dann um 250k). Kommt aus den Einsätzen, die RTP bleibt unter 100 %.
@@ -499,7 +495,7 @@ function jackpotSpin(bet) {
 }
 const jackpotPot = () => Math.round(jackpot.pot);
 
-// --- Admin: den größtmöglichen Wurf erzwingen (zum Vorführen der Animationen) ---
+// Admin: den größtmöglichen Wurf erzwingen (zum Vorführen der Animationen)
 // Der nächste Dreh im Grundspiel ist dann ein volles Raster mit dem besten
 // Symbol, jede Linie trifft auf einmal ihre höchste Stufe (thresholdPay zahlt
 // bei Überschuss die oberste).
@@ -640,7 +636,7 @@ function evaluateAnywhere(machine, grid, unit) {
       positions: base.concat(wildPos),
     });
   }
-  // Bigger symbol wins first → nicer escalating reveal.
+  // Größere Symbole zuerst, dann steigert sich das Aufdecken schöner.
   wins.sort((a, b) => b.win - a.win);
   return wins;
 }
@@ -762,11 +758,9 @@ function evaluateCluster(machine, grid, unit, startMultiplier) {
   return { totalWin, cascades, endMultiplier: multiplier };
 }
 
-// ---------------------------------------------------------------------------
 // Der eigentliche Dreh, ohne Konto und ohne Buchung. Nutzen Einzelspieler-Slots
 // und PvP gemeinsam. `session` sind die Freispiele für diesen Automaten (oder null).
 // Gibt { result, session, spinBet, totalWin, inFree } zurück.
-// ---------------------------------------------------------------------------
 
 function evaluateSpin(machine, bet, session, forceGrid = null) {
   const inFree = !!(session && session.remaining > 0);
@@ -855,7 +849,7 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
     freeSpinsAwarded = scatters.count;
     session.remaining += freeSpinsAwarded;
   } else if (machine.freeSpins && scatters.count >= machine.freeSpins.trigger) {
-    // Mehr Scatter als nötig geben mehr Freispiele (z. B. 3→10, 4→15, 5→20 …).
+    // Mehr Scatter als nötig geben mehr Freispiele (z. B. 3 geben 10, 4 geben 15, 5 geben 20 …).
     const fs = machine.freeSpins;
     const extra = fs.extra != null ? fs.extra : Math.round(fs.count / 2);
     freeSpinsAwarded = fs.count + Math.max(0, scatters.count - fs.trigger) * extra;
@@ -904,9 +898,7 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
   return { result, session: newSession, spinBet, totalWin, inFree };
 }
 
-// ---------------------------------------------------------------------------
 // Socket wiring (single-player, account-backed)
-// ---------------------------------------------------------------------------
 
 function setupSlots(io, accounts) {
   io.on("connection", (socket) => {

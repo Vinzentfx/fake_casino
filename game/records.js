@@ -80,9 +80,9 @@ let _accounts = null;
  * Blackjack-Eintrag als "undefined Siege am Stück".
  *
  * Zwei Faelle werden dabei bewusst weggeworfen statt umgerechnet:
- *   - Spiele, deren Art sich geaendert hat (Blackjack: Vielfaches -> Serie).
+ *   * Spiele, deren Art sich geaendert hat (Blackjack: früher Vielfaches, jetzt Serie).
  *     Ein Vielfaches laesst sich nicht in eine Serie umrechnen.
- *   - Werte unter der neuen Untergrenze. Sonst stuende auf der Karte "ab 3x"
+ *   * Werte unter der neuen Untergrenze. Sonst stuende auf der Karte "ab 3x"
  *     und darunter ein Rekord von 2,55.
  */
 function migriere(best) {
@@ -223,7 +223,7 @@ function setze(key, spiel, wert, extra) {
     }
   } catch {}
 
-  // Nur ansagen, wenn jemand einen FREMDEN Rekord schlaegt. Wer seinen eigenen
+  // Nur ansagen, wenn jemand einen fremden Rekord schlaegt. Wer seinen eigenen
   // verbessert, muss dafuer nicht den Chat vollschreiben.
   if (alt && alt.key !== key && _io) {
     try {

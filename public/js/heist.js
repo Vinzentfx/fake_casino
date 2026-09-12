@@ -1,10 +1,8 @@
 "use strict";
 
-/* ============================================================
-   Casino-Heist (Overlay)
+/* Casino-Heist (Overlay)
    Alle hauen auf KNACKEN!, bis der Tresor leer ist oder die Zeit abläuft. Die
-   Beute wird nach Treffern verteilt, entschieden wird auf dem Server.
-   ============================================================ */
+   Beute wird nach Treffern verteilt, entschieden wird auf dem Server. */
 
 (function () {
   const { socket, toast, escapeHtml } = window.Casino;
@@ -47,7 +45,7 @@
     if (!active) return;
     const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
     const t = $("#heist-timer");
-    if (t) t.textContent = `⏱️ ${left}s · deine Treffer: ${myHits}`;
+    if (t) t.textContent = `Noch ${left}s · deine Treffer: ${myHits}`;
   }
   setInterval(tickTimer, 200);
 
@@ -80,7 +78,7 @@
   socket.on("heist:start", (s) => { show(s); toast("Casino-Heist! Ran an den Tresor."); });
   socket.on("heist:progress", update);
   socket.on("heist:end", end);
-  // Join an already-running heist on (re)connect.
+  // Beim Verbinden oder Neuverbinden in einen laufenden Heist einsteigen.
   socket.on("connect", () => socket.emit("heist:state", (s) => { if (s && s.active) show(s); }));
   socket.emit("heist:state", (s) => { if (s && s.active) show(s); });
 })();

@@ -1,11 +1,9 @@
 "use strict";
 
-/* ============================================================
-   Schach-Duell
+/* Schach-Duell
    Schach mit Einsatz. Brett und Uhren kommen aus dem Stand vom Server. Figur
    antippen zeigt die erlaubten Züge, Zielfeld antippen zieht. Die Regeln prüft
-   der Server (chess.js). Die Schach-Liga steht auch hier drin.
-   ============================================================ */
+   der Server (chess.js). Die Schach-Liga steht auch hier drin. */
 
 (function () {
   const { socket, toast, applyAccount, getAccount, escapeHtml } = window.Casino;
@@ -41,7 +39,7 @@
       document.querySelectorAll("#chs-tcs .mem-size-btn").forEach((x) => x.classList.toggle("active", x === b));
     }));
 
-  // --- Board ---
+  // Brett
   function myColor() { return st && st.yourColor ? st.yourColor : "w"; }
   function squareName(row, col) { return FILES[col] + (8 - row); } // board[row][col], row0=rank8
 
@@ -101,7 +99,7 @@
     } else { selected = null; legalTargets = []; renderBoard(); }
   }
 
-  // --- Clocks ---
+  // Clocks
   function fmtClock(ms) {
     ms = Math.max(0, ms | 0);
     const m = Math.floor(ms / 60000), s = Math.floor((ms % 60000) / 1000);
@@ -126,7 +124,7 @@
   }
   function stopClock() { if (clockInt) { clearInterval(clockInt); clockInt = null; } }
 
-  // --- Status / moves ---
+  // Status / moves
   let statusTimer = null;
   function flashStatus(msg) {
     const el = $("#chs-status"); if (!el) return;
@@ -182,7 +180,7 @@
     }
   }
 
-  // --- State ---
+  // Zustand
   function apply(s) {
     const prev = st && st.state;
     st = s; myCode = s.code;
@@ -215,7 +213,7 @@
   socket.on("chess:state", (s) => { if (s) apply(s); });
   socket.on("account:update", (d) => { if (d && d.account) applyAccount(d.account); });
 
-  // --- Buttons ---
+  // Knöpfe
   $("#chs-create").addEventListener("click", () => {
     const err = $("#chs-error"); err.textContent = "";
     const buyIn = parseInt($("#chs-buyin").value, 10);
@@ -253,7 +251,7 @@
   const chsBack = document.querySelector('[data-screen="chess"] .back-btn');
   if (chsBack) chsBack.addEventListener("click", () => { if (myCode) leave(); });
 
-  // --- League ---
+  // Liga
   function renderLeague(data) {
     const me = data.me;
     $("#chs-me-card").innerHTML = me
@@ -281,7 +279,7 @@
   $("#chs-league-btn").addEventListener("click", openLeague);
   $("#chs-league-back").addEventListener("click", () => show("chs-setup"));
 
-  // --- Spectate ---
+  // Spectate
   socket.on("chess:specEnd", () => {
     stopClock(); st = null; myCode = null;
     $("#chs-spec-banner").style.display = "none";

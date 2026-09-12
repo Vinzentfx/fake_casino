@@ -23,7 +23,7 @@
   let grenzen = { minBet: 50, maxBet: 50000, maxWin: 0 };
   let laeuft = false;
 
-  /* --- Verlauf --- */
+  /* Verlauf */
   const ladeVerlauf = () => { try { return JSON.parse(localStorage.getItem(VERLAUF_KEY)) || []; } catch { return []; } };
   function merkeVerlauf(gewonnen, mult) {
     const v = ladeVerlauf();
@@ -40,7 +40,7 @@
       : "";
   }
 
-  /* --- Karten --- */
+  /* Karten */
   const ROT = new Set([1, 2]); // Herz und Karo im Farbindex des Servers
 
   function karteEl(k, klasse = "") {
@@ -65,7 +65,7 @@
     }
   }
 
-  /* --- Darstellung --- */
+  /* Darstellung */
   function zeichne(v, extra = {}) {
     stand = v;
     laeuft = !!v && !v.none && !v.over;
@@ -119,7 +119,7 @@
     }
   }
 
-  /* --- Aktionen --- */
+  /* Aktionen */
   function starten() {
     const err = $("#hilo-error"); err.textContent = "";
     const bet = parseInt($("#hilo-amount").value, 10);
@@ -181,7 +181,7 @@
     });
   }
 
-  /* --- Einhaengen --- */
+  /* Einhaengen */
   function wire() {
     $("#hilo-start")?.addEventListener("click", starten);
     $("#hilo-hoch")?.addEventListener("click", () => tippen("hoch"));

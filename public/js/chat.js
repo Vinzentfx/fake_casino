@@ -1,15 +1,13 @@
 "use strict";
 
-/* ============================================================
-   Chat-Dock, schwebt unten links auf jedem Screen.
+/* Chat-Dock, schwebt unten links auf jedem Screen.
 
    In Ruhe ist nur die Blase zu sehen. Der Verlauf ist ausgeblendet und lässt
    Klicks durch (pointer-events:none), damit er nie einen Spielknopf verdeckt.
    Eine neue Nachricht oder ein Tipp blendet ihn kurz ein, danach verblasst er
    wieder. Die Blase antippen öffnet die Eingabe. Es gibt nur ein Dock, der Raum
    wechselt mit dem Screen (global in Lobby und Startseite, der Lobby-Code in
-   einer Spiel-Lobby).
-   ============================================================ */
+   einer Spiel-Lobby). */
 
 (function () {
   const { socket, escapeHtml } = window.Casino;
@@ -50,7 +48,7 @@
     if (scroll) logEl.scrollTop = logEl.scrollHeight;
   }
 
-  // --- Reveal / fade ---
+  // Reveal / fade
   function reveal() {
     dock.classList.add("show");
     clearTimeout(fadeTimer);
@@ -67,7 +65,7 @@
     else { fadeTimer = setTimeout(hide, FADE_MS); }
   }
 
-  // --- Room / history ---
+  // Raum und Verlauf
   function loadRoom(r) {
     room = r || "global";
     dock.dataset.chatRoom = room;
@@ -86,7 +84,7 @@
     });
   }
 
-  // --- Wiring ---
+  // Wiring
   toggleEl.addEventListener("click", () => setOpen(!open));
 
   formEl.addEventListener("submit", (e) => {
@@ -115,7 +113,7 @@
     reveal();
   });
 
-  // --- Public API ---
+  // Nach außen
   window.Casino.chat = {
     // Privaten Chat einer Lobby betreten oder verlassen (Schlüssel ist der Lobby-Code).
     enterLobby: (code) => { dock.dataset.lobbyRoom = code; if (code !== room) loadRoom(code); },

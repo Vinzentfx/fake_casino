@@ -17,7 +17,7 @@ const CHIP_TTL = 7000;                  // so lange einsammelbar (Fall ~4,5 s pl
 const GOLD_CHANCE = 0.08;               // goldene Chips zählen fünffach
 
 function setupChipRain(io, accounts) {
-  let state = null; // { endsAt, pot, chips:Map(id->{value,gold,at,taken}), collected:{key:{n,sum}} }
+  let state = null; // { endsAt, pot, chips:Map(id: {value,gold,at,taken}), collected:{key:{n,sum}} }
   let spawner = null, closer = null;
   const grabTimes = new Map();
   let nextId = 1;

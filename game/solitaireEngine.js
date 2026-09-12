@@ -67,7 +67,7 @@ function canOntoTableau(card, pile) {
   return t.up && !sameColor(card, t.card) && card.r === t.card.r - 1;
 }
 
-// --- Züge ---
+// Züge
 /** Vom Nachziehstapel ziehen (oder den Ablagestapel umdrehen, wenn der leer ist). */
 function drawStock(state) {
   if (state.stock.length === 0) {

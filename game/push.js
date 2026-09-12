@@ -202,7 +202,7 @@ async function an(key, typ, payload) {
   try { return await anEinen(acc, typ, payload); } catch { return 0; }
 }
 
-// --- Mitspieler rufen ---
+// Mitspieler rufen
 // Der ehrlichste Auslöser von allen: ein echter Mensch sitzt gerade da und
 // sucht Gesellschaft. Kein Automatismus schafft das. Dafuer streng begrenzt,
 // sonst wird daraus eine Klingelanlage.
@@ -239,7 +239,7 @@ async function rufe(key, text) {
   return { ok: true, erreicht: n };
 }
 
-// --- Serien-Erinnerung ---
+// Serien-Erinnerung
 // Die Login-Serie reisst 26 Stunden nach dem letzten Abholen. Ab Tag drei tut
 // das weh genug, dass eine Erinnerung willkommen ist statt laestig.
 const SERIE_GRACE_MS = 26 * 60 * 60 * 1000;

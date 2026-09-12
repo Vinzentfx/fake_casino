@@ -1,11 +1,9 @@
 "use strict";
 
-/* ============================================================
-   Chip-Regen
+/* Chip-Regen
    Chips regnen über den Screen, auf dem man gerade ist, antippen sammelt sie
    ein. Die Ebene lässt Klicks durch, nur die Chips selbst fangen sie.
-   Entschieden wird auf dem Server.
-   ============================================================ */
+   Entschieden wird auf dem Server. */
 
 (function () {
   const { socket, toast, escapeHtml } = window.Casino;
