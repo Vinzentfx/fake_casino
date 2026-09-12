@@ -42,8 +42,8 @@
     const voll = gewaehlt.size === stand.tipps;
     const kaufen = $("#lo-kaufen");
     kaufen.disabled = !voll;
-    kaufen.textContent = voll
-      ? `Los kaufen (${fmt(stand.lospreis)} Chips)`
+    kaufen.innerHTML = voll
+      ? `Los kaufen (${Casino.betrag(stand.lospreis)})`
       : `Noch ${stand.tipps - gewaehlt.size} Zahl${stand.tipps - gewaehlt.size === 1 ? "" : "en"} wählen`;
   }
 
@@ -51,7 +51,7 @@
     if (!s || !s.ok) return;
     stand = s;
 
-    $("#lo-jackpot").textContent = fmt(s.jackpot) + " Chips";
+    $("#lo-jackpot").innerHTML = Casino.betrag(s.jackpot);
     $("#lo-anzahl").textContent = String(s.tipps);
 
     clearInterval(uhr);
@@ -79,8 +79,8 @@
     $("#lo-info").innerHTML = `
       <h3 class="lo-titel">Was gezahlt wird</h3>
       <div class="lo-stufe"><b>4 Richtige</b><em>1 zu 1.820</em><span>Jackpot</span></div>
-      <div class="lo-stufe"><b>3 Richtige</b><em>1 zu 38</em><span>${fmt(s.gewinn3)} Chips</span></div>
-      <div class="lo-stufe"><b>2 Richtige</b><em>1 zu 5</em><span>${fmt(s.gewinn2)} Chips</span></div>
+      <div class="lo-stufe"><b>3 Richtige</b><em>1 zu 38</em><span>${Casino.betrag(s.gewinn3)}</span></div>
+      <div class="lo-stufe"><b>2 Richtige</b><em>1 zu 5</em><span>${Casino.betrag(s.gewinn2)}</span></div>
       <p class="muted small">${s.verkauft} Lose von ${s.mitspieler} ${s.mitspieler === 1 ? "Person" : "Leuten"} für diese Ziehung.
       Ein Teil jedes Loses wächst in den Jackpot, der Rest bleibt im Haus.</p>`;
 

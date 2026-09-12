@@ -128,19 +128,18 @@
     }
 
     const l = s.los;
-    const gesperrt = s.sperreBis > Date.now();
-    const tage = gesperrt ? Math.ceil((s.sperreBis - Date.now()) / 86400000) : 0;
+    const gesperrt = !!s.gesperrt;
     const chips = s.meineChips || 0;
 
     const band = gesperrt
       ? `<div class="auk-band auk-band-still">
-           <b>Eine Woche Pause</b>
-           <small>Du hast gerade erst ersteigert. Noch ${tage} ${tage === 1 ? "Tag" : "Tage"}, damit nicht immer dieselben alles bekommen.</small>
+           <b>Dieses Los setzt du aus</b>
+           <small>Du hast das letzte gewonnen. Beim nächsten bist du wieder dabei.</small>
          </div>`
       : l.binIch
         ? `<div class="auk-band auk-band-gut">
              <b>Du hältst das Höchstgebot</b>
-             <small>${zahl(l.gebot)} Chips liegen hinterlegt, bis dich jemand überbietet.</small>
+             <small>${Casino.betrag(l.gebot)} liegen hinterlegt, bis dich jemand überbietet.</small>
            </div>`
         : l.warIch
           ? `<div class="auk-band auk-band-warn">

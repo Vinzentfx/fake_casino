@@ -113,7 +113,7 @@
 
     const btn = $("#hilo-cashout");
     if (btn && v.cashout) {
-      btn.innerHTML = `<i data-icon="auszahlen"></i> Auszahlen: ${fmt(v.cashout)} Chips (${mx(v.mult)}×)` +
+      btn.innerHTML = `<i data-icon="auszahlen"></i> Auszahlen: ${Casino.betrag(v.cashout)} (${mx(v.mult)}×)` +
         (v.gedeckelt ? " · Deckel erreicht" : "");
       if (Casino.icons) Casino.icons.zeichne(btn);
     }

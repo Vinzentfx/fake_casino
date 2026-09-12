@@ -25,6 +25,17 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-12",
+      datum: "12. September 2026",
+      titel: "Auktion: nur ein Los aussetzen, und überall steht jetzt das Zeichen",
+      items: [
+        { icon: "auktion", titel: "Eine Woche Pause war zu lang",
+          text: "Wer ein Stück ersteigert hatte, war eine Woche gesperrt. Bei neun Losen und einem Los alle ein bis zwei Tage hieß das: für die halbe Sammlung raus. Jetzt setzt man genau EIN Los aus, das direkt nach dem eigenen Zuschlag, und ist danach wieder dabei. Damit gewinnt niemand zweimal hintereinander, aber mitbieten darf jeder fast immer." },
+        { icon: "chip", titel: "Das Chip-Zeichen statt das Wort „Chips“",
+          text: "An über zwanzig Stellen stand bei einer Zahl noch das Wort statt des gezeichneten Zeichens: im Glücksrad, auf der ganzen Season-Leiter, beim Kalender-Knopf, beim Lotterie-Jackpot und den Gewinnstufen, bei der Arbeit, beim Crash-Auszahlknopf, im Kniffel-Topf, bei Higher/Lower, Würfelpoker, Kopfgeld und im Auktionshaus. Im Fließtext bleibt das Wort, da gehört es hin." },
+      ],
+    },
+    {
       id: "2026-09-22-c",
       datum: "11. September 2026",
       titel: "Aufgeräumt",

@@ -32,7 +32,7 @@
     const factor = s.hustle && s.hustle.factor ? s.hustle.factor : 1;
     const power = Math.max(1, Math.round(s.clickPower * (s.schulleiter ? 3 : 1) * factor));
     $("#clicker-power").textContent = power;
-    $("#work-power").textContent = power + " Chips" + (s.schulleiter ? " (Schulleiter ×3)" : "");
+    $("#work-power").innerHTML = window.Casino.betrag(power) + (s.schulleiter ? " (Schulleiter ×3)" : "");
     renderHustle(s.hustle);
     renderJobs(s.jobs);
     const btn = $("#work-upgrade-btn");
@@ -42,7 +42,7 @@
       btn.disabled = true;
       btn.textContent = "Voll ausgebaut";
     } else {
-      costEl.textContent = fmt(s.upgradeCost) + " Chips";
+      costEl.innerHTML = window.Casino.betrag(s.upgradeCost);
       btn.disabled = false;
       btn.innerHTML = `${window.Casino.icons.ui("aufwerten")} Upgrade kaufen`;
     }
@@ -68,10 +68,10 @@
     workState = jobs;
     const tag = jobs.dayEarned || 0, tagMax = jobs.dayCap || 1;
     $("#work-job-day-earned").textContent = fmt(tag);
-    $("#work-job-day").textContent = `${fmt(tag)} / ${fmt(tagMax)} Chips Tagesgrenze`;
+    $("#work-job-day").innerHTML = `${fmt(tag)} / ${window.Casino.betrag(tagMax)} Tagesgrenze`;
     const bar = $("#work-day-bar")?.firstElementChild;
     if (bar) bar.style.width = Math.min(100, Math.round((100 * tag) / tagMax)) + "%";
-    $("#work-job-hour").textContent = `${fmt(jobs.hourEarned || 0)} / ${fmt(jobs.hourCap || 0)} Chips`;
+    $("#work-job-hour").innerHTML = `${fmt(jobs.hourEarned || 0)} / ${window.Casino.betrag(jobs.hourCap || 0)}`;
 
     const f = jobs.factor || {};
     const faktor = f.factor || 1;
@@ -387,7 +387,7 @@
     }
     const chips = [];
     chips.push(`<span class="buff-chip" style="border-color:${me.color};color:${me.color}">${window.Casino.icons.ui("businesses")}${me.houses} ${me.houses === 1 ? "Haus" : "Häuser"}</span>`);
-    chips.push(`<span class="buff-chip">${fmt(me.value)} Chips Wert</span>`);
+    chips.push(`<span class="buff-chip">${window.Casino.betrag(me.value)} Wert</span>`);
     if (me.streets) chips.push(`<span class="buff-chip">${window.Casino.icons.ui("krone")}${me.streets} ${me.streets === 1 ? "Straße" : "Straßen"} komplett</span>`);
     if (me.hasGolden) chips.push(`<span class="buff-chip" style="border-color:#ffd700;color:#ffd700">${window.Casino.icons.ui("stern-voll")}Goldene Straße (2× Tribut)</span>`);
     for (const s of me.sets || []) chips.push(`<span class="buff-chip">${s.emoji} ${escapeHtml(s.label)} (+${s.tribute.toLocaleString("de-DE")}/Std)</span>`);

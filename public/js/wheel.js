@@ -139,9 +139,15 @@
     const box = $("#gr-ergebnis");
     if (!box) return;
     box.className = `gr-ergebnis${r.art === "fortuna" ? " gr-ergebnis-fortuna" : ""}`;
+    /* Bei Chips steht hier eine ZAHL, und Zahlen tragen im Haus das Zeichen,
+       nicht das Wort. Der Server schickt den Betrag getrennt mit, damit der
+       Client ihn zeichnen kann statt einen fertigen Satz anzuzeigen. */
+    const kopf = r.art === "chips" && r.chips
+      ? window.Casino.betragDelta(r.chips)
+      : escapeHtml(r.titel || "");
     box.innerHTML =
       `<small>${escapeHtml(ART_KOPF[r.art] || "Gewonnen")}</small>` +
-      `<b>${escapeHtml(r.titel || "")}</b>` +
+      `<b>${kopf}</b>` +
       (r.text ? `<span>${escapeHtml(r.text)}</span>` : "");
     box.hidden = false;
   }

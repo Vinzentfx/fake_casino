@@ -996,7 +996,7 @@ function renderProfile() {
       const tags = [];
       if (d.clan) tags.push(`<span class="pf-tag">${window.Casino.icons.ui("clans")}${escapeHtml(d.clan)}</span>`);
       if (d.ach && d.ach.badge) tags.push(`<span class="pf-tag">${d.ach.badge}</span>`);
-      if (d.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">${window.Casino.icons.ui("quests")}Kopfgeld ${Number(d.bounty).toLocaleString("de-DE")} Chips</span>`);
+      if (d.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">${window.Casino.icons.ui("quests")}Kopfgeld ${window.Casino.betrag(d.bounty)}</span>`);
       $("#profile-tags").innerHTML = tags.join("");
 
       const c = d.city;
@@ -1228,7 +1228,7 @@ async function openPlayerProfile(name) {
     const tags = [];
     if (data.clan) tags.push(`<span class="pf-tag">${window.Casino.icons.ui("clans")}${escapeHtml(data.clan)}</span>`);
     if (ach.badge) tags.push(`<span class="pf-tag">${ach.badge}</span>`);
-    if (data.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">${window.Casino.icons.ui("quests")}Kopfgeld ${zahl(data.bounty)} Chips</span>`);
+    if (data.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">${window.Casino.icons.ui("quests")}Kopfgeld ${window.Casino.betrag(data.bounty)}</span>`);
     if (acc.lastSeen) tags.push(`<span class="pf-tag">${window.Casino.icons.ui("uhr")}${wannGrob(acc.lastSeen)}</span>`);
 
     const badges = (ach.unlocked || []).length
@@ -1377,7 +1377,7 @@ function renderCalendar(s) {
   }).join("");
   if (btn) {
     btn.disabled = !s.canClaim;
-    btn.textContent = s.canClaim ? `Tag ${s.current + 1} abholen: ${s.rewards[s.current].toLocaleString("de-DE")} Chips` : "Heute schon abgeholt, morgen gibt's den nächsten.";
+    btn.innerHTML = s.canClaim ? `Tag ${s.current + 1} abholen: ${window.Casino.betrag(s.rewards[s.current])}` : "Heute schon abgeholt, morgen gibt's den nächsten.";
   }
 }
 function loadCalendar() {
@@ -1407,7 +1407,7 @@ function renderLiveops() {
   if (s && s.tourney) {
     const min = Math.max(0, Math.ceil((s.tourney.endsAt - Date.now()) / 60000));
     const lead = s.tourney.board && s.tourney.board[0];
-    parts.push(`<span class="lo-chip tourney">Slot-Turnier · ${s.tourney.prize.toLocaleString("de-DE")} Chips · noch ${min} Min${lead ? ` · vorne: ${escapeHtml(lead.name)} (${lead.mult}×)` : ""}</span>`);
+    parts.push(`<span class="lo-chip tourney">Slot-Turnier · ${window.Casino.betrag(s.tourney.prize)} · noch ${min} Min${lead ? ` · vorne: ${escapeHtml(lead.name)} (${lead.mult}×)` : ""}</span>`);
   }
   el.innerHTML = parts.join("");
   el.classList.toggle("hidden", parts.length === 0);

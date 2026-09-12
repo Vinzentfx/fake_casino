@@ -60,7 +60,7 @@
           <b>${t.label}</b><em>${t.chance}</em><span>${mx(t.zahlt)}×</span>
         </div>`).join("") +
       `<p class="wp-tab-fuss muted small">Alles darunter ist verloren. Die Chancen gelten,
-       wenn du gezielt darauf spielst. Höchstgewinn ${fmt(grenzen.maxWin)} Chips pro Runde.</p>`;
+       wenn du gezielt darauf spielst. Höchstgewinn ${Casino.betrag(grenzen.maxWin)} pro Runde.</p>`;
   }
 
   function zeichne(v) {
@@ -96,7 +96,7 @@
 
     const zahlt = v.zahlt || 0;
     $("#wp-status").innerHTML = v.over
-      ? `<b>${v.ergebnisName || v.kategorieName}</b>` + (v.payout ? ` · <span class="wp-gewinn">+${fmt(v.payout)} Chips</span>` : " · nichts diesmal")
+      ? `<b>${v.ergebnisName || v.kategorieName}</b>` + (v.payout ? ` · <span class="wp-gewinn">+${Casino.betrag(v.payout)}</span>` : " · nichts diesmal")
       : `<b>${v.kategorieName}</b>` + (zahlt ? ` · zahlt gerade ${mx(zahlt)}× = ${fmt(v.moeglich)}` : " · zahlt noch nichts");
 
     $("#wp-hinweis").textContent = v.over

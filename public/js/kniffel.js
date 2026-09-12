@@ -114,7 +114,8 @@
     const summe = `<div class="kn-zeile kn-summe"><span>Gesamt</span>` +
       v.spieler.map((s) => `<span>${s.gesamt}</span>`).join("") + `</div>`;
     $("#kn-zettel").innerHTML = kopf + zeilen + summe;
-    $("#kn-topf").textContent = `Topf ${fmt(v.topf)} Chips`;
+    // innerHTML statt textContent: die Zahl traegt im Haus das Zeichen.
+    $("#kn-topf").innerHTML = `Topf ${Casino.betrag(v.topf)}`;
   }
 
   function hole() { socket.emit("kniffel:state", (r) => zeichne(r)); }

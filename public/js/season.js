@@ -95,7 +95,20 @@
     const pct = s.level >= gesamt ? 100 : Math.min(100, Math.round((100 * (s.xp - basis)) / spanne));
 
     const zustand = (r) => (r.claimed ? "claimed" : r.unlocked ? "ready" : "locked");
-    const istSpecial = (r) => !!(r.kosmetik && r.kosmetik.length);
+    /*
+   * Was eine Stufe gibt, als HTML. Der Server schickt dieselbe Zeile auch als
+   * fertigen Text (`label`) — der ist fuer Chat und Benachrichtigung, wo nur
+   * Text durchgeht. Hier steht eine Zahl auf dem Bildschirm, und Zahlen
+   * tragen im Haus das Zeichen statt das Wort.
+   */
+  function belohnung(r) {
+    const teile = [];
+    if (r.chipsFuerDich > 0) teile.push(window.Casino.betrag(r.chipsFuerDich));
+    for (const st of r.stuecke || []) teile.push(escapeHtml(st));
+    return teile.join(" + ") || "\u2014";
+  }
+
+  const istSpecial = (r) => !!(r.kosmetik && r.kosmetik.length);
 
     box.innerHTML = `
       <div class="se-hero">
@@ -123,7 +136,7 @@
               <span class="muted small">${fmt(s.xp)} / ${fmt(s.nextXp || s.xp)} XP</span>
             </div>
             <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
-            ${naechste ? `<div class="se-naechste">Als Nächstes: <b>${escapeHtml(naechste.label)}</b></div>` : ""}
+            ${naechste ? `<div class="se-naechste">Als Nächstes: <b>${belohnung(naechste)}</b></div>` : ""}
           </div>
         </div>
 
@@ -151,7 +164,7 @@
               ${istSpecial(r) ? '<span class="se-karte-tag">Einzigartig</span>' : ""}
             </div>
             <div class="se-karte-body">
-              <b>${escapeHtml(r.label)}</b>
+              <b>${belohnung(r)}</b>
               <small>${fmt(r.xp)} XP</small>
             </div>
             <button class="se-karte-btn" data-season-claim="${r.level}" ${!r.unlocked || r.claimed ? "disabled" : ""}>

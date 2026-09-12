@@ -41,7 +41,20 @@ const SCHRITT_ANTEIL = 0.05;
 const ENDE_STUNDE = 20, ENDE_MINUTE = 30;  // eine halbe Stunde nach der Lotterie
 const MIN_LAUFZEIT_MS = 24 * 60 * 60 * 1000;
 const VERLAENGERUNG_MS = 2 * 60 * 1000;
-const SPERRE_MS = 7 * 24 * 60 * 60 * 1000;
+/*
+ * Nach einem Zuschlag setzt man EIN Los aus, nicht eine Woche.
+ *
+ * Die Wochensperre sollte verhindern, dass die zwei groessten Konten alles
+ * abraeumen. Sie hat aber auch verhindert, dass ueberhaupt jemand zweimal
+ * mitbietet: bei neun Losen und einem Los alle ein bis zwei Tage war ein
+ * Gewinner fuer die halbe Sammlung raus. Ein Los auszusetzen reicht, damit
+ * nicht derselbe zweimal hintereinander zuschlaegt, und laesst danach jeden
+ * wieder ran.
+ *
+ * Gemerkt wird die NUMMER des gewonnenen Loses, nicht die Uhrzeit: die Lose
+ * wechseln nach Zeitplan, und "ein Los aussetzen" ist damit unabhaengig davon,
+ * wie lange ein Los lief.
+ */
 const VERLAUF_MAX = 12;
 const ARCHIV_MAX = 20;
 
@@ -106,6 +119,13 @@ const ART_NAME = {
   style: "Namensstil", frame: "Rahmen", title: "Titel", effect: "Gewinn-Effekt",
   banner: "Profil-Banner", schild: "Namensschild", aura: "Aura", karte: "Kartenrücken",
 };
+
+/** Setzt dieser Spieler das laufende Los aus? Genau das eine nach seinem Sieg. */
+function gesperrtFuer(acc, los) {
+  if (!acc || !los) return false;
+  const gewonnen = Number(acc.auktionSiegLos) || 0;
+  return gewonnen > 0 && los.nr === gewonnen + 1;
+}
 
 /** Der Mindestbetrag fuer das naechste Gebot. */
 function mindestGebot(los) {
@@ -179,6 +199,7 @@ function hammer() {
   if (acc) {
     if (cosmetics.grant(acc, los.type, los.id)) stuecke.push(los.label);
     acc.auktionSieg = Date.now();
+    acc.auktionSiegLos = los.nr;
     accounts.save();
   }
   // Das Gebot ist beim Bieten abgebucht worden und wird hier nicht
@@ -222,10 +243,8 @@ function bieten(key, betrag) {
   if (!acc) return { ok: false, error: "Nicht eingeloggt." };
   if (Date.now() >= los.endet) return { ok: false, error: "Zu spät, der Zuschlag ist durch." };
 
-  const sperreBis = (acc.auktionSieg || 0) + SPERRE_MS;
-  if (Date.now() < sperreBis) {
-    const tage = Math.ceil((sperreBis - Date.now()) / 86400000);
-    return { ok: false, error: `Du hast gerade erst ersteigert. Noch ${tage} ${tage === 1 ? "Tag" : "Tage"} Pause.` };
+  if (gesperrtFuer(acc, los)) {
+    return { ok: false, error: "Du hast das letzte Los gewonnen. Dieses eine setzt du aus, ab dem nächsten bist du wieder dabei." };
   }
   if (los.bieter === key) return { ok: false, error: "Du hältst das Höchstgebot bereits." };
 
@@ -341,7 +360,7 @@ function gesehen(key) {
 function oeffentlich(key) {
   const los = state.los;
   const acc = key ? accounts.get(key) : null;
-  const sperreBis = acc ? (acc.auktionSieg || 0) + SPERRE_MS : 0;
+  const gesperrt = !!(acc && los && gesperrtFuer(acc, los));
   return {
     los: los ? {
       nr: los.nr, art: los.art, label: los.label, type: los.type, id: los.id,
@@ -357,7 +376,7 @@ function oeffentlich(key) {
     archiv: state.archiv.slice(0, 8),
     startGebot: START_GEBOT,
     verlaengerung: VERLAENGERUNG_MS,
-    sperreBis: sperreBis > Date.now() ? sperreBis : 0,
+    gesperrt,
     meineChips: acc ? acc.chips : 0,
     marke: menueMarke(key),
   };

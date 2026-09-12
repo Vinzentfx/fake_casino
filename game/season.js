@@ -158,6 +158,12 @@ function publicState(acc) {
       // Zahlenaenderung falsch.
       label: belohnungsText(r, faktor),
       chipsFuerDich: Math.round((r.chips || 0) * faktor),
+      /* Die Kosmetik-Namen getrennt, damit der Client die Zeile selbst bauen
+         und die Chips mit dem Zeichen statt mit dem Wort schreiben kann.
+         `label` bleibt fuer alles, wo nur Text durchgeht (Chat, Push). */
+      stuecke: (r.kosmetik || []).map((k) => {
+        try { return require("./cosmetics").label(k.type, k.id); } catch { return k.id; }
+      }),
       unlocked: xp >= r.xp,
       claimed: !!s.claimed[r.level],
     })),

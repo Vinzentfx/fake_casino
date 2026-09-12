@@ -350,7 +350,7 @@
     if (phase === "flying" && mine && !mine.cashedAt) {
       const win = Math.round(mine.amount * dispMult);
       btn.disabled = false; btn.className = "btn-primary crash-cashbtn";
-      btn.textContent = `Auszahlen: ${fmt(win)} Chips (${dispMult.toFixed(2)}×)`;
+      btn.innerHTML = `Auszahlen: ${window.Casino.betrag(win)} (${dispMult.toFixed(2)}×)`;
     } else if (phase === "betting" && !mine) {
       btn.disabled = false; btn.className = "btn-primary";
       btn.textContent = "Einsatz setzen";
