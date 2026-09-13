@@ -25,6 +25,17 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-22-f",
+      datum: "13. September 2026",
+      titel: "Du kannst deinen Namen ändern",
+      items: [
+        { icon: "profil", titel: "Neuer Name, altes Konto",
+          text: "In den Einstellungen steht jetzt „Name ändern“. Der neue Name gilt sofort überall, auch rückwirkend: in der Chronik, in den Bestenlisten, an deinen Häusern, im Auktionshaus. Anmelden kannst du dich weiter mit dem alten Namen, du kannst dich also nicht aussperren. Einmal im Monat." },
+        { icon: "sports", titel: "Echte Fußballspiele",
+          text: "Bei den Sportwetten kamen zuletzt nur simulierte Partien. Woran es liegt, war von außen nicht zu sehen; jetzt steht es im Klartext im Admin-Bereich und lässt sich dort auch beheben." },
+      ],
+    },
+    {
       id: "2026-09-22-e",
       datum: "12. September 2026",
       titel: "Zwei neue Events, Post vom Casino und ein Loch im Server",

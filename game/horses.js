@@ -452,12 +452,13 @@ function rebuildDailyCache() {
   let rang = 0, vorige = null;
   const mitRang = ranked.map((a, i) => {
     if (a.dailyHorseWins !== vorige) { rang = i + 1; vorige = a.dailyHorseWins; }
-    return { name: a.name, wins: a.dailyHorseWins, rank: rang };
+    return { name: a.name, key: accounts.schluesselVon(a), wins: a.dailyHorseWins, rank: rang };
   });
   // Was jedem zusteht, rechnet der Server. Der Client hat den Preis vorher aus
   // der Array-Position gezogen und zeigte bei einem Gleichstand "+0".
   const anteile = preisAnteile(mitRang, DAILY_PRIZES);
-  mitRang.forEach((r) => { r.prize = anteile.get(r.name) || 0; byKey[String(r.name).trim().toLowerCase()] = r; });
+  // Nach dem Schluessel ablegen, nicht nach dem Anzeigenamen: der kann sich aendern.
+  mitRang.forEach((r) => { r.prize = anteile.get(r.name) || 0; byKey[r.key] = r; });
   // Alle mit Rang 1 bis 3 zeigen, nicht die ersten drei der Liste: bei einem
   // Gleichstand auf Platz 3 gehoeren beide aufs Treppchen.
   dailyCache = { top: mitRang.filter((r) => r.rank <= 3), byKey };

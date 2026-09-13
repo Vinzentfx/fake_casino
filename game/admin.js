@@ -16,6 +16,8 @@ let _heist = null;
 function setHeist(h) { _heist = h; }
 let _events = {}; // { rain, quiz, vault }, die Admin-Events aus server.js
 function setEvents(e) { _events = e || {}; }
+let _verteileUmbenennung = null;  // aus server.js: zieht offene Bildschirme nach
+function setUmbenennen(fn) { _verteileUmbenennung = fn; }
 
 /* Angekündigte Events
 
@@ -105,6 +107,19 @@ function strafenUebersicht(accounts) {
     if (m.length) out.push({ name: a.name, strafen: m });
   }
   return out.sort((x, y) => x.name.localeCompare(y.name));
+}
+
+/**
+ * Aus dem, was im Feld steht, den echten Schluessel machen.
+ *
+ * Der Admin tippt (oder klickt) einen Anzeigenamen. Seit sich Namen aendern
+ * lassen, ist der nicht mehr automatisch der Schluessel: wer jemanden unter
+ * seinem frueheren Namen sucht, soll ihn trotzdem finden, und wer ihn unter
+ * dem neuen sucht, darf nicht in einem leeren Konto landen.
+ */
+function keyVon(accounts, target) {
+  const roh = String(target || "");
+  return accounts.kanonisch(roh) || roh.toLowerCase();
 }
 
 /** Alle Sockets eines Kontos. */
@@ -307,11 +322,11 @@ function setupAdmin(io, accounts) {
       amount = Math.floor(Number(amount));
       if (!Number.isFinite(amount) || amount < 0) return ack({ ok: false, error: "Ungültiger Betrag." });
       const delta = amount - acc.chips;
-      const res = accounts.adjustChips(String(target).toLowerCase(), delta);
+      const res = accounts.adjustChips(keyVon(accounts, target), delta);
       if (!res.ok) return ack({ ok: false, error: res.error });
       // Das Ziel benachrichtigen, falls online
       io.of("/").sockets.forEach((s) => {
-        if (s.data.account === String(target).toLowerCase()) {
+        if (s.data.account === keyVon(accounts, target)) {
           s.emit("account:update", { account: res.account });
         }
       });
@@ -321,10 +336,10 @@ function setupAdmin(io, accounts) {
     socket.on("admin:ban", ({ target } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const res = accounts.ban(String(target).toLowerCase());
+      const res = accounts.ban(keyVon(accounts, target));
       if (res.ok) {
         io.of("/").sockets.forEach((s) => {
-          if (s.data.account === String(target).toLowerCase()) {
+          if (s.data.account === keyVon(accounts, target)) {
             s.emit("admin:kicked", { reason: "Dein Account wurde gesperrt." });
             s.disconnect(true);
           }
@@ -336,7 +351,7 @@ function setupAdmin(io, accounts) {
     socket.on("admin:unban", ({ target } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      ack(accounts.unban(String(target).toLowerCase()));
+      ack(accounts.unban(keyVon(accounts, target)));
     });
 
     // IP-Bann: sperrt die IP eines Spielers (über den Namen die letzte bekannte IP)
@@ -346,7 +361,7 @@ function setupAdmin(io, accounts) {
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       let addr = ip ? ipbans.normIp(ip) : "";
       if (!addr && target) {
-        const acc = accounts.get(String(target).toLowerCase());
+        const acc = accounts.get(keyVon(accounts, target));
         addr = acc && acc.lastIp ? ipbans.normIp(acc.lastIp) : "";
         if (!addr) return ack({ ok: false, error: "Keine IP für diesen Spieler bekannt (muss erst online gewesen sein)." });
       }
@@ -388,13 +403,13 @@ function setupAdmin(io, accounts) {
     socket.on("admin:shadowban", ({ target, on } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      ack(accounts.setShadowban(String(target).toLowerCase(), !!on, { grund: "ohne Angabe" }));
+      ack(accounts.setShadowban(keyVon(accounts, target), !!on, { grund: "ohne Angabe" }));
     });
 
     socket.on("admin:deleteAccount", ({ target } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const key = String(target).toLowerCase();
+      const key = keyVon(accounts, target);
       // Rauswerfen, falls online
       io.of("/").sockets.forEach((s) => {
         if (s.data.account === key) {
@@ -408,7 +423,7 @@ function setupAdmin(io, accounts) {
     socket.on("admin:clearBank", ({ target } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const key = String(target || "").toLowerCase();
+      const key = keyVon(accounts, target);
       const acc = accounts.get(key);
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
       const cleared = Math.floor((acc.savings && acc.savings.amount) || 0);
@@ -421,7 +436,7 @@ function setupAdmin(io, accounts) {
     socket.on("admin:resetStat", ({ target, stat } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const acc = accounts.get(String(target).toLowerCase());
+      const acc = accounts.get(keyVon(accounts, target));
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
       acc.stats = acc.stats || { gamesPlayed: 0, handsWon: 0, biggestWin: 0, biggestLoss: 0 };
       if (stat === "bigwin") acc.stats.biggestWin = 0;
@@ -588,7 +603,7 @@ function setupAdmin(io, accounts) {
     socket.on("admin:resetBonus", ({ target } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const acc = accounts.get(String(target || "").toLowerCase());
+      const acc = accounts.get(keyVon(accounts, target));
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
       /* Auch Rad und Kalender: die drei stehen im Menue nebeneinander, und
          "Bonus wieder frei" hat vorher nur einen davon freigegeben. Wer die
@@ -628,7 +643,7 @@ function setupAdmin(io, accounts) {
     socket.on("admin:strafeSetzen", ({ target, art, minuten, wert, spiele, grund } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const key = String(target || "").toLowerCase();
+      const key = keyVon(accounts, target);
       const acc = accounts.get(key);
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
       if (key === OWNER) return ack({ ok: false, error: "Dich selbst bestrafen geht nicht." });
@@ -658,7 +673,7 @@ function setupAdmin(io, accounts) {
     socket.on("admin:strafeAufheben", ({ target, art } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const acc = accounts.get(String(target || "").toLowerCase());
+      const acc = accounts.get(keyVon(accounts, target));
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
       const res = art === "*" ? strafen.alleAufheben(acc) : strafen.hebeAuf(acc, art);
       if (res.ok) {
@@ -687,7 +702,7 @@ function setupAdmin(io, accounts) {
       if (!z) return ack({ ok: false, error: "Unbekanntes Ziel." });
       let key = regie.GLOBAL;
       if (!z.global) {
-        key = String(target || "").toLowerCase();
+        key = keyVon(accounts, target);
         if (!accounts.get(key)) return ack({ ok: false, error: "Account nicht gefunden." });
       }
       ack(regie.setze(key, ziel, wert));
@@ -729,7 +744,7 @@ function setupAdmin(io, accounts) {
     socket.on("admin:kick", ({ target, grund } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const key = String(target || "").toLowerCase();
+      const key = keyVon(accounts, target);
       if (!accounts.get(key)) return ack({ ok: false, error: "Account nicht gefunden." });
       const text = String(grund || "").slice(0, 140) || "Du wurdest vom Casino getrennt. Du kannst sofort wieder rein.";
       let getrennt = 0;
@@ -744,7 +759,7 @@ function setupAdmin(io, accounts) {
     socket.on("admin:nachricht", ({ target, text, auchPush } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const key = String(target || "").toLowerCase();
+      const key = keyVon(accounts, target);
       const acc = accounts.get(key);
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
       const t = String(text || "").trim().slice(0, 400);
@@ -772,7 +787,7 @@ function setupAdmin(io, accounts) {
     socket.on("admin:kosmetik", ({ target, art, id, weg } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const acc = accounts.get(String(target || "").toLowerCase());
+      const acc = accounts.get(keyVon(accounts, target));
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
       const res = weg ? cosmetics.adminNimm(acc, art, id) : cosmetics.adminGib(acc, art, id);
       if (res.ok) {
@@ -794,6 +809,65 @@ function setupAdmin(io, accounts) {
       chat.clearRoom("global");
       io.emit("chat:geleert", { room: "global" });
       ack({ ok: true });
+    });
+
+    /* Umbenennen durch den Admin.
+
+       Der Anlass ist ein anderer als beim Spieler: es gibt Namen, die aus
+       dem Schaufenster sollen, und der Betroffene wird sie nicht von selbst
+       aendern. Deshalb ohne Wartezeit und ohne Veto des Wortfilters (ein
+       Admin-Name muss auch mal "Anonym 3" heissen duerfen).
+
+       Der alte Name fuehrt weiter zum Konto, sichtbar ist er nirgends mehr.
+       Genau das ist der Zweck: niemand wird ausgesperrt, aber von aussen
+       liest ihn auch keiner. */
+    socket.on("admin:rename", ({ target, neu } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const res = accounts.rename(String(target || ""), neu, { vonAdmin: true });
+      if (!res.ok) return ack(res);
+      if (_verteileUmbenennung) _verteileUmbenennung(res.key, res.alt, res.neu, res.account);
+      // Bewusst keine Ansage im Chat: wenn ein Name verschwinden soll, hilft
+      // es nicht, ihn zum Abschied noch einmal an alle zu schicken.
+      for (const s of socketsVon(io, res.key)) {
+        s.emit("admin:nachricht", {
+          titel: "Neuer Name",
+          text: `Du heißt hier jetzt ${res.neu}. Anmelden kannst du dich weiter mit deinem alten Namen.`,
+        });
+      }
+      ack(res);
+    });
+
+    /* Echte Fussballspiele
+
+       Ob der Zugang zu football-data.org funktioniert, stand bisher in einer
+       Konsolenzeile beim Start. Beim Hoster liest die niemand, und im Spiel
+       sah man nur, dass ausschliesslich simulierte Partien laufen. */
+    socket.on("admin:sport", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      try { ack({ ok: true, ...require("./sportsbook").diagnose() }); }
+      catch (e) { ack({ ok: false, error: e.message }); }
+    });
+
+    socket.on("admin:sportToken", ({ token } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      try { ack(require("./sportsbook").setzeToken(token)); }
+      catch (e) { ack({ ok: false, error: e.message }); }
+    });
+
+    socket.on("admin:sportHolen", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      try {
+        const r = require("./sportsbook").holeJetzt();
+        /* Der Abruf laeuft asynchron weiter (drei Wettbewerbe mit Abstand,
+           damit das Limit haelt). Der Stand kommt deshalb nach, sobald er
+           etwas wert ist. */
+        setTimeout(() => { try { socket.emit("admin:sportUpdate", require("./sportsbook").diagnose()); } catch {} }, 8000);
+        ack(r);
+      } catch (e) { ack({ ok: false, error: e.message }); }
     });
 
     /* Zwei neue Events
@@ -843,7 +917,7 @@ function setupAdmin(io, accounts) {
         if (bar <= frei) continue;
         const ab = Math.floor(((bar - frei) * satz) / 100);
         if (ab <= 0) continue;
-        const res = accounts.adjustChips(String(a.name).toLowerCase(), -ab);
+        const res = accounts.adjustChips(accounts.schluesselVon(a), -ab);
         if (!res.ok) continue;
         summe += ab; betroffen++;
         for (const s of socketsVon(io, a.name)) {
@@ -865,7 +939,7 @@ function setupAdmin(io, accounts) {
     socket.on("admin:resetAchievements", ({ target } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const acc = accounts.get(String(target || "").toLowerCase());
+      const acc = accounts.get(keyVon(accounts, target));
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
       acc.ach = {};
       accounts.save();
@@ -874,4 +948,4 @@ function setupAdmin(io, accounts) {
   });
 }
 
-module.exports = { setupAdmin, setHeist, setEvents };
+module.exports = { setupAdmin, setHeist, setEvents, setUmbenennen };

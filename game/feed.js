@@ -63,4 +63,17 @@ function setupFeed(io, accounts) {
   });
 }
 
-module.exports = { setupFeed, add };
+/** Denselben Namen im Live-Feed ersetzen (siehe chronik.umbenennen). */
+function umbenennen(alt, neu) {
+  const a = String(alt || "").trim();
+  if (!a || a === neu) return 0;
+  const muster = new RegExp(`(?<![\\p{L}\\p{N}_])${a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}_])`, "giu");
+  let n = 0;
+  for (const e of items) {
+    if (muster.test(e.text)) { e.text = e.text.replace(muster, neu); n++; }
+    if (e.user && e.user.toLowerCase() === a.toLowerCase()) e.user = neu;
+  }
+  return n;
+}
+
+module.exports = { setupFeed, add, umbenennen };

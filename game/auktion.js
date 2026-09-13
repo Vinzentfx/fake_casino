@@ -432,4 +432,28 @@ function setupAuktion(_io, _accounts) {
   });
 }
 
-module.exports = { setupAuktion, oeffentlich, menueMarke, START_GEBOT };
+/**
+ * Ein Bieter heisst jetzt anders.
+ *
+ * Das laufende Los, die Gebotsliste und die Liste der vergebenen Stuecke
+ * halten den Namen als Kopie. Das Archiv haelt nur den Namen und keinen
+ * Schluessel, dort wird deshalb ueber den alten Namen gesucht.
+ */
+function umbenennen(key, alt, neu) {
+  let n = 0;
+  const los = state.los;
+  if (los) {
+    if (los.bieter === key) { los.bieterName = neu; n++; }
+    for (const g of los.verlauf || []) if (g.key === key) { g.name = neu; n++; }
+  }
+  for (const v of Object.values(state.vergeben || {})) {
+    if (v && v.key === key) { v.name = neu; n++; }
+  }
+  for (const a of state.archiv || []) {
+    if (a && String(a.name || "").toLowerCase() === String(alt || "").toLowerCase()) { a.name = neu; n++; }
+  }
+  if (n) save();
+  return n;
+}
+
+module.exports = { setupAuktion, oeffentlich, menueMarke, umbenennen, START_GEBOT };

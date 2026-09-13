@@ -112,8 +112,45 @@ function strengthOf(name) {
   return STRENGTH_DEFAULT;
 }
 
-// Echte Spiele (football-data.org), nur wenn ein Token gesetzt ist
-const FD_TOKEN = process.env.FOOTBALL_DATA_TOKEN || "";
+/* ---------------------------------------------------------------------------
+   Echte Spiele (football-data.org)
+
+   Der Zugang kam bisher ausschliesslich aus einer Umgebungsvariablen, und ob
+   er ankam, stand in einer einzigen Zeile beim Start auf der Konsole. Auf dem
+   alten Server konnte man die lesen. Beim Hoster nicht, und deshalb sah das
+   Problem genau so aus, wie es der Besitzer gemeldet hat: "es kommen nur die
+   Simulationen", ohne jeden Hinweis, warum.
+
+   Zwei Konsequenzen. Erstens fuehrt das Modul jetzt Buch: wann zuletzt geholt
+   wurde, was der Server geantwortet hat, wie viele Spiele dabei ankamen, und
+   was schiefging. Zweitens laesst sich der Zugang zur Laufzeit setzen und
+   liegt dann in data/, denn eine Umgebungsvariable aendert man nur dort, wo
+   der Dienst laeuft, und genau dort sitzt man nicht, wenn es auffaellt.
+
+   Die Datei bekommt 0600 wie data/.secret und wandert mit dem Backup. Der
+   Schluessel selbst wird nirgends angezeigt, nur seine letzten vier Zeichen.
+--------------------------------------------------------------------------- */
+const FD_FILE = path.join(__dirname, "..", "data", "sport-zugang.json");
+
+function ladeToken() {
+  if (process.env.FOOTBALL_DATA_TOKEN) return { token: process.env.FOOTBALL_DATA_TOKEN, quelle: "umgebung" };
+  try {
+    const roh = JSON.parse(fs.readFileSync(FD_FILE, "utf8"));
+    if (roh && roh.token) return { token: String(roh.token), quelle: "datei" };
+  } catch {}
+  return { token: "", quelle: "keiner" };
+}
+
+let { token: FD_TOKEN, quelle: FD_QUELLE } = ladeToken();
+
+/* Buch ueber den letzten Abruf. Steht im Admin-Bildschirm. */
+let _pollJetzt = null;   // wird in setupSportsbook gesetzt, damit der Admin sofort holen kann
+const fdStand = {
+  letzterLauf: 0,
+  letzterErfolg: 0,
+  fehler: "",
+  wettbewerbe: {},   // code -> { status, spiele, ts }
+};
 /*
  * Welche Wettbewerbe geholt werden, wenn ein Token gesetzt ist.
  *
@@ -356,7 +393,9 @@ function setupSportsbook(io, accounts) {
 
   // Real fixtures poller (football-data.org)
   async function pollReal() {
-    if (!FD_TOKEN) return;
+    if (!FD_TOKEN) { fdStand.fehler = "Kein Zugang hinterlegt."; return; }
+    fdStand.letzterLauf = Date.now();
+    fdStand.fehler = "";
     const today = new Date();
     const dateFrom = new Date(today.getTime() - 2 * 864e5).toISOString().slice(0, 10);
     const dateTo = new Date(today.getTime() + 10 * 864e5).toISOString().slice(0, 10);
@@ -364,10 +403,30 @@ function setupSportsbook(io, accounts) {
       try {
         const res = await fetch(`https://api.football-data.org/v4/competitions/${code}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`,
           { headers: { "X-Auth-Token": FD_TOKEN } });
-        if (!res.ok) { console.warn(`[sports] ${code} fixtures HTTP ${res.status}`); continue; }
+        if (!res.ok) {
+          console.warn(`[sports] ${code} fixtures HTTP ${res.status}`);
+          fdStand.wettbewerbe[code] = { status: res.status, spiele: 0, ts: Date.now() };
+          /* 403 heisst bei football-data.org fast immer: der Schluessel taugt,
+             aber nicht fuer diesen Wettbewerb (der kostenlose Zugang deckt
+             zwoelf davon ab). Das ist etwas anderes als ein falscher
+             Schluessel, und der Unterschied gehoert in die Meldung. */
+          fdStand.fehler = res.status === 403
+            ? `${code}: kein Zugriff mit diesem Schlüssel (HTTP 403).`
+            : res.status === 400 || res.status === 401
+              ? `Zugang wird nicht angenommen (HTTP ${res.status}).`
+              : `${code}: HTTP ${res.status}`;
+          continue;
+        }
         const data = await res.json();
-        for (const am of data.matches || []) upsertReal(am, code);
-      } catch (e) { console.warn(`[sports] poll ${code} failed:`, e.message); }
+        const liste = data.matches || [];
+        for (const am of liste) upsertReal(am, code);
+        fdStand.wettbewerbe[code] = { status: 200, spiele: liste.length, ts: Date.now() };
+        fdStand.letzterErfolg = Date.now();
+      } catch (e) {
+        console.warn(`[sports] poll ${code} failed:`, e.message);
+        fdStand.wettbewerbe[code] = { status: 0, spiele: 0, ts: Date.now(), fehler: e.message };
+        fdStand.fehler = `${code}: ${e.message}`;
+      }
       await new Promise((r) => setTimeout(r, 6500)); // space calls (free tier: 10/min)
     }
     io.emit("sports:update");
@@ -408,10 +467,18 @@ function setupSportsbook(io, accounts) {
   }
 
   if (FD_TOKEN) {
-    console.log(`[sports] echte Spiele AN (${FD_COMPS.join(",")})`);
+    console.log(`[sports] echte Spiele AN (${FD_COMPS.join(",")}, Zugang aus der ${FD_QUELLE === "datei" ? "Datei" : "Umgebung"})`);
     pollReal();
-    setInterval(pollReal, FD_POLL_MS);
+  } else {
+    // Die Stille war das Problem: ohne diese Zeile sieht ein Log wie ein
+    // gesundes Log aus, und im Spiel stehen nur simulierte Partien.
+    console.log("[sports] echte Spiele AUS: kein FOOTBALL_DATA_TOKEN gesetzt, es laufen nur Simulationen");
   }
+  /* Der Wecker laeuft immer, auch ohne Zugang: wird einer nachgetragen,
+     holt der naechste Durchlauf die Spiele, ohne dass jemand neu startet. */
+  setInterval(pollReal, FD_POLL_MS);
+
+  _pollJetzt = pollReal;
 
   io.on("connection", (socket) => {
     socket.on("sports:state", (ack) => {
@@ -682,4 +749,60 @@ function loadSports(accounts) {
   }
 }
 
-module.exports = { setupSportsbook, persistSports, TEAM_STRENGTHS, LEAGUES, teamChances, strengthOf };
+/* ---------------------------------------------------------------------------
+   Admin: Zustand und Zugang
+--------------------------------------------------------------------------- */
+
+/** Was ist mit den echten Spielen? Ohne den Schluessel selbst zu zeigen. */
+function diagnose() {
+  let echte = 0, simulierte = 0;
+  for (const m of matches.values()) (m.real ? echte++ : simulierte++);
+  return {
+    an: !!FD_TOKEN,
+    quelle: FD_QUELLE,                                  // umgebung | datei | keiner
+    endet: FD_TOKEN ? FD_TOKEN.slice(-4) : "",          // zum Wiedererkennen, mehr nicht
+    wettbewerbe: FD_COMPS,
+    simAn: SIM_ENABLED,
+    letzterLauf: fdStand.letzterLauf,
+    letzterErfolg: fdStand.letzterErfolg,
+    fehler: fdStand.fehler,
+    proWettbewerb: fdStand.wettbewerbe,
+    echte, simulierte,
+    intervallMs: FD_POLL_MS,
+  };
+}
+
+/**
+ * Zugang setzen oder loeschen. Wirkt sofort, ohne Neustart.
+ *
+ * Eine Umgebungsvariable hat Vorrang: sonst setzt jemand hier etwas ein, der
+ * Dienst benutzt weiter den alten Wert, und niemand versteht, warum.
+ */
+function setzeToken(roh) {
+  if (process.env.FOOTBALL_DATA_TOKEN) {
+    return { ok: false, error: "Es gilt die Umgebungsvariable des Hosters. Die hat Vorrang und lässt sich nur dort ändern." };
+  }
+  const t = String(roh || "").trim();
+  try {
+    fs.mkdirSync(path.dirname(FD_FILE), { recursive: true });
+    if (t) fs.writeFileSync(FD_FILE, JSON.stringify({ token: t, seit: Date.now() }), { mode: 0o600 });
+    else fs.rmSync(FD_FILE, { force: true });
+  } catch (e) {
+    return { ok: false, error: "Konnte nicht gespeichert werden: " + e.message };
+  }
+  FD_TOKEN = t;
+  FD_QUELLE = t ? "datei" : "keiner";
+  fdStand.fehler = "";
+  fdStand.wettbewerbe = {};
+  if (t && _pollJetzt) _pollJetzt();     // gleich ausprobieren, statt drei Minuten zu warten
+  return { ok: true, ...diagnose() };
+}
+
+/** Jetzt holen, statt auf den Wecker zu warten. */
+function holeJetzt() {
+  if (!_pollJetzt) return { ok: false, error: "Sportwetten laufen noch nicht." };
+  _pollJetzt();
+  return { ok: true };
+}
+
+module.exports = { setupSportsbook, persistSports, TEAM_STRENGTHS, LEAGUES, teamChances, strengthOf, diagnose, setzeToken, holeJetzt };

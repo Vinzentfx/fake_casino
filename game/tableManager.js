@@ -322,9 +322,15 @@ function setupPoker(io, accounts) {
     socket.on("auth", ({ token } = {}) => {
       const key = accounts.verifyToken(token);
       const acc = key ? accounts.get(key) : null;
+      /* Der Schluessel kommt aus dem Token, NICHT aus dem Anzeigenamen.
+         Solange sich Namen nicht aendern liessen, war beides dasselbe. Seit
+         es Umbenennungen gibt, waere `acc.name.toLowerCase()` nach einem
+         Wechsel ein anderer Schluessel als der, unter dem Haeuser, Pferde und
+         Aktien dieses Menschen stehen: dieselbe Person mit zwei Identitaeten,
+         und der Besitzer verliert dabei sogar seine eigenen Adminrechte. */
       const warSchonDa = acc && [...io.of("/").sockets.values()]
-        .some((s2) => s2 !== socket && s2.data && s2.data.account === acc.name.toLowerCase());
-      socket.data.account = acc ? acc.name.toLowerCase() : null;
+        .some((s2) => s2 !== socket && s2.data && s2.data.account === key);
+      socket.data.account = acc ? key : null;
       socket.data.displayName = acc ? acc.name : null;
       broadcastPresence();
       if (acc && !warSchonDa) meldeEintritt(acc);

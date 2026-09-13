@@ -99,4 +99,27 @@ function seit(ts) {
 
 const anzahl = () => state.items.length;
 
-module.exports = { notiere, seit, anzahl };
+/**
+ * Einen Namen im Verlauf ersetzen (Umbenennung).
+ *
+ * Die Chronik ist der einzige Ort, an dem ein alter Name noch stehen wuerde,
+ * nachdem ueberall sonst der neue steht: sie speichert fertige Saetze
+ * ("X gewinnt Fortuna"), keine Verweise. Wer umbenannt wird, weil sein Name
+ * nicht mehr oeffentlich sein soll, haette hier weiter ein Denkmal.
+ *
+ * Ersetzt nur ganze Woerter, damit aus "Ali" nicht "NeuName ce" wird.
+ */
+function umbenennen(alt, neu) {
+  const a = String(alt || "").trim();
+  if (!a || a === neu) return 0;
+  const muster = new RegExp(`(?<![\\p{L}\\p{N}_])${a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}_])`, "giu");
+  let n = 0;
+  for (const e of state.items) {
+    if (muster.test(e.text)) { e.text = e.text.replace(muster, neu); n++; }
+    if (e.user && e.user.toLowerCase() === a.toLowerCase()) e.user = neu;
+  }
+  if (n) save();
+  return n;
+}
+
+module.exports = { notiere, seit, anzahl, umbenennen };

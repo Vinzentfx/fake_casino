@@ -183,8 +183,10 @@ function verifyToken(token, { ohneStrafe = false } = {}) {
   const sigBuf = Buffer.from(sig || "", "hex");
   const expBuf = Buffer.from(expected, "hex");
   if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
-  const [key, issuedAt] = payload.split("|");
-  if (!key || !accounts[key] || accounts[key].banned) return null;
+  const [roh, issuedAt] = payload.split("|");
+  // Alte Tokens tragen noch den Anzeigenamen; kanonisch() faengt beides ab.
+  const key = kanonisch(roh);
+  if (!key || accounts[key].banned) return null;
   // Eine laufende Zeitsperre gilt auch fuer ein gueltiges Token, sonst kaeme
   // jeder mit gespeicherter Sitzung weiter rein.
   if (!ohneStrafe && strafen.aktiv(accounts[key], "sperre")) return null;
@@ -211,7 +213,7 @@ function resumeSession(token) {
   const acc = accounts[key];
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
   acc.lastSeen = Date.now();
-  return { ok: true, account: publicAccount(acc), token: issueToken(acc.name) };
+  return { ok: true, account: publicAccount(acc), token: issueToken(key) };
 }
 
 /*
@@ -288,6 +290,7 @@ function save() {
    Speicherfunktion gereicht. */
 strafen.setSpeichern(save);
 
+
 // Läuft immer: alle paar Minuten jedes Konto über der Obergrenze kappen
 // (fängt direkte Buchungen wie den Rake ab und räumt alte ausgenutzte Stände
 // auch bei Spielern auf, die gerade offline sind).
@@ -309,8 +312,150 @@ function normalizeName(name) {
   return String(name || "").trim().toLowerCase();
 }
 
+/* ---------------------------------------------------------------------------
+   Umbenennen
+
+   Ein Konto haengt an seinem Namen: der normalisierte Name ist der
+   Schluessel, und dieser Schluessel steht als Besitzer an Grundstuecken, als
+   Mitglied in Clans, an Pferden, Wetten, Geboten, Aktien und Rekorden. Wer
+   den Schluessel aendert, muesste all das mit umziehen, und was dabei
+   vergessen wird, gehoert danach niemandem mehr.
+
+   Deshalb bleibt der Schluessel, wo er ist, und nur der ANGEZEIGTE Name
+   aendert sich (`acc.name`). Damit bleibt jede Verknuepfung heil.
+
+   Zwei Dinge braucht es dafuer. Erstens muss man das Konto auch unter dem
+   neuen Namen finden: dafuer gibt es den Alias-Index, und er ist der Grund,
+   warum sich der alte Name weiter anmelden kann, wie gewuenscht. Zweitens
+   muessen die Stellen nachgezogen werden, die den Namen als Kopie gespeichert
+   haben (Stadt, Auktion, Rekorde, Chronik, Feed) — sonst stuende der alte
+   Name genau dort weiter, wo ihn alle sehen.
+--------------------------------------------------------------------------- */
+const aliase = new Map();   // normalisierter Name -> Schluessel des Kontos
+
+/*
+ * Jedes Konto weiss, unter welchem Schluessel es liegt.
+ *
+ * Aus dem Anzeigenamen laesst sich der Schluessel nach einer Umbenennung
+ * nicht mehr ableiten, und genau das haben ein Dutzend Stellen getan
+ * (`normalizeName(acc.name)`), um in Stadt, Clan oder Depot nachzusehen. Die
+ * haetten danach beim falschen Menschen nachgeschlagen und nichts gefunden.
+ *
+ * Nicht aufzaehlbar, damit der Schluessel nicht in der gespeicherten Datei
+ * landet: dort ist er schon, er IST der Feldname.
+ */
+function merkeSchluessel(acc, key) {
+  Object.defineProperty(acc, "_key", { value: key, enumerable: false, writable: true, configurable: true });
+}
+const schluesselVon = (acc) => (acc && acc._key) || normalizeName(acc && acc.name);
+
+function baueAliasIndex() {
+  aliase.clear();
+  for (const [key, acc] of Object.entries(accounts)) {
+    if (!acc) continue;
+    merkeSchluessel(acc, key);
+    const jetzt = normalizeName(acc.name);
+    if (jetzt && jetzt !== key) aliase.set(jetzt, key);
+    for (const alt of acc.fruehereNamen || []) {
+      const n = normalizeName(alt);
+      if (n && n !== key) aliase.set(n, key);
+    }
+  }
+}
+
 function get(name) {
-  return accounts[normalizeName(name)] || null;
+  const n = normalizeName(name);
+  if (accounts[n]) return accounts[n];
+  const key = aliase.get(n);
+  return (key && accounts[key]) || null;
+}
+
+/**
+ * Der echte Schluessel zu einem Namen, egal ob jemand den aktuellen, einen
+ * frueheren oder gar keinen erwischt hat. null, wenn es das Konto nicht gibt.
+ *
+ * Das ist die wichtigste Funktion an der ganzen Umbenennung. Alles, was einen
+ * Besitzer speichert (Stadt, Clan, Pferd, Aktie), speichert den Schluessel.
+ * Gaebe ein Login unter dem neuen Namen einen anderen Schluessel zurueck als
+ * ein Login unter dem alten, haette derselbe Mensch zwei Identitaeten, und
+ * seine Haeuser gehoerten der einen und seine Chips der anderen.
+ */
+function kanonisch(name) {
+  const n = normalizeName(name);
+  if (accounts[n]) return n;
+  const k = aliase.get(n);
+  return k && accounts[k] ? k : null;
+}
+
+/** Ist dieser Name schon vergeben (als Schluessel, aktueller Name oder Alias)? */
+function nameVergeben(name) {
+  const n = normalizeName(name);
+  return !!(accounts[n] || aliase.get(n));
+}
+
+const NAME_WECHSEL_MS = 30 * 24 * 60 * 60 * 1000;   // Spieler: einmal im Monat
+
+/**
+ * Anzeigenamen aendern. Der alte Name fuehrt weiter zum Konto (Anmeldung,
+ * Ueberweisung, Suche), er ist nur nirgends mehr zu sehen.
+ *
+ * @param {string} wer        aktueller oder frueherer Name.
+ * @param {string} neu        gewuenschter Name.
+ * @param {object} o
+ * @param {boolean} o.vonAdmin  Admin: ohne Wartezeit und ohne Wortfilter-Veto.
+ */
+function rename(wer, neu, { vonAdmin = false } = {}) {
+  const acc = get(wer);
+  if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  const key = kanonisch(wer);
+  const alt = acc.name;
+
+  neu = String(neu || "").trim().replace(/\s+/g, " ");
+  if (neu.length < 2 || neu.length > 16) return { ok: false, error: "Name muss 2 bis 16 Zeichen lang sein." };
+  if (normalizeName(neu) === normalizeName(alt)) return { ok: false, error: "Das ist schon sein Name." };
+
+  /* Vergeben heisst auch: frueher mal vergeben. Sonst nimmt jemand den
+     abgelegten Namen an und bekommt dessen Anmeldungen ab. */
+  const belegt = accounts[normalizeName(neu)] || (aliase.get(normalizeName(neu)) && accounts[aliase.get(normalizeName(neu))]);
+  if (belegt && belegt !== acc) return { ok: false, error: "Diesen Namen gibt es schon." };
+
+  if (!vonAdmin) {
+    const wf = require("./wortfilter").pruefe(neu, "Der Name");
+    if (!wf.ok) return { ok: false, error: "Dieser Name geht hier nicht. Such dir einen anderen aus." };
+    const seit = Date.now() - (acc.nameGeaendertAm || 0);
+    if (acc.nameGeaendertAm && seit < NAME_WECHSEL_MS) {
+      const tage = Math.ceil((NAME_WECHSEL_MS - seit) / 864e5);
+      return { ok: false, error: `Einmal im Monat. Noch ${tage} ${tage === 1 ? "Tag" : "Tage"}.` };
+    }
+  }
+
+  acc.fruehereNamen = Array.isArray(acc.fruehereNamen) ? acc.fruehereNamen : [];
+  if (!acc.fruehereNamen.some((n) => normalizeName(n) === normalizeName(alt))) acc.fruehereNamen.push(alt);
+  acc.name = neu;
+  /* Die Wartezeit gehoert dem Spieler. Benennt der Admin jemanden um (weil
+     der Name aus dem Schaufenster soll), soll der Betroffene sich danach
+     trotzdem noch selbst einen aussuchen duerfen: sonst bestraft ihn die
+     Sperrfrist fuer etwas, das er gar nicht getan hat. */
+  if (!vonAdmin) acc.nameGeaendertAm = Date.now();
+  baueAliasIndex();
+  save();
+
+  /* Die Kopien nachziehen. Jede einzeln abgesichert: wenn ein Modul nicht
+     bereit ist, soll die Umbenennung trotzdem gelten und nicht auf halber
+     Strecke haengenbleiben. */
+  const nachgezogen = {};
+  for (const [modul, fn] of [
+    ["city", (m) => m.umbenennen(key, alt, neu)],
+    ["auktion", (m) => m.umbenennen(key, alt, neu)],
+    ["stocks", (m) => m.umbenennen(key, alt, neu)],
+    ["records", (m) => m.umbenennen(key, alt, neu)],
+    ["chronik", (m) => m.umbenennen(alt, neu)],
+    ["feed", (m) => m.umbenennen(alt, neu)],
+  ]) {
+    try { nachgezogen[modul] = fn(require(`./${modul}`)) || 0; } catch { nachgezogen[modul] = "—"; }
+  }
+
+  return { ok: true, alt, neu, key, nachgezogen, account: publicAccount(acc) };
 }
 
 // Vermögen = Chips plus alles, was man in der Stadt besitzt.
@@ -325,7 +470,7 @@ const stocks = require("./stocks");
  * und der Spieler galt als arm.
  */
 function _netWorth(acc) {
-  const key = normalizeName(acc.name);
+  const key = schluesselVon(acc);
   return (acc.chips || 0) + _bank(acc) + city.ownerValue(key) + stocks.portfolioValue(key);
 }
 
@@ -349,7 +494,7 @@ const _bank = (acc) => Math.floor((acc && acc.savings && acc.savings.amount) || 
  */
 const IMMOBILIEN_GEWICHT = 0.25;
 function _bremsWert(acc) {
-  const key = normalizeName(acc.name);
+  const key = schluesselVon(acc);
   return (acc.chips || 0) + _bank(acc) + stocks.portfolioValue(key)
     + city.ownerValue(key) * IMMOBILIEN_GEWICHT;
 }
@@ -540,7 +685,10 @@ function bonusAvailable(acc) {
 function login(name, pin) {
   name = String(name || "").trim();
   pin = String(pin || "").trim();
-  const key = normalizeName(name);
+  /* Nicht der getippte Name, sondern der Schluessel dahinter: wer sich mit
+     einem frueheren Namen anmeldet, landet in seinem Konto und nicht in einem
+     frisch angelegten zweiten. */
+  const key = kanonisch(name) || normalizeName(name);
 
   if (!key || name.length < 2 || name.length > 16) {
     return { ok: false, error: "Name muss 2 bis 16 Zeichen lang sein." };
@@ -575,8 +723,9 @@ function login(name, pin) {
       unlocked: ["lucky7"],
     };
     accounts[key] = acc;
+    merkeSchluessel(acc, key);
     save();
-    return { ok: true, created: true, account: publicAccount(acc), token: issueToken(name) };
+    return { ok: true, created: true, account: publicAccount(acc), token: issueToken(key) };
   }
 
   if (acc.banned) return { ok: false, error: "Dein Account wurde gesperrt." };
@@ -591,7 +740,9 @@ function login(name, pin) {
   }
   const warnFails = recordAuthSuccess(acc);
   acc.lastSeen = Date.now();
-  return { ok: true, created: false, account: publicAccount(acc), token: issueToken(acc.name), warnFails };
+  /* Das Token traegt den Schluessel, nicht den Anzeigenamen. Nach einer
+     Umbenennung wuerde ein Token auf den neuen Namen sonst ins Leere zeigen. */
+  return { ok: true, created: false, account: publicAccount(acc), token: issueToken(key), warnFails };
 }
 
 /** Stunden-Bonus abholen. Gibt { ok, amount, streak, account } oder { ok:false, error, msLeft } zurück. */
@@ -608,7 +759,7 @@ function claimDailyBonus(name) {
     };
   }
   const now = Date.now();
-  const key = normalizeName(acc.name);
+  const key = schluesselVon(acc);
   // Schulleiter (Trophäe): Bildung bleibt. Die Serie verfällt nie und jeder
   // Schritt zählt doppelt.
   const schule = city.hasTrophy(key, "schule");
@@ -665,7 +816,7 @@ function rescue(name) {
   if (acc.chips + _bank(acc) >= RESCUE_THRESHOLD)
     return { ok: false, error: "Du hast noch genug Chips." };
   // Kirche (Trophäe): Segen, doppelte Hilfe, halbe Wartezeit.
-  const blessed = city.hasTrophy(normalizeName(acc.name), "kirche");
+  const blessed = city.hasTrophy(schluesselVon(acc), "kirche");
   const cooldown = blessed ? RESCUE_COOLDOWN_MS / 2 : RESCUE_COOLDOWN_MS;
   const since = Date.now() - (acc.lastRescueAt || 0);
   if (since < cooldown)
@@ -750,8 +901,8 @@ const LEADERBOARD_CATS = {
   rich:    { sort: (a) => a.chips,                    label: "Reichste", icon: "chip" },
   level:   { sort: (a) => levelFromXp(a.xp || 0),      label: "Höchstes Level", icon: "level" },
   week:    { sort: (a) => a.weeklyNet || 0,           label: "Spieler der Woche", icon: "season" },
-  estate:  { sort: (a) => city.ownerValue(normalizeName(a.name)), label: "Immobilien-Mogul", icon: "businesses" },
-  streets: { sort: (a) => city.streetCount(normalizeName(a.name)), label: "Straßenkönig", icon: "krone" },
+  estate:  { sort: (a) => city.ownerValue(schluesselVon(a)), label: "Immobilien-Mogul", icon: "businesses" },
+  streets: { sort: (a) => city.streetCount(schluesselVon(a)), label: "Straßenkönig", icon: "krone" },
   bigwin:  { sort: (a) => (a.stats && a.stats.biggestWin) || 0,  label: "Größter Einzelgewinn", icon: "slots" },
   bigloss: { sort: (a) => (a.stats && a.stats.biggestLoss) || 0, label: "Größter Einzelverlust", icon: "auszahlen" },
   games:   { sort: (a) => (a.stats && a.stats.gamesPlayed) || 0, label: "Aktivste", icon: "wuerfel" },
@@ -782,9 +933,9 @@ function leaderboardBy(cat, limit = 10) {
     .map((a) => ({
       name: a.name, value: c.sort(a), chips: a.chips,
       badge: a.badge ? achievements.emojiOf(a.badge) : null,
-      champ: champ != null && normalizeName(a.name) === champ,
+      champ: champ != null && schluesselVon(a) === champ,
       level: levelFromXp(a.xp || 0),
-      clan: require("./clans").tagOf(normalizeName(a.name)),
+      clan: require("./clans").tagOf(schluesselVon(a)),
       ...require("./cosmetics").publicLook(a),
     }))
     .filter((x) => x.value > 0 || cat === "rich")
@@ -889,8 +1040,11 @@ const TRANSFER_MIN_GAMES = 25;    // Absender muss echt gespielt haben, blockt F
 const TRANSFER_DAILY_CAP = 100_000; // max. gesendete Chips pro Absender & Tag
 
 function transfer(fromName, toName, amount) {
-  const fromKey = normalizeName(fromName);
-  const toKey = normalizeName(toName);
+  /* Ueber kanonisch, damit eine Ueberweisung auch dann ankommt, wenn jemand
+     den frueheren Namen des Empfaengers eintippt: der steht noch in genug
+     Koepfen und in jeder aelteren Nachricht. */
+  const fromKey = kanonisch(fromName) || normalizeName(fromName);
+  const toKey = kanonisch(toName) || normalizeName(toName);
   if (!fromKey || !toKey) return { ok: false, error: "Ungültiger Name." };
   if (fromKey === toKey) return { ok: false, error: "Kannst nicht an dich selbst senden." };
   const from = accounts[fromKey];
@@ -1099,6 +1253,16 @@ function unlock(name, machineId, cost) {
   return { ok: true, account: publicAccount(acc) };
 }
 
+/* Frueher benutzte Namen zeigen weiter auf ihr Konto (Anmeldung, Suche,
+   Ueberweisung). Der Index steht im Speicher und wird beim Start aus den
+   Konten aufgebaut.
+
+   Steht bewusst hier unten und nicht oben bei den Konten: `aliase` ist ein
+   const weiter unten in der Datei, und ein Aufruf davor liefe in dieselbe
+   temporale Todeszone, die schon einmal ein Haus mit null Konten gestartet
+   hat. */
+baueAliasIndex();
+
 module.exports = {
   STARTING_CHIPS,
   touchSeen,
@@ -1141,6 +1305,11 @@ module.exports = {
   setShadowban,
   isShadowbanned,
   pechTrifft,
+  rename,
+  kanonisch,
+  schluesselVon,
+  nameVergeben,
+  NAME_WECHSEL_MS,
   calendarState,
   claimCalendar,
   levelInfo,

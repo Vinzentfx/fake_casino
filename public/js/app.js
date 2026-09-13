@@ -91,7 +91,7 @@ function adminReiter() {
       if (ziel === "ansage") ladeAnsage();
       if (ziel === "filter") wfLade();
       // Die Stadt hat 1292 Grundstuecke. Die baut niemand auf Verdacht auf.
-      if (ziel === "werkzeug") { loadAdminLots(); ladeRegie(); ladeKosKatalog(); }
+      if (ziel === "werkzeug") { loadAdminLots(); ladeRegie(); ladeKosKatalog(); ladeSport(); }
       if (ziel === "spieler") ladeStrafen();
     });
   });
@@ -741,6 +741,28 @@ socket.on("announcement:state", ({ announcement, toast: shouldToast } = {}) => {
 });
 
 // Der Server kann einen neuen Bankstand schicken (z. B. nach Buy-in oder Auszahlung beim Poker).
+/* Der eigene Name hat sich geaendert (selbst gemacht oder vom Admin).
+   Der Merker im Browser muss mit, sonst steht beim naechsten Start der alte
+   Name im Anmeldefeld. Und das erneute `auth` laesst den Server die
+   Anwesenheitsliste bei allen neu bauen. */
+socket.on("konto:umbenannt", ({ alt, neu, account } = {}) => {
+  if (account) state.account = { ...state.account, ...account };
+  try { localStorage.setItem("casino_name", neu); } catch {}
+  const tok = (() => { try { return localStorage.getItem("casino_token"); } catch { return null; } })();
+  if (tok) socket.emit("auth", { token: tok });
+  renderTopbar();
+  if (window.Casino.screens.current() === "profile") renderProfile();
+  if (alt) toast(`Aus ${alt} wird ${neu}.`);
+});
+
+/* Jemand hat sich umbenannt: Listen mit Namen holen sich ihren Stand neu,
+   sobald man sie das naechste Mal aufmacht. Offen ist hoechstens eine. */
+socket.on("presence:auffrischen", () => {
+  const jetzt = window.Casino.screens.current();
+  if (jetzt === "leaderboard") loadLeaderboard();
+  if (jetzt === "admin") loadAdminAccounts();
+});
+
 socket.on("account:update", ({ account }) => {
   if (!account) return;
   state.account = { ...state.account, ...account };
@@ -1621,6 +1643,25 @@ try {
 // Bonus-Button-Status regelmäßig auffrischen
 setInterval(refreshBonusButton, 60 * 1000);
 
+/* Namen aendern.
+   Der alte Name bleibt als Anmeldung gueltig, deshalb kann hier niemand sich
+   selbst aussperren. Gesagt wird es trotzdem, sonst probiert es keiner aus. */
+$("#rename-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = $("#rn-error");
+  errEl.textContent = "";
+  const neu = ($("#rn-neu").value || "").trim();
+  if (neu.length < 2) { errEl.textContent = "Mindestens zwei Zeichen."; return; }
+  if (!await window.Casino.dialog.frage(
+    `Du heißt ab sofort „${neu}“. Der Name steht überall, auch rückwirkend.\n\nAnmelden kannst du dich weiter mit „${state.account.name}“. Nächster Wechsel erst in einem Monat.`,
+    { titel: "Name ändern", okText: "Umbenennen" })) return;
+  socket.emit("account:rename", { neu }, (res) => {
+    if (!res || !res.ok) { errEl.textContent = (res && res.error) || "Fehler."; return; }
+    $("#rn-neu").value = "";
+    toast(`Du heißt jetzt ${res.neu}.`);
+  });
+});
+
 // PIN ändern
 $("#change-pin-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1897,6 +1938,7 @@ function zeichnePerson(name) {
           ${p.banned ? "Sperre aufheben" : "Konto sperren"}</button>
         <button class="ad-schalter" type="button" data-person-tun="kick">Rauswerfen</button>
         <button class="ad-schalter" type="button" data-person-tun="schreiben">Anschreiben</button>
+        <button class="ad-schalter" type="button" data-person-tun="umbenennen">Namen ändern</button>
       </div>
       <p class="hint">„Konto sperren“ gilt für immer, bis jemand sie aufhebt. Alles mit Ablaufzeit steht darunter. Rauswerfen trennt nur die Verbindung, er kann sofort wieder rein.</p>
 
@@ -1983,6 +2025,19 @@ async function personTun(tun, name) {
     socket.emit("admin:strafeSetzen", { target: name, art, minuten, wert, spiele, grund }, (r) => {
       if (!melde(r, `${name}: ${def.name} gesetzt${r && r.getrennt ? `, ${r.getrennt} Verbindung${r.getrennt === 1 ? "" : "en"} getrennt` : ""}.`)) return;
       ladeStrafen();
+    });
+    return;
+  }
+  if (tun === "umbenennen") {
+    const neu = await window.Casino.dialog.eingabe(
+      `Wie soll ${name} heißen? Der neue Name steht sofort überall, auch rückwirkend in Chronik, Bestenlisten, Stadt und Auktion. Anmelden kann er sich weiter mit dem alten.`,
+      { titel: "Namen ändern", platzhalter: "Neuer Name", okText: "Umbenennen" });
+    if (!neu) return;
+    socket.emit("admin:rename", { target: name, neu }, (r) => {
+      if (!r || !r.ok) { if (fehler) fehler.textContent = (r && r.error) || "Fehler."; return; }
+      const nz = r.nachgezogen || {};
+      adGewaehlt = r.neu;
+      fertig(`Aus ${r.alt} wird ${r.neu}. Nachgezogen: ${Object.entries(nz).map(([k, v]) => `${k} ${v}`).join(", ")}.`);
     });
     return;
   }
@@ -2667,6 +2722,84 @@ $("#ad-kos-nehmen")?.addEventListener("click", async () => {
   if (!await window.Casino.dialog.frage("Stück wirklich wegnehmen? Es wird auch abgelegt, falls er es gerade trägt.",
     { okText: "Wegnehmen", gefahr: true })) return;
   kosTun(true);
+});
+
+/* Echte Fussballspiele.
+
+   Der Besitzer hat gemeldet, dass beim Hoster nur simulierte Partien laufen.
+   Sichtbar war das vorher nirgends: der Zugang kam aus einer Umgebungsvariablen
+   und meldete sich nur in einer Konsolenzeile beim Start. Diese Karte sagt, ob
+   er da ist, was der Anbieter zuletzt geantwortet hat und wie viele Spiele
+   ankamen. */
+let adSport = null;
+
+function zeichneSport() {
+  const zustand = $("#ad-sport-zustand");
+  const box = $("#ad-sport-stand");
+  if (!zustand || !box || !adSport) return;
+  const an = adSport.an && !!adSport.letzterErfolg;
+  zustand.textContent = !adSport.an ? "kein Zugang" : an ? "läuft" : "antwortet nicht";
+  zustand.classList.toggle("zu", !an);
+  $("#ad-sport-karte")?.classList.toggle("an", !an);
+
+  const zeit = (ts) => (ts ? new Date(ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "nie");
+  const comps = Object.entries(adSport.proWettbewerb || {});
+  box.innerHTML = `
+    <div class="ad-sport-zeilen">
+      <div><span>Zugang</span><b>${adSport.an ? `gesetzt (endet auf ${escapeHtml(adSport.endet)}, aus ${adSport.quelle === "umgebung" ? "der Umgebung des Hosters" : "der Datei"})` : "keiner, es laufen nur Simulationen"}</b></div>
+      <div><span>Wettbewerbe</span><b>${escapeHtml((adSport.wettbewerbe || []).join(", "))}</b></div>
+      <div><span>Zuletzt geholt</span><b>${zeit(adSport.letzterLauf)}${adSport.letzterErfolg ? `, erfolgreich ${zeit(adSport.letzterErfolg)}` : ""}</b></div>
+      <div><span>Spiele gerade</span><b>${adSport.echte} echte, ${adSport.simulierte} simulierte</b></div>
+      ${comps.length ? `<div><span>Antworten</span><b>${comps.map(([c, w]) =>
+        `${escapeHtml(c)}: ${w.status === 200 ? `${w.spiele} Spiele` : w.status ? `HTTP ${w.status}` : "kein Kontakt"}`).join(" · ")}</b></div>` : ""}
+      ${adSport.fehler ? `<div><span>Zuletzt schiefgegangen</span><b class="ad-schlecht">${escapeHtml(adSport.fehler)}</b></div>` : ""}
+    </div>`;
+  const feld = $("#ad-sport-token");
+  if (feld) {
+    const fest = adSport.quelle === "umgebung";
+    feld.disabled = fest;
+    feld.placeholder = fest ? "Kommt vom Hoster, hier nicht änderbar" : "Schlüssel eintragen";
+  }
+}
+
+function ladeSport() {
+  socket.emit("admin:sport", (r) => {
+    if (!r || !r.ok) return;
+    adSport = r;
+    zeichneSport();
+  });
+}
+
+socket.on("admin:sportUpdate", (stand) => { adSport = stand; zeichneSport(); });
+
+$("#ad-sport-speichern")?.addEventListener("click", () => {
+  const fehler = $("#ad-sport-error");
+  if (fehler) fehler.textContent = "";
+  const token = ($("#ad-sport-token")?.value || "").trim();
+  if (!token) { if (fehler) fehler.textContent = "Kein Schlüssel eingegeben."; return; }
+  socket.emit("admin:sportToken", { token }, (r) => {
+    if (!r || !r.ok) { if (fehler) fehler.textContent = (r && r.error) || "Fehler."; return; }
+    $("#ad-sport-token").value = "";
+    adSport = r; zeichneSport();
+    toast("Gespeichert, die Spiele werden gerade geholt.");
+    setTimeout(ladeSport, 9000);
+  });
+});
+
+$("#ad-sport-holen")?.addEventListener("click", () => {
+  socket.emit("admin:sportHolen", (r) => {
+    toast(r?.ok ? "Wird geholt, gleich steht der Stand hier." : (r?.error || "Fehler."));
+    setTimeout(ladeSport, 9000);
+  });
+});
+
+$("#ad-sport-weg")?.addEventListener("click", async () => {
+  if (!await window.Casino.dialog.frage("Schlüssel entfernen? Danach laufen nur noch simulierte Spiele.",
+    { okText: "Entfernen", gefahr: true })) return;
+  socket.emit("admin:sportToken", { token: "" }, (r) => {
+    if (r && r.ok) { adSport = r; zeichneSport(); toast("Schlüssel entfernt."); }
+    else toast((r && r.error) || "Fehler.");
+  });
 });
 
 /* Chat leeren */

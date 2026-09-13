@@ -286,6 +286,25 @@ function ipo(key, name, seedPrice) {
   return { ok: true, sym };
 }
 
+/**
+ * Eine boersennotierte Firma traegt den Namen ihres Gruenders ("X Kiosk AG").
+ * Das Kuerzel bleibt, wie es ist: daran haengen die Depots aller anderen.
+ */
+function umbenennen(key, alt, neu) {
+  let n = 0;
+  const a = String(alt || "").trim();
+  if (!a) return 0;
+  for (const s of Object.values(market.stocks || {})) {
+    if (s && s.ipo && s.founder === key && typeof s.name === "string" && s.name.startsWith(a)) {
+      s.name = neu + s.name.slice(a.length);
+      n++;
+    }
+  }
+  if (n) save();
+  return n;
+}
+
 module.exports = {
+  umbenennen,
   MAX_LEVERAGE, tick, publicStocks, positionsFor, portfolioValue, open, close, ipo, setupStocks,
 };

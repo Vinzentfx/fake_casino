@@ -1555,6 +1555,17 @@
         <div id="push-box"></div>
 
         <hr class="settings-rule" />
+        <h3>Name ändern</h3>
+        <p class="hint" style="margin-top:-4px">Dein neuer Name steht sofort überall, auch rückwirkend in Chronik, Bestenlisten und an deinen Häusern. Anmelden kannst du dich weiter mit dem alten. Einmal im Monat.</p>
+        <form id="rename-form" class="form-col" autocomplete="off">
+          <label>Neuer Name (2 bis 16 Zeichen)
+            <input id="rn-neu" type="text" maxlength="16" placeholder="z. B. Max" required />
+          </label>
+          <div class="form-error" id="rn-error"></div>
+          <button type="submit" class="btn-primary">Namen ändern</button>
+        </form>
+
+        <hr class="settings-rule" />
         <h3>Passwort ändern</h3>
         <p class="hint" style="margin-top:-4px">Dein Name steht öffentlich in der Bestenliste, eine vierstellige PIN ist also schnell geraten. Nimm lieber ein richtiges Passwort (6 bis 24 Zeichen).</p>
         <form id="change-pin-form" autocomplete="off">
@@ -2037,6 +2048,23 @@
             <button class="btn-danger ad-knopf" id="ad-kos-nehmen">Wegnehmen</button>
           </div>
           <div class="form-error" id="ad-kos-error"></div>
+        </div>
+
+        <!-- Echte Fussballspiele. Ob der Zugang funktioniert, stand vorher nur
+             in einer Konsolenzeile beim Start, die beim Hoster niemand liest. -->
+        <div class="ad-karte" id="ad-sport-karte">
+          <div class="ad-kopf"><b>Echte Fußballspiele</b><span class="ad-zustand" id="ad-sport-zustand">…</span></div>
+          <div id="ad-sport-stand" class="ad-sport-stand"><div class="muted small">Lädt…</div></div>
+          <p class="hint">Der Schlüssel kommt von football-data.org (kostenlos). Steht beim Hoster eine Umgebungsvariable, gilt die und das Feld hier ist gesperrt. Sonst liegt der Schlüssel in <code>data/</code> und wandert mit dem Backup.</p>
+          <div class="ad-zeile">
+            <input id="ad-sport-token" type="password" maxlength="80" placeholder="Schlüssel eintragen" autocomplete="off" />
+            <button class="btn-primary ad-knopf" id="ad-sport-speichern">Speichern</button>
+          </div>
+          <div class="ad-knopfreihe">
+            <button class="chip-btn" id="ad-sport-holen">Jetzt holen</button>
+            <button class="chip-btn" id="ad-sport-weg">Schlüssel entfernen</button>
+          </div>
+          <div class="form-error" id="ad-sport-error"></div>
         </div>
 
         <!-- Chat -->

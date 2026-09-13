@@ -685,7 +685,25 @@ function ownedLots() {
 
 function err(error) { return { ok: false, error }; }
 
+/**
+ * Der Besitzer heisst jetzt anders.
+ *
+ * Die Stadt speichert zu jedem Grundstueck den Namen mit, nicht nur den
+ * Schluessel (`{ owner, ownerName }`). Ohne diesen Durchlauf stuende der alte
+ * Name weiter an jedem Haus, in jedem Monopol und bei jedem Bosswechsel,
+ * also ausgerechnet dort, wo ihn jeder sieht.
+ */
+function umbenennen(key, alt, neu) {
+  let n = 0;
+  for (const o of Object.values(state.own || {})) {
+    if (o && o.owner === key) { o.ownerName = neu; n++; }
+  }
+  if (n) save();
+  return n;
+}
+
 module.exports = {
+  umbenennen,
   CLASSES, TROPHIES, colorFor,
   publicOverview, publicDistrict, ownerValue, casinoOwner, bankOwner, tickMarket, fireEvent,
   streetCount, trophiesOf, hasTrophy, bldExists, bldInfo, isBoss, istBossIrgendwo,

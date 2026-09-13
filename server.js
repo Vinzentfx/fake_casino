@@ -468,6 +468,7 @@ const adminEvents = {
   vault: require("./game/teamVault").setupTeamVault(io, accounts),
 };
 require("./game/admin").setEvents(adminEvents);
+require("./game/admin").setUmbenennen(verteileUmbenennung);
 liveops.setEvents(adminEvents); // Events spawnen auch zufällig (maybeAutoSpawn)
 setupClans(io, accounts);
 setupCosmetics(io, accounts);
@@ -521,8 +522,41 @@ accounts.onHand((name) => {
   }
 });
 
+/**
+ * Nach einer Umbenennung alle Bildschirme nachziehen.
+ *
+ * Den Anzeigenamen haelt jeder Socket als Kopie (`displayName`, gesetzt beim
+ * Anmelden); daran haengt die Anwesenheitsliste. Ohne diesen Durchlauf hiesse
+ * jemand ueberall neu und in der Liste rechts weiter alt, bis er die Seite
+ * neu laedt.
+ */
+function verteileUmbenennung(key, alt, neu, account) {
+  for (const s of io.of("/").sockets.values()) {
+    if (!s.data || s.data.account !== key) continue;
+    s.data.displayName = neu;
+    s.emit("konto:umbenannt", { alt, neu, account });
+    s.emit("account:update", { account });
+  }
+  // Die Anwesenheitsliste bauen alle neu, sobald der Umbenannte sich meldet.
+  io.emit("presence:auffrischen");
+}
+
 // Chip-Transfer zwischen Spielern (nur mit Anmeldung am Socket)
 io.on("connection", (socket) => {
+  /* Namenswechsel durch den Spieler selbst. Einmal im Monat, durch den
+     Wortfilter, und der alte Name fuehrt weiter zum Konto: niemand soll sich
+     aus seinem eigenen Account aussperren, weil er den neuen vergisst. */
+  socket.on("account:rename", ({ neu } = {}, ack) => {
+    if (typeof ack !== "function") return;
+    if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
+    const res = accounts.rename(socket.data.account, neu);
+    if (!res.ok) return ack(res);
+    verteileUmbenennung(res.key, res.alt, res.neu, res.account);
+    try { require("./game/chat").announce(io, `${res.alt} heißt jetzt ${res.neu}.`); } catch {}
+    ack(res);
+  });
+
+
   socket.on("account:transfer", ({ to, amount } = {}, ack) => {
     // Zaehler fuer das Achievement "Spendabel", hochgezaehlt wird erst, wenn
     // die Ueberweisung unten tatsaechlich geklappt hat.
@@ -535,8 +569,11 @@ io.on("connection", (socket) => {
     // Update sender
     socket.emit("account:update", { account: res.fromAccount });
     // Empfänger benachrichtigen, falls online
+    // Ueber den echten Schluessel, nicht ueber das Getippte: wer jemanden
+    // unter dessen altem Namen anschreibt, soll trotzdem benachrichtigt werden.
+    const zielKey = accounts.kanonisch(to);
     io.of("/").sockets.forEach((s) => {
-      if (s.data.account === String(to).trim().toLowerCase()) {
+      if (zielKey && s.data.account === zielKey) {
         s.emit("account:update", { account: res.toAccount });
         s.emit("account:received", { from: socket.data.account, amount: Math.floor(Number(amount)) });
       }

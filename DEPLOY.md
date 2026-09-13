@@ -67,7 +67,7 @@ Stehen bei Railway im Projekt unter Variables.
 
 | Variable | Bedeutung |
 |---|---|
-| `FOOTBALL_DATA_TOKEN` | Zugang zu football-data.org für echte Fußballspiele |
+| `FOOTBALL_DATA_TOKEN` | Zugang zu football-data.org für echte Fußballspiele. **Fehlt sie, laufen nur simulierte Spiele.** Seit 13.9.2026 lässt sich der Schlüssel auch im Admin-Bildschirm unter „Werkzeuge → Echte Fußballspiele" eintragen; er liegt dann in `data/sport-zugang.json`. Eine gesetzte Umgebungsvariable hat Vorrang, dann ist das Feld gesperrt. |
 | `FOOTBALL_DATA_COMPS` | Welche Wettbewerbe, auf dem alten Server war es `BL1,PL,PD` |
 | `SPORTS_SIM` | auf `off` setzen, um die simulierten Füllspiele auszublenden |
 | `PORT` | setzt Railway selbst |

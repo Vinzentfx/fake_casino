@@ -306,4 +306,14 @@ function setupRecords(io, accounts) {
   });
 }
 
-module.exports = { setupRecords, melde, meldeSerie, publicState, SPIELE };
+/** Der Rekordhalter heisst jetzt anders. Der Schluessel bleibt, der Name nicht. */
+function umbenennen(key, alt, neu) {
+  let n = 0;
+  for (const eintrag of Object.values(state.best || {})) {
+    if (eintrag && eintrag.key === key) { eintrag.name = neu; n++; }
+  }
+  if (n) save();
+  return n;
+}
+
+module.exports = { setupRecords, melde, meldeSerie, publicState, SPIELE, umbenennen };

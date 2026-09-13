@@ -8729,3 +8729,16 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 .ad-regie-kopf { display: grid; gap: 2px; }
 .ad-regie-kopf small { font-size: var(--fs-xs); color: var(--text-mute); }
 .ad-regie .ad-felder { margin-top: 7px; align-items: end; }
+
+/* Admin: Zustand der echten Fußballspiele. Zeilen aus Bezeichnung und Wert,
+   damit man mit einem Blick sieht, woran es hängt, statt einen Fließtext zu
+   lesen. */
+.ad-sport-stand { margin: 8px 0 4px; }
+.ad-sport-zeilen { display: grid; gap: 5px; }
+.ad-sport-zeilen > div { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.ad-sport-zeilen span {
+  flex: 0 0 130px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-mute);
+}
+.ad-sport-zeilen b { font-size: var(--fs-sm); font-weight: 600; }
+#ad-sport-karte.an { border-color: rgba(var(--bad-rgb), 0.45); }
