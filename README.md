@@ -55,7 +55,7 @@ npm start   # läuft dann auf http://localhost:3000
 
 ## Ehrlich gesagt
 
-Nicht jede Zeile Code habe ich selbst geschrieben, ein großer Teil ist mit
-Hilfe von KI entstanden. Was gebaut wird, wie sich ein Spiel anfühlen soll
-und was an einem Fehler eigentlich falsch läuft, musste ich trotzdem selbst
+Natürlich ist nicht jede Zeile Code  selbst geschrieben, ein großer Teil ist mit
+Hilfe von KI entstanden. Was gebaut wird, wie sich ein Spiel anfühlen soll,
+wie es gebaut werden soll und was an einem Fehler eigentlich falsch läuft, musste ich trotzdem selbst
 herausfinden, meistens zusammen mit den Leuten, die dort spielen.
