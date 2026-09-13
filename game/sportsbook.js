@@ -112,8 +112,7 @@ function strengthOf(name) {
   return STRENGTH_DEFAULT;
 }
 
-/* ---------------------------------------------------------------------------
-   Echte Spiele (football-data.org)
+/* Echte Spiele (football-data.org)
 
    Der Zugang kam bisher ausschliesslich aus einer Umgebungsvariablen, und ob
    er ankam, stand in einer einzigen Zeile beim Start auf der Konsole. Auf dem
@@ -128,8 +127,7 @@ function strengthOf(name) {
    der Dienst laeuft, und genau dort sitzt man nicht, wenn es auffaellt.
 
    Die Datei bekommt 0600 wie data/.secret und wandert mit dem Backup. Der
-   Schluessel selbst wird nirgends angezeigt, nur seine letzten vier Zeichen.
---------------------------------------------------------------------------- */
+   Schluessel selbst wird nirgends angezeigt, nur seine letzten vier Zeichen. */
 const FD_FILE = path.join(__dirname, "..", "data", "sport-zugang.json");
 
 function ladeToken() {
@@ -149,7 +147,7 @@ const fdStand = {
   letzterLauf: 0,
   letzterErfolg: 0,
   fehler: "",
-  wettbewerbe: {},   // code -> { status, spiele, ts }
+  wettbewerbe: {},   // je code: { status, spiele, ts }
 };
 /*
  * Welche Wettbewerbe geholt werden, wenn ein Token gesetzt ist.
@@ -472,7 +470,7 @@ function setupSportsbook(io, accounts) {
   } else {
     // Die Stille war das Problem: ohne diese Zeile sieht ein Log wie ein
     // gesundes Log aus, und im Spiel stehen nur simulierte Partien.
-    console.log("[sports] echte Spiele AUS: kein FOOTBALL_DATA_TOKEN gesetzt, es laufen nur Simulationen");
+    console.log("[sports] echte Spiele aus: kein FOOTBALL_DATA_TOKEN gesetzt, es laufen nur Simulationen");
   }
   /* Der Wecker laeuft immer, auch ohne Zugang: wird einer nachgetragen,
      holt der naechste Durchlauf die Spiele, ohne dass jemand neu startet. */
@@ -749,9 +747,7 @@ function loadSports(accounts) {
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Admin: Zustand und Zugang
---------------------------------------------------------------------------- */
+/* Admin: Zustand und Zugang */
 
 /** Was ist mit den echten Spielen? Ohne den Schluessel selbst zu zeigen. */
 function diagnose() {

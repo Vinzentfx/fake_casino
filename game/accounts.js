@@ -312,8 +312,7 @@ function normalizeName(name) {
   return String(name || "").trim().toLowerCase();
 }
 
-/* ---------------------------------------------------------------------------
-   Umbenennen
+/* Umbenennen
 
    Ein Konto haengt an seinem Namen: der normalisierte Name ist der
    Schluessel, und dieser Schluessel steht als Besitzer an Grundstuecken, als
@@ -321,17 +320,16 @@ function normalizeName(name) {
    den Schluessel aendert, muesste all das mit umziehen, und was dabei
    vergessen wird, gehoert danach niemandem mehr.
 
-   Deshalb bleibt der Schluessel, wo er ist, und nur der ANGEZEIGTE Name
+   Deshalb bleibt der Schluessel, wo er ist, und nur der angezeigte Name
    aendert sich (`acc.name`). Damit bleibt jede Verknuepfung heil.
 
    Zwei Dinge braucht es dafuer. Erstens muss man das Konto auch unter dem
    neuen Namen finden: dafuer gibt es den Alias-Index, und er ist der Grund,
    warum sich der alte Name weiter anmelden kann, wie gewuenscht. Zweitens
    muessen die Stellen nachgezogen werden, die den Namen als Kopie gespeichert
-   haben (Stadt, Auktion, Rekorde, Chronik, Feed) — sonst stuende der alte
-   Name genau dort weiter, wo ihn alle sehen.
---------------------------------------------------------------------------- */
-const aliase = new Map();   // normalisierter Name -> Schluessel des Kontos
+   haben (Stadt, Auktion, Rekorde, Chronik, Feed), sonst stuende der alte
+   Name genau dort weiter, wo ihn alle sehen. */
+const aliase = new Map();   // je normalisiertem Namen: Schluessel des Kontos
 
 /*
  * Jedes Konto weiss, unter welchem Schluessel es liegt.
@@ -342,7 +340,7 @@ const aliase = new Map();   // normalisierter Name -> Schluessel des Kontos
  * haetten danach beim falschen Menschen nachgeschlagen und nichts gefunden.
  *
  * Nicht aufzaehlbar, damit der Schluessel nicht in der gespeicherten Datei
- * landet: dort ist er schon, er IST der Feldname.
+ * landet: dort ist er schon, er ist der Feldname.
  */
 function merkeSchluessel(acc, key) {
   Object.defineProperty(acc, "_key", { value: key, enumerable: false, writable: true, configurable: true });
@@ -452,7 +450,7 @@ function rename(wer, neu, { vonAdmin = false } = {}) {
     ["chronik", (m) => m.umbenennen(alt, neu)],
     ["feed", (m) => m.umbenennen(alt, neu)],
   ]) {
-    try { nachgezogen[modul] = fn(require(`./${modul}`)) || 0; } catch { nachgezogen[modul] = "—"; }
+    try { nachgezogen[modul] = fn(require(`./${modul}`)) || 0; } catch { nachgezogen[modul] = "?"; }
   }
 
   return { ok: true, alt, neu, key, nachgezogen, account: publicAccount(acc) };

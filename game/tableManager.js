@@ -322,7 +322,7 @@ function setupPoker(io, accounts) {
     socket.on("auth", ({ token } = {}) => {
       const key = accounts.verifyToken(token);
       const acc = key ? accounts.get(key) : null;
-      /* Der Schluessel kommt aus dem Token, NICHT aus dem Anzeigenamen.
+      /* Der Schluessel kommt aus dem Token, nicht aus dem Anzeigenamen.
          Solange sich Namen nicht aendern liessen, war beides dasselbe. Seit
          es Umbenennungen gibt, waere `acc.name.toLowerCase()` nach einem
          Wechsel ein anderer Schluessel als der, unter dem Haeuser, Pferde und
