@@ -1,7 +1,10 @@
 # Fake Casino
 
 Ein Casino im Browser für meinen Freundeskreis, mit Spielgeld statt echtem
-Geld. Einzahlen oder auszahlen kann man nichts, die Chips sind nur Punkte.
+Geld. Es gibt keine Einzahlung, keine Auszahlung und keinen Weg, Chips in
+irgendetwas Reales zu tauschen: die Chips sind nur Punkte, jedes neue Konto
+bekommt sie geschenkt. Damit ist es ein Spiel und kein Glücksspielangebot,
+und das war von Anfang an so gewollt.
 
 **Ausprobieren:** <https://fakecasino-production-5147.up.railway.app/?v=mtys3xxe#/lobby> (Name und Passwort ausdenken, das
 Konto entsteht beim ersten Anmelden. Gebaut fürs iPad und Handy.)
@@ -60,3 +63,11 @@ Natürlich ist nicht jede Zeile Code  selbst geschrieben, ein großer Teil ist m
 Hilfe von KI entstanden. Was gebaut wird, wie sich ein Spiel anfühlen soll,
 wie es gebaut werden soll und was an einem Fehler eigentlich falsch läuft, musste ich trotzdem selbst
 herausfinden, meistens zusammen mit den Leuten, die dort spielen.
+
+## Quellen
+
+Die Häuser und Straßen der Spielstadt stammen aus
+[OpenStreetMap](https://www.openstreetmap.org), © OpenStreetMap-Mitwirkende,
+veröffentlicht unter der [Open Database License](https://opendatacommons.org/licenses/odbl/).
+Die Spielpläne der Sportwetten beziehen sich auf echte Begegnungen, gewettet
+wird aber ausschließlich mit Spielgeld.
