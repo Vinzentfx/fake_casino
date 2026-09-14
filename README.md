@@ -9,12 +9,13 @@ Konto entsteht beim ersten Anmelden. Gebaut fürs iPad und Handy.)
 ## Warum
 
 Ich hatte Lust, verschiedene Spiele für mich und meine Freunde zu bauen, bei
-denen man selbst aktiv spielt und auch gegeneinander antreten kann. Das
-Projekt gibt es schon ziemlich lange und es hat sich Stück für Stück
-weiterentwickelt. Inzwischen haben um die 70 Leute ein Konto, und viele
-Änderungen kamen direkt von ihnen: gemeldete Fehler, ein Spiel, das viel zu
-großzügig war, oder Versuche, das System mit Zweitkonten auszutricksen.
-Trotzdem würde ich sagen, dass ich persönlich mehr Zeit in
+denen man selbst aktiv spielt und auch gegeneinander antreten kann. Angefangen
+habe ich im Februar 2026, seitdem hat sich das Projekt Stück für Stück
+weiterentwickelt. Online und in der Versionsgeschichte ist es seit Juni 2026.
+Inzwischen haben um die 70 Leute ein Konto, und viele Änderungen kamen direkt
+von ihnen: gemeldete Fehler, ein Spiel, das viel zu großzügig war, oder
+Versuche, das System mit Zweitkonten auszutricksen. Trotzdem würde ich sagen,
+dass ich persönlich mehr Zeit in
 [LiftLog](https://github.com/Vinzentfx/liftlog) gesteckt habe.
 
 ## Was drin ist
