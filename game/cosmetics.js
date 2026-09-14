@@ -138,7 +138,7 @@ const TITLES = [
    * war, als das Casino wieder aufmachte.
    */
   { id: "rueckkehrer",    text: "Rückkehrer", cost: null, via: "Zur Wiedereröffnung dabei gewesen", limitiert: "comeback" },
-  { id: "rad_fortuna",    text: "Big Yahus Liebling", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad" },
+  { id: "rad_fortuna",    text: "Glückspilz", cost: null, via: "Am Glücksrad gewonnen", limitiert: "rad" },
   /* Zwei Insider aus der Runde. Standen erst bei 6,7 und 2,5 Millionen. Das
      waren 71 Prozent des gesamten fluessigen Geldes im Haus, und genau drei
      Konten lagen ueberhaupt ueber einer Million. Ein Preis, den niemand je

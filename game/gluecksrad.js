@@ -13,7 +13,7 @@
  * steht Fortuna. Davon gibt es sieben im ganzen Casino, danach nie wieder;
  * das Feld zahlt dann Chips. Wer eins hat, trägt einen Ring aus zwölf
  * Goldsegmenten um sein Bild, einen Namen, in dem sich ein Rad dreht, und den
- * Titel "Big Yahus Liebling".
+ * Titel "Glückspilz".
  *
  * Die Chip-Ausbeute ist dabei absichtlich gefallen (von rund 3.150 auf 1.600
  * je Dreh): das Rad soll interessanter werden, nicht ergiebiger.

@@ -32,6 +32,25 @@ dass ich persönlich mehr Zeit in
   (OpenStreetMap), die man mit seinen Gewinnen kaufen kann
 * Bank, Börse, Clans, Chat, Bestenlisten und Achievements
 
+## Kosmetik
+
+Gewinne kann man nicht nur in Häuser stecken, sondern auch ins eigene
+Aussehen. Es gibt elf Arten, das meiste davon kauft man im Laden mit Chips:
+
+* Profilbilder (15) und Namensfarben (9)
+* Namensstile (18), zum Beispiel ein Name, in dem sich ein Rad dreht
+* Rahmen (9) und Auren (3) rund ums Profilbild
+* Titel (18) unter dem Namen
+* Gewinneffekte (8), jeder mit eigener Form und Bewegung
+* Eintrittssprüche (8), die im Chat erscheinen, wenn man reinkommt
+* Profilbanner (8) und Schilder (9) für Profil und Listen
+* Kartenrücken (3) für Poker, Blackjack, Solitär und Memory
+
+Manche Stücke kann man nicht kaufen. Es gibt sie als Stufe im Season Pass,
+für eine komplette Straße oder als Boss eines Ortsteils in der Stadt, einmalig
+zur Wiedereröffnung, im Auktionshaus oder am Glücksrad. Das Paket Fortuna vom
+Glücksrad gibt es im ganzen Casino nur sieben Mal.
+
 ## Wie es funktioniert
 
 Alles, was Chips bewegt, entscheidet der Server. Der Browser schickt nur
