@@ -53,7 +53,7 @@ npm install
 npm start   # läuft dann auf http://localhost:3000
 ```
 
-## Ehrlich gesagt
+## Sonstiges
 
 Natürlich ist nicht jede Zeile Code  selbst geschrieben, ein großer Teil ist mit
 Hilfe von KI entstanden. Was gebaut wird, wie sich ein Spiel anfühlen soll,
