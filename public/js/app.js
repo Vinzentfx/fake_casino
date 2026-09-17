@@ -2809,6 +2809,27 @@ $("#ad-sport-weg")?.addEventListener("click", async () => {
   });
 });
 
+/* Gutschrift für alle */
+$("#ad-alle-geben")?.addEventListener("click", async () => {
+  const fehler = $("#ad-alle-error");
+  if (fehler) fehler.textContent = "";
+  const betrag = Math.floor(Number($("#ad-alle-betrag")?.value));
+  const grund = ($("#ad-alle-grund")?.value || "").trim();
+  if (!Number.isFinite(betrag) || betrag < 1) {
+    if (fehler) fehler.textContent = "Betrag eintragen.";
+    return;
+  }
+  if (!await window.Casino.dialog.frage(`Jedem Konto ${betrag.toLocaleString("de-DE")} Chips gutschreiben?`,
+    { okText: "Gutschreiben", gefahr: true })) return;
+  socket.emit("admin:alleChips", { amount: betrag, grund }, (r) => {
+    if (!r || !r.ok) {
+      if (fehler) fehler.textContent = (r && r.error) || "Fehler.";
+      return;
+    }
+    toast(`${r.anzahl} Konten haben je ${betrag.toLocaleString("de-DE")} Chips bekommen.`);
+  });
+});
+
 /* Chat leeren */
 $("#ad-chat-leeren")?.addEventListener("click", async () => {
   if (!await window.Casino.dialog.frage("Den allgemeinen Chat bei allen leeren?",

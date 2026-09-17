@@ -29,6 +29,8 @@
       datum: "17. September 2026",
       titel: "Drei gemeldete Fehler",
       items: [
+        { icon: "slots", titel: "Alle Automaten frei",
+          text: "Gem Storm, Algen Abyss und Book of Rah musste man früher freischalten. Das kostet jetzt nichts mehr, alle vier Automaten stehen jedem offen. Was du fürs Freischalten bezahlt hast, bekommst du zurück." },
         { icon: "chip", titel: "Bonus nach einer Umbenennung",
           text: "Wer seinen Namen geändert hat oder umbenannt wurde, kam nicht mehr an den Stunden-Bonus und die Soforthilfe. Der Server hat dabei den neuen Namen mit dem alten verglichen und abgelehnt. Geht wieder." },
         { icon: "chess", titel: "Weiße Figuren waren schwarz",

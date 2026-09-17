@@ -95,7 +95,7 @@ const MACHINES = [
     minMatch: 3,
     wild: "W",
     scatter: "S",
-    unlockCost: 10000,
+    unlockCost: 0,   // war 10.000, alle Automaten sind jetzt frei
     bets: [100, 500, 1000, 5000, 25000, 100000],
     payScale: 1.36, // ~98% RTP incl. scaling free spins + jackpot expectation (small buff)
     freeSpins: { trigger: 3, count: 10, multiplier: 2 },
@@ -148,7 +148,7 @@ const MACHINES = [
     scatter: "S",
     mystery: "M",
     golden: "G",
-    unlockCost: 120000,
+    unlockCost: 0,   // war 120.000, alle Automaten sind jetzt frei
     bets: [500, 1000, 5000, 25000, 100000, 250000],
     payScale: 0.058,
     freeSpins: { trigger: 3, count: 4, extra: 1, persistentMultiplier: true },
@@ -225,7 +225,7 @@ const MACHINES = [
     // die Freispiele mit expandierendem Bonussymbol.
     wild: "B",
     scatter: "B",
-    unlockCost: 120000,
+    unlockCost: 0,   // war 120.000, alle Automaten sind jetzt frei
     bets: [500, 1000, 5000, 25000, 100000, 250000],
     payScale: 4.85, // ~98,5 % RTP (2 Mio. Drehs simuliert), der großzügigste Automat im Haus
     freeSpins: { trigger: 3, count: 10, extra: 0 },

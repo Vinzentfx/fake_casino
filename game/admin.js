@@ -333,6 +333,36 @@ function setupAdmin(io, accounts) {
       ack({ ok: true, account: res.account });
     });
 
+    /* Allen dasselbe gutschreiben, etwa als Rueckerstattung. Ohne
+       Vermoegensbremse: das ist kein Gratisgeld aus dem Spiel, sondern eine
+       Korrektur, und die soll bei jedem gleich ankommen. */
+    socket.on("admin:alleChips", ({ amount, grund } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const betrag = Math.floor(Number(amount));
+      if (!Number.isFinite(betrag) || betrag < 1 || betrag > 10_000_000) {
+        return ack({ ok: false, error: "Betrag muss zwischen 1 und 10.000.000 liegen." });
+      }
+      const grundText = String(grund || "").trim().slice(0, 120);
+      const frisch = new Map();
+      for (const acc of accounts.rawAll()) {
+        const key = accounts.schluesselVon(acc);
+        const res = accounts.adjustChips(key, betrag);
+        if (res.ok) frisch.set(key, res.account);
+      }
+      io.of("/").sockets.forEach((s) => {
+        const a = frisch.get(s.data.account);
+        if (a) s.emit("account:update", { account: a });
+      });
+      const summe = betrag * frisch.size;
+      try {
+        require("./chronik").notiere("event",
+          `Gutschrift fuer alle: ${betrag.toLocaleString("de-DE")} Chips je Konto${grundText ? ` (${grundText})` : ""}.`,
+          { wert: summe });
+      } catch {}
+      ack({ ok: true, anzahl: frisch.size, summe });
+    });
+
     socket.on("admin:ban", ({ target } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });

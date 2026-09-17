@@ -2067,6 +2067,22 @@
           <div class="form-error" id="ad-sport-error"></div>
         </div>
 
+        <!-- Gutschrift für alle -->
+        <div class="ad-karte">
+          <div class="ad-kopf"><b>Gutschrift für alle</b></div>
+          <p class="hint">Schreibt jedem Konto denselben Betrag gut, etwa als Rückerstattung. Lässt sich nicht zurücknehmen.</p>
+          <div class="ad-felder">
+            <label class="ad-feld"><span>Chips je Konto</span>
+              <input id="ad-alle-betrag" type="number" min="1" max="10000000" step="1000" value="250000" /></label>
+            <label class="ad-feld"><span>Grund (steht im Tagesbericht)</span>
+              <input id="ad-alle-grund" type="text" maxlength="120" placeholder="Rückerstattung Freischaltungen" autocomplete="off" /></label>
+          </div>
+          <div class="ad-knopfreihe">
+            <button class="btn-primary ad-knopf" id="ad-alle-geben">Allen gutschreiben</button>
+          </div>
+          <div class="form-error" id="ad-alle-error"></div>
+        </div>
+
         <!-- Chat -->
         <div class="ad-karte">
           <div class="ad-kopf"><b>Chat</b></div>
