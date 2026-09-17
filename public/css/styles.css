@@ -4412,7 +4412,9 @@ html.reduce-motion .mem-flip { transition: none; }
   background: rgba(20,20,20,0.35); z-index: 2; }
 .chs-cell.legal:has(.chs-piece)::before { width: 92%; height: 92%; background: transparent;
   border: 4px solid rgba(20,20,20,0.4); box-sizing: border-box; }
-.chs-piece { font-size: min(8vw, 40px); line-height: 1; z-index: 3; user-select: none; }
+.chs-piece { font-size: min(8vw, 40px); line-height: 1; z-index: 3; user-select: none;
+  /* Eine Schrift, die die Figuren als Text zeichnet. Emoji-Schriften faerben selbst. */
+  font-family: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols 2", "DejaVu Sans", serif; }
 /* Beide Farben benutzen dieselbe gefuellte Figur; unterschieden wird ueber
    Fuellung und Rand. Der Rand ist aus vier Schatten gebaut statt aus
    -webkit-text-stroke: der zeichnet mittig und frisst die duennen Stellen

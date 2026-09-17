@@ -228,9 +228,12 @@ app.post("/api/session", (req, res) => {
 });
 
 /** Bonus und Soforthilfe wirken auf ein Konto, der Aufrufer muss also beweisen, dass es seins ist. */
+/* Gibt den Schluessel zurueck, nicht den getippten Namen. Der Vergleich lief
+   frueher gegen den Anzeigenamen, und nach einer Umbenennung passte der nicht
+   mehr zum Token: Stunden-Bonus und Soforthilfe antworteten mit 403. */
 function requireOwnAccount(req, res) {
   const key = accounts.verifyToken(req.body.token);
-  if (!key || key !== String(req.body.name || "").trim().toLowerCase()) {
+  if (!key || key !== accounts.kanonisch(req.body.name)) {
     res.status(403).json({ error: "Nicht autorisiert." });
     return null;
   }
@@ -238,11 +241,12 @@ function requireOwnAccount(req, res) {
 }
 
 app.post("/api/daily-bonus", (req, res) => {
-  if (!requireOwnAccount(req, res)) return;
-  const result = accounts.claimDailyBonus(req.body.name);
+  const key = requireOwnAccount(req, res);
+  if (!key) return;
+  const result = accounts.claimDailyBonus(key);
   if (!result.ok) return res.status(429).json({ error: result.error, msLeft: result.msLeft });
-  achievements.check(req.body.name); // streak/chips milestones
-  quests.track(req.body.name, "claim_bonus");
+  achievements.check(key); // streak/chips milestones
+  quests.track(key, "claim_bonus");
   res.json({
     amount: result.amount, base: result.base, tribute: result.tribute,
     streets: result.streets, golden: result.golden, houses: result.houses,
@@ -253,8 +257,9 @@ app.post("/api/daily-bonus", (req, res) => {
 });
 
 app.post("/api/rescue", (req, res) => {
-  if (!requireOwnAccount(req, res)) return;
-  const result = accounts.rescue(req.body.name);
+  const key = requireOwnAccount(req, res);
+  if (!key) return;
+  const result = accounts.rescue(key);
   if (!result.ok) return res.status(429).json({ error: result.error, msLeft: result.msLeft });
   res.json({ amount: result.amount, account: result.account });
 });

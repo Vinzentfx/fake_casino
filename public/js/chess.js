@@ -18,10 +18,12 @@
      * eingefaerbt: uebrig blieb ein duenner weisser Strich, der auf hellen
      * Feldern praktisch unsichtbar war. Die gefuellte Form mit weisser
      * Fuellung und dunklem Rand (siehe .chs-piece.wp im CSS) ist das, was
-     * jedes Schachbrett macht.
+     * jedes Schachbrett macht. Das angehaengte U+FE0E verlangt die Textform:
+     * ohne das nimmt Windows die Emoji-Schrift, die ihre eigene Farbe
+     * mitbringt, und alle weissen Figuren waren dort schwarz.
      */
-    w: { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
-    b: { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
+    w: { k: "♚\uFE0E", q: "♛\uFE0E", r: "♜\uFE0E", b: "♝\uFE0E", n: "♞\uFE0E", p: "♟\uFE0E" },
+    b: { k: "♚\uFE0E", q: "♛\uFE0E", r: "♜\uFE0E", b: "♝\uFE0E", n: "♞\uFE0E", p: "♟\uFE0E" },
   };
   const FILES = "abcdefgh";
 

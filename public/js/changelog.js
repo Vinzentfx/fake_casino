@@ -25,6 +25,19 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-09-22-g",
+      datum: "17. September 2026",
+      titel: "Drei gemeldete Fehler",
+      items: [
+        { icon: "chip", titel: "Bonus nach einer Umbenennung",
+          text: "Wer seinen Namen geändert hat oder umbenannt wurde, kam nicht mehr an den Stunden-Bonus und die Soforthilfe. Der Server hat dabei den neuen Namen mit dem alten verglichen und abgelehnt. Geht wieder." },
+        { icon: "chess", titel: "Weiße Figuren waren schwarz",
+          text: "Auf Windows hat der Browser die Schachfiguren als Emoji gezeichnet, und die bringen ihre eigene Farbe mit. Jetzt sind Weiß und Schwarz wieder zu unterscheiden." },
+        { icon: "ansage", titel: "Wenn die Verbindung weg ist",
+          text: "Reißt die Verbindung ab, tut kein Knopf mehr etwas, obwohl die Seite normal aussieht. Das Casino sagt jetzt Bescheid und meldet sich von selbst wieder an." },
+      ],
+    },
+    {
       id: "2026-09-22-f",
       datum: "13. September 2026",
       titel: "Du kannst deinen Namen ändern",

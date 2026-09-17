@@ -714,7 +714,14 @@ $("#onboarding-quests")?.addEventListener("click", () => {
 
 // Nach einem Verbindungsabbruch neu anmelden: für den Server ist ein Reconnect
 // ein frischer Socket ohne Identität, das Token muss also noch mal hin.
+let verbindungWeg = false;
+socket.on("disconnect", () => {
+  verbindungWeg = true;
+  toast("Verbindung weg. Solange tut kein Knopf etwas, ich versuche es weiter.");
+});
+
 socket.on("connect", () => {
+  if (verbindungWeg) { verbindungWeg = false; toast("Wieder verbunden."); }
   if (state.token) socket.emit("auth", { token: state.token });
   socket.emit("presence:screen", { screen: currentScreen });
   socket.emit("app:version", (res) => {
