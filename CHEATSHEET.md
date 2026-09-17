@@ -28,8 +28,7 @@ kann trotzdem alles passieren.
 16. [Clans](#clans)
 17. [Kosmetik und Auktionshaus](#kosmetik-und-auktionshaus)
 18. [Rekorde und Achievements](#rekorde-und-achievements)
-19. [Strafen](#strafen)
-20. [Alle Grenzen auf einen Blick](#alle-grenzen-auf-einen-blick)
+19. [Alle Grenzen auf einen Blick](#alle-grenzen-auf-einen-blick)
 
 ## Woher Chips kommen
 
@@ -418,21 +417,6 @@ freigeschaltete Abzeichen lässt sich in der Bestenliste tragen.
 
 **Bestenlisten:** Chips, Level, Wochengewinn, Immobilienwert, Straßen, größter
 Einzelgewinn, größter Verlust, meiste Runden und Pferdesiege.
-
-## Strafen
-
-Sieben Arten, jede mit Ablaufzeit und Grund. Der Grund steht in der Meldung,
-die der Bestrafte liest.
-
-| Strafe | Wirkung |
-|---|---|
-| Zeitsperre | kommt bis zum Ablauf nicht mehr rein |
-| Maulkorb | darf spielen, aber nicht schreiben |
-| Einsatzdeckel | höchstens der eingestellte Einsatz |
-| Pechvogel | verliert häufiger, Stärke einstellbar |
-| Spielverbot | einzelne Spiele gesperrt |
-| Keine Geschenke | kein Bonus, kein Kalender, kein Rad |
-| Auktionsverbot | darf nicht mitbieten |
 
 ## Alle Grenzen auf einen Blick
 
