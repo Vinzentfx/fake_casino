@@ -85,6 +85,7 @@
     <div class="sheet-group">
       <span class="sheet-label">Das Casino</span>
       <button class="sheet-item" data-nav="updates"><i class="si-icon" data-icon="updates"></i><b>Updates</b><small id="menu-updates-sub">Was sich zuletzt geändert hat</small></button>
+      <button class="sheet-item" data-nav="spickzettel"><i class="si-icon" data-icon="frage"></i><b>Spickzettel</b><small>Regeln und Quoten aller Spiele</small></button>
       <button class="sheet-item" id="menu-tour"><i class="si-icon" data-icon="rundgang"></i><b>Rundgang</b><small>Die Neuerungen in sieben Schritten</small></button>
       <button class="sheet-item" data-nav="suggest"><i class="si-icon" data-icon="vorschlaege"></i><b>Vorschläge</b><small>Was fehlt dir hier?</small></button>
     </div>
@@ -1518,6 +1519,14 @@
     </section>
 
     <!-- Updates -->
+    <!-- Spickzettel -->
+    <section class="screen" data-screen="spickzettel">
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="frage"></i>Spickzettel</h2>
+      <p class="muted small" style="margin-top:-6px">Alle Regeln, Quoten und Grenzen. Tippe im Inhalt einen Punkt an, um dorthin zu springen.</p>
+      <div id="spick-inhalt" class="spick"><p class="muted small">Lädt…</p></div>
+    </section>
+
     <section class="screen" data-screen="updates">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
       <h2 class="screen-title"><i data-icon="updates"></i>Updates</h2>
@@ -2351,5 +2360,6 @@
   <script defer src="/js/bank.js"></script>
   <script defer src="/js/stocks.js"></script>
   <script defer src="/js/market.js"></script>
+  <script defer src="/js/spickzettel.js"></script>
 </body>
 </html>

@@ -29,6 +29,8 @@
       datum: "17. September 2026",
       titel: "Drei gemeldete Fehler",
       items: [
+        { icon: "frage", titel: "Spickzettel im Menü",
+          text: "Im Menü steht jetzt „Spickzettel“. Da drin stehen alle Auszahlungsquoten, Einsatzgrenzen, Belohnungen und Regeln, von den Slots über die Stadt bis zum Season-Pass." },
         { icon: "slots", titel: "Alle Automaten frei",
           text: "Gem Storm, Algen Abyss und Book of Rah musste man früher freischalten. Das kostet jetzt nichts mehr, alle vier Automaten stehen jedem offen. Was du fürs Freischalten bezahlt hast, bekommst du zurück." },
         { icon: "chip", titel: "Bonus nach einer Umbenennung",

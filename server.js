@@ -165,6 +165,18 @@ app.get("/api/config", (_req, res) => {
   });
 });
 
+/* Der Spickzettel liegt als Markdown im Repo. Damit ihn auch Spieler lesen
+   koennen, liefert der Server ihn hier aus. */
+const SPICK_FILE = path.join(__dirname, "CHEATSHEET.md");
+let spickText = null;
+app.get("/api/spickzettel", (_req, res) => {
+  if (build.DEV || spickText === null) {
+    try { spickText = fs.readFileSync(SPICK_FILE, "utf8"); } catch { spickText = ""; }
+  }
+  if (!spickText) return res.status(404).json({ error: "Spickzettel nicht gefunden." });
+  res.type("text/plain; charset=utf-8").send(spickText);
+});
+
 app.get("/api/version", (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.json({ version: build.current() });

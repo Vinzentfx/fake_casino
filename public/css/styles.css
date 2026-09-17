@@ -8744,3 +8744,20 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 }
 .ad-sport-zeilen b { font-size: var(--fs-sm); font-weight: 600; }
 #ad-sport-karte.an { border-color: rgba(var(--bad-rgb), 0.45); }
+
+/* Spickzettel: der Text aus CHEATSHEET.md, im Casino lesbar gemacht. */
+.spick { line-height: 1.5; }
+.spick h2 { margin: 22px 0 6px; font-size: 1.05rem; color: var(--gold-strong); }
+.spick h3 { margin: 16px 0 4px; font-size: 0.95rem; color: var(--accent-strong); }
+.spick p { margin: 8px 0; }
+.spick ul, .spick ol { margin: 8px 0 8px 20px; display: grid; gap: 5px; }
+.spick a { color: var(--accent); }
+.spick code {
+  background: rgba(0, 0, 0, 0.35); border-radius: 6px;
+  padding: 1px 5px; font-size: 0.85em;
+}
+/* Tabellen scrollen einzeln, damit der Bildschirm nicht seitlich wandert. */
+.spick-tabelle { overflow-x: auto; margin: 10px 0; }
+.spick table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.spick th, .spick td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.spick th { color: var(--text-dim); font-weight: 700; white-space: nowrap; }
