@@ -50,7 +50,7 @@
           text: "Den Laden gibt es nicht mehr. Vier Kisten: die Tageskiste ist gratis und geht einmal in 20 Stunden, dann Holz für 30.000, Messing für 150.000 und die Schwarze für 600.000. An jeder steht offen, was drin sein kann und wie wahrscheinlich. Tipp eine an, und du siehst jedes einzelne Stück, samt Markierung, was dir noch fehlt." },
 
         { icon: "aufwerten", titel: "Die Ziehung",
-          text: "Der Bildschirm wird schwarz, die Kiste zittert und platzt auf, dann läuft die Rolle aus. Auf den letzten Metern wächst die Marke und ein Lichtkegel geht an. Die Bahn fährt dabei über das Ziel hinaus, manchmal so weit, dass schon das nächste Feld unter der Marke steht, und rollt dann zurück, bis der Treffer genau mittig liegt. Erst danach kommt die Karte. Ab Legendär wird der ganze Bildschirm einmal in der Farbe der Stufe gewaschen." },
+          text: "Der Bildschirm wird schwarz, die Kiste zittert und platzt auf, dann läuft die Rolle aus. Auf den letzten Metern wächst die Marke und ein Lichtkegel geht an. Die Bahn schießt dabei ein Stück über das Ziel hinaus, manchmal gerade eben bis ins nächste Feld, und rollt dann zurück, bis der Treffer genau mittig liegt. Erst danach kommt die Karte. Ab Legendär wird der ganze Bildschirm einmal in der Farbe der Stufe gewaschen." },
 
         { icon: "stern", titel: "Die Gala-Kiste, limitiert",
           text: "250.000 Chips, und sie steht nur bis zum Stichtag. Sie zieht kein einziges Stück aus dem normalen Katalog, sondern aus dreizehn, die es ausschließlich dort gibt: ein eigener Satz für jede Seltenheit, vom Konfetti-Zeichen bis zum Rampenlicht. Danach entstehen diese dreizehn nie wieder." },

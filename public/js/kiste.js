@@ -359,11 +359,13 @@
    * das aus, als haette sie auf dem Nachbarn gehalten. Gezogen wurde immer
    * das Richtige, man konnte es nur nicht mehr glauben.
    *
-   * Jetzt faehrt die Bahn ZU WEIT — mal knapp ueber die Kante, mal so weit,
-   * dass das naechste Feld schon unter der Marke steht — und rollt dann
-   * zurueck, bis der Treffer genau mittig liegt. Das ist beides: die
-   * Spannung des Beinahe, und am Ende eine Landung, an der nichts mehr zu
-   * deuten ist.
+   * Jetzt faehrt die Bahn ein STUECK zu weit — meist bis dicht an die
+   * Kante des Trefferfelds, manchmal gerade eben darueber hinaus — und
+   * rollt dann zurueck, bis der Treffer genau mittig liegt. Das ist
+   * beides: die Spannung des Beinahe, und am Ende eine Landung, an der
+   * nichts mehr zu deuten ist. Der Ueberschuss muss klein bleiben. Wer
+   * bis ueber die Mitte des Nachbarn faehrt, zeigt keine knappe Sache
+   * mehr, sondern einen Sprung um zwei Felder.
    */
   function fahre(res, schau) {
     return new Promise((fertig) => {
@@ -398,9 +400,17 @@
          Rahmenlinie. Ein Pixel, aber es gehoert in die Rechnung. */
       const randVersatz = bahn.offsetLeft - rahmen.clientLeft;
       const genau = -(res.rolle.trefferIndex * schritt) + mitte - breite / 2 - randVersatz;
-      /* Wie weit darueber hinaus. Ab einem ganzen Schritt steht das
-         Nachbarfeld unter der Marke, und genau das soll vorkommen. */
-      const ueber = schritt * (0.55 + Math.random() * 0.7);
+      /* Wie weit darueber hinaus — und das ist wenig.
+         Der erste Anlauf ging bis zu 1,25 Schritt, also 178 Pixel: die
+         Marke stand damit 102 Pixel im Nachbarfeld, an dessen MITTE
+         vorbei. Von dort sieht das Zurueckrollen nicht mehr nach knapp
+         verpasst aus, sondern als spraenge die Bahn zwei Felder zurueck.
+         Jetzt endet der Ueberschuss zwischen 48 und 82 Pixeln: meistens
+         steht die Marke noch im Trefferfeld, nah an der Kante, und im
+         oberen Drittel lugt sie gerade eben ins naechste hinein. Mehr
+         darf es nicht sein — das Beinahe lebt davon, dass man das
+         richtige Feld nie aus den Augen verliert. */
+      const ueber = schritt * (0.34 + Math.random() * 0.24);
 
       const lauf = (schau.bahn || 4900) / 1000;
       const rollen = (schau.rollen || 950) / 1000;
