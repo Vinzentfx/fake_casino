@@ -248,7 +248,7 @@
        wartet mit der Ansage im Chat genau so lange, wie das hier laeuft,
        und wenn die beiden Zahlen auseinanderlaufen, steht das Ergebnis
        wieder im Chat, bevor die Kiste aufgegangen ist. */
-    const schau = res.schau || { aufbau: 1250, platzen: 260, bahn: 5600, halten: 620, landung: 300 };
+    const schau = res.schau || { aufbau: 1250, platzen: 260, bahn: 4900, rollen: 950, halten: 620, landung: 300 };
 
     /*
      * Die Bahn wird JETZT gebaut, nicht erst nach dem Zittern.
@@ -285,8 +285,8 @@
        hat nie getroffen, und dass es trotzdem aussah wie gewollt, lag nur
        daran, dass `langsam` stehenblieb. */
     const rahmen = phase.querySelector(".ki-bahn-rahmen");
-    rahmen.classList.remove("schnell", "langsam", "steht");
-    await fahre(res, schau.bahn / 1000);
+    rahmen.classList.remove("schnell", "langsam", "rollt", "einschlag", "steht");
+    await fahre(res, schau);
 
     /*
      * HALTEN. Die Bahn steht, der Treffer liegt unter der Marke, und eine
@@ -322,64 +322,117 @@
    * sieht gerechnet aus.
    */
   /**
-   * Die Felder anlegen, auf Anfang stellen und AUSMESSEN.
+   * Die Felder anlegen und auf Anfang stellen.
    *
-   * Das Ausmessen ist der Punkt. Vorher stand die Bahn waehrend des
-   * Zitterns auf `display: none`, und dann rechnet ein Browser gar nichts
-   * aus — die ganze Arbeit fiel in dem Moment an, in dem `fahre()` die
-   * erste Breite abgefragt hat, also genau zwischen Platzen und Losfahren.
-   * Hier steht sie stattdessen schon im Layout, nur unsichtbar und aus dem
-   * Fluss genommen, damit sie die Kiste nicht verschiebt.
+   * Hier wird NICHT gemessen, und das ist wichtig genug fuer einen eigenen
+   * Absatz. Ich hatte die Breite hier abgenommen und fuer `fahre()`
+   * gemerkt, und damit einen Fehler gebaut, der genau ab der ZWEITEN
+   * Ziehung zuschlug: nach der ersten bleibt `verblasst` an der Phase
+   * stehen, und das ist ein `scale(0.9)`. Ein Feld misst sich dann als
+   * 118,8 statt 132 Pixel. Auf 38 Felder gerechnet fehlen damit rund 500
+   * Pixel, also dreieinhalb Felder — die Bahn hielt vor einem voellig
+   * anderen Stueck, obwohl gezogen und angezeigt das richtige wurde.
+   *
+   * Gemessen wird deshalb erst in `fahre()`, wenn die Phase nachweislich
+   * sauber ist. Das kostet ein bis drei Millisekunden; der Grund, aus dem
+   * ich es hierher vorgezogen hatte, war ohnehin eine Fehlmessung.
    */
-  let bahnMass = null;
   function baueBahn(res) {
     const bahn = $("#ki-bahn");
     const phase = $("#ki-phase-bahn");
-    phase.classList.remove("hidden");
+    phase.classList.remove("hidden", "verblasst");
     phase.classList.add("wartet");
     bahn.style.transition = "none";
     bahn.style.transform = "translate3d(0,0,0)";
     bahn.innerHTML = res.rolle.felder.map((f, i) => feld(f, i === res.rolle.trefferIndex)).join("");
-    const erstes = bahn.querySelector(".ki-feld");
-    const breite = erstes ? erstes.getBoundingClientRect().width : 0;
-    bahnMass = breite > 0
-      ? { breite, luecke: parseFloat(getComputedStyle(bahn).gap) || 0 }
-      : null;
   }
 
-  function fahre(res, sekunden) {
+  /**
+   * Die Fahrt: erst ueber das Ziel hinaus, dann zurueck auf die Mitte.
+   *
+   * Vorher hielt die Bahn irgendwo im Trefferfeld an. Der Platz war
+   * absichtlich zufaellig (`versatz`), weil immer exakt mittig zu stoppen
+   * gerechnet aussieht — nur war der Zufall zu gross: bis zu 41 Pixel neben
+   * der Feldmitte, bei einem 132 Pixel breiten Feld und nur 10 Pixel
+   * Abstand zum naechsten. Die Marke stand dann dicht an der Kante, und mit
+   * einer Kiste, in der dasselbe Stueck mehrfach auf der Rolle liegt, sah
+   * das aus, als haette sie auf dem Nachbarn gehalten. Gezogen wurde immer
+   * das Richtige, man konnte es nur nicht mehr glauben.
+   *
+   * Jetzt faehrt die Bahn ZU WEIT — mal knapp ueber die Kante, mal so weit,
+   * dass das naechste Feld schon unter der Marke steht — und rollt dann
+   * zurueck, bis der Treffer genau mittig liegt. Das ist beides: die
+   * Spannung des Beinahe, und am Ende eine Landung, an der nichts mehr zu
+   * deuten ist.
+   */
+  function fahre(res, schau) {
     return new Promise((fertig) => {
       const bahn = $("#ki-bahn");
       const rahmen = bahn.parentElement;
 
-      /* Gemessen wurde schon beim Bauen (siehe `baueBahn`), das spart hier
-         den teuersten Augenblick. Falls das nicht geklappt hat, wird es
-         nachgeholt: die Feldbreite haengt am Theme und an der
-         Schriftgroesse, geraten waere sie irgendwann falsch. */
+      /*
+       * Gemessen wird im LAYOUT, nicht auf dem Bildschirm.
+       *
+       * `getBoundingClientRect()` liefert die sichtbare Groesse, also die
+       * nach allen Transformationen der Eltern. Und genau darueber bin ich
+       * gestolpert: nach einer Ziehung bleibt `verblasst` an der Phase
+       * stehen, das ist ein `scale(0.9)`, und beim Entfernen laeuft ein
+       * halbsekuendiger Uebergang zurueck auf 1. Wer in dieser halben
+       * Sekunde misst, bekommt irgendetwas zwischen 118,8 und 132 Pixeln.
+       * Auf 38 Felder gerechnet sind das bis zu 500 Pixel Fehler, also
+       * dreieinhalb Felder: die Bahn hielt vor einem ganz anderen Stueck,
+       * obwohl gezogen und angezeigt das richtige wurde. Mal ging es gut,
+       * mal nicht, je nachdem wie der Uebergang gerade stand.
+       *
+       * `offsetWidth`, `clientWidth` und `offsetLeft` kennen keine
+       * Transformationen. Sie liefern immer dieselben Zahlen, und der Wert,
+       * den wir am Ende setzen (`translate3d`), rechnet in genau diesen
+       * Einheiten.
+       */
       const erstes = bahn.querySelector(".ki-feld");
-      const breite = (bahnMass && bahnMass.breite)
-        || (erstes ? erstes.getBoundingClientRect().width : FELD_FALLBACK);
-      const luecke = (bahnMass && bahnMass.luecke) != null
-        ? bahnMass.luecke
-        : (parseFloat(getComputedStyle(bahn).gap) || 0);
+      const breite = (erstes && erstes.offsetWidth) || FELD_FALLBACK;
+      const luecke = parseFloat(getComputedStyle(bahn).gap) || 0;
       const schritt = breite + luecke;
-      const mitte = rahmen.getBoundingClientRect().width / 2;
-      const versatz = (Math.random() - 0.5) * (breite * 0.62);
-      const ziel = -(res.rolle.trefferIndex * schritt) + mitte - breite / 2 + versatz;
-      const DAUER = sekunden || 5.6;
+      const mitte = rahmen.clientWidth / 2;
+      /* Die Bahn faengt nicht am Rahmenrand an, sondern hinter dessen
+         Rahmenlinie. Ein Pixel, aber es gehoert in die Rechnung. */
+      const randVersatz = bahn.offsetLeft - rahmen.clientLeft;
+      const genau = -(res.rolle.trefferIndex * schritt) + mitte - breite / 2 - randVersatz;
+      /* Wie weit darueber hinaus. Ab einem ganzen Schritt steht das
+         Nachbarfeld unter der Marke, und genau das soll vorkommen. */
+      const ueber = schritt * (0.55 + Math.random() * 0.7);
+
+      const lauf = (schau.bahn || 4900) / 1000;
+      const rollen = (schau.rollen || 950) / 1000;
 
       // Ein Bild abwarten, sonst fasst der Browser Aufbau und Fahrt zusammen
       // und es gibt gar keine Bewegung.
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        bahn.style.transition = `transform ${DAUER}s cubic-bezier(.08,.72,.11,1)`;
-        bahn.style.transform = `translate3d(${ziel}px,0,0)`;
-        ticker(DAUER);
+        bahn.style.transition = `transform ${lauf}s cubic-bezier(.08,.72,.11,1)`;
+        bahn.style.transform = `translate3d(${genau - ueber}px,0,0)`;
+        ticker(lauf);
         rahmen.classList.add("schnell");
         /* Ab drei Vierteln kriecht die Bahn nur noch. Das sieht man an der
            Kurve, aber man MERKT es erst, wenn die Marke mitgeht: sie waechst,
            leuchtet, und das Feld darunter bekommt einen Kegel. */
-        setTimeout(() => { rahmen.classList.remove("schnell"); rahmen.classList.add("langsam"); }, DAUER * 1000 * 0.72);
-        setTimeout(() => fertig(), DAUER * 1000 + 180);
+        setTimeout(() => { rahmen.classList.remove("schnell"); rahmen.classList.add("langsam"); }, lauf * 1000 * 0.72);
+
+        // Zurueckrollen auf die genaue Mitte.
+        setTimeout(() => {
+          rahmen.classList.add("rollt");
+          bahn.style.transition = `transform ${rollen}s cubic-bezier(.32,.96,.34,1)`;
+          bahn.style.transform = `translate3d(${genau}px,0,0)`;
+          window.Casino.sound?.play("tick");
+        }, lauf * 1000 + 120);
+
+        // Aufgesetzt.
+        setTimeout(() => {
+          rahmen.classList.remove("rollt");
+          rahmen.classList.add("einschlag");
+          window.Casino.sound?.play("select");
+          setTimeout(() => rahmen.classList.remove("einschlag"), 700);
+          fertig();
+        }, lauf * 1000 + 120 + rollen * 1000);
       }));
     });
   }

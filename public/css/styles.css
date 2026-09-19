@@ -11482,3 +11482,73 @@ html:not(.reduce-motion) .ki-wasch.an { animation: ki-wasch 0.9s ease-out; }
   opacity: 0;
   pointer-events: none;
 }
+
+/* ------------------------------------------------------------------
+   Die Fahrt, dritter Anlauf: hinaus und zurueck
+
+   Die Bahn faehrt ueber das Ziel, rollt zurueck und setzt GENAU mittig
+   auf. Drei Zustaende bekommen dafuer ihr eigenes Bild:
+     schnell     das Band rast, die Raender schlucken mehr
+     rollt       das Zurueckrollen, alles nimmt die Farbe der Stufe an
+     einschlag   aufgesetzt: ein Ring von der Marke, kurzes Rucken
+   ------------------------------------------------------------------ */
+
+/* Waehrend des Rollens faerbt sich der Rahmen in der Stufe des Treffers.
+   Ab hier steht fest, was es geworden ist, und man sieht es, bevor man es
+   liest. */
+.ki-bahn-rahmen { transition: border-color 0.4s ease, box-shadow 0.4s ease; }
+.ki-bahn-rahmen.rollt,
+.ki-bahn-rahmen.einschlag {
+  border-color: var(--stufe, var(--accent));
+  box-shadow: 0 0 60px -10px var(--stufe, var(--accent));
+}
+html:not(.reduce-motion) .ki-bahn-rahmen.rollt .ki-marke,
+html:not(.reduce-motion) .ki-bahn-rahmen.einschlag .ki-marke {
+  transform: scaleY(1.5);
+  filter: drop-shadow(0 0 14px var(--stufe, var(--accent)));
+}
+
+/* Der Einschlag: ein Ring geht von der Marke aus, und der Rahmen ruckt
+   einmal kurz. Das ist die Bestaetigung — hier ist es angekommen. */
+.ki-bahn-rahmen.einschlag::marker { content: none; }
+.ki-marke::before {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 10px; height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  border: 2px solid var(--stufe, var(--accent));
+  opacity: 0;
+  pointer-events: none;
+}
+html:not(.reduce-motion) .ki-bahn-rahmen.einschlag .ki-marke::before {
+  animation: ki-ring 0.7s cubic-bezier(.16, 1, .3, 1);
+}
+@keyframes ki-ring {
+  0%   { opacity: 0.9; transform: scale(0.4); border-width: 3px; }
+  100% { opacity: 0;   transform: scale(11);  border-width: 1px; }
+}
+html:not(.reduce-motion) .ki-bahn-rahmen.einschlag { animation: ki-ruck 0.36s cubic-bezier(.36,.07,.19,.97); }
+@keyframes ki-ruck {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-5px); }
+  60%      { transform: translateX(3px); }
+}
+
+/* Waehrend des Rasens zieht das Band eine Spur: ein heller Streifen wandert
+   mit. Er sitzt am Rahmen, nicht an der Bahn, die faehrt ja weg. */
+.ki-bahn-rahmen > .ki-spur {
+  position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.07) 50%, transparent 65%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.ki-bahn-rahmen.schnell > .ki-spur { opacity: 1; }
+html:not(.reduce-motion) .ki-bahn-rahmen.schnell > .ki-spur { animation: ki-spur 0.9s linear infinite; }
+@keyframes ki-spur {
+  from { transform: translateX(-60%); }
+  to   { transform: translateX(60%); }
+}

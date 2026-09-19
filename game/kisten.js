@@ -169,7 +169,11 @@ const GRATIS_DECKEL = 5_000;
 const SCHAU = {
   aufbau: 1250,
   platzen: 260,
-  bahn: 5600,
+  /* Die Fahrt geht ueber das Ziel hinaus, und danach rollt die Bahn
+     zurueck, bis der Treffer GENAU unter der Marke steht. Deshalb zwei
+     Zahlen: das Auslaufen und das Zurueckrollen. */
+  bahn: 4900,
+  rollen: 950,
   /* Die Pause zwischen Stillstand und Ergebnis. Die teuerste halbe Sekunde
      der ganzen Schau: die Bahn steht, der Treffer liegt unter der Marke, und
      eine Sekunde lang passiert nichts. Vorher sprang die Karte sofort auf
@@ -177,7 +181,7 @@ const SCHAU = {
   halten: 620,
   landung: 300,
 };
-const SCHAU_MS = SCHAU.aufbau + SCHAU.platzen + SCHAU.bahn + SCHAU.halten + SCHAU.landung;
+const SCHAU_MS = SCHAU.aufbau + SCHAU.platzen + SCHAU.bahn + SCHAU.rollen + SCHAU.halten + SCHAU.landung;
 
 const LISTEN = () => ({
   avatar: cosmetics.AVATARS, color: cosmetics.COLORS, style: cosmetics.STYLES,
