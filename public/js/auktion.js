@@ -336,20 +336,15 @@
 
     const ein = e.target.closest("[data-auk-ein]");
     if (ein) {
-      const g = stand && stand.einliefern ? stand.einliefern.gebuehr : 0;
-      Casino.dialog.eingabe(
-        `Ab welchem Betrag soll „${ein.dataset.label}“ Nr. ${ein.dataset.nr} losgehen? `
-        + `Mindestens ${zahl(stand.startGebot)} Chips. Die Einliefergebühr von ${zahl(g)} Chips wird sofort fällig.`,
-        { titel: "Unter den Hammer", platzhalter: "Startgebot in Chips", okText: "Einliefern" },
-      ).then((betrag) => {
-        if (!betrag) return;
-        socket.emit("auktion:einliefern", { uid: ein.dataset.aukEin, mindest: Number(betrag) }, (r) => {
-          if (!r || !r.ok) return toast((r && r.error) || "Ging nicht.");
-          if (r.account) applyAccount(r.account);
-          toast(`„${r.label}“ Nr. ${r.nr} steht in der Warteschlange.`);
-          render({ ok: true, ...r });
-        });
-      });
+      /* Auch von hier aus der gemeinsame Weg. Wer sein Stück ins
+         Auktionshaus tragen will, soll trotzdem einmal gesagt bekommen,
+         dass der Markt sicher zahlt und das Haus nur vielleicht mehr —
+         die Entscheidung stand vorher nirgends, weil jeder Bildschirm
+         nur seinen eigenen Weg kannte. */
+      Casino.verkaufen(
+        { uid: ein.dataset.aukEin, label: ein.dataset.label, nr: ein.dataset.nr },
+        () => lade(),
+      );
       return;
     }
 

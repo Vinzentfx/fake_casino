@@ -178,19 +178,10 @@
     if (!btn) return;
     const s = stand.meine.find((x) => x.uid === btn.dataset.anbieten);
     if (!s) return;
-    const preis = await window.Casino.dialog.eingabe(
-      `Zu welchem Preis? Zwischen ${fmt(stand.minPreis)} und ${fmt(stand.maxPreis)} Chips. `
-      + `${Math.round(stand.gebuehr * 100)} % gehen beim Verkauf als Gebühr ans Haus.`,
-      { titel: `${s.label} Nr. ${s.nr} anbieten`, platzhalter: "Preis in Chips", okText: "Ins Schaufenster" },
-    );
-    if (preis === null || preis === undefined || preis === "") return;
-    socket.emit("market:anbieten", { uid: s.uid, preis: Number(preis) }, (res) => {
-      if (!res || !res.ok) return toast((res && res.error) || "Ging nicht.");
-      applyAccount(res.account);
-      stand = res;
-      render();
-      toast("Steht im Schaufenster.");
-    });
+    /* Der gemeinsame Weg: erst die Wahl zwischen Festpreis und
+       Versteigerung, dann der Preis. Beides stand vorher an zwei
+       getrennten Orten, und die Entscheidung dazwischen nirgends. */
+    window.Casino.verkaufen(s, () => load());
   });
 
   socket.on("market:update", () => { if (onScreen()) load(); });
