@@ -348,24 +348,38 @@
   }
 
   /**
-   * Die Fahrt: erst ueber das Ziel hinaus, dann zurueck auf die Mitte.
+   * Die Fahrt: erst knapp davor halten, dann VORWAERTS in die Mitte.
    *
-   * Vorher hielt die Bahn irgendwo im Trefferfeld an. Der Platz war
-   * absichtlich zufaellig (`versatz`), weil immer exakt mittig zu stoppen
-   * gerechnet aussieht — nur war der Zufall zu gross: bis zu 41 Pixel neben
-   * der Feldmitte, bei einem 132 Pixel breiten Feld und nur 10 Pixel
-   * Abstand zum naechsten. Die Marke stand dann dicht an der Kante, und mit
-   * einer Kiste, in der dasselbe Stueck mehrfach auf der Rolle liegt, sah
-   * das aus, als haette sie auf dem Nachbarn gehalten. Gezogen wurde immer
-   * das Richtige, man konnte es nur nicht mehr glauben.
+   * Die Bahn hielt urspruenglich irgendwo im Trefferfeld an. Der Platz war
+   * absichtlich zufaellig, weil immer exakt mittig zu stoppen gerechnet
+   * aussieht — nur war der Zufall zu gross: bis zu 41 Pixel neben der
+   * Feldmitte, bei einem 132 Pixel breiten Feld und nur 10 Pixel Abstand
+   * zum naechsten. Die Marke stand dann dicht an der Kante, und mit einer
+   * Kiste, in der dasselbe Stueck mehrfach auf der Rolle liegt, sah das
+   * aus, als haette sie auf dem Nachbarn gehalten.
    *
-   * Jetzt faehrt die Bahn ein STUECK zu weit — meist bis dicht an die
-   * Kante des Trefferfelds, manchmal gerade eben darueber hinaus — und
-   * rollt dann zurueck, bis der Treffer genau mittig liegt. Das ist
-   * beides: die Spannung des Beinahe, und am Ende eine Landung, an der
-   * nichts mehr zu deuten ist. Der Ueberschuss muss klein bleiben. Wer
-   * bis ueber die Mitte des Nachbarn faehrt, zeigt keine knappe Sache
-   * mehr, sondern einen Sprung um zwei Felder.
+   * Der zweite Anlauf fuhr deshalb ZU WEIT und rollte zurueck. Zurueck ist
+   * erlaubt — aber nur, solange der Halt noch auf dem TREFFERFELD liegt.
+   * Sobald die Bahn weit genug faehrt, dass das NACHBARfeld unter der
+   * Marke steht, glaubt man eine Sekunde lang, dieses Stueck bekommen zu
+   * haben, und das Zurueckrollen nimmt es einem wieder weg. Ein Beinahe
+   * darf nicht wie ein Entzug aussehen.
+   *
+   * Deshalb zwei Spielarten, je zur Haelfte:
+   *
+   *   ZURUECK  Die Bahn faehrt ein Stueck ueber die Mitte und rollt
+   *            zurueck. Der Ueberschuss bleibt INNERHALB des Trefferfelds
+   *            (hoechstens 57 von 66 Pixeln bis zu dessen Kante) — es ist
+   *            also nie ein fremdes Stueck zu sehen, das danach
+   *            verschwindet.
+   *
+   *   VORWAERTS Die Bahn haelt kurz DAVOR, manchmal noch ein paar Pixel
+   *            auf dem VORIGEN Feld, und kriecht dann weiter auf die
+   *            Mitte. Hier darf das Nachbarfeld zu sehen sein: man denkt,
+   *            man haette das davor erwischt, und bekommt dann doch das
+   *            dahinter. Das ist ein Gewinn, kein Entzug.
+   *
+   * Die Richtung des Beinahe entscheidet also, ob es sich gut anfuehlt.
    */
   function fahre(res, schau) {
     return new Promise((fertig) => {
@@ -400,17 +414,23 @@
          Rahmenlinie. Ein Pixel, aber es gehoert in die Rechnung. */
       const randVersatz = bahn.offsetLeft - rahmen.clientLeft;
       const genau = -(res.rolle.trefferIndex * schritt) + mitte - breite / 2 - randVersatz;
-      /* Wie weit darueber hinaus — und das ist wenig.
-         Der erste Anlauf ging bis zu 1,25 Schritt, also 178 Pixel: die
-         Marke stand damit 102 Pixel im Nachbarfeld, an dessen MITTE
-         vorbei. Von dort sieht das Zurueckrollen nicht mehr nach knapp
-         verpasst aus, sondern als spraenge die Bahn zwei Felder zurueck.
-         Jetzt endet der Ueberschuss zwischen 48 und 82 Pixeln: meistens
-         steht die Marke noch im Trefferfeld, nah an der Kante, und im
-         oberen Drittel lugt sie gerade eben ins naechste hinein. Mehr
-         darf es nicht sein — das Beinahe lebt davon, dass man das
-         richtige Feld nie aus den Augen verliert. */
-      const ueber = schritt * (0.34 + Math.random() * 0.24);
+      /* Der Halt vor dem Nachlauf, als Abstand zur Feldmitte.
+         Vorwaerts (negativ): 48 bis 85 Pixel davor. Die halbe Feldbreite
+         sind 66, bis zur Kante des vorigen Felds kommen 10 Pixel Luecke
+         dazu — im oberen Drittel haengt die Marke also ein paar Pixel auf
+         dem Vorgaenger, und genau das ist gewollt.
+         Zurueck (positiv): 26 bis 57 Pixel dahinter, immer diesseits der
+         66er-Kante. Das Trefferfeld bleibt die ganze Zeit unter der
+         Marke, es verschwindet nichts. */
+      /* Das Vorzeichen ist genau andersherum, als es sich anfuehlt: ein
+         GROESSERES x schiebt die Bahn nach rechts, die Marke zeigt also
+         auf ein FRUEHERES Feld. Ein Halt VOR dem Treffer ist damit
+         positiv, ein Halt dahinter negativ. Einmal falsch herum gehabt,
+         und die Bahn hielt auf dem Nachbarfeld und rollte zurueck. */
+      const vorwaerts = Math.random() < 0.5;
+      const versatz = vorwaerts
+        ? schritt * (0.34 + Math.random() * 0.26)    // davor, kriecht vorwaerts
+        : -schritt * (0.18 + Math.random() * 0.22);  // dahinter, rollt zurueck
 
       const lauf = (schau.bahn || 4900) / 1000;
       const rollen = (schau.rollen || 950) / 1000;
@@ -419,7 +439,7 @@
       // und es gibt gar keine Bewegung.
       requestAnimationFrame(() => requestAnimationFrame(() => {
         bahn.style.transition = `transform ${lauf}s cubic-bezier(.08,.72,.11,1)`;
-        bahn.style.transform = `translate3d(${genau - ueber}px,0,0)`;
+        bahn.style.transform = `translate3d(${genau + versatz}px,0,0)`;
         ticker(lauf);
         rahmen.classList.add("schnell");
         /* Ab drei Vierteln kriecht die Bahn nur noch. Das sieht man an der
@@ -427,7 +447,7 @@
            leuchtet, und das Feld darunter bekommt einen Kegel. */
         setTimeout(() => { rahmen.classList.remove("schnell"); rahmen.classList.add("langsam"); }, lauf * 1000 * 0.72);
 
-        // Zurueckrollen auf die genaue Mitte.
+        // Der Nachlauf auf die genaue Mitte, vorwaerts oder zurueck.
         setTimeout(() => {
           rahmen.classList.add("rollt");
           bahn.style.transition = `transform ${rollen}s cubic-bezier(.32,.96,.34,1)`;

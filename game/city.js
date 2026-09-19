@@ -149,12 +149,16 @@ function loadMap() {
   }
   bldIndex.clear();
   /*
-   * Doppelte Gebaeude aussortieren.
+   * Doppelte Gebaeude aussortieren. Seit dem 19.9. ist das nur noch ein
+   * Netz: die Karte selbst ist bereinigt und `tools/fetch-porta.js`
+   * entdoppelt beim Abruf. Die Pruefung bleibt hier, weil ein Auszug von
+   * Hand jederzeit wieder welche hereintragen kann — und dann soll es
+   * auffallen und nicht die Bilanz verschieben.
    *
    * Der Overpass-Auszug fragt je Ortsteil nach Gebaeuden IN dessen Flaeche.
    * An den Grenzen liegt dasselbe Haus in zwei Flaechen, und ein paar Wege
    * kamen sogar innerhalb einer Abfrage zweimal zurueck. In der Karte vom
-   * 10.7. waren 65 der 11.131 Gebaeude doppelt, sieben davon in Besitz.
+   * 10.7. waren 65 der 11.869 Gebaeude doppelt, sieben davon in Besitz.
    *
    * Aufgefallen ist es nicht, weil `bldIndex` eine Map ist und der zweite
    * Eintrag den ersten still ueberschreibt. Gezaehlt wurde trotzdem zweimal:

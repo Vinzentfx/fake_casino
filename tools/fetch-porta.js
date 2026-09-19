@@ -317,6 +317,37 @@ area(${area})->.d;
     await sleep(6000); // Overpass nicht überlasten (die Spiegel bremsen sonst)
   }
 
+  /*
+   * Doppelte Gebaeude raus, BEVOR die Karte geschrieben wird.
+   *
+   * Abgefragt wird je Ortsteil nach Gebaeuden in dessen Flaeche. An den
+   * Grenzen liegt dasselbe Haus in zwei Flaechen, und ein paar Wege kamen
+   * sogar innerhalb einer Abfrage zweimal zurueck: im Auszug vom 10.7.
+   * waren 65 von 11.869 Gebaeuden doppelt, 52 davon ueber eine
+   * Ortsteilgrenze hinweg.
+   *
+   * Bemerkt hat es lange niemand, weil der Index im Spiel eine Map ist und
+   * der zweite Eintrag den ersten still ueberschreibt — gezaehlt wurde
+   * aber ueber die Listen, und damit stand ein Haus doppelt in der Bilanz
+   * seines Besitzers. Im Zweifel entschied das, wer Boss eines Ortsteils
+   * ist.
+   *
+   * Behalten wird der LETZTE Eintrag, weil genau den auch der Index
+   * behaelt. Die Karte sagt damit dasselbe wie das Spiel, statt dass das
+   * Spiel die Karte bei jedem Start stillschweigend zurechtruecken muss.
+   */
+  {
+    const letzter = new Map();
+    out.districts.forEach((d, di) => (d.buildings || []).forEach((b, bi) => letzter.set(b.id, di * 1e7 + bi)));
+    let doppelt = 0;
+    out.districts.forEach((d, di) => {
+      const vorher = d.buildings.length;
+      d.buildings = d.buildings.filter((b, bi) => letzter.get(b.id) === di * 1e7 + bi);
+      doppelt += vorher - d.buildings.length;
+    });
+    if (doppelt) console.log(`   ${doppelt} doppelte Gebäude entfernt (Grenzlagen).`);
+  }
+
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(out));
   const mb = (fs.statSync(OUT).size / 1024 / 1024).toFixed(2);
