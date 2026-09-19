@@ -286,7 +286,22 @@ button { font-family: inherit; cursor: pointer; }
   background: linear-gradient(180deg, var(--gold-strong), var(--gold));
   box-shadow: var(--shadow);
 }
-.btn-primary:active { transform: translateY(1px); }
+.btn-primary:active:not(:disabled) { transform: translateY(1px); }
+
+/* Ein gesperrter Hauptknopf sah aus wie ein offener.
+   Es gab fuer `.btn-primary` ueberhaupt keine Regel fuer `:disabled` —
+   voller Goldverlauf, volle Deckkraft, sogar der Zeigefinger. Auf dem
+   Kisten-Bildschirm standen damit fuenf Knoepfe in der Farbe der
+   Hauptaktion, und nur ihr Text ("Wieder in 5 Stunden", "Dir fehlen
+   18.605") verriet, dass keiner davon geht. `.btn-secondary` und
+   `.chip-btn` hatten ihre Regel laengst; ausgerechnet der auffaelligste
+   Knopf im Haus nicht. */
+.btn-primary:disabled {
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.2), rgba(var(--accent-rgb), 0.12));
+  color: var(--text-dim);
+  box-shadow: none;
+  cursor: default;
+}
 
 /* Lobby */
 .section-title { color: var(--gold-strong); font-size: 1.05rem; margin: 18px 4px 10px; }
@@ -789,6 +804,13 @@ body.sheet-open { overflow: hidden; }
   color: var(--text-dim);
 }
 .pf-tag-bounty { color: var(--bad-text); border-color: rgba(var(--bad-rgb), 0.4); }
+/* Prunkstueck und Garnitur, ausgeschrieben. Am Namen sind sie nur zwei
+   kleine Marken mit einer Zahl; hier steht, was sie heissen. Die
+   Erstpraegung bekommt die Akzentfarbe, weil es von ihr je Stueck genau
+   eine gibt. */
+.pf-tag-prunk { color: var(--text); border-color: var(--line); }
+.pf-tag-prunk.erst { color: var(--accent); border-color: rgba(var(--accent-rgb), 0.45); }
+.pf-tag-garnitur { color: var(--text); border-color: var(--line); }
 /* Der Level-Balken laeuft ueber die volle Breite unter Bild und Name. */
 .pf-card .level-box { grid-column: 1 / -1; }
 

@@ -1256,6 +1256,27 @@ async function openPlayerProfile(name) {
     const zahl = (n) => Number(n || 0).toLocaleString("de-DE");
 
     const tags = [];
+    /*
+     * Prunkstueck und Garnitur IN WORTEN.
+     *
+     * Beide haengen als kleine Marke am Namen und reisen damit durch das
+     * ganze Haus — Online-Liste, Bestenliste, Ruhmestafel, Chat. Was sie
+     * bedeuten, stand aber nur im `title`-Attribut, und auf dem iPad gibt
+     * es kein Hover: dort waren es zwei namenlose Kaestchen mit einer
+     * Zahl. Das Profil ist die Stelle, an die man tippt, wenn man wissen
+     * will, wer das ist — also steht es hier ausgeschrieben.
+     */
+    if (acc.prunk && acc.prunk.label && acc.prunk.nr) {
+      const p = acc.prunk;
+      tags.push(`<span class="pf-tag pf-tag-prunk${p.nr === 1 ? " erst" : ""}">`
+        + `${window.Casino.icons.ui(p.nr === 1 ? "stern-voll" : "stern")}`
+        + `${escapeHtml(p.label)} ${p.nr === 1 ? "Nr. 1 · Erstprägung" : `Nr. ${p.nr}`}</span>`);
+    }
+    if (acc.garnitur && acc.garnitur.label && acc.garnitur.teile) {
+      const g = acc.garnitur;
+      tags.push(`<span class="pf-tag pf-tag-garnitur">${window.Casino.icons.ui("kosmetik")}`
+        + `${escapeHtml(g.label)}-Garnitur · ${g.teile} Stücke angelegt</span>`);
+    }
     if (data.clan) tags.push(`<span class="pf-tag">${window.Casino.icons.ui("clans")}${escapeHtml(data.clan)}</span>`);
     if (ach.badge) tags.push(`<span class="pf-tag">${ach.badge}</span>`);
     if (data.bounty) tags.push(`<span class="pf-tag pf-tag-bounty">${window.Casino.icons.ui("quests")}Kopfgeld ${window.Casino.betrag(data.bounty)}</span>`);

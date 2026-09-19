@@ -278,10 +278,11 @@
       <h4 class="auk-h">Selbst versteigern</h4>
       <p class="muted small">Einliefergebühr <b>${zahl(e.gebuehr)}</b> Chips, fällig sofort und auch weg,
         wenn niemand bietet. Vom Zuschlag behält das Haus ${Math.round(e.provision * 100)} %.
-        Mehr als im Markt — dafür steht dein Stück einen ganzen Tag auf der Bühne und jeder bekommt es mit.</p>
+        Mehr als im Markt — dafür steht dein Stück einen ganzen Tag auf der Bühne und jeder bekommt es mit.
+        Angenommen wird ab <b>Episch</b>: bei kleineren Stücken frisst die feste Gebühr den Erlös auf.</p>
       ${habe ? `<p class="hint">Du hast schon etwas in der Warteschlange. Mehr geht erst, wenn das durch ist.</p>`
         : e.voll ? `<p class="hint">Die Warteschlange ist voll. Versuch es später wieder.</p>`
-        : !e.meine.length ? `<p class="hint">Du hast gerade nichts Handelbares. Kosmetik kommt aus den Kisten.</p>`
+        : !e.meine.length ? `<p class="hint">Du hast gerade nichts, was hier hineinpasst — gehandelt wird ab Episch. Kleineres geht auf den Markt.</p>`
         : `<div class="auk-meine">
             ${e.meine.map((x) => `<button class="auk-meins-kachel" data-auk-ein="${escapeHtml(x.uid)}"
                 data-label="${escapeHtml(x.label)}" data-nr="${x.nr}">

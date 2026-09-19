@@ -191,6 +191,15 @@ function istHinterlegt(uid) {
  * im Markt liegt, hier zur Einlieferung bereit, und der Knopf wuerde nur
  * einen Fehler ausspucken.
  */
+/* Ab welcher Stufe das Haus etwas annimmt. Die Rechnung steht bei
+   `einliefern`; kurz: die feste Gebuehr frisst ein billiges Stueck auf.
+   ACHTUNG bei den Kennungen: `cosmetics.stufeKennung` nennt das
+   Einzelstueck "einzel", die Stufentabelle in `kisten.js` nennt dieselbe
+   Stufe "kiste". Wer hier "kiste" schreibt, sperrt ausgerechnet das
+   Seltenste aus — genau das hatte ich erst stehen. "haus" fehlt
+   absichtlich: Haus-Stuecke sind ohnehin nicht handelbar. */
+const AUKTION_AB = new Set(["episch", "legendaer", "mythisch", "einzel"]);
+
 function einlieferbar(acc, key) {
   const drin = new Set(state.schlange.filter((e) => e.key === key).map((e) => e.uid));
   let imMarkt = () => false;
@@ -198,6 +207,7 @@ function einlieferbar(acc, key) {
   const out = [];
   for (const st of Object.values(praegung.alleVon(key))) {
     if (!cosmetics.handelbar(st.art, st.id)) continue;
+    if (!AUKTION_AB.has(cosmetics.stufeVonStueck(st.art, st.id))) continue;
     if (drin.has(st.uid)) continue;
     if (imMarkt(st.uid)) continue;
     out.push({
@@ -217,6 +227,23 @@ function einliefern(key, uid, mindest) {
   const st = praegung.stueck(uid);
   if (!st || st.besitzer !== key) return { ok: false, error: "Das Stück gehört dir nicht." };
   if (!cosmetics.handelbar(st.art, st.id)) return { ok: false, error: "Dieses Stück lässt sich nicht handeln." };
+  /*
+   * Erst ab Episch, und das ist kein Geschmacksurteil, sondern Rechnen.
+   *
+   * Die Gebuehr ist ein FESTER Betrag und faellt auch an, wenn niemand
+   * bietet. Bei einem Stueck fuer 50.000 sind das die Haelfte: der Markt
+   * zahlt 45.000 aus, das Auktionshaus 17.500, und damit muesste der
+   * Hammer auf 64.000 steigen, nur um gleichzuziehen. Wer so etwas
+   * einliefert, verliert fast sicher — und die Warteschlange, die
+   * ohnehin nur ein Los am Tag abarbeitet, waere mit Kleinkram voll.
+   *
+   * Dieselbe Schwelle benutzt der Markt fuer seine Chat-Ansage und die
+   * Ruhmestafel: ab Episch ist etwas der Rede wert.
+   */
+  const stufe = cosmetics.stufeVonStueck(st.art, st.id);
+  if (!AUKTION_AB.has(stufe)) {
+    return { ok: false, error: "Das Auktionshaus nimmt erst ab Episch. Kleineres verkaufst du besser auf dem Markt." };
+  }
   if (state.schlange.some((e) => e.uid === uid)) return { ok: false, error: "Steht schon in der Warteschlange." };
   if (state.los && state.los.uid === uid) return { ok: false, error: "Das Stück ist gerade unter dem Hammer." };
   const meine = state.schlange.filter((e) => e.key === key).length;
