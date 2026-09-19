@@ -62,6 +62,7 @@ function rollover(io, accounts) {
     const key = String(winner.name).trim().toLowerCase();
     state.lastWinner = { key, name: winner.name, net: Math.round(winner.weeklyNet) };
     accounts.adjustChips(key, PRIZE);
+    accounts.meldeStand(io, key);
     chat.announce(io, `Spieler der Woche ist ${winner.name} mit +${Math.round(winner.weeklyNet).toLocaleString("de-DE")} Chips. Dafür gibt es ${PRIZE.toLocaleString("de-DE")} Chips und eine Woche lang die Krone in der Bestenliste.`);
     try {
       require("./chronik").notiere("woche", `Spieler der Woche: ${winner.name} mit +${Math.round(winner.weeklyNet).toLocaleString("de-DE")} Chips netto.`, { user: winner.name });

@@ -156,6 +156,9 @@ function ziehungDurchfuehren() {
   for (const [key, betrag] of Object.entries(auszahlungen)) {
     if (betrag > 0 && accounts) accounts.adjustChips(key, betrag);
   }
+  /* Gezogen wird abends von selbst. Wer gerade da ist, soll den neuen
+     Stand sehen und nicht erst beim naechsten Klick. */
+  if (accounts && io) accounts.meldeStand(io, ...Object.keys(auszahlungen).filter((k) => auszahlungen[k] > 0));
   // Zaehler fuer die Achievements "Drei Richtige" und "Der Jackpot".
   if (accounts) {
     const merke = (key, feld) => {

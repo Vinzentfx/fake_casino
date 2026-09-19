@@ -52,6 +52,7 @@ function setupTeamVault(io, accounts) {
       if (share > 0) { accounts.adjustChips(key, share); const a = accounts.get(key); results.push({ name: a ? a.name : key, share, hits: h }); }
     }
     results.sort((a, b) => b.share - a.share);
+    accounts.meldeStand(io, ...Object.keys(state.hits));
     return results;
   }
 

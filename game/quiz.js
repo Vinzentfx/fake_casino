@@ -102,6 +102,7 @@ function setupQuiz(io, accounts) {
       state.wins[winner.key] = (state.wins[winner.key] || 0) + 1;
       const a = accounts.get(winner.key);
       winnerRow = { name: a ? a.name : winner.key, ms: winner.at - (state.endsAt - ROUND_MS) };
+      accounts.meldeStand(io, winner.key);
     }
     io.emit("quiz:result", { round: state.round, rounds: state.rounds, correct, winner: winnerRow, prize: state.prize, board: board().slice(0, 6) });
     state.q = null;

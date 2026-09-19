@@ -1294,7 +1294,43 @@ function unlock(name, machineId, cost) {
    hat. */
 baueAliasIndex();
 
+/**
+ * Den Kontostand bei denen nachziehen, die gerade verbunden sind.
+ *
+ * Es gibt zwei Sorten Buchung. Die eine kommt auf Zuruf: jemand dreht,
+ * kauft, hebt ab — die Antwort traegt den neuen Stand mit, und der Client
+ * schreibt ihn in die Topbar. Die andere passiert OHNE Zutun: die
+ * Lotterie zieht abends, ein Heist zahlt aus, der Clan ueberweist, ein
+ * versetztes Duell rechnet ab. Da hat niemand gefragt, also kommt auch
+ * keine Antwort — und in der Topbar steht weiter der alte Stand, bis man
+ * zufaellig etwas anderes tut.
+ *
+ * Das faellt besonders haesslich auf, wenn daneben "Dein Anteil: +40.000"
+ * steht und die Zahl oben sich nicht ruehrt.
+ *
+ * `io` wird uebergeben und nicht gemerkt: dieses Modul soll nichts vom
+ * Server wissen muessen (dieselbe Trennung wie bei `strafen.js`).
+ */
+function meldeStand(io, ...keys) {
+  if (!io) return 0;
+  const offen = new Set(keys.filter(Boolean));
+  if (!offen.size) return 0;
+  let n = 0;
+  try {
+    for (const sock of io.of("/").sockets.values()) {
+      const key = sock.data && sock.data.account;
+      if (!key || !offen.has(key)) continue;
+      const acc = get(key);
+      if (acc) { sock.emit("account:update", { account: publicAccount(acc) }); n++; }
+      offen.delete(key);
+      if (!offen.size) break;
+    }
+  } catch {}
+  return n;
+}
+
 module.exports = {
+  meldeStand,
   STARTING_CHIPS,
   touchSeen,
   DAILY_BONUS,

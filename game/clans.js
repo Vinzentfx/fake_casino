@@ -821,6 +821,9 @@ function setupClans(io, accounts) {
 
       c.treasury -= amount;
       accounts.adjustChips(zielKey, amount);
+      /* Das Geld geht an jemand ANDEREN. Der hat nichts gedrueckt, bekommt
+         also auch keine Antwort mit dem neuen Stand. */
+      accounts.meldeStand(_io, zielKey);
       const text = `${acc.name} zahlt ${amount.toLocaleString("de-DE")} Chips an ${ziel.name} aus`;
       logClan(c, text);
       try { if (_io) chat.announce(_io, `[${c.tag}] ${text}.`); } catch {}

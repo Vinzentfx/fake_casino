@@ -37,6 +37,10 @@ function setupHeist(io, accounts) {
       if (share > 0) { accounts.adjustChips(key, share); const a = accounts.get(key); results.push({ name: a ? a.name : key, share, hits: h }); }
     }
     results.sort((a, b) => b.share - a.share);
+    /* "Dein Anteil: +40.000" und darueber ein unveraenderter Kontostand
+       sieht aus wie ein Fehler. Niemand hat hier gefragt, also kommt der
+       neue Stand von selbst. */
+    accounts.meldeStand(io, ...Object.keys(state.hits));
     chat.announce(io, `Tresor geknackt! ${results.length} Ganoven teilen sich ${state.loot.toLocaleString("de-DE")} Chips!`);
     io.emit("heist:end", { success: true, loot: state.loot, results });
     cleanup();

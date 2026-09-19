@@ -111,7 +111,7 @@ function raeumeAuf() {
     // vergessen). Die Herausforderung waere damit nie annehmbar geworden, also
     // Einsatz zurueck statt ihn 48 Stunden zu binden.
     if (!d.erstellerErgebnis && jetzt > d.erstellerBisAt) {
-      if (_accounts) _accounts.adjustChips(d.ersteller, d.einsatz);
+      if (_accounts) { _accounts.adjustChips(d.ersteller, d.einsatz); meldeStand(d.ersteller); }
       rechneAb(d, { sieger: null, ausgang: "nicht gespielt" });
       // Ein Gegner kann hier noch nicht drinstehen: angenommen wird erst,
       // wenn ein Ergebnis des Erstellers vorliegt.
@@ -133,7 +133,7 @@ function raeumeAuf() {
          macht rechneAb. Ihm hier zusaetzlich die Chips zu erstatten hiesse,
          ihm die Kisten zu schenken. */
       const ohnePot = (ADAPTER[d.spiel] || {}).keinPot;
-      if (_accounts && !ohnePot) _accounts.adjustChips(d.ersteller, d.einsatz);
+      if (_accounts && !ohnePot) { _accounts.adjustChips(d.ersteller, d.einsatz); meldeStand(d.ersteller); }
       rechneAb(d, { sieger: null, ausgang: "abgelaufen" });
       archiviere({ ...d, id, aufgabe: null, geheim: null, ausgang: "abgelaufen", beendetAt: jetzt });
       delete state.offen[id];
@@ -310,6 +310,9 @@ function entscheide(id, opts = {}) {
   archiviere(eintrag);
   delete state.offen[id];
   save();
+  /* Beide, ohne zu unterscheiden welcher Zweig oben gegriffen hat: die
+     Meldung kostet nichts und eine vergessene Seite faellt nicht auf. */
+  meldeStand(d.ersteller, d.gegner);
 
   const siegerName = sieger === "ersteller" ? d.erstellerName : sieger === "gegner" ? d.gegnerName : null;
   if (_io) {
@@ -389,6 +392,31 @@ function offeneZuege(key) {
 }
 
 function sende() { if (_io) _io.emit("duell:update"); }
+
+/**
+ * Den Kontostand bei denen nachziehen, die gerade da sind.
+ *
+ * Ein versetztes Duell rechnet ab, ohne dass jemand einen Knopf gedrueckt
+ * hat: der Einsatz kommt zurueck, wenn niemand annimmt, und der Sieger
+ * bekommt den Topf, waehrend er vielleicht gerade Slots spielt. Ohne diese
+ * Zeile steht in seiner Topbar weiter der alte Stand, bis er zufaellig
+ * etwas anderes tut — und beim naechsten Blick stimmt eine Zahl nicht, die
+ * er vorher gesehen hat. Dieselbe Regel wie beim Auktions-Zuschlag und im
+ * Kisten-Duell.
+ */
+function meldeStand(...keys) {
+  if (!_io || !_accounts) return;
+  const offen = new Set(keys.filter(Boolean));
+  if (!offen.size) return;
+  for (const sock of _io.of("/").sockets.values()) {
+    const key = sock.data && sock.data.account;
+    if (!key || !offen.has(key)) continue;
+    const acc = _accounts.get(key);
+    if (acc) sock.emit("account:update", { account: _accounts.publicAccount(acc) });
+    offen.delete(key);
+    if (!offen.size) return;
+  }
+}
 
 function setup(io, accounts) {
   _io = io;

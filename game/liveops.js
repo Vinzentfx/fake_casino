@@ -146,6 +146,7 @@ function settleTourney() {
     _accounts.adjustChips(winner.key, t.prize);
     const acc = _accounts.get(winner.key);
     if (acc) { acc.tourneyWins = (acc.tourneyWins || 0) + 1; _accounts.save(); }
+    _accounts.meldeStand(_io, winner.key);
     try { require("./achievements").check(winner.key); } catch {}
     if (_io) chat.announce(_io, `${winner.name} gewinnt das Slot-Turnier mit ${winner.mult}× Einsatz und bekommt ${t.prize.toLocaleString("de-DE")} Chips.`);
     if (_io) _io.emit("liveops:tourneyWin", { name: winner.name, mult: winner.mult, prize: t.prize });
