@@ -74,7 +74,7 @@
           text: "Polarlicht zieht senkrecht durch den Namen, bei Hochspannung schlägt ein Blitz quer durch, Uhrwerk sind zwei gegenläufige Ringe. Dazu Auren, die fallen statt zu schweben, ein Schild, in das Wasser steigt, sechs neue Chat-Zeichen und Einzelstücke, die es nur aus einer Kiste gibt." },
 
         { icon: "frage", titel: "Und der Kleinkram",
-          text: "Kisten, Markt, Auktionshaus und Sammlung sind jetzt Kacheln in der Lobby statt nur Zeilen im Menü. Die Tageskiste, ein Stadt-Ereignis und ein volles Sparkonto melden sich mit einer Zahl an ihrer Kachel. Edelstein, Bombe und Totenkopf waren als Chat-Zeichen leer, Silber und Gold als Rahmen unsichtbar. Und der Knopf zum Mitspieler-Holen steht jetzt sofort da statt acht Sekunden später." },
+          text: "Kisten, Markt, Auktionshaus und Sammlung sind jetzt Kacheln in der Lobby statt nur Zeilen im Menü. Die Tageskiste, ein Stadt-Ereignis und ein volles Sparkonto melden sich mit einer Zahl an ihrer Kachel. Edelstein, Bombe und Totenkopf waren als Chat-Zeichen leer, Silber und Gold als Rahmen unsichtbar. Die Automaten sind gratis, ließen sich aber nicht drehen, wenn man sie früher nicht gekauft hatte. Und der Knopf zum Mitspieler-Holen steht jetzt sofort da statt acht Sekunden später." },
       ],
     },
     {

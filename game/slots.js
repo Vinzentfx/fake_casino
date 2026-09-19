@@ -905,6 +905,23 @@ function setupSlots(io, accounts) {
     socket.on("slots:machines", (ack) => typeof ack === "function" && ack({ machines: publicMachines(), jackpot: jackpotPot() }));
 
     // Automaten für das angemeldete Konto freischalten.
+    /*
+     * Darf hier gespielt werden?
+     *
+     * Ein Automat, der NICHTS kostet, ist frei — ohne Kauf, ohne Eintrag am
+     * Konto. Genau das hat vorher gefehlt: die Preise wurden auf 0 gesetzt,
+     * der Client hat daraufhin richtig "offen" angezeigt, der Server aber
+     * weiter in `acc.unlocked` nachgesehen. Wer den Automaten frueher nicht
+     * gekauft hatte, kam also hinein und bekam beim Drehen "noch nicht
+     * freigeschaltet" — und einen Freischalt-Knopf gab es auch nicht mehr,
+     * weil er bei Preis 0 wegfaellt. Damit war der Automat fuer ihn tot.
+     *
+     * Dieselbe Regel wie im Client (public/js/slots.js): kostet er nichts,
+     * ist er offen.
+     */
+    const darfSpielen = (machine, key) =>
+      !machine.unlockCost || accounts.isUnlocked(key, machine.id);
+
     socket.on("slots:unlock", ({ machineId } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
@@ -920,7 +937,7 @@ function setupSlots(io, accounts) {
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const machine = MACHINE_BY_ID[machineId];
       if (!machine) return ack({ ok: false, error: "Unbekannter Automat." });
-      if (!accounts.isUnlocked(socket.data.account, machineId)) return ack({ ok: false, error: "Automat noch nicht freigeschaltet." });
+      if (!darfSpielen(machine, socket.data.account)) return ack({ ok: false, error: "Automat noch nicht freigeschaltet." });
 
       const sess = socket.data.slots;
       const session = sess && sess.machineId === machineId && sess.remaining > 0 ? sess : null;
@@ -1047,7 +1064,7 @@ function setupSlots(io, accounts) {
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const machine = MACHINE_BY_ID[machineId];
       if (!machine || !machine.buyBonus || !machine.freeSpins) return ack({ ok: false, error: "Kein Bonus-Kauf hier." });
-      if (!accounts.isUnlocked(socket.data.account, machineId)) return ack({ ok: false, error: "Automat noch nicht freigeschaltet." });
+      if (!darfSpielen(machine, socket.data.account)) return ack({ ok: false, error: "Automat noch nicht freigeschaltet." });
       if (socket.data.slots && socket.data.slots.remaining > 0) return ack({ ok: false, error: "Freispiele laufen schon." });
       bet = Math.floor(Number(bet));
       if (!machine.bets.includes(bet)) return ack({ ok: false, error: "Ungültiger Einsatz." });
