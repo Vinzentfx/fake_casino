@@ -308,7 +308,7 @@
       if (state.canStart && canIStart) {
         row.innerHTML = `<button class="btn-primary" id="start-btn">Hand starten</button>`;
       } else if (state.canStart) {
-        row.innerHTML = `<span class="muted">Warte auf Anführer${state.hostName ? ` (${state.hostName})` : ""}…</span>`;
+        row.innerHTML = `<span class="muted">Warte auf Anführer${state.hostName ? ` (${escapeHtml(state.hostName)})` : ""}…</span>`;
       } else {
         row.innerHTML = `<span class="muted">Warte auf Spieler (mind. 2 mit Chips)…</span>`;
       }

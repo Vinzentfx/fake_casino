@@ -457,6 +457,10 @@ function rename(wer, neu, { vonAdmin = false } = {}) {
     ["praegung", (m) => m.umbenennen(key, alt, neu)],
     ["ruhm", (m) => m.umbenennen(key, alt, neu)],
     ["kistenDuell", (m) => m.umbenennen(key, alt, neu)],
+    // Ein versetztes Duell wartet bis zu 48 Stunden auf seinen Gegner und
+    // traegt beide Namen als Kopie. Ohne diese Zeile steht der alte Name
+    // genau dort weiter, wo der Gegner ihn als Naechstes liest.
+    ["asyncDuell", (m) => m.umbenennen(key, alt, neu)],
     // Der Verkäufername steht als Kopie am Angebot, damit die Marktliste
     // ohne Kontozugriff lesbar ist.
     ["market", (m) => m.umbenennen(key, alt, neu)],
@@ -856,6 +860,13 @@ function rescue(name) {
 function adjustChips(name, delta) {
   const acc = get(name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
+  /* Hier laeuft JEDE Chip-Bewegung durch, also steht hier auch die letzte
+     Sperre. Ohne sie reicht ein einziger Aufrufer, der eine Zahl nicht
+     prueft: `chips + NaN < 0` ist falsch, die Pruefung darueber laesst es
+     durch, und danach ist der Kontostand NaN — dauerhaft, denn jede
+     weitere Rechnung darauf bleibt NaN. Alle heutigen Aufrufer rechnen
+     sauber; die Zeile ist fuer den naechsten. */
+  if (!Number.isFinite(delta)) return { ok: false, error: "Ungültiger Betrag." };
   if (acc.chips + delta < 0) return { ok: false, error: "Nicht genug Chips." };
   acc.chips += delta;
   if (acc.chips > MAX_CHIPS) acc.chips = MAX_CHIPS; // Obergrenze gegen Cheats

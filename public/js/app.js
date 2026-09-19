@@ -1214,7 +1214,7 @@ function startChallenge(game, name) {
 socket.on("social:challengeIncoming", ({ from, game, code, stake, label } = {}) => {
   if (!from || !game || !code) return;
   const hook = DUEL_JOIN_HOOK[game];
-  const txt = `${from} fordert dich zu ${label || DUEL_LABEL[game] || "einem Duell"} heraus\nEinsatz: ${Number(stake || 0).toLocaleString("de-DE")}<i class=mk></i>\n\nAnnehmen?`;
+  const txt = `${from} fordert dich zu ${label || DUEL_LABEL[game] || "einem Duell"} heraus\nEinsatz: ${Number(stake || 0).toLocaleString("de-DE")} Chips\n\nAnnehmen?`;
   (async () => {
     const ja = hook && window.Casino[hook]
       && await window.Casino.dialog.frage(txt, { titel: "Herausforderung", okText: "Annehmen", abbruchText: "Ablehnen" });
@@ -2567,7 +2567,7 @@ $("#admin-comeback-on-btn")?.addEventListener("click", async () => {
   // Einmal nachfragen: das laesst sich nicht zurueckdrehen, und alle
   // einundsiebzig Konten bekommen sofort eine Nachricht.
   const ja = await window.Casino.dialog.frage(
-    `Wiedereröffnung jetzt ausrufen?\n\nAlle bekommen 14 Tage lang ihr Willkommens-Paket, die Gala läuft ${minutes} Minuten mit ${pot.toLocaleString("de-DE")}<i class=mk></i> im Topf. Es geht eine Ansage in den Chat und eine Benachrichtigung an alle, die welche anhaben.`,
+    `Wiedereröffnung jetzt ausrufen?\n\nAlle bekommen 14 Tage lang ihr Willkommens-Paket, die Gala läuft ${minutes} Minuten mit ${pot.toLocaleString("de-DE")} Chips im Topf. Es geht eine Ansage in den Chat und eine Benachrichtigung an alle, die welche anhaben.`,
     { titel: "Wiedereröffnung", okText: "Ausrufen" });
   if (!ja) return;
   socket.emit("admin:comeback", { on: true, minutes, pot }, (r) =>

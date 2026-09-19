@@ -410,7 +410,7 @@
         freeActive = false;
         $("#free-badge").classList.remove("show");
         $("#mult-badge").classList.remove("show");
-        if (freeWinTotal > 0) bigBanner(`Freispiele vorbei!\n+${freeWinTotal.toLocaleString("de-DE")}<i class=mk></i>`, "t-big");
+        if (freeWinTotal > 0) bigBanner(`Freispiele vorbei!\n+${freeWinTotal.toLocaleString("de-DE")}`, "t-big", true);
         freeWinTotal = 0;
       }
       if (pvpMode && pvp.done) {
@@ -1090,7 +1090,19 @@
 
   // Banner
   let bannerTimer = null;
-  function bigBanner(text, cls) {
+  /**
+   * Der Banner setzt TEXT, kein HTML.
+   *
+   * Genau daran ist er gescheitert: am Ende der Freispiele stand
+   * `+17.000<i class=mk></i>` in der Zeichenkette, und weil `textContent`
+   * nichts auswertet, hat der Spieler die spitzen Klammern woertlich
+   * gelesen. Dieselbe Falle gab es schon einmal bei der grossen
+   * Gewinnanzeige.
+   *
+   * Wer die Chip-Marke will, setzt `marke`. Sie kommt dann als echtes
+   * Element dazu — so muss nie wieder HTML durch ein Textfeld.
+   */
+  function bigBanner(text, cls, marke) {
     let b = $("#slot-banner");
     if (!b) {
       b = document.createElement("div");
@@ -1099,6 +1111,11 @@
       $("#slot-stage").appendChild(b);
     }
     b.textContent = text;
+    if (marke) {
+      const i = document.createElement("i");
+      i.className = "mk";
+      b.appendChild(i);
+    }
     b.className = "slot-banner show " + (cls || "");
     clearTimeout(bannerTimer);
     bannerTimer = setTimeout(() => b.classList.remove("show"), 1700);

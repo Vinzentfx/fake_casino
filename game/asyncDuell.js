@@ -425,6 +425,33 @@ function setup(io, accounts) {
   });
 }
 
+/**
+ * Namenskopien nachziehen.
+ *
+ * Am Duell steht der Name beider Seiten als Kopie, damit die Liste ohne
+ * Kontozugriff lesbar ist — und ein Duell wartet bis zu 48 Stunden auf
+ * seinen Gegner. Wer sich in dieser Zeit umbenennt, stuende sonst mit dem
+ * alten Namen in einer Herausforderung, die noch offen ist; und der
+ * haeufigste Grund fuer eine Umbenennung ist gerade, dass der alte Name
+ * nicht mehr zu sehen sein soll.
+ *
+ * Das Archiv kommt mit: dort steht, wer gegen wen gespielt hat, und das
+ * bleibt liegen.
+ */
+function umbenennen(key, alt, neu) {
+  let n = 0;
+  for (const d of Object.values(state.offen)) {
+    if (d.ersteller === key && d.erstellerName !== neu) { d.erstellerName = neu; n++; }
+    if (d.gegner === key && d.gegnerName !== neu) { d.gegnerName = neu; n++; }
+  }
+  for (const e of state.archiv) {
+    if (e.erstellerName === alt) { e.erstellerName = neu; n++; }
+    if (e.gegnerName === alt) { e.gegnerName = neu; n++; }
+  }
+  if (n) save();
+  return n;
+}
+
 // erstelle/nimmAn/gibAb kommen mit heraus, damit sich ein Duell ohne
 // Browser durchspielen laesst. Im Betrieb gehen sie ueber die Socket-Handler.
-module.exports = { setup, registriere, publicState, erstelle, nimmAn, gibAb, offeneZuege, RAKE, MIN_EINSATZ, MAX_EINSATZ };
+module.exports = { setup, registriere, publicState, erstelle, nimmAn, gibAb, umbenennen, offeneZuege, RAKE, MIN_EINSATZ, MAX_EINSATZ };
