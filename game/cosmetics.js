@@ -1051,7 +1051,7 @@ const FAMILIEN = {
   auk:   { label: "Auktionshaus", farbe: "#c86bd6" },
   adm:   { label: "Haus",         farbe: "#e6b7ee" },
   s2:    { label: "Season 2",     farbe: "#ff9f43" },
-  kiste: { label: "Einzelstücke", farbe: "#4fc7c0" },
+  kiste: { label: "Einzelstücke", farbe: "#b6ff4d" },
   rad:   { label: "Fortuna",      farbe: "#f4d782" },
 };
 /* Drei, nicht vier. Zwei Familien (Haus und Kollektion) haben genau drei

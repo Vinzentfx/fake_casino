@@ -410,9 +410,15 @@
       const luecke = parseFloat(getComputedStyle(bahn).gap) || 0;
       const schritt = breite + luecke;
       const mitte = rahmen.clientWidth / 2;
-      /* Die Bahn faengt nicht am Rahmenrand an, sondern hinter dessen
-         Rahmenlinie. Ein Pixel, aber es gehoert in die Rechnung. */
-      const randVersatz = bahn.offsetLeft - rahmen.clientLeft;
+      /* Wo die Bahn anfaengt, gemessen von derselben Kante wie `mitte`.
+         `offsetLeft` ist laut CSSOM bereits ab der POLSTERKANTE des
+         offsetParent gemessen, und `clientWidth` spannt genau dieselbe
+         Box — die Rahmenlinie steckt also in keiner der beiden Zahlen.
+         Ich hatte hier zusaetzlich `- clientLeft` stehen und damit die
+         Rahmenlinie ein zweites Mal abgezogen: die Karte stand danach
+         exakt einen Pixel neben der Marke. Ein Pixel sieht man, wenn
+         beides daneben still steht. */
+      const randVersatz = bahn.offsetLeft;
       const genau = -(res.rolle.trefferIndex * schritt) + mitte - breite / 2 - randVersatz;
       /* Der Halt vor dem Nachlauf, als Abstand zur Feldmitte.
          Vorwaerts (negativ): 48 bis 85 Pixel davor. Die halbe Feldbreite
@@ -422,15 +428,24 @@
          Zurueck (positiv): 26 bis 57 Pixel dahinter, immer diesseits der
          66er-Kante. Das Trefferfeld bleibt die ganze Zeit unter der
          Marke, es verschwindet nichts. */
-      /* Das Vorzeichen ist genau andersherum, als es sich anfuehlt: ein
-         GROESSERES x schiebt die Bahn nach rechts, die Marke zeigt also
-         auf ein FRUEHERES Feld. Ein Halt VOR dem Treffer ist damit
-         positiv, ein Halt dahinter negativ. Einmal falsch herum gehabt,
-         und die Bahn hielt auf dem Nachbarfeld und rollte zurueck. */
-      const vorwaerts = Math.random() < 0.5;
-      const versatz = vorwaerts
-        ? schritt * (0.34 + Math.random() * 0.26)    // davor, kriecht vorwaerts
-        : -schritt * (0.18 + Math.random() * 0.22);  // dahinter, rollt zurueck
+      /* Der Halt bleibt AUF DER TREFFERKARTE, in beide Richtungen.
+         Gerechnet wird deshalb gegen die Kartenbreite und nicht gegen den
+         Schritt: die Karte ist 132 Pixel breit, ihre Kante liegt also 66
+         Pixel von der Mitte weg, und mehr als 0,43 Kartenbreiten (57
+         Pixel) darf der Halt nie daneben liegen.
+
+         Vorher ging der Vorwaerts-Zweig bis 85 Pixel und hielt damit auf
+         dem Feld DAVOR. Das war ausdruecklich so gebaut — und ist
+         trotzdem falsch: worauf die Bahn sichtbar stehenbleibt, darauf
+         muss sie auch einrasten. Alles andere ist ein Karteneinsatz, den
+         man erst glaubt und dann doch nicht bekommt.
+
+         Das Vorzeichen fuehlt sich verkehrt an: ein GROESSERES x schiebt
+         die Bahn nach rechts, die Marke zeigt also auf ein FRUEHERES
+         Feld. Ein Halt vor der Mitte ist damit positiv, einer dahinter
+         negativ. */
+      const weit = breite * (0.2 + Math.random() * 0.23);   // 26 bis 57 Pixel
+      const versatz = Math.random() < 0.5 ? weit : -weit;
 
       const lauf = (schau.bahn || 4900) / 1000;
       const rollen = (schau.rollen || 950) / 1000;

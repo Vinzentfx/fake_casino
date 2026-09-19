@@ -49,7 +49,14 @@ const STUFEN = [
   { id: "legendaer",   label: "Legendär",   bis: 1_000_000, farbe: "#f4d782" },
   { id: "mythisch",    label: "Mythisch",   bis: Infinity,  farbe: "#e0705e" },
   // Nicht über den Preis erreichbar: es gibt sie nur aus einer Kiste.
-  { id: "kiste",       label: "Einzelstück", bis: null,     farbe: "#4fc7c0" },
+  /* Limette, und das ist gerechnet: Tuerkis lag dem Blau von "Selten"
+     zu nah, und in der Neon-Palette war es praktisch die Akzentfarbe
+     selbst (Abstand 20 im Lab-Raum — die Stufe verschwand im Thema).
+     Limette hat zu JEDER anderen Stufe mindestens 55 Abstand, mehr als
+     jeder andere Kandidat, und ist als einzige Stufe ausserhalb der
+     Reihe Blau-Lila-Gold-Rot. Genau das soll sie sagen: die hier steht
+     nicht auf der Skala. */
+  { id: "kiste",       label: "Einzelstück", bis: null,     farbe: "#b6ff4d" },
 ];
 const stufeVon = (cost) => STUFEN.find((s) => s.bis !== null && cost <= s.bis) || STUFEN[0];
 

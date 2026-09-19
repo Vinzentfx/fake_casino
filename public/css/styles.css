@@ -10185,12 +10185,24 @@ html.reduce-motion .au-sml_nachtschwarm::before { opacity: 0.8; }
 .pr-episch      { color: #c86bd6; }
 .pr-legendaer   { color: #f4d782; }
 .pr-mythisch    { color: #e0705e; }
-.pr-einzel      { color: #4fc7c0; }
+.pr-einzel      { color: #b6ff4d; }
 .pr-haus        { color: #e6b7ee; }
 /* Ab Legendaer darf sie leuchten. Darunter nicht: eine Marke, die immer
    glueht, sagt nichts mehr ueber Seltenheit. */
 .pr-legendaer, .pr-mythisch, .pr-einzel, .pr-haus {
   box-shadow: 0 0 6px -1px currentColor;
+}
+/* Die oberste Stufe bekommt mehr als eine Farbe. Von einem Einzelstueck
+   gibt es genau eins im Haus, und das darf man sehen, ohne den Namen der
+   Stufe zu lesen: der Schein atmet langsam. Langsam ist wichtig — eine
+   Marke, die zappelt, wird nach zwei Tagen zur Tapete. Hinter
+   `reduce-motion`, wie jede Bewegung hier. */
+html:not(.reduce-motion) .pr-einzel {
+  animation: prunk-einzel 3s ease-in-out infinite;
+}
+@keyframes prunk-einzel {
+  0%, 100% { box-shadow: 0 0 6px -1px currentColor; }
+  50%      { box-shadow: 0 0 12px 0 currentColor; }
 }
 /*
  * Die Erstpraegung: Nummer 1.
@@ -10212,7 +10224,7 @@ html.reduce-motion .au-sml_nachtschwarm::before { opacity: 0.8; }
 .pr-episch.erst      { color: #c86bd6; }
 .pr-legendaer.erst   { color: #f4d782; }
 .pr-mythisch.erst    { color: #e0705e; }
-.pr-einzel.erst      { color: #4fc7c0; }
+.pr-einzel.erst      { color: #b6ff4d; }
 .pr-haus.erst        { color: #e6b7ee; }
 .pl-prunk.erst { -webkit-text-fill-color: #14140f; }
 .pl-prunk.erst i {
@@ -10915,7 +10927,7 @@ html:not(.reduce-motion) .ki-limit { animation: ki-limit-puls 2.8s ease-in-out i
 .cos-tier-episch      { --stufe-farbe: #c86bd6; }
 .cos-tier-legendaer   { --stufe-farbe: #f4d782; }
 .cos-tier-mythisch    { --stufe-farbe: #e0705e; }
-.cos-tier-einzel      { --stufe-farbe: #4fc7c0; }
+.cos-tier-einzel      { --stufe-farbe: #b6ff4d; }
 .cos-tier-haus        { --stufe-farbe: #e6b7ee; }
 /* Ab Legendaer leuchtet der Streifen. Darunter nicht: was immer glueht,
    sagt nichts mehr ueber Seltenheit. */
@@ -10974,7 +10986,7 @@ html:not(.reduce-motion) .ki-limit { animation: ki-limit-puls 2.8s ease-in-out i
 .ga-auk   { color: #c86bd6; }
 .ga-adm   { color: #e6b7ee; }
 .ga-s2    { color: #ff9f43; }
-.ga-kiste { color: #4fc7c0; }
+.ga-kiste { color: #b6ff4d; }
 .ga-rad   { color: #f4d782; }
 /* Ab fuenf Teilen leuchtet sie. Drei sind ein Anfang, fuenf sind eine
    Ansage, und wer will, dass es auffaellt, sammelt weiter. */
