@@ -501,8 +501,34 @@ function handelbar(art, id) {
 }
 
 /** Einmalig beim Start: vorhandene Bestaende nachtraeglich praegen. */
+/**
+ * Bekommt der nachgetragene Besitzer die Nummer 1?
+ *
+ * Nur bei einem Los aus dem Auktionshaus. Dort gibt es den Ersten
+ * naemlich schon, und es wird nie einen zweiten geben: ein Haus-Los
+ * faellt nach dem Zuschlag aus dem Angebot (`state.vergeben` in
+ * `auktion.js`) und wird nicht noch einmal ausgespielt. Die Eins
+ * freizuhalten hiesse, sie fuer immer wegzuschliessen — und der
+ * Gewinner traegt „Nr. 2" von etwas, das es genau ein Mal gibt.
+ *
+ * Bei allem anderen bleibt sie frei. Kisten- und Kollektionsstuecke
+ * koennen jederzeit noch einmal entstehen, und dann soll die Eins an
+ * den gehen, der sie wirklich als Erster gezogen hat, nicht an den mit
+ * dem aeltesten Konto.
+ */
+function erstpraegungAnBesitzer(art, id) {
+  const item = KATALOG[art] ? KATALOG[art][id] : null;
+  return !!item && item.limitiert === "auktion";
+}
+
 function praegungNachtragen(accounts) {
-  try { return praegung.nachtragen(accounts, praegbar, TOPF); } catch (e) {
+  try {
+    const n = praegung.nachtragen(accounts, praegbar, TOPF, erstpraegungAnBesitzer);
+    /* Wer das Haus schon gestartet hatte, bevor es die Regel gab, traegt
+       eine 2. Einmal geradeziehen. */
+    praegung.korrigiereErstpraegung(erstpraegungAnBesitzer);
+    return n;
+  } catch (e) {
     console.error("praegung: Nachtrag fehlgeschlagen.", e.message);
     return 0;
   }

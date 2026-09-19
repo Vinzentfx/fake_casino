@@ -44,7 +44,7 @@ const FILE = path.join(DATA_DIR, "praegung.json");
 function load() {
   try {
     const raw = JSON.parse(fs.readFileSync(FILE, "utf8"));
-    if (raw && raw.stuecke) return { v: 1, next: raw.next || {}, stuecke: raw.stuecke, nachgetragen: !!raw.nachgetragen };
+    if (raw && raw.stuecke) return { v: 1, next: raw.next || {}, stuecke: raw.stuecke, nachgetragen: !!raw.nachgetragen, einsKorrigiert: !!raw.einsKorrigiert };
   } catch (e) {
     /* Fehlt die Datei, ist ein leeres Register richtig: dann wird gleich
        nachgetragen. Ist sie da und unlesbar, darf NICHT weitergelaufen
@@ -56,7 +56,7 @@ function load() {
       throw e;
     }
   }
-  return { v: 1, next: {}, stuecke: {}, nachgetragen: false };
+  return { v: 1, next: {}, stuecke: {}, nachgetragen: false, einsKorrigiert: false };
 }
 
 let state = load();
@@ -236,7 +236,27 @@ function umbenennen(key, alt, neu) {
  */
 const NACHTRAG_AB = 2;
 
-function nachtragen(accounts, praegbar, topfNachArt) {
+/**
+ * Stuecke, bei denen die Nummer 1 NICHT freibleiben darf.
+ *
+ * Die Regel darueber (Nachtrag faengt bei 2 an) hat einen guten Grund:
+ * nachgetragen wird nach Kontoalter, und wer die Eins allein deshalb
+ * bekaeme, weil sein Konto das erste war, hat sie nicht verdient. Sie
+ * bleibt frei fuer den, der das Stueck als Erster wirklich aus einer
+ * Kiste zieht.
+ *
+ * Bei einem Los aus dem Auktionshaus gibt es diesen Ersten aber schon,
+ * und es wird nie einen zweiten geben: ein Haus-Los verschwindet nach
+ * dem Zuschlag aus dem Angebot und kommt nie wieder. Die Eins blieb
+ * damit fuer immer unerreichbar, und der Gewinner hielt „Nr. 2" von
+ * etwas, das es genau ein Mal gibt. Er HAT es als Erster gehabt, vor
+ * aller Augen, mit Gebot und Uhrzeit.
+ */
+function startNummer(art, id, abEins) {
+  return abEins && abEins(art, id) ? 0 : NACHTRAG_AB - 1;
+}
+
+function nachtragen(accounts, praegbar, topfNachArt, abEins) {
   if (state.nachgetragen) return 0;
   sammeln = true;
   const alle = accounts.rawAll ? accounts.rawAll() : [];
@@ -249,7 +269,7 @@ function nachtragen(accounts, praegbar, topfNachArt) {
       for (const id of owned[topf] || []) {
         if (!praegbar(art, id)) continue;
         const k = schluessel(art, id);
-        if (!state.next[k]) state.next[k] = NACHTRAG_AB - 1;
+        if (!state.next[k]) state.next[k] = startNummer(art, id, abEins);
         if (praegen(art, id, key, acc.name, acc.createdAt || Date.now())) n++;
       }
     }
@@ -261,7 +281,48 @@ function nachtragen(accounts, praegbar, topfNachArt) {
   return n;
 }
 
+/**
+ * Nachtraeglich geradeziehen, was der erste Nachtrag falsch nummeriert hat.
+ *
+ * Laeuft der Nachtrag einmal, sind die Nummern vergeben — auch die zu
+ * hohen. Wer das Haus schon gestartet hatte, bevor `abEins` existierte,
+ * haette sonst fuer immer ein Auktionsstueck mit der Nummer 2, von dem es
+ * genau ein Exemplar gibt, und die 1 waere fuer niemanden mehr zu haben.
+ *
+ * Angefasst wird nur der eindeutige Fall: genau EIN Exemplar, und keines
+ * traegt die 1. Gibt es mehrere (etwa weil jemand von Hand nachgeholfen
+ * hat), bleibt alles stehen und es gibt eine Zeile in der Konsole — eine
+ * Nummer stillschweigend umzuschreiben, waere schlimmer als eine falsche.
+ *
+ * Laeuft genau einmal (`state.einsKorrigiert`).
+ */
+function korrigiereErstpraegung(abEins) {
+  if (state.einsKorrigiert || typeof abEins !== "function") return 0;
+  const nach = new Map();           // "art:id" -> [uid, …]
+  for (const [uid, st] of Object.entries(state.stuecke)) {
+    if (!abEins(st.art, st.id)) continue;
+    const k = schluessel(st.art, st.id);
+    if (!nach.has(k)) nach.set(k, []);
+    nach.get(k).push(uid);
+  }
+  let n = 0;
+  for (const [k, uids] of nach) {
+    if (uids.some((u) => state.stuecke[u].nr === 1)) continue;
+    if (uids.length !== 1) {
+      console.log(`praegung: ${k} hat ${uids.length} Exemplare und keine Nr. 1 — von Hand ansehen.`);
+      continue;
+    }
+    state.stuecke[uids[0]].nr = 1;
+    state.next[k] = Math.max(1, ...uids.map((u) => state.stuecke[u].nr));
+    n++;
+  }
+  state.einsKorrigiert = true;
+  save();
+  if (n) console.log(`praegung: ${n} Auktionsstück(e) auf Nr. 1 gesetzt.`);
+  return n;
+}
+
 module.exports = {
   praegen, uebertragen, entpraegen, stueckVon, alleVon, stueck, bestand,
-  umbenennen, nachtragen,
+  umbenennen, nachtragen, korrigiereErstpraegung,
 };
