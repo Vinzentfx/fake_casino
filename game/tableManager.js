@@ -174,13 +174,17 @@ function setupPoker(io, accounts) {
     leaderboard: "in der Bestenliste",
     profile: "im Profil",
     stats: "bei Statistiken",
-    cosmetics: "im Kosmetik-Shop",
+    cosmetics: "in der Sammlung",
     calendar: "im Kalender",
     wheel: "am Glücksrad",
     transfer: "sendet Chips",
     settings: "in Einstellungen",
     suggest: "bei Vorschlägen",
     market: "auf dem Markt",
+    /* Kisten und Auktionshaus haben gefehlt, seit es sie gibt: wer dort
+       sass, stand in der Anwesenheitsliste als "online". */
+    kiste: "bei den Kisten",
+    auktion: "im Auktionshaus",
     season: "beim Season-Pass",
   };
   // Towers und Rennbahn fehlten hier. Weil presence:screen unbekannte Namen

@@ -103,6 +103,13 @@ const SPIELE = {
   solitaire: { name: "Solitär",       vor: ["sol:", "solrace:"],    einsatz: { "sol:start": "bet", "solrace:create": "buyIn" } },
   chess:     { name: "Schach",        vor: ["chess:"],              einsatz: { "chess:create": "buyIn" } },
   sudoku:    { name: "Sudoku",        vor: ["sudoku:"] },
+  /* Kisten und Kisten-Duell haben lange gefehlt, und das waren ausgerechnet
+     die teuersten Knoepfe im Haus: eine Kiste kostet bis 250.000, ein Duell
+     setzt bis zu einer Million. Ohne Eintrag liess sich beides weder sperren
+     noch deckeln. Die Kiste hat keinen Einsatz IM Ereignis — der Preis haengt
+     an der Kiste, nicht an der Nachricht — deshalb dort nur die Sperre. */
+  kiste:     { name: "Kisten",        vor: ["kiste:"] },
+  kdl:       { name: "Kisten-Duell",  vor: ["kdl:"],                einsatz: { "kdl:erstelle": "einsatz" } },
   lotterie:  { name: "Lotterie",      vor: ["lotterie:"] },
   stocks:    { name: "Börse",         vor: ["stocks:"],             einsatz: { "stocks:open": "margin" } },
   city:      { name: "Stadt",         vor: ["city:"] },
@@ -122,7 +129,7 @@ const SPIELE = {
    oeffnen und "gesperrt" sagen koennen; wer auch den Zustand nicht mehr
    bekommt, sieht einen leeren Bildschirm ohne Erklaerung und meldet einen
    Fehler. */
-const NUR_LESEN = /:(state|config|machines|init|history|legal|leaderboards|list|zufall)$/;
+const NUR_LESEN = /:(state|config|machines|init|history|legal|leaderboards|list|zufall|inhalt)$/;
 
 const spielVon = new Map();   // je Vorsilbe: Spiel-id
 for (const [id, s] of Object.entries(SPIELE)) for (const v of s.vor) spielVon.set(v, id);

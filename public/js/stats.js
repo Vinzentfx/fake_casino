@@ -19,6 +19,11 @@
    */
   const GAME_META = {
     slots: { n: "Slots" }, blackjack: { n: "Blackjack" },
+    /* Der Schluessel ist der Name, mit dem `recordHand` bucht, und der
+       steht so im Spielstand — umbenennen wuerde die bisherige
+       Statistik abschneiden. Ohne diesen Eintrag stand beim
+       Kisten-Duell ein Pokertisch als Symbol. */
+    "Kisten-Duell": { n: "Kisten-Duell", i: "geschenk" },
     roulette: { n: "Roulette" }, sportwetten: { n: "Sportwetten", i: "sports" },
     poker: { n: "Poker" }, crash: { n: "Crash" }, mines: { n: "Mines" },
     pinco: { n: "Pinco Ball" }, solitaire: { n: "Solitär" },

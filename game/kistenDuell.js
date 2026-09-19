@@ -231,6 +231,16 @@ function beitreten(key, id, auswahl) {
   const acc = _accounts.get(key);
   if (!acc) return err("Nicht eingeloggt.");
   if ((acc.chips || 0) < d.einsatz) return err("Nicht genug Chips.");
+  /* Der Einsatzdeckel, von Hand. Die Bremse (`strafen.bremse`) kann ihn hier
+     nicht greifen: sie liest den Einsatz aus der NACHRICHT, und beim
+     Beitreten steht darin nur eine Duell-Kennung. Ohne diese Zeile waere der
+     Deckel umgangen, sobald jemand anders ein grosses Duell aufmacht. */
+  try {
+    const max = require("./strafen").deckel(acc);
+    if (max && d.einsatz > max) {
+      return err(`Dein Einsatz ist auf ${max.toLocaleString("de-DE")} Chips gedeckelt.`);
+    }
+  } catch {}
 
   const gewaehlt = pruefeAuswahl(auswahl, d.budget);
   if (!gewaehlt) return err(`Such dir zwischen einer und ${MAX_KISTEN} Kisten aus, die ins Budget passen.`);
