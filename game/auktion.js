@@ -25,6 +25,21 @@
  * sofort zurueck, sobald jemand ueberbietet. Ohne diese Hinterlegung bietet
  * man Geld, das man nach der naechsten Slot-Runde nicht mehr hat.
  *
+ * EINGELIEFERTE LOSE. Seit es den Kosmetik-Markt gibt, koennen Spieler auch
+ * selbst etwas unter den Hammer bringen. Der Markt ist der stille Weg (fester
+ * Preis, steht da, bis jemand zugreift), das Auktionshaus der laute: ein Los
+ * am Tag, Ansage im Chat, Zuschlag um halb neun, und alle sehen zu.
+ *
+ * Das kostet mehr, und das ist der Punkt. Die Einliefergebuehr faellt sofort
+ * an und ist weg, auch wenn niemand bietet — sonst stellt jeder alles ein,
+ * was er doppelt hat, und die Warteschlange ist auf Wochen voll. Dazu kommt
+ * eine Provision vom Zuschlag, hoeher als die Gebuehr im Markt: fuer die
+ * Aufmerksamkeit zahlt man.
+ *
+ * Eingeliefertes und Haus-Lose wechseln sich ab. Die Haus-Stuecke sind
+ * endlich und selten; ohne Abwechslung waeren sie nie wieder drangekommen,
+ * sobald drei Leute etwas einliefern.
+ *
  * Stand in data/auktion.json.
  */
 
@@ -61,13 +76,24 @@ const VERLAENGERUNG_MS = 2 * 60 * 1000;
 const VERLAUF_MAX = 12;
 const ARCHIV_MAX = 20;
 
+/* Einlieferung durch Spieler.
+   Die Gebuehr faellt beim Einliefern an und verbrennt, auch wenn das Stueck
+   danach niemand will. Ohne sie waere die Warteschlange voll mit allem, was
+   irgendwer doppelt hat. Die Provision ist hoeher als die zehn Prozent im
+   Markt, weil das Auktionshaus mehr Aufmerksamkeit bringt: ein Los am Tag,
+   Ansage im Chat, Zuschlag zur festen Uhrzeit. */
+const EINLIEFER_GEBUEHR = 25_000;
+const EINLIEFER_PROVISION = 0.15;
+const EINLIEFER_MAX_JE_SPIELER = 1;   // sonst blockiert einer die Schlange
+const EINLIEFER_MAX = 8;
+
 /* Welche Arten ueberhaupt versteigert werden. Ein Los ist immer ein Stueck aus
    game/cosmetics.js mit limitiert: "auktion". Hier steht nur, in welchen
    Toepfen gesucht wird. */
 const ARTEN = ["style", "frame", "title", "effect", "banner", "schild", "aura", "karte"];
 
 let io = null, accounts = null;
-let state = { v: 1, nr: 0, los: null, vergeben: {}, archiv: [] };
+let state = { v: 1, nr: 0, los: null, vergeben: {}, archiv: [], schlange: [], letztesVomHaus: false };
 
 const de = (n) => Math.round(Number(n) || 0).toLocaleString("de-DE");
 const marke = (type, id) => `${type}:${id}`;
@@ -81,6 +107,8 @@ function load() {
       los: roh.los || null,
       vergeben: roh.vergeben && typeof roh.vergeben === "object" ? roh.vergeben : {},
       archiv: Array.isArray(roh.archiv) ? roh.archiv : [],
+      schlange: Array.isArray(roh.schlange) ? roh.schlange : [],
+      letztesVomHaus: !!roh.letztesVomHaus,
     };
   } catch { /* erste Auktion */ }
 }
@@ -124,8 +152,12 @@ const ART_NAME = {
 };
 
 /** Setzt dieser Spieler das laufende Los aus? Genau das eine nach seinem Sieg. */
-function gesperrtFuer(acc, los) {
+function gesperrtFuer(acc, los, key) {
   if (!acc || !los) return false;
+  /* Auf das eigene Los bietet niemand. Sonst treibt man den Preis hoch und
+     zahlt am Ende nur die Provision dafuer, dass das Stueck bei einem
+     selbst bleibt. */
+  if (los.von && key && los.von === key) return true;
   const gewonnen = Number(acc.auktionSiegLos) || 0;
   return gewonnen > 0 && los.nr === gewonnen + 1;
 }
@@ -133,13 +165,121 @@ function gesperrtFuer(acc, los) {
 /** Der Mindestbetrag fuer das naechste Gebot. */
 function mindestGebot(los) {
   if (!los) return START_GEBOT;
-  if (!los.gebot) return START_GEBOT;
+  if (!los.gebot) return los.mindest || START_GEBOT;
   return los.gebot + Math.max(SCHRITT_MIN, Math.ceil(los.gebot * SCHRITT_ANTEIL / 1000) * 1000);
 }
 
+/* ------------------------------------------------------------------
+   Einlieferung durch Spieler
+   ------------------------------------------------------------------ */
+
+const praegung = require("./praegung");
+
+/** Liegt dieses Exemplar hier in Verwahrung? Fuer den Markt, damit dort
+    nicht angeboten wird, was schon unter dem Hammer steht. */
+function istHinterlegt(uid) {
+  if (state.los && state.los.uid === uid) return true;
+  return state.schlange.some((e) => e.uid === uid);
+}
+
+/**
+ * Was `key` einliefern koennte: gepraegt, handelbar, frei.
+ *
+ * "Frei" heisst auch: nicht gerade im Schaufenster des Marktes. Die Praegung
+ * sagt weiter, dass es ihm gehoert — hinterlegt wird ueber `cosOwned`, und
+ * das sieht man hier nicht. Ohne diese Zeile stuende ein Stueck, das schon
+ * im Markt liegt, hier zur Einlieferung bereit, und der Knopf wuerde nur
+ * einen Fehler ausspucken.
+ */
+function einlieferbar(acc, key) {
+  const drin = new Set(state.schlange.filter((e) => e.key === key).map((e) => e.uid));
+  let imMarkt = () => false;
+  try { imMarkt = require("./market").istHinterlegt; } catch {}
+  const out = [];
+  for (const st of Object.values(praegung.alleVon(key))) {
+    if (!cosmetics.handelbar(st.art, st.id)) continue;
+    if (drin.has(st.uid)) continue;
+    if (imMarkt(st.uid)) continue;
+    out.push({
+      uid: st.uid, art: st.art, stueckId: st.id,
+      label: cosmetics.label(st.art, st.id),
+      look: cosmetics.vorschauDaten(st.art, st.id),
+      nr: st.nr, bestand: praegung.bestand(st.art, st.id),
+    });
+  }
+  return out.sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function einliefern(key, uid, mindest) {
+  const acc = accounts.get(key);
+  if (!acc) return { ok: false, error: "Nicht eingeloggt." };
+  if (strafen.aktiv(acc, "keineAuktion")) return { ok: false, error: "Du darfst gerade nichts einliefern." };
+  const st = praegung.stueck(uid);
+  if (!st || st.besitzer !== key) return { ok: false, error: "Das Stück gehört dir nicht." };
+  if (!cosmetics.handelbar(st.art, st.id)) return { ok: false, error: "Dieses Stück lässt sich nicht handeln." };
+  if (state.schlange.some((e) => e.uid === uid)) return { ok: false, error: "Steht schon in der Warteschlange." };
+  if (state.los && state.los.uid === uid) return { ok: false, error: "Das Stück ist gerade unter dem Hammer." };
+  const meine = state.schlange.filter((e) => e.key === key).length;
+  if (meine >= EINLIEFER_MAX_JE_SPIELER) return { ok: false, error: "Du hast schon etwas in der Warteschlange." };
+  if (state.schlange.length >= EINLIEFER_MAX) return { ok: false, error: "Die Warteschlange ist voll. Versuch es morgen wieder." };
+  if ((acc.chips || 0) < EINLIEFER_GEBUEHR) return { ok: false, error: `Die Einliefergebühr von ${de(EINLIEFER_GEBUEHR)} Chips fehlt dir.` };
+
+  const m = Math.max(START_GEBOT, Math.round(Number(mindest) || 0));
+  /* Aus der Hand geben, genau wie im Markt: sonst traegt man weiter, was
+     unter dem Hammer steht. */
+  if (!cosmetics.besitzNehmen(acc, st.art, st.id)) return { ok: false, error: "Das Stück gehört dir nicht." };
+  accounts.adjustChips(key, -EINLIEFER_GEBUEHR);
+  accounts.save();
+
+  state.schlange.push({
+    uid, key, name: acc.name,
+    art: st.art, id: st.id,
+    label: cosmetics.label(st.art, st.id),
+    nr: st.nr,
+    mindest: m,
+    seit: Date.now(),
+  });
+  save();
+  sende();
+  return {
+    ok: true,
+    label: cosmetics.label(st.art, st.id), nr: st.nr,
+    platz: state.schlange.filter((e) => e.key === key).length,
+    account: accounts.publicAccount(acc),
+  };
+}
+
+/** Aus der Warteschlange zurueckholen. Die Gebuehr bleibt weg. */
+function zuruecknehmen(key, uid) {
+  const i = state.schlange.findIndex((e) => e.uid === uid && e.key === key);
+  if (i < 0) return { ok: false, error: "Das steht nicht in deiner Warteschlange." };
+  const e = state.schlange[i];
+  const acc = accounts.get(key);
+  if (!acc) return { ok: false, error: "Nicht eingeloggt." };
+  cosmetics.besitzGeben(acc, e.art, e.id);
+  accounts.save();
+  state.schlange.splice(i, 1);
+  save();
+  sende();
+  return { ok: true, label: e.label, account: accounts.publicAccount(acc) };
+}
+
+/**
+ * Das naechste Los aufmachen.
+ *
+ * Haus und Spieler wechseln sich ab. Die Haus-Stuecke sind endlich und
+ * selten; ohne die Abwechslung waeren sie nie wieder drangekommen, sobald
+ * drei Leute etwas einliefern. Ist eine Seite leer, kommt die andere.
+ */
 function starteLos() {
+  const eingeliefert = state.schlange.length > 0;
+  const hausOffen = offeneStuecke().length > 0;
+  const nimmEingeliefert = eingeliefert && (state.letztesVomHaus || !hausOffen);
+  if (nimmEingeliefert) return starteEingeliefertes();
+
   const offen = offeneStuecke();
   if (!offen.length) {
+    if (eingeliefert) return starteEingeliefertes();
     // Alles vergeben. Auch das muss bei allen ankommen, sonst zeigt der
     // Bildschirm weiter das Los, das gerade den Hammer bekommen hat.
     state.los = null;
@@ -161,12 +301,52 @@ function starteLos() {
     bieter: null,
     bieterName: null,
     verlauf: [],
+    vomHaus: true,
   };
+  state.letztesVomHaus = true;
   save();
   try {
     chat.announce(io, `Auktionshaus: ${ART_NAME[s.type]} „${s.label}“ kommt unter den Hammer. Startgebot ${de(START_GEBOT)} Chips, Zuschlag ${endeText(state.los.endet)}.`);
   } catch {}
   try { require("./chronik").notiere("event", `Neu im Auktionshaus: ${ART_NAME[s.type]} „${s.label}“. Startgebot ${de(START_GEBOT)} Chips.`); } catch {}
+  sende();
+  return state.los;
+}
+
+/** Das aelteste eingelieferte Stueck unter den Hammer bringen. */
+function starteEingeliefertes() {
+  const e = state.schlange.shift();
+  if (!e) return null;
+  state.nr += 1;
+  state.los = {
+    nr: state.nr,
+    type: e.art, id: e.id,
+    label: e.label,
+    art: ART_NAME[e.art] || cosmetics.ART_NAME[e.art] || e.art,
+    start: Date.now(),
+    endet: naechstesEnde(),
+    gebot: 0,
+    bieter: null,
+    bieterName: null,
+    verlauf: [],
+    /* Das Kennzeichen eines eingelieferten Loses: es haengt an einem
+       Exemplar (uid) und hat einen Verkaeufer. Ein Haus-Los hat beides
+       nicht — dort entsteht das Stueck erst beim Zuschlag. */
+    uid: e.uid,
+    von: e.key, vonName: e.name,
+    stueckNr: e.nr,
+    mindest: e.mindest,
+    vomHaus: false,
+  };
+  state.letztesVomHaus = false;
+  save();
+  try {
+    chat.announce(io, `Auktionshaus: ${e.name} bringt ${ART_NAME[e.art] || e.art} „${e.label}“ Nr. ${e.nr} unter den Hammer. `
+      + `Startgebot ${de(e.mindest)} Chips, Zuschlag ${endeText(state.los.endet)}.`);
+  } catch {}
+  try {
+    require("./chronik").notiere("event", `${e.name} versteigert „${e.label}“ Nr. ${e.nr}. Startgebot ${de(e.mindest)} Chips.`, { user: e.name });
+  } catch {}
   sende();
   return state.los;
 }
@@ -188,9 +368,18 @@ function hammer() {
   if (!los) return;
 
   if (!los.bieter || !los.gebot) {
-    // Niemand hat geboten. Das Stueck wandert zurueck in den Topf und kommt
-    // spaeter wieder, weggeworfen wird hier nichts.
-    try { chat.announce(io, `Keine Gebote für „${los.label}“. Das Stück kommt später noch einmal.`); } catch {}
+    if (los.von) {
+      /* Eingeliefert und niemand wollte es: zurueck an den Einlieferer. Die
+         Gebuehr bleibt weg — sie hat den Platz unter dem Hammer bezahlt,
+         nicht den Verkauf. */
+      const vAcc = accounts.get(los.von);
+      if (vAcc) { cosmetics.besitzGeben(vAcc, los.type, los.id); accounts.save(); }
+      try { chat.announce(io, `Keine Gebote für „${los.label}“ Nr. ${los.stueckNr}. Es geht zurück an ${los.vonName}.`); } catch {}
+    } else {
+      // Haus-Los: das Stueck wandert zurueck in den Topf und kommt spaeter
+      // wieder, weggeworfen wird hier nichts.
+      try { chat.announce(io, `Keine Gebote für „${los.label}“. Das Stück kommt später noch einmal.`); } catch {}
+    }
     state.los = null;
     save();
     starteLos();
@@ -199,33 +388,69 @@ function hammer() {
 
   const acc = accounts.get(los.bieter);
   const stuecke = [];
-  if (acc) {
-    if (cosmetics.grant(acc, los.type, los.id)) stuecke.push(los.label);
-    acc.auktionSieg = Date.now();
-    acc.auktionSiegLos = los.nr;
+  let anVerkaeufer = 0, provision = 0;
+
+  if (los.von) {
+    /*
+     * Eingeliefertes Los: hier wechselt ein EXEMPLAR den Besitzer, es
+     * entsteht keins. Deshalb praegung.uebertragen und nicht grant — sonst
+     * haette der Kaeufer ein frisch gepraegtes Stueck mit neuer Nummer und
+     * der Verkaeufer sein altes noch in der Kette.
+     */
+    provision = Math.round(los.gebot * EINLIEFER_PROVISION);
+    anVerkaeufer = los.gebot - provision;
+    if (acc) {
+      cosmetics.besitzGeben(acc, los.type, los.id);
+      stuecke.push(los.label);
+      acc.auktionSieg = Date.now();
+      acc.auktionSiegLos = los.nr;
+    }
+    const vAcc = accounts.get(los.von);
+    if (vAcc) accounts.adjustChips(los.von, anVerkaeufer);
     accounts.save();
+    praegung.uebertragen(los.uid, los.bieter, acc ? acc.name : los.bieterName, los.gebot);
+    /* Der Verkaeufer bekommt Chips, ohne etwas gedrueckt zu haben. Ohne diese
+       Zeile steht in seiner Topbar weiter der alte Stand. */
+    if (vAcc) {
+      for (const sock of io.of("/").sockets.values()) {
+        if (sock.data && sock.data.account === los.von) {
+          sock.emit("account:update", { account: accounts.publicAccount(vAcc) });
+          sock.emit("auktion:verkauft", { label: los.label, nr: los.stueckNr, betrag: los.gebot, erloes: anVerkaeufer, an: los.bieterName });
+          break;
+        }
+      }
+    }
+  } else {
+    if (acc) {
+      if (cosmetics.grant(acc, los.type, los.id)) stuecke.push(los.label);
+      acc.auktionSieg = Date.now();
+      acc.auktionSiegLos = los.nr;
+      accounts.save();
+    }
+    // Das Gebot ist beim Bieten abgebucht worden und wird hier nicht
+    // weitergereicht: es verbrennt. Das ist der ganze Zweck des Hauses.
+    state.vergeben[marke(los.type, los.id)] = {
+      key: los.bieter, name: los.bieterName, betrag: los.gebot, ts: Date.now(),
+    };
   }
-  // Das Gebot ist beim Bieten abgebucht worden und wird hier nicht
-  // weitergereicht: es verbrennt. Das ist der ganze Zweck des Hauses.
-  state.vergeben[marke(los.type, los.id)] = {
-    key: los.bieter, name: los.bieterName, betrag: los.gebot, ts: Date.now(),
-  };
   state.archiv.unshift({
     nr: los.nr, art: los.art, label: los.label,
     name: los.bieterName, betrag: los.gebot, ts: Date.now(),
+    von: los.vonName || null, stueckNr: los.stueckNr || null,
   });
   if (state.archiv.length > ARCHIV_MAX) state.archiv.length = ARCHIV_MAX;
 
+  const satz = los.von
+    ? `Zuschlag: ${los.bieterName} ersteigert ${los.art} „${los.label}“ Nr. ${los.stueckNr} von ${los.vonName} für ${de(los.gebot)} Chips.`
+    : `Zuschlag: ${los.bieterName} ersteigert ${los.art} „${los.label}“ für ${de(los.gebot)} Chips.`;
+  try { chat.announce(io, satz); } catch {}
   try {
-    chat.announce(io, `Zuschlag: ${los.bieterName} ersteigert ${los.art} „${los.label}“ für ${de(los.gebot)} Chips.`);
-  } catch {}
-  try {
-    require("./chronik").notiere("event", `${los.bieterName} ersteigert ${los.art} „${los.label}“ für ${de(los.gebot)} Chips.`, { user: los.bieterName, wert: los.gebot });
+    require("./chronik").notiere("event", satz, { user: los.bieterName, wert: los.gebot });
   } catch {}
   if (acc) {
     for (const s of io.of("/").sockets.values()) {
       if (s.data && s.data.account === los.bieter) {
-        s.emit("auktion:zuschlag", { art: los.art, label: los.label, betrag: los.gebot, stuecke });
+        s.emit("auktion:zuschlag", { art: los.art, label: los.label, betrag: los.gebot, stuecke, nr: los.stueckNr || null, von: los.vonName || null });
         /* Das hinterlegte Gebot ist jetzt endgueltig weg. Ohne diese Zeile
            steht in der Topbar weiter der Stand von vor dem Gebot, weil der
            Zuschlag nicht vom Client ausgeloest wurde. */
@@ -250,7 +475,10 @@ function bieten(key, betrag) {
   if (verbot) {
     return { ok: false, error: `Du darfst gerade nicht mitbieten (${strafen.restText(verbot)})${verbot.grund ? `: ${verbot.grund}` : "."}` };
   }
-  if (gesperrtFuer(acc, los)) {
+  if (los.von && los.von === key) {
+    return { ok: false, error: "Das ist dein eigenes Los." };
+  }
+  if (gesperrtFuer(acc, los, key)) {
     return { ok: false, error: "Du hast das letzte Los gewonnen. Dieses eine setzt du aus, ab dem nächsten bist du wieder dabei." };
   }
   if (los.bieter === key) return { ok: false, error: "Du hältst das Höchstgebot bereits." };
@@ -367,12 +595,19 @@ function gesehen(key) {
 function oeffentlich(key) {
   const los = state.los;
   const acc = key ? accounts.get(key) : null;
-  const gesperrt = !!(acc && los && gesperrtFuer(acc, los));
+  const gesperrt = !!(acc && los && gesperrtFuer(acc, los, key));
   return {
     los: los ? {
       nr: los.nr, art: los.art, label: los.label, type: los.type, id: los.id,
       start: los.start, endet: los.endet, gebot: los.gebot,
       bieterName: los.bieterName,
+      /* Wer eingeliefert hat, und welches Exemplar. Bei einem Haus-Los steht
+         hier nichts: dort entsteht das Stueck erst beim Zuschlag, es hat
+         also weder Nummer noch Vorbesitzer. */
+      vonName: los.vonName || null,
+      meins: !!(key && los.von === key),
+      stueckNr: los.stueckNr || null,
+      look: cosmetics.vorschauDaten(los.type, los.id),
       binIch: !!(key && los.bieter === key),
       // Habe ich hier schon einmal geboten und wurde ueberholt?
       warIch: !!(key && los.verlauf.some((g) => g.key === key)),
@@ -386,6 +621,19 @@ function oeffentlich(key) {
     gesperrt,
     meineChips: acc ? acc.chips : 0,
     marke: menueMarke(key),
+    /* Einlieferung */
+    einliefern: {
+      gebuehr: EINLIEFER_GEBUEHR,
+      provision: EINLIEFER_PROVISION,
+      maxJeSpieler: EINLIEFER_MAX_JE_SPIELER,
+      voll: state.schlange.length >= EINLIEFER_MAX,
+      schlange: state.schlange.map((e, i) => ({
+        uid: e.uid, label: e.label, nr: e.nr, name: e.name,
+        look: cosmetics.vorschauDaten(e.art, e.id),
+        mindest: e.mindest, platz: i + 1, meins: !!(key && e.key === key),
+      })),
+      meine: acc ? einlieferbar(acc, key) : [],
+    },
   };
 }
 
@@ -429,6 +677,22 @@ function setupAuktion(_io, _accounts) {
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
       ack(bieten(socket.data.account, betrag));
     });
+
+    socket.on("auktion:einliefern", ({ uid, mindest } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const key = socket.data.account;
+      if (!key) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const r = einliefern(key, String(uid || ""), mindest);
+      ack(r.ok ? { ...r, ...oeffentlich(key) } : r);
+    });
+
+    socket.on("auktion:zurueck", ({ uid } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const key = socket.data.account;
+      if (!key) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const r = zuruecknehmen(key, String(uid || ""));
+      ack(r.ok ? { ...r, ...oeffentlich(key) } : r);
+    });
   });
 }
 
@@ -451,9 +715,13 @@ function umbenennen(key, alt, neu) {
   }
   for (const a of state.archiv || []) {
     if (a && String(a.name || "").toLowerCase() === String(alt || "").toLowerCase()) { a.name = neu; n++; }
+    if (a && String(a.von || "").toLowerCase() === String(alt || "").toLowerCase()) { a.von = neu; n++; }
   }
+  // Der Einlieferer steht am laufenden Los und an allem in der Schlange.
+  if (los && los.von === key) { los.vonName = neu; n++; }
+  for (const e of state.schlange || []) if (e.key === key) { e.name = neu; n++; }
   if (n) save();
   return n;
 }
 
-module.exports = { setupAuktion, oeffentlich, menueMarke, umbenennen, START_GEBOT };
+module.exports = { setupAuktion, oeffentlich, menueMarke, umbenennen, istHinterlegt, START_GEBOT, EINLIEFER_GEBUEHR, EINLIEFER_PROVISION };

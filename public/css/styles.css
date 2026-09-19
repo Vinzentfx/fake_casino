@@ -2161,12 +2161,159 @@ html.reduce-motion .screen { animation: none; }
 }
 .buff-chip small { opacity: 0.75; font-weight: 600; }
 
-/* Marktplatz */
+/* Fortschritt in der Stadt (Baustelle, Schicht)
+   Eine Restzeit allein sagt nicht, ob gerade angefangen wurde oder ob es
+   gleich fertig ist. Beides dauert Stunden, und man kommt zwischendurch
+   wieder. */
+.fortschritt { margin-top: var(--sp-2); }
+.fortschritt-bahn {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.fortschritt-bahn > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.55), var(--accent));
+  transition: width 0.9s linear;
+}
+/* Fertig: der Balken hört auf zu wandern und steht ruhig. Ein pulsierender
+   Balken, der nichts mehr tut, sieht aus wie ein Hänger. */
+.fortschritt.voll .fortschritt-bahn > span { background: var(--good); }
+.fortschritt-text {
+  margin-top: 4px;
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+.fortschritt-text b { font-family: var(--font-num); color: var(--text); }
+html.reduce-motion .fortschritt-bahn > span { transition: none; }
+
+/* Kosmetik-Markt
+   Der Markt zeigt, was man kauft. Die Vorschau links, die Angaben rechts,
+   darunter die Herkunft und der Preis. Ein Markt fuer Aussehen, auf dem nur
+   Namen stehen, ist keiner. */
+.mkt-karte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+@media (hover: hover) { .mkt-karte:hover { border-color: var(--line-strong); } }
+.mkt-karte.meins { border-color: rgba(var(--accent-rgb), 0.5); background: var(--accent-soft); }
+/* Frisch gekauft: leuchtet kurz auf. Sonst sieht ein Kauf aus wie ein
+   Ladefehler, weil das Angebot oben einfach verschwindet. */
+.mkt-karte.frisch { animation: mkt-frisch 2.2s ease; }
+@keyframes mkt-frisch {
+  0%   { border-color: var(--accent); box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.55); }
+  30%  { border-color: var(--accent); box-shadow: 0 0 0 10px rgba(var(--accent-rgb), 0); }
+  100% { border-color: var(--line); box-shadow: none; }
+}
+html.reduce-motion .mkt-karte.frisch { animation: none; border-color: var(--accent); }
+
+.mkt-stueck { display: flex; align-items: center; gap: var(--sp-3); }
+/* Die Buehne fuer das Stueck. Feste Hoehe, damit die Karten in einer Liste
+   nicht springen, egal ob ein Emoji oder ein ganzes Namensschild drin steht. */
+.mkt-demo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 96px;
+  height: 62px;
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.mkt-demo > * { max-width: 100%; }
+/* Das Zeichen fuer "bewegt sich", oben rechts auf der Buehne. */
+.mkt-motion {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  color: var(--accent);
+  opacity: 0.75;
+  pointer-events: none;
+}
+.mkt-stueck-text { min-width: 0; flex: 1 1 auto; }
+.mkt-stueck-kopf { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.mkt-art { margin-top: 2px; color: var(--text-mute); font-size: var(--fs-xs); }
+.mkt-von { margin-top: 4px; color: var(--text-dim); font-size: var(--fs-sm); }
+
+.mkt-fuss {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
+}
+.mkt-preis { font-family: var(--font-num); font-size: 1.05rem; font-weight: 800; color: var(--accent); }
+.mkt-preis small { display: block; color: var(--text-mute); font-size: var(--fs-xs); font-weight: 600; }
+.mkt-belegt { color: var(--text-mute); font-size: var(--fs-xs); }
+
+/* Leerer Zustand. Ein grauer Satz allein sieht aus wie ein Fehler. */
+.mkt-leer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--sp-4) var(--sp-3);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+  color: var(--text-dim);
+  text-align: center;
+}
+.mkt-leer svg { width: 26px; height: 26px; opacity: 0.5; margin-bottom: 2px; }
+.mkt-leer span { font-size: var(--fs-sm); max-width: 34ch; }
+
+/* Marktplatz (alt) */
 .mkt-item, .mkt-offer {
   background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.1);
   border-radius: 12px; padding: 12px; margin-bottom: 8px;
 }
-.mkt-item-head { font-size: 0.95rem; margin-bottom: 8px; }
+.mkt-item-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+/* Das eigene Angebot hervorheben, damit man beim Durchgehen nicht sucht,
+   was einem selbst gehört. */
+.mkt-item.meins { border-color: var(--line-strong); background: var(--accent-soft); }
+/* Die Nummer des Exemplars. Dieselbe Marke wie im Laden, damit man sie als
+   dasselbe erkennt. */
+.mkt-nr {
+  padding: 2px 6px;
+  border-radius: var(--r-xs);
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--accent);
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  font-weight: 900;
+  white-space: nowrap;
+}
+/* Woher das Stück kommt. Steht immer da und nicht hinter einem Hover: auf
+   dem iPad gibt es keinen. */
+.mkt-herkunft {
+  margin: 0 0 8px;
+  padding: 7px 9px;
+  border-left: 2px solid var(--line);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+}
 .mkt-item-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .mkt-item-actions .btn-primary { flex: 0 0 auto; }
 .mkt-sell { display: flex; gap: 6px; align-items: center; margin-left: auto; }
@@ -5282,6 +5429,11 @@ html.reduce-motion .tw-flip { transition: none; }
 
 .cb-row {
   display: grid;
+  /* Fuenf Spalten, und die Zahlen sind EINE davon (.cb-nums). Vorher stand
+     jede Zahl als eigenes Kind in der Zeile; mit der Einnahme-Spalte waren es
+     mehr Kinder als Spalten, und die letzte rutschte in eine zweite Reihe,
+     mitten in die Krone. Ein optionales Kind (die Abzeichen) darf in einem
+     festen Raster gar nicht direkt haengen. */
   grid-template-columns: 1.6rem 10px 1fr auto auto;
   align-items: center;
   gap: var(--sp-2);
@@ -5303,17 +5455,47 @@ html.reduce-motion .tw-flip { transition: none; }
 .cb-rank { color: var(--text-mute); font-size: var(--fs-xs); text-align: right; }
 .cb-dot { width: 10px; height: 10px; border-radius: 50%; }
 .cb-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cb-nums { display: flex; align-items: center; gap: var(--sp-2); }
 .cb-num { font-family: var(--font-num); font-size: var(--fs-sm); white-space: nowrap; }
 .cb-value { color: var(--text-dim); }
+/* Was am Ende herauskommt, in der Akzentfarbe: 232 billige Häuser sind viel
+   Wert und wenig Einnahme, ein ausgebautes Café ist umgekehrt. Genau dieser
+   Unterschied ist der Grund für die Spalte. */
+.cb-netto { color: var(--accent); font-weight: 700; }
 .cb-tags { font-size: var(--fs-xs); white-space: nowrap; }
 .cb-caret { color: var(--text-mute); }
 
-/* Bei wenig Platz fliegen Wert und Abzeichen raus, Name und Hausanzahl
-   bleiben: das ist die Information, um die es geht. */
+/* Bei wenig Platz fliegen Wert und Abzeichen raus, Name, Hausanzahl und
+   Einnahme bleiben: das ist die Information, um die es geht. */
 @media (max-width: 560px) {
-  .cb-row { grid-template-columns: 1.6rem 10px 1fr auto; }
   .cb-value, .cb-tags { display: none; }
 }
+
+/* Die Stadtrechnung: Miete, Abzüge, was bleibt. Dieselben Zahlen, mit denen
+   der Stunden-Bonus rechnet, damit niemand nachrechnen muss, wo der
+   Unterschied herkommt. */
+.stadt-rechnung {
+  width: 100%;
+  margin: var(--sp-2) 0 0;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+.stadt-rechnung td { padding: 3px 0; vertical-align: baseline; }
+.stadt-rechnung td:first-child { color: var(--text-dim); }
+.stadt-rechnung td:last-child {
+  text-align: right;
+  font-family: var(--font-num);
+  white-space: nowrap;
+}
+.stadt-rechnung .pos { color: var(--good); }
+.stadt-rechnung .neg { color: var(--bad-text); }
+.stadt-rechnung .sum td {
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
+}
+.stadt-rechnung .sum td:first-child { color: var(--text); }
+.stadt-rechnung .sum td:last-child { color: var(--accent); }
+.stadt-rechnung.klein { margin-bottom: var(--sp-2); font-size: var(--fs-xs); }
 
 .cb-items { padding: 0 var(--sp-2) var(--sp-2); }
 .cb-item {
@@ -5750,7 +5932,8 @@ html:not(.reduce-motion) .nm-s2_phoenix { animation: pl-sweep 1.6s linear infini
    die Karte ihre eigene Hintergrundzeichnung behält und ein Banner
    sie nur überdeckt, statt sie zu ersetzen. */
 .pf-card { position: relative; overflow: hidden; }
-.pf-card[data-banner]::before {
+.pf-card[data-banner]::before,
+.cos-pass[data-banner]::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -5760,26 +5943,33 @@ html:not(.reduce-motion) .nm-s2_phoenix { animation: pl-sweep 1.6s linear infini
 }
 .pf-card > * { position: relative; z-index: 1; }
 
-.pf-card[data-banner="filz"]::before  { background: repeating-linear-gradient(135deg, #0f4029, #0f4029 6px, #0d3624 6px, #0d3624 12px); }
-.pf-card[data-banner="nacht"]::before { background: radial-gradient(120% 160% at 20% 0%, #1e3a8a, #0b1220 70%); }
-.pf-card[data-banner="sonne"]::before { background: linear-gradient(160deg, #ff9f43, #d6336c 60%, #3b1d4e); }
-.pf-card[data-banner="welle"]::before {
+.pf-card[data-banner="filz"]::before,
+.cos-pass[data-banner="filz"]::before  { background: repeating-linear-gradient(135deg, #0f4029, #0f4029 6px, #0d3624 6px, #0d3624 12px); }
+.pf-card[data-banner="nacht"]::before,
+.cos-pass[data-banner="nacht"]::before { background: radial-gradient(120% 160% at 20% 0%, #1e3a8a, #0b1220 70%); }
+.pf-card[data-banner="sonne"]::before,
+.cos-pass[data-banner="sonne"]::before { background: linear-gradient(160deg, #ff9f43, #d6336c 60%, #3b1d4e); }
+.pf-card[data-banner="welle"]::before,
+.cos-pass[data-banner="welle"]::before {
   background:
     radial-gradient(90% 60% at 10% 110%, rgba(78, 205, 196, 0.75), transparent 70%),
     radial-gradient(90% 60% at 90% 120%, rgba(94, 168, 224, 0.7), transparent 70%),
     linear-gradient(180deg, #0a2540, #06131f);
 }
-.pf-card[data-banner="gold"]::before {
+.pf-card[data-banner="gold"]::before,
+.cos-pass[data-banner="gold"]::before {
   background: linear-gradient(105deg, #6b4f12, #f7dc8c 42%, #fff6d8 50%, #f7dc8c 58%, #6b4f12);
 }
-.pf-card[data-banner="nordlicht"]::before {
+.pf-card[data-banner="nordlicht"]::before,
+.cos-pass[data-banner="nordlicht"]::before {
   background:
     radial-gradient(80% 70% at 25% 100%, rgba(74, 222, 128, 0.8), transparent 65%),
     radial-gradient(80% 70% at 75% 110%, rgba(139, 92, 246, 0.75), transparent 65%),
     linear-gradient(180deg, #050b16, #0a1a2b);
   background-size: 180% 180%, 180% 180%, 100% 100%;
 }
-html:not(.reduce-motion) .pf-card[data-banner="nordlicht"]::before {
+html:not(.reduce-motion) .pf-card[data-banner="nordlicht"]::before,
+.cos-pass[data-banner="nordlicht"]::before {
   animation: pf-nordlicht 9s ease-in-out infinite alternate;
 }
 @keyframes pf-nordlicht {
@@ -6227,6 +6417,30 @@ html:not(.reduce-motion) .nm-glitch::after { animation: nm-glitch-c 1.9s steps(1
   0%, 88%, 100% { transform: translate(0, 0); opacity: 0; }
   90% { transform: translate(3px, 1px); opacity: 0.9; }
   95% { transform: translate(-2px, -1px); opacity: 0.7; }
+}
+
+/* Die Nummer des eigenen Exemplars
+   Steht an derselben Stelle wie die Marke, und das geht, weil sich beide
+   ausschliessen: eine Marke sagt, wie man ein Stueck bekommt, eine Nummer
+   hat nur, wer es schon hat. */
+.cos-item:has(.cos-nr) { padding-top: 22px; }
+.cos-nr {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  padding: 2px 3px;
+  border-radius: var(--r-xs);
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--accent);
+  font-family: var(--font-num);
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Marke auf zeitlich begrenzten Kosmetiks
@@ -7750,25 +7964,64 @@ a.sheet-item { text-decoration: none; color: inherit; }
    und auf dem iPad duerfen Overlays keine Spielknoepfe verdecken. Der Knopf
    erscheint ausserdem nur, wenn man wirklich in einer Lobby sitzt und jemand
    da ist, den man holen koennte. */
+/*
+ * Er war ein nackter Kreis mit einem Symbol darin, der irgendwann lautlos
+ * auftauchte. Damit hat ihn niemand bemerkt — ausgerechnet in dem Moment,
+ * in dem man ihn braucht: man macht eine Lobby auf und will sofort wissen,
+ * wen man holen kann. Jetzt steht der Text dabei, die Zahl der Erreichbaren
+ * als Marke, und er faehrt EINMAL auf. Danach ist er ruhig: ein Knopf, der
+ * dauernd wackelt, wird zur Tapete.
+ */
 .einladen-fab {
   position: fixed;
   right: 14px;
   bottom: 78px;
   z-index: 60;
-  width: 46px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 1px solid rgba(var(--accent-rgb), 0.5);
-  background: var(--surface);
+  padding: 0 14px 0 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--accent);
+  background: var(--surface-solid);
   color: var(--accent-strong);
-  box-shadow: var(--shadow-1);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  box-shadow: var(--shadow-1), 0 0 22px -8px var(--accent);
   cursor: pointer;
+  max-width: calc(100vw - 28px);
 }
-.einladen-fab svg { width: 22px; height: 22px; }
-.einladen-fab:active { transform: scale(0.94); }
-html:not(.reduce-motion) .einladen-fab { animation: se-pulsen 2.4s ease-in-out infinite; }
+.einladen-fab svg { width: 22px; height: 22px; flex: 0 0 auto; }
+.einladen-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.einladen-zahl {
+  flex: 0 0 auto;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+}
+.einladen-fab:active { transform: scale(0.97); }
+/* Einmal auffahren und zweimal pulsen, dann Ruhe. */
+html:not(.reduce-motion) .einladen-fab.rein { animation: einladen-rein 0.5s var(--ease-out), einladen-puls 1.1s ease-in-out 0.5s 2; }
+@keyframes einladen-rein {
+  from { opacity: 0; transform: translateY(14px) scale(0.9); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes einladen-puls {
+  0%, 100% { box-shadow: var(--shadow-1), 0 0 22px -8px var(--accent); }
+  50%      { box-shadow: var(--shadow-1), 0 0 26px 2px rgba(var(--accent-rgb), 0.55); }
+}
+
+@media (max-width: 420px) {
+  /* Auf dem Telefon nimmt der Text zu viel Platz neben dem Chat-Dock. */
+  .einladen-text { display: none; }
+  .einladen-fab { padding: 0 10px; }
+}
 
 /* Towers: Auszahlungsdeckel sichtbar machen
    Auf "Meister" verspricht Ebene 9 das 256.901-fache, ausgezahlt werden aber
@@ -8235,6 +8488,7 @@ html:not(.reduce-motion) .sch-auk_tresor { animation: sch-tresor 5s linear infin
    Vorschau). Die stehen hier bewusst in einem Selektor statt vier Mal
    untereinander wie bei den aelteren. */
 .pf-card[data-banner="auk_gewitter"]::before,
+.cos-pass[data-banner="auk_gewitter"]::before,
 .player-profile-head[data-banner="auk_gewitter"]::before,
 .cos-preview[data-banner="auk_gewitter"]::before,
 .cos-banner-demo[data-banner="auk_gewitter"] {
@@ -8246,6 +8500,7 @@ html:not(.reduce-motion) .sch-auk_tresor { animation: sch-tresor 5s linear infin
   background-size: 150% 150%, 150% 150%, 130% 130%, 100% 100%;
 }
 html:not(.reduce-motion) .pf-card[data-banner="auk_gewitter"]::before,
+.cos-pass[data-banner="auk_gewitter"]::before,
 html:not(.reduce-motion) .player-profile-head[data-banner="auk_gewitter"]::before,
 html:not(.reduce-motion) .cos-preview[data-banner="auk_gewitter"]::before,
 html:not(.reduce-motion) .cos-banner-demo[data-banner="auk_gewitter"] {
@@ -8761,3 +9016,2469 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 .spick table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .spick th, .spick td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .spick th { color: var(--text-dim); font-weight: 700; white-space: nowrap; }
+
+/* ------------------------------------------------------------------
+   Kisten
+   Die Ziehung ist auf dem Server längst entschieden, bevor sich hier
+   etwas bewegt. Was hier passiert, ist ausschließlich Anschauung:
+   die Bahn faehrt so weit, dass der Treffer unter der Marke landet.
+   ------------------------------------------------------------------ */
+.ki-wrap { max-width: 660px; margin: 0 auto; padding: 12px; }
+.ki-titel { text-align: center; }
+
+/* ------------------------------------------------------------------
+   Reiter: Kisten | Duelle
+   Das Duell stand vorher als Ueberschrift unter der Preisliste. Wer oben
+   eine Kiste aufmacht, scrollt da nie hin, und damit gab es das halbe
+   Spiel praktisch nicht.
+   ------------------------------------------------------------------ */
+.ki-reiter {
+  display: flex; gap: var(--sp-1);
+  margin: var(--sp-4) 0 var(--sp-3);
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+}
+.ki-reiter-knopf {
+  position: relative;
+  flex: 1;
+  padding: 9px 10px;
+  border: 0; border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit; font-weight: 700;
+  cursor: pointer;
+  transition: background var(--dur-2) var(--ease), color var(--dur-2) var(--ease);
+}
+.ki-reiter-knopf.active { background: var(--accent); color: var(--accent-ink); }
+.ki-reiter-marke {
+  display: inline-block;
+  min-width: 1.35em; margin-left: 6px; padding: 1px 5px;
+  border-radius: var(--r-pill);
+  background: var(--line-strong); color: var(--text);
+  font-size: var(--fs-xs); font-style: normal; font-family: var(--font-num);
+}
+/* Rot, sobald man selbst am Zug ist: da liegt der eigene Einsatz drin. */
+.ki-reiter-marke.dran { background: var(--bad); color: #2a0a06; }
+.ki-reiter-knopf.active .ki-reiter-marke { background: rgba(0, 0, 0, 0.22); color: var(--accent-ink); }
+.ki-tafel.hidden { display: none; }
+
+/* ------------------------------------------------------------------
+   Die Ruhmestafel
+   Was zuletzt im Haus gezogen wurde. Waagerecht und wischbar: auf dem
+   iPad ist das die einzige Form, in der zwoelf Karten auf den Schirm
+   passen, ohne die Preisliste nach unten zu druecken.
+   ------------------------------------------------------------------ */
+.ki-ruhm { margin-top: var(--sp-4); }
+.ki-ruhm.hidden { display: none; }
+.ki-ruhm-kopf { display: flex; align-items: baseline; gap: var(--sp-2); margin-bottom: 6px; }
+.ki-ruhm-band {
+  display: flex; gap: var(--sp-2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  /* Am rechten Rand ausblenden: so sieht man, dass es weitergeht, ohne
+     dass eine Leiste dafuer Platz braucht. */
+  -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+          mask-image: linear-gradient(90deg, #000 88%, transparent);
+}
+.ki-ruhm-band::-webkit-scrollbar { display: none; }
+.ki-ruhm-karte {
+  flex: 0 0 auto; width: 132px;
+  scroll-snap-align: start;
+  padding: var(--sp-2);
+  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--stufe) 42%, transparent);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--stufe) 20%, transparent), transparent 70%),
+    var(--surface);
+  text-align: center;
+}
+html:not(.reduce-motion) .ki-ruhm-karte.frisch { animation: ki-ruhm-rein 0.6s var(--ease-out); }
+@keyframes ki-ruhm-rein {
+  from { opacity: 0; transform: translateX(-16px) scale(0.92); }
+  to   { opacity: 1; transform: none; }
+}
+.ki-ruhm-stufe {
+  color: var(--stufe);
+  font-size: 0.64rem; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.ki-ruhm-demo {
+  display: flex; align-items: center; justify-content: center;
+  height: 40px; margin: 4px 0;
+  overflow: hidden;
+}
+.ki-ruhm-demo > * { max-width: 100%; }
+.ki-ruhm-name {
+  font-size: var(--fs-xs); font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ki-ruhm-name i { color: var(--text-mute); font-style: normal; font-family: var(--font-num); }
+.ki-ruhm-wer {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  margin-top: 4px; padding-top: 4px;
+  border-top: 1px solid var(--line-neutral);
+  font-size: var(--fs-xs);
+  overflow: hidden; white-space: nowrap;
+}
+.ki-ruhm-wer .pl-ava { font-size: 0.9em; }
+.ki-ruhm-wer .pl-title { display: none; }
+
+.ki-liste { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-4); }
+.ki-karte {
+  position: relative;
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--top) 30%, var(--line));
+  border-radius: var(--r-md);
+  overflow: hidden;
+  /* Die Farbe der besten Stufe zieht von oben in die Kachel. Damit sieht
+     man den Unterschied zwischen der 30.000er und der 600.000er Kiste,
+     bevor man den Preis gelesen hat. */
+  background: var(--surface);
+  background:
+    radial-gradient(90% 120% at 18% 0%, color-mix(in srgb, var(--top) 16%, transparent), transparent 62%),
+    var(--surface);
+}
+.ki-karte.arm { opacity: 0.55; }
+/* Die Gratiskiste hebt sich ab: sie ist der Einstieg, und wer neu ist, soll
+   sie zuerst sehen und nicht die 600.000er darunter. */
+.ki-karte.gratis { border-color: rgba(var(--accent-rgb), 0.5); }
+.ki-kopf { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+
+/*
+ * Das Bild der Kiste.
+ *
+ * Die Bilder sind freigestellt (tools/kisten-bilder.py), also ohne
+ * Hintergrund. Genau deshalb steht hier KEIN Kasten mehr darum: vorher sass
+ * ein Produktfoto in einem grauen Rechteck, und das sah aus wie ein
+ * Katalogeintrag. Jetzt steht die Kiste frei auf einem Schein in der Farbe
+ * ihrer besten Stufe, wippt langsam und bekommt einen Lichtstreifen
+ * darueber. Bewegung ist hier nicht Zierrat: eine Kiste, die sich nie
+ * ruehrt, sieht aus wie ein Bild, und eine, die atmet, sieht aus, als waere
+ * etwas drin.
+ */
+.ki-bild-halter {
+  position: relative;
+  flex: 0 0 auto;
+  width: 104px; height: 88px;
+  display: flex; align-items: center; justify-content: center;
+}
+.ki-bild-halter::before {
+  content: "";
+  position: absolute; inset: -10% -6%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--top) 55%, transparent), transparent 76%);
+  opacity: 0.55;
+  pointer-events: none;
+}
+html:not(.reduce-motion) .ki-bild-halter::before { animation: ki-schein 4.2s ease-in-out infinite; }
+@keyframes ki-schein {
+  0%, 100% { opacity: 0.38; transform: scale(0.94); }
+  50%      { opacity: 0.68; transform: scale(1.04); }
+}
+/* Der Schatten auf dem Boden. Er schrumpft, wenn die Kiste hochgeht — ohne
+   das schwebt sie nicht, sondern rutscht. */
+.ki-bild-halter::after {
+  content: "";
+  position: absolute; left: 14%; right: 14%; bottom: 4px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55), transparent);
+  pointer-events: none;
+}
+html:not(.reduce-motion) .ki-bild-halter::after { animation: ki-schatten 4.2s ease-in-out infinite; }
+@keyframes ki-schatten {
+  0%, 100% { transform: scaleX(1);    opacity: 0.6; }
+  50%      { transform: scaleX(0.82); opacity: 0.34; }
+}
+.ki-bild {
+  position: relative;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+}
+html:not(.reduce-motion) .ki-bild { animation: ki-schweb 4.2s ease-in-out infinite; }
+@keyframes ki-schweb {
+  0%, 100% { transform: translateY(0)    rotate(-0.6deg); }
+  50%      { transform: translateY(-6px) rotate(0.6deg); }
+}
+/* Gesperrt heisst still: eine Kiste, die man nicht aufmachen kann, soll
+   nicht auch noch winken. */
+.ki-karte.arm .ki-bild,
+.ki-karte.arm .ki-bild-halter::before,
+.ki-karte.arm .ki-bild-halter::after { animation: none; }
+
+.ki-kopf-text { min-width: 0; }
+.ki-kopf-text b { display: block; font-size: var(--fs-lg); }
+.ki-kopf-text span { display: block; margin-top: 2px; }
+/* Die beste Stufe als Zeile ueber dem Namen. Kuerzer als jede Erklaerung
+   und auf dem iPad lesbar, wo es kein Hover gibt. */
+.ki-top {
+  color: var(--top);
+  font-size: 0.64rem; font-weight: 800;
+  letter-spacing: 0.09em; text-transform: uppercase;
+}
+
+/* Die Chancen als Band. Ein Balken sagt in einer Zeile, was eine Tabelle
+   in fünf sagt, und die Zahlen stehen trotzdem darunter: auf dem iPad
+   gibt es kein Hover, in dem man sie verstecken könnte. */
+.ki-chancen {
+  display: flex; height: 8px; border-radius: 999px; overflow: hidden;
+  background: var(--surface-sunken);
+}
+.ki-chancen > span { display: block; }
+.ki-chancen-text {
+  display: flex; flex-wrap: wrap; gap: 4px 12px;
+  margin: 6px 0 var(--sp-3);
+  color: var(--text-dim); font-size: var(--fs-xs);
+}
+.ki-chancen-text i, .ki-legende i {
+  display: inline-block; width: 8px; height: 8px;
+  margin-right: 5px; border-radius: 2px; vertical-align: middle;
+}
+.ki-knopf { width: 100%; }
+
+.ki-legende {
+  display: flex; flex-wrap: wrap; gap: 6px 14px;
+  margin-top: var(--sp-4); padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+  color: var(--text-dim); font-size: var(--fs-xs);
+}
+.ki-legende b { color: var(--text); font-family: var(--font-num); }
+
+/* ------------------------------------------------------------------
+   Die Ziehung: Vollbild
+   Eine Kiste, die man neben der Preisliste aufmacht, ist eine Zeile in
+   einer Liste. Eine, die den Bildschirm uebernimmt, ist ein Moment.
+   ------------------------------------------------------------------ */
+body.ki-offen { overflow: hidden; }
+.ki-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  /* Deckend. Hier stand erst ein Verlauf mit rgba(var(--stufe-rgb), 0);
+     die Variable gibt es nicht, damit war der Wert ungueltig und die ganze
+     Deklaration fiel weg — das Vollbild war durchsichtig und die Preisliste
+     stand mitten in der Ziehung. Die Farbe der Stufe kommt jetzt als eigene
+     Ebene darueber (.ki-tint), die darf ausfallen. */
+  background: #040605;
+  animation: ki-ov-auf 0.32s ease;
+}
+@keyframes ki-ov-auf { from { opacity: 0; } to { opacity: 1; } }
+/* Die Farbe der Stufe als Schimmer ueber dem Schwarz. Eigene Ebene, damit
+   ein Ausfall hier nicht den deckenden Hintergrund mitnimmt. */
+.ki-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 46%, var(--stufe) 0%, transparent 58%);
+  opacity: 0.13;
+}
+html.reduce-motion .ki-overlay { animation: none; }
+.ki-overlay.hidden { display: none; }
+/* Der Schlag beim Landen. Nur ab Legendär, sonst wackelt der Bildschirm
+   sechsmal am Abend und niemand sieht mehr hin. */
+.ki-overlay.beben { animation: ki-beben 0.6s cubic-bezier(.36,.07,.19,.97); }
+@keyframes ki-beben {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  12% { transform: translate3d(-9px, 4px, 0); }
+  26% { transform: translate3d(8px, -5px, 0); }
+  44% { transform: translate3d(-6px, -3px, 0); }
+  62% { transform: translate3d(4px, 3px, 0); }
+  82% { transform: translate3d(-2px, 1px, 0); }
+}
+html.reduce-motion .ki-overlay.beben { animation: none; }
+
+/* AUFBAU: die Kiste steht allein im Bild und zittert. */
+.ki-phase { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); width: 100%; }
+.ki-phase.hidden { display: none; }
+/* Im Aufbau steht die Kiste gross und frei, ohne Rahmen: sie SOLL das Bild
+   sein und nicht in einer Kachel sitzen. */
+.ki-kiste-gross {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  width: min(360px, 78vw);
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.75));
+}
+/* Der Schein dahinter, in der Farbe der Stufe. Die Kiste ist freigestellt,
+   also liegt er wirklich HINTER ihr und nicht als Kasten darum. */
+.ki-kiste-gross::before {
+  content: "";
+  position: absolute; inset: -18% -12%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--stufe, #e7c66b), transparent 72%);
+  opacity: 0.3;
+  z-index: -1;
+  pointer-events: none;
+}
+html:not(.reduce-motion) .ki-kiste-gross.zittert::before { animation: ki-schein-auf var(--aufbau, 1.25s) ease-in forwards; }
+@keyframes ki-schein-auf {
+  from { opacity: 0.14; transform: scale(0.8); }
+  to   { opacity: 0.7;  transform: scale(1.18); }
+}
+/*
+ * Das Licht aus dem Deckelspalt.
+ *
+ * Alle vier Kisten sind zu, und ohne diesen Streifen zittert nur ein Kasten.
+ * Der Spalt liegt bei diesen Bildern auf gut einem Drittel der Hoehe; der
+ * Streifen wird waehrend des Zitterns heller und breiter, so als wuerde von
+ * innen etwas draengen. Das ist die eine Sekunde, in der die Spannung
+ * entsteht — danach faehrt ohnehin die Bahn.
+ */
+.ki-kiste-gross::after {
+  content: "";
+  position: absolute; left: 19%; right: 19%; top: 37%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--stufe, #fff);
+  filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+}
+html:not(.reduce-motion) .ki-kiste-gross.zittert::after { animation: ki-spalt var(--aufbau, 1.25s) ease-in forwards; }
+@keyframes ki-spalt {
+  0%   { opacity: 0;    transform: scaleY(0.6); filter: blur(2px); }
+  55%  { opacity: 0.55; transform: scaleY(1.4); filter: blur(4px); }
+  100% { opacity: 1;    transform: scaleY(3.4); filter: blur(7px); }
+}
+.ki-kiste-gross img { width: 100%; height: auto; display: block; }
+html:not(.reduce-motion) .ki-kiste-gross.zittert { animation: ki-zitter var(--aufbau, 1.25s) cubic-bezier(.36,.07,.19,.97); }
+/* Erst kaum, dann heftig: die Spannung steckt in der Beschleunigung, nicht
+   im Ausschlag. */
+@keyframes ki-zitter {
+  0%   { transform: rotate(0deg) scale(1); }
+  20%  { transform: rotate(-1deg) scale(1.01); }
+  40%  { transform: rotate(2deg) scale(1.02); }
+  60%  { transform: rotate(-3deg) scale(1.04); }
+  75%  { transform: rotate(4deg) scale(1.06); }
+  85%  { transform: rotate(-5deg) scale(1.08); }
+  100% { transform: rotate(0deg) scale(1.12); }
+}
+html:not(.reduce-motion) .ki-kiste-gross.platzt { animation: ki-platz 0.26s ease-in forwards; }
+@keyframes ki-platz {
+  0%   { transform: scale(1.12); opacity: 1; filter: brightness(1); }
+  40%  { transform: scale(1.38); opacity: 1; filter: brightness(2.6); }
+  100% { transform: scale(2.1); opacity: 0; filter: brightness(3); }
+}
+.ki-aufbau-text {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Der Blitz beim Landen, in der Farbe der Stufe. */
+.ki-blitz { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+.ki-blitz.an {
+  background: radial-gradient(circle at 50% 50%, var(--stufe) 0%, transparent 62%);
+  animation: ki-blitz 0.72s ease-out;
+}
+@keyframes ki-blitz {
+  0%   { opacity: 0.85; transform: scale(0.3); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+html.reduce-motion .ki-blitz.an { animation: none; }
+
+/* Strahlen hinter der Karte. Nur ab Legendär. */
+.ki-strahlen {
+  position: absolute; left: 50%; top: 50%;
+  width: 170vmax; height: 170vmax; margin: -85vmax 0 0 -85vmax;
+  opacity: 0; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg,
+    var(--stufe) 0deg 3deg, transparent 3deg 13deg);
+  -webkit-mask: radial-gradient(circle, #000 0 8%, transparent 46%);
+  mask: radial-gradient(circle, #000 0 8%, transparent 46%);
+}
+.ki-strahlen.an { animation: ki-strahlen-auf 0.5s ease-out forwards, ki-strahlen-dreh 22s linear infinite; }
+@keyframes ki-strahlen-auf { to { opacity: 0.2; } }
+@keyframes ki-strahlen-dreh { to { transform: rotate(360deg); } }
+html.reduce-motion .ki-strahlen.an { animation: none; opacity: 0.12; }
+
+/* Die Bahn */
+.ki-phase-bahn {
+  width: 100%;
+  max-width: 820px;
+  transition: opacity 0.5s ease, transform 0.5s ease, max-height 0.5s ease;
+}
+/* Nach der Landung tritt die Bahn zurueck. Sie hat ihre Arbeit getan, und
+   neben dem Ergebnis stehen zu bleiben heisst nur, ihm den Platz wegzunehmen. */
+.ki-phase-bahn.verblasst { opacity: 0.22; transform: scale(0.9) translateY(-8px); }
+html.reduce-motion .ki-phase-bahn { transition: none; }
+.ki-bahn-rahmen {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  padding: var(--sp-4) 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 50px -12px rgba(var(--accent-rgb), 0.45);
+}
+/* Die Raender ausblenden, damit die Felder nicht hart abgeschnitten
+   auftauchen, sondern hereinfahren. */
+.ki-bahn-rahmen::before, .ki-bahn-rahmen::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 88px;
+  pointer-events: none; z-index: 2;
+}
+.ki-bahn-rahmen::before { left: 0; background: linear-gradient(90deg, #04060590, transparent); }
+.ki-bahn-rahmen::after { right: 0; background: linear-gradient(270deg, #04060590, transparent); }
+/* Die Marke in der Mitte: das ist die Stelle, auf die es ankommt. */
+.ki-marke {
+  position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 2px; margin-left: -1px; z-index: 3;
+  background: var(--accent);
+  box-shadow: 0 0 14px 2px rgba(var(--accent-rgb), 0.9);
+  pointer-events: none;
+}
+.ki-marke::before, .ki-marke::after {
+  content: ""; position: absolute; left: 50%; margin-left: -7px;
+  border-left: 7px solid transparent; border-right: 7px solid transparent;
+}
+.ki-marke::before { top: 0; border-top: 10px solid var(--accent); }
+.ki-marke::after { bottom: 0; border-bottom: 10px solid var(--accent); }
+
+.ki-bahn { display: flex; gap: 10px; will-change: transform; }
+.ki-feld {
+  flex: 0 0 auto;
+  width: 132px;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  border-bottom: 4px solid var(--stufe);
+  border-radius: var(--r-sm);
+  background: linear-gradient(180deg, var(--surface), rgba(0, 0, 0, 0.45));
+  text-align: center;
+  /* Jedes Feld traegt seine Stufe als Schein. Beim Vorbeiziehen wird daraus
+     ein Farbband, und man sieht schon an der Bahn, ob etwas Gutes kommt. */
+  box-shadow: inset 0 -22px 20px -20px var(--stufe);
+}
+.ki-feld-demo {
+  display: flex; align-items: center; justify-content: center;
+  height: 64px; overflow: hidden;
+}
+.ki-feld-demo > * { max-width: 100%; }
+.ki-feld-name {
+  margin-top: 5px;
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Das Ergebnis */
+.ki-ergebnis { position: relative; z-index: 4; width: 100%; max-width: 400px; margin-top: var(--sp-2); }
+.ki-ergebnis.hidden { display: none; }
+.ki-erg-karte {
+  position: relative;
+  padding: var(--sp-4) var(--sp-3) var(--sp-3);
+  border: 1px solid var(--stufe);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  text-align: center;
+  box-shadow: 0 0 60px -10px var(--stufe), 0 18px 40px -20px #000;
+  animation: ki-auf 0.46s cubic-bezier(.16,1.4,.36,1);
+}
+@keyframes ki-auf {
+  from { opacity: 0; transform: translateY(16px) scale(0.9); }
+  to   { opacity: 1; transform: none; }
+}
+html.reduce-motion .ki-erg-karte { animation: none; }
+.ki-erg-stufe {
+  position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+  padding: 3px 12px; border-radius: 999px;
+  background: var(--stufe);
+  color: #10140f; font-size: var(--fs-xs); font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.ki-erg-demo {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 74px; margin: var(--sp-3) 0 var(--sp-2);
+}
+.ki-erg-name { font-size: 1.22rem; font-weight: 800; }
+.ki-erg-art { margin-top: 2px; color: var(--text-mute); font-size: var(--fs-xs); }
+.ki-erg-zeile { margin-top: var(--sp-3); color: var(--text-dim); font-size: var(--fs-sm); }
+.ki-erg-zeile b { font-family: var(--font-num); color: var(--text); }
+.ki-erg-zeile .pos { color: var(--good); font-family: inherit; }
+.ki-erg-knoepfe { display: flex; gap: var(--sp-2); margin-top: var(--sp-3); }
+.ki-erg-knoepfe button { flex: 1; }
+
+@media (max-width: 560px) {
+  .ki-feld { width: 104px; }
+  .ki-feld-demo { height: 52px; }
+  .ki-bild-halter { width: 84px; height: 72px; }
+  .ki-ruhm-karte { width: 118px; }
+}
+
+/* ------------------------------------------------------------------
+   Neue Stuecke: zwei aus der Kiste, drei vergibt das Haus
+   ------------------------------------------------------------------ */
+
+/* Lackiert (Kiste). Kein weiterer Verlauf, sondern eine Oberflaeche: dunkles
+   Metall mit einem harten Glanzstreifen, der schraeg darueber wandert. */
+.nm-kiste_lack {
+  background-image: linear-gradient(104deg,
+    #4a5764 0%, #8e9dab 34%, #ffffff 44%, #c9d6e2 50%, #6b7885 62%, #3d4854 100%);
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
+}
+html:not(.reduce-motion) .nm-kiste_lack { animation: pl-sweep 3.4s linear infinite; }
+
+/* Zensiert (Haus). Der Balken liegt ueber der Schrift und rutscht alle paar
+   Sekunden kurz weg. Das Einzige im Haus, das den Namen VERSTECKT. */
+.nm-adm_zensiert {
+  position: relative;
+  background-image: linear-gradient(100deg, #e9e9ef, #b9b9c6 50%, #e9e9ef);
+}
+.nm-adm_zensiert::after {
+  content: "";
+  position: absolute;
+  inset: 0.06em -0.14em;
+  border-radius: 2px;
+  background: #0b0b0e;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+  pointer-events: none;
+}
+html:not(.reduce-motion) .nm-adm_zensiert::after { animation: nm-zensur 6s cubic-bezier(.7,0,.3,1) infinite; }
+@keyframes nm-zensur {
+  0%, 74%  { transform: translateX(0); }
+  /* Kurz weg, dann wieder drueber. Die Pause ist lang, sonst ist der Witz
+     nach zwei Minuten keiner mehr. */
+  82%, 90% { transform: translateX(105%); }
+  100%     { transform: translateX(0); }
+}
+
+/* Orbit (Haus). Kein Ring am Bild, sondern zwei Koerper auf zwei Bahnen.
+   --rahmen-farbe bleibt transparent, sonst gewinnt das Grundgeruest. */
+.fr-adm_orbit { --rahmen-farbe: transparent; position: relative; overflow: visible; }
+.fr-adm_orbit::before, .fr-adm_orbit::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.3em;
+  height: 0.3em;
+  margin: -0.15em 0 0 -0.15em;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.fr-adm_orbit::before {
+  background: var(--accent);
+  box-shadow: 0 0 0.35em 0.06em rgba(var(--accent-rgb), 0.85);
+}
+.fr-adm_orbit::after {
+  width: 0.22em; height: 0.22em; margin: -0.11em 0 0 -0.11em;
+  background: #9be7ff;
+  box-shadow: 0 0 0.3em 0.05em rgba(155, 231, 255, 0.8);
+}
+html:not(.reduce-motion) .fr-adm_orbit::before { animation: fr-orbit-a 3.1s linear infinite; }
+html:not(.reduce-motion) .fr-adm_orbit::after  { animation: fr-orbit-b 4.6s linear infinite; }
+/* Zwei Bahnen, die gegeneinander kippen: die eine liegt flach, die andere
+   steht. Deshalb zwei Keyframes statt einer mit anderer Dauer. */
+@keyframes fr-orbit-a {
+  from { transform: rotate(0deg) translateX(0.82em) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(0.82em) rotate(-360deg); }
+}
+@keyframes fr-orbit-b {
+  from { transform: rotate(180deg) translateX(0.82em) scaleY(0.45) rotate(-180deg); }
+  to   { transform: rotate(-180deg) translateX(0.82em) scaleY(0.45) rotate(180deg); }
+}
+/* Ohne Bewegung stehen die beiden still nebeneinander, statt zu verschwinden. */
+html.reduce-motion .fr-adm_orbit::before { transform: translateX(0.82em); }
+html.reduce-motion .fr-adm_orbit::after  { transform: translateX(-0.82em); }
+
+/* Funkenflug (Kiste). Goldstaub schwebt, das hier schiesst: kurze Funken,
+   geradlinig weg und aus. */
+.au-kiste_funken::before, .au-kiste_funken::after,
+.au-adm_eklipse::before, .au-adm_eklipse::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+.au-kiste_funken > .pl-ava { border-radius: 50%; box-shadow: 0 0 0.4em 0.1em rgba(255, 160, 60, 0.35); }
+.au-kiste_funken::before, .au-kiste_funken::after {
+  width: 2px; height: 2px; margin: -1px 0 0 -1px;
+  border-radius: 1px;
+  background: #fff3b0;
+  box-shadow:
+    -16px -10px 0 0 #ffb347, 15px -12px 0 0 #ff7a1c, -12px 12px 0 0 #ffd76e,
+    17px 9px 0 -0.5px #ff9d2e, 2px -18px 0 -0.5px #fff3b0, -19px 2px 0 0 #ff7a1c;
+}
+html:not(.reduce-motion) .au-kiste_funken::before { animation: au-funke 1.5s linear infinite; }
+html:not(.reduce-motion) .au-kiste_funken::after  { animation: au-funke 1.5s linear infinite 0.75s; }
+@keyframes au-funke {
+  0%   { opacity: 0; transform: scale(0.25); }
+  18%  { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* Eklipse (Haus). Eine dunkle Scheibe ueber dem Bild, aussen eine goldene
+   Korona, die wandert. Groessen in Prozent der Huelle, nicht in em: die
+   Huelle ist so gross wie das Bild, und das ist mal 1,9em und mal doppelt. */
+.au-adm_eklipse > .pl-ava { filter: brightness(0.35) contrast(1.2); }
+.au-adm_eklipse::before {
+  width: 132%; height: 132%; margin: -66% 0 0 -66%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    rgba(244, 215, 130, 0) 0deg, rgba(255, 233, 168, 0.95) 40deg,
+    rgba(244, 215, 130, 0.15) 110deg, rgba(255, 246, 216, 0.85) 200deg,
+    rgba(244, 215, 130, 0.1) 280deg, rgba(244, 215, 130, 0) 360deg);
+  -webkit-mask: radial-gradient(circle, transparent 0 38%, #000 44%, #000 100%);
+  mask: radial-gradient(circle, transparent 0 38%, #000 44%, #000 100%);
+  filter: blur(1.5px);
+}
+.au-adm_eklipse::after {
+  width: 106%; height: 106%; margin: -53% 0 0 -53%;
+  border-radius: 50%;
+  background: #05050a;
+  box-shadow: 0 0 0.5em 0.1em rgba(0, 0, 0, 0.9);
+}
+html:not(.reduce-motion) .au-adm_eklipse::before { animation: au-korona 9s linear infinite; }
+@keyframes au-korona { to { transform: rotate(360deg); } }
+
+/* Kisten-Duelle */
+.ki-ueber { margin: var(--sp-5, 22px) 0 4px; }
+/* ------------------------------------------------------------------
+   Kisten-Duelle
+   ------------------------------------------------------------------ */
+
+/* Der Kopf des Reiters. Zwei Kisten, die sich gegenueberstehen, sagen in
+   einem Bild, worum es geht; die drei Zeilen darunter sagen den Rest.
+   Vorher stand hier eine Ueberschrift und ein grauer Knopf. */
+.kd-held {
+  position: relative;
+  margin-top: var(--sp-3);
+  padding: var(--sp-4) var(--sp-3) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  text-align: center;
+  background: var(--surface);
+  background:
+    radial-gradient(90% 70% at 50% 0%, rgba(var(--accent-rgb), 0.14), transparent 68%),
+    var(--surface);
+}
+.kd-held-bild {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  gap: clamp(8px, 5vw, 34px);
+  margin-bottom: var(--sp-3);
+}
+.kd-held-bild img {
+  width: clamp(76px, 22vw, 108px);
+  height: auto;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
+}
+/* Die beiden neigen sich gegeneinander und wippen versetzt: so sieht es
+   nach Gegenueber aus und nicht nach zwei Bildern nebeneinander. */
+.kd-held-bild img:first-child { transform: rotate(-7deg); }
+.kd-held-bild img:last-child  { transform: rotate(7deg); }
+html:not(.reduce-motion) .kd-held-bild img:first-child { animation: kd-wipp-l 3.6s ease-in-out infinite; }
+html:not(.reduce-motion) .kd-held-bild img:last-child  { animation: kd-wipp-r 3.6s ease-in-out infinite 0.5s; }
+@keyframes kd-wipp-l {
+  0%, 100% { transform: rotate(-7deg) translateY(0); }
+  50%      { transform: rotate(-4deg) translateY(-7px); }
+}
+@keyframes kd-wipp-r {
+  0%, 100% { transform: rotate(7deg) translateY(0); }
+  50%      { transform: rotate(4deg) translateY(-7px); }
+}
+.kd-vs {
+  font-family: var(--font-num);
+  font-size: clamp(1.1rem, 5vw, 1.5rem); font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  text-shadow: 0 0 18px rgba(var(--accent-rgb), 0.6);
+}
+html:not(.reduce-motion) .kd-vs { animation: kd-vs-puls 2.4s ease-in-out infinite; }
+@keyframes kd-vs-puls {
+  0%, 100% { transform: scale(1);    opacity: 0.86; }
+  50%      { transform: scale(1.12); opacity: 1; }
+}
+.kd-held-titel { display: block; font-size: var(--fs-lg); }
+.kd-held p { margin: 6px auto var(--sp-3); max-width: 42ch; }
+
+.kd-auf { width: 100%; }
+.kd-fussnote { margin: var(--sp-2) 0 0; }
+
+.kd-liste { margin-top: var(--sp-4); }
+.kd-karte {
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+/* Ein laufendes Duell hebt sich ab: da ist gerade etwas zu sehen, und
+   Zusehen ist hier ausdruecklich erwuenscht. */
+.kd-karte.laeuft { border-color: rgba(var(--accent-rgb), 0.55); background: var(--accent-soft); }
+.kd-karte.meins { border-style: dashed; }
+.kd-kopf { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.kd-einsatz { font-family: var(--font-num); font-size: var(--fs-lg); font-weight: 800; color: var(--accent); }
+.kd-status { color: var(--text-mute); font-size: var(--fs-xs); }
+/* Die Kisten als Bilderreihe. "3 Kisten" sagt nicht, welche — und genau
+   das ist die Frage, bevor man mitmacht. */
+.kd-kisten { display: flex; flex-wrap: wrap; gap: 4px; margin: var(--sp-2) 0; }
+.kd-kisten img { width: 40px; height: 34px; object-fit: contain; }
+.kd-wer {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-sm);
+}
+.kd-teilnehmer { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.kd-teilnehmer .pl-title { display: none; }
+.kd-gegen { color: var(--text-mute); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; }
+.kd-leer { color: var(--text-mute); font-style: italic; }
+.kd-karte > button { width: 100%; }
+
+.kd-zaehler { display: flex; align-items: center; gap: 8px; }
+.kd-zaehler button {
+  width: 32px; height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  color: var(--text);
+  font: inherit; font-size: 1.1rem;
+  cursor: pointer;
+}
+.kd-zaehler button:disabled { opacity: 0.3; cursor: default; }
+.kd-zaehler b { min-width: 1.2em; font-family: var(--font-num); text-align: center; }
+
+/* ------------------------------------------------------------------
+   Das Duell im Vollbild
+
+   Zwei Bahnen nebeneinander, und zwar SENKRECHT. Waagerecht waere jede
+   der beiden so schmal, dass man drei Felder sieht; senkrecht passen
+   sie nebeneinander und laufen trotzdem lang aus.
+   ------------------------------------------------------------------ */
+.kb-overlay {
+  position: fixed; inset: 0;
+  z-index: 300;
+  display: flex;
+  /* NICHT align-items: center.
+     In einem Kasten, der scrollt, schiebt zentrieren alles, was nicht
+     hineinpasst, oben UEBER den Rand hinaus — und dorthin kommt man nicht
+     zurueck, weil es vor dem Anfang der Bildlaufleiste liegt. Genau das war
+     bei der Inhaltsliste der drei grossen Kisten passiert: die oberen
+     Stufen waren nicht erreichbar. `margin: auto` am Kind zentriert
+     genauso, wenn Platz da ist, und schiebt nichts weg, wenn keiner da
+     ist. */
+  align-items: flex-start; justify-content: center;
+  padding: max(10px, var(--safe-top)) 10px max(10px, var(--safe-bottom));
+  background: #06090c;
+  background: radial-gradient(120% 80% at 50% 0%, rgba(var(--accent-rgb), 0.12), transparent 62%), #06090c;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.kb-overlay.hidden { display: none; }
+.kb-inhalt { width: 100%; max-width: 720px; margin: auto; }
+
+/* Zusammenstellen */
+.kb-bau {
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+.kb-bau h3 { margin: 0 0 4px; }
+.kb-bau-liste { display: flex; flex-direction: column; gap: var(--sp-2); margin: var(--sp-3) 0; }
+.kb-bau-zeile {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.kb-bau-zeile img { flex: 0 0 auto; width: 54px; height: 44px; object-fit: contain; }
+.kb-bau-text { flex: 1; min-width: 0; }
+.kb-bau-text b { display: block; font-size: var(--fs-sm); }
+.kb-summe { margin-bottom: var(--sp-3); color: var(--text-dim); font-size: var(--fs-sm); }
+.kb-summe b { font-family: var(--font-num); font-size: var(--fs-lg); color: var(--accent); }
+
+/* Das Duell */
+.kb-duell { display: flex; flex-direction: column; gap: var(--sp-3); }
+.kb-runde {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+/* Die Kisten als Fortschritt: welche ist dran, welche sind durch. Das ist
+   die Antwort auf "wie lange noch", ohne dass irgendwo eine Zahl steht. */
+.kb-kisten { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.kb-kisten img {
+  width: 38px; height: 32px; object-fit: contain;
+  opacity: 0.32;
+  transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease);
+}
+.kb-kisten img.durch { opacity: 0.7; }
+.kb-kisten img.dran {
+  opacity: 1;
+  transform: scale(1.35);
+  filter: drop-shadow(0 0 10px rgba(var(--accent-rgb), 0.8));
+}
+
+.kb-bahnen { display: flex; align-items: stretch; justify-content: center; gap: var(--sp-2); }
+.kb-vs {
+  align-self: center;
+  font-family: var(--font-num); font-weight: 900;
+  color: var(--text-mute);
+  font-size: var(--fs-sm);
+}
+.kb-spalte {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+  transition: border-color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease);
+}
+/* Wer vorn liegt, steht in Gold. Beim Zusehen ist das die einzige Frage. */
+.kb-spalte.vorn {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px -6px var(--accent);
+}
+.kb-spieler { display: flex; align-items: center; gap: 5px; max-width: 100%; overflow: hidden; font-size: var(--fs-sm); }
+.kb-spieler .pl-title { display: none; }
+.kb-wert {
+  font-family: var(--font-num); font-size: var(--fs-lg); font-weight: 800;
+  color: var(--accent);
+}
+html:not(.reduce-motion) .kb-wert.hoch { animation: kb-hoch 0.5s var(--ease-out); }
+@keyframes kb-hoch {
+  0%   { transform: scale(1);    color: var(--good); }
+  40%  { transform: scale(1.28); color: var(--good); }
+  100% { transform: scale(1);    color: var(--accent); }
+}
+
+.kb-fenster {
+  position: relative;
+  width: 100%;
+  height: 168px;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  /* Oben und unten ausblenden: die Bahn soll aus dem Nichts kommen und ins
+     Nichts laufen, statt an einer harten Kante abzureissen. */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 22%, #000 78%, transparent);
+          mask-image: linear-gradient(180deg, transparent, #000 22%, #000 78%, transparent);
+}
+.kb-marke {
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 2px; margin-top: -1px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  z-index: 2;
+}
+.kb-bahn { display: flex; flex-direction: column; gap: 6px; padding: 0 4px; will-change: transform; }
+.kb-feld {
+  flex: 0 0 auto;
+  height: 74px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-sm);
+  border-bottom: 2px solid var(--stufe);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 70%);
+}
+.kb-feld-demo {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; width: 100%;
+  overflow: hidden;
+  font-size: 0.8rem;
+}
+.kb-feld-demo > * { max-width: 100%; }
+
+/* Was schon gezogen wurde. Steht unter der Bahn und waechst mit — damit
+   sieht man auch beim Dazukommen, was bisher gelaufen ist. */
+.kb-bisher { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; min-height: 34px; }
+.kb-bisher-karte {
+  width: 38px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  border-radius: var(--r-xs);
+  border-bottom: 2px solid var(--stufe);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.6rem;
+  /* Titel und Sprueche sind laenger als die Kachel. Abgeschnitten mitten im
+     Wort liest sich das wie ein Tippfehler ("uerwe"), also ausblenden
+     statt abschneiden: so sieht man, dass da mehr steht. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+html:not(.reduce-motion) .kb-bisher-karte { animation: ki-auf 0.3s var(--ease-out); }
+.kb-bisher-demo { transform: scale(0.62); white-space: nowrap; }
+
+.kb-warte {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: var(--sp-4);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+  text-align: center;
+}
+.kb-warte span { max-width: 44ch; }
+.kb-warte button { margin-top: var(--sp-2); }
+.kb-warte-punkte { display: flex; gap: 6px; }
+.kb-warte-punkte i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); opacity: 0.4; }
+html:not(.reduce-motion) .kb-warte-punkte i { animation: kb-punkt 1.2s ease-in-out infinite; }
+html:not(.reduce-motion) .kb-warte-punkte i:nth-child(2) { animation-delay: 0.2s; }
+html:not(.reduce-motion) .kb-warte-punkte i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes kb-punkt { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+.kb-ende {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  text-align: center;
+}
+.kb-ende.hidden { display: none; }
+.kb-ende b { font-size: var(--fs-xl); }
+.kb-ende.gewonnen { border-color: var(--accent); box-shadow: 0 0 34px -12px var(--accent); }
+.kb-ende.gewonnen b { color: var(--accent); }
+.kb-beute { color: var(--good-text); }
+html:not(.reduce-motion) .kb-ende { animation: ki-auf 0.5s cubic-bezier(.16, 1.4, .36, 1); }
+.kb-zu { width: 100%; }
+
+@media (max-width: 560px) {
+  .kb-fenster { height: 142px; }
+  .kb-feld { height: 62px; }
+  .kb-bau-zeile img { width: 44px; height: 38px; }
+}
+
+/* ------------------------------------------------------------------
+   Die Ansage, wenn irgendwo etwas Mythisches gezogen wird
+   Kein Toast: ein Toast sagt "ging nicht". Das hier ist das Gegenteil,
+   also kommt es von oben, in der Farbe der Stufe, und geht von selbst.
+   ------------------------------------------------------------------ */
+.ruhm-banner {
+  position: fixed;
+  left: 50%; top: calc(var(--safe-top) + 8px);
+  z-index: 60;
+  display: flex; align-items: center; gap: var(--sp-2);
+  max-width: min(94vw, 520px);
+  padding: 9px 14px;
+  border: 1px solid var(--stufe, var(--accent));
+  border-radius: var(--r-pill);
+  background: var(--overlay);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 24px -6px var(--stufe, var(--accent));
+  font-size: var(--fs-sm);
+  transform: translate(-50%, -140%);
+  pointer-events: none;
+}
+.ruhm-banner.hidden { display: none; }
+.ruhm-banner.an { animation: ruhm-rein 6.2s var(--ease-out) forwards; }
+@keyframes ruhm-rein {
+  0%        { transform: translate(-50%, -140%); opacity: 0; }
+  6%, 92%   { transform: translate(-50%, 0);     opacity: 1; }
+  100%      { transform: translate(-50%, -140%); opacity: 0; }
+}
+/* Ohne Bewegung steht es einfach da und geht nach derselben Zeit wieder. */
+html.reduce-motion .ruhm-banner.an { animation: none; transform: translate(-50%, 0); }
+.rb-stufe {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--stufe, var(--accent));
+  color: #10100c;
+  font-size: 0.64rem; font-weight: 900;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.rb-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rb-text b { color: var(--stufe, var(--accent)); }
+.rb-text i { color: var(--text-mute); font-style: normal; }
+
+/* ------------------------------------------------------------------
+   Belohnungen fuer vollstaendige Kollektionen
+   Es gibt sie auf keinem anderen Weg: nicht aus Kisten, nicht auf dem
+   Markt, nicht vom Haus. Entsprechend duerfen sie auffallen.
+   ------------------------------------------------------------------ */
+
+/* Glutkern (Kollektion "Feuer"). Die Schrift glueht von innen, und der
+   heisse Kern wandert langsam durch sie hindurch. */
+.nm-sml_glutkern {
+  background-image: linear-gradient(96deg,
+    #7a1002 0%, #c21807 22%, #ff6a00 40%, #fff0a8 50%, #ff6a00 60%, #c21807 78%, #7a1002 100%);
+  filter: drop-shadow(0 0 5px rgba(255, 106, 0, 0.7));
+}
+html:not(.reduce-motion) .nm-sml_glutkern { animation: pl-sweep 2.6s linear infinite; }
+
+/* Wesergold (Kollektion "Porta"). Gebuerstetes Messing, und eine Welle
+   laeuft langsam quer durch das Schild. */
+.sch-sml_wesergold {
+  background-image:
+    linear-gradient(101deg, rgba(255,255,255,0) 38%, rgba(255,246,216,0.55) 48%, rgba(255,255,255,0) 58%),
+    repeating-linear-gradient(94deg, #6b5320 0 2px, #7d6227 2px 4px),
+    linear-gradient(180deg, #b9932f, #6b5320);
+  background-size: 260% 100%, auto, auto;
+  border-color: #d9b24c !important;
+  color: #fff6d8 !important;
+}
+html:not(.reduce-motion) .sch-sml_wesergold { animation: sch-welle 4.2s linear infinite; }
+@keyframes sch-welle { to { background-position: 260% 0, 0 0, 0 0; } }
+
+/* Nachtschwarm (Kollektion "Mitternacht"). Kein Leuchten und kein Sog,
+   sondern Bewegung: dunkle Koerper kreisen dicht um das Bild und blitzen
+   nur auf, wenn sie vorne durchziehen. */
+.au-sml_nachtschwarm::before, .au-sml_nachtschwarm::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.26em;
+  height: 0.26em;
+  margin: -0.13em 0 0 -0.13em;
+  border-radius: 50%;
+  background: #1b2030;
+  box-shadow:
+    0.95em 0 0 -0.02em #232a3d, -0.95em 0 0 -0.02em #232a3d,
+    0 0.8em 0 -0.05em #1b2030, 0 -0.8em 0 -0.05em #1b2030;
+  pointer-events: none;
+  z-index: 0;
+}
+html:not(.reduce-motion) .au-sml_nachtschwarm::before { animation: au-schwarm 4.4s linear infinite; }
+html:not(.reduce-motion) .au-sml_nachtschwarm::after {
+  animation: au-schwarm 6.2s linear infinite reverse;
+  filter: brightness(1.9);
+}
+@keyframes au-schwarm {
+  from { transform: rotate(0deg) scaleY(0.42); }
+  to   { transform: rotate(360deg) scaleY(0.42); }
+}
+html.reduce-motion .au-sml_nachtschwarm::before { opacity: 0.8; }
+
+/* Prunkstueck und Kollektionen in der Sammlung */
+.cos-prunk-liste { display: flex; flex-wrap: wrap; gap: 6px; }
+.cos-prunk-item {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font: inherit; font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.cos-prunk-item small {
+  margin-left: 6px;
+  font-family: var(--font-num);
+  color: var(--accent);
+}
+.cos-prunk-item.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.cos-sammlungen { display: flex; flex-direction: column; gap: var(--sp-2); }
+.cos-slg {
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.cos-slg.voll { border-color: var(--good); background: rgba(var(--good-rgb), 0.08); }
+.cos-slg-kopf { display: flex; align-items: center; justify-content: space-between; }
+.cos-slg-stand { font-family: var(--font-num); color: var(--accent); font-weight: 800; }
+.cos-slg-bahn {
+  height: 5px; margin: 8px 0;
+  border-radius: 999px; background: var(--surface-sunken); overflow: hidden;
+}
+.cos-slg-bahn > span {
+  display: block; height: 100%; border-radius: 999px;
+  background: var(--accent); transition: width 0.4s ease;
+}
+.cos-slg.voll .cos-slg-bahn > span { background: var(--good); }
+/* Die Teile einzeln, und was fehlt, ist durchgestrichen erkennbar. Eine
+   blosse Zahl "3 von 6" sagt nicht, WAS man noch braucht, und genau das
+   ist die Frage, mit der man auf den Markt geht. */
+.cos-slg-teile { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.cos-slg-teil {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-mute);
+  font-size: var(--fs-xs);
+  opacity: 0.6;
+}
+.cos-slg-teil.hat {
+  border-color: rgba(var(--good-rgb), 0.5);
+  color: var(--good-text);
+  opacity: 1;
+}
+.cos-slg-preis { color: var(--text-dim); font-size: var(--fs-xs); }
+.cos-slg-preis b { color: var(--accent); }
+.cos-slg.voll .cos-slg-preis b { color: var(--good); }
+
+/* Marken der neuen Herkuenfte. Jede sagt in einem Wort, wie man drankommt;
+   ein gemeinsames "zu verdienen" waere fuer alle drei zu unbestimmt. */
+.cos-marke-sammlung {
+  background: rgba(var(--good-rgb), 0.22);
+  color: var(--good-text);
+  border: 1px solid rgba(var(--good-rgb), 0.5);
+}
+.cos-marke-haus {
+  background: rgba(200, 107, 214, 0.22);
+  color: #e6b7ee;
+  border: 1px solid rgba(200, 107, 214, 0.55);
+}
+
+/* Das Prunkstueck am Namen.
+   Klein, aber ueberall: Chat, Online-Liste, Bestenliste, Pokertisch, Stadt.
+   Die Farbe sagt die Seltenheit, die Zahl die Nummer. */
+.pl-prunk {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 5px;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-family: var(--font-num);
+  font-size: 0.62em;
+  font-weight: 900;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.pl-prunk i {
+  width: 0.48em; height: 0.48em;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pr-gewoehnlich { color: #9aa4ae; }
+.pr-selten      { color: #5ea8e0; }
+.pr-episch      { color: #c86bd6; }
+.pr-legendaer   { color: #f4d782; }
+.pr-mythisch    { color: #e0705e; }
+.pr-einzel      { color: #4fc7c0; }
+.pr-haus        { color: #e6b7ee; }
+/* Ab Legendaer darf sie leuchten. Darunter nicht: eine Marke, die immer
+   glueht, sagt nichts mehr ueber Seltenheit. */
+.pr-legendaer, .pr-mythisch, .pr-einzel, .pr-haus {
+  box-shadow: 0 0 6px -1px currentColor;
+}
+/*
+ * Die Erstpraegung: Nummer 1.
+ *
+ * Sie sticht ueber die FORM heraus und nicht ueber die Farbe, denn die
+ * Farbe gehoert schon der Seltenheitsstufe. Die Marke wird gefuellt statt
+ * umrandet, und der Punkt davor wird zu einem kleinen Stern. Damit sieht
+ * man eine Eins auch in einer Liste, in der zwanzig Marken stehen.
+ */
+.pl-prunk.erst {
+  background: currentColor;
+  box-shadow: 0 0 9px -1px currentColor;
+}
+/* Die Schrift muss auf der gefuellten Marke lesbar bleiben, und zwar bei
+   allen sieben Stufenfarben. Deshalb dunkel statt „die andere Farbe“. */
+.pl-prunk.erst { color: inherit; }
+.pr-gewoehnlich.erst { color: #9aa4ae; }
+.pr-selten.erst      { color: #5ea8e0; }
+.pr-episch.erst      { color: #c86bd6; }
+.pr-legendaer.erst   { color: #f4d782; }
+.pr-mythisch.erst    { color: #e0705e; }
+.pr-einzel.erst      { color: #4fc7c0; }
+.pr-haus.erst        { color: #e6b7ee; }
+.pl-prunk.erst { -webkit-text-fill-color: #14140f; }
+.pl-prunk.erst i {
+  /* Ein Stern statt eines Punktes, gezeichnet ueber clip-path: ein Zeichen
+     mehr im Markup waere eine zweite Stelle, an der es fehlen kann. */
+  background: #14140f;
+  border-radius: 0;
+  width: 0.56em; height: 0.56em;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+/* Chat-Zeichen: ein Symbol vor der Nachricht, in der Farbe der Zeile. */
+.pl-zeichen {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  color: var(--accent);
+  vertical-align: middle;
+}
+.pl-zeichen svg { width: 0.95em; height: 0.95em; }
+.zn-totenkopf { color: var(--bad-text); }
+.zn-bombe     { color: #e0705e; }
+.zn-edelstein { color: #7ec8ff; }
+.zn-blitz     { color: #ffd76e; }
+.zn-flagge    { color: #66c07a; }
+.zn-ziel      { color: #c86bd6; }
+/* Die Auktionsmarke ist das einzige Zeichen, das sich bewegt. */
+html:not(.reduce-motion) .zn-auk_marke svg { animation: pl-breathe 2.4s ease-in-out infinite; }
+
+.cos-zeichen-demo {
+  display: flex; align-items: center; justify-content: center;
+  height: 30px; color: var(--accent);
+}
+.cos-zeichen-demo svg { width: 22px; height: 22px; }
+
+/* Wer etwas getan hat, im Tagesbericht: Bild, Chat-Zeichen und Prunkstueck
+   am Ende der Zeile. Der Bericht ist die einzige Flaeche, die jeder liest,
+   auch Tage spaeter; alles andere verlangt Gleichzeitigkeit. */
+.tb-wer {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding-left: var(--sp-2);
+  font-size: 0.86em;
+}
+.tb-wer .pl-ava { font-size: 1.05em; }
+
+/* ==================================================================
+   Nachschlag: sechs neue Stuecke und drei Chat-Zeichen
+
+   Bei jedem davon gilt dieselbe Regel wie beim Gewinn-Effekt: eine neue
+   FORM oder eine neue BEWEGUNG, nicht nur eine andere Farbe. Der Laden hat
+   zwoelf Stile, und elf davon schieben ihren Verlauf waagerecht durch die
+   Schrift (`pl-sweep`). Nach dem zwoelften Mal ist das kein Unterschied
+   mehr, sondern ein Farbregler.
+   ================================================================== */
+
+/* Polarlicht (900.000). Zieht SENKRECHT statt waagerecht: weiche Vorhaenge,
+   die von unten nach oben durch die Schrift wandern. Dafuer muss die
+   Hintergrundgroesse andersherum stehen als bei allen anderen Stilen, sonst
+   greift das gemeinsame `background-size: 220% 100%` von oben. */
+.nm-aurora {
+  background-image: linear-gradient(8deg,
+    #1b3b6f 0%, #2f8f7a 22%, #6ef2c0 38%, #a8f0e0 48%,
+    #6a5acd 64%, #8f6ee0 78%, #1b3b6f 100%);
+  background-size: 100% 300%;
+  background-position: 50% 0%;
+  filter: drop-shadow(0 0 5px rgba(110, 242, 192, 0.35));
+}
+html:not(.reduce-motion) .nm-aurora { animation: nm-vorhang 5.2s ease-in-out infinite; }
+@keyframes nm-vorhang {
+  0%, 100% { background-position: 50% 0%; }
+  50%      { background-position: 50% 100%; }
+}
+
+/*
+ * Hochspannung (1.400.000). Der einzige Stil, bei dem sich der Verlauf gar
+ * nicht bewegt: die Schrift steht kalt da, und alle paar Sekunden schlaegt
+ * ein Blitz quer durch. Der Blitz ist ein schmaler, schraeger Streifen, der
+ * in 0,4 Sekunden durchfaehrt — danach vier Sekunden nichts. Genau die
+ * Pause macht ihn; ein Blitz, der dauernd zuckt, ist eine Lampe.
+ */
+.nm-hochspannung {
+  position: relative;
+  background-image: linear-gradient(100deg, #1b6fe0, #bff0ff 48%, #2f8ae0);
+  filter: drop-shadow(0 0 4px rgba(120, 190, 255, 0.5));
+}
+.nm-hochspannung::after {
+  content: "";
+  position: absolute;
+  inset: -0.25em -0.5em;
+  background: linear-gradient(104deg, transparent 44%, #ffffff 48%, #9fe6ff 50%, transparent 55%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+html:not(.reduce-motion) .nm-hochspannung::after { animation: nm-schlag 4.4s linear infinite; }
+@keyframes nm-schlag {
+  0%, 88%   { opacity: 0; transform: translateX(-120%); }
+  90%       { opacity: 1; }
+  96%       { opacity: 1; transform: translateX(120%); }
+  97%, 100% { opacity: 0; transform: translateX(120%); }
+}
+
+/*
+ * Uhrwerk (850.000). Zwei gestrichelte Ringe, die gegeneinander laufen. Der
+ * einzige Rahmen, der nach Mechanik aussieht statt nach Leuchten, und der
+ * einzige mit zwei Ebenen, die sich unterschiedlich schnell drehen.
+ *
+ * Die Striche kommen aus einem repeating-conic-gradient und nicht aus
+ * `border-style: dashed`: ein gestrichelter Rand setzt seine Striche selbst
+ * und sieht bei jeder Groesse anders aus, und das Bild ist hier mal 1,9em
+ * und mal doppelt so gross.
+ */
+.fr-uhrwerk { --rahmen-farbe: transparent; position: relative; }
+.fr-uhrwerk::before, .fr-uhrwerk::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.fr-uhrwerk::before {
+  inset: -3px; padding: 2px;
+  background: repeating-conic-gradient(from 0deg, #d8b25a 0deg 9deg, transparent 9deg 18deg);
+}
+.fr-uhrwerk::after {
+  inset: 1px; padding: 1.5px;
+  background: repeating-conic-gradient(from 0deg, #8d9aa6 0deg 14deg, transparent 14deg 28deg);
+}
+html:not(.reduce-motion) .fr-uhrwerk::before { animation: pl-spin 9s linear infinite; }
+html:not(.reduce-motion) .fr-uhrwerk::after  { animation: pl-spin 5.5s linear infinite reverse; }
+
+/*
+ * Sprung (Einzelstueck aus der Kiste). Der Ring ist zerbrochen: drei Boegen,
+ * die auseinandertreiben und wieder zusammenschnappen. Alle anderen Rahmen
+ * sind heil und drehen sich; dieser ist kaputt und haelt trotzdem.
+ *
+ * Die Luecken stehen im conic-gradient, das Auseinandertreiben macht ein
+ * Skalieren der Ebene — dadurch loesen sich die Boegen vom Bild, statt nur
+ * schneller zu kreisen.
+ */
+.fr-kiste_sprung { --rahmen-farbe: transparent; position: relative; }
+.fr-kiste_sprung::before, .fr-kiste_sprung::after {
+  content: "";
+  position: absolute;
+  inset: -2px; padding: 2px;
+  border-radius: 50%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.fr-kiste_sprung::before {
+  background: conic-gradient(from 0deg,
+    #e8eef5 0deg 96deg, transparent 96deg 128deg,
+    #cfe0f0 128deg 224deg, transparent 224deg 252deg,
+    #e8eef5 252deg 344deg, transparent 344deg);
+}
+/* Die zweite Ebene ist derselbe Bruch, nur leicht verdreht und schwach:
+   das gibt dem Sprung Tiefe, statt ihn als flache Linie stehen zu lassen. */
+.fr-kiste_sprung::after {
+  background: conic-gradient(from 14deg,
+    rgba(120, 200, 255, 0.55) 0deg 96deg, transparent 96deg 128deg,
+    rgba(120, 200, 255, 0.55) 128deg 224deg, transparent 224deg 252deg,
+    rgba(120, 200, 255, 0.55) 252deg 344deg, transparent 344deg);
+  filter: blur(1.5px);
+}
+html:not(.reduce-motion) .fr-kiste_sprung::before { animation: fr-bruch 3.8s cubic-bezier(.7, 0, .2, 1) infinite; }
+html:not(.reduce-motion) .fr-kiste_sprung::after  { animation: fr-bruch 3.8s cubic-bezier(.7, 0, .2, 1) infinite 0.08s; }
+@keyframes fr-bruch {
+  0%, 62%  { transform: scale(1)    rotate(0deg); }
+  /* Auseinander und kurz halten — sonst sieht man den Bruch gar nicht. */
+  78%      { transform: scale(1.16) rotate(9deg); }
+  86%      { transform: scale(1.16) rotate(9deg); }
+  100%     { transform: scale(1)    rotate(0deg); }
+}
+
+/*
+ * Ringsystem (Einzelstueck aus der Kiste). Alle anderen Auren liegen UM das
+ * Bild herum; dieser Ring liegt schraeg hindurch, wie bei einem Planeten.
+ * Die Neigung macht `scaleY`, nicht 3D: eine echte Perspektive muesste an
+ * jeder Stelle mitgegeben werden, an der ein Spielerbild steht, und das
+ * sind inzwischen ein Dutzend.
+ *
+ * Groessen in Prozent der Huelle, nicht in em: das Bild ist mal 1,9em und
+ * mal doppelt so gross.
+ */
+.au-kiste_ringsystem::before, .au-kiste_ringsystem::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.au-kiste_ringsystem::before {
+  width: 165%; height: 165%;
+  margin: -82.5% 0 0 -82.5%;
+  border: 2px solid rgba(255, 228, 160, 0.85);
+  box-shadow: 0 0 8px rgba(255, 210, 120, 0.5);
+  transform: rotate(-18deg) scaleY(0.3);
+}
+.au-kiste_ringsystem::after {
+  width: 125%; height: 125%;
+  margin: -62.5% 0 0 -62.5%;
+  border: 1.5px solid rgba(160, 220, 255, 0.7);
+  transform: rotate(-18deg) scaleY(0.3);
+}
+html:not(.reduce-motion) .au-kiste_ringsystem::before { animation: au-ring 12s linear infinite; }
+html:not(.reduce-motion) .au-kiste_ringsystem::after  { animation: au-ring 8s linear infinite reverse; }
+/* Kippen statt drehen: der Ring klappt langsam auf und wieder zu, dadurch
+   wirkt er raeumlich, ohne dass irgendwo eine Perspektive gesetzt werden
+   muss. */
+@keyframes au-ring {
+  0%, 100% { transform: rotate(-18deg) scaleY(0.30); }
+  50%      { transform: rotate(-18deg) scaleY(0.62); }
+}
+
+/*
+ * Gezeiten (1.300.000). Das teuerste Namensschild, und das einzige, das
+ * keinen Verlauf schiebt, sondern einen PEGEL hat: das Wasser laeuft von
+ * unten in die Plakette und faellt wieder ab. Zwoelf Sekunden fuer einen
+ * Durchlauf, damit es nicht blubbert, sondern steigt.
+ */
+.sch-gezeiten {
+  position: relative;
+  overflow: hidden;
+  background: rgba(20, 60, 80, 0.45);
+  border-color: rgba(120, 220, 230, 0.5);
+}
+.sch-gezeiten::before {
+  content: "";
+  position: absolute;
+  left: -10%; right: -10%; bottom: -60%;
+  height: 160%;
+  border-radius: 42% 46% 0 0 / 22% 26% 0 0;
+  background: linear-gradient(180deg, rgba(120, 220, 230, 0.55), rgba(30, 110, 150, 0.7));
+  pointer-events: none;
+}
+/* Das Wasser liegt ueber dem Grund der Plakette, aber unter Bild und Namen.
+   Mit `z-index: -1` verschwand es hinter dem eigenen Hintergrund und war
+   gar nicht zu sehen; also stattdessen den Inhalt eine Ebene hochziehen. */
+.sch-gezeiten > * { position: relative; z-index: 1; }
+html:not(.reduce-motion) .sch-gezeiten::before { animation: sch-flut 12s ease-in-out infinite; }
+@keyframes sch-flut {
+  0%, 100% { transform: translateY(58%) rotate(-1.5deg); }
+  50%      { transform: translateY(6%)  rotate(1.5deg); }
+}
+
+/* Die Erstpraegung im Markt und in der Sammlung.
+   Gefuellt statt getoent: dieselbe Handschrift wie bei der Marke am Namen,
+   damit man an drei verschiedenen Stellen dasselbe wiedererkennt. */
+.mkt-nr.erst, .cos-nr.erst {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 0 10px -2px var(--accent);
+}
+
+/* ------------------------------------------------------------------
+   Auktionshaus: eingelieferte Lose
+   Spieler koennen selbst etwas unter den Hammer bringen. Der Markt ist
+   der stille Weg, das Auktionshaus der laute — also faellt es hier auch
+   optisch auf, wem ein Los gehoert und welches Exemplar es ist.
+   ------------------------------------------------------------------ */
+.auk-stuecknr {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--accent);
+  font-family: var(--font-num);
+  font-size: 0.62em;
+  font-weight: 900;
+  vertical-align: middle;
+}
+.auk-stuecknr.erst { background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 10px -2px var(--accent); }
+
+.auk-schlange { display: flex; flex-direction: column; gap: var(--sp-2); }
+.auk-schlange-zeile {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.auk-schlange-zeile.auk-meins { border-color: rgba(var(--accent-rgb), 0.5); }
+.auk-platz {
+  flex: 0 0 auto;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--line);
+  font-family: var(--font-num); font-size: var(--fs-xs); font-weight: 800;
+}
+.auk-schlange-demo {
+  flex: 0 0 auto;
+  width: 56px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  font-size: 0.7rem;
+}
+.auk-schlange-text { flex: 1; min-width: 0; }
+.auk-schlange-text b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auk-schlange-text small { color: var(--text-mute); font-size: var(--fs-xs); }
+.auk-klein { flex: 0 0 auto; padding: 5px 10px; font-size: var(--fs-xs); }
+
+.auk-einliefern p { margin: 0 0 var(--sp-3); }
+.auk-meine {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: var(--sp-2);
+}
+.auk-meins-kachel {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--dur-2) var(--ease), transform var(--dur-1) var(--ease);
+}
+.auk-meins-kachel:active { transform: scale(0.97); }
+.auk-meins-kachel b { font-size: var(--fs-xs); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.auk-meins-kachel small { color: var(--text-mute); font-size: 0.64rem; }
+.auk-meins-kachel small.auk-erst { color: var(--accent); font-weight: 800; }
+.auk-meins-demo {
+  display: flex; align-items: center; justify-content: center;
+  height: 36px; width: 100%;
+  overflow: hidden;
+  font-size: 0.72rem;
+}
+.auk-meins-demo > * { max-width: 100%; }
+
+/* Die Stadtrechnung in der Statistik.
+   Dieselbe Tabelle wie in der Stadt (`.stadt-rechnung`), hier nur mit
+   eigenem Kasten: in der Statistik steht sie zwischen Visitenkarte und
+   Kacheln und braucht eine Ueberschrift, damit klar ist, worum es geht. */
+.st-rechnung {
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.st-rechnung-h {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0 0 var(--sp-2);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.st-rechnung .stadt-rechnung { width: 100%; }
+
+/* ------------------------------------------------------------------
+   Kiste antippen: was ist drin?
+   ------------------------------------------------------------------ */
+
+/* Der ganze obere Teil der Kachel ist der Knopf dafuer. Ein eigenes
+   Info-Symbol daneben waere auf dem iPad eine Zielflaeche von zwoelf
+   Pixeln; so trifft man ihn immer. Der Oeffnen-Knopf liegt als
+   Geschwister dahinter, nicht darin — Knopf im Knopf zerlegt der
+   Parser (siehe CLAUDE.md). */
+.ki-kopf-knopf {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ki-kopf-knopf:active { opacity: 0.85; }
+.ki-mehr {
+  display: block;
+  margin: -4px 0 var(--sp-3);
+  color: var(--text-mute);
+  font-size: var(--fs-xs);
+}
+.ki-kopf-knopf:active .ki-mehr { color: var(--accent); }
+
+.kin {
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+.kin-kopf { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.kin-kopf img { flex: 0 0 auto; width: 84px; height: 72px; object-fit: contain; }
+.kin-kopf b { display: block; font-size: var(--fs-lg); }
+.kin-kopf span { display: block; }
+.kin-zahl { margin-top: 4px; color: var(--accent); font-size: var(--fs-sm); font-weight: 700; }
+
+.kin-stufe { margin-bottom: var(--sp-4); }
+.kin-stufe-kopf {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--stufe);
+}
+.kin-stufe-kopf b { color: var(--stufe); letter-spacing: 0.04em; text-transform: uppercase; font-size: var(--fs-sm); }
+.kin-stufe-kopf span { color: var(--text-mute); font-size: var(--fs-xs); font-family: var(--font-num); }
+
+.kin-liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: var(--sp-2);
+}
+.kin-stueck {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: var(--sp-2) 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  text-align: center;
+}
+/* Was man schon hat, tritt zurueck. Weglassen waere falsch: man will auch
+   sehen, was man hier schon eingesammelt hat. */
+.kin-stueck.hat { opacity: 0.42; }
+.kin-stueck b { font-size: var(--fs-xs); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kin-stueck small { color: var(--text-mute); font-size: 0.62rem; }
+.kin-demo {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 38px;
+  overflow: hidden;
+  font-size: 0.78rem;
+  /* Titel und Sprueche sind laenger als die Kachel. Mitten im Wort
+     abgeschnitten liest sich das wie ein Tippfehler, also ausblenden
+     statt abschneiden — so sieht man, dass da mehr steht. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+.kin-demo .cos-title-demo, .kin-demo .cos-style-demo { white-space: nowrap; }
+.kin-demo > * { max-width: 100%; }
+.kin-hat {
+  position: absolute; top: 4px; right: 4px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--good-soft);
+  color: var(--good-text);
+  font-size: 0.56rem; font-weight: 800;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.kin-fuss { margin: 0 0 var(--sp-3); }
+
+@media (max-width: 560px) {
+  .kin { padding: var(--sp-3); }
+  .kin-liste { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
+  .kin-kopf img { width: 64px; height: 56px; }
+}
+
+/* ==================================================================
+   Die Gala-Kiste: dreizehn Stuecke, die es nur dort gibt
+
+   Ein eigener Satz fuer jede Seltenheit, vom Konfetti-Zeichen bis zum
+   Rampenlicht. Gemeinsame Handschrift: Schwarz, Bordeaux und Gold, wie
+   auf der Kiste selbst. Und jedes Stueck macht etwas, das im Haus sonst
+   keins macht — sonst waere eine limitierte Kiste nur eine mit Datum.
+   ================================================================== */
+
+/* --- Roter Teppich (Banner, selten) -------------------------------
+   Kein flaechiger Verlauf, sondern ein Laeufer mit Richtung: der rote
+   Streifen zieht schraeg nach hinten, links und rechts die Goldkante. */
+.pf-card[data-banner="gala_teppich"]::before,
+.cos-pass[data-banner="gala_teppich"]::before,
+.player-profile-head[data-banner="gala_teppich"]::before,
+.cos-banner-demo[data-banner="gala_teppich"] {
+  background:
+    linear-gradient(104deg, transparent 22%, rgba(247, 220, 140, 0.9) 23%, rgba(247, 220, 140, 0.9) 25%, transparent 26%),
+    linear-gradient(104deg, transparent 74%, rgba(247, 220, 140, 0.9) 75%, rgba(247, 220, 140, 0.9) 77%, transparent 78%),
+    linear-gradient(104deg, #1a0d10 0%, #1a0d10 22%, #8e1621 24%, #c0212f 50%, #8e1621 76%, #1a0d10 78%);
+}
+
+/* --- Samtkordel (Namensschild, episch) ----------------------------
+   Bordeauxfarbener Samt, aussen die Kordel. Der Samt ist kein flacher
+   Ton: zwei sehr weiche Lichter darin lassen ihn sich drehen. */
+.sch-gala_samt {
+  background:
+    radial-gradient(70% 120% at 20% 0%, rgba(255, 255, 255, 0.16), transparent 60%),
+    radial-gradient(70% 120% at 80% 100%, rgba(0, 0, 0, 0.35), transparent 60%),
+    #63121c;
+  border-color: #d9b45a;
+  box-shadow: inset 0 0 0 1px rgba(247, 220, 140, 0.45);
+}
+
+/* --- Lorbeerkranz (Rahmen, episch) --------------------------------
+   Kein geschlossener Ring: zwei Zweige, die sich unten treffen und oben
+   offen bleiben, genau wie auf der Kiste. Die Luecke oben macht den
+   Unterschied zu allen anderen Rahmen — sie sind Kreise, das hier ist
+   ein Kranz. */
+.fr-gala_kranz { --rahmen-farbe: transparent; position: relative; }
+.fr-gala_kranz::before {
+  content: "";
+  position: absolute;
+  inset: -3px; padding: 2.5px;
+  border-radius: 50%;
+  background: conic-gradient(from 200deg,
+    #d9b45a 0deg 130deg, transparent 130deg 230deg, #d9b45a 230deg 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+/* Die Blaetter: kurze Striche quer ueber die Zweige. Ein zweiter Kranz
+   aus feinen Segmenten, etwas weiter aussen. */
+.fr-gala_kranz::after {
+  content: "";
+  position: absolute;
+  inset: -6px; padding: 3px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 200deg,
+    rgba(217, 180, 90, 0.85) 0deg 5deg, transparent 5deg 13deg);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  /* Oben aufschneiden, damit der Kranz offen bleibt. */
+  clip-path: polygon(0 18%, 50% 0%, 50% 34%, 50% 0%, 100% 18%, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+html:not(.reduce-motion) .fr-gala_kranz::after { animation: gala-kranz 6s ease-in-out infinite; }
+@keyframes gala-kranz {
+  0%, 100% { transform: rotate(-3deg); }
+  50%      { transform: rotate(3deg); }
+}
+
+/* --- Konfettiregen (Aura, legendaer) ------------------------------
+   Goldstaub schwebt, Funken schiessen, der Nachtschwarm kreist, das
+   Ringsystem liegt. Diese hier FAELLT: Schnipsel rieseln am Bild
+   vorbei nach unten und kippen dabei. */
+.au-gala_konfetti::before, .au-gala_konfetti::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 0;
+  width: 0.22em; height: 0.34em;
+  margin-left: -0.11em;
+  border-radius: 1px;
+  pointer-events: none;
+}
+.au-gala_konfetti::before { background: #f7dc8c; }
+.au-gala_konfetti::after  { background: #c0212f; }
+html:not(.reduce-motion) .au-gala_konfetti::before { animation: gala-fall-a 2.6s linear infinite; }
+html:not(.reduce-motion) .au-gala_konfetti::after  { animation: gala-fall-b 3.1s linear infinite 0.7s; }
+@keyframes gala-fall-a {
+  0%   { transform: translate(-0.9em, -0.6em) rotate(0deg);    opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translate(-1.3em, 1.8em) rotate(420deg);   opacity: 0; }
+}
+@keyframes gala-fall-b {
+  0%   { transform: translate(0.9em, -0.6em) rotate(0deg);     opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translate(1.25em, 1.8em) rotate(-380deg);  opacity: 0; }
+}
+html.reduce-motion .au-gala_konfetti::before { transform: translate(-1em, 0.4em); }
+html.reduce-motion .au-gala_konfetti::after  { transform: translate(1em, 0.1em); }
+
+/* --- Gravur (Namensstil, mythisch) --------------------------------
+   Goldschimmer schiebt Farbe durch die Schrift. Das hier hat eine FORM:
+   eine helle obere und eine dunkle untere Kante, also ein Relief, und
+   darueber faehrt ein harter Lichtstreifen. Man sieht nicht die Farbe
+   wandern, sondern das Licht ueber etwas Geformtem. */
+.nm-gala_gravur {
+  background-image: linear-gradient(100deg,
+    #7a5c12 0%, #d9b45a 30%, #fff6d8 46%, #ffffff 50%, #d9b45a 60%, #6b4f12 100%);
+  background-size: 260% 100%;
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 246, 216, 0.55))
+    drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.75))
+    drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+}
+html:not(.reduce-motion) .nm-gala_gravur { animation: pl-sweep 3.8s linear infinite; }
+
+/* --- Rampenlicht (Namensstil, EINZELSTUECK) -----------------------
+ *
+ * Das aufwendigste Stueck im Haus, und das ist Absicht: es gibt es nur
+ * einmal, und wer es zieht, soll es sehen koennen, ohne dass jemand
+ * danach fragt.
+ *
+ * Drei Ebenen, die zusammenarbeiten:
+ *   die Schrift steht im Dunkeln, bronzen und kaum lesbar hell,
+ *   ein Scheinwerferkegel faehrt langsam darueber und laesst genau den
+ *     Teil aufleuchten, den er trifft,
+ *   und hinterher rieselt Konfetti durch das Licht.
+ *
+ * Kein anderer Stil arbeitet mit Licht UND Schatten; alle anderen faerben
+ * nur. Deshalb ist der Grundton hier bewusst fast schwarz — ohne das
+ * Dunkel gaebe es kein Licht.
+ */
+/*
+ * Der Kegel steckt IM Verlauf, nicht in einer Ebene darueber.
+ *
+ * Erst lag er als eigenes Element mit `mix-blend-mode: screen` obendrauf.
+ * Das geht hier nicht: die Schrift ist ueber `background-clip: text`
+ * ausgestanzt und hat gar keine Flaeche, gegen die sich etwas aufhellen
+ * liesse — sichtbar war ein grauer Kasten quer ueber dem Namen. Im
+ * Verlauf selbst wird das Licht dagegen mit der Schrift ausgestanzt und
+ * leuchtet genau die Buchstaben an, die es gerade trifft.
+ *
+ * Die Spanne ist bewusst extrem: fast schwarz aussen, reines Weiss in der
+ * Mitte. Ohne das Dunkel gaebe es kein Licht.
+ */
+.nm-gala_rampenlicht {
+  position: relative;
+  background-image: linear-gradient(100deg,
+    #2a2418 0%, #342b1a 26%,
+    #8a6f2e 40%, #fff6d8 47%, #ffffff 50%, #fff6d8 53%, #8a6f2e 60%,
+    #342b1a 74%, #2a2418 100%);
+  background-size: 300% 100%;
+  filter:
+    drop-shadow(0 0 7px rgba(255, 246, 216, 0.4))
+    drop-shadow(0 2px 2px rgba(0, 0, 0, 0.85));
+}
+/* Das Konfetti, das durch den Kegel faellt. Zwei Schnipsel reichen: mehr
+   waere in einer Namenszeile Unruhe statt Feier. */
+.nm-gala_rampenlicht::after {
+  content: "";
+  position: absolute;
+  left: 46%; top: -0.4em;
+  width: 0.18em; height: 0.26em;
+  border-radius: 1px;
+  background: #c0212f;
+  box-shadow: 0.7em 0.1em 0 #f7dc8c;
+  pointer-events: none;
+}
+html:not(.reduce-motion) .nm-gala_rampenlicht { animation: gala-kegel 5.2s ease-in-out infinite; }
+html:not(.reduce-motion) .nm-gala_rampenlicht::after { animation: gala-rieseln 5.2s linear infinite; }
+@keyframes gala-kegel {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+@keyframes gala-rieseln {
+  0%       { transform: translate(-1.6em, -0.2em) rotate(0deg);   opacity: 0; }
+  20%      { opacity: 1; }
+  70%      { opacity: 1; }
+  100%     { transform: translate(1.6em, 1.4em) rotate(540deg);   opacity: 0; }
+}
+/* Ohne Bewegung steht der Kegel mitten auf dem Namen, damit er lesbar
+   bleibt: aussen ist er absichtlich fast schwarz. */
+html.reduce-motion .nm-gala_rampenlicht { background-position: 50% 50%; }
+html.reduce-motion .nm-gala_rampenlicht::after { display: none; }
+
+/* Die limitierte Kiste hebt sich ab, und zwar oben mit der Restzeit: das
+   ist die eine Information, die sie von allen anderen unterscheidet. */
+.ki-karte.limitiert { border-color: rgba(var(--accent-rgb), 0.55); }
+.ki-limit {
+  display: inline-block;
+  margin-bottom: var(--sp-2);
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.64rem; font-weight: 900;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+html:not(.reduce-motion) .ki-limit { animation: ki-limit-puls 2.8s ease-in-out infinite; }
+@keyframes ki-limit-puls {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.5); }
+  50%      { box-shadow: 0 0 14px 2px rgba(var(--accent-rgb), 0.45); }
+}
+.kin-limit { margin-top: 4px; color: var(--accent); font-size: var(--fs-xs); font-weight: 700; }
+
+/* ------------------------------------------------------------------
+   Seltenheit in der Sammlung
+
+   Hundert Stuecke in zwoelf Reitern sahen aus wie hundert gleiche
+   Kacheln. Die Stufe steht deshalb als farbiger Streifen am unteren
+   Rand — unten und nicht als Rahmen, weil der Rahmen schon "angelegt"
+   bedeutet und zwei Bedeutungen an einer Kante niemand auseinanderhaelt.
+
+   Dieselben sieben Farben wie bei der Marke am Namen (.pr-*) und in den
+   Kisten. Wer dort gelernt hat, dass Rot mythisch heisst, soll es hier
+   nicht neu lernen muessen.
+   ------------------------------------------------------------------ */
+.cos-tier {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  background: var(--stufe-farbe, transparent);
+  pointer-events: none;
+}
+.cos-tier-gewoehnlich { --stufe-farbe: #9aa4ae; }
+.cos-tier-selten      { --stufe-farbe: #5ea8e0; }
+.cos-tier-episch      { --stufe-farbe: #c86bd6; }
+.cos-tier-legendaer   { --stufe-farbe: #f4d782; }
+.cos-tier-mythisch    { --stufe-farbe: #e0705e; }
+.cos-tier-einzel      { --stufe-farbe: #4fc7c0; }
+.cos-tier-haus        { --stufe-farbe: #e6b7ee; }
+/* Ab Legendaer leuchtet der Streifen. Darunter nicht: was immer glueht,
+   sagt nichts mehr ueber Seltenheit. */
+.cos-tier-legendaer, .cos-tier-mythisch, .cos-tier-einzel, .cos-tier-haus {
+  height: 4px;
+  box-shadow: 0 0 8px -1px var(--stufe-farbe);
+}
+/* Die Erstpraegung: das Exemplar ist besonders, nicht das Stueck. Deshalb
+   kein weiterer Farbton, sondern Gold ueber die ganze Kachel. */
+.cos-tier-erst {
+  --stufe-farbe: var(--accent);
+  height: 4px;
+  box-shadow: 0 0 10px 0 var(--accent);
+}
+.cos-item:has(.cos-tier-erst) { border-color: rgba(var(--accent-rgb), 0.5); }
+/* Was man nicht hat, zeigt seine Stufe blasser: sie sagt dort, was einen
+   erwartet, nicht was man erreicht hat. */
+.cos-item.locked .cos-tier { opacity: 0.5; }
+
+/* ------------------------------------------------------------------
+   Die Garnitur
+
+   Drei oder mehr Stuecke derselben Familie gleichzeitig angelegt. Die
+   Marke haengt am Namen, genau wie das Prunkstueck, und reist damit
+   ueberall mit: Chat, Bestenliste, Tisch, Stadt, Tagesbericht.
+
+   Bewusst anders geformt als die Prunkmarke: die ist rund und traegt
+   eine Nummer, diese ist eckig und traegt eine Anzahl. Zwei runde
+   Marken nebeneinander haette niemand auseinandergehalten.
+   ------------------------------------------------------------------ */
+.pl-garnitur {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-family: var(--font-num);
+  font-size: 0.6em;
+  font-weight: 900;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+/* Drei Striche uebereinander: das Zeichen fuer "mehrere, zusammen". */
+.pl-garnitur i {
+  width: 0.5em; height: 0.5em;
+  background:
+    linear-gradient(currentColor, currentColor) 0 10% / 100% 18% no-repeat,
+    linear-gradient(currentColor, currentColor) 0 50% / 100% 18% no-repeat,
+    linear-gradient(currentColor, currentColor) 0 90% / 100% 18% no-repeat;
+}
+.ga-gala  { color: #e0a02e; }
+.ga-sml   { color: #4fc7c0; }
+.ga-auk   { color: #c86bd6; }
+.ga-adm   { color: #e6b7ee; }
+.ga-s2    { color: #ff9f43; }
+.ga-kiste { color: #4fc7c0; }
+.ga-rad   { color: #f4d782; }
+/* Ab fuenf Teilen leuchtet sie. Drei sind ein Anfang, fuenf sind eine
+   Ansage, und wer will, dass es auffaellt, sammelt weiter. */
+.pl-garnitur.voll {
+  background: currentColor;
+  box-shadow: 0 0 9px -1px currentColor;
+}
+.pl-garnitur.voll { -webkit-text-fill-color: #14140f; }
+.pl-garnitur.voll i { background-color: #14140f; }
+
+/* Garnituren in der Sammlung: je Familie eine Zeile mit drei Zahlen.
+   Wie viele es gibt, wie viele man hat, wie viele man traegt — drei
+   verschiedene Fragen, deshalb drei Zahlen und nicht eine Quote. */
+.cos-familien { display: grid; gap: var(--sp-2); }
+.cos-fam {
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.cos-fam.an {
+  border-color: var(--fam);
+  box-shadow: 0 0 18px -10px var(--fam);
+}
+.cos-fam-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
+.cos-fam-kopf b { color: var(--fam); }
+.cos-fam-marke {
+  padding: 1px 8px;
+  border: 1px solid var(--fam);
+  border-radius: 3px;
+  color: var(--fam);
+  font-family: var(--font-num);
+  font-size: var(--fs-xs); font-weight: 900;
+}
+.cos-fam-marke.voll { background: var(--fam); color: #14140f; box-shadow: 0 0 9px -1px var(--fam); }
+.cos-fam-fehlt { color: var(--text-mute); font-size: var(--fs-xs); }
+.cos-fam-bahn {
+  height: 5px; margin: 8px 0 6px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.cos-fam-bahn span { display: block; height: 100%; background: var(--fam); border-radius: 999px; }
+.cos-fam-zahlen { display: flex; gap: var(--sp-4); color: var(--text-mute); font-size: var(--fs-xs); }
+.cos-fam-zahlen b { color: var(--text); font-family: var(--font-num); }
+
+/* ==================================================================
+   Sammlung: Kopf, Spielerkarte, Vitrine
+
+   Das ist die erste Flaeche, die man in der Sammlung sieht, und sie
+   beantwortet eine Frage, die vorher niemand beantwortet hat: WIE SEHE
+   ICH AUS. Vorher stand oben eine Vorschauzeile mit dem eigenen Namen,
+   darunter hundert gleich aussehende Kacheln. Eine Karte zeigt alles
+   zusammen — Banner, Bild, Rahmen, Name, Stil, Zeichen, Prunkstueck,
+   Garnitur und Titel — also genau das, was die anderen von einem sehen.
+   ================================================================== */
+
+.cos-eyebrow {
+  display: block;
+  color: var(--text-mute);
+  font-size: 0.64rem; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+.cos-atelier-kopf {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.cos-atelier-kopf b { display: block; font-size: var(--fs-lg); line-height: var(--lh-tight); }
+.cos-sammlung-zaehler {
+  flex: 0 0 auto;
+  color: var(--text-mute);
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.cos-sammlung-zaehler strong { color: var(--accent); font-size: var(--fs-lg); }
+
+/* Die Karte selbst. Querformat wie ein Ausweis, das Banner als Flaeche
+   darunter (dieselben Regeln wie bei der Visitenkarte, siehe oben). */
+.cos-pass {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "marke   marke"
+    "bild    person"
+    "trophae trophae";
+  gap: var(--sp-2) var(--sp-3);
+  align-items: center;
+  padding: var(--sp-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  box-shadow: 0 14px 40px -24px #000;
+}
+.cos-pass[data-banner]::before {
+  content: "";
+  position: absolute; inset: 0;
+  opacity: 0.4;
+  pointer-events: none;
+}
+/* Der Glanz: ein schraeger Lichtstreifen, der einmal langsam ueber die
+   Karte wandert. Eine Karte, die still daliegt, ist ein Kasten. */
+.cos-pass-foil {
+  position: absolute; inset: -40% -60%;
+  background: linear-gradient(104deg, transparent 42%, rgba(255, 255, 255, 0.13) 50%, transparent 58%);
+  pointer-events: none;
+}
+html:not(.reduce-motion) .cos-pass-foil { animation: cos-foil 7s ease-in-out infinite; }
+@keyframes cos-foil {
+  0%, 100% { transform: translateX(-28%); }
+  50%      { transform: translateX(28%); }
+}
+.cos-pass-brand {
+  grid-area: marke;
+  position: relative;
+  display: flex; align-items: baseline; gap: var(--sp-2);
+}
+.cos-pass-brand span {
+  color: var(--accent);
+  font-size: 0.66rem; font-weight: 900;
+  letter-spacing: 0.22em;
+}
+.cos-pass-brand i {
+  color: var(--text-mute);
+  font-style: normal;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em; text-transform: uppercase;
+}
+.cos-pass-portrait { grid-area: bild; position: relative; }
+.cos-pass-portrait .pl-ava { font-size: 2.6rem; }
+.cos-pass-person {
+  grid-area: person;
+  position: relative;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+  min-width: 0;
+  font-size: var(--fs-xl);
+}
+.cos-pass-person .pl-title {
+  flex-basis: 100%;
+  font-size: var(--fs-xs);
+}
+
+/* Das Prunkstueck bekommt einen eigenen Streifen unten: es ist das eine
+   Stueck, das man ausgesucht hat, und nicht eins von vielen. */
+.cos-pass-trophy {
+  grid-area: trophae;
+  position: relative;
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+.cos-pass-trophy-kicker {
+  display: block;
+  color: var(--text-mute);
+  font-size: 0.62rem; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.cos-pass-trophy b { color: var(--accent); font-size: var(--fs-lg); }
+.cos-pass-trophy small { display: block; color: var(--text-dim); font-size: var(--fs-xs); }
+.cos-pass-trophy.leer b { color: var(--text-dim); font-size: var(--fs-md); }
+
+/* Die Zahlen unter der Karte. Drei Werte, die man sonst nirgends sieht:
+   wie viel davon gepraegt ist, wie viele Kollektionen voll sind, welche
+   Auszeichnung man traegt. */
+.cos-atelier-info {
+  display: grid;
+  gap: var(--sp-3);
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+.cos-atelier-stats { display: flex; gap: var(--sp-2); }
+.cos-atelier-stats span {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.cos-atelier-stats b { font-family: var(--font-num); font-size: var(--fs-lg); color: var(--accent); }
+.cos-atelier-stats small { color: var(--text-mute); font-size: var(--fs-xs); }
+.cos-atelier-details { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); }
+.cos-atelier-details span { display: flex; flex-direction: column; }
+.cos-atelier-details i { color: var(--text-mute); font-style: normal; font-size: var(--fs-xs); }
+.cos-atelier-details b { font-size: var(--fs-sm); }
+
+/* Die Vitrine: die Einleitung ueber der Prunkstueck-Auswahl. */
+.cos-vitrine {
+  display: flex; align-items: center; gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.cos-vitrine-leer { border-style: dashed; flex-wrap: wrap; }
+.cos-vitrine-siegel {
+  flex: 0 0 auto;
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+.cos-vitrine b { display: block; margin-top: 2px; }
+.cos-vitrine p { margin: 2px 0 0; color: var(--text-dim); font-size: var(--fs-sm); }
+.cos-vitrine-intro { min-width: 0; }
+.cos-vitrine-cta { flex: 0 0 auto; }
+
+/* Das Zeichen der Kollektion. Ein Buchstabe im Kreis reicht: drei
+   Kollektionen brauchen kein eigenes Bild, nur etwas, das sie
+   auseinanderhaelt. */
+.cos-slg { position: relative; padding-left: 58px; }
+.cos-slg-symbol {
+  position: absolute;
+  left: var(--sp-3); top: var(--sp-3);
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--accent);
+  font-family: var(--font-num);
+  font-weight: 900;
+}
+.cos-slg.voll .cos-slg-symbol { border-color: var(--good); color: var(--good); }
+.cos-slg-kopf p { margin: 2px 0 0; color: var(--text-dim); font-size: var(--fs-sm); }
+.cos-slg-kopf > div { min-width: 0; }
+.cos-slg-stand i { color: var(--text-mute); font-style: normal; font-size: var(--fs-xs); }
+.cos-slg-teil i { margin-right: 4px; font-style: normal; }
+.cos-slg-preis span { margin-right: 4px; }
+
+@media (max-width: 560px) {
+  .cos-atelier-kopf { flex-direction: column; align-items: flex-start; gap: var(--sp-1); }
+  .cos-atelier-stats { flex-wrap: wrap; }
+  .cos-pass { padding: var(--sp-3); }
+  .cos-vitrine-cta { width: 100%; }
+}
+
+/* Das Duell aufmachen: zwei Schritte, zwei Zahlen.
+   Wie viel man riskiert, hat mit dem eigenen Konto zu tun; was man
+   aufmacht, mit der Frage, wie man spielen will. Beides in ein Formular
+   zu werfen hiesse, die zweite Entscheidung zu treffen, bevor man die
+   erste verstanden hat. */
+.kb-schritte {
+  display: flex; align-items: center; gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  color: var(--text-mute);
+  font-size: var(--fs-xs); font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.kb-schritte .an { color: var(--accent); }
+.kb-schritte i { flex: 1; height: 1px; background: var(--line); }
+
+/* NICHT .kb-feld: so heisst schon ein Feld auf der senkrechten Bahn im
+   Duell, und dessen feste Hoehe von 74px plus Zentrierung hat das
+   Formular zusammengeschoben, bis die Zeilen uebereinanderlagen. */
+.kb-eingabe { display: block; margin-bottom: var(--sp-2); }
+.kb-eingabe-kopf { display: flex; align-items: baseline; gap: var(--sp-2); margin-bottom: 4px; }
+.kb-eingabe-kopf b { font-size: var(--fs-md); }
+.kb-eingabe-kopf small { color: var(--text-mute); font-size: var(--fs-xs); }
+.kb-eingabe input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-family: var(--font-num); font-size: var(--fs-xl); font-weight: 800;
+}
+.kb-eingabe input:focus { outline: none; border-color: var(--accent); }
+.kb-eingabe-fuss { display: block; margin-top: 4px; color: var(--text-mute); font-size: var(--fs-xs); }
+
+/* Vorschlaege, keine Vorgaben: antippen setzt das Feld, tippen geht weiter. */
+.kb-schnell { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--sp-4); }
+.kb-schnell button {
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-num); font-size: var(--fs-xs); font-weight: 700;
+  cursor: pointer;
+}
+.kb-schnell button.an { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+
+.kb-hinweis {
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: var(--accent-soft);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+.kb-rest { margin-bottom: var(--sp-3); color: var(--text-dim); font-size: var(--fs-sm); }
+.kb-rest b { font-family: var(--font-num); font-size: var(--fs-lg); color: var(--accent); }
+
+/* Die Kopfzeile ueber den beiden Bahnen: links der Topf, rechts das
+   Budget, dazwischen die Runde. Drei Zahlen, die man waehrend des Duells
+   im Blick haben will, ohne wegzusehen. */
+.kb-kopfzeile {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+}
+.kb-topf { color: var(--accent); font-family: var(--font-num); font-weight: 800; }
+.kb-budget { color: var(--text-mute); font-family: var(--font-num); }
+.kb-kopfzeile .kb-runde { flex: 1; text-align: center; }
+
+/* Die eigene Kistenreihe je Spalte: jeder macht seine eigene Liste auf. */
+.kb-spalte .kb-kisten { display: flex; justify-content: center; flex-wrap: wrap; gap: 3px; }
+.kb-spalte .kb-kisten img {
+  width: 24px; height: 20px; object-fit: contain;
+  opacity: 0.3;
+  transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease);
+}
+.kb-spalte .kb-kisten img.durch { opacity: 0.65; }
+.kb-spalte .kb-kisten img.dran {
+  opacity: 1; transform: scale(1.4);
+  filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.8));
+}
+
+/* Testzugang in der Wartungskarte.
+   Wer hier steht, kommt auch bei geschlossenem Haus rein — der eigentliche
+   Grund fuer den ganzen Wartungsmodus. */
+.ad-test {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+.ad-test > b { display: block; }
+.ad-test .hint { margin: 2px 0 var(--sp-2); }
+.ad-test-zeile { display: flex; gap: var(--sp-2); }
+.ad-test-zeile input {
+  flex: 1; min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font: inherit;
+}
+.ad-test-zeile input:focus { outline: none; border-color: var(--accent); }
+.ad-test-zeile .ad-knopf { flex: 0 0 auto; }
+.ad-test-liste { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: var(--sp-2); }
+.ad-test-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 4px 3px 10px;
+  border: 1px solid rgba(var(--good-rgb), 0.5);
+  border-radius: var(--r-pill);
+  background: var(--good-soft);
+  color: var(--good-text);
+  font-size: var(--fs-xs); font-weight: 700;
+}
+.ad-test-chip button {
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  color: inherit;
+  font: inherit; line-height: 1;
+  cursor: pointer;
+}
+.ad-test-leeren {
+  padding: 3px 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-mute);
+  font: inherit; font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+/* Wer mit seinen Kisten durch ist, steht still daneben. Die Bahn wird
+   blass und bekommt ein Wort darueber — eine stehengebliebene Bahn sieht
+   sonst aus wie ein Fehler. */
+.kb-spalte.fertig .kb-fenster { opacity: 0.35; }
+.kb-spalte.fertig .kb-fenster::after {
+  content: "durch";
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-mute);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 3;
+}
+
+/* Im Duell steht der Name in einer schmalen Spalte. `.pl-text` stapelt
+   normalerweise (Name über Titel) — hier wuerden Prunkmarke und Garnitur
+   dadurch je eine eigene volle Zeile bekommen und die Koepfe der beiden
+   Spalten unterschiedlich hoch machen. */
+.kb-spieler .pl-text,
+.kd-teilnehmer .pl-text {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.kb-spieler .pl-prunk,
+.kb-spieler .pl-garnitur { margin-left: 0; }
+.kb-spieler { min-height: 2.2em; }
+
+/* Eine Marke auf der Lobby-Kachel: dort wartet etwas.
+   Oben rechts, wo sonst die Zahl der Anwesenden steht — beides
+   gleichzeitig gibt es nicht, ein Bildschirm mit Wartendem ist keiner,
+   auf dem gerade jemand sitzt. */
+.tile-marke {
+  position: absolute;
+  top: 6px; right: 6px;
+  min-width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-num);
+  font-size: 0.64rem; font-weight: 900;
+  box-shadow: 0 0 10px -2px var(--accent);
+}
+html:not(.reduce-motion) .tile-marke { animation: ki-limit-puls 2.6s ease-in-out infinite; }
+
+/* ------------------------------------------------------------------
+   Die Ziehung, zweiter Anlauf
+
+   Die Bahn lief, blieb stehen, und im selben Moment stand die Karte
+   daneben. Damit hatte der Treffer nie einen eigenen Augenblick: man sah
+   gar nicht, WAS unter der Marke liegt, bevor schon das Ergebnis da war.
+
+   Drei Zugaben, und alle drei sind Zeit, nicht Zierrat:
+     schnell   solange die Bahn rast, zieht sie einen Streifen
+     langsam   ab drei Vierteln waechst die Marke und macht ein Licht an
+     steht     halbe Sekunde Stille auf dem Treffer, dann erst die Karte
+   ------------------------------------------------------------------ */
+
+/* Tempo: waehrend die Bahn rast, wird sie an den Raendern weich. Das ist
+   kein Weichzeichner (der kostet auf dem iPad zu viel), sondern ein
+   staerkeres Ausblenden nach aussen. */
+html:not(.reduce-motion) .ki-bahn-rahmen.schnell::before,
+html:not(.reduce-motion) .ki-bahn-rahmen.schnell::after { width: 130px; }
+.ki-bahn-rahmen::before, .ki-bahn-rahmen::after { transition: width 0.6s ease; }
+
+/* Die letzten Sekunden: die Marke wird groesser und heller, und unter ihr
+   geht ein Kegel an. Jetzt entscheidet sich etwas. */
+.ki-marke { transition: transform 0.5s var(--ease-out), filter 0.5s ease; }
+html:not(.reduce-motion) .ki-bahn-rahmen.langsam .ki-marke,
+html:not(.reduce-motion) .ki-bahn-rahmen.steht .ki-marke {
+  transform: scaleY(1.35);
+  filter: drop-shadow(0 0 10px var(--accent));
+}
+/* Dazu ein Lichtkegel in der Mitte des Rahmens, damit man hinsieht, wo es
+   entschieden wird. Er sitzt auf dem Rahmen selbst, nicht auf der Bahn:
+   die faehrt ja weg. */
+.ki-bahn-rahmen > .ki-kegel {
+  position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 120px; margin-left: -60px;
+  background: linear-gradient(180deg, transparent, rgba(var(--accent-rgb), 0.16) 45%, transparent);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.ki-bahn-rahmen.langsam > .ki-kegel,
+.ki-bahn-rahmen.steht > .ki-kegel { opacity: 1; }
+
+/* Das Trefferfeld, sobald es steht: es hebt sich heraus und leuchtet in
+   seiner Stufenfarbe. Vorher war es eins von vierundvierzig. */
+.ki-feld { transition: transform 0.45s var(--ease-out), box-shadow 0.45s ease, border-color 0.45s ease; }
+html:not(.reduce-motion) .ki-feld.gefunden {
+  transform: scale(1.14);
+  box-shadow: 0 0 0 2px var(--stufe), 0 0 34px -4px var(--stufe);
+  z-index: 3;
+}
+html.reduce-motion .ki-feld.gefunden { box-shadow: 0 0 0 2px var(--stufe); }
+
+/* Die Ergebniskarte kommt in Stufen: Stempel, Stueck, Name, Rest. */
+html:not(.reduce-motion) .ki-erg-karte.stufig > * { animation: ki-erg-rein 0.34s var(--ease-out) backwards; }
+html:not(.reduce-motion) .ki-erg-karte.stufig > :nth-child(1) { animation-delay: 0.02s; }
+html:not(.reduce-motion) .ki-erg-karte.stufig > :nth-child(2) { animation-delay: 0.16s; }
+html:not(.reduce-motion) .ki-erg-karte.stufig > :nth-child(3) { animation-delay: 0.28s; }
+html:not(.reduce-motion) .ki-erg-karte.stufig > :nth-child(4) { animation-delay: 0.36s; }
+html:not(.reduce-motion) .ki-erg-karte.stufig > :nth-child(5) { animation-delay: 0.44s; }
+html:not(.reduce-motion) .ki-erg-karte.stufig > :nth-child(6) { animation-delay: 0.52s; }
+@keyframes ki-erg-rein {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+/* Der Stempel mit der Seltenheit faellt ein, statt einzublenden. */
+html:not(.reduce-motion) .ki-erg-karte.stufig .ki-erg-stufe {
+  animation: ki-stempel 0.42s cubic-bezier(.16, 1.5, .4, 1) backwards;
+}
+@keyframes ki-stempel {
+  0%   { opacity: 0; transform: scale(2.4) rotate(-8deg); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+
+/* Ab Legendaer wird der ganze Bildschirm einmal in der Stufenfarbe
+   gewaschen. Der Blitz allein sass nur in der Mitte. */
+.ki-wasch {
+  position: absolute; inset: 0;
+  background: var(--stufe);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+html:not(.reduce-motion) .ki-wasch.an { animation: ki-wasch 0.9s ease-out; }
+@keyframes ki-wasch {
+  0%   { opacity: 0; }
+  12%  { opacity: 0.42; }
+  100% { opacity: 0; }
+}
+
+
+/* Die Bahn waehrend des Zitterns: schon im Layout, aber unsichtbar und aus
+   dem Fluss genommen. Auf `display: none` rechnet ein Browser gar nichts
+   aus, und die ganze Arbeit fiel dann genau in den Moment zwischen Platzen
+   und Losfahren — gemessen ueber zwei Sekunden Stillstand. */
+.ki-phase-bahn.wartet {
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  opacity: 0;
+  pointer-events: none;
+}

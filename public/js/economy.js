@@ -341,7 +341,7 @@
   let vb = null, fitVb = null;
 
   const CLS_FILL = {
-    residential: "#3e5748", civic: "#4a4f6e", kiosk: "#5e5636", cafe: "#5d4a33",
+    residential: "#3e5748", pension: "#47614f", civic: "#4a4f6e", kiosk: "#5e5636", cafe: "#5d4a33",
     shop: "#33565e", hotel: "#59335e", factory: "#5a4a3a", casino: "#5a2a6e", bank: "#6e5a2a",
   };
   /* Wahrzeichen auf der Karte. Kennungen statt Emoji: die Karte ist ein
@@ -369,10 +369,107 @@
       if (!res || !res.ok) { toast((res && res.error) || "Stadtteil nicht ladbar."); return; }
       district = res.district;
       view = "district";
+      // Der Ausbau-Cache gilt je Ortsteil-Ladung: Kosten haengen am Preisindex,
+      // und die Zahl der offenen Baustellen kann sich inzwischen geaendert haben.
+      ausbauCache = {};
       if (!keepView) { selectedId = null; vb = null; }
       renderDistrict();
       renderDetail();
     });
+  }
+
+  /**
+   * Die Stadtrechnung als Tabelle: Miete, Abzüge, was bleibt.
+   * Dieselben Zahlen, mit denen der Stunden-Bonus rechnet.
+   */
+  function stadtAufstellung(st) {
+    const zeile = (label, wert, klasse) =>
+      `<tr><td>${label}</td><td class="${klasse || ""}">${wert}</td></tr>`;
+    let rows = zeile("Gebäude", fmt(st.haeuser));
+    rows += zeile("Wert", `${fmt(st.wert)}<i class=mk></i>`);
+    rows += zeile("Miete je Stunde", `${fmt(st.miete)}<i class=mk></i>`, "pos");
+    if (st.betriebe) {
+      rows += zeile(`davon ${fmt(st.betriebe)} ${st.betriebe === 1 ? "Betrieb" : "Betriebe"}`,
+        `auf ${Math.round(st.personalFaktor * 100)} %`, st.personalFaktor < 1 ? "neg" : "pos");
+    }
+    rows += zeile(st.verwaltung
+      ? `Verwaltung (${fmt(st.haeuser - st.verwFrei)} × ${fmt(st.verwJe)})`
+      : `Verwaltung (erste ${st.verwFrei} frei)`,
+      st.verwaltung ? `−${fmt(st.verwaltung)}<i class=mk></i>` : "0", st.verwaltung ? "neg" : "");
+    rows += zeile(st.steuer > 0
+      ? `Grundsteuer (${Math.round(st.satz * 100)} %)`
+      : `Grundsteuer (bis ${fmt(st.steuerFrei)} frei)`,
+      st.steuer > 0 ? `−${fmt(st.steuer)}<i class=mk></i>` : "0", st.steuer > 0 ? "neg" : "");
+    rows += `<tr class="sum"><td><b>Dir bleiben je Stunde</b></td><td><b>${fmt(st.netto)}<i class=mk></i></b></td></tr>`;
+    return `<table class="stadt-rechnung">${rows}</table>`;
+  }
+
+  /*
+   * Personal fuer die Betriebe.
+   *
+   * Steht direkt unter der Miete, weil es die einzige Zahl daneben ist, die
+   * man selbst aendern kann. Wer keine Betriebe hat, sieht hier nichts: ein
+   * Knopf, der bei den meisten Leuten nur "du hast keine Betriebe" sagt,
+   * waere ein Knopf zu viel.
+   */
+  function personalZeile(me, st) {
+    const p = me && me.personal;
+    if (!p || !p.betriebe) return "";
+    const betr = `${fmt(p.betriebe)} ${p.betriebe === 1 ? "Betrieb" : "Betriebe"}`;
+    if (p.aktuell) {
+      return `<div class="cd-row cd-buff on small" style="display:block">${window.Casino.icons.ui("quests")}`
+        + `<b>${escapeHtml(p.aktuell.label)}</b> im Dienst. Deine ${betr} laufen auf ${Math.round(st.personalFaktor * 100)} %.`
+        + fortschritt(p.aktuell.seit, p.aktuell.bis, "Feierabend in")
+        + `</div>`;
+    }
+    let out = `<div class="cd-row small" style="color:var(--bad)">${window.Casino.icons.ui("quests")}`
+      + `Niemand im Dienst. Deine ${betr} laufen auf ${Math.round(p.ohnePersonal * 100)} %, `
+      + `dir entgehen <b>${fmt(st.ohnePersonal)}</b> Chips je Stunde.</div>`;
+    out += `<div class="empire-items" style="margin-top:6px">`;
+    for (const x of p.stufen) {
+      out += `<button class="empire-item" data-personal="${x.id}">${escapeHtml(x.label)}`
+        + `<small>${x.stunden} h auf ${Math.round(x.faktor * 100)} % · Lohn ${fmt(x.lohn)}`
+        + ` · lohnt sich ab ${x.abholungen} Abholungen</small></button>`;
+    }
+    out += `</div>`;
+    return out;
+  }
+
+  /*
+   * Das offene Stadt-Ereignis.
+   *
+   * Steht ganz oben und nicht am Gebaeude selbst: es ist das Einzige in der
+   * Stadt, das auf eine Entscheidung wartet, und wer 86 Haeuser hat, findet
+   * sonst nie heraus, welches gemeint ist.
+   *
+   * Beide Wege stehen mit ihren Folgen da, auch die schlechte Seite. Was nur
+   * im title-Attribut oder erst nach dem Tippen steht, gibt es auf dem iPad
+   * nicht.
+   */
+  function ereignisKarte(me) {
+    const ev = me && me.ereignis;
+    if (!ev) return "";
+    let out = `<div class="cd-row cd-buff" style="display:block;border-color:var(--accent)">`
+      + `<b>${escapeHtml(ev.titel)}</b>`
+      + `<p class="small" style="margin:4px 0 8px">${escapeHtml(ev.text)}</p>`
+      + `<div class="empire-items">`;
+    for (const w of ev.wahl) {
+      const teile = [];
+      if (w.kosten) teile.push(`kostet ${fmt(w.kosten)}`);
+      if (w.gewinn) teile.push(`bringt ${fmt(w.gewinn)}`);
+      if (w.folge) {
+        teile.push(w.folge.faktor === 0
+          ? `${ev.haus} ${w.folge.stunden} h geschlossen`
+          : `${w.folge.stunden} h auf ${Math.round(w.folge.faktor * 100)} %`);
+      }
+      if (w.streit) teile.push("Ausgang offen");
+      if (!teile.length) teile.push("keine Folgen");
+      out += `<button class="empire-item" data-ereignis="${w.id}">${escapeHtml(w.label)}`
+        + `<small>${escapeHtml(teile.join(" · "))}</small></button>`;
+    }
+    out += `</div><p class="muted small" style="margin:8px 0 0">${escapeHtml(ev.haus)} in ${escapeHtml(ev.district)}. `
+      + `Das wartet, so lange du willst, aber bis dahin passiert nichts Neues in der Stadt.</p></div>`;
+    return out;
   }
 
   // "Dein Imperium"
@@ -391,13 +488,31 @@
     for (const s of me.sets || []) chips.push(`<span class="buff-chip">${s.emoji} ${escapeHtml(s.label)} (+${s.tribute.toLocaleString("de-DE")}/Std)</span>`);
     for (const t of me.trophies) chips.push(`<span class="buff-chip">${t.emoji} ${escapeHtml(t.title)}</span>`);
     for (const d of me.bossOf) chips.push(`<span class="buff-chip">${window.Casino.icons.ui("krone")}Boss von ${escapeHtml(d)}</span>`);
+    /*
+     * Was die Stadt wirklich abwirft, in ganzen Zahlen.
+     *
+     * Vorher stand hier nur der Wert. Was ein Haus einbringt, stand
+     * ausschliesslich in der Bonus-Meldung, und die ist nach vier Sekunden
+     * weg. Wer vor der Entscheidung stand, noch eins zu kaufen, hatte keine
+     * Zahl, mit der er rechnen konnte.
+     */
+    const st = overview && overview.steuer;
+    let mietzeile = "";
+    if (st && st.miete) {
+      /* Eine echte Aufstellung, keine Zeile Fliesstext.
+         Wer 232 Haeuser hat, soll auf einen Blick sehen, dass ihn die
+         Verwaltung fast so viel kostet wie die Steuer. Wer das nur als
+         Prozentsatz liest, optimiert an der falschen Stelle. */
+      mietzeile = stadtAufstellung(st);
+      mietzeile += personalZeile(me, st);
+    }
     // "Meine Immobilien": antippen springt zum Gebäude auf der Karte.
     let list = `<details class="empire-list"><summary>Meine Immobilien (${me.houses})</summary><div class="empire-items">`;
     for (const p of me.properties || []) {
       list += `<button class="empire-item" data-goto-d="${p.did}" data-goto-b="${p.id}">${p.emoji} ${escapeHtml(p.label)}<small>${escapeHtml(p.districtName)} · ${fmt(p.price)}<i class=mk></i></small></button>`;
     }
     list += `</div></details>`;
-    box.innerHTML = chips.join("") + list;
+    box.innerHTML = ereignisKarte(me) + chips.join("") + mietzeile + list;
   }
 
   // "Wem gehört Porta"
@@ -419,13 +534,8 @@
     const b = overview.board;
 
     if (hint) {
-      const staffel = overview.ownerScale || 1;
       const teile = [`${fmt(b.besetzt)} von ${fmt(b.gesamt)} Gebäuden haben einen Besitzer, ${fmt(b.frei)} sind noch frei.`];
-      if (staffel > 1.01) {
-        teile.push(`Dein Kaufpreis liegt bei ${staffel.toLocaleString("de-DE")}×. Je mehr du besitzt, desto teurer wird das nächste Haus (höchstens ${overview.ownerScaleMax}×).`);
-      } else {
-        teile.push("Jedes Haus lässt sich übernehmen: du zahlst 50 % Aufschlag, der Vorbesitzer bekommt den vollen Marktwert.");
-      }
+      teile.push("Jedes Haus lässt sich übernehmen: du zahlst 50 % Aufschlag, der Vorbesitzer bekommt den vollen Marktwert.");
       hint.textContent = teile.join(" ");
     }
 
@@ -433,6 +543,15 @@
       box.innerHTML = '<p class="muted small" style="margin:0">Noch gehört niemandem etwas. Die ganze Stadt ist frei.</p>';
       return;
     }
+
+    /* Auch bei den anderen. Die Stadt ist oeffentlich, und erst im Vergleich
+       sieht man, warum jemand mit weniger Haeusern mehr einnimmt. */
+    const fremdeRechnung = (z, board) => `<table class="stadt-rechnung klein">`
+      + `<tr><td>Miete je Stunde</td><td class="pos">${fmt(z.miete)}<i class=mk></i></td></tr>`
+      + `<tr><td>Verwaltung${z.verwaltung ? ` (${fmt(z.houses - board.verwFrei)} × ${fmt(board.verwJe)})` : ""}</td><td class="${z.verwaltung ? "neg" : ""}">${z.verwaltung ? "−" + fmt(z.verwaltung) : "0"}</td></tr>`
+      + `<tr><td>Grundsteuer</td><td class="${z.steuer > 0 ? "neg" : ""}">${z.steuer > 0 ? "−" + fmt(z.steuer) : "0"}</td></tr>`
+      + `<tr class="sum"><td><b>bleibt</b></td><td><b>${fmt(z.netto)}<i class=mk></i></b></td></tr>`
+      + `</table>`;
 
     box.innerHTML = b.liste.map((z) => {
       const offen = offenerBesitzer === z.key;
@@ -444,12 +563,15 @@
             <span class="cb-rank">${z.rang}</span>
             <span class="cb-dot" style="background:${z.color}"></span>
             <span class="cb-name">${escapeHtml(z.name)}${z.isMe ? " (du)" : ""}</span>
-            <span class="cb-num">${window.Casino.icons.ui("businesses")}${fmt(z.houses)}</span>
-            <span class="cb-num cb-value">${fmt(z.value)}<i class=mk></i></span>
-            ${marken.length ? `<span class="cb-tags">${marken.join(" ")}</span>` : ""}
+            <span class="cb-nums">
+              <span class="cb-num">${window.Casino.icons.ui("businesses")}${fmt(z.houses)}</span>
+              <span class="cb-num cb-value">${fmt(z.value)}<i class=mk></i></span>
+              <span class="cb-num cb-netto">${fmt(z.netto)}<i class=mk></i>/h</span>
+              ${marken.length ? `<span class="cb-tags">${marken.join(" ")}</span>` : ""}
+            </span>
             <span class="cb-caret">${offen ? "▾" : "▸"}</span>
           </button>
-          ${offen ? `<div class="cb-items" data-items="${escapeHtml(z.key)}">${renderBesitzerListe(z)}</div>` : ""}
+          ${offen ? `<div class="cb-items" data-items="${escapeHtml(z.key)}">${fremdeRechnung(z, b)}${renderBesitzerListe(z)}</div>` : ""}
         </div>`;
     }).join("");
   }
@@ -508,6 +630,26 @@
   $("#biz-buffs").addEventListener("click", (e) => {
     const item = e.target.closest(".empire-item");
     if (!item) return;
+    // Im selben Kasten stehen zwei Sorten Knopf: Sprung zum Gebäude und
+    // Personal einstellen. Das Personal hat kein Ziel auf der Karte.
+    if (item.dataset.ereignis) {
+      socket.emit("city:ereignis", { wahl: item.dataset.ereignis }, (res) => {
+        if (!res || !res.ok) { toast((res && res.error) || "Ging nicht."); return; }
+        applyAccount(res.account);
+        toast(res.meldung || "Erledigt.");
+        loadCity();
+      });
+      return;
+    }
+    if (item.dataset.personal) {
+      socket.emit("city:personal", { stufe: item.dataset.personal }, (res) => {
+        if (!res || !res.ok) { toast((res && res.error) || "Ging nicht."); return; }
+        applyAccount(res.account);
+        toast(`Eingestellt, −${fmt(res.cost)} Chips Lohn.`);
+        loadCity();
+      });
+      return;
+    }
     springeZuGebaeude(item.dataset.gotoD, parseInt(item.dataset.gotoB, 10));
   });
 
@@ -649,7 +791,11 @@
       if (sameSt) { stroke = "#ffcf5e"; sw = 2.0; }   // gleiche Straße hervorheben
       if (sel) { stroke = "#7ec8ff"; sw = 2.4; }
       const special = b.cls === "casino" || b.cls === "bank" || b.trophy;
-      parts.push(`<path class="bld" data-b="${b.id}" d="${pathOf(b.pts)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${special ? 'filter="url(#glow)"' : ""} style="cursor:pointer"/>`);
+      /* Baustellen bekommen einen gestrichelten Rand. Ein Umbau dauert
+         Stunden, und ohne Markierung auf der Karte muesste man jedes eigene
+         Haus einzeln antippen, um zu sehen, wo gerade etwas laeuft. */
+      const bauRand = b.bau ? ' stroke-dasharray="3 2"' : "";
+      parts.push(`<path class="bld" data-b="${b.id}" d="${pathOf(b.pts)}" fill="${fill}" stroke="${b.bau ? "#ffb347" : stroke}" stroke-width="${b.bau ? Math.max(sw, 1.8) : sw}"${bauRand} ${special ? 'filter="url(#glow)"' : ""} style="cursor:pointer"/>`);
       if (b.cls === "casino" || b.cls === "bank")
         parts.push(window.Casino.icons.svgGruppe(b.cls === "casino" ? "marke" : "bank", b.c[0], b.c[1], Math.max(15, Math.sqrt(b.a) * 1.1), "#fff"));
       else if (b.trophy)
@@ -795,12 +941,136 @@
   function staffelHinweis(bossRabatt) {
     let out = "";
     if (bossRabatt) out += `<div class="cd-row muted small">${window.Casino.icons.ui("krone")}Boss-Rabatt: −10 % in deinem Ortsteil.</div>`;
-    const st = district && district.ownerScale;
-    if (st && st > 1.01) {
-      const max = district.ownerScaleMax || 3;
-      out += `<div class="cd-row muted small">${window.Casino.icons.ui("businesses")}Besitzer-Staffel: du hast ${fmt(district.ownerHouses)} Gebäude, deshalb ×${st.toLocaleString("de-DE")} auf jeden Kauf (höchstens ×${max}). Verkaufen und Entschädigungen bleiben beim Marktwert.</div>`;
+    /*
+     * Hier stand die Besitzer-Staffel ("dein Kaufpreis liegt bei ×3"). Die
+     * gibt es nicht mehr, alle zahlen den Marktwert. An ihrer Stelle steht
+     * die Grundsteuer, aber die gehoert nicht ans einzelne Haus, sondern an
+     * den Stunden-Bonus und in die Uebersicht: sie kostet nichts beim Kauf,
+     * sie kuerzt die laufende Miete.
+     */
+    const st = district && district.steuer;
+    if (st && (st.verwaltung || st.satz > 0.005)) {
+      const wie = [];
+      if (st.verwaltung) wie.push(`${fmt(st.verwJe)} Verwaltung je Gebäude über ${st.verwFrei}`);
+      if (st.satz > 0.005) wie.push(`${Math.round(st.satz * 100)} % Grundsteuer auf den Rest`);
+      out += `<div class="cd-row muted small">${window.Casino.icons.ui("businesses")}Besitz kostet laufend: ${wie.join(" und ")}. Der Kaufpreis bleibt davon unberührt.</div>`;
+    }
+    // Die Abgabe des Ortsteils steckt schon im Preis. Sie muss trotzdem
+    // dastehen, sonst hält man die höhere Zahl für einen Fehler.
+    const z = district && district.zoll;
+    if (z && z.satz > 0 && !district.iAmBoss) {
+      out += `<div class="cd-row muted small">${window.Casino.icons.ui("krone")}Abgabe an ${escapeHtml(z.bossName || "den Boss")}: ${Math.round(z.satz * 100)} % auf alles, was du hier ausgibst. Schon im Preis.</div>`;
     }
     return out;
+  }
+
+  /*
+   * Der Regler des Bosses.
+   *
+   * Steht im Ortsteil und nicht im Imperium: er gilt fuer genau diesen
+   * Ortsteil, und wer ihn dreht, soll dabei auf dessen Karte sehen.
+   */
+  function zollRegler() {
+    const z = district && district.zoll;
+    if (!z || !district.iAmBoss) return "";
+    const max = Math.round((z.max || 0.1) * 100);
+    const jetzt = Math.round(z.satz * 100);
+    const gesperrt = z.frei > Date.now();
+    let out = `<div class="cd-section"><div class="cd-sub">Deine Abgabe in ${escapeHtml(district.name)}</div>`;
+      out += `<div class="cd-row small">Fremde zahlen <b>${jetzt} %</b> auf jeden Kauf, jede Übernahme und jeden Ausbau hier. Das Geld geht an dich.</div>`;
+    if (gesperrt) {
+      out += `<div class="cd-row muted small">Ändern geht wieder in ${dauerText(z.frei - Date.now())}. Einmal je Stunde, damit niemand den Satz hochdreht, sobald jemand bauen will.</div>`;
+    } else {
+      out += `<div class="empire-items">`;
+      for (let p = 0; p <= max; p += 2) {
+        out += `<button class="empire-item${p === jetzt ? " on" : ""}" data-zoll="${p}">${p} %</button>`;
+      }
+      out += `</div><div class="cd-row muted small">Je höher, desto mehr verdienst du an jedem Fremden. Und desto eher geht er woanders bauen.</div>`;
+    }
+    return out + `</div>`;
+  }
+
+  /*
+   * Ausbau-Panel.
+   *
+   * Kosten, Dauer und die Miete nachher kommen einzeln vom Server. Sie fuer
+   * jedes der tausend Gebaeude eines Ortsteils mitzuschicken waere Unsinn,
+   * angetippt wird immer nur eins. Die Antwort landet im Cache, damit das
+   * Panel beim naechsten Zeichnen sofort steht statt zu flackern.
+   */
+  let ausbauCache = {};
+
+  function ausbauZeile(b) {
+    if (b.bau) {
+      return `<div class="cd-row cd-buff on" style="display:block">`
+        + `${window.Casino.icons.ui("businesses")}Wird zu${b.bau.ziel === "pension" ? "r" : "m"} <b>${escapeHtml(zielName(b.bau.ziel))}</b> umgebaut.`
+        + fortschritt(b.bau.seit, b.bau.fertig, "Fertig in")
+        + `</div>`;
+    }
+    const info = ausbauCache[b.id];
+    if (!info) {
+      // Noch nicht da: anfragen und neu zeichnen, wenn die Antwort kommt.
+      socket.emit("city:ausbauInfo", { buildingId: b.id }, (r) => {
+        if (!r || !r.ok) return;
+        ausbauCache[b.id] = r.info;
+        if (selectedId === b.id) renderDetail();
+      });
+      return `<div class="cd-row muted small">Ausbau wird geprüft …</div>`;
+    }
+    if (!info.ziel) return "";
+    const kopf = `<div class="cd-row small">Ausbauen zu${info.ziel === "pension" ? "r" : "m"} <b>${escapeHtml(info.zielName)}</b>: Miete <b>${fmt(info.mieteJetzt)}</b> auf <b>${fmt(info.mieteNachher)}</b> je Stunde, Bauzeit ${dauerText(info.dauerMs)}.</div>`;
+    if (!info.moeglich) return kopf + `<div class="cd-row muted small">${escapeHtml(info.grund || "")}</div>`;
+    return kopf
+      + `<button class="cd-toggle" data-act="ausbau">${info.zielEmoji} Ausbauen für ${fmt(info.kosten)}<i class=mk></i></button>`
+      + `<div class="cd-row muted small">${info.offen} von ${info.max} Baustellen belegt. Solange gebaut wird, kann dir niemand das Gebäude abnehmen und du kannst es nicht verkaufen.</div>`;
+  }
+
+  /*
+   * Fortschritt als Balken, nicht nur als Restzeit.
+   *
+   * Eine Zahl allein sagt nicht, ob gerade angefangen wurde oder ob es
+   * gleich fertig ist. Beides dauert hier Stunden, und man kommt zwischendurch
+   * wieder; der Balken ist die einzige Anzeige, die man im Vorbeigehen liest.
+   * `data-bis` und `data-seit` lässt der Ticker unten jede Sekunde
+   * nachziehen, damit er auch ohne Neuladen läuft.
+   */
+  function fortschritt(seit, bis, text) {
+    const jetzt = Date.now();
+    const gesamt = Math.max(1, bis - (seit || bis - 3600000));
+    const anteil = Math.max(0, Math.min(1, (jetzt - (seit || bis - gesamt)) / gesamt));
+    return `<div class="fortschritt" data-seit="${seit || ""}" data-bis="${bis}">
+      <div class="fortschritt-bahn"><span style="width:${(anteil * 100).toFixed(1)}%"></span></div>
+      <div class="fortschritt-text">${text} <b class="fortschritt-rest">${dauerText(Math.max(0, bis - jetzt))}</b></div>
+    </div>`;
+  }
+
+  /* Alle sichtbaren Balken im Sekundentakt nachziehen. Ein Intervall für
+     alle statt eins je Balken: es gibt selten mehr als zwei, aber jeder
+     eigene Timer überlebt das nächste Neuzeichnen und läuft weiter ins
+     Leere. */
+  setInterval(() => {
+    const screen = document.querySelector('[data-screen="businesses"]');
+    if (!screen || !screen.classList.contains("active")) return;
+    const jetzt = Date.now();
+    for (const el of document.querySelectorAll(".fortschritt")) {
+      const bis = Number(el.dataset.bis) || 0;
+      const seit = Number(el.dataset.seit) || bis - 3600000;
+      const gesamt = Math.max(1, bis - seit);
+      const anteil = Math.max(0, Math.min(1, (jetzt - seit) / gesamt));
+      const bahn = el.querySelector(".fortschritt-bahn > span");
+      if (bahn) bahn.style.width = (anteil * 100).toFixed(1) + "%";
+      const rest = el.querySelector(".fortschritt-rest");
+      if (rest) rest.textContent = bis > jetzt ? dauerText(bis - jetzt) : "fertig";
+      if (anteil >= 1) el.classList.add("voll");
+    }
+  }, 1000);
+
+  const zielName = (id) => (district && district.classes && district.classes[id] ? district.classes[id].name : id);
+  function dauerText(ms) {
+    const min = Math.ceil(ms / 60000);
+    if (min < 60) return `${min} min`;
+    const h = Math.floor(min / 60), m = min % 60;
+    return m ? `${h} h ${m} min` : `${h} h`;
   }
 
   function renderDetail() {
@@ -820,7 +1090,7 @@
     }
     const b = bldById(selectedId);
     if (!b) {
-      box.innerHTML = '<p class="muted small" style="text-align:center;padding:14px">Zoome rein und tippe ein Haus an.</p>';
+      box.innerHTML = '<p class="muted small" style="text-align:center;padding:14px">Zoome rein und tippe ein Haus an.</p>' + zollRegler();
       return;
     }
     const c = district.classes[b.cls];
@@ -838,6 +1108,12 @@
     const residents = (district.residents && district.residents[b.id]) || [];
     if (residents.length)
       body += `<div class="cd-row">Hier wohnt: <b>${residents.map(escapeHtml).join(", ")}</b></div>`;
+    // Ab der Pension steht ein Mensch dahinter. Bei einem Wohnhaus nicht.
+    if (b.mieter)
+      body += `<div class="cd-row">${escapeHtml(b.mieter.rolle)}: <b>${escapeHtml(b.mieter.name)}</b></div>`;
+    if (b.effekt)
+      body += `<div class="cd-row" style="color:${b.effekt.faktor < 1 ? "var(--bad)" : "var(--good)"}">`
+        + `Läuft auf <b>${Math.round(b.effekt.faktor * 100)} %</b>, noch ${dauerText(Math.max(0, b.effekt.bis - Date.now()))}.</div>`;
     body += `</div>`;
 
     // Vorteil der Trophäe.
@@ -868,8 +1144,12 @@
       body += `<button class="btn-primary cd-btn" data-act="buy">Kaufen für ${fmt(meiner)}<i class=mk></i>${abweichung ? ` <s class="muted small">${fmt(b.price)}</s>` : ""}</button>`;
       body += staffelHinweis(meiner < b.price);
     } else if (b.mine) {
-      body += `<button class="btn-primary cd-btn" data-act="sell">Verkaufen für ${fmt(b.sellPrice)}<i class=mk></i></button>`;
-      if (/^(kiosk|cafe|shop|hotel|factory)$/.test(b.cls)) {
+      body += ausbauZeile(b);
+      /* Waehrend gebaut wird, ist Verkaufen gesperrt. Der Server lehnt es
+         ohnehin ab, aber ein Knopf, der nur eine Fehlermeldung ausloest, ist
+         auf dem iPad das Gleiche wie ein kaputter Knopf. */
+      if (!b.bau) body += `<button class="btn-primary cd-btn" data-act="sell">Verkaufen für ${fmt(b.sellPrice)}<i class=mk></i></button>`;
+      if (!b.bau && /^(kiosk|cafe|shop|hotel|factory)$/.test(b.cls)) {
         body += b.listed
           ? `<div class="cd-row" style="color:#7ec8ff">An der Börse</div>`
           : `<button class="cd-toggle" data-act="ipo">An die Börse bringen (IPO)</button>`;
@@ -890,12 +1170,25 @@
       ? `<button class="cd-toggle on" data-act="moveout">Du wohnst hier (ausziehen)</button>`
       : `<button class="cd-toggle" data-act="movein">Hier einziehen (kostet nichts, nur zum Spaß)</button>`;
     body += `</div>`;
-    box.innerHTML = head + body;
+    box.innerHTML = head + body + zollRegler();
   }
 
   $("#city-detail").addEventListener("click", (e) => {
+    if (view !== "district") return;
+    // Der Regler des Bosses haengt nicht an einem gewaehlten Gebaeude, er
+    // steht auch darunter, wenn gerade keins angetippt ist.
+    const zollBtn = e.target.closest("[data-zoll]");
+    if (zollBtn) {
+      socket.emit("city:zoll", { districtId: district.id, satz: Number(zollBtn.dataset.zoll) / 100 }, (res) => {
+        if (!res || !res.ok) { toast((res && res.error) || "Ging nicht."); return; }
+        district = res.district; district.residents = district.residents || {};
+        renderDistrict(); renderDetail();
+        toast(`Abgabe steht auf ${Math.round(res.satz * 100)} %.`);
+      });
+      return;
+    }
     const b = bldById(selectedId);
-    if (!b || view !== "district") return;
+    if (!b) return;
     const btn = e.target.closest("[data-act]");
     if (!btn) return;
     const act = btn.dataset.act;
@@ -907,17 +1200,21 @@
       });
       return;
     }
-    const EVT = { buy: "city:buy", sell: "city:sell", takeover: "city:takeover", ipo: "city:ipo" };
+    const EVT = { buy: "city:buy", sell: "city:sell", takeover: "city:takeover", ipo: "city:ipo", ausbau: "city:ausbau" };
     const ev = EVT[act];
     if (!ev) return;
     socket.emit(ev, { buildingId: b.id, districtId: district.id }, (res) => {
       if (!res || !res.ok) { toast((res && res.error) || "Aktion fehlgeschlagen."); return; }
+      // Nach jeder Aktion stimmt der Cache nicht mehr: ein Kauf aendert die
+      // Zahl der Baustellen, ein Ausbau die Klasse und damit die naechste Stufe.
+      ausbauCache = {};
       applyAccount(res.account);
       if (res.district) { district = res.district; district.residents = district.residents || {}; }
       renderDistrict();
       renderDetail();
       socket.emit("city:state", (r2) => { if (r2 && r2.ok) { overview = r2.overview; renderEmpire(overview.me); } });
-      if (res.raised) toast(`Börsengang geschafft, +${fmt(res.raised)} Chips Kapital (${res.sym}).`);
+      if (act === "ausbau") toast(`Umbau läuft, −${fmt(res.cost)} Chips. Der Rest kommt von selbst.`);
+      else if (res.raised) toast(`Börsengang geschafft, +${fmt(res.raised)} Chips Kapital (${res.sym}).`);
       else if (res.gain) toast(`+${fmt(res.gain)} Chips`);
       else if (res.cost) toast(`−${fmt(res.cost)} Chips`);
       else toast("Erledigt.");
@@ -931,6 +1228,10 @@
   });
   socket.on("city:news", (n) => {
     if (n && n.txt) toast(n.txt);
+  });
+  // Jemand hat in deinem Ortsteil gekauft und dir die Abgabe gezahlt.
+  socket.on("city:abgabe", (a) => {
+    if (a && a.amount) toast(`+${fmt(a.amount)} Chips Abgabe von ${a.von}.`);
   });
   // Achievement freigeschaltet: feiern (nur bei mir, die großen stehen eh im Chat).
   socket.on("ach:unlocked", (a) => {

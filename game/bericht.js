@@ -43,10 +43,20 @@ const REIHE = ["woche", "rekord", "stadt", "event", "gewinn", "horses"];
 const de = (n) => Math.round(Number(n) || 0).toLocaleString("de-DE");
 
 /** Alles, was gerade abzuholen ist. Auch die Marke am Menue lebt davon. */
+/* Welcher Bildschirm zu welchem Duellspiel gehoert. Ohne die Zuordnung
+   haette die Marke keine Adresse, und das ist die eine Regel, die fuer
+   jede Marke am Menue gilt. */
+/* Das Kisten-Duell steht bewusst NICHT drin: es laeuft live, man kann es
+   nicht liegen lassen und spaeter abholen. Eine Marke dafuer waere schon
+   veraltet, bevor man das Menue aufmacht. */
+const DUELL_SCHIRM = { sudoku: "sudoku" };
+const DUELL_ICON = { sudoku: "sudoku" };
+const DUELL_NAME = { sudoku: "Sudoku-Duell" };
+
 function marken(accounts, key) {
   const acc = accounts.get(key);
-  if (!acc) return { season: 0, geschenk: 0, kalender: 0, rad: 0, gesamt: 0 };
-  let season = 0, geschenk = 0, kalender = 0, rad = 0;
+  if (!acc) return { season: 0, geschenk: 0, kalender: 0, rad: 0, stadt: 0, duell: 0, duellOrte: {}, kiste: 0, bank: 0, kacheln: {}, gesamt: 0 };
+  let season = 0, geschenk = 0, kalender = 0, rad = 0, stadt = 0, duell = 0, kiste = 0;
   try { season = require("./season").offeneStufen(acc); } catch {}
   try {
     const cb = require("./comeback").publicState(key);
@@ -54,14 +64,50 @@ function marken(accounts, key) {
   } catch {}
   try { kalender = accounts.calendarState(key)?.canClaim ? 1 : 0; } catch {}
   try { rad = require("./gluecksrad").zustand(key)?.canSpin ? 1 : 0; } catch {}
+  /* Die Gratiskiste zaehlt wie der Gratis-Dreh: einmal in zwanzig Stunden,
+     und ohne Hinweis merkt es niemand. Der Stunden-Bonus steht bewusst
+     nicht im Zaehler, weil es ihn fast immer gibt. */
+  try { kiste = require("./kisten").gratisFrei(acc) ? 1 : 0; } catch {}
+  /* Das Sparkonto am Deckel: dort hoert der Zins auf, und das merkt sonst
+     niemand. Die einzige Sache in der Bank, die auf einen wartet. */
+  let bank = 0;
+  try { bank = require("./bank").sparVoll(acc) ? 1 : 0; } catch {}
+  /* Ein offenes Stadt-Ereignis steht im Bericht, aber NICHT im goldenen
+     Zaehler am Menue. Die Regel dafuer ist "jede Marke am Menue braucht eine
+     Adresse im Menue", und die Stadt hat dort keine Zeile, sie haengt als
+     Kachel in der Lobby. Eine Zahl am Menue, hinter der man das Gemeinte
+     nicht findet, ist schlimmer als keine Zahl. */
+  try { stadt = require("./city").ereignisVon(key) ? 1 : 0; } catch {}
+  /* Ein angenommenes Duell, das man noch nicht gespielt hat: der Einsatz ist
+     weg, das Ergebnis fehlt. Das zaehlt mit, anders als das Stadt-Ereignis:
+     es gibt fuer beide Duellspiele eine Zeile im Menue, also hat die Marke
+     eine Adresse. */
+  let duellOrte = {};
+  try {
+    for (const z of require("./asyncDuell").offeneZuege(key)) {
+      const schirm = DUELL_SCHIRM[z.spiel];
+      if (!schirm) continue;               // ohne Adresse im Menue keine Marke
+      duellOrte[schirm] = (duellOrte[schirm] || 0) + 1;
+      duell++;
+    }
+  } catch {}
   /* Die Auktion zaehlt nicht mit: sie ist nichts zum Abholen, sondern etwas,
      das man verpassen kann. Deshalb eine eigene, rote Marke statt einer Zahl
      im goldenen Zaehler. */
   let auktion = { neu: false, ueberboten: false, an: false };
   try { auktion = require("./auktion").menueMarke(key); } catch {}
   return {
-    season, geschenk, kalender, rad,
-    gesamt: season + geschenk + kalender + rad,
+    season, geschenk, kalender, rad, stadt, duell, duellOrte, kiste, bank,
+    /*
+     * Im goldenen Zaehler steht nur, was auch im MENUE zu finden ist.
+     * Stadt und Bank haben dort keine Zeile, sie sind Lobby-Kacheln — ihre
+     * Marke sitzt auf der Kachel und hat dort ihre Adresse. Eine Zahl am
+     * Menue, hinter der man das Gemeinte nicht findet, ist schlimmer als
+     * keine Zahl.
+     */
+    gesamt: season + geschenk + kalender + rad + duell + kiste,
+    /* Marken, die auf einer Lobby-Kachel sitzen. Kennung = Screen-Name. */
+    kacheln: { businesses: stadt, bank, kiste, ...duellOrte },
     auktion,
   };
 }
@@ -81,13 +127,59 @@ function abholListe(accounts, key, m) {
     out.push({ nav: "calendar", icon: "kalender", titel: "Kalender", text: `Tag ${tag}: ${de(cal.rewards[cal.current])} Chips liegen bereit.` });
   }
   if (m.rad) out.push({ nav: "wheel", icon: "gluecksrad", titel: "Glücksrad", text: "Dein Gratis-Dreh ist wieder frei." });
+  if (m.kiste) out.push({ nav: "kiste", icon: "geschenk", titel: "Tageskiste", text: "Die Gratiskiste ist wieder offen." });
   if (m.season) out.push({ nav: "season", icon: "season", titel: "Season-Pass", text: m.season === 1 ? "Eine freigeschaltete Stufe wartet." : `${m.season} freigeschaltete Stufen warten.` });
   if (m.geschenk) out.push({ tun: "paket", icon: "geschenk", titel: "Willkommens-Paket", text: "Noch nicht abgeholt." });
+  if (m.stadt) {
+    let ev = null;
+    try { ev = require("./city").ereignisVon(key); } catch {}
+    if (ev) out.push({ nav: "businesses", icon: "businesses", titel: ev.titel, text: `${ev.haus} in ${ev.district}. Du musst entscheiden.` });
+  }
+  if (m.duell) {
+    let zuege = [];
+    try { zuege = require("./asyncDuell").offeneZuege(key); } catch {}
+    for (const z of zuege) {
+      out.push({
+        nav: DUELL_SCHIRM[z.spiel] || "lobby",
+        icon: DUELL_ICON[z.spiel] || "krieg",
+        titel: DUELL_NAME[z.spiel] || "Duell",
+        text: `Gegen ${z.gegen || "einen offenen Gegner"}. Dein Einsatz von ${de(z.einsatz)} liegt drin, gespielt hast du noch nicht.`,
+      });
+    }
+  }
   return out;
 }
 
 /** Chronik-Eintraege zu Zeilen, gruppiert und gedeckelt. */
-function punkteAus(eintraege) {
+/*
+ * Wie jemand aussieht, zu einem Namen aus der Chronik.
+ *
+ * Die Chronik speichert fertige Saetze und den NAMEN, nicht den Schluessel:
+ * sie soll Jahre spaeter lesbar sein. Fuer die Anzeige braucht es aber das
+ * Aussehen, und das haengt am Konto. Aufgeloest wird ueber den Alias-Index,
+ * damit auch ein alter Name noch zum richtigen Konto fuehrt.
+ *
+ * Und warum ueberhaupt: der Tagesbericht ist die einzige Flaeche, die in
+ * dieser Runde wirklich jeder liest, auch Tage spaeter. Alles andere
+ * (Online-Liste, Pokertisch, Aura) verlangt, dass zwei gleichzeitig da sind,
+ * und genau das passiert fast nie. Wer etwas Seltenes hat, wird hier gesehen
+ * oder nirgends.
+ */
+function lookVon(accounts, name) {
+  if (!name) return null;
+  try {
+    const key = accounts.kanonisch(name);
+    const acc = key ? accounts.get(key) : null;
+    if (!acc) return null;
+    const l = require("./cosmetics").publicLook(acc);
+    return {
+      name: acc.name, avatar: l.avatar, nameColor: l.nameColor, nameStyle: l.nameStyle,
+      frame: l.frame, aura: l.aura, zeichen: l.zeichen, prunk: l.prunk,
+    };
+  } catch { return null; }
+}
+
+function punkteAus(eintraege, accounts) {
   const gruppen = new Map();
   for (const e of eintraege) {
     if (!gruppen.has(e.art)) gruppen.set(e.art, []);
@@ -103,7 +195,7 @@ function punkteAus(eintraege) {
     if (art === "gewinn") liste.sort((a, b) => (b.wert || 0) - (a.wert || 0));
     const max = GRENZE[art] || 4;
     for (const e of liste.slice(0, max)) {
-      out.push({ art, icon: ICON[art] || "feed", text: e.text, ts: e.ts });
+      out.push({ art, icon: ICON[art] || "feed", text: e.text, ts: e.ts, look: lookVon(accounts, e.user) });
     }
     if (liste.length > max) {
       const rest = liste.length - max;
@@ -115,7 +207,7 @@ function punkteAus(eintraege) {
   const verluste = gruppen.get("verlust") || [];
   if (verluste.length) {
     const schlimm = verluste.slice().sort((a, b) => (b.wert || 0) - (a.wert || 0))[0];
-    out.push({ art: "verlust", icon: ICON.verlust, leise: true, text: schlimm.text, ts: schlimm.ts });
+    out.push({ art: "verlust", icon: ICON.verlust, leise: true, text: schlimm.text, ts: schlimm.ts, look: lookVon(accounts, schlimm.user) });
   }
   return out;
 }
@@ -191,7 +283,7 @@ function bauen(accounts, key) {
   const seit = Math.max(Number(acc.berichtAt) || 0, jetzt - ERSTBLICK_MS);
   const m = marken(accounts, key);
   const abholbar = abholListe(accounts, key, m);
-  const punkte = punkteAus(chronik.seit(seit));
+  const punkte = punkteAus(chronik.seit(seit), accounts);
   const zahlen = zahlenAus(accounts, key, seit);
 
   /* Von selbst aufgehen soll er nur einmal am Tag, und nur wenn drin etwas

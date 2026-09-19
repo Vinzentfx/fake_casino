@@ -87,6 +87,13 @@
     if (type === "schild") return `<span class="auk-schild sch-${escapeHtml(id)}">${escapeHtml(label)}</span>`;
     if (type === "banner") return `<span class="cos-banner-demo${k}" data-banner="${escapeHtml(id)}"></span>`;
     if (type === "effect") return `<span class="auk-effekt">${escapeHtml(label)}</span>`;
+    /* Seit Spieler selbst einliefern koennen, kommen hier auch Arten an, die
+       es als Haus-Los nie gab: Profilbilder, Farben, Sprueche, Chat-Zeichen.
+       Ohne diese Zeilen stuende auf der Buehne nur der Name. */
+    if (type === "avatar") return `<span class="cos-emoji">${escapeHtml(String(label).split(" ")[0] || "🙂")}</span>`;
+    if (type === "zeichen" && window.Casino.spieler) {
+      return window.Casino.spieler.kosVorschau({ art: "style", id: "standard", label });
+    }
     return `<span class="auk-titeltext">${escapeHtml(label)}</span>`;
   }
 
@@ -158,8 +165,10 @@
           <div class="auk-podest" aria-hidden="true"></div>
           <div class="auk-stueck">${stueck(l.type, l.id, l.label)}</div>
         </div>
-        <h3 class="auk-name">${escapeHtml(l.label)}</h3>
-        <p class="auk-einmal">Gibt es genau einmal, und nur hier.</p>
+        <h3 class="auk-name">${escapeHtml(l.label)}${l.stueckNr ? ` <span class="auk-stuecknr${l.stueckNr === 1 ? " erst" : ""}">Nr. ${l.stueckNr}</span>` : ""}</h3>
+        <p class="auk-einmal">${l.vonName
+          ? `Eingeliefert von <b>${escapeHtml(l.vonName)}</b>. Dieses eine Exemplar wechselt den Besitzer.`
+          : "Gibt es genau einmal, und nur hier."}</p>
 
         <div class="auk-stand">
           <div class="auk-feld">
@@ -177,7 +186,8 @@
 
         ${band}
 
-        ${gesperrt || l.binIch ? "" : `
+        ${l.meins ? `<p class="hint auk-hinweis">Dein Los. Bieten kannst du hier nicht — der Erlös abzüglich ${Math.round((s.einliefern?.provision || 0) * 100)} % Provision kommt beim Zuschlag auf dein Konto.</p>` : ""}
+        ${gesperrt || l.binIch || l.meins ? "" : `
           <div class="auk-bieten">
             <div class="auk-stufen">${bietKnoepfe(l, chips)}</div>
             <details class="auk-eigen">
@@ -202,6 +212,8 @@
         </div>` : ""}
       </div>
       ${kommendesHTML(s)}
+      ${schlangeHTML(s)}
+      ${einliefernHTML(s)}
       ${archivHTML(s)}`;
 
     Casino.icons.zeichne(box);
@@ -224,13 +236,70 @@
     </div>`;
   }
 
+  /**
+   * Was Spieler eingeliefert haben und noch wartet.
+   *
+   * Steht getrennt von "Kommt noch": das sind die Haus-Stuecke, hier stehen
+   * die der anderen. Wer wissen will, ob sich das Warten lohnt, sieht beides
+   * und in welcher Reihenfolge.
+   */
+  function schlangeHTML(s) {
+    const e = s.einliefern;
+    if (!e || !e.schlange.length) return "";
+    return `<div class="tafel auk-kommt">
+      <h4 class="auk-h">Von Spielern eingeliefert (${e.schlange.length})</h4>
+      <div class="auk-schlange">
+        ${e.schlange.map((x) => `<div class="auk-schlange-zeile${x.meins ? " auk-meins" : ""}">
+          <span class="auk-platz">${x.platz}</span>
+          <span class="auk-schlange-demo">${window.Casino.spieler.kosVorschau(x.look, { name: x.name })}</span>
+          <span class="auk-schlange-text">
+            <b>${escapeHtml((x.look && x.look.label) || x.label)}</b>
+            <small>Nr. ${x.nr} · von ${escapeHtml(x.name)} · ab ${zahl(x.mindest)}</small>
+          </span>
+          ${x.meins ? `<button class="btn-secondary auk-klein" data-auk-zurueck="${escapeHtml(x.uid)}">Zurück</button>` : ""}
+        </div>`).join("")}
+      </div>
+    </div>`;
+  }
+
+  /**
+   * Selbst etwas unter den Hammer bringen.
+   *
+   * Der Markt ist der stille Weg: fester Preis, liegt da, bis jemand
+   * zugreift. Das Auktionshaus ist der laute: ein Los am Tag, Ansage im
+   * Chat, Zuschlag zur festen Uhrzeit, alle sehen zu. Dafuer kostet es
+   * mehr, und genau das steht hier auch dran.
+   */
+  function einliefernHTML(s) {
+    const e = s.einliefern;
+    if (!e) return "";
+    const habe = e.schlange.some((x) => x.meins);
+    return `<div class="tafel auk-einliefern">
+      <h4 class="auk-h">Selbst versteigern</h4>
+      <p class="muted small">Einliefergebühr <b>${zahl(e.gebuehr)}</b> Chips, fällig sofort und auch weg,
+        wenn niemand bietet. Vom Zuschlag behält das Haus ${Math.round(e.provision * 100)} %.
+        Mehr als im Markt — dafür steht dein Stück einen ganzen Tag auf der Bühne und jeder bekommt es mit.</p>
+      ${habe ? `<p class="hint">Du hast schon etwas in der Warteschlange. Mehr geht erst, wenn das durch ist.</p>`
+        : e.voll ? `<p class="hint">Die Warteschlange ist voll. Versuch es später wieder.</p>`
+        : !e.meine.length ? `<p class="hint">Du hast gerade nichts Handelbares. Kosmetik kommt aus den Kisten.</p>`
+        : `<div class="auk-meine">
+            ${e.meine.map((x) => `<button class="auk-meins-kachel" data-auk-ein="${escapeHtml(x.uid)}"
+                data-label="${escapeHtml(x.label)}" data-nr="${x.nr}">
+              <span class="auk-meins-demo">${window.Casino.spieler.kosVorschau(x.look, { name: "Du" })}</span>
+              <b>${escapeHtml((x.look && x.look.label) || x.label)}</b>
+              <small class="${x.nr === 1 ? "auk-erst" : ""}">${x.nr === 1 ? "Erstprägung" : `Nr. ${x.nr}`}${x.bestand > 1 ? ` von ${x.bestand}` : ""}</small>
+            </button>`).join("")}
+          </div>`}
+    </div>`;
+  }
+
   function archivHTML(s) {
     if (!s.archiv || !s.archiv.length) return "";
     return `<div class="tafel auk-archiv">
       <h4 class="auk-h">Schon vergeben</h4>
       ${s.archiv.map((a) => `<div class="auk-zeile">
-        <span class="auk-wer">${escapeHtml(a.art)} „${escapeHtml(a.label)}“</span>
-        <span class="auk-wann">${escapeHtml(a.name)}</span>
+        <span class="auk-wer">${escapeHtml(a.art)} „${escapeHtml(a.label)}“${a.stueckNr ? ` Nr. ${a.stueckNr}` : ""}</span>
+        <span class="auk-wann">${escapeHtml(a.name)}${a.von ? ` von ${escapeHtml(a.von)}` : ""}</span>
         <b>${zahl(a.betrag)}<i class=mk></i></b>
       </div>`).join("")}
     </div>`;
@@ -263,6 +332,41 @@
     const stufe = e.target.closest("[data-gebot]");
     if (stufe) { biete(stufe.dataset.gebot); return; }
     if (e.target.closest("#auk-bieten")) { biete($("#auk-betrag")?.value); return; }
+
+    const ein = e.target.closest("[data-auk-ein]");
+    if (ein) {
+      const g = stand && stand.einliefern ? stand.einliefern.gebuehr : 0;
+      Casino.dialog.eingabe(
+        `Ab welchem Betrag soll „${ein.dataset.label}“ Nr. ${ein.dataset.nr} losgehen? `
+        + `Mindestens ${zahl(stand.startGebot)} Chips. Die Einliefergebühr von ${zahl(g)} Chips wird sofort fällig.`,
+        { titel: "Unter den Hammer", platzhalter: "Startgebot in Chips", okText: "Einliefern" },
+      ).then((betrag) => {
+        if (!betrag) return;
+        socket.emit("auktion:einliefern", { uid: ein.dataset.aukEin, mindest: Number(betrag) }, (r) => {
+          if (!r || !r.ok) return toast((r && r.error) || "Ging nicht.");
+          if (r.account) applyAccount(r.account);
+          toast(`„${r.label}“ Nr. ${r.nr} steht in der Warteschlange.`);
+          render({ ok: true, ...r });
+        });
+      });
+      return;
+    }
+
+    const zur = e.target.closest("[data-auk-zurueck]");
+    if (zur) {
+      socket.emit("auktion:zurueck", { uid: zur.dataset.aukZurueck }, (r) => {
+        if (!r || !r.ok) return toast((r && r.error) || "Ging nicht.");
+        if (r.account) applyAccount(r.account);
+        toast(`„${r.label}“ ist wieder bei dir. Die Gebühr bleibt weg.`);
+        render({ ok: true, ...r });
+      });
+      return;
+    }
+  });
+
+  socket.on("auktion:verkauft", (d) => {
+    toast(`Zuschlag auf dein Los: „${d.label}“ Nr. ${d.nr} geht für ${zahl(d.betrag)} an ${d.an}. Du bekommst ${zahl(d.erloes)} Chips.`);
+    Casino.fx?.confetti({ count: 60, wucht: 1.1 });
   });
 
   document.addEventListener("input", (e) => {

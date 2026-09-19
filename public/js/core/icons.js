@@ -528,6 +528,50 @@
       <circle cx="12" cy="12" r="5" ${S} opacity=".6"/>
       <circle cx="12" cy="12" r="1.8" ${A}/>`,
 
+    /*
+     * Edelstein, Bombe und Totenkopf gibt es zweimal, und das ist Absicht.
+     *
+     * In `SPIEL` stehen sie als farbige Bilder mit eigenen Verlaeufen: so
+     * poppen sie im Minenfeld auf, und dort sollen sie auch farbig sein.
+     * Als Chat-Zeichen waeren sie damit die einzigen drei bunten Symbole in
+     * einer Zeile aus Strichzeichnungen, und ihre `<defs>` haetten in einem
+     * vollen Chat zwanzigmal dieselbe id.
+     *
+     * `ui()` sucht zuerst hier, findet also diese Strichfassung. Gefehlt hat
+     * sie ganz: die drei Zeichen liessen sich kaufen und anlegen und haben
+     * dann nichts angezeigt — genau die Falle, die in CLAUDE.md steht.
+     */
+    edelstein: `<path d="M7.6 3.4h8.8l4.2 5.8-8.6 11.4L3.4 9.2Z" ${A}/>
+      <path d="M7.6 3.4 12 9.2l4.4-5.8M3.4 9.2h17.2M12 9.2v11.4" ${S} stroke-width="1.3"/>`,
+
+    bombe: `<circle cx="10.8" cy="14.6" r="6.4" ${A}/>
+      <path d="M14.8 9.6 16.8 7.2" ${S}/>
+      <path d="M16.8 7.2c1.3-1.2 3.1-1 4 .4" ${S} stroke-width="1.4"/>
+      <path d="M8.2 12.4a3.6 3.6 0 0 1 2.4-2" ${S} stroke-width="1.2" opacity=".65"/>`,
+
+    /* Der Schaedel muss bei zwoelf Pixeln erkennbar bleiben. Er lebt von
+       zwei Dingen: einem breiten Hirnschaedel ueber einem deutlich
+       schmaleren Kiefer, und grossen Augenhoehlen. Die erste Fassung hatte
+       einen schmalen Kopf und kleine Augen und sah aus wie eine Gluehbirne. */
+    totenkopf: `<path d="M12 2.6c4.6 0 8 3.1 8 7.2 0 2.3-1 4-2.6 5.1v1.4c0 .9-.7 1.6-1.6 1.6H8.2c-.9 0-1.6-.7-1.6-1.6v-1.4C5 13.8 4 12.1 4 9.8c0-4.1 3.4-7.2 8-7.2Z" ${A}/>
+      <ellipse cx="8.8" cy="10" rx="2.35" ry="2.6" fill="#10131a"/>
+      <ellipse cx="15.2" cy="10" rx="2.35" ry="2.6" fill="#10131a"/>
+      <path d="M12 13.2 10.9 15.4h2.2Z" fill="#10131a"/>
+      <path d="M9.5 18v2.6M12 18v2.6M14.5 18v2.6" ${S} stroke-width="1.4"/>`,
+
+    /* Konfetti: drei Schnipsel, unterschiedlich gekippt. Gleichmaessig
+       gedreht saehe es aus wie ein Muster, nicht wie geworfen. */
+    konfetti: `<rect x="2.6" y="4.2" width="6.6" height="3.6" rx=".8" transform="rotate(-26 5.9 6)" ${A}/>
+      <rect x="13.4" y="2.6" width="7.2" height="3.6" rx=".8" transform="rotate(20 17 4.4)" ${A} opacity=".78"/>
+      <rect x="14.2" y="12.8" width="7" height="3.6" rx=".8" transform="rotate(-40 17.7 14.6)" ${A} opacity=".9"/>
+      <rect x="3.2" y="14.6" width="6.8" height="3.6" rx=".8" transform="rotate(36 6.6 16.4)" ${A} opacity=".62"/>`,
+
+    /* Der Stern der Gala-Kiste: derselbe wie auf dem Deckel, fuenfzackig
+       und im Ring. Das normale `stern-voll` steht schon fuer das
+       Sternzeichen; zwei gleiche Symbole waeren keine zwei Stuecke. */
+    "gala-stern": `<circle cx="12" cy="12" r="8.6" ${S} stroke-width="1.5"/>
+      <path d="M12 5.6 13.9 10h4.5l-3.6 2.8 1.4 4.4L12 14.6l-4.2 2.6 1.4-4.4L5.6 10h4.5Z" ${A}/>`,
+
     // Rueckenflosse ueber der Wasserlinie. Mehr braucht ein Hai nicht.
     hai: `<path d="M12 3.4c3.4 2.6 5.6 6.6 6.4 11.6h-9.6c.4-4.4 1.4-8.2 3.2-11.6Z" ${A}/>
       <path d="M2.6 17.6c1.6 0 1.6 1.6 3.2 1.6s1.6-1.6 3.2-1.6 1.6 1.6 3.2 1.6 1.6-1.6 3.2-1.6 1.6 1.6 3.2 1.6 1.6-1.6 3.2-1.6" ${S}/>`,
@@ -566,9 +610,17 @@
       stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   }
 
-  /** Fertiges SVG fuer eine Spielkennung, oder null. */
+  /**
+   * Fertiges SVG fuer eine Spielkennung, oder null.
+   *
+   * Faellt auf die Oberflaechen-Symbole zurueck. Kisten, Markt, Auktionshaus
+   * und Sammlung sind Bildschirme, keine Spiele, und hatten deshalb nur dort
+   * ein Zeichen — als Lobby-Kachel waeren sie die einzigen vier mit einem
+   * Emoji gewesen, und Emoji bringen ihre eigene Farbe mit und passen in
+   * keinem der drei Designs. Beide Listen zeichnen im selben Raster.
+   */
   function icon(id) {
-    const d = ICONS[id];
+    const d = ICONS[id] || UI[id];
     if (!d) return null;
     return `<svg class="g-icon" viewBox="0 0 24 24" aria-hidden="true"
       stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;

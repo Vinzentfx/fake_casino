@@ -47,11 +47,25 @@
           </button>`).join("")}</div>`
       : "";
 
+    /*
+     * Wer etwas getan hat, steht hier mit seinem Aussehen.
+     *
+     * Das ist die einzige Flaeche, die in dieser Runde wirklich jeder liest,
+     * auch Tage spaeter. Alles andere (Online-Liste, Pokertisch, Aura)
+     * verlangt Gleichzeitigkeit, und die gibt es hier fast nie. Wer etwas
+     * Seltenes hat, wird also hier gesehen oder nirgends.
+     */
+    const wer = (p) => {
+      if (!p.look || !Casino.spieler) return "";
+      return `<span class="tb-wer">${Casino.spieler.avatar(p.look)}`
+        + `${Casino.spieler.zeichen(p.look)}${Casino.spieler.prunk(p.look)}${Casino.spieler.garnitur(p.look)}</span>`;
+    };
     const punkte = b.punkte.length
       ? `<div class="tb-liste">${b.punkte.map((p) => `
           <div class="tb-zeile${p.leise ? " tb-leise" : ""}">
             <span class="tb-sym">${sym(p.icon)}</span>
             <span class="tb-text">${esc(p.text)}</span>
+            ${wer(p)}
           </div>`).join("")}</div>`
       : `<p class="muted small tb-nichts">Nichts Großes passiert. Dann bist du jetzt der Erste.</p>`;
 

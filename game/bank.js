@@ -41,6 +41,24 @@ function stateFor(acc) {
   };
 }
 
+/**
+ * Ist das Sparkonto voll?
+ *
+ * Fuer die Marke auf der Lobby-Kachel. Am Deckel hoert der Zins auf, und
+ * das merkt sonst niemand: der Stand steht ja weiter da und sieht gut aus.
+ * Im Stand vom 18.9. liegt ein Konto bei 17 von 25 Millionen, der Deckel
+ * ist also erreichbar und nicht bloss theoretisch.
+ *
+ * Es ist die einzige Sache in der Bank, die ueberhaupt auf einen wartet:
+ * Zinsen laufen von selbst auf, es gibt nichts abzuholen und keine
+ * Kredite. Eine Marke ohne Bedeutung waere schlimmer als keine.
+ */
+function sparVoll(acc) {
+  if (!acc || !acc.savings) return false;
+  accrueSavings(acc);
+  return (acc.savings.amount || 0) >= SAVINGS_CAP;
+}
+
 function setupBank(io, accounts) {
   _accounts = accounts;
   io.on("connection", (socket) => {
@@ -88,4 +106,4 @@ function setupBank(io, accounts) {
   });
 }
 
-module.exports = { setupBank };
+module.exports = { setupBank, sparVoll, SAVINGS_CAP };

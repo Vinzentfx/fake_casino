@@ -648,6 +648,18 @@ function renderAbholBadge() {
     setzeSheetMarke('[data-nav="calendar"]', m.kalender);
     setzeSheetMarke('[data-nav="wheel"]', m.rad);
     setzeSheetMarke("#menu-geschenk", m.geschenk);
+    /* Duelle: jede Marke an dem Eintrag, unter dem das Duell auch liegt.
+       Eine Zahl am Menue, hinter der man das Gemeinte nicht findet, waere
+       schlimmer als keine. */
+    const orte = m.duellOrte || {};
+    setzeSheetMarke('[data-nav="sudoku"]', orte.sudoku || 0);
+    setzeSheetMarke('[data-nav="kiste"]', m.kiste || 0);
+
+    /* Dieselbe Zahl auch auf die Lobby-Kachel. Quelle ist diese eine
+       Antwort, damit Kachel und Menue nie Verschiedenes behaupten. */
+    /* Die Kachel-Marken kommen fertig vom Server: welcher Bildschirm etwas
+       liegen hat, entscheidet bericht.marken und nicht der Client. */
+    if (window.Casino._lobbyMarken) window.Casino._lobbyMarken(m.kacheln || {});
 
     const sub = $("#menu-season-sub");
     if (sub) sub.textContent = m.season ? `${m.season} ${m.season === 1 ? "Stufe wartet" : "Stufen warten"}` : "Fortschritt und Belohnungen";
@@ -779,7 +791,7 @@ socket.on("account:update", ({ account }) => {
 
 // Nur bekannte Schilder durchlassen: ein alter Wert aus einer Nachricht darf
 // keine fremde Klasse ins Dokument schreiben.
-const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma", "auk_tresor"]);
+const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma", "auk_tresor", "sml_wesergold", "gezeiten", "gala_samt"]);
 const schildKlasse = (p) => (p && SCHILDER.has(p.schild) ? " sch-" + p.schild : "");
 
 function renderOnlinePlayers(players = []) {
@@ -796,7 +808,7 @@ function renderOnlinePlayers(players = []) {
     const clan = p.clan ? `<small class="online-clan">[${escapeHtml(p.clan)}]</small>` : "";
     const status = p.status && p.status.label ? escapeHtml(p.status.label) : "online";
     return `<button class="online-player${schildKlasse(p)}" type="button" data-player-profile="${escapeHtml(p.name || "")}" title="${escapeHtml(p.name || "?")} ansehen">` +
-      window.Casino.spieler.avatar(p) + window.Casino.spieler.name(p, { tag: "b" }) +
+      window.Casino.spieler.avatar(p) + window.Casino.spieler.name(p, { tag: "b" }) + window.Casino.spieler.prunk(p) + window.Casino.spieler.garnitur(p) +
       `${clan}${level}<em>${p.title ? escapeHtml(p.title) : status}</em></button>`;
   }).join("");
 }
@@ -823,7 +835,7 @@ function renderZuletztDa(liste = []) {
   el.classList.remove("hidden");
   el.innerHTML = '<span class="muted small">Zuletzt hier:</span>' + liste.map((p) =>
     `<button class="online-player last-player${schildKlasse(p)}" type="button" data-player-profile="${escapeHtml(p.name || "")}">` +
-      window.Casino.spieler.avatar(p) + window.Casino.spieler.name(p, { tag: "b" }) +
+      window.Casino.spieler.avatar(p) + window.Casino.spieler.name(p, { tag: "b" }) + window.Casino.spieler.prunk(p) + window.Casino.spieler.garnitur(p) +
       `<em>${wann(p.lastSeen)}</em></button>`).join("");
 }
 
@@ -1520,7 +1532,14 @@ async function claimBonus() {
     setAccount(data.account);
     const extras = [];
     if (data.tribute) extras.push(`+${data.tribute.toLocaleString("de-DE")} Straßen-Tribut (${data.streets} Straßen${data.golden ? ", Goldene Straße dabei" : ""})`);
-    if (data.houses) extras.push(`+${data.houses.toLocaleString("de-DE")} Haus-Miete (${data.housesOwned} Häuser)`);
+    if (data.houses) {
+      // Die Grundsteuer muss in der Meldung stehen. Sonst sieht man nur eine
+      // Zahl, die nicht zur eigenen Haeuserzahl passt, und haelt sie fuer
+      // einen Fehler.
+      const st = data.stadt;
+      const steuer = st && st.satz > 0.005 ? `, ${Math.round(st.satz * 100)} % Grundsteuer ab` : "";
+      extras.push(`+${data.houses.toLocaleString("de-DE")} Haus-Miete (${data.housesOwned} Häuser${steuer})`);
+    }
     if (data.sets) extras.push(`+${data.sets.toLocaleString("de-DE")} Sammel-Sets`);
     if (data.cashback) extras.push(`+${data.cashback.toLocaleString("de-DE")} Cashback`);
     const streakNote = data.streak > 1 ? `, ${data.streak} Tage am Stück` : "";
@@ -1605,7 +1624,7 @@ function renderLbList() {
     const lvl = p.level ? ` <span class="lb-level" title="Level ${p.level}">Lv ${p.level}</span>` : "";
     const clan = p.clan ? ` <span class="lb-clan">[${escapeHtml(p.clan)}]</span>` : "";
     const ava = window.Casino.spieler.avatar(p);
-    const nm = window.Casino.spieler.name(p, { tag: "b" });
+    const nm = window.Casino.spieler.name(p, { tag: "b" }) + window.Casino.spieler.prunk(p) + window.Casino.spieler.garnitur(p);
     const titel = window.Casino.spieler.title(p);
     if (p.schild && SCHILDER.has(p.schild)) li.classList.add("sch-" + p.schild);
     li.innerHTML =
@@ -2561,12 +2580,15 @@ $("#admin-comeback-off-btn")?.addEventListener("click", () => {
 /* Wartung
    Zwischen "laeuft" und "Server aus" gab es nichts, und deshalb wurde an der
    Wirtschaft im laufenden Betrieb geschraubt, waehrend Leute spielen. */
-let adWartung = { an: false, text: "", standardText: "" };
+let adWartung = { an: false, text: "", standardText: "", zugang: [] };
 
 function zeichneWartung() {
   const z = $("#ad-wartung-zustand");
   if (z) {
-    z.textContent = adWartung.an ? "geschlossen" : "offen";
+    const n = (adWartung.zugang || []).length;
+    z.textContent = adWartung.an
+      ? (n ? `geschlossen, ${n} im Test` : "geschlossen")
+      : "offen";
     z.classList.toggle("zu", !!adWartung.an);
   }
   $("#ad-wartung-karte")?.classList.toggle("an", !!adWartung.an);
@@ -2575,13 +2597,52 @@ function zeichneWartung() {
     if (adWartung.standardText) feld.placeholder = adWartung.standardText;
     if (!feld.value && adWartung.an) feld.value = adWartung.text || "";
   }
+  const liste = $("#ad-test-liste");
+  if (liste) {
+    const leute = adWartung.zugang || [];
+    liste.innerHTML = leute.length
+      ? leute.map((n) => `<span class="ad-test-chip">${window.Casino.escapeHtml(n)}`
+          + `<button type="button" data-test-raus="${window.Casino.escapeHtml(n)}" aria-label="${window.Casino.escapeHtml(n)} wieder aussperren">×</button></span>`).join("")
+        + `<button type="button" class="ad-test-leeren" id="ad-test-leeren">Alle entfernen</button>`
+      : `<span class="hint">Niemand. Bei geschlossenem Haus kommst nur du rein.</span>`;
+  }
 }
+
+/* Testzugang: rein, raus, alle raus. Eine Runde je Knopf, und der Server
+   schickt danach den ganzen Stand zurueck — so kann die Liste hier nicht
+   von dem abweichen, was wirklich gilt. */
+function testzugang(tun, name) {
+  socket.emit("admin:testzugang", { tun, name }, (r) => {
+    if (!r || !r.ok) return toast((r && r.error) || "Fehler.");
+    adWartung = { ...adWartung, an: r.an, text: r.text, zugang: r.zugang || [] };
+    zeichneWartung();
+    const feld = $("#ad-test-name");
+    if (feld && tun !== "raus" && tun !== "leeren") feld.value = "";
+    toast(tun === "leeren" ? "Testliste geleert."
+      : tun === "raus" ? `${name} ist wieder ausgesperrt.`
+      : `${name} darf rein.`);
+  });
+}
+
+$("#ad-test-add")?.addEventListener("click", () => {
+  const n = ($("#ad-test-name")?.value || "").trim();
+  if (!n) return toast("Welcher Spieler?");
+  testzugang("rein", n);
+});
+$("#ad-test-name")?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); $("#ad-test-add")?.click(); }
+});
+document.addEventListener("click", (e) => {
+  const raus = e.target.closest("[data-test-raus]");
+  if (raus) { testzugang("raus", raus.dataset.testRaus); return; }
+  if (e.target.closest("#ad-test-leeren")) testzugang("leeren");
+});
 
 function wartungSetzen(zu) {
   const text = ($("#ad-wartung-text")?.value || "").trim();
   socket.emit("admin:wartung", { on: !!zu, text }, (r) => {
     if (!r || !r.ok) { toast((r && r.error) || "Fehler."); return; }
-    adWartung = { an: r.an, text: r.text, standardText: r.standardText || adWartung.standardText };
+    adWartung = { an: r.an, text: r.text, zugang: r.zugang || [], standardText: r.standardText || adWartung.standardText };
     zeichneWartung();
     toast(zu
       ? `Casino geschlossen${r.getrennt ? `, ${r.getrennt} rausgeschickt` : ""}.`

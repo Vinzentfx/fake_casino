@@ -33,10 +33,11 @@
     // Namensstil und Farbe kommen jetzt mit der Nachricht mit. Vorher war der
     // Chat die einzige Stelle, an der alle Namen gleich grau aussahen.
     const nm = window.Casino.spieler
-      ? window.Casino.spieler.name(msg, { extra: "chat-name" })
+      ? window.Casino.spieler.name(msg, { extra: "chat-name" }) + window.Casino.spieler.prunk(msg) + window.Casino.spieler.garnitur(msg)
       : `<span class="chat-name">${escapeHtml(msg.name)}</span>`;
+    const zn = window.Casino.spieler ? window.Casino.spieler.zeichen(msg) : "";
     return `<div class="chat-row${mine ? " mine" : ""}">
-      ${nm}
+      ${zn}${nm}
       <span class="chat-text">${escapeHtml(msg.text)}</span>
     </div>`;
   }

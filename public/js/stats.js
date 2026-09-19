@@ -45,6 +45,47 @@
       .catch(() => render(name, null));
   }
 
+  /**
+   * Die Stadtrechnung: Miete je Stunde, Abzuege, was bleibt.
+   *
+   * Dieselbe Aufstellung wie in der Stadt, und dieselben Zahlen, mit denen
+   * der Stunden-Bonus rechnet — sie kommen aus `city.mieteVon` und stehen
+   * deshalb nirgends zweimal. Sie gehört hierher, weil die Statistik die
+   * Seite ist, auf der man nachsieht, wie jemand dasteht; die Stadt zeigt
+   * sie nur dem, der gerade dort ist.
+   *
+   * Auch bei fremden Spielern, und das ist Absicht: wem was gehört, steht
+   * in der Stadt ohnehin offen, und in einer Wirtschaft, in der man sich
+   * gegenseitig Häuser abnimmt, ist genau das die interessante Zahl.
+   */
+  function stadtRechnung(city, isMe, wer) {
+    const r = city && city.rechnung;
+    if (!r || !r.haeuser) return "";
+    const zeile = (label, wert, klasse) =>
+      `<tr><td>${label}</td><td class="${klasse || ""}">${wert}</td></tr>`;
+    let rows = zeile("Gebäude", fmt(r.haeuser));
+    rows += zeile("Wert", `${fmt(r.wert)}<i class=mk></i>`);
+    rows += zeile("Miete je Stunde", `${fmt(r.miete)}<i class=mk></i>`, "pos");
+    if (r.betriebe) {
+      rows += zeile(`davon ${fmt(r.betriebe)} ${r.betriebe === 1 ? "Betrieb" : "Betriebe"}`,
+        `auf ${Math.round(r.personalFaktor * 100)} %`, r.personalFaktor < 1 ? "neg" : "pos");
+    }
+    rows += zeile(r.verwaltung
+      ? `Verwaltung (${fmt(r.haeuser - r.verwFrei)} × ${fmt(r.verwJe)})`
+      : `Verwaltung (erste ${r.verwFrei} frei)`,
+      r.verwaltung ? `−${fmt(r.verwaltung)}<i class=mk></i>` : "0", r.verwaltung ? "neg" : "");
+    rows += zeile(r.steuer > 0
+      ? `Grundsteuer (${Math.round(r.satz * 100)} %)`
+      : `Grundsteuer (bis ${fmt(r.steuerFrei)} frei)`,
+      r.steuer > 0 ? `−${fmt(r.steuer)}<i class=mk></i>` : "0", r.steuer > 0 ? "neg" : "");
+    rows += `<tr class="sum"><td><b>${isMe ? "Dir bleiben je Stunde" : `${escapeHtml(wer)} bleiben je Stunde`}</b></td>`
+      + `<td><b>${fmt(r.netto)}<i class=mk></i></b></td></tr>`;
+    return `<div class="st-rechnung">
+      <h4 class="st-rechnung-h">${window.Casino.icons.ui("businesses")}Stadtrechnung</h4>
+      <table class="stadt-rechnung">${rows}</table>
+    </div>`;
+  }
+
   function render(name, d) {
     const me = window.Casino.getAccount();
     const isMe = me && me.name.toLowerCase() === name.toLowerCase();
@@ -91,7 +132,8 @@
         </div>
         ${city && city.houses
           ? `<div class="biz-buffs" style="margin-bottom:.75rem"><span class="buff-chip">${cityLine}</span></div>`
-          : ""}`;
+          : ""}
+        ${stadtRechnung(city, isMe, acc.name || name)}`;
       /* Chips und Netto-Vermoegen standen hier als Pillen und gleich darunter
          noch einmal als Kachel, dieselbe Zahl zweimal, zwei Zentimeter
          auseinander. Die Kacheln sagen es besser, also bleibt hier nur, was

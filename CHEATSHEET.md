@@ -26,7 +26,7 @@ kann trotzdem alles passieren.
 14. [Stadt](#stadt)
 15. [Bank, Börse, Markt](#bank-börse-markt)
 16. [Clans](#clans)
-17. [Kosmetik und Auktionshaus](#kosmetik-und-auktionshaus)
+17. [Kosmetik, Kisten und Auktionshaus](#kosmetik-kisten-und-auktionshaus)
 18. [Rekorde und Achievements](#rekorde-und-achievements)
 19. [Alle Grenzen auf einen Blick](#alle-grenzen-auf-einen-blick)
 
@@ -50,7 +50,9 @@ kann trotzdem alles passieren.
   hält, solange zwischen zwei Abholungen keine 26 Stunden liegen.
 * **Straßen-Tribut:** 2.000 Chips je komplette Straße, höchstens 10 Straßen
   zählen. Die Goldene Straße der Woche zahlt doppelt.
-* **Haus-Miete:** 200 Chips je Gebäude, höchstens 100 Gebäude zählen.
+* **Haus-Miete:** 0,9 % des Werts je Gebäude und Stunde, abzüglich Verwaltung
+  und Grundsteuer (siehe [Stadt](#stadt)). Als Einziges am Stunden-Bonus wird
+  die Miete nicht von der Vermögensbremse gekürzt: du hast dafür bezahlt.
 * **Sammel-Sets:** zum Beispiel Stadtbekannt (2.000) oder ein Kaffee-Kartell
   (3.000 je Ortsteil).
 * **Cashback:** 10 % deiner Verluste seit der letzten Abholung, höchstens
@@ -315,6 +317,7 @@ Gebäudeklasse, der Grundfläche und dem Preisindex des Ortsteils ab.
 | Klasse | Grundpreis |
 |---|---|
 | Wohnhaus | 25.000 |
+| Pension | 100.000 |
 | Öffentliches Gebäude | 120.000 |
 | Kiosk | 400.000 |
 | Café | 2 Mio |
@@ -332,11 +335,64 @@ Gebäudeklasse, der Grundfläche und dem Preisindex des Ortsteils ab.
 * **Wahrzeichen** in der Nähe heben den Preis in ihrem Umkreis um 25 %.
 * **Straßen-Monopol:** alle Häuser einer Straße mit Nummer, mindestens drei.
   Färbt die Straße und zahlt Tribut beim Stunden-Bonus.
-* **Stadtteil-Boss:** höchster Immobilienwert im Ortsteil, kauft dort 10 %
-  billiger.
-* **Jedes weitere Haus** wird für dich 4 % teurer, gedeckelt beim Dreifachen.
+* **Stadtteil-Boss:** höchster Immobilienwert im Ortsteil. Kauft dort 10 %
+  billiger und legt die **Abgabe** fest: 0 bis 10 %, die Fremde auf jeden
+  Kauf, jede Übernahme und jeden Ausbau in seinem Ortsteil zahlen. Das Geld
+  geht an ihn, er selbst zahlt nichts. Der Satz lässt sich einmal je Stunde
+  ändern und bleibt am Ortsteil, wenn der Boss wechselt.
+* **Miete:** jedes Gebäude wirft 0,9 % seines Werts pro Stunde ab, abgeholt
+  mit dem Stunden-Bonus.
+* **Verwaltung:** 80 Chips je Stunde und Gebäude, ab dem 26. Ein Wohnhaus
+  bringt rund 207, ein Café 27.000. Der Abzug tut deshalb dem billig
+  zusammengekauften Schuppen weh und dem ausgebauten Betrieb nicht.
+* **Grundsteuer** auf das, was danach übrig ist. Bis 8.750 Chips die Stunde
+  steuerfrei, darüber steigt der Satz: zehnmal so viel Miete ergibt gut
+  dreimal so viel Netto. Du bekommst immer mehr, wenn du mehr hast, aber nie
+  proportional.
+* Der **Kaufpreis** bleibt von beidem unberührt. Jeder zahlt den Marktwert.
 * **Casino-Besitzer** kassieren 5 % aller Verluste an Hausspielen. Spiele
   gegeneinander sind davon ausgenommen.
+
+**Ausbauen.** Aus einem Wohnhaus wird ein Betrieb, Stufe für Stufe. Das kostet
+die Wertdifferenz plus 25 % Aufschlag und dauert. Während gebaut wird, läuft
+die alte Miete weiter, niemand kann dir das Gebäude abnehmen, und du kannst es
+nicht verkaufen. Drei Baustellen gleichzeitig. Trophäen lassen sich nicht
+ausbauen.
+
+| Ausbau | braucht mindestens | Bauzeit |
+|---|---|---|
+| Wohnhaus zur Pension | 80 m² | 2 Stunden |
+| Öffentliches Gebäude zum Kiosk | 150 m² | 4 Stunden |
+| Pension zum Kiosk | 150 m² | 4 Stunden |
+| Kiosk zum Café | 300 m² | 8 Stunden |
+| Café zum Laden | 600 m² | 12 Stunden |
+| Laden zum Hotel | 1.200 m² | 24 Stunden |
+| Hotel zur Fabrik | 2.500 m² | 48 Stunden |
+
+Die Grundfläche ist die eigentliche Hürde: 78 % aller Wohnhäuser können eine
+Pension werden, 31 % ein Kiosk, 5 % ein Café, 1 % ein Laden und 0,2 % ein
+Hotel. Es lohnt sich, auf der Karte nach großen Häusern zu suchen.
+
+**Personal.** Ab dem Kiosk braucht ein Gebäude jemanden hinter dem Tresen.
+Ohne Personal laufen alle deine Betriebe auf 50 %. Eine Schicht gilt für alle
+Betriebe zusammen, der Lohn richtet sich nach dem, was sie abwerfen.
+
+| Stufe | Dauer | Betriebe laufen auf | lohnt sich ab |
+|---|---|---|---|
+| Aushilfe | 12 Stunden | 85 % | 4 Abholungen |
+| Fachkraft | 12 Stunden | 100 % | 5 Abholungen |
+| Geschäftsführung | 24 Stunden | 115 % | 7 Abholungen |
+
+Die Miete kommt mit dem Stunden-Bonus, also je Abholung und nicht je Stunde.
+Wer zweimal am Tag vorbeischaut, für den lohnt sich keine Schicht. Wohnhäuser
+und Pensionen brauchen kein Personal.
+
+**Mieter und Ereignisse.** Jedes ausgebaute Gebäude hat einen Menschen darin,
+und ab und zu passiert dort etwas: Wasserschaden, ein Filmteam, eine
+Kündigung, das Ordnungsamt. Du hast immer höchstens ein offenes Ereignis, es
+läuft nie ab, und solange es offen ist, passiert nichts Schlechtes. Beide
+Wege kosten etwas, der eine Chips, der andere Ertrag. Ein Ereignis wirkt nur
+auf das eine Gebäude und nur für ein paar Stunden.
 
 **Trophäen-Gebäude.** Kosten ein Vielfaches des normalen Preises und geben
 einen dauerhaften Vorteil.
@@ -370,34 +426,175 @@ einen dauerhaften Vorteil.
 * **Clan-Aufträge** wechseln wöchentlich und laufen übers normale Spielen, nicht
   nur über Duelle.
 
-## Kosmetik und Auktionshaus
+## Kosmetik, Kisten und Auktionshaus
 
-Elf Arten, das meiste kauft man im Laden mit Chips.
+Zwölf Arten: Profilbild, Namensfarbe, Namensstil, Rahmen, Aura, Titel,
+Gewinn-Effekt, Eintritts-Spruch, Profilbanner, Namensschild, Kartenrücken und
+**Chat-Zeichen**.
 
-| Art | Stück |
+**Es gibt keinen Laden mehr.** Kosmetik kommt aus **Kisten** und vom
+**Markt**. Der Bildschirm „Sammlung“ zeigt nur noch, was du hast (zum
+Anlegen) und was es gibt (mit der Herkunft daneben).
+
+**Kisten.** Was drin sein kann und wie wahrscheinlich, steht an jeder Kiste.
+Gezogen wird auf dem Server. **Tipp auf eine Kiste**, und du siehst jedes
+einzelne Stück, das herauskommen kann, nach Stufen sortiert, mit der Chance
+auf genau dieses Stück und der Markierung, was du davon schon hast.
+
+| Kiste | Preis | Inhalt |
+|---|---|---|
+| Tageskiste | gratis, einmal in 20 Std | 82 % gewöhnlich, 16 % selten, 2 % episch |
+| Holzkiste | 30.000 | 65 / 25 / 8 / 2 % bis legendär |
+| Messingkiste | 150.000 | 30 / 42 / 21 / 6 / 1 % bis mythisch |
+| Schwarze Kiste | 600.000 | 20 / 38 / 30 / 9 % plus **3 % Einzelstück** |
+| **Gala-Kiste** | 250.000 | 34 / 30 / 24 / 9 / 2 % plus **1 % Einzelstück** |
+
+**Die Gala-Kiste ist limitiert und hat einen eigenen Topf.** Sie zieht kein
+einziges Stück aus dem allgemeinen Katalog, sondern aus dreizehn, die es
+ausschließlich dort gibt, ein eigener Satz für jede Seltenheit: Konfetti,
+Ehrengast, Anstoßen (gewöhnlich), Goldstern, Nominiert, Roter Teppich
+(selten), Samtkordel, Lorbeerkranz, Auftritt (episch), Konfettiregen und
+Blitzlichtgewitter (legendär), Gravur (mythisch) und **Rampenlicht** als
+Einzelstück. Nach dem Stichtag verschwindet die Kiste, und diese dreizehn
+entstehen nie wieder; was dann noch existiert, gibt es nur über den Markt.
+
+Die Seltenheit kommt aus dem alten Ladenpreis: bis 30.000 gewöhnlich, bis
+120.000 selten, bis 400.000 episch, bis 1 Mio legendär, darüber mythisch.
+**Einzelstücke** gibt es nur aus der Schwarzen Kiste.
+
+Ziehst du etwas, das du schon hast, bekommst du **25 % seines Werts** als
+Chips. Die Tageskiste zahlt stattdessen **3.000 Chips** (durch die
+Vermögensbremse), damit ein Gratis-Knopf nicht irgendwann gar nichts mehr
+tut. Keine Kiste zahlt auf Dauer mehr aus, als sie kostet, auch nicht bei
+voller Sammlung.
+
+**Ruhmestafel.** Oben bei den Kisten steht, was zuletzt im ganzen Haus
+gezogen wurde, ab episch aufwärts, mit Namen. Ab legendär kommt es zusätzlich
+in den Chat, bei mythisch und Einzelstücken läuft es bei allen, die gerade da
+sind, quer über den Bildschirm. Angesagt wird erst, wenn die Kiste im Browser
+wirklich offen ist.
+
+**Prägung.** Jedes Stück, das nicht gratis ist, bekommt beim Vergeben eine
+laufende Nummer, ein Prägedatum, den Namen dessen, für den es geprägt wurde,
+und eine Kette aller Besitzer mit Preisen. „Neon Nr. 7“ heißt: es gibt sieben.
+
+**Prunkstück.** Du bestimmst ein geprägtes Stück, und es hängt mit seiner
+Nummer an deinem Namen — im Chat, in der Bestenliste, am Tisch, in der Stadt.
+Dafür muss niemand online sein.
+
+**Garnituren.** Tragen kannst du immer nur zwölf Stücke, also ist jedes
+weitere für die Außenwirkung wertlos — es sei denn, du sammelst **eine
+Familie**. Wer **drei Stücke derselben Familie gleichzeitig angelegt** hat,
+bekommt eine Marke am Namen, mit dem Namen der Familie und der Zahl; ab fünf
+leuchtet sie. Sie hängt wie das Prunkstück am Namen und ist damit überall zu
+sehen.
+
+Sieben Familien: Gala (13 Stücke), Auktionshaus (10), Season 2 (8),
+Einzelstücke (4), Haus (3), Kollektion (3), Fortuna (3). In der Sammlung
+steht für jede, wie viele es gibt, wie viele du hast und wie viele du gerade
+trägst.
+
+**Namensfarben gibt es nicht mehr aus Kisten.** Jeder Namensstil überschreibt
+sie, ein Stück, das ein anderes unsichtbar macht, ist als Ziehung eine Niete.
+Die drei Exemplare, die es im Haus gibt, bleiben geprägt und handelbar; neue
+entstehen nicht mehr.
+
+**Erstprägung.** Von jedem Stück gibt es genau ein Exemplar mit der **Nummer
+1**, und mehr wird es nie geben. Die Marke am Namen ist dann gefüllt statt
+umrandet und trägt einen Stern; im Markt und in der Sammlung steht
+„Erstprägung“ dran.
+
+Was vor der Umstellung schon jemandem gehörte, ist nachträglich geprägt, und
+zwar **ab Nummer 2**. Die Nummer 1 bekommt, wer das Stück als Erster wirklich
+aus einer Kiste zieht. Nachgetragen wird nach Kontoalter, und damit wären
+sonst alle Erstprägungen bei den ältesten Konten gelandet, ohne dass jemand
+dafür etwas getan hätte.
+
+**Kollektionen.** Drei Stück (Porta, Mitternacht, Feuer) mit je sechs
+Teilen. Wer eine vollständig hat, bekommt ein Stück, das es auf keinem
+anderen Weg gibt und das sich auch nicht handeln lässt.
+
+**Kisten-Duelle.** Laufen **live**, und es gibt zwei Zahlen:
+
+**Einsatz** sind echte Chips. Sie gehen beim Aufmachen vom Konto, der Sieger
+bekommt beide zurück abzüglich 10 % fürs Haus. Darum wird gespielt.
+
+**Budget** kostet nichts. Es ist nur die Grenze, innerhalb derer sich jeder
+selbst zusammenstellt, was er aufmacht. Beide haben dasselbe. Wer 50.000
+setzt und 5 Mio Budget wählt, macht acht schwarze Kisten auf und spielt
+trotzdem um 50.000.
+
+**Die gezogenen Stücke gehören niemandem**, es zählt allein ihr Wert: wer
+mehr zieht, gewinnt den Einsatz. Die Kisten sind der Würfel. Genau deshalb
+darf das Budget frei sein — bekäme der Sieger die Stücke, wären aus 50.000
+Chips fünf Millionen Kosmetik geworden.
+
+Jeder stellt sich selbst zusammen, was er aufmacht; die Listen dürfen
+verschieden lang sein. Beide Bahnen laufen gleichzeitig, wer früher durch
+ist, steht still daneben. Solange niemand mitmacht, kostet es nichts: der
+Einsatz kommt beim Abbrechen vollständig zurück. Die Runden dreht der
+Server, wer die Seite neu lädt, verpasst nichts.
+
+| | |
 |---|---|
-| Profilbilder | 15 |
-| Namensfarben | 9 |
-| Namensstile | 18 |
-| Rahmen | 9 |
-| Auren | 3 |
-| Titel | 18 |
-| Gewinneffekte | 8 |
-| Eintrittssprüche | 8 |
-| Profilbanner | 8 |
-| Schilder | 9 |
-| Kartenrücken | 3 |
+| Einsatz | 1.000 bis 1.000.000 |
+| Budget | ab 30.000, höchstens was 10 Kisten kosten |
+| Kisten je Spieler | 1 bis 10 |
+| Gebühr fürs Haus | 10 % vom Topf, verbrennt |
+| Offene Herausforderungen | 2 je Spieler |
+| Wartezeit | 30 Minuten |
 
-Nicht käufliche Stücke kommen aus dem Season-Pass, aus der Stadt (komplette
-Straße oder Ortsteil-Boss), von der Wiedereröffnung, aus dem Glücksrad oder aus
-dem Auktionshaus.
+**Was sich nicht handeln lässt:** Gratis-Stücke, die drei Haus-Stücke
+(vergibt der Besitzer persönlich), die Verdienbaren (Krone, Straßenherr) und
+die Kollektions-Belohnungen. Alles andere darf auf den Markt.
+
+Nicht ziehbar sind Season-Pass, Stadt (komplette Straße, Ortsteil-Boss),
+Wiedereröffnung, Glücksrad und Auktionshaus. Die haben ihren eigenen Weg.
 
 **Auktionshaus.** Ein Los zur Zeit, Zuschlag um 20:30 Uhr, Laufzeit mindestens
-einen Tag. Startgebot 50.000, jedes weitere Gebot mindestens 5.000 oder 5 %
+einen Tag. Es gibt zwei Sorten Lose, und sie wechseln sich ab: **Haus-Lose**
+(Stücke, die es nur hier gibt) und **eingelieferte** Lose von Spielern. Startgebot 50.000, jedes weitere Gebot mindestens 5.000 oder 5 %
 mehr. Ein Gebot in den letzten zwei Minuten verlängert um zwei Minuten. Nach
 einem Zuschlag setzt das Haus ein Los aus. Geboten wird mit hinterlegten Chips:
 Der Betrag geht sofort vom Konto, wer überboten wird, bekommt ihn sofort zurück,
-und beim Zuschlag verbrennt er.
+und beim Zuschlag verbrennt er — jedenfalls bei einem Haus-Los.
+
+**Selbst versteigern.** Du kannst eigene geprägte Stücke einliefern.
+
+| | |
+|---|---|
+| Einliefergebühr | 25.000, sofort fällig, auch weg wenn niemand bietet |
+| Provision vom Zuschlag | 15 % (Markt: 10 %) |
+| Gleichzeitig in der Schlange | 1 je Spieler, 8 insgesamt |
+| Startgebot | du setzt es, mindestens 50.000 |
+
+Der Erlös abzüglich Provision geht an dich, das Stück wechselt als
+**Exemplar** den Besitzer: die Nummer bleibt, und der Verkauf steht in der
+Besitzerkette. Bietet niemand, kommt es zurück und die Gebühr bleibt weg. Auf
+das eigene Los darfst du nicht bieten. Was im Auktionshaus liegt, kannst du
+nicht gleichzeitig im Markt anbieten.
+
+**Prägung.** Jedes nicht käufliche Stück bekommt beim Vergeben eine laufende
+Nummer, ein Prägedatum und den Namen dessen, für den es geprägt wurde. Dazu
+eine Kette aller Besitzer mit den Preisen, zu denen es weitergegeben wurde.
+Ladenware bekommt keine Nummer, die gibt es unbegrenzt.
+
+**Markt.** Geprägte Stücke von Spieler zu Spieler, zum Festpreis — der stille
+Weg, während das Auktionshaus der laute ist. Handelbar ist fast alles, was
+eine Nummer hat; draußen bleiben die Haus-Stücke, die verdienbaren (Krone,
+Straßenherr) und die Kollektions-Belohnungen. Angebote ab **episch** stehen
+im Chat, alles Übrige nur in der Chronik — sonst schiebt einer mit fünf
+Angeboten den ganzen Chat weg.
+
+| | |
+|---|---|
+| Preis | 1.000 bis 100 Mio |
+| Gebühr beim Verkauf | 10 %, verbrennt |
+| Angebote gleichzeitig | 5 je Spieler |
+
+Was im Schaufenster steht, ist hinterlegt: es verschwindet aus deinem Besitz
+und wird abgelegt, wenn du es getragen hast. Zurücknehmen geht jederzeit und
+kostet nichts. Ein Stück, das du schon hast, kannst du nicht kaufen.
 
 ## Rekorde und Achievements
 

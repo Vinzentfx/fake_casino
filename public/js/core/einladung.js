@@ -22,6 +22,17 @@
 
   /* senden */
 
+  /*
+   * Der Knopf.
+   *
+   * Er war ein nackter Kreis unten rechts, der irgendwann lautlos auftauchte,
+   * und damit hat ihn niemand bemerkt — genau an der Stelle, an der es
+   * darauf ankommt: man macht eine Lobby auf und moechte SOFORT wissen, wen
+   * man holen kann. Jetzt steht der Text dabei, die Zahl der Erreichbaren
+   * daneben, und beim ersten Erscheinen faehrt er einmal auf und pulst
+   * kurz. Danach ist er ruhig; ein Knopf, der dauernd wackelt, wird zur
+   * Tapete.
+   */
   function knopf() {
     let b = document.getElementById("einladen-fab");
     if (!b) {
@@ -30,7 +41,7 @@
       b.className = "einladen-fab";
       b.type = "button";
       b.setAttribute("aria-label", "Mitspieler einladen");
-      b.innerHTML = '<i data-icon="rufen"></i>';
+      b.innerHTML = '<i data-icon="rufen"></i><span class="einladen-text">Mitspieler holen</span><b class="einladen-zahl"></b>';
       document.body.appendChild(b);
       if (Casino.icons && Casino.icons.zeichne) Casino.icons.zeichne(b);
       b.addEventListener("click", oeffneWahl);
@@ -38,11 +49,29 @@
     return b;
   }
 
+  let warSichtbar = false;
   function zeichneKnopf() {
     const b = knopf();
     // Kein Knopf, wenn niemand da ist, den man einladen koennte.
-    const sinnvoll = stand.aktiv && (stand.spieler || []).length > 0;
+    const leute = (stand.spieler || []).length;
+    const sinnvoll = stand.aktiv && leute > 0;
     b.hidden = !sinnvoll;
+    if (!sinnvoll) { warSichtbar = false; return; }
+
+    const zahl = b.querySelector(".einladen-zahl");
+    if (zahl) zahl.textContent = String(leute);
+    const text = b.querySelector(".einladen-text");
+    if (text) text.textContent = stand.label ? `Zu ${stand.label} holen` : "Mitspieler holen";
+
+    /* Einmal auffahren, wenn er neu ist. `rein` bleibt danach stehen, die
+       Animation laeuft nur einmal — sonst huepft er bei jedem Takt neu. */
+    if (!warSichtbar) {
+      warSichtbar = true;
+      b.classList.remove("rein");
+      void b.offsetWidth;
+      b.classList.add("rein");
+      try { Casino.sound && Casino.sound.play("select"); } catch {}
+    }
   }
 
   async function oeffneWahl() {
@@ -116,11 +145,19 @@
     });
   }
 
-  // Beim Bildschirmwechsel sofort, sonst im ruhigen Takt: eine Lobby
-  // aufzumachen wechselt den Bildschirm nicht, der Zustand aendert sich also
-  // auch ohne Navigation.
+  /*
+   * Wann nachgefragt wird.
+   *
+   * Der Takt allein reichte nicht: eine Lobby aufzumachen wechselt den
+   * Bildschirm nicht, also stand der Knopf bis zu acht Sekunden lang nicht
+   * da — genau in den Sekunden, in denen man ihn braucht. `lobby:list`
+   * kommt vom Server, sobald sich an irgendeiner Lobby etwas aendert, und
+   * das ist der Moment, in dem sich auch die Antwort aendert.
+   */
   document.addEventListener("casino:screen", hole);
   socket.on("connect", hole);
+  socket.on("lobby:list", hole);
+  Casino.einladung = { pruefe: hole };
   setInterval(hole, 8000);
   hole();
 })();

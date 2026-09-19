@@ -31,7 +31,8 @@ const { setupChess } = require("./game/chess");
 const { setupSocial } = require("./game/social");
 const { setupHeist } = require("./game/heist");
 const { setupClans } = require("./game/clans");
-const { setupCosmetics } = require("./game/cosmetics");
+const cosmetics = require("./game/cosmetics");
+const { setupCosmetics } = cosmetics;
 const { setupPvp } = require("./game/slotsPvp");
 const { setupAdmin } = require("./game/admin");
 const { setupBlackjack } = require("./game/blackjack");
@@ -43,6 +44,9 @@ const { setupEconomy } = require("./game/economy");
 const { setupBank } = require("./game/bank");
 const { setupStocks } = require("./game/stocks");
 const { setupMarket } = require("./game/market");
+const { setupKisten } = require("./game/kisten");
+const { setupRuhm } = require("./game/ruhm");
+const { setupKistenDuell } = require("./game/kistenDuell");
 const { setupChat } = require("./game/chat");
 const { setupLobby } = require("./game/lobby");
 const { setupEinladung } = require("./game/einladung");
@@ -290,6 +294,11 @@ app.get("/api/account/:name", (req, res) => {
     city: cityMe ? {
       houses: cityMe.houses, value: cityMe.value, streets: cityMe.streets,
       trophies: cityMe.trophies, bossOf: cityMe.bossOf, color: cityMe.color,
+      /* Die volle Stadtrechnung: Miete, Verwaltung, Grundsteuer, was bleibt.
+         Dieselben Zahlen wie in der Stadt selbst und dieselben, mit denen
+         der Stunden-Bonus rechnet — sie kommen aus derselben Funktion,
+         damit sie nicht auseinanderlaufen koennen. */
+      rechnung: (() => { try { return city.mieteVon(key); } catch { return null; } })(),
     } : null,
     ach: {
       unlocked: achList.filter((a) => a.unlocked).map((a) => ({ id: a.id, emoji: a.emoji, label: a.label })),
@@ -489,6 +498,10 @@ require("./game/admin").setUmbenennen(verteileUmbenennung);
 liveops.setEvents(adminEvents); // Events spawnen auch zufällig (maybeAutoSpawn)
 setupClans(io, accounts);
 setupCosmetics(io, accounts);
+/* Einmalig: was vor der Praegung schon jemandem gehoerte, bekommt seine
+   Nummer. Muss NACH dem Laden der Konten laufen und laeuft nur beim ersten
+   Mal (die Datei merkt sich, dass sie fertig ist). */
+cosmetics.praegungNachtragen(accounts);
 setupPvp(io, accounts);
 setupAdmin(io, accounts);
 setupBlackjack(io, accounts);
@@ -500,6 +513,9 @@ setupEconomy(io, accounts);
 setupBank(io, accounts);
 setupStocks(io, accounts);
 setupMarket(io, accounts);
+setupRuhm(io, accounts);
+setupKisten(io, accounts);
+setupKistenDuell(io, accounts);
 setupChat(io, accounts);
 setupLobby(io);
 setupEinladung(io, accounts);

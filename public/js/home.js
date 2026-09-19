@@ -25,6 +25,16 @@
     { id: "casino", label: "Casino" },
     { id: "pvp", label: "Gegeneinander" },
     { id: "wirtschaft", label: "Wirtschaft" },
+    /*
+     * Sammeln.
+     *
+     * Kisten, Markt, Auktionshaus und Sammlung standen bis hierhin NUR im
+     * Menue, und zwar im letzten Block unter "Profil" — an der Stelle, an
+     * der man vorbeiscrollt. Alles andere, was mit Chips zu tun hat (Stadt,
+     * Boerse, Bank, Arbeiten), liegt als Kachel in der Lobby. Ausgerechnet
+     * der neueste Teil des Hauses war damit der am schwersten zu findende.
+     */
+    { id: "sammeln", label: "Sammeln" },
   ];
 
   const GAMES = [
@@ -53,8 +63,18 @@
     // Wirtschaft: was du mit den Gewinnen machst
     { id: "businesses", name: "Stadt",          sub: "Porta Westfalica Haus für Haus",    icon: "🏙️", cat: "wirtschaft", h: 174 },
     { id: "stocks",     name: "Börse",          sub: "Long und Short mit Hebel",          icon: "📈", cat: "wirtschaft", h: 146 },
-    { id: "bank",       name: "Bank",           sub: "Sparkonto und Kredite",             icon: "🏦", cat: "wirtschaft", h: 210 },
+    { id: "bank",       name: "Bank",           sub: "Chips parken, kleiner Zins",        icon: "🏦", cat: "wirtschaft", h: 210 },
     { id: "work",       name: "Arbeiten",       sub: "Starthilfe, wenn gar nichts geht",  icon: "💼", cat: "wirtschaft", h: 48 },
+
+    /* Sammeln: woher Kosmetik kommt und wo sie hingeht. Die Kennung ist
+       zugleich der Bildschirmname, die Kachel navigiert darueber. */
+    /* `sym` nur dort, wo das Symbol anders heisst als der Bildschirm: die
+       Kennung muss der Screen-Name sein (die Kachel navigiert darueber),
+       das Zeichen heisst in core/icons.js aber nach dem, was es zeigt. */
+    { id: "kiste",      name: "Kisten",         sub: "Kosmetik als Ziehung, dazu Duelle", icon: "🎁", sym: "geschenk",  cat: "sammeln", h: 45 },
+    { id: "market",     name: "Markt",          sub: "Geprägte Stücke von Spieler zu Spieler", icon: "🛒", sym: "warenkorb", cat: "sammeln", h: 160 },
+    { id: "auktion",    name: "Auktionshaus",   sub: "Ein Los am Tag, Zuschlag um halb neun", icon: "🔨", cat: "sammeln", h: 288 },
+    { id: "cosmetics",  name: "Sammlung",       sub: "Was du hast, anlegen und zeigen",   icon: "🎨", sym: "kosmetik",  cat: "sammeln", h: 320 },
   ];
 
   const GAME_BY_ID = new Map(GAMES.map((g) => [g.id, g]));
@@ -63,6 +83,7 @@
 
   let aktiveKategorie = "casino";
   let spielerProScreen = {};   // je screen: Anzahl
+  let marken = {};             // je screen: was dort wartet
   let favoriten = [];
 
   // Favoriten und zuletzt gespielt
@@ -109,13 +130,20 @@
     const live = anzahl > 0
       ? `<span class="tile-live" title="${anzahl} gerade dort">● ${anzahl}</span>`
       : "";
+    /* Etwas wartet dort. Kommt aus derselben Quelle wie die Zahl am Menue
+       (bericht.marken), damit die Kachel und das Menue nie Verschiedenes
+       behaupten. */
+    const wartet = marken[g.id] || 0;
+    const marke = wartet
+      ? `<span class="tile-marke" title="${wartet === 1 ? "Etwas wartet auf dich" : `${wartet} warten auf dich`}">${wartet}</span>`
+      : "";
     const stern = klein ? "" :
       `<button class="tile-fav${istFavorit ? " on" : ""}" data-fav="${g.id}" type="button"
                aria-label="${istFavorit ? "Favorit entfernen" : "Als Favorit merken"}"
                title="${istFavorit ? "Favorit entfernen" : "Als Favorit merken"}">${istFavorit ? "★" : "☆"}</button>`;
     // Gezeichnetes Symbol, wenn es eines gibt. Das Emoji bleibt als Rueckfall
     // stehen, damit ein neues Spiel ohne eigenes Symbol trotzdem etwas zeigt.
-    const symbol = (Casino.icons && Casino.icons.icon(g.id)) || g.icon;
+    const symbol = (Casino.icons && Casino.icons.icon(g.sym || g.id)) || g.icon;
     /*
      * Der Stern steht neben der Kachel, nicht darin.
      *
@@ -133,7 +161,7 @@
             <span class="tile-name">${Casino.escapeHtml(g.name)}</span>
             ${klein ? "" : `<span class="tile-sub">${Casino.escapeHtml(g.sub)}</span>`}
           </span>
-          ${live}
+          ${live}${marke}
         </button>
         ${stern}
       </div>`;
@@ -264,7 +292,22 @@
     if (Casino.screens.current() === "lobby") zeichneDuelle();
   });
 
+  /**
+   * Was auf einer Kachel wartet.
+   *
+   * Gesetzt von renderAbholBadge in app.js, also aus derselben Quelle wie
+   * die Zahl am Menue-Knopf (`bericht.marken`). Zwei Zaehler fuer dieselbe
+   * Frage wuerden irgendwann Verschiedenes behaupten, und dann glaubt
+   * niemand mehr einem von beiden.
+   */
+  function setzeMarken(neu) {
+    const vorher = JSON.stringify(marken);
+    marken = neu || {};
+    if (JSON.stringify(marken) !== vorher && Casino.screens.current() === "lobby") zeichneSpiele();
+  }
+
   Casino._lobbyPresence = setzeAnwesenheit;
   Casino._lobbyRedraw = zeichneSpiele;
+  Casino._lobbyMarken = setzeMarken;
   Casino._games = GAMES;
 })();

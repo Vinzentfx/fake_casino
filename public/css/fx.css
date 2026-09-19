@@ -344,3 +344,23 @@ html.reduce-motion .fx-beben { animation: none; }
 /* Die Münze ist gezeichnet, nicht geschrieben: die Größe kam über font-size,
    das greift bei einem SVG nicht mehr. */
 .fx-coin svg { width: 1em; height: 1em; display: block; color: var(--accent-strong); }
+
+/* Blitzlichtgewitter (Gala-Kiste)
+   Der einzige Effekt ohne Teilchen und ohne Bahn: ein Punkt geht hart an
+   und ist wieder weg. Deshalb auch keine Bewegung im Keyframe, nur
+   Helligkeit und ein kurzes Aufblenden — ein Blitz, der fliegt, ist
+   kein Blitz. */
+.fx-blitzlicht {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, rgba(255, 255, 255, 0.85) 18%, rgba(210, 230, 255, 0.35) 42%, transparent 70%);
+  opacity: 0;
+  animation: fx-blitz-an steps(1, end) forwards;
+  will-change: opacity, transform;
+}
+@keyframes fx-blitz-an {
+  0%   { opacity: 0; transform: scale(0.35); }
+  18%  { opacity: 1; transform: scale(1); }
+  52%  { opacity: 0.85; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.15); }
+}

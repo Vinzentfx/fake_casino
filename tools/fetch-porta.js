@@ -31,10 +31,25 @@ const DISTRICTS = [
   { id: "holzhausen",    name: "Holzhausen",    rel: 1335620 },
   { id: "kleinenbremen", name: "Kleinenbremen", rel: 1335571 },
   { id: "lerbeck",       name: "Lerbeck",       rel: 1335568 },
+  { id: "lohfeld",       name: "Lohfeld",       rel: 1335636 },
   { id: "nammen",        name: "Nammen",        rel: 1335655 },
   { id: "neesen",        name: "Neesen",        rel: 1335647 },
   { id: "veltheim",      name: "Veltheim",      rel: 1335577 },
 ];
+/*
+ * Die restlichen Ortsteile, falls einer davon dazusoll. Die Relationen sind
+ * nachgeschlagen und geprueft, damit das niemand noch einmal suchen muss:
+ *   Barkhausen 1335628 · Costedt 1335585 · Holtrup 1335641
+ *   Moellbergen 1335598 · Vennebeck 1335606 · Wuelpke 1335592
+ *
+ * WICHTIG beim Nachziehen eines einzelnen Ortsteils: mit ONLY_DISTRICT
+ * schreibt dieses Skript eine Datei, die NUR diesen einen enthaelt. Niemals
+ * direkt auf game/data/porta.json laufen lassen, sonst ist die restliche
+ * Karte weg und mit ihr jede Zuordnung von Besitz. Stattdessen nach OUT in
+ * eine eigene Datei holen und dort hineinmischen:
+ *
+ *   OUT=/tmp/lohfeld.json ONLY_DISTRICT=lohfeld node tools/fetch-porta.js
+ */
 const SELECTED_DISTRICTS = process.env.ONLY_DISTRICT
   ? DISTRICTS.filter((d) => d.id === process.env.ONLY_DISTRICT)
   : DISTRICTS;
@@ -175,6 +190,17 @@ function classify(tags, pois) {
   }
 
   const out = { city: "Porta Westfalica", center: CENTER, districts: [] };
+  /*
+   * Jedes Gebaeude hoechstens einmal.
+   *
+   * Gefragt wird je Ortsteil nach allem IN dessen Flaeche. An den Grenzen
+   * liegt dasselbe Haus in zwei Flaechen, und einzelne Wege kamen sogar
+   * innerhalb einer Abfrage zweimal zurueck. Im Auszug vom 10.7. waren
+   * dadurch 65 Gebaeude doppelt drin; ihr Wert zaehlte im Spiel zweimal, und
+   * im Zweifel entschied das darueber, wer Boss eines Ortsteils ist.
+   * Wer zuerst kommt, behaelt das Haus.
+   */
+  const gesehen = new Set();
 
   for (const d of SELECTED_DISTRICTS) {
     console.log(`→ ${d.name}: Gebäude + Landmarks …`);
@@ -243,6 +269,8 @@ area(${area})->.d;
       if (pts.length > 2 && pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1]) pts = pts.slice(0, -1);
       pts = simplify(pts, 1.2);
       if (pts.length < 3) continue;
+      if (gesehen.has(el.id)) continue;   // liegt schon in einem Nachbarn
+      gesehen.add(el.id);
       const areaM2 = Math.abs(polyArea(pts));
       if (areaM2 < 25) continue; // Kleinkram ignorieren
       const [cx, cy] = centroid(pts);

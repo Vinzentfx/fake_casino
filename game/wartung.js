@@ -15,6 +15,17 @@
  * braucht.
  *
  * Wer drinnen ist, wird getrennt; der Besitzer kommt weiter rein.
+ *
+ * TESTZUGANG. Dazu kommt eine Namensliste: wer daraufsteht, darf auch bei
+ * geschlossenem Haus rein. Das ist der Grund, warum es das ueberhaupt gibt —
+ * ein Update will man mit drei, vier Leuten ausprobieren, bevor siebzig
+ * darauf treffen, und die Alternative waere, das Haus offen zu lassen und
+ * zu hoffen. Die Liste ueberlebt den Neustart wie der Rest.
+ *
+ * Gespeichert wird der normalisierte Name, nicht der Schluessel: hier wird
+ * jemand eingetragen, bevor er verbunden ist, und der Schluessel steht erst
+ * danach fest. Die Pruefung vergleicht kleingeschrieben, damit "Ben" und
+ * "ben" dieselbe Person sind.
  */
 
 const fs = require("fs");
@@ -23,11 +34,18 @@ const FILE = path.join(__dirname, "..", "data", "wartung.json");
 
 const STANDARD = "Das Casino ist gerade kurz zu. Wir sind gleich wieder da.";
 
-let zustand = { an: false, text: STANDARD, seit: 0 };
+const norm = (n) => String(n || "").trim().toLowerCase();
+
+let zustand = { an: false, text: STANDARD, seit: 0, zugang: [] };
 try {
   const roh = JSON.parse(fs.readFileSync(FILE, "utf8"));
   if (roh && typeof roh === "object") {
-    zustand = { an: !!roh.an, text: String(roh.text || STANDARD).slice(0, 200), seit: Number(roh.seit) || 0 };
+    zustand = {
+      an: !!roh.an,
+      text: String(roh.text || STANDARD).slice(0, 200),
+      seit: Number(roh.seit) || 0,
+      zugang: Array.isArray(roh.zugang) ? roh.zugang.map(norm).filter(Boolean) : [],
+    };
   }
 } catch {}
 
@@ -52,15 +70,51 @@ function setze(auf, grund) {
     an: !!auf,
     text: String(grund || "").trim().slice(0, 200) || STANDARD,
     seit: auf ? Date.now() : 0,
+    /* Die Testliste bleibt stehen. Wer sie beim Aufmachen loeschen wuerde,
+       muesste sie beim naechsten Update neu tippen — und genau dann hat
+       man es eilig. */
+    zugang: zustand.zugang || [],
   };
   save();
   return { ok: true, ...state() };
 }
 
+/** Jemanden auf die Testliste setzen. */
+function erlaube(name) {
+  const n = norm(name);
+  if (!n) return { ok: false, error: "Kein Name." };
+  if (zustand.zugang.includes(n)) return { ok: false, error: "Steht schon drauf." };
+  if (zustand.zugang.length >= 20) return { ok: false, error: "Höchstens 20 auf der Testliste." };
+  zustand.zugang.push(n);
+  save();
+  return { ok: true, ...state() };
+}
+
+/** Wieder herunternehmen. */
+function verbiete(name) {
+  const n = norm(name);
+  const i = zustand.zugang.indexOf(n);
+  if (i < 0) return { ok: false, error: "Steht nicht drauf." };
+  zustand.zugang.splice(i, 1);
+  save();
+  return { ok: true, ...state() };
+}
+
+/** Testliste leeren. */
+function leere() {
+  zustand.zugang = [];
+  save();
+  return { ok: true, ...state() };
+}
+
+/** Steht dieser Name auf der Testliste? */
+const hatZugang = (name) => zustand.zugang.includes(norm(name));
+
 /** Darf dieser Kontoname gerade rein? */
 function darfRein(key, owner) {
   if (!an()) return true;
-  return String(key || "").toLowerCase() === String(owner || "").toLowerCase();
+  if (norm(key) === norm(owner)) return true;
+  return hatZugang(key);
 }
 
-module.exports = { an, text, state, setze, darfRein, STANDARD };
+module.exports = { an, text, state, setze, darfRein, erlaube, verbiete, leere, hatZugang, STANDARD };

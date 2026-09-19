@@ -93,6 +93,14 @@ function setupChat(io, accounts) {
       // gekauft hatte, sah davon ausgerechnet dort nichts, wo man sich am
       // meisten sieht. Das Aussehen haengt jetzt an der Nachricht.
       const look = acc ? require("./cosmetics").publicLook(acc) : {};
+      /* Wer hier ein Feld vergisst, baut ein Stueck, das man kaufen, anlegen
+         und dann nirgends sehen kann. Genau das war mit dem Chat-Zeichen und
+         dem Prunkstueck passiert: beide standen in publicLook, aber diese
+         Liste kopierte nur vier Felder, und ausgerechnet im Chat, der am
+         meisten gelesenen Flaeche im Haus, kam nichts davon an.
+         Nicht mitkommen soll nur, was privat ist: der Kartenruecken wirkt
+         allein auf dem eigenen Bildschirm, der Gewinn-Effekt braucht hier
+         niemanden. */
       const msg = {
         name: (acc && acc.name) || socket.data.displayName || "?",
         text, ts: now,
@@ -100,6 +108,14 @@ function setupChat(io, accounts) {
         nameColor: look.nameColor || null,
         nameStyle: look.nameStyle || null,
         title: look.title || null,
+        frame: look.frame || null,
+        aura: look.aura || null,
+        zeichen: look.zeichen || null,
+        prunk: look.prunk || null,
+        /* Und die Garnitur. Genau dieselbe Falle wie oben: sie steht in
+           publicLook, und wer sie hier vergisst, baut ein Stueck, das
+           ausgerechnet im Chat nichts tut. */
+        garnitur: look.garnitur || null,
       };
       push(room, msg);
 

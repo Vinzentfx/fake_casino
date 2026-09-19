@@ -93,8 +93,10 @@
     <div class="sheet-group">
       <span class="sheet-label">Du</span>
       <button class="sheet-item" data-nav="profile"><i class="si-icon" data-icon="profil"></i><b>Profil</b><small>Guthaben, Erfolge, Abmelden</small></button>
-      <button class="sheet-item" data-nav="cosmetics"><i class="si-icon" data-icon="kosmetik"></i><b>Kosmetik</b><small>Avatar und Namensfarbe</small></button>
+      <button class="sheet-item" data-nav="cosmetics"><i class="si-icon" data-icon="kosmetik"></i><b>Sammlung</b><small>Was du hast, anlegen</small></button>
       <button class="sheet-item" data-nav="auktion"><i class="si-icon" data-icon="auktion"></i><b>Auktionshaus</b><small id="menu-auktion-sub">Was es nur einmal gibt</small></button>
+      <button class="sheet-item" data-nav="market"><i class="si-icon" data-icon="warenkorb"></i><b>Markt</b><small>Geprägte Stücke von Spieler zu Spieler</small></button>
+      <button class="sheet-item" data-nav="kiste"><i class="si-icon" data-icon="geschenk"></i><b>Kisten</b><small>Kosmetik als Ziehung</small></button>
       <button class="sheet-item" data-nav="settings"><i class="si-icon" data-icon="einstellungen"></i><b>Einstellungen</b><small>Design, Ton, Passwort</small></button>
       <a class="sheet-item" href="/datenschutz.html"><i class="si-icon" data-icon="sperre"></i><b>Datenschutz</b><small>Was gespeichert wird</small></a>
       <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><i class="si-icon" data-icon="admin"></i><b>Admin</b><small>Verwaltung</small></button>
@@ -1338,15 +1340,37 @@
     <!-- Kosmetik -->
     <section class="screen" data-screen="cosmetics">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-      <h2 class="screen-title"><i data-icon="kosmetik"></i>Kosmetik</h2>
+      <h2 class="screen-title"><i data-icon="kosmetik"></i>Sammlung</h2>
       <div class="tafel">
-        <p class="muted small">Gib Chips für Style aus. Antippen: kaufen oder anlegen. Nichts davon verändert das Spiel, es sieht nur besser aus als bei den anderen.</p>
+        <p class="muted small">Deine Sammlung. Antippen legt an, was du hast, und zeigt, was du noch nicht hast. Gekauft wird hier nichts mehr: Kosmetik kommt aus den <b>Kisten</b> und vom <b>Markt</b>. Nichts davon verändert das Spiel, es sieht nur besser aus als bei den anderen.</p>
 
         <!-- Vorschau. Ohne sie kauft man eine Animation, ohne sie je gesehen
              zu haben, und merkt erst hinterher, dass sie einem nicht gefällt. -->
         <div class="cos-preview" id="cos-preview"></div>
 
-        <h3 class="section-title">Namensstile</h3>
+        <h3 class="section-title">Dein Prunkstück</h3>
+        <p class="hint" style="margin-top:-4px">Ein geprägtes Stück, das mit seiner Nummer an deinem Namen hängt: im Chat, in der Bestenliste, am Tisch, in der Stadt. Dafür muss niemand online sein.</p>
+        <div id="cos-prunk" class="cos-prunk"></div>
+
+        <!--
+          Garnituren: der Grund, von EINER Sache viel zu besitzen.
+          Tragen kann man immer nur zwölf Stücke, also ist jedes weitere
+          für die Außenwirkung wertlos — außer man sammelt eine Familie
+          und legt sie zusammen an.
+        -->
+        <h3 class="section-title" style="margin-top:14px">Garnituren</h3>
+        <p class="hint" style="margin-top:-4px">Trag drei Stücke aus derselben Familie gleichzeitig, und eine Marke hängt an deinem Namen, überall. Ab fünf leuchtet sie.</p>
+        <div id="cos-familien" class="cos-familien"></div>
+
+        <h3 class="section-title" style="margin-top:14px">Kollektionen</h3>
+        <p class="hint" style="margin-top:-4px">Wer eine Kollektion vollständig hat, bekommt ein Stück, das es auf keinem anderen Weg gibt. Was fehlt, holt man sich auf dem Markt.</p>
+        <div id="cos-sammlungen" class="cos-sammlungen"></div>
+
+        <h3 class="section-title" style="margin-top:14px">Chat-Zeichen</h3>
+        <p class="hint" style="margin-top:-4px">Ein Symbol vor jeder deiner Nachrichten. Der Chat ist die einzige Fläche, die jeder liest, auch Stunden später.</p>
+        <div class="cos-grid" id="cos-zeichen"></div>
+
+        <h3 class="section-title" style="margin-top:14px">Namensstile</h3>
         <p class="hint" style="margin-top:-4px">Ersetzt die flache Farbe. Die bewegten stehen still, wenn du in den Einstellungen „Bewegung reduzieren“ anhast.</p>
         <div class="cos-grid cos-grid-wide" id="cos-styles"></div>
 
@@ -1758,16 +1782,111 @@
         <div style="text-align:center">
           <div class="ph-icon" data-icon="warenkorb"></div>
           <h2>Markt</h2>
-          <p class="muted small">Produkte aus deinen Unternehmen: selbst benutzen (Buff) oder teurer an andere verkaufen.</p>
+          <p class="muted small" id="mkt-intro">Geprägte Stücke von Spieler zu Spieler. Jedes hat eine Nummer und eine Geschichte.</p>
         </div>
 
-        <h3 style="margin:14px 0 6px">Dein Inventar</h3>
-        <div class="mkt-inventory" id="mkt-inventory"><p class="muted small">Lädt…</p></div>
-
-        <h3 style="margin:16px 0 6px">Angebote anderer Spieler</h3>
+        <h3 style="margin:14px 0 6px">Im Schaufenster</h3>
         <div class="mkt-offers" id="mkt-offers"><p class="muted small">Lädt…</p></div>
+
+        <h3 style="margin:16px 0 6px">Was du anbieten kannst</h3>
+        <div class="mkt-inventory" id="mkt-inventory"><p class="muted small">Lädt…</p></div>
       </div>
     </section>
+
+    <!-- Kisten: Kosmetik als Ziehung -->
+    <section class="screen" data-screen="kiste">
+      <div class="ki-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <div class="ki-titel">
+          <div class="ph-icon" data-icon="geschenk"></div>
+          <h2>Kisten</h2>
+          <p class="muted small">Kosmetik als Ziehung. Was drin sein kann und wie wahrscheinlich, steht an jeder Kiste.</p>
+        </div>
+
+        <!--
+          Die Ruhmestafel. Steht bewusst GANZ OBEN und nicht in einem eigenen
+          Reiter: das Erste, was man beim Reinkommen sehen soll, ist, dass
+          hier etwas zu holen ist und wer es zuletzt geholt hat. In einer
+          Runde, die versetzt spielt, ist das die einzige Stelle, an der man
+          die Ziehung eines anderen ueberhaupt mitbekommt.
+        -->
+        <div class="ki-ruhm hidden" id="ki-ruhm">
+          <div class="ki-ruhm-kopf">
+            <b>Zuletzt gezogen</b>
+            <span class="muted small">im ganzen Haus</span>
+          </div>
+          <div class="ki-ruhm-band" id="ki-ruhm-band"></div>
+        </div>
+
+        <!-- Reiter. Das Duell stand vorher als Ueberschrift unter der
+             Preisliste und war damit unauffindbar: wer oben eine Kiste
+             aufmacht, scrollt nie so weit. -->
+        <nav class="ki-reiter" id="ki-reiter" role="tablist">
+          <button class="ki-reiter-knopf active" data-ki-tab="kisten" role="tab" aria-selected="true">Kisten</button>
+          <button class="ki-reiter-knopf" data-ki-tab="duelle" role="tab" aria-selected="false">Duelle</button>
+        </nav>
+
+        <section class="ki-tafel" data-ki-tafel="kisten">
+          <div id="ki-liste" class="ki-liste"><p class="muted small">Lädt…</p></div>
+          <div class="ki-stufen" id="ki-stufen"></div>
+        </section>
+
+        <section class="ki-tafel hidden" data-ki-tafel="duelle">
+          <div class="kd-held">
+            <div class="kd-held-bild" aria-hidden="true">
+              <img src="/assets/kisten/holz.png" alt="">
+              <span class="kd-vs">VS</span>
+              <img src="/assets/kisten/schwarz.png" alt="">
+            </div>
+            <b class="kd-held-titel">Wer mehr zieht, gewinnt</b>
+            <p class="muted small">Zwei Bahnen, gleichzeitig. Die Kisten sind der Würfel.</p>
+            <button class="btn-primary kd-auf" data-kd-neu>Duell aufmachen</button>
+          </div>
+          <div id="kd-liste" class="kd-liste"></div>
+        </section>
+      </div>
+    </section>
+
+    <!--
+      Die Ziehung. Vollbild und ausserhalb der Screens: sie soll alles
+      andere verdecken. Eine Kiste, die man neben der Preisliste aufmacht,
+      ist eine Zeile in einer Liste; eine, die den Bildschirm uebernimmt,
+      ist ein Moment.
+    -->
+    <div class="ki-overlay hidden" id="ki-overlay" aria-live="polite">
+      <div class="ki-strahlen" id="ki-strahlen" aria-hidden="true"></div>
+      <div class="ki-blitz" id="ki-blitz" aria-hidden="true"></div>
+      <!-- Ab Legendär wird der ganze Bildschirm einmal in der Farbe der
+           Stufe gewaschen. Der Blitz allein sass nur in der Mitte. -->
+      <div class="ki-wasch" id="ki-wasch" aria-hidden="true"></div>
+
+      <div class="ki-phase ki-phase-aufbau" id="ki-aufbau">
+        <div class="ki-kiste-gross" id="ki-kiste-gross" aria-hidden="true"></div>
+        <div class="ki-aufbau-text" id="ki-aufbau-text"></div>
+      </div>
+
+      <div class="ki-phase ki-phase-bahn hidden" id="ki-phase-bahn">
+        <div class="ki-bahn-rahmen">
+          <!-- Der Lichtkegel geht an, wenn die Bahn langsam wird: dort
+               entscheidet es sich, dort soll man hinsehen. -->
+          <div class="ki-kegel" aria-hidden="true"></div>
+          <div class="ki-marke" aria-hidden="true"></div>
+          <div class="ki-bahn" id="ki-bahn"></div>
+        </div>
+      </div>
+
+      <div class="ki-ergebnis hidden" id="ki-ergebnis"></div>
+    </div>
+
+    <!--
+      Das Kisten-Duell im Vollbild: erst die Zusammenstellung, dann die
+      beiden Bahnen nebeneinander. Eigenes Overlay und nicht das der
+      Einzelziehung, weil beide gleichzeitig offen sein koennen — wer
+      wartet, kann nebenher eine Kiste aufmachen.
+    -->
+    <div class="kb-overlay hidden" id="kb-overlay" aria-live="polite">
+      <div class="kb-inhalt" id="kb-inhalt"></div>
+    </div>
 
     <!-- Admin (nur Vincent) -->
     <section class="screen" data-screen="admin">
@@ -2008,6 +2127,19 @@
             <button class="btn-danger ad-knopf" id="ad-wartung-zu">Casino schließen</button>
             <button class="btn-primary ad-knopf" id="ad-wartung-auf">Wieder aufmachen</button>
           </div>
+
+          <!-- Testzugang
+               Der eigentliche Grund für den Wartungsmodus: ein Update mit
+               drei, vier Leuten ausprobieren, bevor siebzig darauf treffen. -->
+          <div class="ad-test">
+            <b>Testzugang</b>
+            <p class="hint">Wer hier steht, kommt auch bei geschlossenem Haus rein und wird beim Schließen nicht rausgeworfen. Die Liste bleibt stehen, wenn du wieder aufmachst.</p>
+            <div class="ad-test-zeile">
+              <input id="ad-test-name" type="text" maxlength="24" placeholder="Spielername" autocomplete="off" />
+              <button class="btn-secondary ad-knopf" id="ad-test-add">Reinlassen</button>
+            </div>
+            <div id="ad-test-liste" class="ad-test-liste"></div>
+          </div>
         </div>
 
         <!-- Regie
@@ -2130,6 +2262,16 @@
 
   <!-- Toast für Hinweise (z. B. Bonus erhalten) -->
   <div id="toast" class="toast"></div>
+
+  <!--
+    Die Ansage, wenn irgendwo im Haus etwas Mythisches oder ein Einzelstueck
+    gezogen wird. Bewusst kein Toast: ein Toast sagt "deine Eingabe ging
+    nicht", und das hier ist das Gegenteil. Bewusst auch nicht nur der Chat,
+    denn der rollt weg und laeuft nicht auf jedem Bildschirm mit.
+    Die Schwelle steht in game/ruhm.js und ist hoch genug, dass das hier
+    selten bleibt — ein Banner, das dreimal am Abend kommt, ist Tapete.
+  -->
+  <div id="ruhm-banner" class="ruhm-banner hidden" role="status" aria-live="polite"></div>
 
   <!-- Öffentliches Spielerprofil aus Online-Liste / Leaderboards -->
   <div id="player-profile-modal" class="player-profile-modal hidden">
@@ -2360,6 +2502,7 @@
   <script defer src="/js/bank.js"></script>
   <script defer src="/js/stocks.js"></script>
   <script defer src="/js/market.js"></script>
+  <script defer src="/js/kiste.js"></script>
   <script defer src="/js/spickzettel.js"></script>
 </body>
 </html>

@@ -28,13 +28,47 @@
    * Rueckgabewert durch escapeHtml, was jetzt die Marke als Zeichenkette
    * sichtbar machen wuerde.
    */
+  /*
+   * Zustand eines Stuecks. Hier stand der PREIS, und das war die Zeile, die
+   * den Laden ausgemacht hat. Kaufen gibt es nicht mehr: Kosmetik kommt aus
+   * den Kisten und vom Markt. An der Stelle des Preises steht jetzt, WOHER
+   * das Stueck kommt, und das ist bei einem Stueck, das man noch nicht hat,
+   * die Angabe, die man wirklich braucht.
+   */
+  const HERKUNFT = {
+    kiste: "Aus Kisten", auktion: "Auktionshaus", rad: "Glücksrad",
+    comeback: "Wiedereröffnung", haus: "Vom Haus", season: "Season-Pass",
+    sammlung: "Kollektion", verdienbar: "Zu verdienen", gratis: "Gratis",
+    /* Nur noch über den Markt: die Namensfarben entstehen nicht mehr neu. */
+    markt: "Nur noch Markt",
+  };
   const preisHtml = (x) => {
     const sperre = window.Casino.icons.ui("sperre");
     if (x.equipped) return `${window.Casino.icons.ui("ja")} Aktiv`;
     if (x.owned) return "Anlegen";
-    if (x.cost === null) return `${sperre} ${escapeHtml(x.via || "Season")}`;
-    return x.cost ? window.Casino.betrag(x.cost) : "Gratis";
+    if (x.herkunft === "gratis") return "Gratis";
+    return `${sperre} ${escapeHtml(HERKUNFT[x.herkunft] || x.via || "Anderswo")}`;
   };
+
+  /*
+   * Die Seltenheit ist nicht nur eine Zahl im Katalog. In der Sammlung
+   * braucht jedes Stück schon aus der Entfernung eine eigene Wertigkeit,
+   * sonst sehen ein gewöhnlicher Titel und ein einzelnes Auktionsstück wie
+   * dieselbe Kachel aus.
+   *
+   * Die Stufe kommt vom SERVER (`stufeKennung` in game/cosmetics.js) und
+   * wird hier nicht noch einmal aus Preisen gerechnet. Es gibt sie an vier
+   * Stellen im Haus — Marke am Namen, Kisteninhalt, Markt, Sammlung — und
+   * zwei Schwellenlisten laufen beim nächsten neuen Stück auseinander.
+   *
+   * Eine Ausnahme kennt diese Funktion: die Erstprägung sticht über alles,
+   * denn sie hängt nicht am Stück, sondern am Exemplar.
+   */
+  const STUFEN = new Set(["gewoehnlich", "selten", "episch", "legendaer", "mythisch", "einzel", "haus"]);
+  function stufeVon(x) {
+    if (x && x.praegung && x.praegung.nr === 1) return "erst";
+    return x && STUFEN.has(x.stufe) ? x.stufe : "gewoehnlich";
+  }
 
   /** Grob genug: bei sieben Wochen interessiert niemanden die Stunde. */
   function restText(bis) {
@@ -54,7 +88,7 @@
    * sehen, wo es eilt.
    */
   function marke(x) {
-    if (x.owned || x.cost !== null) return "";
+    if (x.owned || x.herkunft === "gratis" || x.herkunft === "kiste") return "";
     const f = (stand && stand.fristen) || {};
     // Zwei Zeilen: oben was es ist, darunter wie lange noch. In einer Zeile
     // passt der Countdown nicht in die schmale Kachel und wird abgeschnitten.
@@ -69,6 +103,11 @@
     /* Auktionsware laeuft gar nicht ab: sie kommt einzeln unter den Hammer,
        und wer sie hat, hat sie von dort. */
     if (x.limitiert === "auktion") return bau("auktion", "Auktion", "einzeln versteigert");
+    /* Sammlungs-Belohnung. Nicht "zu verdienen": es gibt genau einen Weg,
+       und der steht besser da als ein allgemeines Wort. */
+    if (x.limitiert === "sammlung") return bau("sammlung", "Kollektion", "nur komplett");
+    if (x.limitiert === "haus") return bau("haus", "Vom Haus", "wird vergeben");
+    if (x.limitiert === "kiste") return bau("jetzt", "Einzelstück", "nur aus Kisten");
     /* Fortuna laeuft nicht nach Zeit ab, sondern nach Stückzahl. Deshalb
        steht hier kein Countdown, sondern wie viele es noch gibt. */
     if (x.limitiert === "rad") {
@@ -80,12 +119,39 @@
     return bau("verdienen", "Zu verdienen", "");
   }
 
+  /*
+   * Die Nummer des eigenen Exemplars.
+   *
+   * Nur bei dem, was man selbst hat: bei allem anderen gibt es kein
+   * Exemplar, sondern nur eine Stueckzahl, und die steht schon in der Marke.
+   * Das ist der ganze Sinn der Praegung, deshalb steht sie gross und nicht
+   * als Beiwerk im Preisfeld.
+   */
+  function nummer(x) {
+    const p = x.praegung;
+    if (!p || !p.nr) return "";
+    const wieviele = p.bestand > 1 ? ` von ${p.bestand}` : "";
+    /* Die Nummer 1 ist die Erstpraegung, und die gibt es von jedem Stueck
+       genau einmal. Sie steht hier ausgeschrieben und nicht nur als Ziffer:
+       "Nr. 1 von 14" liest sich sonst wie eine beliebige Nummer. */
+    /* Nur das Wort. "Erstprägung · Nr. 1 von 3" passt nicht in eine Kachel
+       von hundert Pixeln und wurde mitten im Wort abgeschnitten; der Rest
+       steht im Titel, für den, der genau hinsehen will. */
+    if (p.nr === 1) return `<span class="cos-nr erst" title="Erstprägung: Nr. 1${wieviele}">Erstprägung</span>`;
+    return `<span class="cos-nr">Nr. ${p.nr}${wieviele}</span>`;
+  }
+
   function knopf(type, x, inhalt, klasse = "") {
-    const gesperrt = !x.owned && x.cost === null;
+    // Gesperrt ist jetzt alles, was man noch nicht hat: kaufen kann man
+    // nichts mehr, es gibt nur noch besitzen oder nicht besitzen.
+    const gesperrt = !x.owned && x.herkunft !== "gratis";
+    const stufe = stufeVon(x);
     return `<button class="cos-item ${x.equipped ? "equipped" : ""}${gesperrt ? " locked" : ""} ${klasse}"
         data-type="${type}" data-id="${x.id}" data-owned="${x.owned ? 1 : 0}" data-locked="${gesperrt ? 1 : 0}">
         ${marke(x)}
+        ${nummer(x)}
         ${inhalt}
+        <span class="cos-tier cos-tier-${stufe}" aria-hidden="true"></span>
         <small class="kos-preis">${preisHtml(x)}</small>
       </button>`;
   }
@@ -114,12 +180,57 @@
       title: vorschau && vorschau.type === "title"
         ? (stand.titles.find((t) => t.id === vorschau.id) || {}).text || null
         : acc.title || null,
+      zeichen: vorschau && vorschau.type === "zeichen" ? vorschau.id : acc.zeichen || null,
+      prunk: acc.prunk || null,
+      badge: acc.badge || null,
+      /* Die Garnitur rechnet der Server aus dem ANGELEGTEN aus, nicht aus
+         der Vorschau: wer gerade etwas anprobiert, traegt es ja noch
+         nicht. Die Karte zeigt deshalb den echten Stand. */
+      garnitur: (stand && stand.garnitur) || null,
     };
-    box.innerHTML =
-      `<span class="cos-preview-label">So sehen dich die anderen</span>` +
-      `<span class="cos-preview-row">${Casino.spieler.avatar(p)}` +
-      `<span class="pl-text">${Casino.spieler.name(p)}${Casino.spieler.title(p)}</span></span>`;
-    if (p.banner) box.dataset.banner = p.banner; else delete box.dataset.banner;
+
+    const alle = Object.values(listen()).flat();
+    const besessen = alle.filter((x) => x.owned).length;
+    const gepraegt = alle.filter((x) => x.owned && x.praegung && x.praegung.nr).length;
+    const gesamt = alle.filter((x) => x.id !== "keiner" && x.id !== "keins" && x.id !== "standard" && x.id !== "haus" && x.id !== "smile" && x.id !== "white" && x.id !== "konfetti").length;
+    const prunk = p.prunk && p.prunk.label && p.prunk.nr
+      ? `<div class="cos-pass-trophy">
+          <span class="cos-pass-trophy-kicker">Dein Prunkstück</span>
+          <b>${escapeHtml(p.prunk.label)}</b><small>${p.prunk.nr === 1 ? "Erstprägung · Nr. 1" : `Exemplar Nr. ${p.prunk.nr}`}</small>
+        </div>`
+      : `<div class="cos-pass-trophy leer">
+          <span class="cos-pass-trophy-kicker">Dein Prunkstück</span>
+          <b>Der erste Fund wartet.</b><small>Geprägte Stücke werden hier zu deinem Erkennungszeichen.</small>
+        </div>`;
+    const details = [
+      ["Stil", p.nameStyle ? nameVon("style", p.nameStyle) : "Klassisch"],
+      ["Rahmen", p.frame ? nameVon("frame", p.frame) : "Ohne"],
+      ["Aura", p.aura ? nameVon("aura", p.aura) : "Ohne"],
+      ["Zeichen", p.zeichen ? nameVon("zeichen", p.zeichen) : "Ohne"],
+    ];
+
+    box.innerHTML = `
+      <div class="cos-atelier-kopf">
+        <div><span class="cos-eyebrow">${vorschau ? "Vorschau" : "Dein Auftritt"}</span>
+          <b>${vorschau ? "So würde dieses Stück wirken" : "Nicht nur besitzen. Wiedererkennbar sein."}</b></div>
+        <span class="cos-sammlung-zaehler"><strong>${besessen}</strong> / ${gesamt} Stücke</span>
+      </div>
+      <div class="cos-pass"${p.banner ? ` data-banner="${escapeHtml(p.banner)}"` : ""}>
+        <div class="cos-pass-foil" aria-hidden="true"></div>
+        <div class="cos-pass-brand"><span>FAKE CASINO</span><i>Spielerkarte</i></div>
+        <div class="cos-pass-portrait">${Casino.spieler.avatar(p)}</div>
+        <div class="cos-pass-person">${Casino.spieler.zeichen(p)}${Casino.spieler.name(p)}${Casino.spieler.prunk(p)}${Casino.spieler.garnitur(p)}${Casino.spieler.title(p)}</div>
+        ${prunk}
+      </div>
+      <div class="cos-atelier-info">
+        <div class="cos-atelier-stats">
+          <span><b>${gepraegt}</b><small>geprägt</small></span>
+          <span><b>${(stand.sammlungen || []).filter((k) => k.komplett).length}</b><small>Kollektionen</small></span>
+          <span><b>${p.badge || "—"}</b><small>Auszeichnung</small></span>
+        </div>
+        <div class="cos-atelier-details">${details.map(([label, value]) =>
+          `<span><i>${escapeHtml(label)}</i><b>${escapeHtml(value)}</b></span>`).join("")}</div>
+      </div>`;
   }
 
   function render(s) {
@@ -141,6 +252,10 @@
 
     setze("#cos-auren", s.auren.map((x) => knopf("aura", x,
       `<span class="cos-aura-demo ${x.id === "keine" ? "" : "au-" + x.id}"><span class="pl-ava">🙂</span></span>` +
+      `<span class="cos-banner-label">${escapeHtml(x.label)}</span>`)).join(""));
+
+    setze("#cos-zeichen", s.zeichen.map((x) => knopf("zeichen", x,
+      `<span class="cos-zeichen-demo">${x.icon ? Casino.icons.ui(x.icon) : "–"}</span>` +
       `<span class="cos-banner-label">${escapeHtml(x.label)}</span>`)).join(""));
 
     setze("#cos-karten", s.karten.map((x) => knopf("karte", x,
@@ -174,17 +289,162 @@
     setze("#cos-colors", s.colors.map((x) => knopf("color", x,
       `<span class="cos-swatch" style="background:${x.color || "#e8e8e8"}"></span>`)).join(""));
 
+    renderPrunk();
+    renderSammlungen();
+    renderFamilien();
     renderVorschau();
   }
+
+  /*
+   * Das Prunkstueck.
+   *
+   * Der wunde Punkt bei Kosmetik in diesem Haus ist nicht, wie schoen sie
+   * ist, sondern dass sie niemand sieht: Kartenruecken nur bei einem selbst,
+   * Aura nur bei Gleichzeitigkeit, Banner erst beim Antippen. Das
+   * Prunkstueck haengt dagegen am Namen und reist ueberall mit, wo der Name
+   * hingeht. Waehlbar ist nur, was eine Nummer hat.
+   */
+  function renderPrunk() {
+    const box = $("#cos-prunk");
+    if (!box || !stand) return;
+    const alle = [];
+    for (const [art, liste] of Object.entries(listen())) {
+      for (const x of liste) {
+        if (x.owned && x.praegung && x.praegung.nr) alle.push({ art, ...x });
+      }
+    }
+    if (!alle.length) {
+      box.innerHTML = `<div class="cos-vitrine cos-vitrine-leer">
+        <div class="cos-vitrine-siegel" aria-hidden="true">✦</div>
+        <div><span class="cos-eyebrow">Noch leer</span><b>Deine Vitrine beginnt mit einem Fundstück.</b>
+          <p>Alles aus einer Kiste erhält eine Nummer. Wähle später genau eines, das an deinem Namen überall im Haus sichtbar bleibt.</p></div>
+        <button class="btn-secondary cos-vitrine-cta" data-nav="kiste" type="button">Kisten ansehen</button>
+      </div>`;
+      return;
+    }
+    const aktuell = stand.prunk || "";
+    box.innerHTML = `<div class="cos-vitrine"><div class="cos-vitrine-siegel" aria-hidden="true">✦</div><div class="cos-vitrine-intro"><span class="cos-eyebrow">Ausgewähltes Erkennungszeichen</span><b>Ein Fundstück reist mit deinem Namen.</b><p>Die Nummer bleibt sichtbar – auch im Chat, auf Listen und am Tisch.</p></div></div>`
+      + `<div class="cos-prunk-liste">`
+      + `<button class="cos-prunk-item${aktuell ? "" : " on"}" data-prunk=""><span>Ohne Prunkstück</span><small>ausgeblendet</small></button>`
+      + alle.map((x) => {
+        const k = `${x.art}:${x.id}`;
+        return `<button class="cos-prunk-item${aktuell === k ? " on" : ""}" data-prunk="${escapeHtml(k)}">`
+          + `<span>${escapeHtml(nameVon(x.art, x.id))}</span><small>${x.praegung.nr === 1 ? "Erstprägung" : `Nr. ${x.praegung.nr}`}</small></button>`;
+      }).join("")
+      + `</div>`;
+  }
+
+  /** Alle Listen mit ihrer Art, an einer Stelle. */
+  function listen() {
+    return {
+      style: stand.styles, title: stand.titles, frame: stand.frames, avatar: stand.avatars,
+      color: stand.colors, effect: stand.effects, spruch: stand.sprueche, banner: stand.banner,
+      schild: stand.schilder, aura: stand.auren, karte: stand.karten,
+      zeichen: stand.zeichen,
+    };
+  }
+
+  /**
+   * Name eines Stuecks, wie ein Mensch ihn liest.
+   *
+   * Nicht einfach `x.label`: ein Spruch traegt seinen Satz mit Platzhalter
+   * ("Das Haus gruesst {name}."), und der gehoert in einer Liste nicht so
+   * hin. Ein Profilbild hat sein Emoji, aber das allein ist als Listenname
+   * zu wenig.
+   */
+  function nameVon(art, id) {
+    const x = (listen()[art] || []).find((i) => i.id === id);
+    if (!x) return id;
+    if (art === "avatar") return `${x.emoji || ""} ${x.label || id}`.trim();
+    if (x.label) return x.label;
+    if (x.text) return String(x.text).replace("{name}", (Casino.getAccount() || {}).name || "Du");
+    return x.emoji || id;
+  }
+
+  /**
+   * Die Garnituren: was man von jeder Familie hat und was davon an ist.
+   *
+   * Drei Zahlen je Zeile, und sie beantworten drei verschiedene Fragen:
+   * wie viele es gibt (lohnt sich das ueberhaupt), wie viele ich habe
+   * (wie weit bin ich), wie viele ich TRAGE (ist sie an). Ohne die dritte
+   * waere die Garnitur eine Marke, die irgendwann auftaucht, statt eines
+   * Ziels, auf das man zugeht.
+   */
+  function renderFamilien() {
+    const box = $("#cos-familien");
+    if (!box || !stand) return;
+    const liste = stand.familien || [];
+    const ab = stand.garniturAb || 3;
+    if (!liste.length) {
+      box.innerHTML = `<p class="hint">Noch keine Familie angefangen. Alles aus einer Kiste, einer Kollektion oder dem Auktionshaus gehört zu einer.</p>`;
+      return;
+    }
+    box.innerHTML = liste.map((f) => {
+      const an = f.getragen >= ab;
+      return `<div class="cos-fam${an ? " an" : ""}" style="--fam:${f.farbe}">
+        <div class="cos-fam-kopf">
+          <b>${escapeHtml(f.label)}</b>
+          ${an ? `<span class="cos-fam-marke${f.getragen >= 5 ? " voll" : ""}">Garnitur ×${f.getragen}</span>`
+               : `<span class="cos-fam-fehlt">noch ${ab - f.getragen} zum Anlegen</span>`}
+        </div>
+        <div class="cos-fam-bahn"><span style="width:${Math.round(f.hat / f.gesamt * 100)}%"></span></div>
+        <div class="cos-fam-zahlen">
+          <span><b>${f.hat}</b> von ${f.gesamt} besitzt</span>
+          <span><b>${f.getragen}</b> angelegt</span>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function renderSammlungen() {
+    const box = $("#cos-sammlungen");
+    if (!box || !stand || !stand.sammlungen) return;
+    const zeichen = { porta: "P", mitternacht: "M", feuer: "F" };
+    box.innerHTML = stand.sammlungen.map((k) => `
+      <article class="cos-slg cos-slg-${escapeHtml(k.id)}${k.komplett ? " voll" : ""}">
+        <div class="cos-slg-symbol" aria-hidden="true">${zeichen[k.id] || "✦"}</div>
+        <div class="cos-slg-kopf"><div><span class="cos-eyebrow">Kollektion</span><b>${escapeHtml(k.label)}</b><p>${escapeHtml(k.text || "")}</p></div>
+          <span class="cos-slg-stand">${k.voll}<i>/ ${k.gesamt}</i></span></div>
+        <div class="cos-slg-bahn"><span style="width:${Math.round(k.voll / k.gesamt * 100)}%"></span></div>
+        <div class="cos-slg-teile">${k.teile.map((t) =>
+          `<span class="cos-slg-teil${t.hat ? " hat" : ""}" title="${escapeHtml(nameVon(t.art, t.id))}"><i>${t.hat ? "✓" : "·"}</i>${escapeHtml(nameVon(t.art, t.id))}</span>`).join("")}</div>
+        <div class="cos-slg-preis"><span>${k.komplett ? "Freigeschaltet" : "Einzigartige Belohnung"}</span><b>${escapeHtml(nameVon(k.belohnung.art, k.belohnung.id))}</b></div>
+      </article>`).join("");
+  }
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-prunk]");
+    if (!b) return;
+    const [type, id] = (b.dataset.prunk || "").split(":");
+    socket.emit("cos:prunk", { type, id }, (r) => {
+      if (!r || !r.ok) return toast((r && r.error) || "Ging nicht.");
+      if (r.account) applyAccount(r.account);
+      render(r);
+      toast(type ? "Prunkstück gesetzt. Es hängt jetzt überall an deinem Namen." : "Prunkstück abgelegt.");
+    });
+  });
 
   function handle(el) {
     const type = el.dataset.type, id = el.dataset.id;
     if (el.dataset.locked === "1") {
       const liste = { style: stand.styles, title: stand.titles, frame: stand.frames, avatar: stand.avatars,
         color: stand.colors, effect: stand.effects, spruch: stand.sprueche, banner: stand.banner,
-        schild: stand.schilder, aura: stand.auren, karte: stand.karten }[type] || [];
+        schild: stand.schilder, aura: stand.auren, karte: stand.karten, zeichen: stand.zeichen }[type] || [];
       const x = liste.find((i) => i.id === id);
-      return toast(x && x.via ? `Nicht zu kaufen. ${x.via}.` : "Gibt es nur über den Season-Pass.");
+      /* Gesperrt heisst jetzt "hast du nicht", nicht mehr "kostet Chips".
+         Antippen zeigt es trotzdem in der Vorschau: man soll sehen koennen,
+         wofuer man Kisten aufmacht. */
+      if (!(vorschau && vorschau.type === type && vorschau.id === id)) {
+        vorschau = { type, id };
+        Casino.sound.play("tick");
+        renderVorschau();
+        $("#cos-preview")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        return;
+      }
+      const woher = x && x.herkunft === "kiste"
+        ? "Das kommt aus den Kisten. Im Menü unter „Kisten“, oder auf dem Markt von jemandem, der es hat."
+        : x && x.via ? x.via + "." : "Gibt es hier nicht.";
+      return toast(woher);
     }
     const owned = el.dataset.owned === "1";
     // Einen Effekt kann man nicht in einer Zeile zeigen, der muss laufen.
@@ -196,8 +456,8 @@
       Casino.fx.spieleGewinnEffekt();
       setTimeout(() => { acc.winEffect = gemerkt; }, 1400);
     }
-    // Erst ansehen, dann kaufen: ein Tipp auf etwas Fremdes zeigt es nur in
-    // der Vorschau. Der zweite Tipp auf dasselbe kauft.
+    // Erst ansehen: ein Tipp auf etwas, das man nicht hat, zeigt es nur in
+    // der Vorschau.
     if (!owned && !(vorschau && vorschau.type === type && vorschau.id === id)) {
       vorschau = { type, id };
       Casino.sound.play("tick");
@@ -205,12 +465,12 @@
       $("#cos-preview")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       return;
     }
-    socket.emit(owned ? "cos:equip" : "cos:buy", { type, id }, (r) => {
+    socket.emit("cos:equip", { type, id }, (r) => {
       if (!r || !r.ok) { toast((r && r.error) || "Fehler."); return; }
       if (r.account) applyAccount(r.account);
       vorschau = null;
-      Casino.sound.play(owned ? "select" : "win");
-      toast(owned ? "Angelegt." : "Gekauft. Noch mal antippen, dann ist es angelegt.");
+      Casino.sound.play("select");
+      toast("Angelegt.");
       render(r);
     });
   }

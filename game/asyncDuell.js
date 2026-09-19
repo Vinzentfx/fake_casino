@@ -46,9 +46,35 @@ const ARCHIV_MAX = 30;
 
 let _io = null, _accounts = null;
 
-// Spiel-Adapter
-// erzeuge(opts)          gibt { aufgabe, geheim, label }
-// bewerte(geheim, einsendung, ms) gibt { punkte, ms, text }, höhere Punkte gewinnen
+/* Spiel-Adapter
+ *
+ * erzeuge(opts)                    gibt { aufgabe, geheim, label }
+ * bewerte(geheim, einsendung, ms)  gibt { punkte, ms, text }, mehr Punkte gewinnen
+ * abrechnen(d, { sieger, ausgang }) optional, siehe unten
+ * keinPot: true                    optional, siehe unten
+ *
+ * `abrechnen` gibt es, weil nicht jedes Duell nur um Chips geht. Beim
+ * Kisten-Duell wechseln GEGENSTAENDE den Besitzer: wer mehr Wert gezogen hat,
+ * bekommt auch die Stuecke des anderen. Chips kann dieses Modul, Gegenstaende
+ * nicht, und es soll sie auch nicht kennen — deshalb die Naht.
+ *
+ * Aufgerufen wird es bei jedem Ausgang, auch bei "abgelaufen" und "nicht
+ * gespielt": ein Adapter, der etwas in Verwahrung hat, muss es in JEDEM Fall
+ * wieder herausgeben koennen. Warten darf nichts kosten, das gilt auch fuer
+ * Gegenstaende.
+ *
+ * `keinPot` gehoert dazu. Normalerweise wandern beide Einsaetze in einen Topf
+ * und der Sieger bekommt ihn. Beim Kisten-Duell ist der Einsatz aber schon
+ * ausgegeben: er IST das Budget, mit dem gezogen wurde. Wuerde der Sieger
+ * zusaetzlich den Topf bekommen, haetten beide ihre Stuecke umsonst
+ * bekommen und das Duell waere der billigste Weg an Kosmetik. Deshalb:
+ *
+ *   keinPot  Es fliessen keine Chips zwischen den beiden. Der Einsatz gilt in
+ *            dem Moment als ausgegeben, in dem jemand sein Ergebnis abgibt.
+ *            Wer nie abgibt, bekommt ihn zurueck, denn dann wurde auch nichts
+ *            gezogen. Der Gewinn steckt ausschliesslich in dem, was der
+ *            Adapter verteilt.
+ */
 const ADAPTER = {};
 
 function registriere(adapter) { ADAPTER[adapter.id] = adapter; }
@@ -86,6 +112,7 @@ function raeumeAuf() {
     // Einsatz zurueck statt ihn 48 Stunden zu binden.
     if (!d.erstellerErgebnis && jetzt > d.erstellerBisAt) {
       if (_accounts) _accounts.adjustChips(d.ersteller, d.einsatz);
+      rechneAb(d, { sieger: null, ausgang: "nicht gespielt" });
       // Ein Gegner kann hier noch nicht drinstehen: angenommen wird erst,
       // wenn ein Ergebnis des Erstellers vorliegt.
       archiviere({ ...d, id, aufgabe: null, geheim: null, ausgang: "nicht gespielt", beendetAt: jetzt });
@@ -101,7 +128,13 @@ function raeumeAuf() {
       continue;
     }
     if (!d.gegner && jetzt > d.laeuftBisAt) {
-      if (_accounts) _accounts.adjustChips(d.ersteller, d.einsatz);
+      /* Bei keinPot ist der Einsatz beim Abgeben ausgegeben worden; der
+         Ersteller bekommt stattdessen zurueck, was er gezogen hat, und das
+         macht rechneAb. Ihm hier zusaetzlich die Chips zu erstatten hiesse,
+         ihm die Kisten zu schenken. */
+      const ohnePot = (ADAPTER[d.spiel] || {}).keinPot;
+      if (_accounts && !ohnePot) _accounts.adjustChips(d.ersteller, d.einsatz);
+      rechneAb(d, { sieger: null, ausgang: "abgelaufen" });
       archiviere({ ...d, id, aufgabe: null, geheim: null, ausgang: "abgelaufen", beendetAt: jetzt });
       delete state.offen[id];
       geaendert = true;
@@ -113,6 +146,16 @@ function raeumeAuf() {
 function archiviere(eintrag) {
   state.archiv.unshift(eintrag);
   if (state.archiv.length > ARCHIV_MAX) state.archiv.length = ARCHIV_MAX;
+}
+
+/** Dem Adapter Bescheid geben, falls er etwas zu verteilen hat. */
+function rechneAb(d, info) {
+  const a = ADAPTER[d.spiel];
+  if (!a || typeof a.abrechnen !== "function") return null;
+  try { return a.abrechnen(d, info); } catch (e) {
+    console.error(`asyncDuell: abrechnen(${d.spiel}) ist gescheitert.`, e.message);
+    return null;
+  }
 }
 
 // Ablauf
@@ -127,7 +170,13 @@ function erstelle(key, { spiel, einsatz, optionen = {} } = {}) {
   const acc = _accounts.get(key);
   if (!acc) return { ok: false, error: "Nicht eingeloggt." };
   einsatz = Math.floor(Number(einsatz) || 0);
-  if (einsatz < MIN_EINSATZ) return { ok: false, error: `Mindesteinsatz ${MIN_EINSATZ} Chips.` };
+  /* Manche Spiele koennen mit einem Mindesteinsatz von 50 Chips gar nichts
+     anfangen: beim Kisten-Duell IST der Einsatz das Budget, und die
+     billigste Kiste kostet 30.000. Ein Duell darunter haette beiden den
+     Einsatz genommen und keine einzige Ziehung geliefert. Deshalb darf ein
+     Spiel eine eigene Untergrenze nennen. */
+  const min = Math.max(MIN_EINSATZ, Math.floor(Number(adapter.minEinsatz) || 0));
+  if (einsatz < min) return { ok: false, error: `Mindesteinsatz ${min.toLocaleString("de-DE")} Chips.` };
   if (einsatz > MAX_EINSATZ) return { ok: false, error: `Maximaleinsatz ${MAX_EINSATZ.toLocaleString("de-DE")} Chips.` };
   if (acc.chips < einsatz) return { ok: false, error: "Nicht genug Chips." };
 
@@ -139,7 +188,10 @@ function erstelle(key, { spiel, einsatz, optionen = {} } = {}) {
   const r = _accounts.adjustChips(key, -einsatz);
   if (!r.ok) return { ok: false, error: r.error };
 
-  const { aufgabe, geheim, label } = adapter.erzeuge(optionen);
+  /* Der Einsatz geht mit in den Adapter. Beim Kisten-Duell IST er die
+     Aufgabe (so viel darfst du in Kisten stecken), und ohne ihn muesste der
+     Adapter ihn aus einer zweiten Quelle raten. */
+  const { aufgabe, geheim, label } = adapter.erzeuge({ ...optionen, einsatz });
   const id = neueId();
   const jetzt = Date.now();
   state.offen[id] = {
@@ -224,9 +276,15 @@ function entscheide(id, opts = {}) {
   else if (b.punkte !== a.punkte) sieger = b.punkte > a.punkte ? "gegner" : "ersteller";
   else if (b.ms !== a.ms) sieger = b.ms < a.ms ? "gegner" : "ersteller";
 
+  const adapter = ADAPTER[d.spiel] || {};
   const pot = d.einsatz * 2;
   let rake = 0, auszahlung = 0;
-  if (sieger) {
+  if (adapter.keinPot) {
+    /* Kein Chip fliesst. Nur wer angenommen, aber nie abgegeben hat, bekommt
+       seinen Einsatz zurueck: der hat nichts gezogen, also auch nichts
+       ausgegeben. */
+    if (opts.aufgabe && d.gegner && !d.gegnerErgebnis) _accounts.adjustChips(d.gegner, d.einsatz);
+  } else if (sieger) {
     rake = Math.floor(pot * RAKE);
     auszahlung = pot - rake;
     _accounts.adjustChips(sieger === "ersteller" ? d.ersteller : d.gegner, auszahlung);
@@ -237,11 +295,16 @@ function entscheide(id, opts = {}) {
     _accounts.adjustChips(d.gegner, d.einsatz);
   }
 
+  const ausgang = opts.aufgabe ? "aufgegeben" : sieger ? "entschieden" : "unentschieden";
+  const beute = rechneAb(d, { sieger, ausgang });
+
   const eintrag = {
     id, spiel: d.spiel, label: d.label, einsatz: d.einsatz,
+    // Was der Adapter verteilt hat, fuers Archiv und die Meldung.
+    beute: beute || null,
     erstellerName: d.erstellerName, gegnerName: d.gegnerName,
     erstellerErgebnis: oeffentlichesErgebnis(a), gegnerErgebnis: oeffentlichesErgebnis(b),
-    ausgang: opts.aufgabe ? "aufgegeben" : sieger ? "entschieden" : "unentschieden",
+    ausgang,
     sieger, auszahlung, beendetAt: Date.now(),
   };
   archiviere(eintrag);
@@ -273,7 +336,7 @@ function entscheide(id, opts = {}) {
     } catch {}
   }
   sende();
-  return { eintrag, sieger, auszahlung, siegerName };
+  return { eintrag, sieger, auszahlung, siegerName, beute };
 }
 
 /** Was andere von einem Ergebnis sehen duerfen. Die Loesung nie. */
@@ -307,6 +370,22 @@ function publicState(key) {
     minEinsatz: MIN_EINSATZ, maxEinsatz: MAX_EINSATZ, rake: RAKE,
     laufzeitMs: LAUFZEIT_MS, spielzeitMs: SPIELZEIT_MS,
   };
+}
+
+/**
+ * Wo jemand am Zug ist und den Einsatz schon los ist.
+ *
+ * Fuer die Marke am Menue. Ein Duell, das man angenommen und nicht gespielt
+ * hat, ist genau das, was der goldene Zaehler meint: bezahlt und noch nicht
+ * abgeholt. Dass es irgendwann von selbst verfaellt und der Einsatz
+ * zurueckkommt, macht es nicht besser — dann hat man umsonst gewartet.
+ */
+function offeneZuege(key) {
+  return publicState(key).laufend.map((d) => ({
+    id: d.id, spiel: d.spiel, einsatz: d.einsatz,
+    gegen: d.meine ? d.gegnerName : d.erstellerName,
+    bisAt: d.bisAt,
+  }));
 }
 
 function sende() { if (_io) _io.emit("duell:update"); }
@@ -346,4 +425,6 @@ function setup(io, accounts) {
   });
 }
 
-module.exports = { setup, registriere, publicState, RAKE, MIN_EINSATZ, MAX_EINSATZ };
+// erstelle/nimmAn/gibAb kommen mit heraus, damit sich ein Duell ohne
+// Browser durchspielen laesst. Im Betrieb gehen sie ueber die Socket-Handler.
+module.exports = { setup, registriere, publicState, erstelle, nimmAn, gibAb, offeneZuege, RAKE, MIN_EINSATZ, MAX_EINSATZ };

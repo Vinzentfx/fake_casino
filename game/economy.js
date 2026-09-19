@@ -731,6 +731,24 @@ function setupEconomy(io, accounts) {
       if (r.cost) res = accounts.adjustChips(key, -r.cost).account;
       else if (r.gain) res = accounts.adjustChips(key, r.gain).account;
       else res = accounts.publicAccount(accounts.get(key));
+      /* Die Abgabe des Ortsteils geht an den Boss. Bewusst NICHT ueber
+         `payout`: das ist die Entschaedigung bei einer Uebernahme und zieht
+         eine Chronik-Zeile und das Kopfgeld nach sich. Beides waere hier
+         falsch, hier hat niemand jemandem etwas weggenommen. */
+      if (r.zoll && r.zoll.to && r.zoll.to !== key && r.zoll.amount > 0) {
+        accounts.adjustChips(r.zoll.to, r.zoll.amount);
+        /* Und dem Boss Bescheid sagen, falls er gerade da ist. Die Buchung
+           passiert ohne sein Zutun; ohne diese Zeile stuende in seiner Topbar
+           weiter der alte Stand, genau wie beim Auktions-Zuschlag. */
+        const boss = accounts.get(r.zoll.to);
+        for (const sck of io.of("/").sockets.values()) {
+          if (sck.data && sck.data.account === r.zoll.to) {
+            if (boss) sck.emit("account:update", { account: accounts.publicAccount(boss) });
+            sck.emit("city:abgabe", { amount: r.zoll.amount, von: acc.name });
+            break;
+          }
+        }
+      }
       // Übernahme: der Vorbesitzer wird entschädigt (der Aufschlag über dem Wert verbrennt).
       if (r.payout && r.payout.to && r.payout.to !== key && r.payout.amount > 0) {
         accounts.adjustChips(r.payout.to, r.payout.amount);
@@ -748,6 +766,9 @@ function setupEconomy(io, accounts) {
       }
       ack({
         ok: true, account: res, cost: r.cost || 0, gain: r.gain || 0,
+        // Manche Aktionen haben etwas zu erzaehlen (der Ausgang eines
+        // Stadt-Ereignisses steht erst nach dem Druecken fest).
+        meldung: r.meldung || null,
         district: districtId ? city.publicDistrict(districtId, key) : null,
       });
       for (const msg of city.territoryDiff(before, city.territorySnapshot())) {
@@ -770,6 +791,59 @@ function setupEconomy(io, accounts) {
     socket.on("city:buy",      A((id, key, name) => city.buyBuilding(id, key, name)));
     socket.on("city:sell",     A((id, key) => city.sellBuilding(id, key)));
     socket.on("city:takeover", A((id, key, name) => city.takeover(id, key, name)));
+    // Ausbau: gleiche Form wie Kauf und Uebernahme, also derselbe Wrapper.
+    // Die Chips gehen sofort weg, fertig wird es spaeter von selbst.
+    socket.on("city:ausbau",   A((id, key) => city.ausbauStart(id, key)));
+
+    /* Personal fuer die Betriebe. Laeuft ueber denselben Wrapper wie alles
+       andere, damit der Lohn an genau der Stelle abgebucht wird, an der auch
+       Kaeufe abgebucht werden. `buildingId` bleibt leer, die Schicht gilt
+       fuer alle Betriebe zusammen. */
+    socket.on("city:personal", ({ stufe } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      doAction(socket, ack, (key) => city.personalEinstellen(key, stufe), null, null);
+    });
+
+    /* Stadt-Ereignis: eine von zwei Wegen waehlen. Wieder derselbe Wrapper,
+       damit Kosten und Auszahlung an genau der Stelle laufen wie alles
+       andere, was in der Stadt Chips bewegt. */
+    // Ortsteil-Abgabe festlegen. Nur der Boss, hoechstens einmal je Stunde.
+    socket.on("city:zoll", ({ districtId, satz } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const key = socket.data.account;
+      const r = city.zollSetzen(key, districtId, satz);
+      if (!r.ok) return ack(r);
+      const pct = Math.round(r.satz * 100);
+      chat.announce(io, `${acc.name} setzt die Abgabe in ${r.district} auf ${pct} %.`);
+      try { require("./chronik").notiere("stadt", `${acc.name} setzt die Abgabe in ${r.district} auf ${pct} %.`, { user: acc.name }); } catch {}
+      ack({ ok: true, satz: r.satz, district: city.publicDistrict(districtId, key) });
+      broadcastCity();
+    });
+
+    socket.on("city:ereignis", ({ wahl } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      doAction(socket, ack, (key) => city.ereignisWaehlen(key, wahl), null, null);
+    });
+
+    socket.on("city:personalState", (ack) => {
+      if (typeof ack !== "function") return;
+      const key = socket.data.account;
+      if (!key) return ack({ ok: false, error: "Nicht eingeloggt." });
+      ack({ ok: true, personal: city.personalAngebot(key) });
+    });
+
+    // Was an einem Gebaeude geht, einzeln abgefragt. Das Panel braucht Kosten,
+    // Dauer und die Miete nachher, und die alle im Ortsteil mitzuschicken
+    // hiesse, sie fuer tausend Gebaeude zu rechnen, die niemand antippt.
+    socket.on("city:ausbauInfo", ({ buildingId } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const key = socket.data.account || null;
+      const info = city.ausbauInfo(buildingId, key);
+      if (!info) return ack({ ok: false, error: "Gebäude nicht gefunden." });
+      ack({ ok: true, info });
+    });
 
     // Eine eigene Firma an die Börse bringen: jetzt Kapital holen, danach
     // wird sie für alle gehandelt.
@@ -818,9 +892,28 @@ function setupEconomy(io, accounts) {
   // rüttelt eine Lokalnachricht einen Ortsteil durch und alle bekommen einen Toast.
   // Derselbe Takt treibt auch die Woche an (Spieler der Woche, Goldene Straße).
   setInterval(() => {
-    const event = city.tickMarket();
+    const { event, fertig } = city.tickMarket();
     io.emit("city:update");
     if (event) io.emit("city:news", event);
+    /*
+     * Fertige Baustellen ansagen. Das gehoert in die Chronik und nicht nur in
+     * den Feed: ein Umbau dauert Stunden, und der Sinn ist gerade, dass man
+     * ihn anstellt und weggeht. Wer zurueckkommt, soll im Bericht lesen, dass
+     * aus seinem Haus ein Cafe geworden ist.
+     */
+    /* Ungefaehr alle zehn Minuten bekommt jemand ein Ereignis. Gezogen wird
+       nur unter denen, die keins offen haben und mindestens ein ausgebautes
+       Gebaeude besitzen; solange kaum jemand ausgebaut hat, passiert hier von
+       selbst fast nichts. */
+    if (Math.random() < 0.1) {
+      const ev = city.ereignisZiehen();
+      if (ev) io.emit("city:ereignis", { fuer: ev.key });
+    }
+    for (const f of fertig || []) {
+      const satz = `${f.name} hat ${f.label} in ${f.district} zu${f.ziel === "pension" ? "r" : "m"} ${f.klasse} ausgebaut.`;
+      chat.announce(io, `${f.emoji} ${satz}`);
+      try { require("./chronik").notiere("stadt", satz, { user: f.name }); } catch {}
+    }
     weekly.tick(io, accounts);
   }, 60000).unref();
   weekly.tick(io, accounts); // Goldene Straße beim Start festlegen

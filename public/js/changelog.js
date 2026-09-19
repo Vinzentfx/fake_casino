@@ -25,6 +25,59 @@
 (function () {
   const RELEASES = [
     {
+      /*
+       * Ein Eintrag fuer das ganze Update.
+       *
+       * Waehrend der Arbeit sind daraus neun geworden, jeder mit eigener
+       * Ueberschrift, zusammen vierundvierzig Punkte. Fuer Spieler ist das
+       * kein Verlauf, sondern eine Wand — und die Haelfte davon stimmte am
+       * Ende nicht mehr, weil der naechste Eintrag sie ueberholt hatte
+       * (die Duelle waren erst versetzt, dann live, dann ohne Beute).
+       * Hier steht deshalb nur, was am Ende WAHR ist.
+       */
+      id: "2026-09-30-a",
+      datum: "19. September 2026",
+      titel: "Die Stadt, die Kisten und der Markt",
+      gross: true,
+      items: [
+        { icon: "businesses", titel: "Die Stadt zahlt wieder",
+          text: "Der Dreifachpreis beim Kaufen ist weg, jeder zahlt den Marktwert. Stattdessen wirft jedes Gebäude Miete ab, jede Stunde, und davon gehen Verwaltung und Grundsteuer ab. Die ganze Rechnung steht offen da: Miete, Abzüge, was bleibt. Auch in der Statistik, bei dir und bei jedem anderen." },
+
+        { icon: "aufwerten", titel: "Häuser ausbauen, Betriebe besetzen",
+          text: "Aus einem Wohnhaus wird eine Pension, daraus ein Kiosk, ein Café, ein Hotel, am Ende eine Fabrik. Der Ausbau dauert Stunden, höchstens drei Baustellen gleichzeitig, und ein Neustart macht ihm nichts aus. Betriebe bringen nur die volle Miete, wenn Personal drin ist. Dazu Ereignisse an deinen Häusern, Bewohner mit Namen, eine Abgabe, die der Ortsteil-Boss selbst festlegt, und Lohfeld als neuer Ortsteil." },
+
+        { icon: "geschenk", titel: "Kosmetik kommt aus Kisten",
+          text: "Den Laden gibt es nicht mehr. Vier Kisten: die Tageskiste ist gratis und geht einmal in 20 Stunden, dann Holz für 30.000, Messing für 150.000 und die Schwarze für 600.000. An jeder steht offen, was drin sein kann und wie wahrscheinlich. Tipp eine an, und du siehst jedes einzelne Stück, samt Markierung, was dir noch fehlt." },
+
+        { icon: "aufwerten", titel: "Die Ziehung",
+          text: "Der Bildschirm wird schwarz, die Kiste zittert und platzt auf, dann läuft die Rolle aus. Auf den letzten Metern wächst die Marke und ein Lichtkegel geht an, der Treffer leuchtet auf, und erst danach kommt die Karte. Ab Legendär wird der ganze Bildschirm einmal in der Farbe der Stufe gewaschen." },
+
+        { icon: "stern", titel: "Die Gala-Kiste, limitiert",
+          text: "250.000 Chips, und sie steht nur bis zum Stichtag. Sie zieht kein einziges Stück aus dem normalen Katalog, sondern aus dreizehn, die es ausschließlich dort gibt: ein eigener Satz für jede Seltenheit, vom Konfetti-Zeichen bis zum Rampenlicht. Danach entstehen diese dreizehn nie wieder." },
+
+        { icon: "kosmetik", titel: "Jedes Stück hat eine Nummer",
+          text: "Alles, was nicht gratis ist, bekommt beim Vergeben eine laufende Nummer, ein Prägedatum und die Kette aller Besitzer. Aus „Neon“ wird „Neon Nr. 7“. Und von jedem Stück gibt es genau eine Nummer 1: die Erstprägung, und die bekommt, wer es als Erster wirklich aus einer Kiste zieht." },
+
+        { icon: "warenkorb", titel: "Markt und Auktionshaus",
+          text: "Auf dem Markt verkaufst du geprägte Stücke zum Festpreis, zehn Prozent gehen ans Haus. An jedem Angebot steht, woher das Stück kommt und was vorher dafür gezahlt wurde. Im Auktionshaus kannst du jetzt auch selbst etwas einliefern: 25.000 Gebühr, 15 Prozent vom Zuschlag, dafür steht dein Stück einen ganzen Tag auf der Bühne." },
+
+        { icon: "krieg", titel: "Kisten-Duelle, live",
+          text: "Du setzt Chips, und du wählst ein Budget. Das Budget kostet nichts, es ist nur die Grenze, innerhalb derer sich jeder selbst zusammenstellt, was er aufmacht. Dann laufen beide Bahnen gleichzeitig, Runde für Runde, und jeder sieht, was der andere gerade dreht. Die gezogenen Stücke gehören niemandem, es zählt ihr Wert: wer mehr zieht, gewinnt den Einsatz." },
+
+        { icon: "bestenliste", titel: "Endlich sieht man, was du hast",
+          text: "Das Prunkstück hängt mit seiner Nummer an deinem Namen, überall. Chat-Zeichen setzen ein Symbol vor jede deiner Nachrichten. Und wer drei Stücke derselben Familie gleichzeitig trägt, bekommt eine Garnitur-Marke dazu, ab fünf leuchtet sie. Dafür muss niemand gleichzeitig online sein." },
+
+        { icon: "season", titel: "Kollektionen und Ruhmestafel",
+          text: "Drei Sammlungen mit je sechs Stücken. Wer eine vollständig hat, bekommt etwas, das es auf keinem anderen Weg gibt. Oben bei den Kisten steht, was zuletzt im ganzen Haus gezogen wurde, und bei etwas richtig Seltenem läuft es bei allen quer über den Bildschirm." },
+
+        { icon: "kosmetik", titel: "37 neue Stücke",
+          text: "Polarlicht zieht senkrecht durch den Namen, bei Hochspannung schlägt ein Blitz quer durch, Uhrwerk sind zwei gegenläufige Ringe. Dazu Auren, die fallen statt zu schweben, ein Schild, in das Wasser steigt, sechs neue Chat-Zeichen und Einzelstücke, die es nur aus einer Kiste gibt." },
+
+        { icon: "frage", titel: "Und der Kleinkram",
+          text: "Kisten, Markt, Auktionshaus und Sammlung sind jetzt Kacheln in der Lobby statt nur Zeilen im Menü. Die Tageskiste, ein Stadt-Ereignis und ein volles Sparkonto melden sich mit einer Zahl an ihrer Kachel. Edelstein, Bombe und Totenkopf waren als Chat-Zeichen leer, Silber und Gold als Rahmen unsichtbar. Und der Knopf zum Mitspieler-Holen steht jetzt sofort da statt acht Sekunden später." },
+      ],
+    },
+    {
       id: "2026-09-22-g",
       datum: "17. September 2026",
       titel: "Drei gemeldete Fehler",

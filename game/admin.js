@@ -753,9 +753,12 @@ function setupAdmin(io, accounts) {
       let getrennt = 0;
       if (on) {
         // Zumachen heisst zumachen: wer drin ist, geht raus, sonst spielt eine
-        // halbe Runde weiter, waehrend man an den Zahlen schraubt.
+        // halbe Runde weiter, waehrend man an den Zahlen schraubt. Wer auf
+        // der Testliste steht, bleibt — sonst muessten die Testspieler nach
+        // jedem Zumachen neu rein.
         for (const s of io.of("/").sockets.values()) {
           if (!s.data || !s.data.account || s.data.account === OWNER) continue;
+          if (wartung.hatZugang(s.data.account)) continue;
           s.emit("admin:kicked", { reason: wartung.text() });
           s.disconnect(true);
           getrennt++;
@@ -765,6 +768,32 @@ function setupAdmin(io, accounts) {
       }
       io.emit("wartung:state", wartung.state());
       ack({ ok: true, ...res, getrennt });
+    });
+
+    /*
+     * Testzugang: wer bei geschlossenem Haus trotzdem rein darf.
+     *
+     * Der eigentliche Grund fuer den Wartungsmodus. Ein Update will man mit
+     * drei, vier Leuten ausprobieren, bevor siebzig darauf treffen; ohne
+     * diese Liste bliebe nur, das Haus offen zu lassen und zu hoffen.
+     */
+    socket.on("admin:testzugang", ({ tun, name } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      let res;
+      if (tun === "raus") res = wartung.verbiete(name);
+      else if (tun === "leeren") res = wartung.leere();
+      else {
+        /* Ueber den Account aufloesen, damit der geschriebene Name stimmt:
+           wer "ben" eintippt, meint "Ben", und auf der Liste soll stehen,
+           was der Spieler auch sieht. */
+        const acc = accounts.get(name);
+        if (!acc) return ack({ ok: false, error: "Den Spieler gibt es nicht." });
+        res = wartung.erlaube(acc.name);
+      }
+      if (!res.ok) return ack(res);
+      io.emit("wartung:state", wartung.state());
+      ack({ ok: true, ...res });
     });
 
     /* Werkzeuge: rauswerfen, anschreiben, Kosmetik geben, Chat leeren */

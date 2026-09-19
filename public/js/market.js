@@ -1,14 +1,20 @@
 "use strict";
 
-/* Markt: Inventar und Handel zwischen Spielern */
+/* Kosmetik-Markt: geprägte Stücke zwischen Spielern.
+   Festpreis, hinterlegt, Gebühr beim Verkauf. Entschieden wird auf dem
+   Server (game/market.js), hier wird nur angezeigt und getippt. */
 
 (function () {
-  const { socket, toast, applyAccount, showScreen, escapeHtml } = window.Casino;
+  const { socket, toast, applyAccount, escapeHtml } = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
 
-  let inventory = [];
-  let offers = [];
+  let stand = null;
+  /* Welches Stück gerade frisch gekauft ist, und bis wann es leuchtet.
+     Muss hier stehen und nicht als Klasse am Element: `market:update` geht an
+     alle, also auch an den Käufer selbst, und der baut daraufhin die Liste
+     neu auf. Eine Klasse, die direkt am Element hängt, ist danach weg. */
+  let frisch = { uid: null, bis: 0 };
 
   const onScreen = () => {
     const s = document.querySelector('[data-screen="market"]');
@@ -18,91 +24,182 @@
   function load() {
     socket.emit("market:state", (res) => {
       if (!res || !res.ok) return;
-      inventory = res.inventory;
-      offers = res.offers;
+      stand = res;
       render();
     });
   }
 
-  function render() {
-    renderInventory();
-    renderOffers();
+  /** Datum kurz. Bei einem Stück von vor Monaten zählt der Tag, nicht die Uhrzeit. */
+  const tag = (ts) => new Date(ts).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" });
+
+  /*
+   * Die Herkunft eines Stücks.
+   *
+   * Das ist der ganze Grund für den Markt: ein Hologramm Nr. 3, das seit der
+   * Prägung beim Ersten liegt, ist eine andere Sache als eins, das schon
+   * durch drei Hände ging. Steht deshalb am Angebot und nicht hinter einem
+   * zweiten Tipp, denn auf dem iPad gibt es kein Hover.
+   */
+  function herkunft(o) {
+    const zeilen = [`Geprägt am ${tag(o.gepraegtAm)} für <b>${escapeHtml(o.gepraegtFuer)}</b>.`];
+    if (o.verlauf.length) {
+      const letzte = o.verlauf.slice(-3);
+      zeilen.push("Verkauft: " + letzte.map((v) => `${fmt(v.preis)} an ${escapeHtml(v.name)}`).join(", ")
+        + (o.verlauf.length > 3 ? ` (und ${o.verlauf.length - 3} weitere Male)` : ""));
+    } else {
+      zeilen.push("Hat noch nie den Besitzer gewechselt.");
+    }
+    return `<div class="mkt-herkunft">${zeilen.join("<br>")}</div>`;
   }
 
-  function renderInventory() {
-    const el = $("#mkt-inventory");
-    if (!el) return;
-    if (!inventory.length) { el.innerHTML = '<p class="muted small">Leer. Produkte gibt es bei deinen Firmen in der Stadt.</p>'; return; }
-    el.innerHTML = inventory.map((it) => `
-      <div class="mkt-item">
-        <div class="mkt-item-head">${it.emoji} <b>${escapeHtml(it.name)}</b> ×${it.count}<br><span class="muted small">${escapeHtml(it.desc)} (${it.mins} Min)</span></div>
-        <div class="mkt-item-actions">
-          <button class="btn-primary mkt-use" data-key="${it.key}">Benutzen</button>
-          <div class="mkt-sell">
-            <input type="number" class="mkt-price" data-key="${it.key}" min="1" value="${Math.round(it.suggested * 1.5)}" />
-            <button class="mkt-list" data-key="${it.key}">Verkaufen</button>
-          </div>
-        </div>
-      </div>`).join("");
-    el.querySelectorAll(".mkt-use").forEach((b) =>
-      b.addEventListener("click", () => useItem(b.dataset.key)));
-    el.querySelectorAll(".mkt-list").forEach((b) =>
-      b.addEventListener("click", () => {
-        const price = parseInt(el.querySelector(`.mkt-price[data-key="${b.dataset.key}"]`).value, 10);
-        listItem(b.dataset.key, price);
-      }));
+  const acc = () => window.Casino.getAccount() || {};
+
+  /*
+   * Die Kachel eines Stücks: links es selbst, rechts, was es ist.
+   *
+   * Die Vorschau kommt aus Casino.spieler.kosVorschau, also aus derselben
+   * Quelle wie die im Laden. Ohne sie wäre das hier eine Liste von Namen, und
+   * niemand kauft ein Aussehen, das er nicht gesehen hat.
+   */
+  function stueckKachel(o, extra = "") {
+    const bewegt = o.look && o.look.motion
+      ? `<span class="mkt-motion" aria-hidden="true">${window.Casino.icons.ui("stern-voll")}</span>` : "";
+    return `<div class="mkt-stueck">
+      <div class="mkt-demo mkt-demo-${escapeHtml((o.look && o.look.art) || "x")}">
+        ${window.Casino.spieler.kosVorschau(o.look, { name: acc().name || "Du" })}${bewegt}
+      </div>
+      <div class="mkt-stueck-text">
+        <div class="mkt-stueck-kopf"><b>${escapeHtml(o.label)}</b>
+          <span class="mkt-nr${o.nr === 1 ? " erst" : ""}"${o.nr === 1 ? ' title="Erstprägung: das erste Exemplar, das es von diesem Stück je gab"' : ""}>Nr. ${o.nr}${o.bestand > 1 ? ` / ${o.bestand}` : ""}</span></div>
+        <div class="mkt-art">${escapeHtml((o.look && o.look.artName) || "")}</div>
+        ${extra}
+      </div>
+    </div>`;
   }
 
   function renderOffers() {
     const el = $("#mkt-offers");
-    if (!el) return;
-    if (!offers.length) { el.innerHTML = '<p class="muted small">Keine Angebote.</p>'; return; }
-    const me = window.Casino.getAccount() && window.Casino.getAccount().name;
-    el.innerHTML = offers.map((o) => {
-      const mine = o.seller === me;
-      return `<div class="mkt-offer">
-        <div>${o.emoji} <b>${escapeHtml(o.name)}</b> <span class="muted small">von ${escapeHtml(o.seller)}</span></div>
-        <div class="mkt-offer-buy"><b>${fmt(o.price)}<i class=mk></i></b>
-          ${mine ? `<button class="mkt-unlist" data-id="${o.id}">Zurücknehmen</button>`
-                 : `<button class="btn-primary mkt-buy" data-id="${o.id}">Kaufen</button>`}</div>
+    if (!el || !stand) return;
+    if (!stand.angebote.length) {
+      el.innerHTML = `<div class="mkt-leer">${window.Casino.icons.ui("warenkorb")}
+        <b>Nichts im Schaufenster</b>
+        <span>Wer etwas Seltenes hat, kann es unten anbieten.</span></div>`;
+      return;
+    }
+    el.innerHTML = stand.angebote.map((o) => {
+      const gebuehr = Math.round(o.preis * stand.gebuehr);
+      return `<div class="mkt-karte${o.meins ? " meins" : ""}" data-karte-id="${o.id}">
+        ${stueckKachel(o, `<div class="mkt-von">von <b>${escapeHtml(o.verkaeuferName)}</b>${o.meins ? " (du)" : ""}</div>`)}
+        ${herkunft(o)}
+        <div class="mkt-fuss">
+          ${o.meins
+            ? `<span class="mkt-preis">${fmt(o.preis)}<i class=mk></i>
+                 <small>davon ${fmt(gebuehr)} Gebühr</small></span>
+               <button class="btn-secondary" data-zurueck="${o.id}">Zurücknehmen</button>`
+            : `<span class="mkt-preis">${fmt(o.preis)}<i class=mk></i></span>
+               <button class="btn-primary" data-kauf="${o.id}">Kaufen</button>`}
+        </div>
       </div>`;
     }).join("");
-    el.querySelectorAll(".mkt-buy").forEach((b) => b.addEventListener("click", () => buyOffer(b.dataset.id)));
-    el.querySelectorAll(".mkt-unlist").forEach((b) => b.addEventListener("click", () => unlist(b.dataset.id)));
   }
 
-  function useItem(itemKey) {
-    socket.emit("item:use", { itemKey }, (res) => {
-      if (!res || !res.ok) { toast((res && res.error) || "Fehler."); return; }
+  function renderInventory() {
+    const el = $("#mkt-inventory");
+    if (!el || !stand) return;
+    if (!stand.meine.length) {
+      el.innerHTML = `<div class="mkt-leer">${window.Casino.icons.ui("sperre")}
+        <b>Du hast nichts Handelbares</b>
+        <span>Gehandelt wird nur, was es nicht im Laden gibt: Auktionsware, Fortuna, die Wiedereröffnung und die Season.</span></div>`;
+      return;
+    }
+    const voll = stand.offen >= stand.maxJeSpieler;
+    const leuchtet = (uid) => (frisch.uid === uid && frisch.bis > Date.now() ? " frisch" : "");
+    el.innerHTML = stand.meine.map((s) => `
+      <div class="mkt-karte${leuchtet(s.uid)}" data-uid="${escapeHtml(s.uid)}">
+        ${stueckKachel(s)}
+        <div class="mkt-fuss">
+          <span class="mkt-belegt">${stand.offen} / ${stand.maxJeSpieler} Angebote</span>
+          <button class="btn-primary" data-anbieten="${s.uid}" ${voll ? "disabled" : ""}>Anbieten</button>
+        </div>
+      </div>`).join("")
+      + `<p class="muted small" style="margin:10px 0 0">`
+      + `Beim Verkauf gehen ${Math.round(stand.gebuehr * 100)} % Gebühr ans Haus. `
+      + `Solange etwas im Schaufenster steht, kannst du es nicht tragen; Zurücknehmen geht jederzeit und kostet nichts.</p>`;
+  }
+
+  function render() {
+    renderOffers();
+    renderInventory();
+  }
+
+  $("#mkt-offers")?.addEventListener("click", (e) => {
+    const kauf = e.target.closest("[data-kauf]");
+    const zurueck = e.target.closest("[data-zurueck]");
+    if (kauf) {
+      const o = stand.angebote.find((x) => x.id === kauf.dataset.kauf);
+      if (!o) return;
+      window.Casino.dialog.frage(
+        `${o.label} Nr. ${o.nr} für ${fmt(o.preis)} Chips von ${o.verkaeuferName}.`,
+        { titel: "Kaufen?", okText: "Kaufen" },
+      ).then((ja) => {
+        if (!ja) return;
+        socket.emit("market:buy", { id: o.id }, (res) => {
+          if (!res || !res.ok) return toast((res && res.error) || "Ging nicht.");
+          applyAccount(res.account);
+          stand = res;
+          render();
+          window.Casino.sound?.play("win");
+          /* Die Kachel wandert von oben nach unten, und ohne Zeichen dafür
+             sieht ein Kauf aus wie ein Ladefehler: das Angebot ist einfach
+             weg. Das Stück leuchtet deshalb kurz in der eigenen Liste auf. */
+          frisch = { uid: res.gekauft.uid, bis: Date.now() + 2400 };
+          render();
+          const neuKachel = document.querySelector(`#mkt-inventory .mkt-karte[data-uid="${res.gekauft.uid}"]`);
+          if (neuKachel) neuKachel.scrollIntoView({ block: "center", behavior: "smooth" });
+          setTimeout(() => { frisch = { uid: null, bis: 0 }; if (onScreen()) render(); }, 2400);
+          toast(`${res.gekauft.label} Nr. ${res.gekauft.nr} gehört jetzt dir.`);
+        });
+      });
+      return;
+    }
+    if (zurueck) {
+      socket.emit("market:zurueck", { id: zurueck.dataset.zurueck }, (res) => {
+        if (!res || !res.ok) return toast((res && res.error) || "Ging nicht.");
+        applyAccount(res.account);
+        stand = res;
+        render();
+        toast("Wieder bei dir.");
+      });
+    }
+  });
+
+  $("#mkt-inventory")?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-anbieten]");
+    if (!btn) return;
+    const s = stand.meine.find((x) => x.uid === btn.dataset.anbieten);
+    if (!s) return;
+    const preis = await window.Casino.dialog.eingabe(
+      `Zu welchem Preis? Zwischen ${fmt(stand.minPreis)} und ${fmt(stand.maxPreis)} Chips. `
+      + `${Math.round(stand.gebuehr * 100)} % gehen beim Verkauf als Gebühr ans Haus.`,
+      { titel: `${s.label} Nr. ${s.nr} anbieten`, platzhalter: "Preis in Chips", okText: "Ins Schaufenster" },
+    );
+    if (preis === null || preis === undefined || preis === "") return;
+    socket.emit("market:anbieten", { uid: s.uid, preis: Number(preis) }, (res) => {
+      if (!res || !res.ok) return toast((res && res.error) || "Ging nicht.");
       applyAccount(res.account);
-      inventory = res.inventory; render();
-      toast(`${res.product.emoji} ${res.product.name} aktiv: ${res.product.desc}!`);
+      stand = res;
+      render();
+      toast("Steht im Schaufenster.");
     });
-  }
-  function listItem(itemKey, price) {
-    socket.emit("item:list", { itemKey, price }, (res) => {
-      if (!res || !res.ok) { toast((res && res.error) || "Fehler."); return; }
-      inventory = res.inventory; offers = res.offers; render();
-      toast("Zum Verkauf eingestellt.");
-    });
-  }
-  function unlist(offerId) {
-    socket.emit("item:unlist", { offerId }, (res) => {
-      if (!res || !res.ok) { toast((res && res.error) || "Fehler."); return; }
-      inventory = res.inventory; offers = res.offers; render();
-    });
-  }
-  function buyOffer(offerId) {
-    socket.emit("market:buy", { offerId }, (res) => {
-      if (!res || !res.ok) { toast((res && res.error) || "Fehler."); return; }
-      applyAccount(res.account);
-      inventory = res.inventory; offers = res.offers; render();
-      toast("Gekauft, liegt im Inventar.");
-    });
-  }
+  });
 
   socket.on("market:update", () => { if (onScreen()) load(); });
+  // Verkauft, während man woanders war. Kommt immer, nicht nur auf dem Screen.
+  socket.on("market:verkauft", (v) => {
+    if (!v) return;
+    toast(`${v.label} Nr. ${v.nr} ist verkauft: ${fmt(v.erloes)} Chips von ${v.an}.`);
+    if (onScreen()) load();
+  });
 
-  // Ruft der Router auf, wenn der Markt aufgeht.
-  window.Casino._loadMarket = load;
+  window.Casino.screens.register("market", { onEnter: load });
 })();

@@ -334,6 +334,42 @@
   }
 
   /**
+   * Blitzlichtgewitter: eine Reihe Pressefotografen.
+   *
+   * Der einzige Effekt ohne Teilchen. Alles andere im Haus WIRFT etwas
+   * (Muenzen fallen, Feuerwerk fliegt auseinander, der Salut schiesst,
+   * der Tresor druckt nach aussen), hier gibt es keine Bahn: ringsum am
+   * Bildrand gehen kurze, harte Blitze los, ein paar Dutzend in
+   * anderthalb Sekunden, und dazwischen ist nichts.
+   *
+   * Sie sitzen bewusst am RAND und nicht in der Mitte: man steht selbst im
+   * Bild, die Fotografen stehen drumherum.
+   */
+  function blitzlicht(w) {
+    const anzahl = 14 + w * 8;
+    for (let i = 0; i < anzahl; i++) {
+      // Auf dem Rand verteilt, oben dichter als unten: dort steht die Reihe.
+      const oben = Math.random() < 0.62;
+      const x = zufall(2, 98);
+      const y = oben ? zufall(4, 34) : zufall(64, 96);
+      const gross = zufall(52, 120 + w * 40);
+      teil("fx-blitzlicht", {
+        left: x + "vw",
+        top: y + "vh",
+        width: gross + "px",
+        height: gross + "px",
+        marginLeft: -gross / 2 + "px",
+        marginTop: -gross / 2 + "px",
+        animationDelay: zufall(0, 1100 + w * 200) + "ms",
+        animationDuration: zufall(180, 300) + "ms",
+      }, 1900 + w * 260);
+    }
+    // Ein einziger heller Moment ueber allem, wenn viele gleichzeitig
+    // ausloesen. Ohne ihn bleibt es ein Flackern am Rand.
+    if (w >= 2) schwall("255,255,255", w);
+  }
+
+  /**
    * Tresorsprengung: eine Druckwelle aus der Mitte, dann fliegt das Geld raus.
    *
    * Bewusst als einziger Effekt von innen nach aussen. Alles andere im Laden
@@ -428,6 +464,7 @@
       case "sterne": return sternenfall(w);
       case "salut": return salut(w);
       case "auk_tresor": return tresor(w);
+      case "gala_blitzlicht": return blitzlicht(w);
       default: {
         // Konfetti: mehr, groesser, laenger, und ab Stufe 3 eine zweite Welle.
         confetti({ count: 60 * w, wucht: w });

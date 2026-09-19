@@ -44,10 +44,12 @@ const STREAK_GRACE_HOURS = 26;
 const STREET_TRIBUTE = 2000;
 const STREET_TRIBUTE_CAP = 10; // höchstens 10 Straßen zahlen (max. +20.000/h)
 
-// Haus-Tribut: jedes Gebäude zahlt mit dem Stunden-Bonus etwas Miete.
-// Gedeckelt, sonst druckt man mit tausend billigen Häusern Geld.
-const HOUSE_TRIBUTE = 200;
-const HOUSE_TRIBUTE_CAP = 100; // höchstens 100 Häuser zählen (+20.000/h)
+// Haus-Miete: jedes Gebäude wirft mit dem Stunden-Bonus einen Anteil seines
+// Werts ab, und darauf liegt die Grundsteuer. Beides rechnet die Stadt
+// (city.mieteVon), hier wird nur abgeholt. Den alten harten Deckel bei
+// hundert Häusern gibt es nicht mehr: er hat dafür gesorgt, dass Spenders
+// Häuser 101 bis 232 exakt nichts brachten, während sie ihn in der
+// Vermögensbremse trotzdem nach unten zogen.
 
 // Cashback wie beim Treueprogramm echter Casinos: ein Teil der Verluste an
 // Hausspielen seit der letzten Abholung kommt mit dem nächsten Bonus zurück.
@@ -449,6 +451,15 @@ function rename(wer, neu, { vonAdmin = false } = {}) {
     ["records", (m) => m.umbenennen(key, alt, neu)],
     ["chronik", (m) => m.umbenennen(alt, neu)],
     ["feed", (m) => m.umbenennen(alt, neu)],
+    // Die Praegung haelt Erstbesitzer und Besitzerkette als Namenskopie: der
+    // Verlauf soll Jahre spaeter lesbar sein, auch wenn es das Konto nicht
+    // mehr gibt. Genau deshalb muss er hier mit.
+    ["praegung", (m) => m.umbenennen(key, alt, neu)],
+    ["ruhm", (m) => m.umbenennen(key, alt, neu)],
+    ["kistenDuell", (m) => m.umbenennen(key, alt, neu)],
+    // Der Verkäufername steht als Kopie am Angebot, damit die Marktliste
+    // ohne Kontozugriff lesbar ist.
+    ["market", (m) => m.umbenennen(key, alt, neu)],
   ]) {
     try { nachgezogen[modul] = fn(require(`./${modul}`)) || 0; } catch { nachgezogen[modul] = "?"; }
   }
@@ -772,9 +783,9 @@ function claimDailyBonus(name) {
   const streets = Math.min(city.streetCount(key), STREET_TRIBUTE_CAP);
   const golden = city.ownsGolden(key) ? STREET_TRIBUTE : 0;
   const tribute = streets * STREET_TRIBUTE + golden;
-  // Haus-Tribut: jedes Gebäude zahlt ein bisschen (gedeckelt).
-  const housesOwned = city.houseCount(key);
-  const houses = Math.min(housesOwned, HOUSE_TRIBUTE_CAP) * HOUSE_TRIBUTE;
+  // Haus-Miete abzüglich Grundsteuer, beides aus der Stadt.
+  const stadt = city.mieteVon(key);
+  const housesOwned = stadt.haeuser;
   // Sammel-Sets (Stadtbekannt, Kaffee-Kartell …).
   const setList = city.setsOf(key);
   const sets = setList.reduce((s, x) => s + x.tribute, 0);
@@ -787,16 +798,27 @@ function claimDailyBonus(name) {
   acc.lossSince = 0;
   // Bremse für die Reichen (ohne Cashback, das ist durch die eigenen Verluste
   // begrenzt und kein Gratisgeld).
+  /*
+   * Die Bremse trifft das geschenkte Geld, nicht die Rendite.
+   *
+   * Grundbetrag, Serie, Straßen-Tribut und Sets sind Gratis-Einnahmen und
+   * werden weiter gebremst. Die Haus-Miete nicht: dafür hat jemand Chips
+   * ausgegeben, und die Grundsteuer bremst sie bereits selbst. Vorher lief
+   * beides zusammen, und damit stand Vincent mit 86 Häusern bei einem
+   * Viertel seiner eigenen Mieteinnahmen, während ein Konto ohne einen
+   * einzigen Stein den vollen Satz bekam. Das war genau die Stelle, an der
+   * sich Spielen wie eine Strafe anfühlte.
+   */
   const f = faucetFactor(acc.name);
   const tBase = Math.round(base * f), tTribute = Math.round(tribute * f);
-  const tHouses = Math.round(houses * f), tSets = Math.round(sets * f);
+  const tHouses = stadt.netto, tSets = Math.round(sets * f);
   const amount = tBase + tTribute + tHouses + tSets + cashback;
   acc.chips += amount;
   acc.lastBonusAt = now;
   save();
   return {
     ok: true, amount, base: tBase, tribute: tTribute, streets, golden,
-    houses: tHouses, housesOwned, sets: tSets, setList, cashback,
+    houses: tHouses, housesOwned, stadt, sets: tSets, setList, cashback,
     streak: acc.bonusStreak, taper: Math.round(f * 100), account: publicAccount(acc),
   };
 }
