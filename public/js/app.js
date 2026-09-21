@@ -16,6 +16,33 @@ const state = {
 let appVersion = null;
 let reloadRequired = false;
 
+const istBesitzerUI = () => !!(state.account && state.account.name.toLowerCase() === "vincent");
+const istModeratorUI = () => !!(state.account && state.account.rolle === "mod");
+const hatVerwaltungsrechte = () => istBesitzerUI() || istModeratorUI();
+
+function verwaltungUI() {
+  const owner = istBesitzerUI();
+  const darf = hatVerwaltungsrechte();
+  const item = document.querySelector("#menu-admin");
+  if (item) item.style.display = darf ? "" : "none";
+  const label = document.querySelector("#menu-admin-label");
+  const sub = document.querySelector("#menu-admin-sub");
+  const titel = document.querySelector("#admin-title");
+  if (label) label.textContent = owner ? "Admin" : "Moderation";
+  if (sub) sub.textContent = owner ? "Verwaltung" : "Chat und Spieler schützen";
+  if (titel) titel.textContent = owner ? "Admin" : "Moderation";
+  document.querySelectorAll("[data-owner-only]").forEach((el) => {
+    el.classList.toggle("hidden", !owner);
+  });
+  const dauerPermanent = document.querySelector('#an-dauer option[value="0"]');
+  if (dauerPermanent) dauerPermanent.hidden = !owner;
+  document.querySelectorAll("#an-dauer option").forEach((o) => {
+    if (Number(o.value) > 1440) o.hidden = !owner;
+  });
+  if (!owner && document.querySelector("#an-dauer")?.value === "0") document.querySelector("#an-dauer").value = "60";
+  if (!darf && currentScreen === "admin") showScreen("lobby", { history: "replace" });
+}
+
 // DOM-Helfer
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -48,6 +75,10 @@ window.Casino.screens.setGuard((name) => {
     return false;
   }
   if (!state.account && !publicScreens.has(name)) return false;
+  if (name === "admin" && !hatVerwaltungsrechte()) {
+    toast("Dafür brauchst du Moderator-Rechte.");
+    return false;
+  }
   return true;
 });
 
@@ -57,7 +88,7 @@ window.Casino.screens.setGuard((name) => {
 window.Casino.screens.register("leaderboard", { onEnter: () => loadLeaderboard() });
 window.Casino.screens.register("profile", { onEnter: () => renderProfile() });
 window.Casino.screens.register("admin", {
-  onEnter: () => { loadAdminAccounts(); ladeAnsage(); anVorschau(); adminReiter(); },
+  onEnter: () => { verwaltungUI(); loadAdminAccounts(); ladeAnsage(); anVorschau(); adminReiter(); },
   // Die Uhr der Event-Karten muss nicht weiterlaufen, wenn niemand hinsieht.
   onLeave: () => { if (typeof evUhr !== "undefined" && evUhr) { clearInterval(evUhr); evUhr = null; } },
 });
@@ -309,6 +340,7 @@ window.Casino = Object.assign(window.Casino || {}, {
     if (!account) return;
     state.account = { ...state.account, ...account };
     wendeKartenAn(state.account);
+    verwaltungUI();
     renderTopbar();
     if (currentScreen === "profile") renderProfile();
   },
@@ -392,9 +424,7 @@ function setAccount(acc, token) {
   wendeKartenAn(acc);
   renderTopbar();
   requestPresence();
-  // Admin-Tile nur für Vincent sichtbar
-  const adminItem = $("#menu-admin");
-  if (adminItem) adminItem.style.display = acc.name.toLowerCase() === "vincent" ? "" : "none";
+  verwaltungUI();
   maybeShowUpdate();
   renderUpdateBadge();
 }
@@ -785,6 +815,7 @@ socket.on("presence:auffrischen", () => {
 socket.on("account:update", ({ account }) => {
   if (!account) return;
   state.account = { ...state.account, ...account };
+  verwaltungUI();
   renderTopbar();
   if (currentScreen === "profile") renderProfile();
 });
@@ -1791,7 +1822,7 @@ let adGewaehlt = null;    // Name der geöffneten Person
 
 function loadAdminAccounts() {
   loadAdminDashboard();
-  loadIpBans();
+  if (istBesitzerUI()) { loadIpBans(); loadDeviceBans(); }
   ladeStrafen();
   socket.emit("announcement:get", (res) => {
     if (res && res.ok && res.announcement && $("#admin-announcement-text")) {
@@ -1803,7 +1834,9 @@ function loadAdminAccounts() {
   list.innerHTML = '<div class="muted small">Lädt…</div>';
   socket.emit("admin:listAccounts", (res) => {
     if (!res || !res.ok) { list.innerHTML = '<div class="muted small">Fehler.</div>'; return; }
-    adKonten = (res.accounts || []).slice().sort((a, b) => b.chips - a.chips);
+    adKonten = (res.accounts || []).slice().sort((a, b) => istBesitzerUI()
+      ? (b.chips || 0) - (a.chips || 0)
+      : String(a.name).localeCompare(String(b.name), "de"));
     zeichneKontenListe();
     if (adGewaehlt) zeichnePerson(adGewaehlt);
   });
@@ -1832,9 +1865,10 @@ function zeichneKontenListe() {
     <button class="ad-reihe${adGewaehlt === p.name ? " aktiv" : ""}" type="button" data-konto="${escapeHtml(p.name)}">
       <span class="ad-platz">${suche ? "" : i + 1}</span>
       <span class="ad-name">${escapeHtml(p.name)}</span>
+      ${p.rolle === "mod" ? '<span class="ad-flag ad-flag-mod">Mod</span>' : ""}
       ${p.banned ? '<span class="ad-flag ad-flag-bad">gesperrt</span>' : ""}
       ${(p.strafen || []).map((st) => `<span class="ad-flag">${escapeHtml(st.kurz)}</span>`).join("")}
-      <b>${Math.floor(p.chips || 0).toLocaleString("de-DE")}<i class=mk></i></b>
+      <b>${istBesitzerUI() ? `${Math.floor(p.chips || 0).toLocaleString("de-DE")}<i class=mk></i>` : (p.rolle === "mod" ? "Moderator" : "Spieler")}</b>
     </button>`).join("")
     + (!suche && treffer.length > zeigen.length
       ? `<div class="muted small ad-mehr">… und ${treffer.length - zeigen.length} weitere. Zum Finden oben tippen.</div>` : "");
@@ -1872,7 +1906,9 @@ function adStrafRest(bis) {
 function strafenBlock(p) {
   const offen = p.strafen || [];
   const arten = adStrafArten || {};
-  const artListe = Object.keys(arten);
+  const modArten = new Set(["sperre", "stumm", "spielsperre", "keineAuktion"]);
+  const artListe = Object.keys(arten).filter((a) => istBesitzerUI() || modArten.has(a));
+  const dauern = AD_DAUERN.filter((d) => istBesitzerUI() || d.v > 0);
   return `
     <div class="ad-straf">
       <div class="cd-sub">Strafen</div>
@@ -1882,9 +1918,9 @@ function strafenBlock(p) {
           <span>${adStrafRest(s.bis)}</span>
           ${s.spiele ? `<small>${escapeHtml(s.spiele.map((g) => (adStrafSpiele || {})[g] || g).join(", "))}</small>` : ""}
           ${s.grund ? `<small>${escapeHtml(s.grund)}</small>` : ""}
-          <button class="ad-strafweg" type="button" data-straf-weg="${escapeHtml(s.art)}" aria-label="Aufheben">✕</button>
+          ${istBesitzerUI() || modArten.has(s.art) ? `<button class="ad-strafweg" type="button" data-straf-weg="${escapeHtml(s.art)}" aria-label="Aufheben">✕</button>` : ""}
         </div>`).join("")}</div>
-        <button class="chip-btn" type="button" data-straf-weg="*">Alle aufheben</button>`
+        ${istBesitzerUI() ? '<button class="chip-btn" type="button" data-straf-weg="*">Alle aufheben</button>' : ""}`
         : `<p class="hint">Nichts offen.</p>`}
 
       ${artListe.length ? `
@@ -1892,7 +1928,7 @@ function strafenBlock(p) {
         <label class="ad-feld"><span>Strafe</span>
           <select id="ad-straf-art">${artListe.map((a) => `<option value="${a}">${escapeHtml(arten[a].name)}</option>`).join("")}</select></label>
         <label class="ad-feld"><span>Dauer</span>
-          <select id="ad-straf-dauer">${AD_DAUERN.map((d) => `<option value="${d.v}"${d.v === 1440 ? " selected" : ""}>${d.t}</option>`).join("")}</select></label>
+          <select id="ad-straf-dauer">${dauern.map((d) => `<option value="${d.v}"${d.v === 1440 ? " selected" : ""}>${d.t}</option>`).join("")}</select></label>
         <label class="ad-feld hidden" id="ad-straf-wert-feld"><span id="ad-straf-wert-label">Wert</span>
           <input id="ad-straf-wert" type="number" inputmode="numeric" /></label>
       </div>
@@ -1971,29 +2007,34 @@ function zeichnePerson(name) {
   box.classList.remove("hidden");
   const chips = Math.floor(p.chips || 0);
   const bank = Math.floor(p.savings || 0);
+  const owner = istBesitzerUI();
+  const selbst = String(p.name).toLowerCase() === "vincent";
+  const geschuetzt = selbst || (!owner && p.rolle === "mod");
 
   box.innerHTML = `
     <div class="ad-karte ad-person-karte">
       <div class="ad-person-kopf">
         <div>
           <b>${escapeHtml(p.name)}</b>
-          <small>${chips.toLocaleString("de-DE")} auf der Hand · ${bank.toLocaleString("de-DE")} auf der Bank</small>
+          <small>${owner ? `${chips.toLocaleString("de-DE")} auf der Hand · ${bank.toLocaleString("de-DE")} auf der Bank` : (p.rolle === "mod" ? "Moderator" : "Spieler")}</small>
         </div>
         <button class="chip-btn ad-zu" type="button" data-person-zu aria-label="Schließen">✕</button>
       </div>
 
       <div class="ad-flags">
+        ${owner && !selbst ? `<button class="ad-schalter${p.rolle === "mod" ? " an" : ""}" type="button" data-person-tun="rolle">
+          ${p.rolle === "mod" ? "Moderator entfernen" : "Zum Moderator machen"}</button>
+        ` : ""}${owner && !selbst ? `
         <button class="ad-schalter${p.banned ? " an" : ""}" type="button" data-person-tun="${p.banned ? "unban" : "ban"}">
           ${p.banned ? "Sperre aufheben" : "Konto sperren"}</button>
-        <button class="ad-schalter" type="button" data-person-tun="kick">Rauswerfen</button>
-        <button class="ad-schalter" type="button" data-person-tun="schreiben">Anschreiben</button>
-        <button class="ad-schalter" type="button" data-person-tun="umbenennen">Namen ändern</button>
+        <button class="ad-schalter" type="button" data-person-tun="umbenennen">Namen ändern</button>` : ""}
+        ${geschuetzt ? "" : '<button class="ad-schalter" type="button" data-person-tun="kick">Rauswerfen</button><button class="ad-schalter" type="button" data-person-tun="schreiben">Anschreiben</button>'}
       </div>
-      <p class="hint">„Konto sperren“ gilt für immer, bis jemand sie aufhebt. Alles mit Ablaufzeit steht darunter. Rauswerfen trennt nur die Verbindung, er kann sofort wieder rein.</p>
+      <p class="hint">${geschuetzt ? "Besitzer und andere Moderatoren sind geschützt." : (owner ? "Dauerhafte Kontosperren bleiben beim Besitzer. Zeitstrafen stehen darunter." : "Du kannst schreiben, trennen und zeitlich begrenzt moderieren.")}</p>
 
-      ${strafenBlock(p)}
+      ${geschuetzt ? "" : strafenBlock(p)}
 
-      <div class="ad-feld ad-feld-breit">
+      ${owner ? `<div class="ad-feld ad-feld-breit">
         <span>Chips setzen</span>
         <div class="ad-zeile">
           <input id="ad-chips" type="number" inputmode="numeric" min="0" step="1000" value="${chips}" />
@@ -2004,7 +2045,7 @@ function zeichnePerson(name) {
       <div class="ad-knopfreihe">
         <button class="chip-btn" type="button" data-person-tun="bank">Bank leeren</button>
         <button class="chip-btn" type="button" data-person-tun="bonus">Geschenke wieder frei</button>
-        <button class="chip-btn" type="button" data-person-tun="ipban">IP sperren</button>
+        ${selbst ? "" : '<button class="chip-btn" type="button" data-person-tun="deviceban">Gerät sperren</button><button class="chip-btn" type="button" data-person-tun="ipban">IP sperren</button>'}
       </div>
 
       <div class="ad-feld ad-feld-breit">
@@ -2016,13 +2057,14 @@ function zeichnePerson(name) {
         </div>
       </div>
 
-      <div class="ad-gefahr">
+      ${selbst ? "" : `<div class="ad-gefahr">
         <b>Nicht rückgängig zu machen</b>
         <div class="ad-knopfreihe">
           <button class="btn-danger ad-knopf" type="button" data-person-tun="achievements">Achievements zurücksetzen</button>
           <button class="btn-danger ad-knopf" type="button" data-person-tun="loeschen">Konto löschen</button>
         </div>
-      </div>
+      </div>`}
+      ` : ""}
       <div class="form-error" id="ad-person-error"></div>
     </div>`;
 
@@ -2040,6 +2082,20 @@ async function personTun(tun, name) {
     if (!r || !r.ok) { if (fehler) fehler.textContent = (r && r.error) || "Fehler."; return false; }
     fertig(text); return true;
   };
+
+  if (tun === "rolle") {
+    const p = adKonten.find((x) => x.name === name);
+    const geben = !p || p.rolle !== "mod";
+    const ok = await window.Casino.dialog.frage(
+      geben
+        ? `${name} zum Moderator machen? Die Person darf Chats und Bilder moderieren, Spieler zeitlich bestrafen, rauswerfen und Ansagen stellen. Geld, Konten, Events und Spielausgänge bleiben geschützt.`
+        : `${name} die Moderator-Rechte entziehen?`,
+      { titel: geben ? "Moderator ernennen" : "Moderator entfernen", okText: geben ? "Ernennen" : "Entfernen" });
+    if (!ok) return;
+    socket.emit("admin:setRolle", { target: name, rolle: geben ? "mod" : null }, (r) =>
+      melde(r, geben ? `${name} ist jetzt Moderator.` : `${name} ist kein Moderator mehr.`));
+    return;
+  }
 
   if (tun === "chips") {
     const betrag = parseInt($("#ad-chips")?.value, 10);
@@ -2102,8 +2158,10 @@ async function personTun(tun, name) {
     const text = await window.Casino.dialog.eingabe(`Nachricht an ${name}:`,
       { titel: "Anschreiben", platzhalter: "Text", okText: "Schicken" });
     if (!text) return;
-    socket.emit("admin:nachricht", { target: name, text, auchPush: true }, (r) =>
-      melde(r, r && r.gesehen ? `${name} hat es gerade gelesen.` : `${name} ist offline, Benachrichtigung ist raus.`));
+    socket.emit("admin:nachricht", { target: name, text, auchPush: istBesitzerUI() }, (r) =>
+      melde(r, r && r.gesehen
+        ? `${name} hat es gerade gelesen.`
+        : (istBesitzerUI() ? `${name} ist offline, Benachrichtigung ist raus.` : `${name} ist offline; die Nachricht wurde nicht zugestellt.`)));
     return;
   }
   if (tun === "bank") {
@@ -2122,6 +2180,15 @@ async function personTun(tun, name) {
       if (!r || !r.ok) { if (fehler) fehler.textContent = (r && r.error) || "Fehler."; return; }
       toast(`IP ${r.ip} gesperrt (${r.kicked} Verbindung${r.kicked === 1 ? "" : "en"} getrennt).`);
       loadIpBans();
+    });
+    return;
+  }
+  if (tun === "deviceban") {
+    if (!await window.Casino.dialog.frage(`Das zuletzt von ${name} benutzte Gerät sperren? Andere Menschen im selben WLAN bleiben dabei unberührt.`, { okText: "Gerät sperren", gefahr: true })) return;
+    socket.emit("admin:deviceban", { target: name }, (r) => {
+      if (!r || !r.ok) { if (fehler) fehler.textContent = r?.error || "Fehler."; return; }
+      toast(`Gerät …${r.id} gesperrt (${r.getrennt} Verbindung${r.getrennt === 1 ? "" : "en"} getrennt).`);
+      loadDeviceBans();
     });
     return;
   }
@@ -2218,6 +2285,22 @@ function loadAdminDashboard() {
     const miniList = (items, valFn, empty) => items.length
       ? items.map((p) => `<li><span>${escapeHtml(p.name)}</span><b>${valFn(p)}</b></li>`).join("")
       : `<li class="muted">${empty}</li>`;
+    if (!istBesitzerUI()) {
+      const strafenZahl = (d.strafen || []).reduce((n, p) => n + p.strafen.length, 0);
+      box.innerHTML = `
+        <div class="ad-kopf ad-lage-kopf"><h3>Moderation</h3><button class="chip-btn" id="admin-dash-refresh">Aktualisieren</button></div>
+        <div class="ad-kacheln">
+          <div class="ad-kachel"><div class="muted small">Online</div><b>${d.online?.accounts || 0} Spieler</b>
+            <div class="small ad-kachel-liste">${online.length ? online.map((p) => escapeHtml(p.name)).join(", ") : "Niemand da"}</div></div>
+          <div class="ad-kachel"><div class="muted small">Offene Strafen</div><b>${strafenZahl}</b>
+            <div class="small muted">Verwalten im Reiter „Spieler“</div></div>
+          <div class="ad-kachel"><div class="muted small">Konten</div><b>${d.totals?.accounts || 0}</b>
+            <div class="small muted">Geldwerte bleiben privat.</div></div>
+        </div>
+        <div class="ad-notiz"><span>Du kannst Ansagen stellen, Inhalte prüfen, Spieler anschreiben oder trennen und zeitlich begrenzte Strafen setzen.</span></div>`;
+      $("#admin-dash-refresh")?.addEventListener("click", loadAdminDashboard);
+      return;
+    }
     /* Drei Zustaende lassen sich versehentlich anlassen: die Wartung, eine
        Strafe und ein Regie-Zettel. Alle drei stehen deshalb ganz oben und
        nicht nur in ihrem Reiter. */
@@ -2558,8 +2641,35 @@ function loadIpBans() {
   });
 }
 
+function loadDeviceBans() {
+  const list = $("#admin-deviceban-list");
+  if (!list) return;
+  socket.emit("admin:devicebanList", (res) => {
+    if (!res || !res.ok) { list.innerHTML = '<li class="muted">-</li>'; return; }
+    if (!res.bans.length) { list.innerHTML = '<li class="muted">Kein Gerät gesperrt.</li>'; return; }
+    list.innerHTML = "";
+    res.bans.forEach((b) => {
+      const li = document.createElement("li");
+      const who = b.accounts?.length ? ` <span class="muted small">(${b.accounts.map(escapeHtml).join(", ")})</span>` : "";
+      li.innerHTML = `<span><code>Gerät …${escapeHtml(b.id)}</code>${who}</span>`;
+      const btn = document.createElement("button");
+      btn.className = "btn-primary";
+      btn.style.cssText = "font-size:.75rem;padding:4px 10px";
+      btn.textContent = "Entsperren";
+      btn.addEventListener("click", () => socket.emit("admin:deviceunban", { id: b.id }, (r) => {
+        toast(r?.ok ? `Gerät …${b.id} entsperrt.` : (r?.error || "Fehler."));
+        loadDeviceBans();
+      }));
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  });
+}
+
 // Beim Öffnen des Admin-Screens die IP-Bann-Liste mitladen.
-socket.on("ipbanned", () => { window.Casino.dialog.hinweis("Deine IP-Adresse wurde gesperrt."); });
+socket.on("ipbanned", (d = {}) => {
+  window.Casino.dialog.hinweis(d.device ? "Dieses Gerät wurde gesperrt." : "Dieses Netzwerk wurde gesperrt.");
+});
 
 // Admin: Test-Tools
 $("#admin-force-win-btn")?.addEventListener("click", () => {
@@ -2933,8 +3043,8 @@ function wfZeichne(d) {
     if (!box) return;
     if (!woerter.length) { box.innerHTML = `<p class="muted small">${leer}</p>`; return; }
     box.innerHTML = woerter.map((w) =>
-      `<span class="wf-wort">${escapeHtml(w)}<button type="button" data-wf-weg="${escapeHtml(w)}"
-        data-wf-art="${art}" aria-label="Entfernen">${window.Casino.icons.ui("schliessen")}</button></span>`).join("");
+      `<span class="wf-wort">${escapeHtml(w)}${istBesitzerUI() ? `<button type="button" data-wf-weg="${escapeHtml(w)}"
+        data-wf-art="${art}" aria-label="Entfernen">${window.Casino.icons.ui("schliessen")}</button>` : ""}</span>`).join("");
     box.querySelectorAll("[data-wf-weg]").forEach((b) => b.addEventListener("click", () => {
       socket.emit("admin:filterRemove", { wort: b.dataset.wfWeg, art: b.dataset.wfArt }, (r) => {
         if (r && r.ok) { wfZeichne(r); wfProbe(); }

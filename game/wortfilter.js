@@ -77,6 +77,14 @@ const HART = [
   "missgeburt", "heilhitler",
 ];
 
+/* Zeichen haben keine Wortgrenzen und fielen deshalb bisher durch den
+   normalen Wortfilter. Diese beiden Unicode-Zeichen sind die gebräuchlichen
+   Hakenkreuz-Varianten. Eigene reine Symbol-Einträge werden unten genauso
+   direkt geprüft. */
+const VERBOTENE_ZEICHEN = new Map([
+  ["卐", "hakenkreuz"], ["卍", "hakenkreuz"],
+]);
+
 /* Ausnahmen. Erwischt der Filter eines dieser Woerter, ist es kein Treffer.
    Steht hier, weil "Fickmuehle" ein Brettspiel ist und "Arschbombe" ein
    Sprung ins Wasser, beides wuerde man nicht sperren wollen. */
@@ -114,6 +122,11 @@ const ERSATZ = {
   "ó": "o", "ò": "o", "ô": "o", "õ": "o",
   "ú": "u", "ù": "u", "û": "u",
   "ç": "c", "ñ": "n",
+  // Häufige griechische/kyrillische Homoglyphen gegen "nаzi" u. Ä.
+  "а": "a", "α": "a", "е": "e", "ε": "e", "і": "i", "ι": "i",
+  "ј": "j", "о": "o", "ο": "o", "р": "p", "ρ": "p", "с": "c",
+  "ϲ": "c", "х": "x", "χ": "x", "у": "y", "ү": "y", "к": "k",
+  "κ": "k", "м": "m", "т": "t", "ν": "v", "в": "b", "н": "h",
 };
 
 /**
@@ -134,6 +147,10 @@ function normalisiere(roh) {
 
   for (let i = 0; i < s.length; i++) {
     let z = s[i];
+    /* NFKD macht Vollbreitenzeichen und Akzente vergleichbar. Die Herkunft
+       bleibt trotzdem beim ursprünglichen Zeichen, damit im Chat die
+       richtige Stelle maskiert wird. */
+    z = z.normalize("NFKD").replace(/\p{M}/gu, "");
     z = ERSATZ[z] || z;
     // ß und ss sind fuer den Filter dasselbe Wort.
     if (z === "ß") z = "s";
@@ -188,6 +205,29 @@ function treffer(roh) {
   const original = String(roh || "");
   if (!original.trim()) return [];
 
+  const direkt = [];
+  for (const [zeichen, wort] of VERBOTENE_ZEICHEN) {
+    let ab = 0, idx;
+    while ((idx = original.indexOf(zeichen, ab)) !== -1) {
+      direkt.push({ wort, von: idx, bis: idx + zeichen.length });
+      ab = idx + zeichen.length;
+    }
+  }
+  /* Ein selbst eingetragenes Symbol wie ☭ oder eine Emoji-Folge besitzt
+     keine \b-Wortgrenze. Exakter Unicode-Vergleich ist hier die richtige
+     Regel und macht auch Einträge mit nur einem Zeichen wirksam. */
+  for (const rohWort of eigene.woerter) {
+    const wort = String(rohWort || "");
+    if (!wort || verdichte(wort, true).text.length >= 2) continue;
+    const haystack = original.normalize("NFKC").toLowerCase();
+    const needle = wort.normalize("NFKC").toLowerCase();
+    let ab = 0, idx;
+    while ((idx = haystack.indexOf(needle, ab)) !== -1) {
+      direkt.push({ wort, von: idx, bis: idx + needle.length });
+      ab = idx + Math.max(1, needle.length);
+    }
+  }
+
   const ausnahmen = alleAusnahmen();
   const nDicht = verdichte(original, true).text;
   // Steht eine Ausnahme im Text, ist der Treffer, der in ihr steckt, keiner.
@@ -204,7 +244,7 @@ function treffer(roh) {
   const inAusnahme = (von, bis) =>
     ausnahmeStellen.some(([a, b]) => von >= a && bis <= b);
 
-  const gefunden = new Map();   // je "von:bis": Treffer
+  const gefunden = new Map(direkt.map((t) => [`${t.von}:${t.bis}`, t]));   // je "von:bis": Treffer
 
   // Durchgang 1: an Wortgrenzen
   const { text: nText, herkunft } = normalisiere(original);
@@ -283,7 +323,9 @@ function entschaerfe(roh) {
     if (von < pos) continue;             // Ueberlappung: die erste gewinnt
     out += original.slice(pos, von);
     const stueck = original.slice(von, bis);
-    out += stueck[0] + "*".repeat(Math.max(1, stueck.length - 1));
+    out += VERBOTENE_ZEICHEN.has(stueck) || /^[^\p{L}\p{N}]+$/u.test(stueck)
+      ? "*".repeat(Math.max(1, [...stueck].length))
+      : stueck[0] + "*".repeat(Math.max(1, stueck.length - 1));
     pos = bis;
   }
   out += original.slice(pos);
@@ -304,7 +346,7 @@ function listeState() {
 
 function ergaenze(wort) {
   const w = saeubereEintrag(wort);
-  if (!w || w.length < 2) return { ok: false, error: "Mindestens zwei Zeichen." };
+  if (!w) return { ok: false, error: "Ein Zeichen oder Wort eingeben." };
   if (BASIS.includes(w) || eigene.woerter.includes(w)) return { ok: false, error: "Steht schon auf der Liste." };
   eigene.woerter.push(w);
   speichern();

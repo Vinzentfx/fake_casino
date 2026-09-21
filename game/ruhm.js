@@ -125,7 +125,10 @@ function melde(key, treffer, opts = {}) {
 
   const fertig = fuellen(e);
   if (io) {
-    io.emit("ruhm:neu", { eintrag: fertig, banner: BANNER_AB.has(treffer.stufe.id) || serienRang === "jackpot" });
+    io.emit("ruhm:neu", {
+      eintrag: fertig,
+      banner: BANNER_AB.has(treffer.stufe.id) || serienRang === "gold" || serienRang === "jackpot",
+    });
   }
   return fertig;
 }

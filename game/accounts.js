@@ -650,6 +650,7 @@ function publicAccount(acc) {
   if (!acc) return null;
   return {
     name: acc.name,
+    rolle: acc.rolle === "mod" ? "mod" : null,
     chips: acc.chips,
     createdAt: acc.createdAt,
     lastBonusAt: acc.lastBonusAt,
@@ -1125,6 +1126,7 @@ function deleteAccount(name) {
 function listAll() {
   return Object.values(accounts).map((a) => ({
     name: a.name,
+    rolle: a.rolle === "mod" ? "mod" : null,
     chips: a.chips,
     savings: Math.floor((a.savings && a.savings.amount) || 0),
     netWorth: _netWorth(a),

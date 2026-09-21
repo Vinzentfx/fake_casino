@@ -99,7 +99,7 @@
       <button class="sheet-item" data-nav="kiste"><i class="si-icon" data-icon="geschenk"></i><b>Kisten</b><small>Kosmetik als Ziehung</small></button>
       <button class="sheet-item" data-nav="settings"><i class="si-icon" data-icon="einstellungen"></i><b>Einstellungen</b><small>Design, Ton, Passwort</small></button>
       <a class="sheet-item" href="/datenschutz.html"><i class="si-icon" data-icon="sperre"></i><b>Datenschutz</b><small>Was gespeichert wird</small></a>
-      <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><i class="si-icon" data-icon="admin"></i><b>Admin</b><small>Verwaltung</small></button>
+      <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><i class="si-icon" data-icon="admin"></i><b id="menu-admin-label">Admin</b><small id="menu-admin-sub">Verwaltung</small></button>
     </div>
   </nav>
   <div id="announcement-strip" class="announcement-strip hidden" aria-live="polite">
@@ -1800,7 +1800,7 @@
         <div class="ki-titel">
           <div class="ph-icon" data-icon="geschenk"></div>
           <h2>Kisten</h2>
-          <p class="muted small">Erst fällt das Stück. Dann wird seine vierstellige Seriennummer geprägt.</p>
+          <p class="muted small">Frühes Öffnen bringt nichts.</p>
         </div>
 
         <div class="ki-serienlotterie" id="ki-serienlotterie"></div>
@@ -1892,20 +1892,20 @@
       <div class="kb-inhalt" id="kb-inhalt"></div>
     </div>
 
-    <!-- Admin (nur Vincent) -->
+    <!-- Verwaltung: Besitzer und Moderatoren, mit getrennten Rechten -->
     <section class="screen" data-screen="admin">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-      <h2 class="screen-title"><i data-icon="admin"></i>Admin</h2>
+      <h2 class="screen-title"><i data-icon="admin"></i><span id="admin-title">Admin</span></h2>
 
       <!-- Reiter. Der Bildschirm war ueber 3000 Pixel lang; bis zu den
            Events scrollte man an der kompletten Accountliste vorbei. -->
       <nav class="ad-reiter" id="ad-reiter" role="tablist">
         <button class="ad-reiter-knopf active" data-ad="uebersicht" role="tab" aria-selected="true">Übersicht</button>
         <button class="ad-reiter-knopf" data-ad="ansage" role="tab" aria-selected="false">Ansage</button>
-        <button class="ad-reiter-knopf" data-ad="events" role="tab" aria-selected="false">Events</button>
+        <button class="ad-reiter-knopf" data-ad="events" data-owner-only role="tab" aria-selected="false">Events</button>
         <button class="ad-reiter-knopf" data-ad="spieler" role="tab" aria-selected="false">Spieler</button>
         <button class="ad-reiter-knopf" data-ad="filter" role="tab" aria-selected="false">Inhalte</button>
-        <button class="ad-reiter-knopf" data-ad="werkzeug" role="tab" aria-selected="false">Werkzeuge</button>
+        <button class="ad-reiter-knopf" data-ad="werkzeug" data-owner-only role="tab" aria-selected="false">Werkzeuge</button>
       </nav>
 
       <section class="ad-tafel" data-ad-tafel="uebersicht">
@@ -1947,7 +1947,7 @@
             </label>
           </div>
 
-          <label class="an-push">
+          <label class="an-push" data-owner-only>
             <input type="checkbox" id="an-push" />
             <span><b>Auch als Benachrichtigung schicken</b>
             <small>Erreicht die, die gerade nicht da sind. Wer verbunden ist, bekommt keine, der sieht die Zeile ohnehin.</small></span>
@@ -1990,15 +1990,18 @@
 
         <div class="ad-person hidden" id="ad-person"></div>
 
-        <div class="ad-karte">
-          <div class="ad-kopf"><b>IP-Sperren</b></div>
-          <p class="hint">Sperrt die Adresse, nicht das Konto. Ein Name sperrt die zuletzt gesehene IP dieses Kontos; eine IP wird direkt gesperrt.</p>
+        <div class="ad-karte" data-owner-only>
+          <div class="ad-kopf"><b>Netzwerk- und Gerätesperren</b></div>
+          <p class="hint"><b>IP nur im Notfall:</b> Sie sperrt auch andere Personen im selben WLAN und lässt sich per VPN wechseln. Für einzelne Störer besser in ihrer Personenkarte erst Konto oder Gerät sperren.</p>
           <div class="ad-zeile">
             <input id="admin-ipban-input" type="text" maxlength="45" placeholder="Spielername oder IP" />
             <button class="btn-danger ad-knopf" id="admin-ipban-btn">IP sperren</button>
           </div>
           <div class="form-error" id="admin-ipban-error"></div>
+          <div class="cd-sub">Gesperrte Netzwerke</div>
           <ol class="leaderboard ad-ipliste" id="admin-ipban-list"><li class="muted">-</li></ol>
+          <div class="cd-sub">Gesperrte Geräte</div>
+          <ol class="leaderboard ad-ipliste" id="admin-deviceban-list"><li class="muted">-</li></ol>
         </div>
 
         <!-- Wer hat gerade etwas offen? Eine Strafe, die man vergisst, läuft
@@ -2031,7 +2034,7 @@
           <b id="wf-basis"></b>
         </p>
 
-        <div class="wf-spalten">
+        <div class="wf-spalten" data-owner-only>
           <div class="wf-spalte">
             <div class="cd-sub">Eigene Wörter</div>
             <p class="hint">Zusätzlich zur Basisliste. Was hier steht, wird gefiltert.</p>
@@ -2077,6 +2080,12 @@
             was der Filter beanstanden würde.</p>
           <button class="btn-secondary" id="wf-bestand-btn">Bestand prüfen</button>
           <div id="wf-bestand-aus"></div>
+        </div>
+
+        <div class="wf-bestand">
+          <div class="cd-sub">Chat</div>
+          <p class="hint">Leert den allgemeinen Verlauf bei allen, wenn dort etwas nicht stehen bleiben soll.</p>
+          <button class="btn-danger ad-knopf" id="ad-chat-leeren">Chat leeren</button>
         </div>
       </section>
 
@@ -2226,15 +2235,6 @@
             <button class="btn-primary ad-knopf" id="ad-alle-geben">Allen gutschreiben</button>
           </div>
           <div class="form-error" id="ad-alle-error"></div>
-        </div>
-
-        <!-- Chat -->
-        <div class="ad-karte">
-          <div class="ad-kopf"><b>Chat</b></div>
-          <p class="hint">Leert den allgemeinen Verlauf bei allen. Der Verlauf liegt nur im Speicher, es ist also nichts zu retten und nichts kaputt zu machen.</p>
-          <div class="ad-knopfreihe">
-            <button class="btn-danger ad-knopf" id="ad-chat-leeren">Chat leeren</button>
-          </div>
         </div>
 
         <div class="ad-karte">

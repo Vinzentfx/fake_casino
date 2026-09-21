@@ -599,18 +599,21 @@ function nachDerSchau(io, accounts, socket, key, kiste, r) {
       || serienRang === "gold" || serienRang === "jackpot")) {
       const acc = accounts.get(key);
       if (acc) {
-        /* "aus der Schwarze Kiste" war falsch. Mit "öffnet die …" stimmt der
-           Fall bei allen drei Kisten, ohne dass irgendwo ein Artikel
-           mitgepflegt werden muss. */
-        /* Die Art gehoert dazu. "zieht Krone" ist zweideutig: es gibt einen
-           Namensstil und ein Chat-Zeichen mit demselben Namen, und im Chat
-           steht sonst eine Meldung, die niemand einordnen kann. */
         const art = cosmetics.ART_NAME[r.treffer.art] || "";
         const serie = r.treffer.serie;
-        const serienText = serie && serie.id !== "standard"
-          ? ` mit ${serie.label} #${serie.code}` : "";
-        const satz = `${acc.name} öffnet die ${kiste.label} und zieht „${r.treffer.label}“`
-          + `${art ? ` (${art}, ${r.stufe.label})` : ` (${r.stufe.label})`}${serienText}.`;
+        const fund = `„${r.treffer.label}“${art ? ` (${art})` : ""}`;
+        let satz;
+        if (serienRang === "jackpot") {
+          satz = `🎰 SERIEN-JACKPOT! ${acc.name} prägt #${serie.code} auf ${fund} aus „${kiste.label}“.`;
+        } else if (serienRang === "gold") {
+          satz = `✦ GOLD-SERIE! ${acc.name} prägt #${serie.code} auf ${fund} aus „${kiste.label}“.`;
+        } else if (r.stufe.id === "kiste") {
+          satz = `◆ EINZELSTÜCK! ${acc.name} zieht ${fund} aus „${kiste.label}“.`;
+        } else if (r.stufe.id === "mythisch") {
+          satz = `🔥 MYTHISCHER FUND! ${acc.name} zieht ${fund} aus „${kiste.label}“.`;
+        } else {
+          satz = `★ Seltener Fund: ${acc.name} zieht ${fund} (${r.stufe.label}) aus „${kiste.label}“.`;
+        }
         chat.announce(io, satz);
         try { require("./chronik").notiere("event", satz, { user: acc.name, wert: r.treffer.wert }); } catch {}
       }

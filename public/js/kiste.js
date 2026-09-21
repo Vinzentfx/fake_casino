@@ -70,16 +70,23 @@
     if (banner) zeigeRuhmBanner(eintrag);
   });
 
-  /* Das Banner quer ueber den Bildschirm. Nur fuer Mythisches und
-     Einzelstuecke, und nicht fuer den, der gerade selbst zieht: der sieht
-     sein Ergebnis ohnehin gross vor sich. */
+  /* Das Banner quer ueber den Bildschirm. Für sehr seltene Stücke und
+     besonders seltene Seriennummern, aber nicht für den Ziehenden selbst. */
   let bannerTimer = null;
   function zeigeRuhmBanner(e) {
     const el = $("#ruhm-banner");
     if (!el) return;
     if (e.name === acc().name) return;
-    el.style.setProperty("--stufe", e.stufe.farbe);
-    el.innerHTML = `<span class="rb-stufe">${escapeHtml(e.stufe.label)}</span>
+    const serienRang = e.serie && e.serie.id;
+    const art = serienRang === "jackpot" ? "jackpot"
+      : serienRang === "gold" ? "gold"
+      : e.stufe.id === "kiste" ? "einzel" : "mythisch";
+    const titel = serienRang === "jackpot" ? "Serien-Jackpot"
+      : serienRang === "gold" ? "Gold-Serie"
+      : e.stufe.id === "kiste" ? "Einzelstück" : "Mythischer Fund";
+    el.dataset.art = art;
+    el.style.setProperty("--stufe", (e.serie && e.serie.farbe) || e.stufe.farbe);
+    el.innerHTML = `<span class="rb-spark" aria-hidden="true">✦</span><span class="rb-stufe">${titel}</span>
       <span class="rb-text">${window.Casino.spieler.name(e.look ? { ...e.look, name: e.name } : { name: e.name })}
       zieht <b>${escapeHtml(e.label)}</b>${e.nr ? ` · #${escapeHtml(window.Casino.spieler.serienCode(e))} ${(e.serie && escapeHtml(e.serie.kurz)) || ""}` : ""}`
       + `${e.artName ? ` <i>${escapeHtml(e.artName)}</i>` : ""}</span>`;
@@ -141,12 +148,7 @@
     const box = $("#ki-serienlotterie");
     if (!box || !stand || !stand.serien) return;
     const klassen = stand.serien.klassen || [];
-    box.innerHTML = `<div class="ki-serien-kopf">
-        <span class="ki-serien-siegel" aria-hidden="true">#</span>
-        <div><span class="cos-eyebrow">Serienlotterie</span><b>Der Zeitpunkt zählt nicht mehr. Nur der Zug.</b>
-          <p>Jedes neue Fundstück erhält eine freie Nummer von #0001 bis #9999. Frühes Öffnen gibt keinen Vorteil.</p></div>
-      </div>
-      <div class="ki-serien-chancen">${klassen.map((s) => `
+    box.innerHTML = `<div class="ki-serien-chancen">${klassen.map((s) => `
         <span class="serie-${escapeHtml(s.id)}"><i style="--serie:${s.farbe}"></i><b>${escapeHtml(s.kurz)}</b><small>${pct(s.chance)} %</small></span>`).join("")}</div>`;
   }
 

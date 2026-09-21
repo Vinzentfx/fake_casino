@@ -8858,6 +8858,7 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 .ad-flag { font-size: 0.66rem; padding: 2px 6px; border-radius: var(--r-pill);
   background: var(--surface-2); border: 1px solid var(--line-neutral); color: var(--text-dim); }
 .ad-flag-bad { background: var(--bad-soft); border-color: rgba(var(--bad-rgb), 0.45); color: var(--bad-text); }
+.ad-flag-mod { background: rgba(var(--accent-rgb), 0.13); border-color: rgba(var(--accent-rgb), 0.5); color: var(--accent); }
 .ad-mehr { padding: 6px 2px; }
 
 /* Die Person: alles zu einem Konto an einer Stelle */
@@ -9995,12 +9996,18 @@ html:not(.reduce-motion) .kb-ende { animation: ki-auf 0.5s cubic-bezier(.16, 1.4
   padding: 9px 14px;
   border: 1px solid var(--stufe, var(--accent));
   border-radius: var(--r-pill);
-  background: var(--overlay);
+  background: linear-gradient(105deg, color-mix(in srgb, var(--stufe, var(--accent)) 16%, var(--overlay)), var(--overlay) 58%);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 24px -6px var(--stufe, var(--accent));
   font-size: var(--fs-sm);
   transform: translate(-50%, -140%);
   pointer-events: none;
 }
+.ruhm-banner[data-art="gold"], .ruhm-banner[data-art="jackpot"] {
+  border-width: 2px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 34px -3px var(--stufe, var(--accent));
+}
+.ruhm-banner[data-art="jackpot"] { background: linear-gradient(110deg, #3a2104, #171109 42%, #291704); }
+.rb-spark { color: var(--stufe, var(--accent)); font-size: 1.15rem; filter: drop-shadow(0 0 6px currentColor); }
 .ruhm-banner.hidden { display: none; }
 .ruhm-banner.an { animation: ruhm-rein 6.2s var(--ease-out) forwards; }
 @keyframes ruhm-rein {
@@ -11674,7 +11681,7 @@ html:not(.reduce-motion) .serie-badge.serie-gold { animation: serie-atmen 2.8s e
   position: relative;
   overflow: hidden;
   margin: var(--sp-4) 0;
-  padding: var(--sp-3);
+  padding: 8px;
   border: 1px solid color-mix(in srgb, #5eead4 34%, var(--line));
   border-radius: var(--r-lg);
   background:
@@ -11693,26 +11700,12 @@ html:not(.reduce-motion) .serie-badge.serie-gold { animation: serie-atmen 2.8s e
   transform: rotate(-7deg);
   pointer-events: none;
 }
-.ki-serien-kopf { position: relative; z-index: 1; display: flex; gap: var(--sp-3); align-items: center; }
-.ki-serien-kopf b { display: block; font-size: var(--fs-lg); }
-.ki-serien-kopf p { margin: 3px 0 0; color: var(--text-dim); font-size: var(--fs-sm); }
-.ki-serien-siegel {
-  flex: 0 0 auto;
-  width: 48px; height: 48px;
-  display: grid; place-items: center;
-  border: 1px solid #5eead4;
-  border-radius: 14px;
-  background: rgba(94, 234, 212, 0.08);
-  color: #5eead4;
-  font: 900 1.4rem/1 var(--font-num);
-  box-shadow: inset 0 0 18px rgba(94, 234, 212, 0.13), 0 0 22px -12px #5eead4;
-}
 .ki-serien-chancen {
   position: relative; z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
-  margin-top: var(--sp-3);
+  margin-top: 0;
 }
 .ki-serien-chancen > span {
   --serie-farbe: #9aa4ae;
@@ -11908,8 +11901,6 @@ html:not(.reduce-motion) .cos-slg.voll .cos-slg-glanz { animation: cos-slg-glanz
 
 @media (max-width: 560px) {
   .ki-serien-chancen { grid-template-columns: repeat(2, 1fr); }
-  .ki-serien-kopf { align-items: flex-start; }
-  .ki-serien-siegel { width: 42px; height: 42px; }
   .cos-archiv { grid-template-columns: auto 1fr; }
   .cos-archiv-zahlen { grid-column: 1 / -1; }
   .cos-archiv-zahlen span { flex: 1; }

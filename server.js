@@ -70,6 +70,7 @@ const comeback = require("./game/comeback");
 const feed = require("./game/feed");
 const liveops = require("./game/liveops");
 const ipbans = require("./game/ipbans");
+const zugangsschutz = require("./game/zugangsschutz");
 const strafen = require("./game/strafen");
 const wartung = require("./game/wartung");
 
@@ -187,22 +188,12 @@ app.get("/api/version", (_req, res) => {
   res.json({ version: build.current() });
 });
 
-// Gegen Gratis-Chips über Zweitkonten: pro IP nur eine begrenzte Zahl neuer
-// Konten am Tag (jedes neue Konto bringt Startchips mit). Reicht locker für
-// Freunde im selben WLAN, bremst aber Massen-Anlegen.
-const ACCOUNTS_PER_IP_PER_DAY = 8;
-const DAY_MS = 24 * 60 * 60 * 1000;
-const ipCreations = new Map(); // je IP: [Zeitpunkte]
-function recentCreations(ip) {
-  const now = Date.now();
-  const list = (ipCreations.get(ip) || []).filter((t) => now - t < DAY_MS);
-  ipCreations.set(ip, list);
-  return list;
-}
-
 app.post("/api/login", (req, res) => {
   const name = req.body.name;
   const ip = req.ip || "unknown";
+  const deviceId = zugangsschutz.geraet(req, res);
+  if (ipbans.isBanned(ip)) return res.status(403).json({ error: "Dieses Netzwerk ist gesperrt." });
+  if (zugangsschutz.istGesperrt(deviceId)) return res.status(403).json({ error: "Dieses Gerät ist gesperrt." });
   /* Wartung: das Haus ist zu, der Besitzer kommt rein. 503 und nicht 403,
      damit man auf den Blick in die Netzwerkkonsole nicht "verboten" liest:
      es ist nichts verboten, es ist nur gerade geschlossen. */
@@ -211,12 +202,19 @@ app.post("/api/login", (req, res) => {
   }
   // Würde dieser Login ein neues Konto anlegen, gilt die Grenze pro IP.
   const willCreate = name && !accounts.get(name);
-  if (willCreate && recentCreations(ip).length >= ACCOUNTS_PER_IP_PER_DAY) {
-    return res.status(429).json({ error: "Zu viele neue Accounts aus diesem Netzwerk. Bitte später erneut versuchen." });
+  if (willCreate) {
+    const schutz = zugangsschutz.pruefeNeueAnmeldung(ip, deviceId);
+    if (!schutz.ok) return res.status(429).json({ error: schutz.error });
   }
   const result = accounts.login(name, req.body.pin);
   if (!result.ok) return res.status(400).json({ error: result.error });
-  if (result.created) recentCreations(ip).push(Date.now());
+  const intern = accounts.get(name);
+  if (intern) {
+    intern.lastIp = ip;
+    intern.lastDeviceId = deviceId;
+    accounts.save();
+  }
+  if (result.created) zugangsschutz.merkeNeueAnmeldung(ip, deviceId);
   res.json({
     created: result.created,
     account: result.account,
@@ -232,11 +230,20 @@ app.post("/api/login", (req, res) => {
  * (und mit der wachsenden Sperre niemand wegen eines Tippfehlers ausgesperrt wird).
  */
 app.post("/api/session", (req, res) => {
+  const deviceId = zugangsschutz.geraet(req, res);
+  if (ipbans.isBanned(req.ip || "unknown")) return res.status(403).json({ error: "Dieses Netzwerk ist gesperrt." });
+  if (zugangsschutz.istGesperrt(deviceId)) return res.status(403).json({ error: "Dieses Gerät ist gesperrt." });
   const result = accounts.resumeSession(req.body && req.body.token);
   if (result.ok && !wartung.darfRein(result.account && result.account.name, OWNER_KEY)) {
     return res.status(503).json({ error: wartung.text() });
   }
   if (!result.ok) return res.status(401).json({ error: result.error });
+  const intern = accounts.get(result.account && result.account.name);
+  if (intern) {
+    intern.lastIp = req.ip || "unknown";
+    intern.lastDeviceId = deviceId;
+    accounts.save();
+  }
   res.json({
     account: result.account,
     token: result.token,
@@ -477,8 +484,13 @@ io.on("connection", (socket) => {
   socket.setMaxListeners(80);
   // IP-Bann-Gate: gesperrte IPs werden sofort getrennt.
   socket.data.ip = ipbans.ipOf(socket);
+  socket.data.deviceId = zugangsschutz.idAusRequest(socket.handshake);
   if (ipbans.isBanned(socket.data.ip)) {
     socket.emit("ipbanned");
+    return socket.disconnect(true);
+  }
+  if (zugangsschutz.istGesperrt(socket.data.deviceId)) {
+    socket.emit("ipbanned", { device: true });
     return socket.disconnect(true);
   }
   socket.emit("app:version", { version: appVersion() });
@@ -488,7 +500,17 @@ io.on("connection", (socket) => {
   // Beim Auth die letzte IP am Account merken (damit der Owner per Name IP-bannen kann).
   socket.on("auth", ({ token } = {}) => {
     const key = accounts.verifyToken(token);
-    if (key) { const acc = accounts.get(key); if (acc) { acc.lastIp = socket.data.ip; } }
+    if (key) {
+      const acc = accounts.get(key);
+      if (acc) {
+        acc.lastIp = socket.data.ip;
+        if (!socket.data.deviceId && acc.lastDeviceId) socket.data.deviceId = acc.lastDeviceId;
+        if (zugangsschutz.istGesperrt(socket.data.deviceId)) {
+          socket.emit("ipbanned", { device: true });
+          return socket.disconnect(true);
+        }
+      }
+    }
     /* Beim Verbinden steht noch kein Konto am Socket, deshalb kann das
        Wartungs-Tor erst hier zuschlagen. Wer ein gueltiges Token hat und
        nicht der Besitzer ist, geht mit derselben Meldung raus, die auch im
@@ -555,7 +577,7 @@ setupKniffel(io, accounts);
 setupHilo(io, accounts);
 setupWuerfel(io, accounts);
 setupLotterie(io, accounts);
-setupAnnouncements(io);
+setupAnnouncements(io, accounts);
 setupBericht(io, accounts);
 gluecksrad.setup(io, accounts);
 setupAuktion(io, accounts);

@@ -80,7 +80,7 @@ function publicState() {
   return store.aktuell ? { ...store.aktuell } : null;
 }
 
-function setupAnnouncements(io) {
+function setupAnnouncements(io, accounts) {
   /* Eine Ansage mit Ablauf muss auch dann verschwinden, wenn niemand etwas
      anklickt. Vorher gab es keinen Ablauf, also auch keinen Grund zu
      ticken. */
@@ -96,11 +96,16 @@ function setupAnnouncements(io) {
     });
 
     const istBesitzer = () => socket.data.account === OWNER;
+    const istModerator = () => {
+      if (istBesitzer()) return true;
+      const acc = accounts && accounts.get(socket.data.account);
+      return !!(acc && acc.rolle === "mod");
+    };
 
     /** Was der Admin-Bildschirm braucht: Stand, Verlauf, moegliche Arten. */
     socket.on("admin:announcementState", (ack) => {
       if (typeof ack !== "function") return;
-      if (!istBesitzer()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!istModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       ack({
         ok: true,
         announcement: publicState(),
@@ -112,7 +117,7 @@ function setupAnnouncements(io) {
 
     socket.on("admin:announcement", async ({ text, art, minuten, push } = {}, ack) => {
       if (typeof ack !== "function") return;
-      if (!istBesitzer()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!istModerator()) return ack({ ok: false, error: "Kein Zugriff." });
 
       text = String(text || "").replace(/\s+/g, " ").trim().slice(0, MAX_TEXT);
       if (!text) return ack({ ok: false, error: "Text eingeben." });
@@ -122,10 +127,17 @@ function setupAnnouncements(io) {
       /* Ablauf. 0 heisst "bis ich sie wegnehme", der bisherige und weiter
          der uebliche Fall. Nach oben eine Woche, damit ein vertippter Wert
          keine Zeile hinterlaesst, die den Sommer ueberdauert. */
-      const min = Math.max(0, Math.min(7 * 24 * 60, Math.floor(Number(minuten) || 0)));
+      let min = Math.max(0, Math.min(7 * 24 * 60, Math.floor(Number(minuten) || 0)));
+      /* Moderatoren dürfen das Haus informieren, aber keine dauerhafte
+         Ansage oder Push-Nachricht an Abwesende erzeugen. */
+      if (!istBesitzer()) {
+        min = Math.max(1, Math.min(24 * 60, min || 60));
+        push = false;
+      }
       const bis = min ? Date.now() + min * 60 * 1000 : 0;
 
-      const eintrag = { text, art, by: OWNER, at: Date.now(), bis };
+      const actor = accounts && accounts.get(socket.data.account);
+      const eintrag = { text, art, by: actor ? actor.name : OWNER, at: Date.now(), bis };
       store.aktuell = eintrag;
       store.verlauf = [{ ...eintrag }, ...store.verlauf].slice(0, VERLAUF_MAX);
       save();
@@ -151,7 +163,7 @@ function setupAnnouncements(io) {
 
     socket.on("admin:announcementClear", (ack) => {
       if (typeof ack !== "function") return;
-      if (!istBesitzer()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!istModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       store.aktuell = null;
       save();
       io.emit("announcement:state", { announcement: null, toast: false });

@@ -1,10 +1,13 @@
 "use strict";
 
 const OWNER = "vincent";
+const MOD_STRAFEN = new Set(["sperre", "stumm", "spielsperre", "keineAuktion"]);
+const MOD_MAX_MINUTEN = 7 * 24 * 60;
 const city = require("./city");
 const slots = require("./slots");
 const liveops = require("./liveops");
 const ipbans = require("./ipbans");
+const zugangsschutz = require("./zugangsschutz");
 const chat = require("./chat");
 const wortfilter = require("./wortfilter");
 const bilder = require("./bilder");
@@ -144,9 +147,22 @@ function setupAdmin(io, accounts) {
       return socket.data.account === OWNER;
     }
 
+    function isModerator() {
+      if (isOwner()) return true;
+      const acc = accounts.get(socket.data.account);
+      return !!(acc && acc.rolle === "mod");
+    }
+
+    function istGeschuetzt(target) {
+      const key = keyVon(accounts, target);
+      const acc = accounts.get(key);
+      return key === OWNER || !!(acc && acc.rolle === "mod");
+    }
+
     socket.on("admin:dashboard", (ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
+      const ownerAnsicht = isOwner();
       const all = accounts.listAll();
       const onlineMap = new Map();
       for (const s of io.of("/").sockets.values()) {
@@ -180,8 +196,8 @@ function setupAdmin(io, accounts) {
           },
           totals: {
             accounts: all.length,
-            chips: all.reduce((sum, a) => sum + (a.chips || 0), 0),
-            bank: all.reduce((sum, a) => sum + (a.savings || 0), 0),
+            chips: ownerAnsicht ? all.reduce((sum, a) => sum + (a.chips || 0), 0) : undefined,
+            bank: ownerAnsicht ? all.reduce((sum, a) => sum + (a.savings || 0), 0) : undefined,
           },
           /* Der Zustand jedes Events, nicht nur ein Ja/Nein. Vorher stand
              im Bildschirm "Heist: aktiv", ohne zu sagen, wie lange noch
@@ -189,7 +205,7 @@ function setupAdmin(io, accounts) {
 
              `zustand` liefert jedes Modul seit dieser Runde; `active` bleibt
              als Rueckfall, falls ein Modul es einmal nicht kann. */
-          events: {
+          events: ownerAnsicht ? {
             liveops: typeof liveops.publicState === "function" ? liveops.publicState() : null,
             geplant: planPublic(),
             heist: eventZustand(_heist),
@@ -201,16 +217,17 @@ function setupAdmin(io, accounts) {
             rainActive: !!(_events.rain && _events.rain.active()),
             quizActive: !!(_events.quiz && _events.quiz.active()),
             vaultActive: !!(_events.vault && _events.vault.active()),
-          },
-          topWinners,
-          topLosers,
-          alerts,
+          } : {},
+          topWinners: ownerAnsicht ? topWinners : [],
+          topLosers: ownerAnsicht ? topLosers : [],
+          alerts: ownerAnsicht ? alerts : [],
           /* Wartung, offene Strafen und liegende Regie-Zettel gehoeren in die
              Uebersicht und nicht nur in ihren Reiter: es sind genau die drei
              Zustaende, die man versehentlich anlaesst. */
-          wartung: wartung.state(),
+          wartung: ownerAnsicht ? wartung.state() : null,
           strafen: strafenUebersicht(accounts),
-          regie: regie.liste(),
+          regie: ownerAnsicht ? regie.liste() : [],
+          rolle: ownerAnsicht ? "owner" : "mod",
         },
       });
     });
@@ -221,7 +238,7 @@ function setupAdmin(io, accounts) {
        dazu, und Ausnahmen fuer Woerter, die zu Unrecht haengenbleiben. */
     socket.on("admin:filterState", (ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       ack({ ok: true, ...wortfilter.listeState() });
     });
 
@@ -243,7 +260,7 @@ function setupAdmin(io, accounts) {
        Wappen und die Meldungen dazu. */
     socket.on("admin:bilder", (ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       let meldungen = [];
       try { meldungen = require("./clans").meldungen(); } catch {}
       ack({ ok: true, bilder: bilder.alle(), meldungen });
@@ -251,7 +268,7 @@ function setupAdmin(io, accounts) {
 
     socket.on("admin:bildWeg", ({ art, id, meldungErledigen } = {}, ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       const weg = bilder.loesche(String(art || ""), String(id || ""));
       if (meldungErledigen && art === "clan") {
         try { require("./clans").meldungErledigen(String(id), false); } catch {}
@@ -262,7 +279,7 @@ function setupAdmin(io, accounts) {
     /* Meldung abhaken, ohne das Bild zu entfernen, wenn sie unbegruendet war. */
     socket.on("admin:meldungOk", ({ clanId } = {}, ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       try { ack(require("./clans").meldungErledigen(String(clanId || ""), false)); }
       catch { ack({ ok: false, error: "Fehler." }); }
     });
@@ -273,7 +290,7 @@ function setupAdmin(io, accounts) {
        merken. */
     socket.on("admin:filterProbe", ({ text } = {}, ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       const roh = String(text || "").slice(0, 200);
       const t = wortfilter.treffer(roh);
       ack({
@@ -289,7 +306,7 @@ function setupAdmin(io, accounts) {
        lassen entscheidet der Besitzer je Fall. */
     socket.on("admin:filterPruefeBestand", (ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       const treffer = [];
       for (const a of accounts.listAll()) {
         const t = wortfilter.treffer(a.name);
@@ -310,14 +327,44 @@ function setupAdmin(io, accounts) {
 
     socket.on("admin:listAccounts", (ack) => {
       if (typeof ack !== "function") return;
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
+      const liste = accounts.listAll();
+      ack({
+        ok: true,
+        accounts: isOwner() ? liste : liste.map(({ name, rolle, banned, strafen, lastSeen }) => ({
+          name, rolle, banned, strafen, lastSeen,
+        })),
+      });
+    });
+
+    /* Nur der Besitzer vergibt Rollen. Die Rolle liegt am Konto und bleibt
+       dadurch über Neustarts und Backups erhalten. */
+    socket.on("admin:setRolle", ({ target, rolle } = {}, ack) => {
+      if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      ack({ ok: true, accounts: accounts.listAll() });
+      const key = keyVon(accounts, target);
+      const acc = accounts.get(key);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      if (key === OWNER) return ack({ ok: false, error: "Der Besitzer bleibt Besitzer." });
+      if (rolle === "mod") acc.rolle = "mod";
+      else delete acc.rolle;
+      accounts.save();
+      for (const s of socketsVon(io, key)) {
+        s.emit("account:update", { account: accounts.publicAccount(acc) });
+        s.emit("admin:nachricht", {
+          titel: rolle === "mod" ? "Moderator-Rechte" : "Rolle geändert",
+          text: rolle === "mod"
+            ? "Du kannst jetzt moderieren. Geld, Konten, Events und Spielausgänge bleiben nur beim Besitzer."
+            : "Deine Moderator-Rechte wurden entfernt.",
+        });
+      }
+      ack({ ok: true, rolle: acc.rolle || null });
     });
 
     socket.on("admin:setChips", ({ target, amount } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const acc = accounts.get(target);
+      const acc = accounts.get(keyVon(accounts, target));
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
       amount = Math.floor(Number(amount));
       if (!Number.isFinite(amount) || amount < 0) return ack({ ok: false, error: "Ungültiger Betrag." });
@@ -366,10 +413,12 @@ function setupAdmin(io, accounts) {
     socket.on("admin:ban", ({ target } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const res = accounts.ban(keyVon(accounts, target));
+      const key = keyVon(accounts, target);
+      if (key === OWNER) return ack({ ok: false, error: "Das Besitzerkonto wird nicht gesperrt." });
+      const res = accounts.ban(key);
       if (res.ok) {
         io.of("/").sockets.forEach((s) => {
-          if (s.data.account === keyVon(accounts, target)) {
+          if (s.data.account === key) {
             s.emit("admin:kicked", { reason: "Dein Account wurde gesperrt." });
             s.disconnect(true);
           }
@@ -426,6 +475,49 @@ function setupAdmin(io, accounts) {
       ack({ ok: true, bans });
     });
 
+    /* Gerätesperre: gezielter als eine IP-Sperre. Sie trifft nur den
+       Browser-Schlüssel, den das Ziel zuletzt benutzt hat. Ein gelöschter
+       Browser-Speicher ist nicht unfehlbar erkennbar, deshalb bleibt die
+       Konto- und Erstellungsbremse zusätzlich bestehen. */
+    socket.on("admin:deviceban", ({ target } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = keyVon(accounts, target);
+      const acc = accounts.get(key);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      if (key === OWNER) return ack({ ok: false, error: "Das Besitzer-Gerät wird nicht gesperrt." });
+      if (!acc.lastDeviceId) return ack({ ok: false, error: "Noch kein Gerät für dieses Konto bekannt. Die Person muss sich einmal neu anmelden." });
+      if (!zugangsschutz.sperre(acc.lastDeviceId)) return ack({ ok: false, error: "Gerät konnte nicht gesperrt werden." });
+      let getrennt = 0;
+      for (const s of io.of("/").sockets.values()) {
+        if (s.data && s.data.deviceId === acc.lastDeviceId) {
+          s.emit("ipbanned", { device: true });
+          s.disconnect(true);
+          getrennt++;
+        }
+      }
+      ack({ ok: true, id: acc.lastDeviceId.slice(-6), getrennt });
+    });
+
+    socket.on("admin:deviceunban", ({ id } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const voll = zugangsschutz.liste().find((x) => x === id || x.endsWith(String(id || "")));
+      if (!voll) return ack({ ok: false, error: "Gerät nicht gefunden." });
+      ack({ ok: zugangsschutz.entsperre(voll) });
+    });
+
+    socket.on("admin:devicebanList", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const alle = accounts.rawAll();
+      const bans = zugangsschutz.liste().map((id) => ({
+        id: id.slice(-6),
+        accounts: alle.filter((a) => a.lastDeviceId === id).map((a) => a.name),
+      }));
+      ack({ ok: true, bans });
+    });
+
     /* Pechvogel als Ja/Nein. Der Bildschirm setzt ihn seit dem Strafen-Umbau
        über admin:strafeSetzen (mit Stärke und Ablaufzeit); dieses Ereignis
        bleibt, weil ein alter, offener Tab es noch schicken kann, und landet
@@ -440,6 +532,7 @@ function setupAdmin(io, accounts) {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const key = keyVon(accounts, target);
+      if (key === OWNER) return ack({ ok: false, error: "Das Besitzerkonto wird nicht gelöscht." });
       // Rauswerfen, falls online
       io.of("/").sockets.forEach((s) => {
         if (s.data.account === key) {
@@ -661,7 +754,7 @@ function setupAdmin(io, accounts) {
        nicht Deko: er steht in der Meldung, die der Bestrafte liest. */
     socket.on("admin:strafen", (ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       ack({
         ok: true,
         arten: strafen.ARTEN,
@@ -672,11 +765,20 @@ function setupAdmin(io, accounts) {
 
     socket.on("admin:strafeSetzen", ({ target, art, minuten, wert, spiele, grund } = {}, ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       const key = keyVon(accounts, target);
       const acc = accounts.get(key);
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
-      if (key === OWNER) return ack({ ok: false, error: "Dich selbst bestrafen geht nicht." });
+      if (key === OWNER) return ack({
+        ok: false,
+        error: isOwner() ? "Dich selbst bestrafen geht nicht." : "Der Besitzer ist geschützt.",
+      });
+      if (!isOwner()) {
+        if (istGeschuetzt(key)) return ack({ ok: false, error: "Moderatoren können Besitzer und andere Moderatoren nicht bestrafen." });
+        const dauer = Math.floor(Number(minuten) || 0);
+        if (!MOD_STRAFEN.has(art)) return ack({ ok: false, error: "Diese Strafe darf nur der Besitzer setzen." });
+        if (dauer < 1 || dauer > MOD_MAX_MINUTEN) return ack({ ok: false, error: "Moderatoren dürfen Strafen für höchstens 7 Tage setzen." });
+      }
 
       const res = strafen.setze(acc, art, { minuten, wert, spiele, grund });
       if (!res.ok) return ack(res);
@@ -702,12 +804,17 @@ function setupAdmin(io, accounts) {
 
     socket.on("admin:strafeAufheben", ({ target, art } = {}, ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
-      const acc = accounts.get(keyVon(accounts, target));
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = keyVon(accounts, target);
+      const acc = accounts.get(key);
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      if (!isOwner()) {
+        if (istGeschuetzt(key)) return ack({ ok: false, error: "Moderatoren können bei Besitzer und Moderatoren keine Strafe ändern." });
+        if (art === "*" || !MOD_STRAFEN.has(art)) return ack({ ok: false, error: "Diese Strafe darf nur der Besitzer aufheben." });
+      }
       const res = art === "*" ? strafen.alleAufheben(acc) : strafen.hebeAuf(acc, art);
       if (res.ok) {
-        for (const s of socketsVon(io, acc.name)) {
+        for (const s of socketsVon(io, key)) {
           s.emit("admin:nachricht", { titel: "Vom Casino", text: art === "*" ? "Alle Strafen sind aufgehoben." : `Aufgehoben: ${(strafen.ARTEN[art] || {}).name || art}.` });
         }
       }
@@ -802,9 +909,10 @@ function setupAdmin(io, accounts) {
     // haengt oder eine Ansage verpasst hat: er kann sofort wieder rein.
     socket.on("admin:kick", ({ target, grund } = {}, ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       const key = keyVon(accounts, target);
       if (!accounts.get(key)) return ack({ ok: false, error: "Account nicht gefunden." });
+      if (!isOwner() && istGeschuetzt(key)) return ack({ ok: false, error: "Moderatoren können Besitzer und andere Moderatoren nicht trennen." });
       const text = String(grund || "").slice(0, 140) || "Du wurdest vom Casino getrennt. Du kannst sofort wieder rein.";
       let getrennt = 0;
       for (const s of socketsVon(io, key)) { s.emit("admin:kicked", { reason: text }); s.disconnect(true); getrennt++; }
@@ -817,15 +925,16 @@ function setupAdmin(io, accounts) {
        Benachrichtigung, sonst waere sie weg. */
     socket.on("admin:nachricht", ({ target, text, auchPush } = {}, ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       const key = keyVon(accounts, target);
       const acc = accounts.get(key);
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      if (!isOwner() && istGeschuetzt(key)) return ack({ ok: false, error: "Moderatoren können Besitzer und andere Moderatoren nicht anschreiben." });
       const t = String(text || "").trim().slice(0, 400);
       if (!t) return ack({ ok: false, error: "Kein Text." });
       const sockets = socketsVon(io, key);
       for (const s of sockets) s.emit("admin:nachricht", { titel: "Nachricht vom Casino", text: t });
-      if (auchPush && !sockets.length) {
+      if (isOwner() && auchPush && !sockets.length) {
         (async () => {
           try { await require("./push").an(key, "live", { title: "Nachricht vom Casino", body: t, url: "/" }); } catch {}
         })();
@@ -864,7 +973,7 @@ function setupAdmin(io, accounts) {
     // der Verlauf liegt nur im Speicher und ist nach einem Neustart ohnehin weg.
     socket.on("admin:chatLeeren", (ack) => {
       if (typeof ack !== "function") return;
-      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
       chat.clearRoom("global");
       io.emit("chat:geleert", { room: "global" });
       ack({ ok: true });
