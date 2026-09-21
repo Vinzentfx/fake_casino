@@ -399,21 +399,40 @@ app.post("/api/admin/restore", (req, res) => {
     return res.status(400).json({ error: "Das ist kein Fake-Casino-Backup (accounts.json fehlt)." });
   }
   try {
+    // Erst alles pruefen. Sonst koennte eine kaputte JSON-Datei den laufenden
+    // Stand schon halb ueberschrieben haben, bevor der Fehler auffaellt.
+    for (const [name, content] of Object.entries(files)) {
+      if (!/^[\w.\-]+$/.test(name) || name.includes("..") || typeof content !== "string") continue;
+      if (name.endsWith(".json")) JSON.parse(content);
+    }
     fs.mkdirSync(DATA_DIR, { recursive: true });
     let written = 0;
+    const wiederhergestellt = new Set();
     for (const [name, content] of Object.entries(files)) {
       // Nur flache Dateinamen, keine Pfad-Tricks ins Dateisystem.
       if (!/^[\w.\-]+$/.test(name) || name.includes("..")) continue;
       if (typeof content !== "string") continue;
       fs.writeFileSync(path.join(DATA_DIR, name), content);
+      wiederhergestellt.add(name);
       written += 1;
     }
+
+    // Ein Restore ist ein Schnappschuss, kein Zusammenmischen. Dateien aus
+    // spaeteren Tests oder neueren Funktionen duerfen nicht neben dem alten
+    // Stand liegen bleiben. Fehlende Dateien legen die Module beim Start mit
+    // ihren sicheren Standardwerten neu an.
+    for (const name of fs.readdirSync(DATA_DIR)) {
+      const p = path.join(DATA_DIR, name);
+      if (fs.statSync(p).isFile() && !wiederhergestellt.has(name)) fs.unlinkSync(p);
+    }
+
     /* Bilder aus aelteren Backups fehlen einfach, dann bleibt der Ordner
        leer und die Clans stehen ohne Wappen da, statt dass das Einspielen
        scheitert. */
     const binaer = req.body.binaer;
+    const bilderDir = path.join(DATA_DIR, "bilder");
+    const wiederhergestellteBilder = new Set();
     if (binaer && typeof binaer === "object") {
-      const bilderDir = path.join(DATA_DIR, "bilder");
       fs.mkdirSync(bilderDir, { recursive: true });
       for (const [pfad, b64] of Object.entries(binaer)) {
         // Genau ein Ordner, ein flacher Dateiname darin, nichts sonst.
@@ -421,8 +440,15 @@ app.post("/api/admin/restore", (req, res) => {
         if (!m || m[1].includes("..") || typeof b64 !== "string") continue;
         try {
           fs.writeFileSync(path.join(bilderDir, m[1]), Buffer.from(b64, "base64"));
+          wiederhergestellteBilder.add(m[1]);
           written += 1;
         } catch {}
+      }
+    }
+    if (fs.existsSync(bilderDir)) {
+      for (const name of fs.readdirSync(bilderDir)) {
+        const p = path.join(bilderDir, name);
+        if (fs.statSync(p).isFile() && !wiederhergestellteBilder.has(name)) fs.unlinkSync(p);
       }
     }
     res.json({ ok: true, written, restarting: true });
@@ -431,9 +457,11 @@ app.post("/api/admin/restore", (req, res) => {
   }
   // Alle Module halten ihren Zustand im RAM und würden die frisch geschriebenen
   // Dateien beim nächsten save() wieder überschreiben, also sauber neu starten.
-  // systemd (und lokal ein Prozess-Manager) startet den Server automatisch neu.
+  // Railway startet beim Standard "On Failure" nur Prozesse neu, die mit einem
+  // Fehlercode enden. Ein sauberer exit(0) laesst das Deployment dagegen im
+  // Status "Success" stehen, obwohl kein Webserver mehr laeuft.
   console.log("Backup eingespielt, Server startet neu, um die Daten zu laden.");
-  setTimeout(() => process.exit(0), 800);
+  setTimeout(() => process.exit(1), 800);
 });
 
 // Server und Socket.IO

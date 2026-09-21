@@ -11,7 +11,7 @@ Betrieb, siehe ganz unten.
 | **Adresse** | https://fakecasino-production-5147.up.railway.app |
 | **Plattform** | Railway, gebaut mit Nixpacks, gestartet mit `npm start` (siehe `railway.json`) |
 | **Node** | ab Version 22 (`engines` in `package.json`) |
-| **Neustart** | `restartPolicyType: ALWAYS`, also auch nach einem sauberen Beenden |
+| **Neustart** | `restartPolicyType: ON_FAILURE`; der Restore beendet den Prozess bewusst mit Fehlercode, damit auch Free-/Trial-Dienste neu starten |
 | **Repo** | https://github.com/Vinzentfx/fake_casino |
 
 ## Deployen
