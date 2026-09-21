@@ -297,6 +297,7 @@ function oeffentlich(acc) {
   const t = topf();
   return {
     stufen: STUFEN.filter((s) => t[s.id] && t[s.id].length).map((s) => ({ id: s.id, label: s.label, farbe: s.farbe, anzahl: t[s.id].length })),
+    serien: praegung.serienRegeln(),
     doppeltAnteil: DOPPELT_ANTEIL,
     doppeltFrei: DOPPELT_FREI_CHIPS,
     /* Abgelaufene Kisten fallen raus, und zwar hier und nicht im Client:
@@ -457,6 +458,7 @@ function oeffne(accounts, key, kistenId) {
       look: cosmetics.vorschauDaten(treffer.art, treffer.id),
       wert: treffer.wert,
       nr: st ? st.nr : null,
+      serie: st ? st.serie : null,
     },
     neu, zurueck,
     account: accounts.publicAccount(acc),
@@ -592,7 +594,9 @@ function nachDerSchau(io, accounts, socket, key, kiste, r) {
     if (r.neu) ruhm.melde(key, { ...r.treffer, stufe: r.stufe, kisteLabel: kiste.label });
     const fertig = cosmetics.sammlungAnsage(io, accounts, key);
     if (fertig.length) ack2(socket, fertig);
-    if (r.neu && (r.stufe.id === "legendaer" || r.stufe.id === "mythisch" || r.stufe.id === "kiste")) {
+    const serienRang = r.treffer.serie && r.treffer.serie.id;
+    if (r.neu && (r.stufe.id === "legendaer" || r.stufe.id === "mythisch" || r.stufe.id === "kiste"
+      || serienRang === "gold" || serienRang === "jackpot")) {
       const acc = accounts.get(key);
       if (acc) {
         /* "aus der Schwarze Kiste" war falsch. Mit "öffnet die …" stimmt der
@@ -602,8 +606,11 @@ function nachDerSchau(io, accounts, socket, key, kiste, r) {
            Namensstil und ein Chat-Zeichen mit demselben Namen, und im Chat
            steht sonst eine Meldung, die niemand einordnen kann. */
         const art = cosmetics.ART_NAME[r.treffer.art] || "";
+        const serie = r.treffer.serie;
+        const serienText = serie && serie.id !== "standard"
+          ? ` mit ${serie.label} #${serie.code}` : "";
         const satz = `${acc.name} öffnet die ${kiste.label} und zieht „${r.treffer.label}“`
-          + `${art ? ` (${art}, ${r.stufe.label})` : ` (${r.stufe.label})`}.`;
+          + `${art ? ` (${art}, ${r.stufe.label})` : ` (${r.stufe.label})`}${serienText}.`;
         chat.announce(io, satz);
         try { require("./chronik").notiere("event", satz, { user: acc.name, wert: r.treffer.wert }); } catch {}
       }

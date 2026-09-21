@@ -34,6 +34,7 @@ const MAX = 12;
    die zieht jeder taeglich, und eine Tafel, auf der alles steht, sagt
    nichts. */
 const TAFEL_AB = new Set(["episch", "legendaer", "mythisch", "kiste"]);
+const SERIE_TAFEL_AB = new Set(["gold", "jackpot"]);
 /* Ab welcher Stufe es allen, die gerade da sind, quer ueber den Bildschirm
    gesagt wird. Bewusst zwei Stufen hoeher als die Tafel: ein Banner, das
    dreimal am Abend kommt, ist nach einer Woche Tapete. */
@@ -69,8 +70,11 @@ function speichern() {
 function fuellen(e) {
   const cosmetics = require("./cosmetics");
   const kisten = require("./kisten");
+  const praegung = require("./praegung");
   const acc = accounts ? accounts.get(e.key) : null;
   const stufe = kisten.STUFEN.find((s) => s.id === e.stufe) || kisten.STUFEN[0];
+  const aktuell = praegung.stueckVon(e.key, e.art, e.id);
+  const nr = aktuell ? aktuell.nr : e.nr || null;
   return {
     ts: e.ts,
     name: acc ? acc.name : e.name,
@@ -79,7 +83,8 @@ function fuellen(e) {
     artName: cosmetics.ART_NAME[e.art] || e.art,
     look2: cosmetics.vorschauDaten(e.art, e.id),
     stufe: { id: stufe.id, label: stufe.label, farbe: stufe.farbe },
-    nr: e.nr || null,
+    nr,
+    serie: aktuell ? aktuell.serie : (e.serie || praegung.serieVon(nr)),
     kiste: e.kiste || null,
     duell: !!e.duell,
   };
@@ -98,7 +103,8 @@ function tafel() {
  * nicht jeder fuer sich entscheiden muessen, was selten genug ist.
  */
 function melde(key, treffer, opts = {}) {
-  if (!treffer || !treffer.stufe || !TAFEL_AB.has(treffer.stufe.id)) return null;
+  const serienRang = treffer && treffer.serie && treffer.serie.id;
+  if (!treffer || !treffer.stufe || (!TAFEL_AB.has(treffer.stufe.id) && !SERIE_TAFEL_AB.has(serienRang))) return null;
   const acc = accounts ? accounts.get(key) : null;
   const e = {
     ts: Date.now(),
@@ -109,6 +115,7 @@ function melde(key, treffer, opts = {}) {
     label: treffer.label,
     stufe: treffer.stufe.id,
     nr: treffer.nr || null,
+    serie: treffer.serie || null,
     kiste: opts.kisteLabel || treffer.kisteLabel || null,
     duell: !!opts.duell,
   };
@@ -118,7 +125,7 @@ function melde(key, treffer, opts = {}) {
 
   const fertig = fuellen(e);
   if (io) {
-    io.emit("ruhm:neu", { eintrag: fertig, banner: BANNER_AB.has(treffer.stufe.id) });
+    io.emit("ruhm:neu", { eintrag: fertig, banner: BANNER_AB.has(treffer.stufe.id) || serienRang === "jackpot" });
   }
   return fertig;
 }

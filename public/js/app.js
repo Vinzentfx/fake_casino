@@ -1268,9 +1268,11 @@ async function openPlayerProfile(name) {
      */
     if (acc.prunk && acc.prunk.label && acc.prunk.nr) {
       const p = acc.prunk;
-      tags.push(`<span class="pf-tag pf-tag-prunk${p.nr === 1 ? " erst" : ""}">`
-        + `${window.Casino.icons.ui(p.nr === 1 ? "stern-voll" : "stern")}`
-        + `${escapeHtml(p.label)} ${p.nr === 1 ? "Nr. 1 · Erstprägung" : `Nr. ${p.nr}`}</span>`);
+      const rang = window.Casino.spieler.serienRang(p);
+      const code = window.Casino.spieler.serienCode(p);
+      tags.push(`<span class="pf-tag pf-tag-prunk serie-${rang}">`
+        + `${window.Casino.icons.ui(rang === "jackpot" ? "stern-voll" : "stern")}`
+        + `${escapeHtml(p.label)} #${escapeHtml(code)} · ${escapeHtml((p.serie && p.serie.label) || "Klassische Serie")}</span>`);
     }
     if (acc.garnitur && acc.garnitur.label && acc.garnitur.teile) {
       const g = acc.garnitur;

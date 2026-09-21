@@ -61,12 +61,11 @@
    * Stellen im Haus — Marke am Namen, Kisteninhalt, Markt, Sammlung — und
    * zwei Schwellenlisten laufen beim nächsten neuen Stück auseinander.
    *
-   * Eine Ausnahme kennt diese Funktion: die Erstprägung sticht über alles,
-   * denn sie hängt nicht am Stück, sondern am Exemplar.
+   * Die Serienprägung läuft daneben als eigene Ebene: Stück-Seltenheit und
+   * Nummern-Seltenheit sollen nicht dieselbe Farbe an derselben Kante sein.
    */
   const STUFEN = new Set(["gewoehnlich", "selten", "episch", "legendaer", "mythisch", "einzel", "haus"]);
   function stufeVon(x) {
-    if (x && x.praegung && x.praegung.nr === 1) return "erst";
     return x && STUFEN.has(x.stufe) ? x.stufe : "gewoehnlich";
   }
 
@@ -130,15 +129,7 @@
   function nummer(x) {
     const p = x.praegung;
     if (!p || !p.nr) return "";
-    const wieviele = p.bestand > 1 ? ` von ${p.bestand}` : "";
-    /* Die Nummer 1 ist die Erstpraegung, und die gibt es von jedem Stueck
-       genau einmal. Sie steht hier ausgeschrieben und nicht nur als Ziffer:
-       "Nr. 1 von 14" liest sich sonst wie eine beliebige Nummer. */
-    /* Nur das Wort. "Erstprägung · Nr. 1 von 3" passt nicht in eine Kachel
-       von hundert Pixeln und wurde mitten im Wort abgeschnitten; der Rest
-       steht im Titel, für den, der genau hinsehen will. */
-    if (p.nr === 1) return `<span class="cos-nr erst" title="Erstprägung: Nr. 1${wieviele}">Erstprägung</span>`;
-    return `<span class="cos-nr">Nr. ${p.nr}${wieviele}</span>`;
+    return Casino.spieler.serienBadge(p, { label: false });
   }
 
   function knopf(type, x, inhalt, klasse = "") {
@@ -196,7 +187,7 @@
     const prunk = p.prunk && p.prunk.label && p.prunk.nr
       ? `<div class="cos-pass-trophy">
           <span class="cos-pass-trophy-kicker">Dein Prunkstück</span>
-          <b>${escapeHtml(p.prunk.label)}</b><small>${p.prunk.nr === 1 ? "Erstprägung · Nr. 1" : `Exemplar Nr. ${p.prunk.nr}`}</small>
+          <b>${escapeHtml(p.prunk.label)}</b><small>${escapeHtml((p.prunk.serie && p.prunk.serie.label) || "Klassische Serie")} · #${escapeHtml(Casino.spieler.serienCode(p.prunk))}</small>
         </div>`
       : `<div class="cos-pass-trophy leer">
           <span class="cos-pass-trophy-kicker">Dein Prunkstück</span>
@@ -329,7 +320,7 @@
       + alle.map((x) => {
         const k = `${x.art}:${x.id}`;
         return `<button class="cos-prunk-item${aktuell === k ? " on" : ""}" data-prunk="${escapeHtml(k)}">`
-          + `<span>${escapeHtml(nameVon(x.art, x.id))}</span><small>${x.praegung.nr === 1 ? "Erstprägung" : `Nr. ${x.praegung.nr}`}</small></button>`;
+          + `<span>${escapeHtml(nameVon(x.art, x.id))}</span><small>${escapeHtml((x.praegung.serie && x.praegung.serie.kurz) || "Serie")} #${escapeHtml(Casino.spieler.serienCode(x.praegung))}</small></button>`;
       }).join("")
       + `</div>`;
   }
@@ -399,17 +390,47 @@
   function renderSammlungen() {
     const box = $("#cos-sammlungen");
     if (!box || !stand || !stand.sammlungen) return;
-    const zeichen = { porta: "P", mitternacht: "M", feuer: "F" };
-    box.innerHTML = stand.sammlungen.map((k) => `
-      <article class="cos-slg cos-slg-${escapeHtml(k.id)}${k.komplett ? " voll" : ""}">
-        <div class="cos-slg-symbol" aria-hidden="true">${zeichen[k.id] || "✦"}</div>
-        <div class="cos-slg-kopf"><div><span class="cos-eyebrow">Kollektion</span><b>${escapeHtml(k.label)}</b><p>${escapeHtml(k.text || "")}</p></div>
-          <span class="cos-slg-stand">${k.voll}<i>/ ${k.gesamt}</i></span></div>
-        <div class="cos-slg-bahn"><span style="width:${Math.round(k.voll / k.gesamt * 100)}%"></span></div>
-        <div class="cos-slg-teile">${k.teile.map((t) =>
-          `<span class="cos-slg-teil${t.hat ? " hat" : ""}" title="${escapeHtml(nameVon(t.art, t.id))}"><i>${t.hat ? "✓" : "·"}</i>${escapeHtml(nameVon(t.art, t.id))}</span>`).join("")}</div>
-        <div class="cos-slg-preis"><span>${k.komplett ? "Freigeschaltet" : "Einzigartige Belohnung"}</span><b>${escapeHtml(nameVon(k.belohnung.art, k.belohnung.id))}</b></div>
-      </article>`).join("");
+    const zeichen = { porta: "♜", mitternacht: "☾", feuer: "♠" };
+    const voll = stand.sammlungen.filter((k) => k.komplett).length;
+    const teile = stand.sammlungen.reduce((n, k) => n + k.voll, 0);
+    const gesamt = stand.sammlungen.reduce((n, k) => n + k.gesamt, 0);
+    const prozent = gesamt ? Math.round(teile / gesamt * 100) : 0;
+    box.innerHTML = `
+      <div class="cos-archiv">
+        <div class="cos-archiv-siegel" style="--fort:${prozent * 3.6}deg"><span>${prozent}<i>%</i></span></div>
+        <div class="cos-archiv-text"><span class="cos-eyebrow">Das Sammlungsarchiv</span>
+          <b>${voll === stand.sammlungen.length ? "Das Archiv ist vollständig." : `${gesamt - teile} Fundstücke bis zum vollständigen Archiv.`}</b>
+          <p>Jede Reihe endet mit einer exklusiven Trophäe, die weder in Kisten noch auf dem Markt entsteht.</p></div>
+        <div class="cos-archiv-zahlen"><span><b>${teile}</b><small>von ${gesamt} Teilen</small></span><span><b>${voll}</b><small>von ${stand.sammlungen.length} voll</small></span></div>
+      </div>`
+      + stand.sammlungen.map((k, index) => {
+        const pct = Math.round(k.voll / k.gesamt * 100);
+        return `<article class="cos-slg cos-slg-${escapeHtml(k.id)}${k.komplett ? " voll" : ""}">
+          <div class="cos-slg-glanz" aria-hidden="true"></div>
+          <header class="cos-slg-kopf">
+            <div class="cos-slg-symbol" aria-hidden="true">${zeichen[k.id] || "✦"}</div>
+            <div class="cos-slg-titel"><span class="cos-eyebrow">Archiv ${String(index + 1).padStart(2, "0")}</span><b>${escapeHtml(k.label)}</b><p>${escapeHtml(k.text || "")}</p></div>
+            <div class="cos-slg-stand"><strong>${k.voll}</strong><i>/ ${k.gesamt}</i><small>${k.komplett ? "vollendet" : "gefunden"}</small></div>
+          </header>
+          <div class="cos-slg-bahn"><span style="width:${pct}%"></span><i>${pct} %</i></div>
+          <div class="cos-slg-teile">${k.teile.map((t, i) => {
+            const stufe = STUFEN.has(t.stufe) ? t.stufe : "gewoehnlich";
+            return `<div class="cos-slg-teil cos-slg-teil-${stufe}${t.hat ? " hat" : ""}">
+              <span class="cos-slg-index">${String(i + 1).padStart(2, "0")}</span>
+              <div class="cos-slg-demo">${Casino.spieler.kosVorschau(t.look, { name: (Casino.getAccount() || {}).name || "Du" })}</div>
+              <b>${escapeHtml(t.label || nameVon(t.art, t.id))}</b>
+              <small>${escapeHtml((t.look && t.look.artName) || "Fundstück")}</small>
+              <span class="cos-slg-status">${t.hat ? "Im Archiv" : "Fehlt"}</span>
+            </div>`;
+          }).join("")}</div>
+          <div class="cos-slg-preis${k.komplett ? " frei" : ""}">
+            <div class="cos-slg-preis-demo">${Casino.spieler.kosVorschau(k.belohnung.look, { name: (Casino.getAccount() || {}).name || "Du" })}</div>
+            <div><span>${k.komplett ? "Archiv-Trophäe freigeschaltet" : "Trophäe hinter dem letzten Siegel"}</span>
+              <b>${escapeHtml(k.belohnung.label || nameVon(k.belohnung.art, k.belohnung.id))}</b>
+              <small>${k.komplett ? "Gehört dir für immer." : `Noch ${k.gesamt - k.voll} ${k.gesamt - k.voll === 1 ? "Fundstück" : "Fundstücke"}.`}</small></div>
+          </div>
+        </article>`;
+      }).join("");
   }
 
   document.addEventListener("click", (e) => {

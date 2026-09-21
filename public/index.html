@@ -1342,7 +1342,7 @@
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
       <h2 class="screen-title"><i data-icon="kosmetik"></i>Sammlung</h2>
       <div class="tafel">
-        <p class="muted small">Deine Sammlung. Antippen legt an, was du hast, und zeigt, was du noch nicht hast. Gekauft wird hier nichts mehr: Kosmetik kommt aus den <b>Kisten</b> und vom <b>Markt</b>. Nichts davon verändert das Spiel, es sieht nur besser aus als bei den anderen.</p>
+        <p class="muted small">Dein persönliches Archiv. Jedes Fundstück trägt eine zufällige Seriennummer; besondere Muster sind seltener als das Stück selbst. Antippen legt an, was du besitzt, und zeigt, was dir noch fehlt.</p>
 
         <!-- Vorschau. Ohne sie kauft man eine Animation, ohne sie je gesehen
              zu haben, und merkt erst hinterher, dass sie einem nicht gefällt. -->
@@ -1363,7 +1363,7 @@
         <div id="cos-familien" class="cos-familien"></div>
 
         <h3 class="section-title" style="margin-top:14px">Kollektionen</h3>
-        <p class="hint" style="margin-top:-4px">Wer eine Kollektion vollständig hat, bekommt ein Stück, das es auf keinem anderen Weg gibt. Was fehlt, holt man sich auf dem Markt.</p>
+        <p class="hint" style="margin-top:-4px">Sechs Fundstücke öffnen jeweils ein Archiv-Siegel. Hinter dem letzten wartet eine Trophäe, die auf keinem anderen Weg entsteht.</p>
         <div id="cos-sammlungen" class="cos-sammlungen"></div>
 
         <h3 class="section-title" style="margin-top:14px">Chat-Zeichen</h3>
@@ -1782,7 +1782,7 @@
         <div style="text-align:center">
           <div class="ph-icon" data-icon="warenkorb"></div>
           <h2>Markt</h2>
-          <p class="muted small" id="mkt-intro">Geprägte Stücke von Spieler zu Spieler. Jedes hat eine Nummer und eine Geschichte.</p>
+          <p class="muted small" id="mkt-intro">Geprägte Stücke von Spieler zu Spieler. Jedes hat eine zufällige Seriennummer und eine Geschichte.</p>
         </div>
 
         <h3 style="margin:14px 0 6px">Im Schaufenster</h3>
@@ -1800,8 +1800,10 @@
         <div class="ki-titel">
           <div class="ph-icon" data-icon="geschenk"></div>
           <h2>Kisten</h2>
-          <p class="muted small">Kosmetik als Ziehung. Was drin sein kann und wie wahrscheinlich, steht an jeder Kiste.</p>
+          <p class="muted small">Erst fällt das Stück. Dann wird seine vierstellige Seriennummer geprägt.</p>
         </div>
+
+        <div class="ki-serienlotterie" id="ki-serienlotterie"></div>
 
         <!--
           Die Ruhmestafel. Steht bewusst GANZ OBEN und nicht in einem eigenen

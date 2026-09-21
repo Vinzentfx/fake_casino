@@ -21,6 +21,7 @@
   const { socket, toast, applyAccount, escapeHtml } = Casino;
   const $ = (s) => document.querySelector(s);
   const zahl = (n) => Math.round(Number(n) || 0).toLocaleString("de-DE");
+  const serienCode = (x) => Casino.spieler.serienCode(x);
 
   let stand = null;
   let uhr = null;
@@ -165,7 +166,7 @@
           <div class="auk-podest" aria-hidden="true"></div>
           <div class="auk-stueck">${stueck(l.type, l.id, l.label)}</div>
         </div>
-        <h3 class="auk-name">${escapeHtml(l.label)}${l.stueckNr ? ` <span class="auk-stuecknr${l.stueckNr === 1 ? " erst" : ""}">Nr. ${l.stueckNr}</span>` : ""}</h3>
+        <h3 class="auk-name">${escapeHtml(l.label)}${l.stueckNr ? ` ${Casino.spieler.serienBadge({ nr: l.stueckNr, serie: l.stueckSerie })}` : ""}</h3>
         <p class="auk-einmal">${l.vonName
           ? `Eingeliefert von <b>${escapeHtml(l.vonName)}</b>. Dieses eine Exemplar wechselt den Besitzer.`
           : "Gibt es genau einmal, und nur hier."}</p>
@@ -254,7 +255,7 @@
           <span class="auk-schlange-demo">${window.Casino.spieler.kosVorschau(x.look, { name: x.name })}</span>
           <span class="auk-schlange-text">
             <b>${escapeHtml((x.look && x.look.label) || x.label)}</b>
-            <small>Nr. ${x.nr} · von ${escapeHtml(x.name)} · ab ${zahl(x.mindest)}</small>
+            <small>#${serienCode(x)} · ${(x.serie && escapeHtml(x.serie.kurz)) || "Serie"} · von ${escapeHtml(x.name)} · ab ${zahl(x.mindest)}</small>
           </span>
           ${x.meins ? `<button class="btn-secondary auk-klein" data-auk-zurueck="${escapeHtml(x.uid)}">Zurück</button>` : ""}
         </div>`).join("")}
@@ -288,7 +289,7 @@
                 data-label="${escapeHtml(x.label)}" data-nr="${x.nr}">
               <span class="auk-meins-demo">${window.Casino.spieler.kosVorschau(x.look, { name: "Du" })}</span>
               <b>${escapeHtml((x.look && x.look.label) || x.label)}</b>
-              <small class="${x.nr === 1 ? "auk-erst" : ""}">${x.nr === 1 ? "Erstprägung" : `Nr. ${x.nr}`}${x.bestand > 1 ? ` von ${x.bestand}` : ""}</small>
+              ${Casino.spieler.serienBadge(x)}
             </button>`).join("")}
           </div>`}
     </div>`;
@@ -299,7 +300,7 @@
     return `<div class="tafel auk-archiv">
       <h4 class="auk-h">Schon vergeben</h4>
       ${s.archiv.map((a) => `<div class="auk-zeile">
-        <span class="auk-wer">${escapeHtml(a.art)} „${escapeHtml(a.label)}“${a.stueckNr ? ` Nr. ${a.stueckNr}` : ""}</span>
+        <span class="auk-wer">${escapeHtml(a.art)} „${escapeHtml(a.label)}“${a.stueckNr ? ` ${Casino.spieler.serienBadge({ nr: a.stueckNr, serie: a.stueckSerie })}` : ""}</span>
         <span class="auk-wann">${escapeHtml(a.name)}${a.von ? ` von ${escapeHtml(a.von)}` : ""}</span>
         <b>${zahl(a.betrag)}<i class=mk></i></b>
       </div>`).join("")}
@@ -361,7 +362,7 @@
   });
 
   socket.on("auktion:verkauft", (d) => {
-    toast(`Zuschlag auf dein Los: „${d.label}“ Nr. ${d.nr} geht für ${zahl(d.betrag)} an ${d.an}. Du bekommst ${zahl(d.erloes)} Chips.`);
+    toast(`Zuschlag auf dein Los: „${d.label}“ #${serienCode(d)} geht für ${zahl(d.betrag)} an ${d.an}. Du bekommst ${zahl(d.erloes)} Chips.`);
     Casino.fx?.confetti({ count: 60, wucht: 1.1 });
   });
 

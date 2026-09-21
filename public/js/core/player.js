@@ -105,27 +105,33 @@
   }
 
   const PRUNK_STUFEN = new Set(["gewoehnlich", "selten", "episch", "legendaer", "mythisch", "einzel", "haus"]);
-  /*
-   * Die Erstpraegung.
-   *
-   * Von jedem Stueck gibt es genau EIN Exemplar mit der Nummer 1, und
-   * zurueckholen kann man es nie: wer es hergibt, bekommt hoechstens ein
-   * anderes Exemplar desselben Stuecks zurueck, aber nie wieder die Eins.
-   * Das ist die einzige Seltenheit im Haus, die nicht aus einer Tabelle
-   * kommt, sondern aus der Reihenfolge — und sie kostet nichts ausser
-   * dieser Zeile, weil das Register die Nummern ohnehin schon fuehrt.
-   *
-   * Sichtbar gemacht wird sie ueber die Marke am Namen, also dort, wo sie
-   * jeder sieht, ohne irgendwo hinzugehen.
-   */
+  const SERIEN_RANG = new Set(["standard", "glueck", "gold", "jackpot"]);
+  function serienCode(k) {
+    if (!k || !k.nr) return "";
+    return (k.serie && k.serie.code) || String(k.nr).padStart(4, "0");
+  }
+  function serienRang(k) {
+    const rang = k && k.serie && k.serie.id;
+    return SERIEN_RANG.has(rang) ? rang : "standard";
+  }
+  function serienBadge(k, { label = true } = {}) {
+    if (!k || !k.nr) return "";
+    const rang = serienRang(k);
+    const name = (k.serie && k.serie.label) || "Klassische Serie";
+    return `<span class="serie-badge serie-${rang}" title="${esc(name)} #${serienCode(k)}">`
+      + `<i></i>${label ? `<small>${esc(name)}</small>` : ""}<b>#${serienCode(k)}</b></span>`;
+  }
+
+  /* Die Marke am Namen zeigt nicht mehr, wer zuerst geklickt hat, sondern
+     welche zufällige Serienprägung dieses konkrete Exemplar trägt. */
   function prunk(p) {
     const k = p && p.prunk;
     if (!k || !k.nr) return "";
     const stufe = PRUNK_STUFEN.has(k.stufe) ? k.stufe : "gewoehnlich";
-    const erst = k.nr === 1 ? " erst" : "";
-    const titel = k.nr === 1 ? `${k.label} Nr. 1 — Erstprägung` : `${k.label} Nr. ${k.nr}`;
-    return `<span class="pl-prunk pr-${stufe}${erst}" title="${esc(titel)}">`
-      + `<i></i>${esc(String(k.nr))}</span>`;
+    const rang = serienRang(k);
+    const titel = `${k.label} #${serienCode(k)} — ${(k.serie && k.serie.label) || "Klassische Serie"}`;
+    return `<span class="pl-prunk pr-${stufe} serie-${rang}" title="${esc(titel)}">`
+      + `<i></i>${esc(serienCode(k))}</span>`;
   }
 
   /*
@@ -208,5 +214,5 @@
     }
   }
 
-  Casino.spieler = { name, avatar, title, chip, prunk, garnitur, zeichen, kosVorschau };
+  Casino.spieler = { name, avatar, title, chip, prunk, garnitur, zeichen, kosVorschau, serienCode, serienRang, serienBadge };
 })();

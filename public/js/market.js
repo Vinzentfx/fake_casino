@@ -8,6 +8,7 @@
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
+  const serieCode = (x) => window.Casino.spieler.serienCode(x);
 
   let stand = null;
   /* Welches Stück gerade frisch gekauft ist, und bis wann es leuchtet.
@@ -35,7 +36,7 @@
   /*
    * Die Herkunft eines Stücks.
    *
-   * Das ist der ganze Grund für den Markt: ein Hologramm Nr. 3, das seit der
+   * Das ist der ganze Grund für den Markt: ein Hologramm #0427, das seit der
    * Prägung beim Ersten liegt, ist eine andere Sache als eins, das schon
    * durch drei Hände ging. Steht deshalb am Angebot und nicht hinter einem
    * zweiten Tipp, denn auf dem iPad gibt es kein Hover.
@@ -70,7 +71,7 @@
       </div>
       <div class="mkt-stueck-text">
         <div class="mkt-stueck-kopf"><b>${escapeHtml(o.label)}</b>
-          <span class="mkt-nr${o.nr === 1 ? " erst" : ""}"${o.nr === 1 ? ' title="Erstprägung: das erste Exemplar, das es von diesem Stück je gab"' : ""}>Nr. ${o.nr}${o.bestand > 1 ? ` / ${o.bestand}` : ""}</span></div>
+          ${window.Casino.spieler.serienBadge(o)}</div>
         <div class="mkt-art">${escapeHtml((o.look && o.look.artName) || "")}</div>
         ${extra}
       </div>
@@ -139,7 +140,7 @@
       const o = stand.angebote.find((x) => x.id === kauf.dataset.kauf);
       if (!o) return;
       window.Casino.dialog.frage(
-        `${o.label} Nr. ${o.nr} für ${fmt(o.preis)} Chips von ${o.verkaeuferName}.`,
+        `${o.label} #${serieCode(o)} für ${fmt(o.preis)} Chips von ${o.verkaeuferName}.`,
         { titel: "Kaufen?", okText: "Kaufen" },
       ).then((ja) => {
         if (!ja) return;
@@ -157,7 +158,7 @@
           const neuKachel = document.querySelector(`#mkt-inventory .mkt-karte[data-uid="${res.gekauft.uid}"]`);
           if (neuKachel) neuKachel.scrollIntoView({ block: "center", behavior: "smooth" });
           setTimeout(() => { frisch = { uid: null, bis: 0 }; if (onScreen()) render(); }, 2400);
-          toast(`${res.gekauft.label} Nr. ${res.gekauft.nr} gehört jetzt dir.`);
+          toast(`${res.gekauft.label} #${serieCode(res.gekauft)} gehört jetzt dir.`);
         });
       });
       return;
@@ -188,7 +189,7 @@
   // Verkauft, während man woanders war. Kommt immer, nicht nur auf dem Screen.
   socket.on("market:verkauft", (v) => {
     if (!v) return;
-    toast(`${v.label} Nr. ${v.nr} ist verkauft: ${fmt(v.erloes)} Chips von ${v.an}.`);
+    toast(`${v.label} #${serieCode(v)} ist verkauft: ${fmt(v.erloes)} Chips von ${v.an}.`);
     if (onScreen()) load();
   });
 

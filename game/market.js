@@ -9,7 +9,7 @@
  * Screen existierte nur noch.
  *
  * Jetzt gehandelt wird das, was game/praegung.js zu einem Gegenstand macht:
- * Exemplare mit einer laufenden Nummer und einer Besitzerkette.
+ * Exemplare mit einer zufaelligen Seriennummer und einer Besitzerkette.
  *
  * Die Regeln und warum sie so sind:
  *
@@ -77,6 +77,9 @@ function save() {
 
 const err = (error) => ({ ok: false, error });
 const de = (n) => Math.round(n).toLocaleString("de-DE");
+const serienText = (nr, serie) => nr
+  ? `#${(serie && serie.code) || String(nr).padStart(4, "0")}${serie && serie.kurz ? ` ${serie.kurz}` : ""}`
+  : "";
 
 /**
  * Ein Angebot, fertig zum Anzeigen.
@@ -94,7 +97,7 @@ function publicAngebot(id, a, viewerKey) {
     label: cosmetics.label(st.art, st.id),
     // Damit der Markt das Stück zeigen kann und nicht nur seinen Namen.
     look: cosmetics.vorschauDaten(st.art, st.id),
-    nr: st.nr, bestand: praegung.bestand(st.art, st.id),
+    nr: st.nr, serie: st.serie, bestand: praegung.bestand(st.art, st.id),
     gepraegtAm: st.gepraegtAm, gepraegtFuer: st.fuerName,
     haende: st.kette.length,
     // Nur die Verkäufe, nicht die Prägung: ein Preis von 0 ist kein Preis.
@@ -134,7 +137,7 @@ function anbietbar(acc, key) {
       uid: st.uid, art: st.art, stueckId: st.id,
       label: cosmetics.label(st.art, st.id),
       look: cosmetics.vorschauDaten(st.art, st.id),
-      nr: st.nr, bestand: praegung.bestand(st.art, st.id),
+      nr: st.nr, serie: st.serie, bestand: praegung.bestand(st.art, st.id),
       haende: st.kette.length,
     });
   }
@@ -176,7 +179,7 @@ function anbieten(accounts, key, uid, preis) {
   const id = String(store.next++);
   store.angebote[id] = { uid, preis: p, verkaeufer: key, verkaeuferName: acc.name, seit: Date.now() };
   save();
-  return { ok: true, id, art: st.art, stueckId: st.id, nr: st.nr, label: cosmetics.label(st.art, st.id), preis: p };
+  return { ok: true, id, art: st.art, stueckId: st.id, nr: st.nr, serie: st.serie, label: cosmetics.label(st.art, st.id), preis: p };
 }
 
 function zuruecknehmen(accounts, key, id) {
@@ -222,7 +225,7 @@ function kaufen(accounts, key, id) {
     // Die uid mit zurück: der Client will genau diese Kachel hervorheben,
     // und sie über den angezeigten Text zu suchen ist zu wackelig.
     uid: a.uid,
-    label: cosmetics.label(st.art, st.id), nr: st.nr,
+    label: cosmetics.label(st.art, st.id), nr: st.nr, serie: st.serie,
     preis: a.preis, gebuehr, anVerkaeufer,
     verkaeufer: a.verkaeufer, verkaeuferName: verk ? verk.name : a.verkaeuferName,
   };
@@ -256,9 +259,10 @@ function umbenennen(key, alt, neu) {
 /* Ab wann ein Angebot im Chat steht. Dieselbe Schwelle wie auf der
    Ruhmestafel (game/ruhm.js), damit „selten genug, um es zu sagen“ im
    ganzen Haus dasselbe heisst. */
-function erwaehnenswert(art, id) {
+function erwaehnenswert(art, id, serie) {
   try {
-    return require("./ruhm").TAFEL_AB.has(cosmetics.stufeVonStueck(art, id));
+    return require("./ruhm").TAFEL_AB.has(cosmetics.stufeVonStueck(art, id))
+      || (serie && (serie.id === "gold" || serie.id === "jackpot"));
   } catch { return true; }
 }
 
@@ -278,8 +282,8 @@ function setupMarket(io, accounts) {
       if (!r.ok) return ack(r);
       ack({ ok: true, ...oeffentlich(accounts, key()), account: accounts.publicAccount(accounts.get(key())) });
       io.emit("market:update");
-      const satz = `${accounts.get(key()).name} bietet „${r.label}“ Nr. ${r.nr} für ${de(r.preis)} Chips an.`;
-      if (erwaehnenswert(r.art, r.stueckId)) chat.announce(io, satz);
+      const satz = `${accounts.get(key()).name} bietet „${r.label}“ ${serienText(r.nr, r.serie)} für ${de(r.preis)} Chips an.`;
+      if (erwaehnenswert(r.art, r.stueckId, r.serie)) chat.announce(io, satz);
       try { require("./chronik").notiere("stadt", satz, { user: accounts.get(key()).name, wert: r.preis }); } catch {}
     });
 
@@ -301,9 +305,9 @@ function setupMarket(io, accounts) {
       const fertig = cosmetics.sammlungAnsage(io, accounts, key());
       ack({ ok: true, ...oeffentlich(accounts, key()), account: accounts.publicAccount(acc), gekauft: r, sammlung: fertig });
       io.emit("market:update");
-      chat.announce(io, `${acc.name} kauft „${r.label}“ Nr. ${r.nr} von ${r.verkaeuferName} für ${de(r.preis)} Chips.`);
+      chat.announce(io, `${acc.name} kauft „${r.label}“ ${serienText(r.nr, r.serie)} von ${r.verkaeuferName} für ${de(r.preis)} Chips.`);
       try {
-        require("./chronik").notiere("stadt", `${acc.name} kauft „${r.label}“ Nr. ${r.nr} von ${r.verkaeuferName} für ${de(r.preis)} Chips.`, { user: acc.name, wert: r.preis });
+        require("./chronik").notiere("stadt", `${acc.name} kauft „${r.label}“ ${serienText(r.nr, r.serie)} von ${r.verkaeuferName} für ${de(r.preis)} Chips.`, { user: acc.name, wert: r.preis });
       } catch {}
       /* Der Verkäufer bekommt Chips, ohne etwas gedrückt zu haben. Ohne diese
          Zeile steht in seiner Topbar weiter der alte Stand, genau wie beim
@@ -312,7 +316,7 @@ function setupMarket(io, accounts) {
       for (const s of io.of("/").sockets.values()) {
         if (s.data && s.data.account === r.verkaeufer) {
           if (verkAcc) s.emit("account:update", { account: accounts.publicAccount(verkAcc) });
-          s.emit("market:verkauft", { label: r.label, nr: r.nr, preis: r.preis, erloes: r.anVerkaeufer, an: acc.name });
+          s.emit("market:verkauft", { label: r.label, nr: r.nr, serie: r.serie, preis: r.preis, erloes: r.anVerkaeufer, an: acc.name });
           break;
         }
       }

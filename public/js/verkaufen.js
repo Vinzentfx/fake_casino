@@ -29,6 +29,7 @@
   if (!socket) return;
 
   const zahl = (n) => Math.floor(Number(n) || 0).toLocaleString("de-DE");
+  const serie = (x) => `#${Casino.spieler.serienCode(x)}${x.serie && x.serie.kurz ? ` ${x.serie.kurz}` : ""}`;
 
   /** Beide Stände holen, sonst kennt man je nur den halben Vergleich. */
   function staende() {
@@ -66,7 +67,7 @@
     const [markt, auk] = await staende();
     if (!markt) return Casino.toast("Der Markt antwortet gerade nicht.");
 
-    const name = `${stueck.label} Nr. ${stueck.nr}`;
+    const name = `${stueck.label} ${serie(stueck)}`;
     const grund = auktionsGrund(auk, stueck.uid);
     const e = (auk && auk.einliefern) || {};
 
@@ -128,7 +129,7 @@
     socket.emit("auktion:einliefern", { uid: stueck.uid, mindest: Number(start) }, (r) => {
       if (!r || !r.ok) return Casino.toast((r && r.error) || "Ging nicht.");
       if (r.account) Casino.applyAccount(r.account);
-      Casino.toast(`„${r.label}“ Nr. ${r.nr} steht in der Warteschlange.`);
+      Casino.toast(`„${r.label}“ ${serie(r)} steht in der Warteschlange.`);
       if (fertig) fertig(r);
     });
   }

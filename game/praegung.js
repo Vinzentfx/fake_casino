@@ -14,10 +14,10 @@
  * rund fünfzehn Stück. Der Laden ist der größte Chip-Abfluss, den das Casino
  * hat, und er wird nicht benutzt, weil ein Stück nichts erzählt.
  *
- * Hier bekommt jedes limitierte Exemplar deshalb eine laufende Nummer, ein
+ * Hier bekommt jedes limitierte Exemplar deshalb eine zufaellige Seriennummer, ein
  * Prägedatum, einen Erstbesitzer und eine Kette aller Besitzer mit den
  * Preisen, zu denen es den Besitzer gewechselt hat. Aus "Hologramm" wird
- * "Hologramm Nr. 3 von 7, geprägt für Ben, zweimal weitergegeben, zuletzt für
+ * "Hologramm #0427, geprägt für Ben, zweimal weitergegeben, zuletzt für
  * 840.000". Erst damit lohnt sich ein Markt, und erst damit ist Seltenheit
  * etwas, das man sehen kann.
  *
@@ -37,6 +37,7 @@
 
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "praegung.json");
@@ -44,7 +45,15 @@ const FILE = path.join(DATA_DIR, "praegung.json");
 function load() {
   try {
     const raw = JSON.parse(fs.readFileSync(FILE, "utf8"));
-    if (raw && raw.stuecke) return { v: 1, next: raw.next || {}, stuecke: raw.stuecke, nachgetragen: !!raw.nachgetragen, einsKorrigiert: !!raw.einsKorrigiert };
+    if (raw && raw.stuecke) return {
+      v: Number(raw.v) || 1,
+      next: raw.next || {},
+      stuecke: raw.stuecke,
+      vergeben: raw.vergeben || {},
+      nachgetragen: !!raw.nachgetragen,
+      einsKorrigiert: !!raw.einsKorrigiert,
+      serienZufall: !!raw.serienZufall,
+    };
   } catch (e) {
     /* Fehlt die Datei, ist ein leeres Register richtig: dann wird gleich
        nachgetragen. Ist sie da und unlesbar, darf NICHT weitergelaufen
@@ -56,7 +65,7 @@ function load() {
       throw e;
     }
   }
-  return { v: 1, next: {}, stuecke: {}, nachgetragen: false, einsKorrigiert: false };
+  return { v: 2, next: {}, stuecke: {}, vergeben: {}, nachgetragen: false, einsKorrigiert: true, serienZufall: true };
 }
 
 let state = load();
@@ -89,19 +98,127 @@ const saveJetzt = save;
 const schluessel = (art, id) => `${art}:${id}`;
 const neueUid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
+/* ------------------------------------------------------------------
+ * Serienlotterie
+ *
+ * Eine laufende Nummer belohnt Tempo: wer nach einem neuen Katalogstueck
+ * zuerst genug Kisten aufmacht, kann die Eins praktisch erzwingen. Eine
+ * Seriennummer soll aber ein Fund sein, kein Wettrennen.
+ *
+ * Jede neue Praegung zieht deshalb zuerst eine Klasse und danach eine noch
+ * freie vierstellige Nummer aus deren Muster-Topf. Die Chance bleibt bei
+ * jedem Exemplar gleich, egal ob es das erste oder das hundertste ist.
+ * Innerhalb eines Stuecks wird eine Nummer nie doppelt vergeben.
+ * ------------------------------------------------------------------ */
+const SERIEN_MAX = 9_999;
+const SERIEN = [
+  { id: "jackpot", label: "Jackpot-Serie", kurz: "Jackpot", chance: 0.5, farbe: "#b6ff4d" },
+  { id: "gold", label: "Gold-Serie", kurz: "Gold", chance: 2, farbe: "#f4d782" },
+  { id: "glueck", label: "Glücksserie", kurz: "Glück", chance: 7.5, farbe: "#5eead4" },
+  { id: "standard", label: "Klassische Serie", kurz: "Klassisch", chance: 90, farbe: "#9aa4ae" },
+];
+
+const JACKPOT_NUMMERN = new Set([1, 7, 77, 777, 7777]);
+const GOLD_NUMMERN = new Set([123, 321, 1234, 2026, 4321]);
+for (let z = 1; z <= 9; z++) {
+  GOLD_NUMMERN.add(z * 11);
+  GOLD_NUMMERN.add(z * 111);
+  GOLD_NUMMERN.add(z * 1111);
+}
+for (const n of JACKPOT_NUMMERN) GOLD_NUMMERN.delete(n);
+
+const istSpiegel = (n) => {
+  const s = String(n);
+  return s.length >= 3 && s === s.split("").reverse().join("");
+};
+const GLUECK_NUMMERN = new Set();
+for (let n = 10; n <= SERIEN_MAX; n++) {
+  if (istSpiegel(n) || n % 100 === 0) GLUECK_NUMMERN.add(n);
+}
+for (const n of JACKPOT_NUMMERN) GLUECK_NUMMERN.delete(n);
+for (const n of GOLD_NUMMERN) GLUECK_NUMMERN.delete(n);
+
+const POOLS = {
+  jackpot: [...JACKPOT_NUMMERN],
+  gold: [...GOLD_NUMMERN],
+  glueck: [...GLUECK_NUMMERN],
+  standard: [],
+};
+for (let n = 1; n <= SERIEN_MAX; n++) {
+  if (!JACKPOT_NUMMERN.has(n) && !GOLD_NUMMERN.has(n) && !GLUECK_NUMMERN.has(n)) POOLS.standard.push(n);
+}
+
+function serienRang(nr) {
+  nr = Number(nr) || 0;
+  if (JACKPOT_NUMMERN.has(nr)) return "jackpot";
+  if (GOLD_NUMMERN.has(nr)) return "gold";
+  if (GLUECK_NUMMERN.has(nr)) return "glueck";
+  return "standard";
+}
+
+function serieVon(nr) {
+  nr = Number(nr) || 0;
+  if (!nr) return null;
+  const def = SERIEN.find((s) => s.id === serienRang(nr)) || SERIEN[SERIEN.length - 1];
+  return { ...def, nr, code: String(nr).padStart(4, "0") };
+}
+
+function belegteNummern(art, id) {
+  const k = schluessel(art, id);
+  const out = new Set((state.vergeben && state.vergeben[k]) || []);
+  for (const s of Object.values(state.stuecke)) {
+    if (s.art === art && s.id === id && s.nr) out.add(Number(s.nr));
+  }
+  return out;
+}
+
+function merkeVergeben(art, id, nr) {
+  const k = schluessel(art, id);
+  state.vergeben = state.vergeben || {};
+  const liste = state.vergeben[k] || (state.vergeben[k] = []);
+  if (!liste.includes(nr)) liste.push(nr);
+}
+
+function zieheRang() {
+  const r = crypto.randomInt(10_000);
+  if (r < 50) return "jackpot";
+  if (r < 250) return "gold";
+  if (r < 1_000) return "glueck";
+  return "standard";
+}
+
+function zieheNummer(art, id) {
+  const belegt = belegteNummern(art, id);
+  const start = zieheRang();
+  const reihenfolge = start === "jackpot" ? ["jackpot", "gold", "glueck", "standard"]
+    : start === "gold" ? ["gold", "glueck", "standard", "jackpot"]
+    : start === "glueck" ? ["glueck", "standard", "gold", "jackpot"]
+    : ["standard", "glueck", "gold", "jackpot"];
+  for (const rang of reihenfolge) {
+    const frei = POOLS[rang].filter((n) => !belegt.has(n));
+    if (frei.length) return frei[crypto.randomInt(frei.length)];
+  }
+  throw new Error(`Alle Seriennummern fuer ${art}:${id} sind vergeben.`);
+}
+
+const mitSerie = (uid, s) => ({ uid, ...s, serie: serieVon(s.nr) });
+
+function serienRegeln() {
+  return {
+    stellen: 4,
+    max: SERIEN_MAX,
+    klassen: SERIEN.map((s) => ({ ...s })),
+    hinweis: "Jede Nummer wird zufällig gezogen und je Stück nur einmal vergeben.",
+  };
+}
+
 /**
  * Wie viele Exemplare dieses Stücks es wirklich gibt.
  *
- * Gezählt wird, was DA ist, nicht wie weit der Zähler steht. Seit der
- * Nachtrag bei 2 anfängt (die Nummer 1 bleibt dem ersten echten Zug
- * vorbehalten), sind die beiden Zahlen nicht mehr dasselbe: der Zähler stünde
- * bei 28, während 27 Exemplare existieren, und an jedem Angebot stünde
- * „Nr. 5 von 28" für eine Sache, die es 27 Mal gibt. Ein eingezogenes Stück
- * (`entpraegen`) fehlt hier ebenfalls, und das ist richtig so.
- *
- * Der Zähler bleibt daneben bestehen und vergibt weiter Nummern: eine Nummer
- * darf nie zweimal vergeben werden, auch wenn das Exemplar dazu nicht mehr
- * existiert.
+ * Gezählt wird, was DA ist, nicht wie viele Seriennummern jemals vergeben
+ * wurden. Ein eingezogenes Stück (`entpraegen`) fehlt hier, seine Nummer
+ * bleibt in `vergeben` aber dauerhaft gesperrt. So können nie zwei Besitzer
+ * in ihrer Historie dasselbe Exemplar beanspruchen.
  */
 function bestand(art, id) {
   const k = schluessel(art, id);
@@ -115,7 +232,7 @@ function bestand(art, id) {
 /** Das Exemplar, das `key` von diesem Stück hält. Null, wenn keins. */
 function stueckVon(key, art, id) {
   for (const [uid, s] of Object.entries(state.stuecke)) {
-    if (s.besitzer === key && s.art === art && s.id === id) return { uid, ...s };
+    if (s.besitzer === key && s.art === art && s.id === id) return mitSerie(uid, s);
   }
   return null;
 }
@@ -124,12 +241,12 @@ function stueckVon(key, art, id) {
 function alleVon(key) {
   const out = {};
   for (const [uid, s] of Object.entries(state.stuecke)) {
-    if (s.besitzer === key) out[schluessel(s.art, s.id)] = { uid, ...s };
+    if (s.besitzer === key) out[schluessel(s.art, s.id)] = mitSerie(uid, s);
   }
   return out;
 }
 
-const stueck = (uid) => (state.stuecke[uid] ? { uid, ...state.stuecke[uid] } : null);
+const stueck = (uid) => (state.stuecke[uid] ? mitSerie(uid, state.stuecke[uid]) : null);
 
 /**
  * Ein neues Exemplar prägen.
@@ -141,9 +258,8 @@ const stueck = (uid) => (state.stuecke[uid] ? { uid, ...state.stuecke[uid] } : n
 function praegen(art, id, key, name, at = Date.now()) {
   if (!art || !id || !key) return null;
   if (stueckVon(key, art, id)) return null;
-  const k = schluessel(art, id);
-  const nr = (state.next[k] || 0) + 1;
-  state.next[k] = nr;
+  const nr = zieheNummer(art, id);
+  merkeVergeben(art, id, nr);
   const uid = neueUid();
   state.stuecke[uid] = {
     art, id, nr, gepraegtAm: at,
@@ -152,7 +268,7 @@ function praegen(art, id, key, name, at = Date.now()) {
     kette: [{ key, name: name || key, at, preis: 0 }],
   };
   save();
-  return { uid, ...state.stuecke[uid] };
+  return mitSerie(uid, state.stuecke[uid]);
 }
 
 /**
@@ -169,7 +285,7 @@ function uebertragen(uid, nachKey, nachName, preis = 0, at = Date.now()) {
   s.besitzerName = nachName || nachKey;
   s.kette.push({ key: nachKey, name: nachName || nachKey, at, preis: Math.max(0, Math.round(preis) || 0) });
   saveJetzt();
-  return { uid, ...s };
+  return mitSerie(uid, s);
 }
 
 /**
@@ -207,56 +323,12 @@ function umbenennen(key, alt, neu) {
 /**
  * Bestehende Bestände einmalig nachprägen.
  *
- * Läuft genau einmal, beim ersten Start nach dem Umbau. Die Reihenfolge der
- * Nummern muss dabei irgendwo herkommen, und "wer war zuerst da" ist die
- * einzige Angabe, die für alle Stücke existiert: sortiert wird nach dem Alter
- * des Kontos. Wer sein Stück wirklich zuerst hatte, lässt sich nachträglich
- * nicht mehr feststellen, aber eine willkürliche Reihenfolge wäre schlechter
- * als eine nachvollziehbare.
- *
- * `praegbar(art, id)` entscheidet, was eine Nummer bekommt, und kommt aus
- * game/cosmetics.js. Dieses Modul kennt den Katalog absichtlich nicht: sonst
- * hinge das Register an den Preisen im Laden.
+ * Auch alte Bestände gehen durch dieselbe Serienlotterie wie ein neuer Zug.
+ * Das Kontoalter bestimmt nur die stabile Arbeitsreihenfolge, nicht mehr die
+ * Qualität der Nummer. `praegbar` und `topfNachArt` kommen aus cosmetics.js,
+ * damit das Register den Katalog nicht doppelt kennen muss.
  */
-/*
- * Die Nummer 1 bleibt frei.
- *
- * Nachgetragen wird nach Kontoalter, das ist die einzige Reihenfolge, die es
- * für alten Besitz überhaupt gibt. Damit gingen aber ALLE Erstprägungen an
- * die ältesten Konten: im Stand vom 18.9. hätte der Besitzer allein 20 von
- * 37 bekommen, nicht weil er sie gezogen hat, sondern weil sein Konto das
- * erste war. In dem Moment, in dem die Nummer 1 eine sichtbare Auszeichnung
- * ist, wäre das keine.
- *
- * Also fängt der Nachtrag bei 2 an. Die Nummer 1 eines Stücks bekommt, wer
- * es nach der Umstellung als Erster wirklich aus einer Kiste zieht — und
- * wenn es niemand zieht, bleibt sie für immer frei. Das nimmt niemandem
- * etwas weg: alle behalten ihre Stücke und ihre Reihenfolge, sie fängt nur
- * eins höher an.
- */
-const NACHTRAG_AB = 2;
-
-/**
- * Stuecke, bei denen die Nummer 1 NICHT freibleiben darf.
- *
- * Die Regel darueber (Nachtrag faengt bei 2 an) hat einen guten Grund:
- * nachgetragen wird nach Kontoalter, und wer die Eins allein deshalb
- * bekaeme, weil sein Konto das erste war, hat sie nicht verdient. Sie
- * bleibt frei fuer den, der das Stueck als Erster wirklich aus einer
- * Kiste zieht.
- *
- * Bei einem Los aus dem Auktionshaus gibt es diesen Ersten aber schon,
- * und es wird nie einen zweiten geben: ein Haus-Los verschwindet nach
- * dem Zuschlag aus dem Angebot und kommt nie wieder. Die Eins blieb
- * damit fuer immer unerreichbar, und der Gewinner hielt „Nr. 2" von
- * etwas, das es genau ein Mal gibt. Er HAT es als Erster gehabt, vor
- * aller Augen, mit Gebot und Uhrzeit.
- */
-function startNummer(art, id, abEins) {
-  return abEins && abEins(art, id) ? 0 : NACHTRAG_AB - 1;
-}
-
-function nachtragen(accounts, praegbar, topfNachArt, abEins) {
+function nachtragen(accounts, praegbar, topfNachArt) {
   if (state.nachgetragen) return 0;
   sammeln = true;
   const alle = accounts.rawAll ? accounts.rawAll() : [];
@@ -268,8 +340,6 @@ function nachtragen(accounts, praegbar, topfNachArt, abEins) {
     for (const [art, topf] of Object.entries(topfNachArt)) {
       for (const id of owned[topf] || []) {
         if (!praegbar(art, id)) continue;
-        const k = schluessel(art, id);
-        if (!state.next[k]) state.next[k] = startNummer(art, id, abEins);
         if (praegen(art, id, key, acc.name, acc.createdAt || Date.now())) n++;
       }
     }
@@ -282,47 +352,45 @@ function nachtragen(accounts, praegbar, topfNachArt, abEins) {
 }
 
 /**
- * Nachtraeglich geradeziehen, was der erste Nachtrag falsch nummeriert hat.
+ * Einmaliger Wechsel von den alten laufenden Nummern zur Serienlotterie.
  *
- * Laeuft der Nachtrag einmal, sind die Nummern vergeben — auch die zu
- * hohen. Wer das Haus schon gestartet hatte, bevor `abEins` existierte,
- * haette sonst fuer immer ein Auktionsstueck mit der Nummer 2, von dem es
- * genau ein Exemplar gibt, und die 1 waere fuer niemanden mehr zu haben.
- *
- * Angefasst wird nur der eindeutige Fall: genau EIN Exemplar, und keines
- * traegt die 1. Gibt es mehrere (etwa weil jemand von Hand nachgeholfen
- * hat), bleibt alles stehen und es gibt eine Zeile in der Konsole — eine
- * Nummer stillschweigend umzuschreiben, waere schlimmer als eine falsche.
- *
- * Laeuft genau einmal (`state.einsKorrigiert`).
+ * Besitzer, Praegedatum und komplette Handelskette bleiben unberuehrt. Die
+ * alte Nummer wird als `altNr` aufgehoben, aber nicht mehr als Wertung
+ * gezeigt. Danach werden alle Exemplare frisch und ohne Reihenfolge-Vorteil
+ * gezogen. Ein Neustart wiederholt das nicht (`serienZufall`).
  */
-function korrigiereErstpraegung(abEins) {
-  if (state.einsKorrigiert || typeof abEins !== "function") return 0;
-  const nach = new Map();           // "art:id" -> [uid, …]
-  for (const [uid, st] of Object.entries(state.stuecke)) {
-    if (!abEins(st.art, st.id)) continue;
-    const k = schluessel(st.art, st.id);
-    if (!nach.has(k)) nach.set(k, []);
-    nach.get(k).push(uid);
+function migriereSerien() {
+  if (state.serienZufall) return 0;
+  const uids = Object.keys(state.stuecke);
+  state.vergeben = {};
+  for (const uid of uids) {
+    const s = state.stuecke[uid];
+    if (s.nr && !s.altNr) s.altNr = s.nr;
+    s.nr = 0;
   }
-  let n = 0;
-  for (const [k, uids] of nach) {
-    if (uids.some((u) => state.stuecke[u].nr === 1)) continue;
-    if (uids.length !== 1) {
-      console.log(`praegung: ${k} hat ${uids.length} Exemplare und keine Nr. 1 — von Hand ansehen.`);
-      continue;
-    }
-    state.stuecke[uids[0]].nr = 1;
-    state.next[k] = Math.max(1, ...uids.map((u) => state.stuecke[u].nr));
-    n++;
+  // Die Arbeitsreihenfolge selbst darf keinen Vorteil schaffen.
+  for (let i = uids.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(i + 1);
+    [uids[i], uids[j]] = [uids[j], uids[i]];
   }
+  for (const uid of uids) {
+    const s = state.stuecke[uid];
+    s.nr = zieheNummer(s.art, s.id);
+  }
+  state.v = 2;
+  state.next = {};
+  for (const s of Object.values(state.stuecke)) merkeVergeben(s.art, s.id, s.nr);
+  state.serienZufall = true;
   state.einsKorrigiert = true;
   save();
-  if (n) console.log(`praegung: ${n} Auktionsstück(e) auf Nr. 1 gesetzt.`);
-  return n;
+  if (uids.length) console.log(`praegung: ${uids.length} Stücke auf zufällige Seriennummern umgestellt.`);
+  return uids.length;
 }
+
+migriereSerien();
 
 module.exports = {
   praegen, uebertragen, entpraegen, stueckVon, alleVon, stueck, bestand,
-  umbenennen, nachtragen, korrigiereErstpraegung,
+  umbenennen, nachtragen, serieVon, serienRegeln,
+  _intern: { serienRang, zieheRang, zieheNummer, migriereSerien, POOLS, SERIEN },
 };

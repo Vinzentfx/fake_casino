@@ -476,8 +476,8 @@ function praegbar(art, id) {
   const item = KATALOG[art] ? KATALOG[art][id] : null;
   /* Alles ausser den Gratis-Stuecken. Seit es den Laden nicht mehr gibt,
      entsteht jedes Stueck erst in dem Moment, in dem es jemand aus einer
-     Kiste zieht; damit ist auch bei der frueheren Ladenware eine Nummer
-     etwas wert. "Neon Nr. 7" heisst dann wirklich, dass es sieben gibt. */
+     Kiste zieht; damit ist auch bei der frueheren Ladenware eine zufaellige
+     Serienpraegung etwas wert. */
   return !!item && item.cost !== 0;
 }
 function handelbar(art, id) {
@@ -501,33 +501,9 @@ function handelbar(art, id) {
 }
 
 /** Einmalig beim Start: vorhandene Bestaende nachtraeglich praegen. */
-/**
- * Bekommt der nachgetragene Besitzer die Nummer 1?
- *
- * Nur bei einem Los aus dem Auktionshaus. Dort gibt es den Ersten
- * naemlich schon, und es wird nie einen zweiten geben: ein Haus-Los
- * faellt nach dem Zuschlag aus dem Angebot (`state.vergeben` in
- * `auktion.js`) und wird nicht noch einmal ausgespielt. Die Eins
- * freizuhalten hiesse, sie fuer immer wegzuschliessen — und der
- * Gewinner traegt „Nr. 2" von etwas, das es genau ein Mal gibt.
- *
- * Bei allem anderen bleibt sie frei. Kisten- und Kollektionsstuecke
- * koennen jederzeit noch einmal entstehen, und dann soll die Eins an
- * den gehen, der sie wirklich als Erster gezogen hat, nicht an den mit
- * dem aeltesten Konto.
- */
-function erstpraegungAnBesitzer(art, id) {
-  const item = KATALOG[art] ? KATALOG[art][id] : null;
-  return !!item && item.limitiert === "auktion";
-}
-
 function praegungNachtragen(accounts) {
   try {
-    const n = praegung.nachtragen(accounts, praegbar, TOPF, erstpraegungAnBesitzer);
-    /* Wer das Haus schon gestartet hatte, bevor es die Regel gab, traegt
-       eine 2. Einmal geradeziehen. */
-    praegung.korrigiereErstpraegung(erstpraegungAnBesitzer);
-    return n;
+    return praegung.nachtragen(accounts, praegbar, TOPF);
   } catch (e) {
     console.error("praegung: Nachtrag fehlgeschlagen.", e.message);
     return 0;
@@ -617,6 +593,8 @@ function setupCosmetics(io, accounts) {
           bestand: praegung.bestand(art, id),
           handelbar: handelbar(art, id),
           nr: st ? st.nr : null,
+          serie: st ? st.serie : null,
+          altNr: st ? st.altNr || null : null,
           gepraegtAm: st ? st.gepraegtAm : null,
           fuer: st ? st.fuerName : null,
           haende: st ? st.kette.length : 0,
@@ -639,6 +617,7 @@ function setupCosmetics(io, accounts) {
         chips: acc.chips,
         fristen: { season: seasonEnde, comeback: comebackEnde },
         fortuna: { rest: radRest, max: FORTUNA_MAX },
+        serien: praegung.serienRegeln(),
         avatars: AVATARS.map((a) => ({ ...a, owned: hat("avatar", a.id), equipped: a.emoji === eqAva, ...mitPraegung("avatar")(a) })),
         colors: COLORS.map((c) => ({ ...c, owned: hat("color", c.id), equipped: (c.color || null) === eqCol, ...mitPraegung("color")(c) })),
         styles: STYLES.map((x) => ({ ...x, owned: hat("style", x.id), equipped: (acc.nameStyle || "standard") === x.id, ...mitPraegung("style")(x) })),
@@ -658,7 +637,21 @@ function setupCosmetics(io, accounts) {
            eine Marke, die irgendwann auftaucht, statt eines Ziels. */
         familien: familienStand(acc),
         garniturAb: GARNITUR_AB,
-        sammlungen: sammlungen.fortschritt(acc, hatStueck),
+        sammlungen: sammlungen.fortschritt(acc, hatStueck).map((k) => ({
+          ...k,
+          teile: k.teile.map((t) => ({
+            ...t,
+            label: label(t.art, t.id),
+            look: vorschauDaten(t.art, t.id),
+            stufe: stufeVonStueck(t.art, t.id),
+          })),
+          belohnung: {
+            ...k.belohnung,
+            label: label(k.belohnung.art, k.belohnung.id),
+            look: vorschauDaten(k.belohnung.art, k.belohnung.id),
+            stufe: stufeVonStueck(k.belohnung.art, k.belohnung.id),
+          },
+        })),
         spruchText: acc.spruchText || "",
         spruchMax: SPRUCH_MAX,
       };
@@ -985,6 +978,7 @@ function prunkVon(acc, key) {
     art, id,
     label: item.label || item.text || id,
     nr: st ? st.nr : null,
+    serie: st ? st.serie : null,
     /* Die Stufe als KENNUNG, nicht als Farbe. Der Client hat dafuer eine
        feste Liste von Klassen; eine Farbe aus einer alten Nachricht duerfte
        sonst irgendwann etwas ins Dokument schreiben, das niemand geprueft

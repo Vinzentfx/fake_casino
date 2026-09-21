@@ -11586,3 +11586,336 @@ html:not(.reduce-motion) .ki-bahn-rahmen.schnell > .ki-spur { animation: ki-spur
   from { transform: translateX(-60%); }
   to   { transform: translateX(60%); }
 }
+
+/* ==================================================================
+   Serienlotterie
+
+   Stueck-Seltenheit und Serien-Seltenheit sind zwei getrennte Dinge. Die
+   Nummer bekommt deshalb ein eigenes, ueberall gleiches Siegel: Kiste,
+   Sammlung, Markt, Auktion und die kleine Prunkmarke am Namen.
+   ================================================================== */
+.serie-badge {
+  --serie-farbe: #9aa4ae;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--serie-farbe) 58%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--serie-farbe) 11%, var(--surface-sunken));
+  color: var(--serie-farbe);
+  line-height: 1;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.serie-badge i {
+  width: 6px; height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+.serie-badge small {
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+.serie-badge b {
+  color: inherit;
+  font-family: var(--font-num);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+}
+.serie-standard { --serie-farbe: #9aa4ae; }
+.serie-glueck   { --serie-farbe: #5eead4; }
+.serie-gold     { --serie-farbe: #f4d782; }
+.serie-jackpot  { --serie-farbe: #b6ff4d; }
+html:not(.reduce-motion) .serie-badge.serie-jackpot,
+html:not(.reduce-motion) .serie-badge.serie-gold { animation: serie-atmen 2.8s ease-in-out infinite; }
+@keyframes serie-atmen {
+  0%, 100% { box-shadow: 0 0 0 transparent; }
+  50% { box-shadow: 0 0 16px -3px var(--serie-farbe); }
+}
+
+/* Auf der kleinen Sammlungskachel nur Nummer, die Erklaerung steckt im
+   Tooltip. Das Siegel bleibt breit genug fuer vier feste Stellen. */
+.cos-item:has(> .serie-badge) { padding-top: 28px; }
+.cos-item > .serie-badge {
+  position: absolute;
+  top: 5px; right: 5px;
+  z-index: 2;
+  padding: 3px 6px;
+}
+.cos-item > .serie-badge small { display: none; }
+
+/* Die Prunkmarke ist die Miniatur derselben Serienklasse. */
+.pl-prunk.serie-glueck { border-color: #5eead4; color: #5eead4; }
+.pl-prunk.serie-gold { border-color: #f4d782; color: #f4d782; box-shadow: 0 0 8px -2px #f4d782; }
+.pl-prunk.serie-jackpot {
+  border-color: #b6ff4d;
+  color: #17200c;
+  background: linear-gradient(135deg, #eaffbf, #b6ff4d 52%, #efffd5);
+  box-shadow: 0 0 12px -1px #b6ff4d;
+}
+.pf-tag-prunk.serie-glueck { border-color: #5eead4; }
+.pf-tag-prunk.serie-gold { border-color: #f4d782; }
+.pf-tag-prunk.serie-jackpot { border-color: #b6ff4d; color: #dfffab; }
+
+/* ------------------------------------------------------------------
+   Kistenhalle: nicht mehr vier Formulare untereinander, sondern eine
+   Ausstellung mit einer klaren zweiten Ziehung fuer die Seriennummer.
+   ------------------------------------------------------------------ */
+.ki-serienlotterie {
+  position: relative;
+  overflow: hidden;
+  margin: var(--sp-4) 0;
+  padding: var(--sp-3);
+  border: 1px solid color-mix(in srgb, #5eead4 34%, var(--line));
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(115deg, rgba(94, 234, 212, 0.08), transparent 42%),
+    radial-gradient(70% 140% at 100% 0%, rgba(182, 255, 77, 0.12), transparent 72%),
+    var(--surface-2);
+  box-shadow: 0 18px 44px -34px #5eead4;
+}
+.ki-serienlotterie::after {
+  content: "0007 0777 2026 7777";
+  position: absolute;
+  right: -8px; top: -8px;
+  color: rgba(255, 255, 255, 0.035);
+  font: 900 2.25rem/1 var(--font-num);
+  letter-spacing: 0.06em;
+  transform: rotate(-7deg);
+  pointer-events: none;
+}
+.ki-serien-kopf { position: relative; z-index: 1; display: flex; gap: var(--sp-3); align-items: center; }
+.ki-serien-kopf b { display: block; font-size: var(--fs-lg); }
+.ki-serien-kopf p { margin: 3px 0 0; color: var(--text-dim); font-size: var(--fs-sm); }
+.ki-serien-siegel {
+  flex: 0 0 auto;
+  width: 48px; height: 48px;
+  display: grid; place-items: center;
+  border: 1px solid #5eead4;
+  border-radius: 14px;
+  background: rgba(94, 234, 212, 0.08);
+  color: #5eead4;
+  font: 900 1.4rem/1 var(--font-num);
+  box-shadow: inset 0 0 18px rgba(94, 234, 212, 0.13), 0 0 22px -12px #5eead4;
+}
+.ki-serien-chancen {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: var(--sp-3);
+}
+.ki-serien-chancen > span {
+  --serie-farbe: #9aa4ae;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 6px;
+  align-items: center;
+  padding: 7px 8px;
+  border: 1px solid color-mix(in srgb, var(--serie-farbe) 32%, var(--line));
+  border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, 0.13);
+}
+.ki-serien-chancen i { grid-row: 1 / 3; width: 7px; height: 100%; min-height: 24px; border-radius: 9px; background: var(--serie); box-shadow: 0 0 10px -2px var(--serie); }
+.ki-serien-chancen b { color: var(--serie-farbe); font-size: var(--fs-xs); }
+.ki-serien-chancen small { color: var(--text-mute); font-family: var(--font-num); font-size: 0.64rem; }
+
+@media (min-width: 620px) {
+  .ki-liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .ki-karte { display: flex; flex-direction: column; }
+  .ki-karte .ki-kopf-knopf { flex: 1; }
+  .ki-karte.limitiert { grid-column: 1 / -1; }
+}
+.ki-karte { box-shadow: 0 16px 38px -34px var(--top); }
+.ki-karte:not(.arm):hover { border-color: color-mix(in srgb, var(--top) 62%, var(--line)); }
+.ki-karte.limitiert {
+  background:
+    linear-gradient(100deg, rgba(143, 22, 33, 0.17), transparent 48%),
+    radial-gradient(80% 130% at 86% 0%, color-mix(in srgb, var(--top) 18%, transparent), transparent 64%),
+    var(--surface);
+}
+
+/* Die zweite Enthuellung nach dem Stueck: die Seriennummer bekommt eine
+   eigene Platte statt als grauer Zusatz hinter der Art zu verschwinden. */
+.ki-erg-serie {
+  --serie-farbe: #9aa4ae;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px var(--sp-3);
+  align-items: center;
+  margin: var(--sp-3) auto 0;
+  padding: 10px 12px;
+  max-width: 290px;
+  border: 1px solid color-mix(in srgb, var(--serie-farbe) 65%, transparent);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--serie-farbe) 14%, transparent), transparent 58%),
+    rgba(0, 0, 0, 0.24);
+  text-align: left;
+  box-shadow: 0 0 28px -15px var(--serie-farbe);
+}
+.ki-erg-serie > span { color: var(--text-mute); font-size: 0.58rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.ki-erg-serie > b { grid-row: 1 / 4; grid-column: 2; color: var(--serie-farbe); font: 900 1.55rem/1 var(--font-num); letter-spacing: 0.08em; }
+.ki-erg-serie > strong { color: var(--serie-farbe); font-size: var(--fs-sm); }
+.ki-erg-serie > small { color: var(--text-mute); font-size: 0.62rem; }
+.ki-overlay[data-serie="gold"] .ki-erg-karte,
+.ki-overlay[data-serie="jackpot"] .ki-erg-karte { border-color: var(--serie); box-shadow: 0 0 74px -8px var(--serie), 0 18px 40px -20px #000; }
+.ki-overlay[data-serie="jackpot"]::before { background: radial-gradient(circle at 50% 46%, var(--serie) 0%, transparent 62%); opacity: 0.2; }
+html:not(.reduce-motion) .ki-overlay[data-serie="jackpot"] .ki-erg-serie { animation: serie-jackpot-land 0.68s cubic-bezier(.16,1.4,.36,1); }
+@keyframes serie-jackpot-land {
+  0% { opacity: 0; transform: scale(1.7) rotate(-4deg); filter: brightness(2.5); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+
+/* ------------------------------------------------------------------
+   Sammlungsarchiv
+   Jede Kollektion ist eine kleine Vitrine mit echter Vorschau der sechs
+   Teile und der Trophäe dahinter. Besitz wird nicht mehr als Textchip,
+   sondern als sichtbar eingesetztes Fundstück gelesen.
+   ------------------------------------------------------------------ */
+.cos-sammlungen { gap: var(--sp-4); }
+.cos-archiv {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--sp-3);
+  align-items: center;
+  padding: var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(70% 140% at 0% 50%, rgba(var(--accent-rgb), 0.13), transparent 68%),
+    var(--surface-2);
+}
+.cos-archiv-siegel {
+  width: 68px; height: 68px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) var(--fort), var(--surface-sunken) 0);
+  box-shadow: 0 0 24px -13px var(--accent);
+}
+.cos-archiv-siegel > span {
+  width: 54px; height: 54px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--accent);
+  font: 900 1.05rem/1 var(--font-num);
+}
+.cos-archiv-siegel i { font-size: 0.58em; font-style: normal; }
+.cos-archiv-text b { display: block; }
+.cos-archiv-text p { margin: 3px 0 0; color: var(--text-dim); font-size: var(--fs-xs); }
+.cos-archiv-zahlen { display: flex; gap: 6px; }
+.cos-archiv-zahlen span { min-width: 72px; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-sunken); text-align: center; }
+.cos-archiv-zahlen b { display: block; color: var(--accent); font: 900 var(--fs-lg)/1 var(--font-num); }
+.cos-archiv-zahlen small { display: block; margin-top: 3px; color: var(--text-mute); font-size: 0.58rem; }
+
+.cos-sammlungen .cos-slg {
+  --kol: var(--accent);
+  position: relative;
+  overflow: hidden;
+  padding: var(--sp-4);
+  border: 1px solid color-mix(in srgb, var(--kol) 36%, var(--line));
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(100% 100% at 100% 0%, color-mix(in srgb, var(--kol) 13%, transparent), transparent 66%),
+    var(--surface);
+  box-shadow: 0 24px 48px -44px var(--kol);
+}
+.cos-slg-porta { --kol: #d8ba67; }
+.cos-slg-mitternacht { --kol: #8b7cf6; }
+.cos-slg-feuer { --kol: #ff765f; }
+.cos-sammlungen .cos-slg.voll { border-color: var(--kol); background: radial-gradient(100% 100% at 100% 0%, color-mix(in srgb, var(--kol) 21%, transparent), transparent 67%), var(--surface); }
+.cos-slg-glanz { position: absolute; inset: -100% -30%; pointer-events: none; background: linear-gradient(110deg, transparent 42%, rgba(255,255,255,.045) 50%, transparent 58%); }
+html:not(.reduce-motion) .cos-slg.voll .cos-slg-glanz { animation: cos-slg-glanz 6s ease-in-out infinite; }
+@keyframes cos-slg-glanz { 0%,100% { transform: translateX(-25%); } 50% { transform: translateX(25%); } }
+.cos-sammlungen .cos-slg-kopf { position: relative; display: grid; grid-template-columns: auto 1fr auto; gap: var(--sp-3); align-items: center; }
+.cos-sammlungen .cos-slg-symbol {
+  position: static;
+  width: 48px; height: 48px;
+  border-color: color-mix(in srgb, var(--kol) 60%, transparent);
+  border-radius: 15px;
+  color: var(--kol);
+  font-size: 1.3rem;
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--kol) 10%, transparent);
+}
+.cos-sammlungen .cos-slg.voll .cos-slg-symbol { border-color: var(--kol); color: var(--kol); box-shadow: 0 0 18px -8px var(--kol), inset 0 0 20px color-mix(in srgb, var(--kol) 14%, transparent); }
+.cos-slg-titel b { display: block; color: var(--text); font-size: var(--fs-xl); }
+.cos-slg-titel p { margin: 2px 0 0; color: var(--text-dim); font-size: var(--fs-sm); }
+.cos-sammlungen .cos-slg-stand { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; min-width: 62px; color: var(--kol); }
+.cos-slg-stand strong { font: 900 1.7rem/1 var(--font-num); }
+.cos-slg-stand i { margin-left: 3px; }
+.cos-slg-stand small { flex-basis: 100%; color: var(--text-mute); font-size: 0.58rem; text-align: right; text-transform: uppercase; }
+.cos-sammlungen .cos-slg-bahn { position: relative; height: 8px; margin: var(--sp-3) 0; overflow: visible; }
+.cos-sammlungen .cos-slg-bahn > span { border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--kol) 70%, #fff), var(--kol)); box-shadow: 0 0 12px -4px var(--kol); }
+.cos-slg-bahn > i { position: absolute; right: 0; top: -18px; color: var(--text-mute); font: normal 0.58rem/1 var(--font-num); }
+.cos-sammlungen .cos-slg-teile { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin: 0; }
+.cos-sammlungen .cos-slg-teil {
+  --teil: #9aa4ae;
+  position: relative;
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  padding: 10px 7px 8px;
+  border: 1px solid color-mix(in srgb, var(--teil) 24%, var(--line));
+  border-radius: var(--r-md);
+  background: rgba(0,0,0,.14);
+  color: var(--text-mute);
+  text-align: center;
+  opacity: .55;
+}
+.cos-slg-teil-selten { --teil: #5ea8e0; }
+.cos-slg-teil-episch { --teil: #c86bd6; }
+.cos-slg-teil-legendaer { --teil: #f4d782; }
+.cos-slg-teil-mythisch { --teil: #e0705e; }
+.cos-slg-teil-einzel, .cos-slg-teil-haus { --teil: #b6ff4d; }
+.cos-sammlungen .cos-slg-teil.hat { border-color: color-mix(in srgb, var(--teil) 58%, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--teil) 10%, transparent), rgba(0,0,0,.1)); color: var(--text); opacity: 1; box-shadow: inset 0 -3px 0 var(--teil); }
+.cos-slg-index { position: absolute; top: 5px; left: 6px; color: var(--text-mute); font: 700 .55rem/1 var(--font-num); }
+.cos-slg-demo { height: 48px; max-width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; filter: grayscale(.7); }
+.cos-slg-teil.hat .cos-slg-demo { filter: none; }
+.cos-slg-demo > * { max-width: 100%; }
+.cos-slg-teil b { max-width: 100%; margin-top: 3px; overflow: hidden; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+.cos-slg-teil > small { max-width: 100%; color: var(--text-mute); font-size: .56rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cos-slg-status { margin-top: 5px; padding: 2px 6px; border-radius: var(--r-pill); background: var(--surface-sunken); color: var(--text-mute); font-size: .53rem; font-weight: 800; text-transform: uppercase; }
+.cos-slg-teil.hat .cos-slg-status { background: color-mix(in srgb, var(--teil) 13%, transparent); color: var(--teil); }
+.cos-sammlungen .cos-slg-preis {
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: var(--sp-3);
+  align-items: center;
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px dashed color-mix(in srgb, var(--kol) 48%, var(--line));
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--kol) 7%, transparent);
+}
+.cos-slg-preis.frei { border-style: solid; box-shadow: 0 0 26px -18px var(--kol); }
+.cos-slg-preis-demo { height: 54px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.cos-slg-preis-demo > * { max-width: 100%; }
+.cos-slg-preis span { display: block; margin: 0; color: var(--text-mute); font-size: .58rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.cos-sammlungen .cos-slg-preis b { display: block; margin-top: 2px; color: var(--kol); font-size: var(--fs-md); }
+.cos-slg-preis small { display: block; margin-top: 2px; color: var(--text-dim); font-size: var(--fs-xs); }
+
+@media (max-width: 560px) {
+  .ki-serien-chancen { grid-template-columns: repeat(2, 1fr); }
+  .ki-serien-kopf { align-items: flex-start; }
+  .ki-serien-siegel { width: 42px; height: 42px; }
+  .cos-archiv { grid-template-columns: auto 1fr; }
+  .cos-archiv-zahlen { grid-column: 1 / -1; }
+  .cos-archiv-zahlen span { flex: 1; }
+  .cos-sammlungen .cos-slg { padding: var(--sp-3); }
+  .cos-sammlungen .cos-slg-kopf { grid-template-columns: auto 1fr; }
+  .cos-sammlungen .cos-slg-stand { grid-column: 1 / -1; justify-content: flex-start; }
+  .cos-slg-stand small { flex-basis: auto; margin-left: 6px; text-align: left; }
+  .cos-sammlungen .cos-slg-teile { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

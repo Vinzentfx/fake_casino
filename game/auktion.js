@@ -96,6 +96,9 @@ let io = null, accounts = null;
 let state = { v: 1, nr: 0, los: null, vergeben: {}, archiv: [], schlange: [], letztesVomHaus: false };
 
 const de = (n) => Math.round(Number(n) || 0).toLocaleString("de-DE");
+const serienText = (nr, serie) => nr
+  ? `#${(serie && serie.code) || String(nr).padStart(4, "0")}${serie && serie.kurz ? ` ${serie.kurz}` : ""}`
+  : "";
 const marke = (type, id) => `${type}:${id}`;
 
 function load() {
@@ -214,7 +217,7 @@ function einlieferbar(acc, key) {
       uid: st.uid, art: st.art, stueckId: st.id,
       label: cosmetics.label(st.art, st.id),
       look: cosmetics.vorschauDaten(st.art, st.id),
-      nr: st.nr, bestand: praegung.bestand(st.art, st.id),
+      nr: st.nr, serie: st.serie, bestand: praegung.bestand(st.art, st.id),
     });
   }
   return out.sort((a, b) => a.label.localeCompare(b.label));
@@ -263,6 +266,7 @@ function einliefern(key, uid, mindest) {
     art: st.art, id: st.id,
     label: cosmetics.label(st.art, st.id),
     nr: st.nr,
+    serie: st.serie,
     mindest: m,
     seit: Date.now(),
   });
@@ -344,6 +348,7 @@ function starteLos() {
 function starteEingeliefertes() {
   const e = state.schlange.shift();
   if (!e) return null;
+  const st = praegung.stueck(e.uid) || e;
   state.nr += 1;
   state.los = {
     nr: state.nr,
@@ -361,18 +366,19 @@ function starteEingeliefertes() {
        nicht — dort entsteht das Stueck erst beim Zuschlag. */
     uid: e.uid,
     von: e.key, vonName: e.name,
-    stueckNr: e.nr,
+    stueckNr: st.nr,
+    stueckSerie: st.serie || praegung.serieVon(st.nr),
     mindest: e.mindest,
     vomHaus: false,
   };
   state.letztesVomHaus = false;
   save();
   try {
-    chat.announce(io, `Auktionshaus: ${e.name} bringt ${ART_NAME[e.art] || e.art} „${e.label}“ Nr. ${e.nr} unter den Hammer. `
+    chat.announce(io, `Auktionshaus: ${e.name} bringt ${ART_NAME[e.art] || e.art} „${e.label}“ ${serienText(st.nr, st.serie)} unter den Hammer. `
       + `Startgebot ${de(e.mindest)} Chips, Zuschlag ${endeText(state.los.endet)}.`);
   } catch {}
   try {
-    require("./chronik").notiere("event", `${e.name} versteigert „${e.label}“ Nr. ${e.nr}. Startgebot ${de(e.mindest)} Chips.`, { user: e.name });
+    require("./chronik").notiere("event", `${e.name} versteigert „${e.label}“ ${serienText(st.nr, st.serie)}. Startgebot ${de(e.mindest)} Chips.`, { user: e.name });
   } catch {}
   sende();
   return state.los;
@@ -393,6 +399,10 @@ function endeText(ts) {
 function hammer() {
   const los = state.los;
   if (!los) return;
+  if (los.uid) {
+    const aktuell = praegung.stueck(los.uid);
+    if (aktuell) { los.stueckNr = aktuell.nr; los.stueckSerie = aktuell.serie; }
+  }
 
   if (!los.bieter || !los.gebot) {
     if (los.von) {
@@ -401,7 +411,7 @@ function hammer() {
          nicht den Verkauf. */
       const vAcc = accounts.get(los.von);
       if (vAcc) { cosmetics.besitzGeben(vAcc, los.type, los.id); accounts.save(); }
-      try { chat.announce(io, `Keine Gebote für „${los.label}“ Nr. ${los.stueckNr}. Es geht zurück an ${los.vonName}.`); } catch {}
+      try { chat.announce(io, `Keine Gebote für „${los.label}“ ${serienText(los.stueckNr, los.stueckSerie)}. Es geht zurück an ${los.vonName}.`); } catch {}
     } else {
       // Haus-Los: das Stueck wandert zurueck in den Topf und kommt spaeter
       // wieder, weggeworfen wird hier nichts.
@@ -416,6 +426,7 @@ function hammer() {
   const acc = accounts.get(los.bieter);
   const stuecke = [];
   let anVerkaeufer = 0, provision = 0;
+  let zuschlagStueck = los.uid ? praegung.stueck(los.uid) : null;
 
   if (los.von) {
     /*
@@ -435,21 +446,30 @@ function hammer() {
     const vAcc = accounts.get(los.von);
     if (vAcc) accounts.adjustChips(los.von, anVerkaeufer);
     accounts.save();
-    praegung.uebertragen(los.uid, los.bieter, acc ? acc.name : los.bieterName, los.gebot);
+    zuschlagStueck = praegung.uebertragen(los.uid, los.bieter, acc ? acc.name : los.bieterName, los.gebot);
+    if (zuschlagStueck) {
+      los.stueckNr = zuschlagStueck.nr;
+      los.stueckSerie = zuschlagStueck.serie;
+    }
     /* Der Verkaeufer bekommt Chips, ohne etwas gedrueckt zu haben. Ohne diese
        Zeile steht in seiner Topbar weiter der alte Stand. */
     if (vAcc) {
       for (const sock of io.of("/").sockets.values()) {
         if (sock.data && sock.data.account === los.von) {
           sock.emit("account:update", { account: accounts.publicAccount(vAcc) });
-          sock.emit("auktion:verkauft", { label: los.label, nr: los.stueckNr, betrag: los.gebot, erloes: anVerkaeufer, an: los.bieterName });
+          sock.emit("auktion:verkauft", { label: los.label, nr: los.stueckNr, serie: los.stueckSerie, betrag: los.gebot, erloes: anVerkaeufer, an: los.bieterName });
           break;
         }
       }
     }
   } else {
     if (acc) {
-      if (cosmetics.grant(acc, los.type, los.id)) stuecke.push(los.label);
+      if (cosmetics.grant(acc, los.type, los.id, los.bieter)) stuecke.push(los.label);
+      zuschlagStueck = praegung.stueckVon(los.bieter, los.type, los.id);
+      if (zuschlagStueck) {
+        los.stueckNr = zuschlagStueck.nr;
+        los.stueckSerie = zuschlagStueck.serie;
+      }
       acc.auktionSieg = Date.now();
       acc.auktionSiegLos = los.nr;
       accounts.save();
@@ -463,12 +483,12 @@ function hammer() {
   state.archiv.unshift({
     nr: los.nr, art: los.art, label: los.label,
     name: los.bieterName, betrag: los.gebot, ts: Date.now(),
-    von: los.vonName || null, stueckNr: los.stueckNr || null,
+    von: los.vonName || null, stueckNr: los.stueckNr || null, stueckSerie: los.stueckSerie || null,
   });
   if (state.archiv.length > ARCHIV_MAX) state.archiv.length = ARCHIV_MAX;
 
   const satz = los.von
-    ? `Zuschlag: ${los.bieterName} ersteigert ${los.art} „${los.label}“ Nr. ${los.stueckNr} von ${los.vonName} für ${de(los.gebot)} Chips.`
+    ? `Zuschlag: ${los.bieterName} ersteigert ${los.art} „${los.label}“ ${serienText(los.stueckNr, los.stueckSerie)} von ${los.vonName} für ${de(los.gebot)} Chips.`
     : `Zuschlag: ${los.bieterName} ersteigert ${los.art} „${los.label}“ für ${de(los.gebot)} Chips.`;
   try { chat.announce(io, satz); } catch {}
   try {
@@ -477,7 +497,7 @@ function hammer() {
   if (acc) {
     for (const s of io.of("/").sockets.values()) {
       if (s.data && s.data.account === los.bieter) {
-        s.emit("auktion:zuschlag", { art: los.art, label: los.label, betrag: los.gebot, stuecke, nr: los.stueckNr || null, von: los.vonName || null });
+        s.emit("auktion:zuschlag", { art: los.art, label: los.label, betrag: los.gebot, stuecke, nr: los.stueckNr || null, serie: los.stueckSerie || null, von: los.vonName || null });
         /* Das hinterlegte Gebot ist jetzt endgueltig weg. Ohne diese Zeile
            steht in der Topbar weiter der Stand von vor dem Gebot, weil der
            Zuschlag nicht vom Client ausgeloest wurde. */
@@ -621,6 +641,7 @@ function gesehen(key) {
 
 function oeffentlich(key) {
   const los = state.los;
+  const losStueck = los && los.uid ? praegung.stueck(los.uid) : null;
   const acc = key ? accounts.get(key) : null;
   const gesperrt = !!(acc && los && gesperrtFuer(acc, los, key));
   return {
@@ -633,7 +654,8 @@ function oeffentlich(key) {
          also weder Nummer noch Vorbesitzer. */
       vonName: los.vonName || null,
       meins: !!(key && los.von === key),
-      stueckNr: los.stueckNr || null,
+      stueckNr: losStueck ? losStueck.nr : los.stueckNr || null,
+      stueckSerie: losStueck ? losStueck.serie : los.stueckSerie || praegung.serieVon(los.stueckNr),
       look: cosmetics.vorschauDaten(los.type, los.id),
       binIch: !!(key && los.bieter === key),
       // Habe ich hier schon einmal geboten und wurde ueberholt?
@@ -642,7 +664,10 @@ function oeffentlich(key) {
       verlauf: los.verlauf.slice(0, VERLAUF_MAX).map((g) => ({ ...g, ich: !!(key && g.key === key) })),
     } : null,
     kommendes: kommendes(los),
-    archiv: state.archiv.slice(0, 8),
+    archiv: state.archiv.slice(0, 8).map((a) => ({
+      ...a,
+      stueckSerie: a.stueckSerie || praegung.serieVon(a.stueckNr),
+    })),
     startGebot: START_GEBOT,
     verlaengerung: VERLAENGERUNG_MS,
     gesperrt,
@@ -654,11 +679,14 @@ function oeffentlich(key) {
       provision: EINLIEFER_PROVISION,
       maxJeSpieler: EINLIEFER_MAX_JE_SPIELER,
       voll: state.schlange.length >= EINLIEFER_MAX,
-      schlange: state.schlange.map((e, i) => ({
-        uid: e.uid, label: e.label, nr: e.nr, name: e.name,
-        look: cosmetics.vorschauDaten(e.art, e.id),
-        mindest: e.mindest, platz: i + 1, meins: !!(key && e.key === key),
-      })),
+      schlange: state.schlange.map((e, i) => {
+        const st = praegung.stueck(e.uid);
+        return {
+          uid: e.uid, label: e.label, nr: st ? st.nr : e.nr, serie: st ? st.serie : praegung.serieVon(e.nr), name: e.name,
+          look: cosmetics.vorschauDaten(e.art, e.id),
+          mindest: e.mindest, platz: i + 1, meins: !!(key && e.key === key),
+        };
+      }),
       meine: acc ? einlieferbar(acc, key) : [],
     },
   };

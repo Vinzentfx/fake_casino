@@ -9,6 +9,7 @@
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
+  const pct = (n) => Number(n).toLocaleString("de-DE", { maximumFractionDigits: 1 });
 
   let stand = null;
   let laeuft = false;
@@ -51,7 +52,8 @@
       <div class="ki-ruhm-karte" style="--stufe:${e.stufe.farbe}">
         <div class="ki-ruhm-stufe">${escapeHtml(e.stufe.label)}</div>
         <div class="ki-ruhm-demo">${window.Casino.spieler.kosVorschau(e.look2, { name: e.name })}</div>
-        <div class="ki-ruhm-name">${escapeHtml(e.label)}${e.nr ? ` <i>Nr. ${e.nr}</i>` : ""}</div>
+        <div class="ki-ruhm-name">${escapeHtml(e.label)}</div>
+        ${e.nr ? window.Casino.spieler.serienBadge(e, { label: false }) : ""}
         <div class="ki-ruhm-wer">${window.Casino.spieler.chip(e.look ? { ...e.look, name: e.name } : { name: e.name })}</div>
       </div>`).join("");
   }
@@ -79,7 +81,7 @@
     el.style.setProperty("--stufe", e.stufe.farbe);
     el.innerHTML = `<span class="rb-stufe">${escapeHtml(e.stufe.label)}</span>
       <span class="rb-text">${window.Casino.spieler.name(e.look ? { ...e.look, name: e.name } : { name: e.name })}
-      zieht <b>${escapeHtml(e.label)}</b>${e.nr ? ` Nr. ${e.nr}` : ""}`
+      zieht <b>${escapeHtml(e.label)}</b>${e.nr ? ` · #${escapeHtml(window.Casino.spieler.serienCode(e))} ${(e.serie && escapeHtml(e.serie.kurz)) || ""}` : ""}`
       + `${e.artName ? ` <i>${escapeHtml(e.artName)}</i>` : ""}</span>`;
     el.classList.remove("hidden");
     // Neu anstossen, falls schon eins laeuft.
@@ -135,8 +137,22 @@
      Server, das letzte Feld ist also das hoechste. */
   const beste = (k) => k.chancen[k.chancen.length - 1];
 
+  function renderSerienlotterie() {
+    const box = $("#ki-serienlotterie");
+    if (!box || !stand || !stand.serien) return;
+    const klassen = stand.serien.klassen || [];
+    box.innerHTML = `<div class="ki-serien-kopf">
+        <span class="ki-serien-siegel" aria-hidden="true">#</span>
+        <div><span class="cos-eyebrow">Serienlotterie</span><b>Der Zeitpunkt zählt nicht mehr. Nur der Zug.</b>
+          <p>Jedes neue Fundstück erhält eine freie Nummer von #0001 bis #9999. Frühes Öffnen gibt keinen Vorteil.</p></div>
+      </div>
+      <div class="ki-serien-chancen">${klassen.map((s) => `
+        <span class="serie-${escapeHtml(s.id)}"><i style="--serie:${s.farbe}"></i><b>${escapeHtml(s.kurz)}</b><small>${pct(s.chance)} %</small></span>`).join("")}</div>`;
+  }
+
   function render() {
     if (!stand) return;
+    renderSerienlotterie();
     const chips = (window.Casino.getAccount() || {}).chips || 0;
     $("#ki-liste").innerHTML = stand.kisten.map((k) => {
       const wartet = k.frei && k.wiederAb > Date.now();
@@ -151,7 +167,7 @@
         : k.frei ? "Kostenlos öffnen"
         : `Öffnen für ${fmt(k.preis)}`;
       const top = beste(k);
-      return `<div class="ki-karte${gesperrt ? " arm" : ""}${k.frei ? " gratis" : ""}${k.limitiert ? " limitiert" : ""}" style="--top:${top.farbe}">
+      return `<div class="ki-karte ki-karte-${escapeHtml(k.id)}${gesperrt ? " arm" : ""}${k.frei ? " gratis" : ""}${k.limitiert ? " limitiert" : ""}" style="--top:${top.farbe}">
         ${k.limitiert ? `<div class="ki-limit">Nur noch ${restLauf(k.bis)}</div>` : ""}
         <button class="ki-kopf-knopf" data-inhalt="${k.id}" type="button"
           aria-label="Was ist in der ${escapeHtml(k.label)}?">
@@ -202,6 +218,7 @@
      soll nicht dasselbe Feuerwerk bekommen wie ein Einzelstueck, sonst ist
      das Feuerwerk nach dem dritten Mal nichts mehr wert. */
   const WUCHT = { gewoehnlich: 0, selten: 1, episch: 2, legendaer: 3, mythisch: 4, kiste: 5 };
+  const SERIEN_WUCHT = { standard: 0, glueck: 2, gold: 4, jackpot: 6 };
 
   const overlay = () => $("#ki-overlay");
   const schlafe = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -227,9 +244,11 @@
    */
   async function zeigeZiehung(res) {
     const ov = overlay();
-    const wucht = WUCHT[res.stufe.id] ?? 0;
+    const wucht = Math.max(WUCHT[res.stufe.id] ?? 0, SERIEN_WUCHT[res.treffer.serie && res.treffer.serie.id] || 0);
     ov.style.setProperty("--stufe", res.stufe.farbe);
+    ov.style.setProperty("--serie", (res.treffer.serie && res.treffer.serie.farbe) || res.stufe.farbe);
     ov.dataset.wucht = String(wucht);
+    ov.dataset.serie = (res.treffer.serie && res.treffer.serie.id) || "standard";
     ov.classList.remove("hidden");
     document.body.classList.add("ki-offen");
     $("#ki-ergebnis").classList.add("hidden");
@@ -499,7 +518,7 @@
   /** Blitz, Strahlen und die Karte. Alles nach Stufe abgestuft. */
   function ergebnis(res) {
     const ov = overlay();
-    const wucht = WUCHT[res.stufe.id] ?? 0;
+    const wucht = Math.max(WUCHT[res.stufe.id] ?? 0, SERIEN_WUCHT[res.treffer.serie && res.treffer.serie.id] || 0);
     const t = res.treffer;
 
     if (!reduziert()) {
@@ -524,7 +543,12 @@
         <span class="ki-erg-stufe">${escapeHtml(res.stufe.label)}</span>
         <div class="ki-erg-demo">${window.Casino.spieler.kosVorschau(t.look, { name: (window.Casino.getAccount() || {}).name || "Du" })}</div>
         <div class="ki-erg-name">${escapeHtml(t.label)}</div>
-        <div class="ki-erg-art">${escapeHtml((t.look && t.look.artName) || "")}${t.nr ? ` · Nr. ${t.nr}` : ""}</div>
+        <div class="ki-erg-art">${escapeHtml((t.look && t.look.artName) || "")}</div>
+        ${res.neu && t.nr ? `<div class="ki-erg-serie serie-${escapeHtml((t.serie && t.serie.id) || "standard")}">
+          <span>Serienprägung</span><b>#${escapeHtml(window.Casino.spieler.serienCode(t))}</b>
+          <strong>${escapeHtml((t.serie && t.serie.label) || "Klassische Serie")}</strong>
+          <small>${pct((t.serie && t.serie.chance) || 90)} % aller neuen Exemplare</small>
+        </div>` : ""}
         <div class="ki-erg-zeile">${res.neu
           ? `<b class="pos">Neu für dich.</b> Liegt in deiner Sammlung.`
           : `Hattest du schon. <b>+${fmt(res.zurueck)}</b><i class=mk></i> zurück.`}</div>
