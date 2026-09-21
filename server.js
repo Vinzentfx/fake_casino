@@ -451,17 +451,20 @@ app.post("/api/admin/restore", (req, res) => {
         if (fs.statSync(p).isFile() && !wiederhergestellteBilder.has(name)) fs.unlinkSync(p);
       }
     }
+    // Sobald Node die Antwort vollstaendig an den Socket uebergeben hat,
+    // sofort raus. Schon ein kurzes Wartefenster reicht fuer einen Spiel-Timer,
+    // der seinen alten RAM-Stand wieder ueber die restaurierten Dateien schreibt.
+    res.once("finish", () => {
+      console.log("Backup eingespielt, Server startet neu, um die Daten zu laden.");
+      process.exit(1);
+    });
     res.json({ ok: true, written, restarting: true });
   } catch (e) {
     return res.status(500).json({ error: "Wiederherstellen fehlgeschlagen: " + e.message });
   }
-  // Alle Module halten ihren Zustand im RAM und würden die frisch geschriebenen
-  // Dateien beim nächsten save() wieder überschreiben, also sauber neu starten.
-  // Railway startet beim Standard "On Failure" nur Prozesse neu, die mit einem
-  // Fehlercode enden. Ein sauberer exit(0) laesst das Deployment dagegen im
-  // Status "Success" stehen, obwohl kein Webserver mehr laeuft.
-  console.log("Backup eingespielt, Server startet neu, um die Daten zu laden.");
-  setTimeout(() => process.exit(1), 800);
+  // Alle Module halten ihren Zustand im RAM und wuerden die frisch geschriebenen
+  // Dateien beim naechsten save() wieder ueberschreiben. Der finish-Handler oben
+  // beendet deshalb sofort mit Fehlercode; Railway "On Failure" startet neu.
 });
 
 // Server und Socket.IO
