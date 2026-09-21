@@ -183,6 +183,7 @@ app.get("/api/spickzettel", (_req, res) => {
 
 app.get("/api/version", (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("X-Casino-Restore", "snapshot-v2");
   res.json({ version: build.current() });
 });
 
