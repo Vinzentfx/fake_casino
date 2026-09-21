@@ -2,7 +2,7 @@
 
 Alle Regeln, Quoten und Grenzen des Casinos auf einen Blick. Alles ist
 Spielgeld, es gibt keine Ein- und keine Auszahlung. Die Zahlen stehen genau so
-im Code (Stand 17. September 2026). Ändert sich dort etwas, gehört es hierhin.
+im Code (Stand 21. September 2026). Ändert sich dort etwas, gehört es hierhin.
 
 **RTP** ist die Auszahlungsquote: Welcher Anteil der Einsätze kommt auf lange
 Sicht zurück? 98 % heißt, das Haus behält im Schnitt 2 %. In einzelnen Runden
@@ -12,23 +12,25 @@ kann trotzdem alles passieren.
 
 1. [Woher Chips kommen](#woher-chips-kommen)
 2. [Vermögensbremse](#vermögensbremse)
-3. [Level und XP](#level-und-xp)
-4. [Season](#season)
-5. [Aufträge](#aufträge)
-6. [Slots](#slots)
-7. [Blackjack](#blackjack)
-8. [Roulette](#roulette)
-9. [Schnelle Runden](#schnelle-runden)
-10. [Lotterie](#lotterie)
-11. [Sportwetten](#sportwetten)
-12. [Rennbahn](#rennbahn)
-13. [Gegeneinander](#gegeneinander)
-14. [Stadt](#stadt)
-15. [Bank, Börse, Markt](#bank-börse-markt)
-16. [Clans](#clans)
-17. [Kosmetik, Kisten und Auktionshaus](#kosmetik-kisten-und-auktionshaus)
-18. [Rekorde und Achievements](#rekorde-und-achievements)
-19. [Alle Grenzen auf einen Blick](#alle-grenzen-auf-einen-blick)
+3. [Arbeiten](#arbeiten)
+4. [Level und XP](#level-und-xp)
+5. [Season](#season)
+6. [Aufträge](#aufträge)
+7. [Live-Events](#live-events)
+8. [Slots](#slots)
+9. [Blackjack](#blackjack)
+10. [Roulette](#roulette)
+11. [Schnelle Runden](#schnelle-runden)
+12. [Lotterie](#lotterie)
+13. [Sportwetten](#sportwetten)
+14. [Rennbahn](#rennbahn)
+15. [Gegeneinander](#gegeneinander)
+16. [Stadt](#stadt)
+17. [Bank, Börse, Markt und Transfers](#bank-börse-markt-und-transfers)
+18. [Clans](#clans)
+19. [Kosmetik, Kisten und Auktionshaus](#kosmetik-kisten-und-auktionshaus)
+20. [Rekorde und Achievements](#rekorde-und-achievements)
+21. [Alle Grenzen auf einen Blick](#alle-grenzen-auf-einen-blick)
 
 ## Woher Chips kommen
 
@@ -42,7 +44,7 @@ kann trotzdem alles passieren.
 | Tagesaufträge | 2.000 bis 5.200 je Auftrag | drei am Tag |
 | Wochenaufträge | 18.000 bis 32.000 je Auftrag | zwei in der Woche |
 | Season-Stufen | 2.500 bis 80.000 | 20 Stufen je Season |
-| Arbeiten (Klicker) | kleine Beträge | laufend, gedeckelt |
+| Arbeiten (Klicker und Jobs) | abhängig von Vermögen und Aufgabe | laufend, gedeckelt |
 
 **Stunden-Bonus im Detail.** Der Grundbetrag ist 1.000 Chips. Dazu kommt:
 
@@ -96,6 +98,42 @@ einem Viertel.
 
 Betroffen sind Stunden-Bonus, Kalender, Glücksrad und Verlosungen. Gewinne aus
 Spielen und das Cashback laufen nicht durch die Bremse.
+
+## Arbeiten
+
+Arbeiten ist die Starthilfe für kleine Konten, kein unbegrenzter Geldautomat.
+Je höher dein Vermögen, desto kleiner der Lohn. Für 15 Minuten zählt immer der
+höchste zuletzt gemessene Vermögensstand; schnelles Verschieben von Chips
+umgeht die Bremse also nicht.
+
+| Vermögen | Arbeitslohn |
+|---|---|
+| unter 50.000 | 4-fach |
+| 50.000 bis unter 250.000 | 2,5-fach |
+| 250.000 bis unter 1 Mio | 1,5-fach |
+| 1 Mio bis unter 10 Mio | 0,6-fach |
+| ab 10 Mio | 0,2-fach |
+
+**Klick-Job.** Ein Klick zahlt je Ausbaustufe 2, 4, 7, 11, 16 oder 22 Chips.
+Die fünf Verbesserungen kosten 200, 400, 600, 800 und 1.000 Chips. Die Schule
+in der Stadt verdreifacht den Klicklohn. Es zählen höchstens 20 Klicks pro
+Sekunde und 35.000 Chips pro Stunde.
+
+Alle 25 gültigen Klicks gibt es einen Fleißbonus von 180 Chips plus 70 je
+Ausbaustufe. Zwischen zwei dafür gezählten Klicks müssen mindestens 180 ms
+liegen. Der Bonus ist auf 10.000 pro Stunde und 60.000 pro Tag begrenzt und
+läuft ebenfalls durch die Arbeitsbremse.
+
+**Casino-Jobs.** Jede Aufgabe bleibt 60 Sekunden offen. Eine richtige Lösung
+zahlt den vollen Lohn und 3 Season-XP, eine falsche noch 40 % und 1 Season-XP.
+Zusammen zahlen Jobs höchstens 32.000 pro Stunde und 150.000 pro Tag.
+
+| Job | Grundlohn | Spieler-XP | Wartezeit | Besonderheit |
+|---|---:|---:|---:|---|
+| Kellner | 170 | 2 | 28 Sekunden | schneller, sicherer Einstieg |
+| Kasse | 95 | 9 | 50 Sekunden | wenig Chips, viel XP |
+| Croupier | 230 | 4 | 95 Sekunden | 22 % Chance auf 2,8-fach, 33 % auf nur 0,35-fach |
+| Sicherheit | 980 | 12 | 125 Sekunden | erst 75 Sekunden Schicht, dann Aufgabe |
 
 ## Level und XP
 
@@ -160,6 +198,36 @@ Drei Tagesaufträge und zwei Wochenaufträge, für alle dieselben. Beispiele:
 
 Dazu gibt es wiederholbare Aufträge, die immer da sind. Sie zahlen kleiner und
 sind pro Tag gedeckelt.
+
+## Live-Events
+
+Live-Events erscheinen automatisch oder werden vom Besitzer angekündigt. Kurze
+Events laufen direkt über dem aktuellen Bildschirm; du musst dafür keinen
+bestimmten Spielraum öffnen.
+
+* **Happy Hour:** alle Chip-Belohnungen aus Aufträgen zählen doppelt.
+* **Slot-Turnier:** dein bestes Gewinn-Vielfaches während der Laufzeit zählt.
+  Der höchste einzelne Treffer gewinnt den angekündigten Preis; ein hoher
+  Einsatz gibt keinen Vorteil.
+* **Casino-Heist:** alle knacken gemeinsam einen Tresor. Wird er rechtzeitig
+  geöffnet, teilt sich die Gruppe die Beute entsprechend ihrer Treffer. Pro
+  Konto zählen höchstens acht Treffer je Sekunde.
+* **Chip-Regen:** fallende Chips können von genau einer Person eingesammelt
+  werden. Goldene zählen fünffach; pro Konto sind höchstens fünf Fänge je
+  Sekunde möglich.
+* **Blitz-Quiz:** 12 Sekunden je Frage, eine Antwort pro Konto. Die schnellste
+  richtige Antwort gewinnt den angezeigten Rundenpreis.
+* **Tresorkampf:** die Anwesenden werden fair auf Rot und Blau verteilt. Wer
+  seinen Tresor zuerst knackt oder bei Ablauf anteilig mehr Schaden verursacht
+  hat, teilt den Topf nach Treffern. Bei exaktem Gleichstand bleibt er im Haus.
+* **Stadt-Ereignisse:** seltene Lokalnachrichten verändern den Preisindex eines
+  Ortsteils; die neue Lage gilt für alle.
+
+Bei einer **Wiedereröffnung** kann zusätzlich ein Geschenkfenster laufen: Das
+Paket enthält bis zu 150.000 Chips durch die Vermögensbremse, 250 Season-XP und
+zwei exklusive Kosmetikstücke. Während der Eröffnungsgala gibt es doppelte
+Season-XP. Jede gespielte Runde gibt ein Los für den Abschlusstopf, höchstens
+40 Lose pro Person.
 
 ## Slots
 
@@ -298,16 +366,27 @@ Europäisch, eine einzige Null.
 | Sudoku-Race | 10 % | 50 bis 1 Mio |
 | Schach-Duell | 10 % | 50 bis 1 Mio |
 | Kniffel-Duell | 5 % | 50 bis 50.000 |
+| Solitär-Race | 10 % | 50 bis 1 Mio |
 | Solitär gegen das Haus | keiner | 20 bis 500, Abräumen zahlt das Doppelte |
 
 * **Poker:** bis zu 6 Plätze, 30 Sekunden pro Zug, danach wird automatisch
   gepasst. Wer mitten in der Hand geht, lässt seinen Einsatz im Pot.
-* **Versetzte Duelle:** Sudoku und ähnliche Rätsel gehen auch, wenn der andere
-  gerade nicht da ist. Du spielst sofort, er später. Die Herausforderung
-  wartet 48 Stunden, danach gibt es den Einsatz zurück. Warten kostet nie etwas.
+* **Memory:** 6, 10 oder 15 Paare. Ein Treffer gibt einen weiteren Zug; am Ende
+  gewinnt, wer mehr Paare gefunden hat. Gleichstand erstattet beide Einsätze.
+* **Versetzte Sudoku-Duelle:** Du spielst sofort, der Gegner später. Eine offene
+  Herausforderung wartet 48 Stunden, jede angefangene Partie höchstens 30
+  Minuten. Nimmt niemand an, kommt der Einsatz zurück; höchstens drei offene
+  Herausforderungen je Spieler.
 * **Sudoku:** 15 Minuten Zeitlimit, danach entscheidet, wer mehr Felder richtig
   hat. Drei Schwierigkeiten mit 45, 34 oder 28 vorgegebenen Zahlen.
-* **Schach:** Blitzpartien mit Wertung und eigener Liga.
+* **Schach:** gewertete Blitzpartien mit 3+2, 5+0 oder 10+5 Minuten und
+  Elo-Wertung ab 1.000. Laufende öffentliche Partien können Zuschauer öffnen.
+* **Kniffel:** Beide haben sieben Wertungsfelder und bis zu drei Würfe pro
+  Runde. Höhere Gesamtpunktzahl gewinnt, Gleichstand gibt die Einsätze zurück.
+* **Solitär-Race:** Beide erhalten exakt dieselben Karten und haben 12 Minuten.
+  Wer zuerst abräumt gewinnt; sonst zählen die Karten auf den Zielstapeln.
+* **Solitär solo:** kostenlos mit unbegrenztem Umdrehen oder gegen das Haus mit
+  zwei Umdrehungen. Nur ein vollständig abgeräumtes Spiel zahlt 2-fach.
 
 ## Stadt
 
@@ -404,27 +483,43 @@ einen dauerhaften Vorteil.
 | Schule | 8-fach | Serien-Bonus doppelt, Serie verfällt nie, Klicks dreifach |
 | Wahrzeichen | 12-fach | Prestige, das größte Gebäude des Ortsteils |
 
-## Bank, Börse, Markt
+## Bank, Börse, Markt und Transfers
 
 * **Sparkonto:** 0,08 % Zinsen pro Tag, höchstens 25 Mio auf dem Konto.
-  Kredite gibt es nicht.
-* **Börse:** ausgedachte Firmen, dazu Börsengänge von Spielern. Long und Short
-  mit Hebel bis 5. Fällt der Wert auf null, ist die Position liquidiert.
+  Die Zinsen laufen automatisch auf, werden aber wie Gratis-Chips von der
+  Vermögensbremse gekürzt. Kredite gibt es nicht.
+* **Börse:** Mindestposition 1.000 Chips. Long und Short sind mit Hebel 1 bis 5
+  möglich. Der Hebel vervielfacht Gewinn und Verlust; fällt der Wert deiner
+  Position auf null, wird sie ohne Auszahlung liquidiert. Geht eine Firma
+  pleite, verlieren Long-Positionen ihren Einsatz, Shorts werden abgerechnet.
+* **Eigener Börsengang:** Kiosk, Café, Laden, Hotel oder Fabrik können einmalig
+  gelistet werden. Du erhältst sofort 50 % des Gebäudewerts als Kapital; danach
+  ist die Aktie für alle handelbar.
 * **Markt:** Unternehmen stellen Produkte her. Die liegen im Inventar und
   lassen sich benutzen oder anderen Spielern verkaufen.
+* **Chips senden:** Absenderkonten müssen mindestens 24 Stunden alt sein und 25
+  Spielrunden haben. Pro Kalendertag lassen sich höchstens 100.000 Chips senden.
+  Der frühere Name eines umbenannten Empfängers funktioniert weiterhin.
 
 ## Clans
 
 * Gründen kostet 100.000 Chips, bis zu 20 Mitglieder.
-* **Schatzkammer:** Mitglieder spenden Chips in eine gemeinsame Kasse.
+* Kürzel haben 2 bis 4 Zeichen. Clans können offen oder geschlossen sein;
+  Gründer und Offiziere bearbeiten Motto, Anfragen, Rollen und Mitglieder.
+* **Schatzkammer:** Mitglieder spenden Chips in eine gemeinsame Kasse. Gründer
+  und Offiziere können Auszahlungen vornehmen; alles steht im Clan-Protokoll.
 * **Clan-Krieg:** Einsatz mindestens 10.000 aus der Kasse, Dauer 1, 3 oder 7
-  Tage, 10 % Rake. Ein PvP-Sieg bringt 150 Kriegspunkte.
-* **Wochenliga:** dasselbe Maß über eine Woche. Der beste Clan bekommt montags
-  250.000 Chips in die Kasse.
+  Tage, 10 % Rake. Gesammelte Season-XP zählen als Kriegspunkte, ein echter
+  PvP-Sieg bringt zusätzlich 150. Der Sieger erhält beide Einsätze abzüglich
+  Rake, bei Gleichstand gehen die Einsätze zurück.
+* **Wochenliga:** die gesammelte Season-XP und Duellsiege zählen auch über die
+  Woche. Der beste Clan bekommt montags 250.000 Chips in die Kasse.
 * **Clan-Fortschritt** gibt allen Mitgliedern bis zu 25 % mehr Season-XP. Ein
-  PvP-Sieg bringt 25 Clan-XP.
-* **Clan-Aufträge** wechseln wöchentlich und laufen übers normale Spielen, nicht
-  nur über Duelle.
+  PvP-Sieg bringt 25 Clan-XP. Die zehn Stufen reichen bis 65.000 XP und zahlen
+  abwechselnd Kassen-Chips oder 5, 10, 15, 20 und 25 % Bonus; Stufe 10 gibt
+  zusätzlich das Clan-Banner.
+* **Clan-Aufträge:** vier pro Woche — ein kleiner und ein großer gemeinsamer
+  Season-XP-Auftrag sowie zwei Aufgaben aus Duellen und Spenden.
 
 ## Kosmetik, Kisten und Auktionshaus
 
@@ -455,12 +550,13 @@ ausschließlich dort gibt, ein eigener Satz für jede Seltenheit: Konfetti,
 Ehrengast, Anstoßen (gewöhnlich), Goldstern, Nominiert, Roter Teppich
 (selten), Samtkordel, Lorbeerkranz, Auftritt (episch), Konfettiregen und
 Blitzlichtgewitter (legendär), Gravur (mythisch) und **Rampenlicht** als
-Einzelstück. Nach dem Stichtag verschwindet die Kiste, und diese dreizehn
+Einzelstück. Am **12. Oktober 2026 um 20:30 Uhr** verschwindet die Kiste, und diese dreizehn
 entstehen nie wieder; was dann noch existiert, gibt es nur über den Markt.
 
 Die Seltenheit kommt aus dem alten Ladenpreis: bis 30.000 gewöhnlich, bis
 120.000 selten, bis 400.000 episch, bis 1 Mio legendär, darüber mythisch.
-**Einzelstücke** gibt es nur aus der Schwarzen Kiste.
+Die allgemeinen **Einzelstücke** gibt es nur aus der Schwarzen Kiste;
+Rampenlicht bleibt das eigene Einzelstück des Gala-Topfs.
 
 Ziehst du etwas, das du schon hast, bekommst du **25 % seines Werts** als
 Chips. Die Tageskiste zahlt stattdessen **3.000 Chips** (durch die
@@ -468,15 +564,36 @@ Vermögensbremse), damit ein Gratis-Knopf nicht irgendwann gar nichts mehr
 tut. Keine Kiste zahlt auf Dauer mehr aus, als sie kostet, auch nicht bei
 voller Sammlung.
 
-**Ruhmestafel.** Oben bei den Kisten steht, was zuletzt im ganzen Haus
-gezogen wurde, ab episch aufwärts, mit Namen. Ab legendär kommt es zusätzlich
-in den Chat, bei mythisch und Einzelstücken läuft es bei allen, die gerade da
-sind, quer über den Bildschirm. Angesagt wird erst, wenn die Kiste im Browser
-wirklich offen ist.
+**Ruhmestafel.** Oben bei den Kisten stehen die letzten zwölf großen Funde im
+ganzen Haus. Ein Stück kommt ab episch auf die Tafel und ab legendär zusätzlich
+in den Chat. Mythische Stücke und Einzelstücke laufen als Banner über alle
+Bildschirme. Eine **Gold- oder Jackpot-Seriennummer** löst Tafel, Chat und Banner
+unabhängig von der Seltenheit des Stücks aus. Angesagt wird erst, wenn die
+Kiste im Browser wirklich offen ist.
 
-**Prägung.** Jedes Stück, das nicht gratis ist, bekommt beim Vergeben eine
-laufende Nummer, ein Prägedatum, den Namen dessen, für den es geprägt wurde,
-und eine Kette aller Besitzer mit Preisen. „Neon Nr. 7“ heißt: es gibt sieben.
+**Prägung und Serienlotterie.** Jedes prägbare Stück erhält eine noch freie
+vierstellige Nummer von #0001 bis #9999, dazu Prägedatum, ursprünglichen
+Empfänger und eine dauerhafte Besitzerkette mit Verkaufspreisen. Die Nummer
+wird für genau dieses Kosmetikstück nie ein zweites Mal vergeben. Sie sagt
+nicht, wie viele Exemplare existieren: #7777 kann vor #0042 gezogen werden.
+
+Stück-Seltenheit und Serien-Seltenheit sind zwei getrennte Ziehungen. Auch ein
+gewöhnliches Stück kann deshalb eine Jackpot-Nummer erhalten.
+
+| Serienklasse | Chance | Welche Nummern |
+|---|---:|---|
+| Klassisch | 90 % | alle übrigen Nummern |
+| Glück | 7,5 % | Spiegelzahlen ab drei Stellen und volle Hunderter |
+| Gold | 2 % | #0123, #0321, #1234, #2026, #4321 sowie gleiche Ziffern wie #0011, #0111 oder #8888 |
+| Jackpot | 0,5 % | #0001, #0007, #0077, #0777 oder #7777 |
+
+Zuerst wird die Klasse gezogen, danach zufällig eine noch freie Nummer daraus.
+Ist diese Klasse bei genau diesem Stück irgendwann leer, nimmt der Server eine
+freie Nummer aus den übrigen Klassen. Auch #0001 wird ausschließlich durch
+diese Ziehung vergeben.
+
+Die früher vergebenen laufenden Nummern wurden einmal zufällig neu ausgelost.
+Prägedatum, Besitzer und vollständige Handelskette blieben dabei erhalten.
 
 **Prunkstück.** Du bestimmst ein geprägtes Stück, und es hängt mit seiner
 Nummer an deinem Namen — im Chat, in der Bestenliste, am Tisch, in der Stadt.
@@ -498,17 +615,6 @@ trägst.
 sie, ein Stück, das ein anderes unsichtbar macht, ist als Ziehung eine Niete.
 Die drei Exemplare, die es im Haus gibt, bleiben geprägt und handelbar; neue
 entstehen nicht mehr.
-
-**Erstprägung.** Von jedem Stück gibt es genau ein Exemplar mit der **Nummer
-1**, und mehr wird es nie geben. Die Marke am Namen ist dann gefüllt statt
-umrandet und trägt einen Stern; im Markt und in der Sammlung steht
-„Erstprägung“ dran.
-
-Was vor der Umstellung schon jemandem gehörte, ist nachträglich geprägt, und
-zwar **ab Nummer 2**. Die Nummer 1 bekommt, wer das Stück als Erster wirklich
-aus einer Kiste zieht. Nachgetragen wird nach Kontoalter, und damit wären
-sonst alle Erstprägungen bei den ältesten Konten gelandet, ohne dass jemand
-dafür etwas getan hätte.
 
 **Kollektionen.** Drei Stück (Porta, Mitternacht, Feuer) mit je sechs
 Teilen. Wer eine vollständig hat, bekommt ein Stück, das es auf keinem
@@ -574,11 +680,6 @@ Besitzerkette. Bietet niemand, kommt es zurück und die Gebühr bleibt weg. Auf
 das eigene Los darfst du nicht bieten. Was im Auktionshaus liegt, kannst du
 nicht gleichzeitig im Markt anbieten.
 
-**Prägung.** Jedes nicht käufliche Stück bekommt beim Vergeben eine laufende
-Nummer, ein Prägedatum und den Namen dessen, für den es geprägt wurde. Dazu
-eine Kette aller Besitzer mit den Preisen, zu denen es weitergegeben wurde.
-Ladenware bekommt keine Nummer, die gibt es unbegrenzt.
-
 **Markt.** Geprägte Stücke von Spieler zu Spieler, zum Festpreis — der stille
 Weg, während das Auktionshaus der laute ist. Handelbar ist fast alles, was
 eine Nummer hat; draußen bleiben die Haus-Stücke, die verdienbaren (Krone,
@@ -633,7 +734,11 @@ Einzelgewinn, größter Verlust, meiste Runden und Pferdesiege.
 | Rennbahn | 50 | 50.000 je Pferd, 100.000 je Rennen | keiner |
 | Duelle | 50 | 1 Mio | keiner |
 | Kniffel | 50 | 50.000 | keiner |
+| Kisten-Duell | 1.000 | 1 Mio | 10 Kisten je Seite |
 | Solitär solo | 20 | 500 | doppelter Einsatz |
 
 Weitere Obergrenzen: Sparkonto 25 Mio, Hebel an der Börse 5-fach, Clan bis 20
-Mitglieder, Chips je Konto 100 Mrd.
+Mitglieder, Chips je Konto 100 Mrd. Beim Arbeiten gelten 35.000 Klicklohn pro
+Stunde, 10.000 Fleißbonus pro Stunde und 60.000 am Tag sowie 32.000 Joblohn pro
+Stunde und 150.000 am Tag. Chip-Transfers sind auf 100.000 je Absender und Tag
+begrenzt.

@@ -148,7 +148,12 @@
     const box = $("#ki-serienlotterie");
     if (!box || !stand || !stand.serien) return;
     const klassen = stand.serien.klassen || [];
-    box.innerHTML = `<div class="ki-serien-chancen">${klassen.map((s) => `
+    box.innerHTML = `<div class="ki-serien-kopf">
+        <span class="ki-serien-siegel" aria-hidden="true">#</span>
+        <div><span class="cos-eyebrow">Serienlotterie</span><b>Jeder Zug prägt eine freie Nummer.</b>
+          <p>Nummern reichen von #0001 bis #9999 und werden nach Seltenheitsklasse ausgelost.</p></div>
+      </div>
+      <div class="ki-serien-chancen">${klassen.map((s) => `
         <span class="serie-${escapeHtml(s.id)}"><i style="--serie:${s.farbe}"></i><b>${escapeHtml(s.kurz)}</b><small>${pct(s.chance)} %</small></span>`).join("")}</div>`;
   }
 
