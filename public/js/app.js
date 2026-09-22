@@ -1872,7 +1872,7 @@ function zeichneKontenListe() {
       <span class="ad-platz">${suche ? "" : i + 1}</span>
       <span class="ad-name">${escapeHtml(p.name)}</span>
       ${p.rolle === "mod" ? '<span class="ad-flag ad-flag-mod">Mod</span>' : ""}
-      ${p.banned ? '<span class="ad-flag ad-flag-bad">gesperrt</span>' : ""}
+      ${p.locked || p.banned ? '<span class="ad-flag ad-flag-bad">eingesperrt</span>' : ""}
       ${(p.strafen || []).map((st) => `<span class="ad-flag">${escapeHtml(st.kurz)}</span>`).join("")}
       <b>${istBesitzerUI() ? `${Math.floor(p.chips || 0).toLocaleString("de-DE")}<i class=mk></i>` : (p.rolle === "mod" ? "Moderator" : "Spieler")}</b>
     </button>`).join("")
@@ -2027,12 +2027,23 @@ function zeichnePerson(name) {
         <button class="chip-btn ad-zu" type="button" data-person-zu aria-label="Schließen">✕</button>
       </div>
 
+      ${owner && !selbst ? `<div class="ad-vollsperre${p.locked ? " an" : ""}">
+        <span class="ad-vollsperre-icon">${p.locked ? "⛓" : "◈"}</span>
+        <div>
+          <b>${p.locked ? "Spieler ist eingesperrt" : "Spieler vollständig sperren"}</b>
+          <p>${p.locked
+            ? `Konto${p.deviceBanned ? " und bekanntes Browser-Gerät" : ""} sind blockiert. Entsperren öffnet beides wieder.`
+            : p.deviceKnown
+              ? "Sperrt das Konto und das zuletzt benutzte Browser-Gerät. Dort kann auch kein neuer Account erstellt werden."
+              : "Sperrt das Konto. Ein Browser-Gerät kann erst mitgesperrt werden, nachdem die Person sich einmal neu angemeldet hat."}</p>
+        </div>
+        <button class="${p.locked ? "btn-secondary" : "btn-danger"} ad-knopf" type="button" data-person-tun="${p.locked ? "unlock" : "lock"}">${p.locked ? "Vollständig entsperren" : "Spieler einsperren"}</button>
+      </div>` : ""}
+
       <div class="ad-flags">
         ${owner && !selbst ? `<button class="ad-schalter${p.rolle === "mod" ? " an" : ""}" type="button" data-person-tun="rolle">
           ${p.rolle === "mod" ? "Moderator entfernen" : "Zum Moderator machen"}</button>
         ` : ""}${owner && !selbst ? `
-        <button class="ad-schalter${p.banned ? " an" : ""}" type="button" data-person-tun="${p.banned ? "unban" : "ban"}">
-          ${p.banned ? "Sperre aufheben" : "Konto sperren"}</button>
         <button class="ad-schalter" type="button" data-person-tun="umbenennen">Namen ändern</button>` : ""}
         ${geschuetzt ? "" : '<button class="ad-schalter" type="button" data-person-tun="kick">Rauswerfen</button><button class="ad-schalter" type="button" data-person-tun="schreiben">Anschreiben</button>'}
       </div>
@@ -2051,7 +2062,7 @@ function zeichnePerson(name) {
       <div class="ad-knopfreihe">
         <button class="chip-btn" type="button" data-person-tun="bank">Bank leeren</button>
         <button class="chip-btn" type="button" data-person-tun="bonus">Geschenke wieder frei</button>
-        ${selbst ? "" : '<button class="chip-btn" type="button" data-person-tun="deviceban">Gerät sperren</button><button class="chip-btn" type="button" data-person-tun="ipban">IP sperren</button>'}
+        ${selbst ? "" : '<button class="chip-btn" type="button" data-person-tun="ipban">IP sperren</button>'}
       </div>
 
       <div class="ad-feld ad-feld-breit">
@@ -2110,9 +2121,25 @@ async function personTun(tun, name) {
       melde(r, `${name}: ${betrag.toLocaleString("de-DE")} Chips.`));
     return;
   }
-  if (tun === "ban" || tun === "unban") {
-    socket.emit(tun === "ban" ? "admin:ban" : "admin:unban", { target: name }, (r) =>
-      melde(r, tun === "ban" ? `${name} gesperrt.` : `${name} entsperrt.`));
+  if (tun === "lock" || tun === "unlock") {
+    const sperren = tun === "lock";
+    const p = adKonten.find((x) => x.name === name) || {};
+    const text = sperren
+      ? `${name} vollständig einsperren? Das Konto wird gesperrt${p.deviceKnown ? " und das zuletzt benutzte Browser-Gerät blockiert. In diesem Browser kann dann auch kein neuer Account erstellt werden." : ". Es ist noch kein Browser-Gerät bekannt, daher greift dort zunächst nur die Kontosperre."}`
+      : `${name} vollständig entsperren? Konto und bekanntes Browser-Gerät werden wieder freigegeben.`;
+    if (!await window.Casino.dialog.frage(text, {
+      titel: sperren ? "Spieler einsperren" : "Sperre aufheben",
+      okText: sperren ? "Jetzt einsperren" : "Entsperren",
+      gefahr: sperren,
+    })) return;
+    socket.emit(sperren ? "admin:lockPlayer" : "admin:unlockPlayer", { target: name }, (r) => {
+      if (!r || !r.ok) { if (fehler) fehler.textContent = r?.error || "Fehler."; return; }
+      const zusatz = r.deviceKnown
+        ? (sperren ? " Konto und Browser sind gesperrt." : " Konto und Browser sind wieder frei.")
+        : (sperren ? " Konto gesperrt; noch kein Browser bekannt." : " Konto ist wieder frei.");
+      fertig(`${name}:${zusatz}`);
+      loadDeviceBans();
+    });
     return;
   }
   if (tun === "straf") {

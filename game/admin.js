@@ -328,13 +328,65 @@ function setupAdmin(io, accounts) {
     socket.on("admin:listAccounts", (ack) => {
       if (typeof ack !== "function") return;
       if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
-      const liste = accounts.listAll();
+      const liste = accounts.listAll().map((a) => {
+        if (!isOwner()) return a;
+        const intern = accounts.get(a.name);
+        const deviceKnown = !!(intern && intern.lastDeviceId);
+        const deviceBanned = !!(deviceKnown && zugangsschutz.istGesperrt(intern.lastDeviceId));
+        return { ...a, deviceKnown, deviceBanned, locked: !!a.banned || deviceBanned };
+      });
       ack({
         ok: true,
         accounts: isOwner() ? liste : liste.map(({ name, rolle, banned, strafen, lastSeen }) => ({
           name, rolle, banned, strafen, lastSeen,
         })),
       });
+    });
+
+    /* Die verständliche Vollsperre: Konto UND zuletzt benutzter Browser.
+       Vorher waren das zwei unscheinbare Knöpfe an verschiedenen Stellen.
+       Wer nur das Konto sperrte, konnte im selben Browser sofort einen neuen
+       Namen anlegen; wer nur das Gerät sperrte, konnte auf einem anderen
+       Gerät wieder in das alte Konto. Diese Aktion näht beides zusammen. */
+    socket.on("admin:lockPlayer", ({ target } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = keyVon(accounts, target);
+      const acc = accounts.get(key);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      if (key === OWNER) return ack({ ok: false, error: "Das Besitzerkonto wird nicht gesperrt." });
+
+      const deviceId = acc.lastDeviceId || "";
+      if (deviceId && socket.data.deviceId === deviceId) {
+        return ack({ ok: false, error: "Dieses Browser-Gerät benutzt du gerade selbst als Besitzer. Es wurde nicht gesperrt." });
+      }
+
+      const konto = accounts.ban(key);
+      if (!konto.ok) return ack(konto);
+      const device = deviceId ? zugangsschutz.sperre(deviceId) : false;
+      let getrennt = 0;
+      for (const s of io.of("/").sockets.values()) {
+        const gleichesKonto = s.data && s.data.account === key;
+        const gleichesGeraet = deviceId && s.data && s.data.deviceId === deviceId;
+        if (!gleichesKonto && !gleichesGeraet) continue;
+        if (gleichesKonto) s.emit("admin:kicked", { reason: "Dein Konto und dieses Gerät wurden gesperrt." });
+        else s.emit("ipbanned", { device: true });
+        s.disconnect(true);
+        getrennt++;
+      }
+      ack({ ok: true, account: true, device, deviceKnown: !!deviceId, id: deviceId ? deviceId.slice(-6) : "", getrennt });
+    });
+
+    socket.on("admin:unlockPlayer", ({ target } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = keyVon(accounts, target);
+      const acc = accounts.get(key);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      const konto = accounts.unban(key);
+      if (!konto.ok) return ack(konto);
+      const device = acc.lastDeviceId ? zugangsschutz.entsperre(acc.lastDeviceId) : false;
+      ack({ ok: true, account: true, device, deviceKnown: !!acc.lastDeviceId });
     });
 
     /* Nur der Besitzer vergibt Rollen. Die Rolle liegt am Konto und bleibt

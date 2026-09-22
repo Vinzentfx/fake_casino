@@ -30,7 +30,8 @@ kann trotzdem alles passieren.
 18. [Clans](#clans)
 19. [Kosmetik, Kisten und Auktionshaus](#kosmetik-kisten-und-auktionshaus)
 20. [Rekorde und Achievements](#rekorde-und-achievements)
-21. [Alle Grenzen auf einen Blick](#alle-grenzen-auf-einen-blick)
+21. [Konten und Schutz](#konten-und-schutz)
+22. [Alle Grenzen auf einen Blick](#alle-grenzen-auf-einen-blick)
 
 ## Woher Chips kommen
 
@@ -739,6 +740,23 @@ freigeschaltete Abzeichen lässt sich in der Bestenliste tragen.
 
 **Bestenlisten:** Chips, Level, Wochengewinn, Immobilienwert, Straßen, größter
 Einzelgewinn, größter Verlust, meiste Runden und Pferdesiege.
+
+## Konten und Schutz
+
+Ein Browser bekommt beim ersten Besuch einen zufälligen, ein Jahr gültigen
+Geräteschlüssel. Das ist kein Fingerabdruck und enthält keine Angaben über das
+Gerät. Pro Browser lassen sich höchstens **zwei neue Konten am Tag** erstellen,
+pro Netzwerk höchstens acht. Bestehende Konten bleiben davon unberührt.
+
+Der Besitzer kann einen Spieler **einsperren**. Dabei werden das Konto und das
+zuletzt damit benutzte Browser-Gerät gemeinsam gesperrt: Das Konto kann sich
+nicht mehr anmelden und in diesem Browser lässt sich auch kein Ersatzkonto
+erstellen. Beim Entsperren werden beide Teile wieder freigegeben. Eine
+IP-Sperre bleibt nur das Notfallwerkzeug, weil sie alle im selben WLAN treffen
+kann und sich mit einem VPN umgehen lässt. Wird der Browser vollständig
+zurückgesetzt oder ein anderes Gerät verwendet, kann eine reine Gerätesperre
+technisch nicht sicher wiedererkannt werden; deshalb bleibt die Kontosperre der
+zweite Teil.
 
 ## Alle Grenzen auf einen Blick
 

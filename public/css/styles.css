@@ -9466,6 +9466,25 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 .ad-person-kopf b { display: block; font-size: 1.05rem; }
 .ad-person-kopf small { display: block; color: var(--text-dim); font-size: 0.78rem; margin-top: 1px; }
 .ad-zu { flex: 0 0 auto; }
+.ad-vollsperre {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 13px;
+  border: 1px solid rgba(var(--bad-rgb), 0.3);
+  border-radius: var(--r-md);
+  background: linear-gradient(110deg, rgba(var(--bad-rgb), 0.075), var(--surface-sunken));
+}
+.ad-vollsperre-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; color: var(--bad-text); background: rgba(var(--bad-rgb), 0.12); font-size: 1.2rem; }
+.ad-vollsperre b { display: block; color: var(--text); font-size: 0.9rem; }
+.ad-vollsperre p { margin: 3px 0 0; color: var(--text-dim); font-size: 0.75rem; line-height: 1.35; }
+.ad-vollsperre.an { border-color: rgba(var(--bad-rgb), 0.62); box-shadow: inset 3px 0 var(--bad), 0 0 22px rgba(var(--bad-rgb), 0.07); }
+@media (max-width: 620px) {
+  .ad-vollsperre { grid-template-columns: auto 1fr; }
+  .ad-vollsperre > button { grid-column: 1 / -1; width: 100%; }
+}
 .ad-flags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .ad-schalter {
   padding: 8px 13px; border-radius: var(--r-pill); cursor: pointer; font: inherit;
