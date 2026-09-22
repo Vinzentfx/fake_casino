@@ -38,6 +38,13 @@
       ? `Wochenend-Pokal läuft · ${current.points || 0}/${current.cap || 30}`
       : "Nächster Pokal: Freitag 18:00";
     if (el) el.innerHTML = `<b>${active ? "Endet" : "Startet"} in ${duration(target - Date.now())}</b><span>${dateRange(s.startAt, s.endAt)}</span>`;
+
+    const lobbyCard = $("#lobby-event-card");
+    const lobbyKicker = $("#lobby-event-kicker");
+    const lobbyTimer = $("#lobby-event-timer");
+    if (lobbyCard) lobbyCard.classList.toggle("active", active);
+    if (lobbyKicker) lobbyKicker.textContent = active ? "JETZT AKTIV · JEDE RUNDE ZÄHLT" : "DAS FESTE WOCHENEND-EVENT";
+    if (lobbyTimer) lobbyTimer.textContent = `${active ? "Endet" : "Startet"} in ${duration(target - Date.now())}`;
   }
 
   function render(data) {
@@ -48,6 +55,12 @@
     $("#event-week-title").textContent = data.title || "Wochenend-Pokal";
     $("#event-points").textContent = `${points} / ${cap}`;
     $("#event-points-fill").style.width = `${Math.min(100, points / cap * 100)}%`;
+    const lobbyTitle = $("#lobby-event-title");
+    const lobbyPoints = $("#lobby-event-points");
+    const lobbyFill = $("#lobby-event-fill");
+    if (lobbyTitle) lobbyTitle.textContent = data.title || "Wochenend-Pokal";
+    if (lobbyPoints) lobbyPoints.textContent = `${points} / ${cap}`;
+    if (lobbyFill) lobbyFill.style.width = `${Math.min(100, points / cap * 100)}%`;
 
     const milestones = $("#event-milestones");
     milestones.innerHTML = (data.milestones || []).map((m) => {
@@ -85,4 +98,14 @@
     }
   });
   window.Casino._loadEventCalendar = load;
+  /* app.js wird absichtlich frueher geladen. Bei einem Neuladen direkt in
+     der Lobby kann deren erster onEnter deshalb schon vorbei sein, bevor
+     dieses Modul bereitsteht. Der Screen-Haken und die aktive Startansicht
+     halten die Vorschau trotzdem immer aktuell. */
+  document.addEventListener("casino:screen", (e) => {
+    const screen = e.detail && e.detail.screen;
+    if (screen === "lobby" || screen === "calendar") load();
+  });
+  const active = document.querySelector(".screen.active");
+  if (active && ["lobby", "calendar"].includes(active.dataset.screen)) load();
 })();

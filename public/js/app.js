@@ -138,6 +138,7 @@ window.Casino.screens.register("lobby", {
   onEnter: () => {
     if (window.Casino._loadLobbies) window.Casino._loadLobbies();
     if (window.Casino._loadFeed) window.Casino._loadFeed();
+    if (window.Casino._loadEventCalendar) window.Casino._loadEventCalendar();
   },
 });
 // Der Automat soll nicht im Hintergrund weiterdrehen, wenn man weggeht.

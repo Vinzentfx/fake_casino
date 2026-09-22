@@ -144,6 +144,24 @@
       <div class="lobby-inner">
         <div id="liveops-banner" class="liveops-banner hidden"></div>
 
+        <!-- Der feste Wochenend-Termin darf kein Geheimnis im Seitenmenue
+             sein. Diese Vorschau bleibt immer in der Lobby und fuehrt mit
+             einem Klick zum vollstaendigen Kalender. -->
+        <button class="lobby-event-card" id="lobby-event-card" type="button" data-nav="calendar">
+          <span class="lobby-event-shine" aria-hidden="true"></span>
+          <span class="lobby-event-cup"><i data-icon="krone"></i></span>
+          <span class="lobby-event-main">
+            <small id="lobby-event-kicker">DAS FESTE WOCHENEND-EVENT</small>
+            <b id="lobby-event-title">Wochenend-Pokal</b>
+            <span id="lobby-event-timer">Freitag 18:00 bis Sonntag</span>
+          </span>
+          <span class="lobby-event-progress">
+            <span><em>Deine Runden</em><strong id="lobby-event-points">0 / 30</strong></span>
+            <i><u id="lobby-event-fill"></u></i>
+          </span>
+          <span class="lobby-event-cta">Kalender öffnen <b>›</b></span>
+        </button>
+
         <!-- Wiedereröffnung: Willkommens-Paket und Gala. Inhalt aus
              js/comeback.js, steht nur da, wenn es etwas zu holen gibt. -->
         <div id="lobby-comeback" class="hidden"></div>
