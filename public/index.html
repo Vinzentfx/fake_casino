@@ -86,7 +86,7 @@
       <span class="sheet-label">Das Casino</span>
       <button class="sheet-item" data-nav="updates"><i class="si-icon" data-icon="updates"></i><b>Updates</b><small id="menu-updates-sub">Was sich zuletzt geändert hat</small></button>
       <button class="sheet-item" data-nav="spickzettel"><i class="si-icon" data-icon="frage"></i><b>Spickzettel</b><small>Regeln und Quoten aller Spiele</small></button>
-      <button class="sheet-item" id="menu-tour"><i class="si-icon" data-icon="rundgang"></i><b>Rundgang</b><small>Die Neuerungen in sieben Schritten</small></button>
+      <button class="sheet-item" id="menu-tour"><i class="si-icon" data-icon="rundgang"></i><b>Rundgang</b><small>Die wichtigsten Orte entdecken</small></button>
       <button class="sheet-item" data-nav="suggest"><i class="si-icon" data-icon="vorschlaege"></i><b>Vorschläge</b><small>Was fehlt dir hier?</small></button>
     </div>
 
@@ -2390,9 +2390,10 @@
   <!-- Rundgang durch die Neuerungen. Inhalt und Ablauf in js/tour.js. -->
   <div id="tour-modal" class="update-modal hidden">
     <div class="update-card tour-card">
-      <div class="update-emoji" id="tour-icon">👋</div>
+      <div class="tour-kicker"><span>Casino-Rundgang</span><b id="tour-counter">1 / 8</b></div>
+      <div class="tour-stage"><div class="update-emoji" id="tour-icon"></div></div>
       <h2 id="tour-title">Willkommen zurück</h2>
-      <p class="muted small" id="tour-text"></p>
+      <p class="tour-copy" id="tour-text"></p>
       <button class="btn-primary hidden" id="tour-goto" type="button">Zeig mir</button>
       <div class="tour-dots" id="tour-dots"></div>
       <div class="tour-nav">

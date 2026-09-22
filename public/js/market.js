@@ -82,9 +82,11 @@
     const el = $("#mkt-offers");
     if (!el || !stand) return;
     if (!stand.angebote.length) {
-      el.innerHTML = `<div class="mkt-leer">${window.Casino.icons.ui("warenkorb")}
+      el.innerHTML = `<div class="mkt-leer">
+        <span class="mkt-leer-symbol">${window.Casino.icons.ui("warenkorb")}</span>
         <b>Nichts im Schaufenster</b>
-        <span>Wer etwas Seltenes hat, kann es unten anbieten.</span></div>`;
+        <span>Gerade bietet niemand ein geprägtes Stück an.</span>
+        <small class="mkt-leer-note">Dein eigenes Angebot erscheint sofort hier im Schaufenster.</small></div>`;
       return;
     }
     el.innerHTML = stand.angebote.map((o) => {
@@ -108,9 +110,11 @@
     const el = $("#mkt-inventory");
     if (!el || !stand) return;
     if (!stand.meine.length) {
-      el.innerHTML = `<div class="mkt-leer">${window.Casino.icons.ui("sperre")}
-        <b>Du hast nichts Handelbares</b>
-        <span>Gehandelt wird nur, was es nicht im Laden gibt: Auktionsware, Fortuna, die Wiedereröffnung und die Season.</span></div>`;
+      el.innerHTML = `<div class="mkt-leer">
+        <span class="mkt-leer-symbol">${window.Casino.icons.ui("kosmetik")}</span>
+        <b>Kein handelbares Stück frei</b>
+        <span>Für ein Angebot brauchst du ein geprägtes Cosmetic, das du gerade nicht trägst und noch nicht eingestellt hast.</span>
+        <small class="mkt-leer-note">Neue Stücke findest du in Kisten, Auktionen und Belohnungen – einen Laden gibt es nicht.</small></div>`;
       return;
     }
     const voll = stand.offen >= stand.maxJeSpieler;

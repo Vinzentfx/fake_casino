@@ -27,7 +27,7 @@
   /** Das Spiel, das heute doppelte XP gibt. */
   function fokusKarte(f) {
     if (!f) return "";
-    return `<button class="se-boost se-boost-fokus" data-nav="${escapeHtml(f.id)}" type="button">
+    return `<button class="se-boost se-boost-fokus" data-nav="${escapeHtml(f.nav || f.id)}" type="button">
       <span class="se-boost-icon">${f.icon}</span>
       <span class="se-boost-text">
         <small>Fokus heute · ${f.faktor}× XP</small>

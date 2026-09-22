@@ -52,7 +52,11 @@ function setupTeamVault(io, accounts) {
       if (share > 0) { accounts.adjustChips(key, share); const a = accounts.get(key); results.push({ name: a ? a.name : key, share, hits: h }); }
     }
     results.sort((a, b) => b.share - a.share);
-    accounts.meldeStand(io, ...Object.keys(state.hits));
+    // Nur die Trefferliste des Siegerteams traegt Kontoschluessel. Der alte
+    // Zugriff auf `state.hits` war immer undefined und warf genau nach der
+    // Auszahlung einen Fehler: Chips waren bereits gutgeschrieben, aber das
+    // Ende kam nie bei den Clients an und der Tresor blieb scheinbar haengen.
+    accounts.meldeStand(io, ...Object.keys(t.hits));
     return results;
   }
 

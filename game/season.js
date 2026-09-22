@@ -50,7 +50,10 @@ const FOKUS_SPIELE = [
   { id: "mines",     label: "Mines",        icon: "💣" },
   { id: "towers",    label: "Towers",       icon: "🗼" },
   { id: "pinco",     label: "Pinco Ball",   icon: "🟢" },
-  { id: "sports",    label: "Sportwetten",  icon: "⚽" },
+  // Verbucht wird das Spiel in accounts.recordHand als `sportwetten`. Der
+  // sichtbare Bildschirm heisst weiterhin `sports`, deshalb ist das Ziel zum
+  // Oeffnen getrennt vom Statistiknamen.
+  { id: "sportwetten", nav: "sports", label: "Sportwetten", icon: "⚽" },
   { id: "horses",    label: "Rennbahn",     icon: "🐎" },
   { id: "poker",     label: "Poker",        icon: "🃏" },
 ];

@@ -2285,18 +2285,53 @@ html.reduce-motion .mkt-karte.frisch { animation: none; border-color: var(--acce
 
 /* Leerer Zustand. Ein grauer Satz allein sieht aus wie ein Fehler. */
 .mkt-leer {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: var(--sp-4) var(--sp-3);
-  border: 1px dashed var(--line);
+  gap: 6px;
+  padding: calc(var(--sp-4) + 4px) var(--sp-3);
+  border: 1px solid var(--line);
   border-radius: var(--r-md);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb), 0.13), transparent 58%),
+    var(--surface-sunken);
   color: var(--text-dim);
   text-align: center;
 }
-.mkt-leer svg { width: 26px; height: 26px; opacity: 0.5; margin-bottom: 2px; }
+.mkt-leer::after {
+  content: "";
+  position: absolute;
+  left: 18%; right: 18%; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.75;
+}
+.mkt-leer-symbol {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 2px;
+  border: 1px solid rgba(var(--accent-rgb), 0.32);
+  border-radius: 50%;
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+  box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.1);
+}
+.mkt-leer-symbol svg { width: 25px; height: 25px; }
 .mkt-leer span { font-size: var(--fs-sm); max-width: 34ch; }
+.mkt-leer > b { color: var(--text); font-size: var(--fs-md); }
+.mkt-leer .mkt-leer-note {
+  max-width: 40ch;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  color: var(--text-mute);
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+}
 
 /* Marktplatz (alt) */
 .mkt-item, .mkt-offer {
@@ -6150,22 +6185,81 @@ html:not(.reduce-motion) .sch-prisma { animation: pl-sweep 4.5s linear infinite;
 .pf-avatar:has(.pl-ava[class*="fr-"]) { border-color: transparent; }
 
 /* Rundgang durch die Neuerungen */
-.tour-card { text-align: center; }
-.tour-card h2 { margin: var(--sp-2) 0; }
-.tour-card .muted { line-height: var(--lh); text-align: left; }
-#tour-goto { width: 100%; margin-top: var(--sp-4); }
-.tour-dots { display: flex; justify-content: center; gap: 6px; margin: var(--sp-4) 0 var(--sp-3); }
-.tour-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--line-neutral);
-  transition: background var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+.tour-card {
+  position: relative;
+  overflow: hidden;
+  padding: 0 22px 22px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% -12%, rgba(var(--accent-rgb), 0.22), transparent 42%),
+    linear-gradient(180deg, #1c2432, #141a24);
 }
-.tour-dot.on { background: var(--accent); transform: scale(1.25); }
+.tour-card::before {
+  content: "";
+  display: block;
+  width: 58%;
+  height: 2px;
+  margin: 0 auto 18px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.5);
+}
+.tour-kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  color: var(--text-mute);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.tour-kicker b {
+  color: var(--accent);
+  font-family: var(--font-num);
+  letter-spacing: 0.06em;
+}
+.tour-stage {
+  display: grid;
+  place-items: center;
+  width: 82px;
+  height: 82px;
+  margin: 18px auto 12px;
+  border: 1px solid rgba(var(--accent-rgb), 0.42);
+  border-radius: 26px;
+  background: linear-gradient(145deg, rgba(var(--accent-rgb), 0.18), rgba(var(--accent-rgb), 0.04));
+  box-shadow: inset 0 1px rgba(255,255,255,0.08), 0 14px 34px rgba(0,0,0,0.28);
+  transform: rotate(3deg);
+}
+.tour-stage .update-emoji { transform: rotate(-3deg); }
+.tour-stage .update-emoji .ui-icon { width: 42px; height: 42px; filter: drop-shadow(0 0 9px rgba(var(--accent-rgb), 0.4)); }
+.tour-card h2 { margin: var(--sp-2) 0; font-size: clamp(1.45rem, 5vw, 1.85rem); }
+.tour-copy {
+  min-height: 5.4em;
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  text-align: left;
+}
+#tour-goto { width: 100%; margin-top: var(--sp-4); }
+.tour-dots { display: flex; justify-content: center; gap: 7px; margin: var(--sp-4) 0 var(--sp-3); }
+.tour-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--line-neutral);
+  transition: width var(--dur-1) var(--ease), background var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+.tour-dot.on { width: 22px; background: var(--accent); box-shadow: 0 0 9px rgba(var(--accent-rgb), 0.42); }
 .tour-nav { display: flex; gap: var(--sp-2); }
 .tour-nav button { flex: 1; min-height: 44px; }
 .tour-nav button:disabled { opacity: 0.4; }
+@media (max-width: 410px) {
+  .tour-card { padding-inline: 16px; }
+  .tour-nav { display: grid; grid-template-columns: 1fr 1fr; }
+  #tour-next { grid-column: 1 / -1; grid-row: 1; }
+}
 
 /* Wiedereröffnung im Admin-Bereich hervorheben: einmaliger Knopf, der viel
    auslöst, gehört nicht zwischen die Alltagsschalter. */
