@@ -524,8 +524,9 @@
     if (el) handle(el);
   });
 
-  window.Casino._loadCosmetics = () => {
+  window.Casino._loadCosmetics = (skipDust = false) => {
     vorschau = null;
     socket.emit("cos:state", (s) => { if (s && s.ok) render(s); });
+    if (!skipDust && window.Casino._loadPraegestaub) window.Casino._loadPraegestaub();
   };
 })();

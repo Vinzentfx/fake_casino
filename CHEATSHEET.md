@@ -572,11 +572,21 @@ Die Seltenheit kommt aus dem alten Ladenpreis: bis 30.000 gewöhnlich, bis
 Die allgemeinen **Einzelstücke** gibt es nur aus der Schwarzen Kiste;
 Rampenlicht bleibt das eigene Einzelstück des Gala-Topfs.
 
-Ziehst du etwas, das du schon hast, bekommst du **25 % seines Werts** als
-Chips. Die Tageskiste zahlt stattdessen **3.000 Chips** (durch die
-Vermögensbremse), damit ein Gratis-Knopf nicht irgendwann gar nichts mehr
-tut. Keine Kiste zahlt auf Dauer mehr aus, als sie kostet, auch nicht bei
-voller Sammlung.
+Ziehst du etwas, das du schon hast, wird es zu **Prägestaub**. Doppelte aus
+der Tageskiste geben immer 5 Staub; bei bezahlten Kisten richtet sich die
+Menge nach der gezogenen Stufe:
+
+| Gewöhnlich | Selten | Episch | Legendär | Mythisch | Einzelstück |
+|---:|---:|---:|---:|---:|---:|
+| 8 | 20 | 55 | 140 | 350 | 700 |
+
+Prägestaub ist nicht handelbar und lässt sich nicht in Chips zurücktauschen.
+Im **Prägeatelier** der Sammlung stehen jede Woche dieselben drei Angebote für
+alle: ein seltenes Stück für 120, ein episches für 320 und ein legendäres für
+750 Staub. Die Auswahl wechselt montags. Angeboten werden nur normale,
+dauerhafte Kistenstücke; Gala-, Season-, Auktions-, Haus-, Einzel- und
+Sammlungsstücke bleiben ausgeschlossen. Ein gekaufter Wochenpreis bekommt wie
+jeder neue Fund erst beim Prägen seine zufällige Seriennummer.
 
 **Ruhmestafel.** Oben bei den Kisten stehen die letzten zwölf großen Funde im
 ganzen Haus. Ein Stück kommt ab episch auf die Tafel und ab legendär zusätzlich

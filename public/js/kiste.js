@@ -208,9 +208,8 @@
         ? `So viele Stücke gibt es dauerhaft. Dazu kommt, was nur in einer limitierten Kiste steckt: `
           + `${limits.map((k) => `${k.stueckzahl} in der ${escapeHtml(k.label)}`).join(", ")}. `
         : "")
-      + `Was du schon besitzt, kommt als Chips zurück: ${Math.round(stand.doppeltAnteil * 100)} % seines Werts. `
-      + `Die Tageskiste zahlt stattdessen ${fmt(stand.doppeltFrei || 0)} Chips, sie kostet ja nichts. `
-      + `Alles, was du hier ziehst, lässt sich auf dem Markt weitergeben.</p>`;
+      + `Doppelte Funde werden zu Prägestaub. Damit prägst du in der Sammlung einen der drei wechselnden Wochenpreise. `
+      + `Alles Neue lässt sich auf dem Markt weitergeben.</p>`;
   }
 
   /** Ein Feld auf der Bahn. Gleiche Vorschau wie im Laden und auf dem Markt. */
@@ -558,7 +557,7 @@
         </div>` : ""}
         <div class="ki-erg-zeile">${res.neu
           ? `<b class="pos">Neu für dich.</b> Liegt in deiner Sammlung.`
-          : `Hattest du schon. <b>+${fmt(res.zurueck)}</b><i class=mk></i> zurück.`}</div>
+          : `Hattest du schon. <b>+${fmt(res.staub)}</b><span class="staub-symbol">✦</span> Prägestaub.</div>`}
         <div class="ki-erg-knoepfe">
           <button class="btn-secondary" data-schliessen>Fertig</button>
           ${/* Bei der Gratiskiste gibt es kein "noch eine": sie ist gerade
@@ -662,7 +661,7 @@
             <div class="kin-stufe" style="--stufe:${s.farbe}">
               <div class="kin-stufe-kopf">
                 <b>${escapeHtml(s.label)}</b>
-                <span>${s.pct} % · ${s.stuecke.length} ${s.stuecke.length === 1 ? "Stück" : "Stücke"} · je ${s.jeStueck.toFixed(s.jeStueck < 1 ? 2 : 1)} %</span>
+                <span>${s.pct} % · ${s.stuecke.length} ${s.stuecke.length === 1 ? "Stück" : "Stücke"} · je ${s.jeStueck.toFixed(s.jeStueck < 1 ? 2 : 1)} % · doppelt +${fmt((k.staub && (k.frei ? k.staub.frei : k.staub.werte[s.id])) || 0)} ✦</span>
               </div>
               <div class="kin-liste">
                 ${s.stuecke.map((x) => `
@@ -675,9 +674,7 @@
               </div>
             </div>`).join("")}
           <p class="muted small kin-fuss">
-            Was du schon hast, kommt als Chips zurück: ${k.frei
-              ? `bei der ${escapeHtml(k.label)} ${fmt(k.doppeltFrei)}, sie kostet ja nichts`
-              : `${Math.round(k.doppeltAnteil * 100)} % seines Werts`}.
+            Was du schon hast, wird zu Prägestaub. Den gibst du in der Sammlung für wechselnde Wochenpreise aus.
           </p>
           <div class="ki-erg-knoepfe">
             <button class="btn-secondary" data-kb-zu>Zurück</button>

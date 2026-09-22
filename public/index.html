@@ -1360,6 +1360,18 @@
       <div class="tafel">
         <p class="muted small">Dein persönliches Archiv. Jedes Fundstück trägt eine zufällige Seriennummer; besondere Muster sind seltener als das Stück selbst. Antippen legt an, was du besitzt, und zeigt, was dir noch fehlt.</p>
 
+        <section class="staub-atelier" id="staub-atelier">
+          <div class="staub-glanz" aria-hidden="true">✦</div>
+          <header class="staub-kopf">
+            <div><span class="cos-eyebrow">Prägeatelier</span><h3>Wochenpreise</h3></div>
+            <div class="staub-konto"><small>Dein Prägestaub</small><b><span id="staub-balance">0</span> ✦</b></div>
+          </header>
+          <p>Doppelte Kistenfunde zerfallen in Prägestaub. Jede Woche liegen hier drei normale Kistenstücke fest aus – ohne Zufall, aber weiterhin mit zufälliger Seriennummer.</p>
+          <div class="staub-zeit" id="staub-zeit">Neue Auswahl wird geladen…</div>
+          <div class="staub-angebote" id="staub-angebote"><p class="muted small">Atelier wird geöffnet…</p></div>
+          <div class="form-error" id="staub-error"></div>
+        </section>
+
         <!-- Vorschau. Ohne sie kauft man eine Animation, ohne sie je gesehen
              zu haben, und merkt erst hinterher, dass sie einem nicht gefällt. -->
         <div class="cos-preview" id="cos-preview"></div>
@@ -2594,6 +2606,7 @@
   <script defer src="/js/teamvault.js"></script>
   <script defer src="/js/clans.js"></script>
   <script defer src="/js/cosmetics.js"></script>
+  <script defer src="/js/praegestaub.js"></script>
   <script defer src="/js/blackjackLobby.js"></script>
   <script defer src="/js/poker.js"></script>
   <script defer src="/js/slots.js"></script>

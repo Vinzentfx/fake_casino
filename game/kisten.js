@@ -25,10 +25,8 @@
  *
  * Doppeltes: `cosOwned` ist eine Liste ohne Doppelte, ein zweites Exemplar
  * wäre unsichtbar und für immer weg. Wer ein Stück schon hat, bekommt
- * stattdessen Chips, und zwar deutlich weniger als seinen Ladenwert. Das ist
- * wichtig, damit eine Kiste für jemanden, der schon alles hat, kein
- * Geldautomat wird: der Rückkauf liegt bei jeder Kiste unter dem Kaufpreis,
- * auch wenn man ALLES besitzt (nachgerechnet in `pruefe()`).
+ * stattdessen Prägestaub nach Seltenheit. Der lässt sich nur im wöchentlichen
+ * Atelier ausgeben und druckt deshalb keine Chips aus vollen Sammlungen.
  *
  * Gezogen wird auf dem Server, immer. Der Client bekommt das Ergebnis und
  * zeigt die Ziehung danach als Animation — er würfelt nichts.
@@ -36,6 +34,7 @@
 
 const cosmetics = require("./cosmetics");
 const praegung = require("./praegung");
+const praegestaub = require("./praegestaub");
 const chat = require("./chat");
 const ruhm = require("./ruhm");
 
@@ -127,38 +126,10 @@ const KISTEN = {
   },
 };
 
-/* Anteil des Ladenwerts, den man für ein Doppeltes zurückbekommt. Bewusst
-   niedrig: siehe pruefe(). */
-const DOPPELT_ANTEIL = 0.25;
-/*
- * Was eine GRATIS-Kiste für Doppeltes zahlt.
- *
- * Erst stand hier eine Null, mit der Begruendung, jeder Rueckkauf an einer
- * Gratiskiste sei ein Chip-Drucker. Das stimmt fuer einen ANTEIL am Wert:
- * wer alles besitzt, haette sich damit jeden Tag ein paar Prozent von
- * 1,8 Millionen abgeholt.
- *
- * Es stimmt aber nicht fuer einen festen kleinen Betrag, und die Null hatte
- * einen Preis, den ich beim Nachrechnen gefunden habe: wer alle 18
- * gewoehnlichen und alle 26 seltenen Stuecke hat, bekommt aus der Tageskiste
- * mit 98 Prozent Wahrscheinlichkeit GAR NICHTS. Ein taeglicher Gratis-Knopf,
- * der nichts tut, ist schlimmer als keiner — und genau die Leute, die am
- * laengsten dabei sind, laufen als Erste hinein.
- *
- * Also ein fester Trostbetrag, unabhaengig vom Wert des Stuecks, und durch
- * die Vermoegensbremse wie jedes andere Gratisgeld. Fuer ein grosses Konto
- * bleibt davon ein Viertel, und mehr als einmal am Tag geht es nicht.
- */
-const DOPPELT_FREI_CHIPS = 3_000;
 /* Was ein Einzelstück wert ist, wenn man es doppelt zieht. Es hat keinen
    Ladenpreis, also braucht es eine Zahl; sie liegt über allem anderen, weil
    das Stück sonst der billigste Ausgang der teuersten Kiste wäre. */
 const KISTENSTUECK_WERT = 2_000_000;
-/* So viel darf eine Gratiskiste hoechstens fuer ein Doppeltes zahlen. Der
-   Kalender gibt an Tag eins 2.000, der Stunden-Bonus liegt in derselben
-   Groessenordnung; eine taegliche Quelle darueber waere keine Kleinigkeit
-   mehr, sondern Einkommen. */
-const GRATIS_DECKEL = 5_000;
 
 /*
  * Wie lange die Ziehung im Browser dauert.
@@ -235,10 +206,9 @@ const laeuft = (kiste) => !kiste || !kiste.bis || Date.now() < kiste.bis;
 /**
  * Gegenprobe beim Start.
  *
- * Zwei Dinge dürfen nicht passieren, und beide fallen sonst erst auf, wenn
- * jemand hundert Kisten aufgemacht hat: eine Stufe ohne Inhalt (die Ziehung
- * liefe ins Leere) und eine Kiste, die für jemanden mit voller Sammlung mehr
- * Chips ausspuckt, als sie kostet.
+ * Zwei Dinge dürfen nicht passieren und fallen sonst erst spät auf: Chancen,
+ * die nicht 100 ergeben, oder eine Stufe ohne Inhalt. Eine volle Sammlung
+ * kann keine Chips mehr drucken, weil Doppelte nur Prägestaub geben.
  */
 function pruefe() {
   const meldungen = [];
@@ -246,29 +216,11 @@ function pruefe() {
     const t = topfVon(k);
     const summe = Object.values(k.chancen).reduce((a, b) => a + b, 0);
     if (Math.round(summe) !== 100) meldungen.push(`${k.label}: Chancen ergeben ${summe} statt 100.`);
-    let erwarteterWert = 0;
-    for (const [stufe, pct] of Object.entries(k.chancen)) {
-      if (!t[stufe] || !t[stufe].length) { meldungen.push(`${k.label}: Stufe „${stufe}“ ist leer.`); continue; }
+    for (const stufe of Object.keys(k.chancen)) {
       /* Bei einer limitierten Kiste ist das die wichtigste Probe: sie zieht
          aus einem eigenen, kleinen Topf, und eine vergessene Stufe faellt
          sonst erst beim ersten Zug auf. */
-      const schnitt = t[stufe].reduce((s, x) => s + x.wert, 0) / t[stufe].length;
-      erwarteterWert += (pct / 100) * schnitt;
-    }
-    const beiVollerSammlung = erwarteterWert * DOPPELT_ANTEIL;
-    /* Bei einer Gratiskiste ist jeder Rückkauf über null ein Chip-Drucker.
-       Deshalb zahlt sie für Doppeltes gar nichts (siehe oeffne), und hier
-       wird sie nur daraufhin geprüft. */
-    if (k.frei) {
-      /* Die Gratiskiste zahlt einen festen Trostbetrag statt eines Anteils.
-         Geprueft wird deshalb nicht auf null, sondern darauf, dass der
-         Betrag klein bleibt: er kommt einmal am Tag und ist damit eine
-         Quelle wie der Kalender, nicht wie ein Spiel. */
-      if (DOPPELT_FREI_CHIPS > GRATIS_DECKEL) {
-        meldungen.push(`${k.label}: Trostbetrag ${DOPPELT_FREI_CHIPS} liegt über dem Deckel von ${GRATIS_DECKEL}.`);
-      }
-    } else if (beiVollerSammlung >= k.preis) {
-      meldungen.push(`${k.label}: druckt Chips. Rückkauf bei voller Sammlung ${Math.round(beiVollerSammlung)} >= Preis ${k.preis}.`);
+      if (!t[stufe] || !t[stufe].length) { meldungen.push(`${k.label}: Stufe „${stufe}“ ist leer.`); continue; }
     }
   }
   for (const m of meldungen) console.error("kisten:", m);
@@ -298,8 +250,7 @@ function oeffentlich(acc) {
   return {
     stufen: STUFEN.filter((s) => t[s.id] && t[s.id].length).map((s) => ({ id: s.id, label: s.label, farbe: s.farbe, anzahl: t[s.id].length })),
     serien: praegung.serienRegeln(),
-    doppeltAnteil: DOPPELT_ANTEIL,
-    doppeltFrei: DOPPELT_FREI_CHIPS,
+    staub: { balance: praegestaub.balance(acc), werte: praegestaub.DUST_BY_TIER, frei: praegestaub.FREE_DUPLICATE_DUST },
     /* Abgelaufene Kisten fallen raus, und zwar hier und nicht im Client:
        eine Kiste, die man noch sieht und nicht mehr aufmachen kann, ist ein
        Knopf, der nur Fehler ausspuckt. */
@@ -358,7 +309,7 @@ function inhalt(acc, kistenId) {
     id: kiste.id, label: kiste.label, text: kiste.text,
     preis: kiste.preis, frei: !!kiste.frei,
     limitiert: !!kiste.limitiert, bis: kiste.bis || 0,
-    doppeltAnteil: DOPPELT_ANTEIL, doppeltFrei: DOPPELT_FREI_CHIPS,
+    staub: { werte: praegestaub.DUST_BY_TIER, frei: praegestaub.FREE_DUPLICATE_DUST },
     stufen,
   };
 }
@@ -437,13 +388,10 @@ function oeffne(accounts, key, kistenId) {
     acc.kisten[kiste.id] = Date.now();
   }
   const neu = cosmetics.grant(acc, treffer.art, treffer.id, key);
-  let zurueck = 0;
+  let staub = 0;
   if (!neu) {
-    // Schon im Besitz: Chips statt eines zweiten, unsichtbaren Exemplars.
-    zurueck = kiste.frei
-      ? Math.round(DOPPELT_FREI_CHIPS * accounts.faucetFactor(acc.name))
-      : Math.round(treffer.wert * DOPPELT_ANTEIL);
-    if (zurueck) accounts.adjustChips(key, zurueck);
+    // Schon im Besitz: Prägestaub statt eines zweiten, unsichtbaren Exemplars.
+    staub = praegestaub.gutschreiben(acc, stufe.id, kiste.frei);
   }
   accounts.save();
 
@@ -460,7 +408,7 @@ function oeffne(accounts, key, kistenId) {
       nr: st ? st.nr : null,
       serie: st ? st.serie : null,
     },
-    neu, zurueck,
+    neu, staub, staubStand: praegestaub.balance(acc),
     account: accounts.publicAccount(acc),
   };
 }

@@ -6098,6 +6098,57 @@ html:not(.reduce-motion) .fr-flamme::before,
 html:not(.reduce-motion) .fr-sterne::before { animation: pl-spin 6s linear infinite; }
 
 /* Kosmetik-Shop: Vorschau, Stile, Titel */
+/* Prägestaub-Atelier: bewusst wie eine kleine Werkbank über dem Archiv. */
+.staub-atelier {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin: var(--sp-4) 0;
+  padding: clamp(17px, 3vw, 24px);
+  border: 1px solid rgba(188, 151, 255, 0.38);
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(circle at 90% 0, rgba(201, 168, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 0 100%, rgba(var(--info-rgb), 0.1), transparent 40%),
+    linear-gradient(145deg, var(--surface-2), var(--surface-sunken));
+  box-shadow: var(--e-3);
+}
+.staub-glanz { position: absolute; z-index: -1; right: -22px; top: -46px; color: rgba(215,190,255,0.08); font-size: 11rem; line-height: 1; transform: rotate(12deg); }
+.staub-kopf { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); }
+.staub-kopf h3 { margin: 2px 0 0; font-size: var(--fs-xl); }
+.staub-kopf .cos-eyebrow { color: #d8c0ff; }
+.staub-konto { min-width: 130px; padding: 9px 12px; border: 1px solid rgba(210,185,255,0.27); border-radius: var(--r-md); background: rgba(0,0,0,0.16); text-align: right; }
+.staub-konto small { display: block; color: var(--text-mute); font-size: 0.64rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+.staub-konto b { display: block; margin-top: 2px; color: #e2d2ff; font: 900 1.22rem/1 var(--font-num); }
+.staub-atelier > p { max-width: 720px; margin: var(--sp-3) 0 5px; color: var(--text-dim); font-size: var(--fs-sm); line-height: 1.48; }
+.staub-zeit { color: #d8c0ff; font-size: var(--fs-xs); font-weight: 780; }
+.staub-angebote { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); margin-top: var(--sp-4); }
+.staub-angebot { position: relative; overflow: hidden; display: grid; grid-template-rows: auto 88px auto auto; gap: 8px; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-lg); background: rgba(0,0,0,0.18); }
+.staub-angebot::after { content: ""; position: absolute; left: 16%; right: 16%; top: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--tier), transparent); }
+.staub-selten { --tier: #5ea8e0; }
+.staub-episch { --tier: #c86bd6; }
+.staub-legendaer { --tier: #f4d782; }
+.staub-stufe { width: max-content; padding: 4px 8px; border: 1px solid color-mix(in srgb, var(--tier) 45%, transparent); border-radius: var(--r-pill); color: var(--tier); background: color-mix(in srgb, var(--tier) 9%, transparent); font-size: 0.61rem; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; }
+.staub-demo { display: grid; place-items: center; overflow: hidden; border-radius: var(--r-md); background: radial-gradient(circle, color-mix(in srgb, var(--tier) 13%, transparent), transparent 67%); }
+.staub-demo .pl-chip { transform: scale(1.06); }
+.staub-name { min-width: 0; text-align: center; }
+.staub-name small, .staub-name b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.staub-name small { color: var(--text-mute); font-size: 0.65rem; }
+.staub-name b { color: var(--text); font-size: var(--fs-sm); }
+.staub-angebot button { min-height: 40px; padding: 9px 7px; font-size: 0.75rem; }
+.staub-angebot.owned { opacity: 0.66; }
+.staub-symbol { color: #d8c0ff; margin-left: 2px; text-shadow: 0 0 8px rgba(200,165,255,0.55); }
+
+@media (max-width: 680px) {
+  .staub-kopf { align-items: stretch; flex-direction: column; }
+  .staub-konto { text-align: left; }
+  .staub-angebote { grid-template-columns: 1fr; }
+  .staub-angebot { grid-template-columns: 72px 1fr; grid-template-rows: auto auto auto; align-items: center; }
+  .staub-stufe { grid-column: 1 / -1; }
+  .staub-demo { grid-row: 2 / 4; min-height: 76px; }
+  .staub-name { text-align: left; }
+}
+
 .cos-preview {
   display: flex;
   flex-direction: column;

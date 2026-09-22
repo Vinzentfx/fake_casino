@@ -75,6 +75,7 @@ const strafen = require("./game/strafen");
 const wartung = require("./game/wartung");
 const { setupResponsible } = require("./game/responsible");
 const { setupEventCalendar } = require("./game/eventCalendar");
+const { setupPraegestaub } = require("./game/praegestaub");
 
 const PORT = process.env.PORT || 3000;
 const build = require("./game/buildinfo");
@@ -554,6 +555,7 @@ require("./game/admin").setUmbenennen(verteileUmbenennung);
 liveops.setEvents(adminEvents); // Events spawnen auch zufällig (maybeAutoSpawn)
 setupClans(io, accounts);
 setupCosmetics(io, accounts);
+setupPraegestaub(io, accounts);
 /* Einmalig: was vor der Praegung schon jemandem gehoerte, bekommt seine
    Nummer. Muss NACH dem Laden der Konten laufen und laeuft nur beim ersten
    Mal (die Datei merkt sich, dass sie fertig ist). */
