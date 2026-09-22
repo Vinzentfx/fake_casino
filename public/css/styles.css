@@ -899,6 +899,113 @@ body.sheet-open { overflow: hidden; }
 .settings-head:first-of-type { margin-top: var(--sp-4); }
 .settings-rule { border: 0; border-top: 1px solid var(--line-neutral); margin: var(--sp-5) 0; }
 
+/* Freiwilliges Sitzungsbudget.
+   Bewusst ruhig und wertneutral: kein roter Alarm, solange nur ein Ziel
+   gesetzt ist. Erst beim Erreichen wechselt die Karte sichtbar den Ton. */
+.budget-card {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(15px, 3vw, 21px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(circle at 0 0, rgba(var(--info-rgb), 0.1), transparent 38%),
+    var(--surface-sunken);
+}
+.budget-card::after {
+  content: "";
+  position: absolute;
+  left: 14%; right: 14%; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--info), transparent);
+  opacity: 0.55;
+}
+.budget-card.active { border-color: rgba(var(--info-rgb), 0.38); }
+.budget-card.reached { border-color: rgba(var(--bad-rgb), 0.48); background: radial-gradient(circle at 0 0, rgba(var(--bad-rgb), 0.11), transparent 40%), var(--surface-sunken); }
+.budget-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--sp-3); }
+.budget-icon {
+  display: grid;
+  place-items: center;
+  width: 48px; height: 48px;
+  border: 1px solid rgba(var(--info-rgb), 0.4);
+  border-radius: 16px;
+  background: rgba(var(--info-rgb), 0.1);
+  color: var(--info-text);
+  transform: rotate(-4deg);
+}
+.budget-icon .ui-icon { width: 25px; height: 25px; transform: rotate(4deg); }
+.budget-head small { color: var(--info-text); font-size: 0.65rem; font-weight: 850; letter-spacing: 0.09em; text-transform: uppercase; }
+.budget-head h3 { margin: 2px 0 0; }
+.budget-head strong { color: var(--text); font: 850 1.15rem/1 var(--font-num); }
+.budget-card > p { margin: var(--sp-3) 0; color: var(--text-dim); font-size: var(--fs-sm); line-height: 1.48; }
+.budget-meter { padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: rgba(0,0,0,0.11); }
+.budget-meter-top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin-bottom: 8px; color: var(--text-mute); font-size: var(--fs-xs); }
+.budget-meter-top b { color: var(--text); }
+.budget-track { height: 7px; overflow: hidden; border-radius: var(--r-pill); background: rgba(255,255,255,0.075); }
+.budget-track > i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--info), var(--accent)); transition: width 0.45s var(--ease); }
+.budget-card.reached .budget-track > i, .loss-warning-modal[data-level="100"] .budget-track > i { background: linear-gradient(90deg, var(--accent), var(--bad)); }
+.budget-presets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: var(--sp-3); }
+.budget-presets button {
+  min-width: 0;
+  padding: 8px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text-dim);
+  font: 750 var(--fs-xs)/1 var(--font-num);
+  cursor: pointer;
+}
+.budget-presets button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.1); }
+.budget-custom { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: var(--sp-2); margin-top: var(--sp-3); }
+.budget-custom label { display: grid; gap: 5px; color: var(--text-mute); font-size: var(--fs-xs); }
+.budget-custom input { width: 100%; box-sizing: border-box; padding: 10px 11px; border: 1px solid var(--line); border-radius: var(--r-sm); outline: none; background: var(--surface); color: var(--text); font: inherit; }
+.budget-custom input:focus { border-color: var(--info); box-shadow: 0 0 0 3px rgba(var(--info-rgb), 0.1); }
+
+.loss-warning-card {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 460px);
+  padding: 26px;
+  border: 1px solid rgba(var(--info-rgb), 0.48);
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(circle at 50% -10%, rgba(var(--info-rgb), 0.2), transparent 43%),
+    linear-gradient(180deg, #1c2432, #141a24);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.65);
+  text-align: center;
+}
+.loss-warning-modal[data-level="100"] .loss-warning-card { border-color: rgba(var(--bad-rgb), 0.56); background: radial-gradient(circle at 50% -10%, rgba(var(--bad-rgb), 0.17), transparent 43%), linear-gradient(180deg, #221f29, #151821); }
+.loss-warning-ring {
+  display: grid;
+  place-items: center;
+  width: 74px; height: 74px;
+  margin: 0 auto 14px;
+  border: 1px solid rgba(var(--info-rgb), 0.5);
+  border-radius: 50%;
+  color: var(--info-text);
+  background: rgba(var(--info-rgb), 0.1);
+  box-shadow: 0 0 30px rgba(var(--info-rgb), 0.13), inset 0 0 0 7px rgba(var(--info-rgb), 0.04);
+}
+.loss-warning-modal[data-level="100"] .loss-warning-ring { border-color: rgba(var(--bad-rgb), 0.55); color: var(--bad-text); background: rgba(var(--bad-rgb), 0.11); box-shadow: 0 0 30px rgba(var(--bad-rgb), 0.14), inset 0 0 0 7px rgba(var(--bad-rgb), 0.04); }
+.loss-warning-ring .ui-icon { width: 34px; height: 34px; }
+.loss-warning-card > small { color: var(--info-text); font-size: 0.68rem; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
+.loss-warning-modal[data-level="100"] .loss-warning-card > small { color: var(--bad-text); }
+.loss-warning-card h2 { margin: 4px 0 8px; }
+.loss-warning-card > p { margin: 0; color: var(--text-dim); font-size: var(--fs-sm); line-height: 1.52; text-align: left; }
+.loss-warning-numbers { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); margin: var(--sp-4) 0 var(--sp-3); }
+.loss-warning-numbers > div { padding: 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: rgba(0,0,0,0.16); }
+.loss-warning-numbers small { display: block; color: var(--text-mute); font-size: 0.68rem; }
+.loss-warning-numbers b { display: block; margin-top: 3px; color: var(--text); font: 850 1.15rem/1 var(--font-num); }
+.loss-warning-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); margin-top: var(--sp-4); }
+
+@media (max-width: 600px) {
+  .budget-presets { grid-template-columns: repeat(3, 1fr); }
+  .budget-custom { grid-template-columns: 1fr 1fr; }
+  .budget-custom label { grid-column: 1 / -1; }
+  .loss-warning-card { padding: 21px 17px; }
+  .loss-warning-actions { grid-template-columns: 1fr; }
+}
+
 /* Theme-Auswahl */
 .theme-picker {
   display: grid;

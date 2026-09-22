@@ -127,7 +127,11 @@ function adminReiter() {
     });
   });
 }
-window.Casino.screens.register("settings", { onEnter: () => { renderThemePicker(); if (window.Casino._loadPush) window.Casino._loadPush(); } });
+window.Casino.screens.register("settings", { onEnter: () => {
+  renderThemePicker();
+  if (window.Casino._loadPush) window.Casino._loadPush();
+  if (window.Casino._loadResponsible) window.Casino._loadResponsible();
+} });
 window.Casino.screens.register("updates", { onEnter: () => renderUpdates() });
 window.Casino.screens.register("calendar", { onEnter: () => loadCalendar() });
 window.Casino.screens.register("lobby", {

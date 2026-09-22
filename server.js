@@ -73,6 +73,7 @@ const ipbans = require("./game/ipbans");
 const zugangsschutz = require("./game/zugangsschutz");
 const strafen = require("./game/strafen");
 const wartung = require("./game/wartung");
+const { setupResponsible } = require("./game/responsible");
 
 const PORT = process.env.PORT || 3000;
 const build = require("./game/buildinfo");
@@ -590,6 +591,7 @@ feed.setupFeed(io, accounts);
 achievements.setupAchievements(io, accounts);
 setupSeason(io, accounts);
 setupRecords(io, accounts);
+setupResponsible(io, accounts);
 push.setupPush(io, accounts);
 asyncDuell.setup(io, accounts);
 comeback.setup(io, accounts);

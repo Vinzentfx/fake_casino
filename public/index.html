@@ -97,7 +97,7 @@
       <button class="sheet-item" data-nav="auktion"><i class="si-icon" data-icon="auktion"></i><b>Auktionshaus</b><small id="menu-auktion-sub">Was es nur einmal gibt</small></button>
       <button class="sheet-item" data-nav="market"><i class="si-icon" data-icon="warenkorb"></i><b>Markt</b><small>Geprägte Stücke von Spieler zu Spieler</small></button>
       <button class="sheet-item" data-nav="kiste"><i class="si-icon" data-icon="geschenk"></i><b>Kisten</b><small>Kosmetik als Ziehung</small></button>
-      <button class="sheet-item" data-nav="settings"><i class="si-icon" data-icon="einstellungen"></i><b>Einstellungen</b><small>Design, Ton, Passwort</small></button>
+      <button class="sheet-item" data-nav="settings"><i class="si-icon" data-icon="einstellungen"></i><b>Einstellungen</b><small>Design, Budget, Sicherheit</small></button>
       <a class="sheet-item" href="/datenschutz.html"><i class="si-icon" data-icon="sperre"></i><b>Datenschutz</b><small>Was gespeichert wird</small></a>
       <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><i class="si-icon" data-icon="admin"></i><b id="menu-admin-label">Admin</b><small id="menu-admin-sub">Verwaltung</small></button>
     </div>
@@ -1599,6 +1599,33 @@
         </label>
 
         <hr class="settings-rule" />
+        <section class="budget-card" id="budget-card">
+          <div class="budget-head">
+            <span class="budget-icon"><i data-icon="ziel"></i></span>
+            <div><small>Freiwillig &amp; ohne Sperre</small><h3>Sitzungsbudget</h3></div>
+            <strong id="budget-value">Aus</strong>
+          </div>
+          <p>Lege fest, bei welchem Nettoverlust dich das Casino erinnern soll. Gewinne derselben Sitzung gleichen Verluste aus; nach 90 Minuten Pause beginnt die Zählung neu.</p>
+          <div class="budget-meter">
+            <div class="budget-meter-top"><span>Diese Sitzung: <b id="budget-loss">0<i class="mk"></i></b></span><span id="budget-left">Kein Hinweis eingestellt</span></div>
+            <div class="budget-track"><i id="budget-fill"></i></div>
+          </div>
+          <div class="budget-presets" id="budget-presets">
+            <button type="button" data-budget="10000">10.000</button>
+            <button type="button" data-budget="25000">25.000</button>
+            <button type="button" data-budget="50000">50.000</button>
+            <button type="button" data-budget="100000">100.000</button>
+            <button type="button" data-budget="250000">250.000</button>
+          </div>
+          <div class="budget-custom">
+            <label>Eigener Betrag<input id="budget-custom" type="number" inputmode="numeric" min="100" max="10000000" step="100" placeholder="z. B. 75.000" /></label>
+            <button class="btn-primary" id="budget-save" type="button">Speichern</button>
+            <button class="btn-secondary" id="budget-off" type="button">Ausschalten</button>
+          </div>
+          <div class="form-error" id="budget-error"></div>
+        </section>
+
+        <hr class="settings-rule" />
         <h3 class="settings-head">Benachrichtigungen</h3>
         <p class="hint" id="push-hint">Prüfe…</p>
         <div id="push-box"></div>
@@ -2280,6 +2307,25 @@
     <button type="button" class="chat-fab" data-chat-toggle aria-label="Chat öffnen"><i data-icon="chat"></i><span class="chat-room-tag" data-chat-tag></span></button>
   </div>
 
+  <!-- Freiwilliger Verlust-Hinweis. Keine Sperre: beide Wege bleiben offen. -->
+  <div id="loss-warning-modal" class="update-modal loss-warning-modal hidden" data-level="80">
+    <div class="loss-warning-card">
+      <div class="loss-warning-ring"><i data-icon="ziel"></i></div>
+      <small id="loss-warning-kicker">Kurzer Überblick</small>
+      <h2 id="loss-warning-title">Noch 20 % im Budget</h2>
+      <p id="loss-warning-text"></p>
+      <div class="loss-warning-numbers">
+        <div><small>Nettoverlust</small><b id="loss-warning-loss">0<i class="mk"></i></b></div>
+        <div><small>Dein Budget</small><b id="loss-warning-budget">0<i class="mk"></i></b></div>
+      </div>
+      <div class="budget-track"><i id="loss-warning-fill"></i></div>
+      <div class="loss-warning-actions">
+        <button class="btn-primary" id="loss-warning-lobby" type="button">Zur Lobby &amp; Pause</button>
+        <button class="btn-secondary" id="loss-warning-continue" type="button">Bewusst weiterspielen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast für Hinweise (z. B. Bonus erhalten) -->
   <div id="toast" class="toast"></div>
 
@@ -2503,6 +2549,7 @@
   <script defer src="/js/pinco.js"></script>
   <script defer src="/js/memory.js"></script>
   <script defer src="/js/suggestions.js"></script>
+  <script defer src="/js/responsible.js"></script>
   <script defer src="/js/sudoku.js"></script>
   <script defer src="/js/solitaire.js"></script>
   <script defer src="/js/chess.js"></script>
