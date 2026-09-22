@@ -208,7 +208,7 @@
         ? `So viele Stücke gibt es dauerhaft. Dazu kommt, was nur in einer limitierten Kiste steckt: `
           + `${limits.map((k) => `${k.stueckzahl} in der ${escapeHtml(k.label)}`).join(", ")}. `
         : "")
-      + `Doppelte Funde werden zu Prägestaub. Damit prägst du in der Sammlung einen der drei wechselnden Wochenpreise. `
+      + `Doppelte Funde werden zu Prägestaub. Damit prägst du in der Sammlung exklusive Atelierstücke. `
       + `Alles Neue lässt sich auf dem Markt weitergeben.</p>`;
   }
 

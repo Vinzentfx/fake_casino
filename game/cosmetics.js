@@ -163,6 +163,9 @@ const STYLES = [
    * anderer Stil arbeitet mit Licht UND Schatten, alle anderen faerben nur.
    */
   { id: "gala_rampenlicht", label: "Rampenlicht", cost: null, via: "Nur aus der Gala-Kiste", limitiert: "kiste", nur: "gala", preview: ["#fff6d8", "#2a2418"], motion: true },
+  /* Exklusiv im Prägeatelier. Quecksilber ist kein weiterer bunter Verlauf:
+     ein schmaler, fast weißer Reflex läuft durch dunkles flüssiges Metall. */
+  { id: "staub_quecksilber", label: "Quecksilber", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "episch", preview: ["#f5f0ff", "#625477"], motion: true },
 ];
 
 /* Rahmen ums Bild
@@ -193,6 +196,8 @@ const FRAMES = [
   /* Gala, episch. Kein Ring, sondern zwei Lorbeerzweige, die sich unten
      treffen und oben offen bleiben — wie auf der Kiste. */
   { id: "gala_kranz", label: "Lorbeerkranz", cost: 390000, nur: "gala", motion: true },
+  /* Ein gezahnter, gegenläufiger Doppelring – exklusiv im Atelier. */
+  { id: "staub_zahnkranz", label: "Zahnkranz", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "episch", motion: true },
 ];
 
 /* Titel
@@ -310,6 +315,8 @@ const BANNER = [
   /* Gala, selten. Ein roter Laeufer mit Goldkante, der schraeg nach hinten
      laeuft — Flaeche, aber mit Richtung. */
   { id: "gala_teppich", label: "Roter Teppich", cost: 55000, nur: "gala" },
+  /* Blaupause: feine Konstruktionslinien plus wandernder Prüfstrahl. */
+  { id: "staub_blaupause", label: "Blaupause", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "selten", motion: true },
 ];
 
 /* Namensschild
@@ -337,6 +344,8 @@ const SCHILDER = [
   /* Gala, episch. Bordeauxfarbener Samt mit einer goldenen Kordel am Rand,
      wie die Absperrung vor dem Eingang. */
   { id: "gala_samt", label: "Samtkordel", cost: 190000, nur: "gala" },
+  /* Flüssiges Metall mit einem glühenden Kern, exklusiv im Atelier. */
+  { id: "staub_schmelzkern", label: "Schmelzkern", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "legendaer", motion: true },
 ];
 
 /* Aura
@@ -368,6 +377,8 @@ const AUREN = [
   /* Gala, legendaer. Die anderen Auren schweben, schiessen, kreisen oder
      liegen. Diese FAELLT: Konfetti rieselt am Bild vorbei nach unten. */
   { id: "gala_konfetti", label: "Konfettiregen", cost: 950000, nur: "gala", motion: true },
+  /* Eine kleine Sternenschmiede: Ring, Funken und violette Korona. */
+  { id: "staub_sternenschmiede", label: "Sternenschmiede", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "legendaer", motion: true },
 ];
 
 /* Kartenrücken
@@ -416,6 +427,9 @@ const ZEICHEN = [
   /* Gala, gewoehnlich und selten. */
   { id: "gala_konfetti", label: "Konfetti",  icon: "konfetti",   cost: 15000,  nur: "gala" },
   { id: "gala_stern",    label: "Goldstern", icon: "gala-stern", cost: 115000, nur: "gala" },
+  /* Das kleine Siegel ist absichtlich im Chat sichtbar: Atelierstücke
+     sollen auch auffallen, wenn niemand gleichzeitig online ist. */
+  { id: "staub_siegel", label: "Prägesiegel", icon: "marke", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "selten", motion: true },
 ];
 
 const KARTEN = [
@@ -491,6 +505,9 @@ function handelbar(art, id) {
   /* Sammlungs-Belohnungen auch nicht. Sie kaufen zu koennen waere die
      Abkuerzung um genau das herum, wofuer es sie gibt. */
   if (item.limitiert === "sammlung") return false;
+  /* Atelierstücke sind persönliche Wochenpreise. Handel würde den ganzen
+     Prägestaub-Weg abkürzen und sie wieder zu normaler Marktware machen. */
+  if (item.limitiert === "staub") return false;
   /* Verdienbares auch nicht: Krone fuer den Ortsteil-Boss, Strassenherr fuer
      die erste komplette Strasse. Die bleiben fuer jeden erreichbar, wer sie
      will, holt sie sich selbst, und ein Markt dafuer waere nur eine
@@ -1006,8 +1023,11 @@ function stufeVonStueck(art, id) {
    aber auch nicht selten, und sie als "Einzelstueck" zu zeigen waere
    geflunkert. */
 const KNAPP = new Set(["kiste", "sammlung", "rad", "auktion"]);
+const ATELIER_STUFEN = new Set(["selten", "episch", "legendaer"]);
 
 function stufeKennung(item) {
+  /* Atelierstücke haben keinen Chippreis, aber bewusst drei Wertigkeiten. */
+  if (ATELIER_STUFEN.has(item.staubTier)) return item.staubTier;
   if (item.limitiert === "haus") return "haus";
   if (item.cost == null) {
     if (KNAPP.has(item.limitiert)) return "einzel";
@@ -1047,6 +1067,7 @@ const FAMILIEN = {
   s2:    { label: "Season 2",     farbe: "#ff9f43" },
   kiste: { label: "Einzelstücke", farbe: "#b6ff4d" },
   rad:   { label: "Fortuna",      farbe: "#f4d782" },
+  staub: { label: "Prägeatelier", farbe: "#d8c0ff" },
 };
 /* Drei, nicht vier. Zwei Familien (Haus und Kollektion) haben genau drei
    Stuecke, und zwei davon sind Auren — bei vier waere die Garnitur dort

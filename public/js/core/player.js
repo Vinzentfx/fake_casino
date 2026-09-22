@@ -27,11 +27,11 @@
   const STILE = new Set(["sonne", "eis", "gift", "beere", "puls", "schimmer",
     "neon", "regenbogen", "feuer", "glitch", "vanta", "splitter", "krone", "s2_bernstein", "s2_phoenix",
     "rad_fortuna", "auk_hologramm", "kiste_lack", "adm_zensiert", "sml_glutkern",
-    "aurora", "hochspannung", "gala_gravur", "gala_rampenlicht"]);
+    "aurora", "hochspannung", "gala_gravur", "gala_rampenlicht", "staub_quecksilber"]);
   const RAHMEN = new Set(["silber", "gold", "neon", "rotierend", "flamme", "sterne", "s2_wolf",
-    "rad_fortuna", "adm_orbit", "uhrwerk", "kiste_sprung", "gala_kranz"]);
+    "rad_fortuna", "adm_orbit", "uhrwerk", "kiste_sprung", "gala_kranz", "staub_zahnkranz"]);
   const AUREN = new Set(["auk_goldstaub", "auk_leere", "kiste_funken", "adm_eklipse", "sml_nachtschwarm",
-    "kiste_ringsystem", "gala_konfetti"]);
+    "kiste_ringsystem", "gala_konfetti", "staub_sternenschmiede"]);
 
   /**
    * Der Name mit Farbe oder Stil.
@@ -94,6 +94,7 @@
     auk_marke: "marke",
     hai: "hai", klingen: "krieg", tresor: "schatzkammer",
     gala_konfetti: "konfetti", gala_stern: "gala-stern",
+    staub_siegel: "marke",
   };
   /** Das Zeichen vor einer Chat-Nachricht. Nichts, wenn keins angelegt ist. */
   function zeichen(p) {
@@ -146,7 +147,7 @@
    * auch: der Server schickt nur die Kennung, und ein unbekannter Wert aus
    * einer alten Nachricht darf keine fremde Klasse ins Dokument schreiben.
    */
-  const FAMILIEN = new Set(["gala", "sml", "auk", "adm", "s2", "kiste", "rad"]);
+  const FAMILIEN = new Set(["gala", "sml", "auk", "adm", "s2", "kiste", "rad", "staub"]);
   function garnitur(p) {
     const g = p && p.garnitur;
     if (!g || !FAMILIEN.has(g.id) || !g.teile) return "";

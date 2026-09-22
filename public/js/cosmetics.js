@@ -39,6 +39,7 @@
     kiste: "Aus Kisten", auktion: "Auktionshaus", rad: "Glücksrad",
     comeback: "Wiedereröffnung", haus: "Vom Haus", season: "Season-Pass",
     sammlung: "Kollektion", verdienbar: "Zu verdienen", gratis: "Gratis",
+    staub: "Prägeatelier",
     /* Nur noch über den Markt: die Namensfarben entstehen nicht mehr neu. */
     markt: "Nur noch Markt",
   };
@@ -105,6 +106,7 @@
     /* Sammlungs-Belohnung. Nicht "zu verdienen": es gibt genau einen Weg,
        und der steht besser da als ein allgemeines Wort. */
     if (x.limitiert === "sammlung") return bau("sammlung", "Kollektion", "nur komplett");
+    if (x.limitiert === "staub") return bau("jetzt", "Prägeatelier", "exklusiver Wochenpreis");
     if (x.limitiert === "haus") return bau("haus", "Vom Haus", "wird vergeben");
     if (x.limitiert === "kiste") return bau("jetzt", "Einzelstück", "nur aus Kisten");
     /* Fortuna laeuft nicht nach Zeit ab, sondern nach Stückzahl. Deshalb

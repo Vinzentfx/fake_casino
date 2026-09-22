@@ -590,11 +590,12 @@ Menge nach der gezogenen Stufe:
 
 Prägestaub ist nicht handelbar und lässt sich nicht in Chips zurücktauschen.
 Im **Prägeatelier** der Sammlung stehen jede Woche dieselben drei Angebote für
-alle: ein seltenes Stück für 120, ein episches für 320 und ein legendäres für
-750 Staub. Die Auswahl wechselt montags. Angeboten werden nur normale,
-dauerhafte Kistenstücke; Gala-, Season-, Auktions-, Haus-, Einzel- und
-Sammlungsstücke bleiben ausgeschlossen. Ein gekaufter Wochenpreis bekommt wie
-jeder neue Fund erst beim Prägen seine zufällige Seriennummer.
+alle: ein seltenes Stück für 160, ein episches für 420 und ein legendäres für
+950 Staub. Die Auswahl wechselt montags. Es gibt dort ausschließlich sechs
+eigene Atelierstücke, die weder aus Kisten noch auf dem Markt entstehen. Pro
+Stufe rotiert jede Woche eines von zwei Stücken. Atelierstücke sind nicht
+handelbar, bekommen beim Prägen ihre zufällige Seriennummer und bilden eine
+eigene Garnitur, sobald drei davon gleichzeitig angelegt sind.
 
 **Ruhmestafel.** Oben bei den Kisten stehen die letzten zwölf großen Funde im
 ganzen Haus. Ein Stück kommt ab episch auf die Tafel und ab legendär zusätzlich

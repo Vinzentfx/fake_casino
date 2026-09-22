@@ -6,8 +6,8 @@
  * Doppelte Kistenfunde werden nicht länger zu Chips zurückgedreht. Das wäre
  * für volle Sammlungen nur ein Geldautomat und fühlt sich trotzdem wie eine
  * Niete an. Stattdessen werden sie zu einer eigenen, nicht handelbaren
- * Währung. Im Atelier stehen jede Woche drei normale Kistenstücke fest zur
- * Wahl. Limitierte, verdiente und Sammlungsstücke bleiben ausgeschlossen.
+ * Währung. Im Atelier stehen jede Woche drei exklusive Stücke fest zur Wahl.
+ * Sie entstehen nirgendwo sonst und bilden zusammen eine eigene Garnitur.
  */
 
 const DUST_BY_TIER = Object.freeze({
@@ -19,7 +19,7 @@ const DUST_BY_TIER = Object.freeze({
   kiste: 700,
 });
 const FREE_DUPLICATE_DUST = 5;
-const OFFER_COST = Object.freeze({ selten: 120, episch: 320, legendaer: 750 });
+const OFFER_COST = Object.freeze({ selten: 160, episch: 420, legendaer: 950 });
 const OFFER_TIERS = Object.freeze(["selten", "episch", "legendaer"]);
 const weekNow = (now = Date.now()) => Math.floor((now / 86400000 + 3) / 7);
 const nextWeekAt = (now = Date.now()) => (weekNow(now) + 1) * 7 * 86400000 - 3 * 86400000;
@@ -49,10 +49,10 @@ function katalog() {
   const out = [];
   for (const [art, liste] of Object.entries(listen)) {
     for (const item of liste || []) {
-      /* Das Atelier ist ein zweiter Weg zu normalen Kistenstücken, aber
-         niemals eine Hintertür zu Gala, Einzelstück, Season oder Auktion. */
-      if (!(item.cost > 0) || item.limitiert || item.nur || item.nichtInKisten) continue;
-      const tier = c.stufeKennung(item);
+      /* Nur eigens für diesen Weg entworfene Stücke. So fühlt sich Staub
+         nicht wie ein Umweg zu gewöhnlicher Kistenware an. */
+      if (item.nur !== "staub" || item.limitiert !== "staub") continue;
+      const tier = item.staubTier;
       if (OFFER_TIERS.includes(tier)) out.push({ art, id: item.id, item, tier });
     }
   }
@@ -65,7 +65,10 @@ function offers(now = Date.now()) {
   return OFFER_TIERS.map((tier) => {
     const pool = all.filter((x) => x.tier === tier).sort((a, b) => `${a.art}:${a.id}`.localeCompare(`${b.art}:${b.id}`));
     const x = pool[hash(`${week}:${tier}:atelier`) % pool.length];
-    return x && { id: `${week}:${tier}`, week, tier, cost: OFFER_COST[tier], art: x.art, cosmeticId: x.id };
+    /* Eigene Versionskennung: Wer in dieser Woche noch einen alten,
+       gewöhnlichen Wochenpreis gekauft hat, soll die neue Kollektion nicht
+       bis Montag gesperrt sehen. */
+    return x && { id: `${week}:atelier:${tier}`, week, tier, cost: OFFER_COST[tier], art: x.art, cosmeticId: x.id };
   }).filter(Boolean);
 }
 
@@ -124,6 +127,31 @@ function setupPraegestaub(io, accounts) {
       let collections = [];
       try { collections = cosmetics.sammlungAnsage(io, accounts, k); } catch {}
       const piece = require("./praegung").stueckVon(k, offer.art, offer.cosmeticId);
+      /* Atelierstücke sind echte Prägungen. Legendäre Stücke und seltene
+         Seriennummern verdienen deshalb dieselbe Bühne wie große Kistenfunde. */
+      try {
+        const tiers = require("./kisten").STUFEN;
+        const tier = tiers.find((x) => x.id === offer.tier) || tiers[0];
+        const label = cosmetics.label(offer.art, offer.cosmeticId);
+        require("./ruhm").melde(k, {
+          art: offer.art, id: offer.cosmeticId, label, stufe: tier,
+          nr: piece && piece.nr, serie: piece && piece.serie,
+        }, { kisteLabel: "Prägeatelier" });
+        const rank = piece && piece.serie && piece.serie.id;
+        if (offer.tier === "legendaer" || rank === "gold" || rank === "jackpot") {
+          const accName = acc.name || k;
+          const code = piece && piece.serie && piece.serie.code;
+          const message = rank === "jackpot"
+            ? `🎰 SERIEN-JACKPOT! ${accName} prägt #${code} auf „${label}“ im Prägeatelier.`
+            : rank === "gold"
+              ? `✦ GOLD-SERIE! ${accName} prägt #${code} auf „${label}“ im Prägeatelier.`
+              : `⚒ LEGENDÄRE PRÄGUNG! ${accName} erschafft „${label}“ exklusiv im Prägeatelier.`;
+          require("./chat").announce(io, message);
+          try { require("./chronik").notiere("event", message, { user: accName }); } catch {}
+        }
+      } catch (e) {
+        console.error("praegestaub: Ansage fehlgeschlagen —", e.message);
+      }
       ack({
         ...state(k),
         boughtPiece: {

@@ -6221,18 +6221,25 @@ html:not(.reduce-motion) .fr-sterne::before { animation: pl-spin 6s linear infin
 .staub-atelier > p { max-width: 720px; margin: var(--sp-3) 0 5px; color: var(--text-dim); font-size: var(--fs-sm); line-height: 1.48; }
 .staub-zeit { color: #d8c0ff; font-size: var(--fs-xs); font-weight: 780; }
 .staub-angebote { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); margin-top: var(--sp-4); }
-.staub-angebot { position: relative; overflow: hidden; display: grid; grid-template-rows: auto 88px auto auto; gap: 8px; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-lg); background: rgba(0,0,0,0.18); }
+.staub-angebot { position: relative; overflow: hidden; display: grid; grid-template-rows: auto 96px auto auto auto; gap: 8px; min-width: 0; padding: 12px; border: 1px solid color-mix(in srgb, var(--tier) 30%, var(--line)); border-radius: var(--r-lg); background: linear-gradient(160deg, color-mix(in srgb, var(--tier) 8%, rgba(0,0,0,.2)), rgba(0,0,0,.22)); box-shadow: inset 0 1px rgba(255,255,255,.04); }
+.staub-angebot::before { content: ""; position: absolute; inset: -60% -35%; z-index: 0; pointer-events: none; background: conic-gradient(from 30deg, transparent 0 34%, color-mix(in srgb, var(--tier) 10%, transparent) 42%, transparent 50% 100%); transform: rotate(-12deg); }
+.staub-angebot > * { position: relative; z-index: 1; }
 .staub-angebot::after { content: ""; position: absolute; left: 16%; right: 16%; top: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--tier), transparent); }
 .staub-selten { --tier: #5ea8e0; }
 .staub-episch { --tier: #c86bd6; }
 .staub-legendaer { --tier: #f4d782; }
 .staub-stufe { width: max-content; padding: 4px 8px; border: 1px solid color-mix(in srgb, var(--tier) 45%, transparent); border-radius: var(--r-pill); color: var(--tier); background: color-mix(in srgb, var(--tier) 9%, transparent); font-size: 0.61rem; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; }
-.staub-demo { display: grid; place-items: center; overflow: hidden; border-radius: var(--r-md); background: radial-gradient(circle, color-mix(in srgb, var(--tier) 13%, transparent), transparent 67%); }
+.staub-angebot-kopf { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.staub-exklusiv { color: var(--text-mute); font-size: .55rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.staub-demo { position: relative; display: grid; place-items: center; overflow: hidden; border: 1px solid color-mix(in srgb, var(--tier) 18%, transparent); border-radius: var(--r-md); background: radial-gradient(circle, color-mix(in srgb, var(--tier) 19%, transparent), transparent 65%); }
+.staub-demo::before { content: ""; position: absolute; width: 82px; height: 82px; border: 1px solid color-mix(in srgb, var(--tier) 26%, transparent); border-radius: 50%; box-shadow: 0 0 24px color-mix(in srgb, var(--tier) 12%, transparent); }
+.staub-demo > * { position: relative; z-index: 1; }
 .staub-demo .pl-chip { transform: scale(1.06); }
 .staub-name { min-width: 0; text-align: center; }
 .staub-name small, .staub-name b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .staub-name small { color: var(--text-mute); font-size: 0.65rem; }
 .staub-name b { color: var(--text); font-size: var(--fs-sm); }
+.staub-einzig { color: color-mix(in srgb, var(--tier) 72%, var(--text-dim)); font-size: .61rem; line-height: 1.25; text-align: center; }
 .staub-angebot button { min-height: 40px; padding: 9px 7px; font-size: 0.75rem; }
 .staub-angebot.owned { opacity: 0.66; }
 .staub-symbol { color: #d8c0ff; margin-left: 2px; text-shadow: 0 0 8px rgba(200,165,255,0.55); }
@@ -6241,10 +6248,11 @@ html:not(.reduce-motion) .fr-sterne::before { animation: pl-spin 6s linear infin
   .staub-kopf { align-items: stretch; flex-direction: column; }
   .staub-konto { text-align: left; }
   .staub-angebote { grid-template-columns: 1fr; }
-  .staub-angebot { grid-template-columns: 72px 1fr; grid-template-rows: auto auto auto; align-items: center; }
-  .staub-stufe { grid-column: 1 / -1; }
-  .staub-demo { grid-row: 2 / 4; min-height: 76px; }
+  .staub-angebot { grid-template-columns: 82px 1fr; grid-template-rows: auto auto auto auto; align-items: center; }
+  .staub-angebot-kopf { grid-column: 1 / -1; }
+  .staub-demo { grid-row: 2 / 5; min-height: 90px; }
   .staub-name { text-align: left; }
+  .staub-einzig { text-align: left; }
 }
 
 .cos-preview {
@@ -11681,6 +11689,7 @@ html:not(.reduce-motion) .ki-limit { animation: ki-limit-puls 2.8s ease-in-out i
 .ga-s2    { color: #ff9f43; }
 .ga-kiste { color: #b6ff4d; }
 .ga-rad   { color: #f4d782; }
+.ga-staub { color: #d8c0ff; }
 /* Ab fuenf Teilen leuchtet sie. Drei sind ein Anfang, fuenf sind eine
    Ansage, und wer will, dass es auffaellt, sammelt weiter. */
 .pl-garnitur.voll {
@@ -12615,3 +12624,102 @@ html:not(.reduce-motion) .cos-slg.voll .cos-slg-glanz { animation: cos-slg-glanz
   .cos-slg-stand small { flex-basis: auto; margin-left: 6px; text-align: left; }
   .cos-sammlungen .cos-slg-teile { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ==================================================================
+   PRÄGEATELIER – sechs Stücke, die nirgendwo sonst entstehen
+
+   Gemeinsame Handschrift: dunkles Metall, violetter Prägestaub und ein
+   warmer Schmiedekern. Die Stücke sind absichtlich keine umgefärbten
+   Kistenkosmetika, sondern besitzen eigene Formen und Bewegungen.
+   ================================================================== */
+
+/* Blaupause (Banner, selten): technische Linien und ein Prüfstrahl. */
+.pf-card[data-banner="staub_blaupause"]::before,
+.cos-pass[data-banner="staub_blaupause"]::before,
+.player-profile-head[data-banner="staub_blaupause"]::before,
+.cos-preview[data-banner="staub_blaupause"]::before,
+.cos-banner-demo[data-banner="staub_blaupause"] {
+  background:
+    linear-gradient(90deg, transparent 48%, rgba(224, 205, 255, .7) 50%, transparent 52%) 0 0 / 220% 100%,
+    linear-gradient(rgba(207, 181, 255, .15) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(90deg, rgba(207, 181, 255, .15) 1px, transparent 1px) 0 0 / 12px 12px,
+    radial-gradient(circle at 70% 35%, rgba(135, 96, 205, .45), transparent 42%),
+    #111525;
+}
+html:not(.reduce-motion) .pf-card[data-banner="staub_blaupause"]::before,
+html:not(.reduce-motion) .cos-pass[data-banner="staub_blaupause"]::before,
+html:not(.reduce-motion) .player-profile-head[data-banner="staub_blaupause"]::before,
+html:not(.reduce-motion) .cos-preview[data-banner="staub_blaupause"]::before,
+html:not(.reduce-motion) .cos-banner-demo[data-banner="staub_blaupause"] {
+  animation: staub-pruefstrahl 4.8s ease-in-out infinite;
+}
+@keyframes staub-pruefstrahl { 0%, 100% { background-position: -100% 0, 0 0, 0 0, 0 0; } 50% { background-position: 100% 0, 0 0, 0 0, 0 0; } }
+
+/* Prägesiegel (Chat-Zeichen, selten): zweifarbiger Atem statt Einheitsfarbe. */
+.zn-staub_siegel { color: #d8c0ff; filter: drop-shadow(0 0 4px rgba(216, 192, 255, .7)); }
+html:not(.reduce-motion) .zn-staub_siegel svg { animation: staub-siegel 2.8s ease-in-out infinite; }
+@keyframes staub-siegel { 0%, 100% { color: #9f7cda; transform: scale(.92) rotate(-8deg); } 50% { color: #ffe0a3; transform: scale(1.14) rotate(8deg); } }
+
+/* Quecksilber (Namensstil, episch): ein harter Reflex läuft durch Metall. */
+.nm-staub_quecksilber {
+  background-image: linear-gradient(105deg,
+    #3c3548 0%, #857a96 22%, #ebe5f3 38%, #ffffff 46%, #6b607a 54%, #c8bdd5 72%, #44394f 100%);
+  background-size: 300% 100%;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,.35)) drop-shadow(0 0 5px rgba(191,159,235,.4));
+}
+html:not(.reduce-motion) .nm-staub_quecksilber { animation: staub-metall 3.6s cubic-bezier(.45,0,.55,1) infinite; }
+@keyframes staub-metall { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* Zahnkranz (Rahmen, episch): zwei mechanische Ringe gegenläufig. */
+.fr-staub_zahnkranz { --rahmen-farbe: transparent; position: relative; overflow: visible; }
+.fr-staub_zahnkranz::before, .fr-staub_zahnkranz::after {
+  content: ""; position: absolute; border-radius: 50%; pointer-events: none;
+  -webkit-mask: radial-gradient(circle, transparent 0 55%, #000 58% 72%, transparent 75%);
+          mask: radial-gradient(circle, transparent 0 55%, #000 58% 72%, transparent 75%);
+}
+.fr-staub_zahnkranz::before {
+  inset: -5px;
+  background: repeating-conic-gradient(#d8c0ff 0 8deg, transparent 8deg 18deg);
+  filter: drop-shadow(0 0 3px rgba(216,192,255,.55));
+}
+.fr-staub_zahnkranz::after {
+  inset: -2px;
+  background: repeating-conic-gradient(#ffe0a3 0 5deg, transparent 5deg 15deg);
+}
+html:not(.reduce-motion) .fr-staub_zahnkranz::before { animation: pl-spin 9s linear infinite; }
+html:not(.reduce-motion) .fr-staub_zahnkranz::after { animation: staub-rueckwaerts 5.5s linear infinite; }
+@keyframes staub-rueckwaerts { to { transform: rotate(-360deg); } }
+
+/* Schmelzkern (Namensschild, legendär): dunkle Gussform mit flüssiger Naht. */
+.sch-staub_schmelzkern {
+  position: relative; overflow: hidden;
+  background:
+    linear-gradient(100deg, transparent 0 35%, rgba(255,241,185,.5) 46%, #ff9f43 50%, rgba(199,109,255,.5) 54%, transparent 65%) 0 0 / 240% 100%,
+    radial-gradient(100% 140% at 50% 120%, rgba(157,86,218,.45), transparent 58%),
+    linear-gradient(180deg, #29242f, #121116);
+  border-color: #b892e8;
+  box-shadow: inset 0 0 0 1px rgba(255,224,163,.22), 0 0 9px rgba(177,126,232,.24);
+}
+html:not(.reduce-motion) .sch-staub_schmelzkern { animation: staub-schmelze 4.2s ease-in-out infinite; }
+@keyframes staub-schmelze { 0%, 100% { background-position: -80% 0, 0 0, 0 0; } 50% { background-position: 120% 0, 0 0, 0 0; } }
+
+/* Sternenschmiede (Aura, legendär): Korona plus zwei Funkenbahnen. */
+.cos-aura-demo.au-staub_sternenschmiede { position: relative; isolation: isolate; }
+.au-staub_sternenschmiede > .pl-ava { border-radius: 50%; box-shadow: 0 0 .62em .18em rgba(169,116,224,.42); }
+.au-staub_sternenschmiede::before, .au-staub_sternenschmiede::after {
+  content: ""; position: absolute; left: 50%; top: 50%; z-index: 0; pointer-events: none;
+}
+.au-staub_sternenschmiede::before {
+  width: 142%; height: 142%; margin: -71% 0 0 -71%; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 12%, #d8c0ff 14% 17%, transparent 19% 42%, #ffe0a3 44% 48%, transparent 50% 75%, #a96fe0 78% 82%, transparent 84%);
+  -webkit-mask: radial-gradient(circle, transparent 0 47%, #000 51% 58%, transparent 62%);
+          mask: radial-gradient(circle, transparent 0 47%, #000 51% 58%, transparent 62%);
+  filter: drop-shadow(0 0 4px rgba(216,192,255,.8));
+}
+.au-staub_sternenschmiede::after {
+  width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; border-radius: 50%; background: #fff;
+  box-shadow: -1.15em -.3em 0 #d8c0ff, 1.05em -.75em 0 #ffe0a3, .8em 1em 0 #a96fe0, -1em .85em 0 #fff0c7;
+}
+html:not(.reduce-motion) .au-staub_sternenschmiede::before { animation: pl-spin 5.8s linear infinite; }
+html:not(.reduce-motion) .au-staub_sternenschmiede::after { animation: staub-funkenbahn 2.2s ease-in-out infinite; }
+@keyframes staub-funkenbahn { 0%,100% { transform: rotate(0deg) scale(.75); opacity: .45; } 50% { transform: rotate(180deg) scale(1.18); opacity: 1; } }

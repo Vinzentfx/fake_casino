@@ -1,6 +1,6 @@
 "use strict";
 
-/* Prägestaub und die drei wöchentlichen Festangebote in der Sammlung. */
+/* Prägestaub und die drei exklusiven Wochenstücke in der Sammlung. */
 (function () {
   const Casino = window.Casino;
   const { socket, toast, escapeHtml } = Casino;
@@ -28,9 +28,10 @@
         : s.balance < o.cost ? `Noch ${fmt(o.cost - s.balance)} ✦ nötig`
         : `${fmt(o.cost)} ✦ prägen`;
       return `<article class="staub-angebot staub-${escapeHtml(o.tier)}${o.owned ? " owned" : ""}">
-        <span class="staub-stufe">${escapeHtml(o.tier === "legendaer" ? "Legendär" : o.tier === "episch" ? "Episch" : "Selten")}</span>
+        <div class="staub-angebot-kopf"><span class="staub-stufe">${escapeHtml(o.tier === "legendaer" ? "Legendär" : o.tier === "episch" ? "Episch" : "Selten")}</span><span class="staub-exklusiv">Atelier-Exklusiv</span></div>
         <div class="staub-demo">${Casino.spieler.kosVorschau(o.look, { name: (Casino.getAccount() || {}).name || "Du" })}</div>
         <div class="staub-name"><small>${escapeHtml(o.artName)}</small><b>${escapeHtml(o.label)}</b></div>
+        <span class="staub-einzig">✦ Nur hier · zählt zur Prägeatelier-Garnitur</span>
         <button class="${disabled ? "btn-secondary" : "btn-primary"}" data-staub-buy="${escapeHtml(o.id)}" ${disabled ? "disabled" : ""}>${status}</button>
       </article>`;
     }).join("");
