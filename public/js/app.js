@@ -139,6 +139,7 @@ window.Casino.screens.register("lobby", {
     if (window.Casino._loadLobbies) window.Casino._loadLobbies();
     if (window.Casino._loadFeed) window.Casino._loadFeed();
     if (window.Casino._loadEventCalendar) window.Casino._loadEventCalendar();
+    if (window.Casino._loadOnboarding) window.Casino._loadOnboarding();
   },
 });
 // Der Automat soll nicht im Hintergrund weiterdrehen, wenn man weggeht.
@@ -499,6 +500,17 @@ function punktHTML(item) {
 function maybeShowUpdate() {
   const cl = window.Casino.changelog;
   if (!cl) return;
+  const acc = state.account;
+  /* Neue Spieler brauchen den aktuellen Zustand, keinen Comeback-Roman aus
+     der Zeit vor ihrer Anmeldung. Wegen bewusst hochgezaehlter Sortier-IDs
+     koennen alte Eintraege formal in der Zukunft liegen; deshalb hier die
+     eindeutige Alterspruefung und der neueste Stand als Ausgangspunkt. */
+  if (acc && Date.now() - Number(acc.createdAt || 0) < 10 * 60 * 1000
+    && Number(acc.stats && acc.stats.gamesPlayed) === 0
+    && !(acc.prefs && acc.prefs.seenUpdate)) {
+    merkeStand(cl.neueste);
+    return;
+  }
   const gesehen = gesehenerStand();
   if (!gesehen) return; // ohne Account gibt es nichts zu vergleichen
 
@@ -741,7 +753,7 @@ function renderUpdateBadge() {
   }
 }
 
-const ONBOARDING_VERSION = "2026-07-08-first-steps";
+const ONBOARDING_VERSION = "2026-09-22-starter-pass";
 function maybeShowOnboarding() {
   let seen = null;
   try { seen = localStorage.getItem("casino_seen_onboarding"); } catch {}
@@ -749,14 +761,11 @@ function maybeShowOnboarding() {
   const m = $("#onboarding-modal");
   if (m) m.classList.remove("hidden");
 }
-$("#onboarding-close")?.addEventListener("click", () => {
+$("#onboarding-start")?.addEventListener("click", () => {
   $("#onboarding-modal")?.classList.add("hidden");
   try { localStorage.setItem("casino_seen_onboarding", ONBOARDING_VERSION); } catch {}
-});
-$("#onboarding-quests")?.addEventListener("click", () => {
-  $("#onboarding-modal")?.classList.add("hidden");
-  try { localStorage.setItem("casino_seen_onboarding", ONBOARDING_VERSION); } catch {}
-  showScreen("quests");
+  showScreen("lobby");
+  setTimeout(() => $("#starter-pass")?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
 });
 
 // Nach einem Verbindungsabbruch neu anmelden: für den Server ist ein Reconnect
@@ -1435,8 +1444,11 @@ $("#login-form").addEventListener("submit", async (e) => {
     if (data.config?.bonusCooldownMs) state.bonusCooldownMs = data.config.bonusCooldownMs;
     if (data.config?.rescueThreshold) RESCUE_THRESHOLD = data.config.rescueThreshold;
     setAccount(data.account, data.token);
-    showScreen("lobby");
     if (data.created) maybeShowOnboarding();
+    /* Die Begruessung muss vor dem Lobby-Wechsel offen sein. Sonst oeffnet
+       der Tagesbericht im selben Moment ebenfalls und zwei Fenster liegen
+       uebereinander. */
+    showScreen("lobby");
     if (data.created) toast(`Willkommen, ${data.account.name}! ${(data.account.chips || 0).toLocaleString("de-DE")} Chips geschenkt.`);
     else toast(`Willkommen zurück, ${data.account.name}!`);
     // Einbruchs-Warnung: fehlgeschlagene Login-Versuche seit dem letzten Besuch.

@@ -76,6 +76,7 @@ const wartung = require("./game/wartung");
 const { setupResponsible } = require("./game/responsible");
 const { setupEventCalendar } = require("./game/eventCalendar");
 const { setupPraegestaub } = require("./game/praegestaub");
+const { setupOnboarding } = require("./game/onboarding");
 
 const PORT = process.env.PORT || 3000;
 const build = require("./game/buildinfo");
@@ -596,6 +597,7 @@ setupSeason(io, accounts);
 setupRecords(io, accounts);
 setupResponsible(io, accounts);
 setupEventCalendar(io, accounts);
+setupOnboarding(io, accounts);
 push.setupPush(io, accounts);
 asyncDuell.setup(io, accounts);
 comeback.setup(io, accounts);

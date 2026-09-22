@@ -115,6 +115,15 @@
    */
   function vielleicht() {
     if (heuteGezeigt) return;
+    const acc = Casino.getAccount();
+    /* Ein Konto, das gerade erst entstanden ist, hat nichts verpasst. Sein
+       erster Bildschirm gehoert dem Starter-Pass, nicht einem Rueckblick auf
+       fremde Wochenereignisse. Ueber das Menue bleibt der Bericht erreichbar. */
+    if (acc && Date.now() - Number(acc.createdAt || 0) < 10 * 60 * 1000
+      && Number(acc.stats && acc.stats.gamesPlayed) === 0) {
+      heuteGezeigt = true;
+      return;
+    }
     const stoert = ["#onboarding-modal", "#update-modal", "#geschenk-modal"]
       .some((s) => { const el = $(s); return el && !el.classList.contains("hidden"); });
     if (stoert) return;

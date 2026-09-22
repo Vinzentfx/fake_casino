@@ -38,6 +38,7 @@ kann trotzdem alles passieren.
 | Quelle | Wie viel | Wie oft |
 |---|---|---|
 | Neues Konto | 5.000 | einmalig |
+| Starter-Pass | 7.500 | einmalig, nur für neue Konten |
 | Stunden-Bonus | 1.000 plus Zuschläge | jede Stunde |
 | Login-Kalender | 2.000 bis 50.000 | einmal am Tag |
 | Glücksrad | 250 bis 25.000, dazu Lose und XP | alle 20 Stunden |
@@ -47,6 +48,12 @@ kann trotzdem alles passieren.
 | Wochenend-Pokal | 2.500, 6.000 und 12.000 plus 7.500 gemeinsam | Freitag 18 Uhr bis Montag 0 Uhr |
 | Season-Stufen | 2.500 bis 80.000 | 20 Stufen je Season |
 | Arbeiten (Klicker und Jobs) | abhängig von Vermögen und Aufgabe | laufend, gedeckelt |
+
+**Starter-Pass.** Neue Konten sehen in der Lobby vier geführte Schritte:
+Stunden-Bonus abholen, Aufträge öffnen, eine beliebige Spielrunde abschließen
+und die Stadt besuchen. Der Fortschritt bleibt am Konto gespeichert. Sind alle
+vier erledigt, lassen sich einmalig 7.500 Chips abholen; ältere Konten bekommen
+den Pass nicht nachträglich.
 
 **Stunden-Bonus im Detail.** Der Grundbetrag ist 1.000 Chips. Dazu kommt:
 

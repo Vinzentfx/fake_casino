@@ -186,6 +186,19 @@
           </div>
         </section>
 
+        <!-- Bleibt fuer neue Konten sichtbar, bis alle vier echten Schritte
+             erledigt und die Belohnung abgeholt ist. -->
+        <section class="starter-pass hidden" id="starter-pass">
+          <div class="starter-pass-top">
+            <span class="starter-pass-seal"><i data-icon="marke"></i></span>
+            <div><small>DEIN ERSTER ABEND</small><h2>Starter-Pass</h2><p>Vier kurze Schritte. Danach kennst du das Haus – und hast etwas mehr Spielraum.</p></div>
+            <div class="starter-pass-reward"><small>ABSCHLUSS</small><b>+7.500<i class="mk"></i></b></div>
+          </div>
+          <div class="starter-pass-track"><i id="starter-pass-fill"></i></div>
+          <div class="starter-steps" id="starter-steps"></div>
+          <button class="btn-primary starter-claim" id="starter-claim" type="button" disabled>Erst alle vier Schritte abschließen</button>
+        </section>
+
         <!-- Schnellzugriff: Favoriten, sonst zuletzt gespielt. Bleibt
              ausgeblendet, solange es weder das eine noch das andere gibt. -->
         <section class="quick-row hidden" id="lobby-quick">
@@ -2556,20 +2569,13 @@
   </div>
 
   <div id="onboarding-modal" class="update-modal hidden">
-    <div class="update-card">
-      <div class="update-emoji" data-icon="marke"></div>
-      <h2>Dein erster Casino-Abend</h2>
-      <p class="muted small" style="text-align:center;margin-top:-4px">So kommst du sauber rein, ohne Chips zu verheizen:</p>
-      <div class="update-list">
-        <div class="update-item"><span class="ui-punkt" data-icon="geschenk"></span><div><b>Stunden-Bonus holen</b><small>Der Bonus ist Starthilfe. Das große Geld kommt später aus Spielen, Aufträgen und guten Entscheidungen.</small></div></div>
-        <div class="update-item"><span class="ui-punkt" data-icon="quests"></span><div><b>Aufträge ansehen</b><small>Die besten frühen Ziele stehen dort: tägliche und wöchentliche Aufgaben, die einfach beim Spielen nebenbei mitlaufen.</small></div></div>
-        <div class="update-item"><span class="ui-punkt" data-icon="wuerfel"></span><div><b>Klein anfangen</b><small>Slots, Blackjack, Roulette, Mines, Crash und Pinco haben Hausvorteil. Erst kleine Einsätze, dann hocharbeiten.</small></div></div>
-        <div class="update-item"><span class="ui-punkt" data-icon="businesses"></span><div><b>Später Stadt & Profil ausbauen</b><small>Immobilien, Achievements, Clan, Kosmetik und Profil sind dein langfristiger Flex.</small></div></div>
-      </div>
-      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-        <button class="btn-primary" id="onboarding-quests" style="flex:1;min-width:150px">Aufträge ansehen</button>
-        <button class="chip-btn" id="onboarding-close" style="flex:1;min-width:150px">Später</button>
-      </div>
+    <div class="update-card onboarding-welcome">
+      <div class="onboarding-mark"><i data-icon="marke"></i><span>NEUES MITGLIED</span></div>
+      <h2>Willkommen im Haus.</h2>
+      <p>Du startest mit <b>5.000 Chips</b>. In der Lobby wartet dein Starter-Pass: vier echte Schritte statt einer Textwand.</p>
+      <div class="onboarding-prize"><small>Wenn alle vier erledigt sind</small><strong>+7.500<i class="mk"></i></strong><span>einmaliger Startschub</span></div>
+      <div class="onboarding-route"><span>Bonus</span><i></i><span>Aufträge</span><i></i><span>1 Runde</span><i></i><span>Stadt</span></div>
+      <button class="btn-primary" id="onboarding-start">Starter-Pass ansehen</button>
     </div>
   </div>
 
@@ -2614,6 +2620,7 @@
   <script defer src="/js/suggestions.js"></script>
   <script defer src="/js/responsible.js"></script>
   <script defer src="/js/eventCalendar.js"></script>
+  <script defer src="/js/onboarding.js"></script>
   <script defer src="/js/sudoku.js"></script>
   <script defer src="/js/solitaire.js"></script>
   <script defer src="/js/chess.js"></script>

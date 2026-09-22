@@ -735,6 +735,9 @@ function login(name, pin) {
       lastBonusAt: 0,
       stats: { gamesPlayed: 0, handsWon: 0, biggestWin: 0 },
       unlocked: ["lucky7"],
+      /* Nur neue Konten bekommen den Starter-Pass. Alte Konten sollen nach
+         einem Update nicht ploetzlich wieder als Anfaenger begruesst werden. */
+      onboarding: { startedAt: Date.now(), steps: {}, claimedAt: 0 },
     };
     accounts[key] = acc;
     merkeSchluessel(acc, key);
