@@ -70,7 +70,7 @@
       <button class="sheet-item" id="menu-bericht" type="button"><i class="si-icon" data-icon="ansage"></i><b>Tagesbericht</b><small id="menu-bericht-sub">Was du verpasst hast</small></button>
       <button class="sheet-item" data-nav="quests"><i class="si-icon" data-icon="quests"></i><b>Aufträge</b><small>Tages- und Wochenziele</small></button>
       <button class="sheet-item" data-nav="season"><i class="si-icon" data-icon="season"></i><b>Season-Pass</b><small id="menu-season-sub">Fortschritt und Belohnungen</small></button>
-      <button class="sheet-item" data-nav="calendar"><i class="si-icon" data-icon="kalender"></i><b>Kalender</b><small id="menu-calendar-sub">Täglich einmal abholen</small></button>
+      <button class="sheet-item" data-nav="calendar"><i class="si-icon" data-icon="kalender"></i><b>Eventkalender</b><small id="menu-calendar-sub">Wochenend-Pokal &amp; Tagesbonus</small></button>
       <button class="sheet-item" data-nav="wheel"><i class="si-icon" data-icon="gluecksrad"></i><b>Glücksrad</b><small id="menu-wheel-sub">Einmal am Tag drehen</small></button>
       <button class="sheet-item" data-nav="leaderboard"><i class="si-icon" data-icon="bestenliste"></i><b>Bestenliste</b><small>Wer liegt vorn</small></button>
       <button class="sheet-item" data-nav="stats"><i class="si-icon" data-icon="statistik"></i><b>Statistik</b><small>Deine Bilanz je Spiel</small></button>
@@ -1472,11 +1472,44 @@
       </div>
     </section>
 
-    <!-- Login-Kalender -->
+    <!-- Eventkalender: planbares Hauptevent plus der bestehende Login-Bonus. -->
     <section class="screen" data-screen="calendar">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-      <h2 class="screen-title"><i data-icon="kalender"></i>Login-Kalender</h2>
-      <div class="tafel">
+      <h2 class="screen-title"><i data-icon="kalender"></i>Eventkalender</h2>
+
+      <section class="event-week-card" id="event-week-card">
+        <div class="event-week-glow" aria-hidden="true"></div>
+        <div class="event-week-head">
+          <span class="event-cup"><i data-icon="krone"></i></span>
+          <div>
+            <small>Jeden Freitag bis Sonntag</small>
+            <h3 id="event-week-title">Wochenend-Pokal</h3>
+          </div>
+          <span class="event-status" id="event-week-status">Lädt…</span>
+        </div>
+        <p class="event-week-copy">Spiele am Wochenende bis zu 30 Runden – wann es dir passt. Jede abgeschlossene Runde zählt gleich viel, und gemeinsam füllt ihr den Casino-Pokal.</p>
+        <div class="event-week-days" aria-label="Wochenplan">
+          <span>MO</span><span>DI</span><span>MI</span><span>DO</span><span class="event-day-main">FR<small>18:00</small></span><span class="event-day-main">SA</span><span class="event-day-main">SO</span>
+        </div>
+        <div class="event-countdown" id="event-countdown">Termin wird geladen…</div>
+
+        <div class="event-progress-head"><span>Deine Runden</span><b id="event-points">0 / 30</b></div>
+        <div class="event-main-track"><i id="event-points-fill"></i></div>
+        <div class="event-milestones" id="event-milestones"></div>
+
+        <div class="event-community">
+          <div class="event-community-icon"><i data-icon="clans"></i></div>
+          <div class="event-community-body">
+            <div><b>Gemeinsamer Pokal</b><span id="event-community-people">Noch niemand dabei</span></div>
+            <p>30 Runden von allen zusammen schalten für jeden Teilnehmer eine Extra-Belohnung frei.</p>
+            <div class="event-main-track"><i id="event-community-fill"></i></div>
+            <small id="event-community-label">0 / 30</small>
+          </div>
+        </div>
+      </section>
+
+      <div class="tafel calendar-login-card">
+        <div class="calendar-login-head"><span><i data-icon="geschenk"></i></span><div><small>Täglich</small><h3>Login-Serie</h3></div></div>
         <p class="muted small">Jeden Tag einmal abholen, die Belohnung steigt. Wer einen Tag auslässt, fängt wieder bei Tag 1 an. Kommt zum Stunden-Bonus dazu.</p>
         <div id="calendar-grid" class="calendar-grid"><p class="muted small">Lädt…</p></div>
         <button class="btn-primary" id="calendar-claim-btn" style="margin-top:14px;width:100%">Heutige Belohnung abholen</button>
@@ -2550,6 +2583,7 @@
   <script defer src="/js/memory.js"></script>
   <script defer src="/js/suggestions.js"></script>
   <script defer src="/js/responsible.js"></script>
+  <script defer src="/js/eventCalendar.js"></script>
   <script defer src="/js/sudoku.js"></script>
   <script defer src="/js/solitaire.js"></script>
   <script defer src="/js/chess.js"></script>

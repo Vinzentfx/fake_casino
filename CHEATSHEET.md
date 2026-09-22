@@ -2,7 +2,7 @@
 
 Alle Regeln, Quoten und Grenzen des Casinos auf einen Blick. Alles ist
 Spielgeld, es gibt keine Ein- und keine Auszahlung. Die Zahlen stehen genau so
-im Code (Stand 21. September 2026). Ändert sich dort etwas, gehört es hierhin.
+im Code (Stand 22. September 2026). Ändert sich dort etwas, gehört es hierhin.
 
 **RTP** ist die Auszahlungsquote: Welcher Anteil der Einsätze kommt auf lange
 Sicht zurück? 98 % heißt, das Haus behält im Schnitt 2 %. In einzelnen Runden
@@ -43,6 +43,7 @@ kann trotzdem alles passieren.
 | Soforthilfe | füllt auf 2.000 auf | alle 30 Minuten |
 | Tagesaufträge | 2.000 bis 5.200 je Auftrag | drei am Tag |
 | Wochenaufträge | 18.000 bis 32.000 je Auftrag | zwei in der Woche |
+| Wochenend-Pokal | 2.500, 6.000 und 12.000 plus 7.500 gemeinsam | Freitag 18 Uhr bis Montag 0 Uhr |
 | Season-Stufen | 2.500 bis 80.000 | 20 Stufen je Season |
 | Arbeiten (Klicker und Jobs) | abhängig von Vermögen und Aufgabe | laufend, gedeckelt |
 
@@ -200,6 +201,19 @@ Dazu gibt es wiederholbare Aufträge, die immer da sind. Sie zahlen kleiner und
 sind pro Tag gedeckelt.
 
 ## Live-Events
+
+**Fester Wochenend-Pokal.** Jede Woche von Freitag 18:00 bis Montag 00:00 Uhr
+(Berliner Zeit). Jede abgeschlossene Spielrunde zählt einen Punkt, Freispiele
+und passives Pferde-Preisgeld nicht. Einsatzhöhe, Gewinn und Uhrzeit geben
+keinen Vorteil. Bei 5, 15 und 30 Runden gibt es 2.500, 6.000 und 12.000 Chips;
+mehr als 30 Punkte kann eine Person nicht sammeln. Sobald alle zusammen 30
+Punkte erreicht haben, bekommt jeder Teilnehmer zusätzlich 7.500 Chips. Wer
+erst danach einsteigt, erhält den gemeinsamen Preis nach seiner ersten Runde.
+Alle Beträge laufen durch die Vermögensbremse.
+
+Der Eventkalender zeigt den Termin schon ab Montag, den Countdown, den eigenen
+Fortschritt und den gemeinsamen Pokal. Deshalb muss niemand gleichzeitig mit
+anderen online sein.
 
 Live-Events erscheinen automatisch oder werden vom Besitzer angekündigt. Kurze
 Events laufen direkt über dem aktuellen Bildschirm; du musst dafür keinen

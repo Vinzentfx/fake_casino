@@ -705,7 +705,9 @@ function finishRace() {
     if (f.h.owner) {
       const r = accounts.adjustChips(f.h.owner, prize);
       if (r.ok) {
-        accounts.recordHand(f.h.owner, prize, true, "horses");
+        // Das Preisgeld ist passives Besitzer-Einkommen, keine zweite Runde
+        // fuer den Wochenend-Pokal (Startgeld/Wette wurden schon gezaehlt).
+        accounts.recordHand(f.h.owner, prize, true, "horses", { event: false });
         f.h.earnings += prize;
         pushAccount(f.h.owner, r.account);
       }

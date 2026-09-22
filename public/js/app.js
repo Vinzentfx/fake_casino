@@ -698,7 +698,7 @@ function renderAbholBadge() {
     const sub = $("#menu-season-sub");
     if (sub) sub.textContent = m.season ? `${m.season} ${m.season === 1 ? "Stufe wartet" : "Stufen warten"}` : "Fortschritt und Belohnungen";
     const kal = $("#menu-calendar-sub");
-    if (kal) kal.textContent = m.kalender ? "Heute noch nicht abgeholt" : "Heute schon abgeholt";
+    if (kal) kal.textContent = m.kalender ? "Tagesbonus wartet · Wochenend-Pokal" : "Wochenend-Pokal & Tagesbonus";
     const rad = $("#menu-wheel-sub");
     if (rad) rad.textContent = m.rad ? "Gratis-Dreh ist frei" : "Heute schon gedreht";
     const eintrag = $("#menu-geschenk");
@@ -1468,6 +1468,7 @@ function renderCalendar(s) {
 }
 function loadCalendar() {
   socket.emit("calendar:state", (s) => { if (s && s.ok) renderCalendar(s); });
+  if (window.Casino._loadEventCalendar) window.Casino._loadEventCalendar();
 }
 $("#calendar-claim-btn")?.addEventListener("click", () => {
   socket.emit("calendar:claim", (r) => {
