@@ -20,11 +20,11 @@ const FILE = path.join(DATA_DIR, "event-calendar.json");
 const ZONE = "Europe/Berlin";
 const PERSONAL_CAP = 30;
 const COMMUNITY_TARGET = 30;
-const COMMUNITY_REWARD = 7500;
+const COMMUNITY_REWARD = 25000;
 const MILESTONES = Object.freeze([
-  { points: 5, reward: 2500, label: "Warmgespielt" },
-  { points: 15, reward: 6000, label: "Halbzeit" },
-  { points: 30, reward: 12000, label: "Pokalrunde" },
+  { points: 5, reward: 7500, label: "Warmgespielt" },
+  { points: 15, reward: 20000, label: "Halbzeit" },
+  { points: 30, reward: 40000, label: "Pokalrunde" },
 ]);
 
 const berlinFormat = new Intl.DateTimeFormat("en-CA", {

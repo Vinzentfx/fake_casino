@@ -38,21 +38,21 @@ kann trotzdem alles passieren.
 | Quelle | Wie viel | Wie oft |
 |---|---|---|
 | Neues Konto | 5.000 | einmalig |
-| Starter-Pass | 7.500 | einmalig, nur für neue Konten |
+| Starter-Pass | 15.000 | einmalig, nur für neue Konten |
 | Stunden-Bonus | 1.000 plus Zuschläge | jede Stunde |
 | Login-Kalender | 2.000 bis 50.000 | einmal am Tag |
 | Glücksrad | 250 bis 25.000, dazu Lose und XP | alle 20 Stunden |
 | Soforthilfe | füllt auf 2.000 auf | alle 30 Minuten |
 | Tagesaufträge | 2.000 bis 5.200 je Auftrag | drei am Tag |
 | Wochenaufträge | 18.000 bis 32.000 je Auftrag | zwei in der Woche |
-| Wochenend-Pokal | 2.500, 6.000 und 12.000 plus 7.500 gemeinsam | Freitag 18 Uhr bis Montag 0 Uhr |
+| Wochenend-Pokal | 7.500, 20.000 und 40.000 plus 25.000 gemeinsam | Freitag 18 Uhr bis Montag 0 Uhr |
 | Season-Stufen | 2.500 bis 80.000 | 20 Stufen je Season |
 | Arbeiten (Klicker und Jobs) | abhängig von Vermögen und Aufgabe | laufend, gedeckelt |
 
 **Starter-Pass.** Neue Konten sehen in der Lobby vier geführte Schritte:
 Stunden-Bonus abholen, Aufträge öffnen, eine beliebige Spielrunde abschließen
 und die Stadt besuchen. Der Fortschritt bleibt am Konto gespeichert. Sind alle
-vier erledigt, lassen sich einmalig 7.500 Chips abholen; ältere Konten bekommen
+vier erledigt, lassen sich einmalig 15.000 Chips abholen; ältere Konten bekommen
 den Pass nicht nachträglich.
 
 **Stunden-Bonus im Detail.** Der Grundbetrag ist 1.000 Chips. Dazu kommt:
@@ -213,9 +213,9 @@ sind pro Tag gedeckelt.
 **Fester Wochenend-Pokal.** Jede Woche von Freitag 18:00 bis Montag 00:00 Uhr
 (Berliner Zeit). Jede abgeschlossene Spielrunde zählt einen Punkt, Freispiele
 und passives Pferde-Preisgeld nicht. Einsatzhöhe, Gewinn und Uhrzeit geben
-keinen Vorteil. Bei 5, 15 und 30 Runden gibt es 2.500, 6.000 und 12.000 Chips;
+keinen Vorteil. Bei 5, 15 und 30 Runden gibt es 7.500, 20.000 und 40.000 Chips;
 mehr als 30 Punkte kann eine Person nicht sammeln. Sobald alle zusammen 30
-Punkte erreicht haben, bekommt jeder Teilnehmer zusätzlich 7.500 Chips. Wer
+Punkte erreicht haben, bekommt jeder Teilnehmer zusätzlich 25.000 Chips. Wer
 erst danach einsteigt, erhält den gemeinsamen Preis nach seiner ersten Runde.
 Alle Beträge laufen durch die Vermögensbremse.
 

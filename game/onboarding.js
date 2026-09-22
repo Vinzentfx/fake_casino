@@ -3,7 +3,7 @@
 /* Starter-Pass für wirklich neue Konten. Vier echte Handlungen führen einmal
    durch den Kern des Hauses; Zustand und Belohnung bleiben serverseitig. */
 
-const REWARD = 7500;
+const REWARD = 15000;
 const CLIENT_STEPS = new Set(["quests", "city"]);
 
 function state(acc) {
