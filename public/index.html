@@ -1240,23 +1240,39 @@
     <!-- Vorschläge -->
     <section class="screen" data-screen="suggest">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-      <h2 class="screen-title"><i data-icon="vorschlaege"></i>Vorschläge</h2>
-      <div class="tafel">
-        <p class="muted small">Welches Spiel oder Feature wünschst du dir? Schreib es hier rein, das lese ich.</p>
-        <div id="suggest-form">
-          <textarea id="suggest-text" rows="4" maxlength="500" placeholder="Dein Vorschlag…"></textarea>
+      <div class="suggest-wrap">
+        <header class="suggest-hero">
+          <div class="suggest-hero-glow" aria-hidden="true"></div>
+          <span class="suggest-hero-icon"><i data-icon="vorschlaege"></i></span>
+          <div class="suggest-hero-copy">
+            <small>Das Casino hört zu</small>
+            <h2>Ideenbrett</h2>
+            <p>Teile deine Idee, unterstütze gute Vorschläge und sieh offen, was geplant oder bereits umgesetzt ist.</p>
+          </div>
+          <div class="suggest-stats" id="suggest-stats"></div>
+        </header>
+
+        <section class="suggest-compose" id="suggest-form">
+          <div class="suggest-compose-head">
+            <div><small>Neue Karte</small><h3>Was fehlt dir im Casino?</h3></div>
+            <span id="suggest-count">0 / 500</span>
+          </div>
+          <textarea id="suggest-text" rows="4" maxlength="500" placeholder="Beschreibe eine konkrete Idee …"></textarea>
           <div class="suggest-row">
-            <span class="muted small" id="suggest-remaining"></span>
-            <button class="btn-primary" id="suggest-send">Absenden</button>
+            <span id="suggest-remaining"></span>
+            <button class="btn-primary" id="suggest-send"><i data-icon="senden"></i> Idee anheften</button>
           </div>
           <div class="form-error" id="suggest-error"></div>
-          <div class="suggest-ok" id="suggest-thanks" style="display:none">Danke, ist angekommen.</div>
-        </div>
-        <!-- Posteingang, nur für den Besitzer -->
-        <div id="suggest-inbox" style="display:none">
-          <h3 class="section-title" style="margin-top:16px">Eingegangene Vorschläge</h3>
-          <div id="suggest-list"></div>
-        </div>
+          <div class="suggest-ok hidden" id="suggest-thanks"></div>
+        </section>
+
+        <section class="suggest-board">
+          <div class="suggest-board-head">
+            <div><small>Gemeinsam entscheiden</small><h3>Ideen der Spieler</h3></div>
+          </div>
+          <div class="suggest-filters" id="suggest-filters"></div>
+          <div class="suggest-list" id="suggest-list"></div>
+        </section>
       </div>
     </section>
 
