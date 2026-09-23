@@ -9034,6 +9034,12 @@ html:not(.reduce-motion) .fr-rad_fortuna::before { animation: pl-spin 7s linear 
   align-items: center;
   justify-content: center;
   isolation: isolate;
+  /* Feste quadratische Bezugsfläche. Mehrere Auren zeichnen ihre Ringe in
+     Prozent; ohne Breite wurde daraus in gestreckten Grid-/Flex-Feldern die
+     Breite der ganzen Kachel und im Extremfall fast die des Bildschirms. */
+  flex: 0 0 1.45em;
+  width: 1.45em;
+  height: 1.45em;
   /* Die Aura ist groesser als das Bild und ragt darueber hinaus. Ohne diesen
      Abstand liegt sie in einer Zeile auf dem Namen daneben, im Profil faellt
      das nicht auf, weil dort viel Platz ist, in der Online-Liste sofort. */
@@ -9233,12 +9239,20 @@ html[data-karte="auk_spiegel"]:not(.reduce-motion) .mem-back {
 }
 
 /* Laden: Kacheln fuer die zwei neuen Arten */
-.cos-aura-demo { display: grid; place-items: center; height: 46px; pointer-events: none; }
+.cos-aura-demo {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  pointer-events: none;
+}
 .cos-aura-demo .pl-ava { font-size: 1.15rem; }
 /* In der Kachel steht die Aura ohne die Huelle aus core/player.js, deshalb
-   traegt hier das Demo-Element selbst die Aura-Klasse. */
-.cos-aura-demo.au-auk_goldstaub,
-.cos-aura-demo.au-auk_leere { position: relative; isolation: isolate; }
+   trägt das quadratische Demo-Element selbst die Aura-Klasse. */
 
 .cos-karte-demo {
   display: block;
