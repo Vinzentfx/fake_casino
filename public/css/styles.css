@@ -9754,7 +9754,9 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
    etwas bewegt. Was hier passiert, ist ausschließlich Anschauung:
    die Bahn faehrt so weit, dass der Treffer unter der Marke landet.
    ------------------------------------------------------------------ */
-.ki-wrap { max-width: 660px; margin: 0 auto; padding: 12px; }
+.screen[data-screen="kiste"] { max-width: 100%; overflow-x: clip; }
+.ki-wrap { width: min(100%, 660px); min-width: 0; margin: 0 auto; padding: 12px; }
+.ki-wrap > *, .ki-tafel { min-width: 0; max-width: 100%; }
 .ki-titel { text-align: center; }
 
 /* ------------------------------------------------------------------
@@ -9806,7 +9808,10 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 .ki-ruhm-kopf { display: flex; align-items: baseline; gap: var(--sp-2); margin-bottom: 6px; }
 .ki-ruhm-band {
   display: flex; gap: var(--sp-2);
+  max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 4px;
@@ -9988,10 +9993,15 @@ html:not(.reduce-motion) .ki-bild { animation: ki-schweb 4.2s ease-in-out infini
    Eine Kiste, die man neben der Preisliste aufmacht, ist eine Zeile in
    einer Liste. Eine, die den Bildschirm uebernimmt, ist ein Moment.
    ------------------------------------------------------------------ */
-body.ki-offen { overflow: hidden; }
+html:has(body.ki-offen), body.ki-offen { overflow: hidden; overscroll-behavior: none; }
 .ki-overlay {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   z-index: 300;
   display: flex;
   flex-direction: column;
@@ -10497,6 +10507,7 @@ html:not(.reduce-motion) .kd-vs { animation: kd-vs-puls 2.4s ease-in-out infinit
    ------------------------------------------------------------------ */
 .kb-overlay {
   position: fixed; inset: 0;
+  width: 100vw; height: 100dvh;
   z-index: 300;
   display: flex;
   /* NICHT align-items: center.
@@ -10512,6 +10523,8 @@ html:not(.reduce-motion) .kd-vs { animation: kd-vs-puls 2.4s ease-in-out infinit
   background: #06090c;
   background: radial-gradient(120% 80% at 50% 0%, rgba(var(--accent-rgb), 0.12), transparent 62%), #06090c;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 .kb-overlay.hidden { display: none; }
