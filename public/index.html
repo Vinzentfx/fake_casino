@@ -1562,16 +1562,20 @@
     <!-- Aufträge -->
     <section class="screen" data-screen="quests">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-      <h2 class="screen-title"><i data-icon="quests"></i>Aufträge</h2>
-      <div class="tafel">
-        <p class="muted small">Chips fürs Spielen. Die Belohnung gibt's automatisch, sobald ein Auftrag erfüllt ist. Alle sehen dieselben Aufträge.</p>
+      <div class="quest-hero">
+        <div class="quest-hero-copy"><span>DEIN AUFTRAGSBUCH</span><h2>Jede Runde zählt.</h2><p>Spiele, entdecke und verdiene. Fertige Aufträge zahlen ihre Chips sofort aus.</p></div>
+        <div class="quest-hero-orbit"><b id="quest-hero-done">0</b><small>von <span id="quest-hero-total">5</span><br>erledigt</small></div>
+        <div class="quest-hero-meter"><i id="quest-hero-fill"></i></div>
+      </div>
+      <div class="quest-board">
+        <div class="quest-board-intro"><span>✦ HEUTE FÜR DICH</span><b id="quest-next">Lade deine Aufträge…</b><p>Alle Spieler haben dieselbe Auswahl. Mindestens ein Tages- und Wochenauftrag lässt sich in jedem Spielmodus erledigen.</p></div>
         <p class="hint hidden" id="quest-hinweis"></p>
-        <h3 class="section-title">Wiederholbar <span class="muted small">· mehrfach pro Tag</span></h3>
-        <div id="quest-repeat"><p class="muted small">Lädt…</p></div>
-        <h3 class="section-title" style="margin-top:14px">Heute <span class="muted small" id="quest-day-timer"></span></h3>
-        <div id="quest-dailies"><p class="muted small">Lädt…</p></div>
-        <h3 class="section-title" style="margin-top:14px">Diese Woche <span class="muted small" id="quest-week-timer"></span></h3>
-        <div id="quest-weeklies"><p class="muted small">Lädt…</p></div>
+        <div class="quest-section-head"><div><span>01 / TAGESZIELE</span><h3>Heute</h3></div><small id="quest-day-timer"></small></div>
+        <div id="quest-dailies" class="quest-grid"><p class="muted small">Lädt…</p></div>
+        <div class="quest-section-head"><div><span>02 / LANGSTRECKE</span><h3>Diese Woche</h3></div><small id="quest-week-timer"></small></div>
+        <div id="quest-weeklies" class="quest-grid"><p class="muted small">Lädt…</p></div>
+        <div class="quest-section-head"><div><span>03 / NEBENVERDIENST</span><h3>Wiederholbar</h3></div><small>Mehrfach täglich</small></div>
+        <div id="quest-repeat" class="quest-grid"><p class="muted small">Lädt…</p></div>
       </div>
     </section>
 
@@ -1821,7 +1825,13 @@
         <div style="text-align:center">
           <div class="ph-icon" data-icon="businesses"></div>
           <h2 id="city-title">Porta Westfalica</h2>
-          <p class="muted small" id="city-subtitle">Die echte Stadt: tippe einen Stadtteil an und kauf echte Häuser. Jedes Haus zahlt beim Stunden-Bonus etwas Tribut, komplette Straßen färben die Karte in deiner Farbe, und dem Casino gehört der Rake aller Hausspiele. Alles hier gehört jemandem nur so lange, bis es ihm einer abkauft.</p>
+          <p class="muted small" id="city-subtitle">Wähle einen Ortsteil und entdecke seine Häuser.</p>
+        </div>
+
+        <div class="city-guide" aria-label="So funktioniert die Stadt">
+          <div class="city-guide-head"><span>DEIN WEG DURCH DIE STADT</span><b id="city-next">Wähle zuerst einen Ortsteil auf der Karte.</b></div>
+          <div class="city-guide-steps"><span class="active" data-city-step="district"><i>01</i> Ortsteil</span><span data-city-step="house"><i>02</i> Haus</span><span data-city-step="street"><i>03</i> Straße</span></div>
+          <p>Häuser bringen Miete beim Stundenbonus. Eine komplette Straße färbt die Karte in deiner Farbe. Fremde Häuser kannst du zum angezeigten Übernahmepreis kaufen.</p>
         </div>
 
         <div class="panel biz-collect-panel">

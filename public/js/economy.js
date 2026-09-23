@@ -13,6 +13,12 @@
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
   const idxStr = (i) => String(i).replace(".", ",");
+  function cityGuide(step, text) {
+    const next = $("#city-next");
+    if (next) next.textContent = text;
+    document.querySelectorAll("[data-city-step]").forEach((el) =>
+      el.classList.toggle("active", el.dataset.cityStep === step));
+  }
   let workState = null;
   let workTick = null;
   let routeAnswer = [];
@@ -677,7 +683,8 @@
     $("#city-back").classList.add("hidden");
     $("#city-zoom").classList.add("hidden");
     $("#city-title").textContent = overview.city;
-    $("#city-subtitle").innerHTML = `Erobere die echte Stadt: Häuser kaufen, Straßen-Monopole sichern, Stadtteil-Boss werden. Verdient wird im Casino, hier zeigst du, was du hast.`;
+    $("#city-subtitle").textContent = "Wähle einen Ortsteil. Jedes Haus auf der Karte kann dir gehören.";
+    cityGuide("district", "Tippe einen Ortsteil auf der Karte an.");
     const lp = $("#land-price");
     if (lp) {
       lp.innerHTML = (overview.casinoOwnerName ? `${window.Casino.icons.ui("marke")}${escapeHtml(overview.casinoOwnerName)}` : `${window.Casino.icons.ui("marke")}frei`)
@@ -729,6 +736,9 @@
       ? ` · ${window.Casino.icons.ui("krone")}${district.monopolies.map((m) => escapeHtml(m.st)).slice(0, 3).join(", ")}${district.monopolies.length > 3 ? "…" : ""}`
       : "";
     $("#city-subtitle").innerHTML = `${district.buildings.length} echte Häuser${mine ? `, <b>${mine}</b> davon deins` : ""}${monoStr}`;
+    cityGuide(selectedId ? "street" : "house", selectedId
+      ? "Prüfe das Haus und sichere bei Bedarf die ganze Straße."
+      : "Zoome in die Karte und tippe ein Haus an.");
     const lp = $("#land-price");
     if (lp) {
       const pct = Math.round((district.idx - 1) * 100);
@@ -1125,12 +1135,20 @@
     // Fortschritt beim Straßen-Monopol.
     if (b.st && district.streetTotals[b.st]) {
       const total = district.streetTotals[b.st];
-      const ownedByMe = district.buildings.filter((x) => x.st === b.st && x.mine).length;
+      const streetHouses = district.buildings.filter((x) => x.st === b.st);
+      const ownedByMe = streetHouses.filter((x) => x.mine).length;
+      const free = streetHouses.filter((x) => !x.owner).length;
+      const takeovers = streetHouses.filter((x) => x.owner && !x.mine).length;
       const mono = district.monopolies.find((m) => m.st === b.st);
-      if (mono)
-        body += `<div class="cd-row cd-street"><b style="color:${mono.color}">${escapeHtml(mono.ownerName)}s ${escapeHtml(b.st)}</b>, Straßen-Monopol</div>`;
-      else
-        body += `<div class="cd-row cd-street"><b>${escapeHtml(b.st)}</b>: ${ownedByMe} von ${total} Häusern gehören dir. Bei allen ${total} färbt sich die Straße.</div>`;
+      body += `<div class="city-street-card${ownedByMe === total ? " complete" : ""}">
+        <div class="city-street-top"><span>STRASSENZIEL</span><b>${escapeHtml(b.st)}</b></div>
+        <div class="city-street-progress"><span style="width:${Math.round(100 * ownedByMe / total)}%"></span></div>
+        <div class="city-street-count"><b>${ownedByMe} / ${total}</b> gehören dir${mono && !ownedByMe ? ` · Monopol von ${escapeHtml(mono.ownerName)}` : ""}</div>
+        ${ownedByMe === total
+          ? `<p>Deine Straße leuchtet auf der Karte. Der Stundenbonus berücksichtigt alle Häuser.</p>`
+          : `<p>${free} frei · ${takeovers} bei anderen Spielern. Übernahmen kosten Aufschlag; Besitzer erhalten eine Ablöse.</p>
+             <button class="btn-primary city-street-buy" data-act="buy-street" type="button">Ganze Straße kaufen <span>Preis prüfen →</span></button>`}
+      </div>`;
     }
 
     body += `<div class="cd-section">`;
@@ -1173,7 +1191,7 @@
     box.innerHTML = head + body + zollRegler();
   }
 
-  $("#city-detail").addEventListener("click", (e) => {
+  $("#city-detail").addEventListener("click", async (e) => {
     if (view !== "district") return;
     // Der Regler des Bosses haengt nicht an einem gewaehlten Gebaeude, er
     // steht auch darunter, wenn gerade keins angetippt ist.
@@ -1192,6 +1210,25 @@
     const btn = e.target.closest("[data-act]");
     if (!btn) return;
     const act = btn.dataset.act;
+    if (act === "buy-street") {
+      if (btn.disabled || !b.st) return;
+      btn.disabled = true;
+      socket.emit("city:streetOffer", { districtId: district.id, street: b.st }, async (offer) => {
+        if (!offer || !offer.ok) { btn.disabled = false; toast((offer && offer.error) || "Straße nicht verfügbar."); return; }
+        const text = `${offer.street}: ${offer.count} Häuser für zusammen ${fmt(offer.cost)} Chips kaufen?\n\n${offer.free} freie Häuser, ${offer.takeovers} Übernahmen. Der Betrag enthält Aufschläge und Ortsteilabgabe. Alle Häuser werden gemeinsam gekauft.`;
+        const yes = await window.Casino.dialog.frage(text, { titel: "Straße übernehmen", okText: "Straße kaufen" });
+        if (!yes) { btn.disabled = false; return; }
+        socket.emit("city:buyStreet", {
+          districtId: district.id, street: b.st, expectedCost: offer.cost, expectedCount: offer.count,
+        }, (res) => {
+          btn.disabled = false;
+          if (!res || !res.ok) { toast((res && res.error) || "Straßenkauf fehlgeschlagen."); loadDistrict(district.id, true); return; }
+          finishCityAction(res, "buy-street");
+          toast(`${offer.street} gehört dir: ${offer.count} Häuser für ${fmt(res.cost)} Chips.`);
+        });
+      });
+      return;
+    }
     if (act === "movein" || act === "moveout") {
       socket.emit("city:residence", { buildingId: act === "movein" ? b.id : null }, (res) => {
         if (!res || !res.ok) { toast((res && res.error) || "Fehler."); return; }
@@ -1205,21 +1242,25 @@
     if (!ev) return;
     socket.emit(ev, { buildingId: b.id, districtId: district.id }, (res) => {
       if (!res || !res.ok) { toast((res && res.error) || "Aktion fehlgeschlagen."); return; }
-      // Nach jeder Aktion stimmt der Cache nicht mehr: ein Kauf aendert die
-      // Zahl der Baustellen, ein Ausbau die Klasse und damit die naechste Stufe.
+      finishCityAction(res, act);
+    });
+  });
+
+  function finishCityAction(res, act) {
+      // Nach jeder Aktion stimmen Preise und Baustellen-Cache nicht mehr.
       ausbauCache = {};
       applyAccount(res.account);
       if (res.district) { district = res.district; district.residents = district.residents || {}; }
       renderDistrict();
       renderDetail();
-      socket.emit("city:state", (r2) => { if (r2 && r2.ok) { overview = r2.overview; renderEmpire(overview.me); } });
+      socket.emit("city:state", (r2) => { if (r2 && r2.ok) { overview = r2.overview; renderEmpire(overview.me); renderBoard(); } });
+      if (act === "buy-street") return;
       if (act === "ausbau") toast(`Umbau läuft, −${fmt(res.cost)} Chips. Der Rest kommt von selbst.`);
       else if (res.raised) toast(`Börsengang geschafft, +${fmt(res.raised)} Chips Kapital (${res.sym}).`);
       else if (res.gain) toast(`+${fmt(res.gain)} Chips`);
       else if (res.cost) toast(`−${fmt(res.cost)} Chips`);
       else toast("Erledigt.");
-    });
-  });
+  }
 
   // Neu laden, wenn sich etwas tut, und Nachrichten als Toast.
   socket.on("city:update", () => {

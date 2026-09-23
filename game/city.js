@@ -1269,7 +1269,7 @@ function buyBuilding(id, key, name) {
   const discount = isBoss(key, e.b._did) ? BOSS_DISCOUNT : 1;
   const grund = Math.round(priceOf(e.b) * discount);
   const zoll = zollFuer(key, e.b._did, grund);
-  return { ok: true, cost: grund + (zoll ? zoll.amount : 0), zoll, commit: () => {
+  return { ok: true, cost: grund + (zoll ? zoll.amount : 0), zoll, purchaseIds: [e.b.id], commit: () => {
     state.own[e.b.id] = { owner: key, ownerName: name };
     save();
   } };
@@ -1300,11 +1300,53 @@ function takeover(id, key, name) {
     ok: true,
     // Der Kaeufer zahlt den Aufschlag, der Vorbesitzer bekommt den reinen
     // Marktwert. Die Differenz verbrennt, wie bisher.
-    cost: grund + (zoll ? zoll.amount : 0),
+    cost: grund + (zoll ? zoll.amount : 0), purchaseIds: [e.b.id],
     zoll,
     payout: { to: o.owner, amount: value },
     commit: () => { state.own[e.b.id] = { owner: key, ownerName: name }; save(); },
   };
+}
+
+/** Ein Straßenkauf ist eine einzige, vorab vollständig berechnete Aktion.
+ *  Andere Eigentümer erhalten für jedes übernommene Haus den normalen
+ *  Marktwert; Baustellen blockieren den gesamten Kauf statt eines Teilkaufs. */
+function streetPlan(districtId, street, key, name) {
+  const d = MAP.districts.find((x) => x.id === districtId);
+  const streetName = String(street || "");
+  const ids = d && d._streets.get(streetName);
+  if (!ids) return err("Diese Straße ist kein kaufbares Monopol in diesem Ortsteil.");
+  const actions = [];
+  let free = 0, takeovers = 0, owned = 0;
+  for (const id of ids) {
+    const holder = state.own[id];
+    if (holder && holder.owner === key) { owned++; continue; }
+    const action = holder ? takeover(id, key, name) : buyBuilding(id, key, name);
+    if (!action.ok) return err(`${streetName}: ${action.error}`);
+    actions.push(action);
+    if (holder) takeovers++; else free++;
+  }
+  if (!actions.length) return err("Dir gehört diese Straße bereits vollständig.");
+  return {
+    ok: true, street: streetName, districtId, total: ids.length, free, takeovers, owned,
+    count: actions.length, cost: actions.reduce((sum, a) => sum + a.cost, 0),
+    zolls: actions.map((a) => a.zoll).filter(Boolean),
+    payouts: actions.map((a) => a.payout).filter(Boolean),
+    purchaseIds: actions.flatMap((a) => a.purchaseIds),
+    commit: () => {
+      /* Alle Bedingungen und die volle Deckung prüft der Aufrufer vor diesem
+         Schritt. Ein Speichern genügt für das gesamte Monopol. */
+      for (const id of actions.flatMap((a) => a.purchaseIds))
+        state.own[id] = { owner: key, ownerName: name };
+      save();
+    },
+  };
+}
+
+function streetOffer(districtId, street, key, name) {
+  const plan = streetPlan(districtId, street, key, name);
+  if (!plan.ok) return plan;
+  const { ok, total, free, takeovers, owned, count, cost } = plan;
+  return { ok, street: plan.street, total, free, takeovers, owned, count, cost };
 }
 
 function listCompany(id, key) {
@@ -1405,6 +1447,6 @@ module.exports = {
   personalAngebot, personalEinstellen, personalVon,
   mieterVon, ereignisVon, ereignisZiehen, ereignisWaehlen, effektVon,
   zollSatz, zollSetzen, zollFuer, ZOLL_MAX,
-  buyBuilding, sellBuilding, takeover,
+  buyBuilding, sellBuilding, takeover, streetPlan, streetOffer,
   listCompany, adminClearLot, adminRemoveOwner, ownedLots, resetCity,
 };

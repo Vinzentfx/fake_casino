@@ -193,6 +193,11 @@ bestimmen, wie schnell du den Deckel erreichst:
 ## Aufträge
 
 Drei Tagesaufträge und zwei Wochenaufträge, für alle dieselben. Beispiele:
+Mindestens ein Tages- und ein Wochenauftrag ist immer spielübergreifend
+(Runden oder Siege). Die übrigen wechseln zwischen Spielen, Bonus und Stadt.
+Im Auftragsbuch zeigen Karten den Fortschritt und führen zum passenden Ort;
+Chips werden bei Erfüllung automatisch ausgezahlt. Jedes Gebäude zählt für
+Kaufaufträge nur einmal je Tag und einmal je Woche, auch nach Weiterverkauf.
 
 | Auftrag | Belohnung |
 |---|---|
@@ -436,6 +441,11 @@ Gebäudeklasse, der Grundfläche und dem Preisindex des Ortsteils ab.
 * **Wahrzeichen** in der Nähe heben den Preis in ihrem Umkreis um 25 %.
 * **Straßen-Monopol:** alle Häuser einer Straße mit Nummer, mindestens drei.
   Färbt die Straße und zahlt Tribut beim Stunden-Bonus.
+  Nach Antippen eines Hauses zeigt die Straßenkarte den Fortschritt. Über
+  „Ganze Straße kaufen“ kann man alle noch fehlenden Häuser gemeinsam kaufen:
+  Der Server zeigt vorher den Gesamtpreis inklusive Übernahmeaufschlag und
+  Ortsteilabgabe. Bei einer Baustelle oder geändertem Angebot wird der Kauf
+  vollständig abgebrochen; bestehende Besitzer erhalten die normale Ablöse.
 * **Stadtteil-Boss:** höchster Immobilienwert im Ortsteil. Kauft dort 10 %
   billiger und legt die **Abgabe** fest: 0 bis 10 %, die Fremde auf jeden
   Kauf, jede Übernahme und jeden Ausbau in seinem Ortsteil zahlen. Das Geld

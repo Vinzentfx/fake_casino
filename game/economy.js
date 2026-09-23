@@ -703,6 +703,13 @@ function setupEconomy(io, accounts) {
       ack({ ok: true, district: d });
     });
 
+    socket.on("city:streetOffer", ({ districtId, street } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct(socket);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      ack(city.streetOffer(districtId, street, socket.data.account, acc.name));
+    });
+
     // Wohnsitz: reine Deko, man "wohnt" in einem beliebigen Haus auf der Karte.
     socket.on("city:residence", ({ buildingId } = {}, ack) => {
       if (typeof ack !== "function") return;
@@ -727,45 +734,64 @@ function setupEconomy(io, accounts) {
       if (r.cost && accounts.get(key).chips < r.cost) return ack({ ok: false, error: "Nicht genug Chips." });
       const before = city.territorySnapshot();
       r.commit();
-      let res;
-      if (r.cost) res = accounts.adjustChips(key, -r.cost).account;
-      else if (r.gain) res = accounts.adjustChips(key, r.gain).account;
-      else res = accounts.publicAccount(accounts.get(key));
+      if (r.cost) accounts.adjustChips(key, -r.cost);
+      else if (r.gain) accounts.adjustChips(key, r.gain);
       /* Die Abgabe des Ortsteils geht an den Boss. Bewusst NICHT ueber
          `payout`: das ist die Entschaedigung bei einer Uebernahme und zieht
          eine Chronik-Zeile und das Kopfgeld nach sich. Beides waere hier
          falsch, hier hat niemand jemandem etwas weggenommen. */
-      if (r.zoll && r.zoll.to && r.zoll.to !== key && r.zoll.amount > 0) {
-        accounts.adjustChips(r.zoll.to, r.zoll.amount);
+      const abgaben = new Map();
+      for (const z of r.zolls || (r.zoll ? [r.zoll] : [])) {
+        if (z.to && z.to !== key && z.amount > 0)
+          abgaben.set(z.to, (abgaben.get(z.to) || 0) + z.amount);
+      }
+      for (const [bossKey, amount] of abgaben) {
+        accounts.adjustChips(bossKey, amount);
         /* Und dem Boss Bescheid sagen, falls er gerade da ist. Die Buchung
            passiert ohne sein Zutun; ohne diese Zeile stuende in seiner Topbar
            weiter der alte Stand, genau wie beim Auktions-Zuschlag. */
-        const boss = accounts.get(r.zoll.to);
+        const boss = accounts.get(bossKey);
         for (const sck of io.of("/").sockets.values()) {
-          if (sck.data && sck.data.account === r.zoll.to) {
+          if (sck.data && sck.data.account === bossKey) {
             if (boss) sck.emit("account:update", { account: accounts.publicAccount(boss) });
-            sck.emit("city:abgabe", { amount: r.zoll.amount, von: acc.name });
+            sck.emit("city:abgabe", { amount, von: acc.name });
             break;
           }
         }
       }
       // Übernahme: der Vorbesitzer wird entschädigt (der Aufschlag über dem Wert verbrennt).
-      if (r.payout && r.payout.to && r.payout.to !== key && r.payout.amount > 0) {
-        accounts.adjustChips(r.payout.to, r.payout.amount);
+      const abloesen = new Map();
+      for (const p of r.payouts || (r.payout ? [r.payout] : [])) {
+        if (p.to && p.to !== key && p.amount > 0)
+          abloesen.set(p.to, (abloesen.get(p.to) || 0) + p.amount);
+      }
+      for (const [ownerKey, amount] of abloesen) {
+        accounts.adjustChips(ownerKey, amount);
+        const ownerAcc = accounts.get(ownerKey);
+        for (const sck of io.of("/").sockets.values()) {
+          if (sck.data && sck.data.account === ownerKey && ownerAcc)
+            sck.emit("account:update", { account: accounts.publicAccount(ownerAcc) });
+        }
         try {
-          const vor = accounts.get(r.payout.to);
-          require("./chronik").notiere("stadt", `${acc.name} nimmt ${vor ? vor.name : "einem Rivalen"} ein Gebäude ab (${r.payout.amount.toLocaleString("de-DE")} Chips Ablöse).`, { user: acc.name });
+          const vor = accounts.get(ownerKey);
+          require("./chronik").notiere("stadt", `${acc.name} übernimmt Gebäude von ${vor ? vor.name : "einem Rivalen"} (${amount.toLocaleString("de-DE")} Chips Ablöse).`, { user: acc.name });
         } catch {}
         // …und wenn auf den Rivalen ein Kopfgeld ausgesetzt ist, kassiert es der Angreifer.
-        const victim = accounts.get(r.payout.to);
-        const bounty = accounts.claimBounty(r.payout.to, key);
+        const victim = accounts.get(ownerKey);
+        const bounty = accounts.claimBounty(ownerKey, key);
         if (bounty > 0) {
           chat.announce(io, `Kopfgeld! ${acc.name} hat ${victim ? victim.name : "einem Rivalen"} ein Gebäude abgenommen und ${bounty.toLocaleString("de-DE")} Chips Kopfgeld kassiert!`);
           achievements.check(key);
         }
       }
+      // Auch Auftrag/Erfolg aus dem Kauf auszahlen, bevor die Kontodaten an
+      // den Käufer gehen; sonst zeigt die Topbar zunächst einen alten Stand.
+      if (r.purchaseIds && r.purchaseIds.length)
+        quests.track(key, "buy_house", r.purchaseIds.length, r.purchaseIds);
+      achievements.check(key);
+      stadtKosmetik(io, accounts, key, acc);
       ack({
-        ok: true, account: res, cost: r.cost || 0, gain: r.gain || 0,
+        ok: true, account: accounts.publicAccount(accounts.get(key)), cost: r.cost || 0, gain: r.gain || 0,
         // Manche Aktionen haben etwas zu erzaehlen (der Ausgang eines
         // Stadt-Ereignisses steht erst nach dem Druecken fest).
         meldung: r.meldung || null,
@@ -777,10 +803,6 @@ function setupEconomy(io, accounts) {
         // Stadt-Ereignisse, die auch Tage spaeter noch jemanden interessieren.
         try { require("./chronik").notiere("stadt", msg); } catch {}
       }
-      // Käufe und Übernahmen zählen für Aufträge, jedes Gebäude aber nur einmal am Tag.
-      if (r.cost) quests.track(key, "buy_house", 1, buildingId);
-      achievements.check(key);
-      stadtKosmetik(io, accounts, key, acc);
       broadcastCity();
     }
 
@@ -791,6 +813,15 @@ function setupEconomy(io, accounts) {
     socket.on("city:buy",      A((id, key, name) => city.buyBuilding(id, key, name)));
     socket.on("city:sell",     A((id, key) => city.sellBuilding(id, key)));
     socket.on("city:takeover", A((id, key, name) => city.takeover(id, key, name)));
+    socket.on("city:buyStreet", ({ districtId, street, expectedCost, expectedCount } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      doAction(socket, ack, (key, name) => {
+        const plan = city.streetPlan(districtId, street, key, name);
+        if (plan.ok && (plan.cost !== Number(expectedCost) || plan.count !== Number(expectedCount)))
+          return { ok: false, error: "Die Straße hat sich seit der Preisübersicht verändert. Bitte prüfe sie erneut." };
+        return plan;
+      }, districtId, null);
+    });
     // Ausbau: gleiche Form wie Kauf und Uebernahme, also derselbe Wrapper.
     // Die Chips gehen sofort weg, fertig wird es spaeter von selbst.
     socket.on("city:ausbau",   A((id, key) => city.ausbauStart(id, key)));

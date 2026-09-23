@@ -15,28 +15,44 @@
     return h >= 24 ? `${Math.floor(h / 24)} T ${h % 24} Std` : `${h} Std ${m} Min`;
   }
 
+  const paths = {
+    play_slots: ["slots", "Slots"], play_blackjack: ["blackjack", "Blackjack"],
+    play_roulette: ["roulette", "Roulette"], bet_sport: ["sports", "Sportwetten"],
+    buy_house: ["businesses", "Zur Stadt"], claim_bonus: ["lobby", "Bonus abholen"],
+    play_mines: ["mines", "Mines"], play_crash: ["crash", "Crash"],
+    play_pinco: ["pinco", "Pinco"], play_poker: ["poker", "Poker"],
+    playtime: ["lobby", "Spielen"], play: ["lobby", "Spiel wählen"], win: ["lobby", "Spiel wählen"],
+  };
+
+  function action(q) {
+    const [screen, label] = paths[q.ev] || paths.play;
+    return `<button class="quest-action" type="button" data-nav="${screen}">${label} <span aria-hidden="true">↗</span></button>`;
+  }
+
   function questRow(q) {
     const pct = Math.min(100, Math.round((100 * q.prog) / q.target));
-    return `<div class="quest ${q.done ? "done" : ""}">
+    return `<article class="quest ${q.done ? "done" : ""}">
+      <div class="quest-eyebrow"><span>${q.done ? "✓ ERLEDIGT" : "✦ AKTIV"}</span><span>${pct}%</span></div>
       <div class="quest-top">
         <span class="quest-label">${escapeHtml(q.label)}</span>
-        <b class="quest-reward">${q.done ? "✓ kassiert" : "+" + fmt(q.reward) + "<i class=mk></i>"}</b>
       </div>
       <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
-      <div class="quest-prog">${q.prog}/${q.target}</div>
-    </div>`;
+      <div class="quest-foot"><span>${q.prog} / ${q.target}</span><b class="quest-reward">${q.done ? "Ausgezahlt" : "+" + fmt(q.reward) + " <i class=mk></i>"}</b></div>
+      ${q.done ? "" : action(q)}
+    </article>`;
   }
 
   function repeatRow(q) {
     const pct = Math.min(100, Math.round((100 * q.prog) / q.target));
-    return `<div class="quest ${q.maxed ? "done" : ""}">
+    return `<article class="quest ${q.maxed ? "done" : ""}">
+      <div class="quest-eyebrow"><span>${q.maxed ? "✓ TAGESLIMIT" : "↻ WIEDERHOLBAR"}</span><span>${q.done} / ${q.cap} heute</span></div>
       <div class="quest-top">
         <span class="quest-label">${escapeHtml(q.label)}</span>
-        <b class="quest-reward">${q.maxed ? "morgen wieder" : "+" + fmt(q.reward) + "<i class=mk></i>"}</b>
       </div>
       <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
-      <div class="quest-prog">${q.prog}/${q.target} · heute ${q.done}/${q.cap}× geschafft</div>
-    </div>`;
+      <div class="quest-foot"><span>${q.prog} / ${q.target}</span><b class="quest-reward">${q.maxed ? "Morgen wieder" : "+" + fmt(q.reward) + " <i class=mk></i>"}</b></div>
+      ${q.maxed ? "" : action(q)}
+    </article>`;
   }
 
   function load() {
@@ -61,6 +77,16 @@
       if (rBox) rBox.innerHTML = (res.repeatable || []).map(repeatRow).join("");
       if (dBox) dBox.innerHTML = res.dailies.map(questRow).join("");
       if (wBox) wBox.innerHTML = res.weeklies.map(questRow).join("");
+      const oneTime = [...res.dailies, ...res.weeklies];
+      const done = oneTime.filter((q) => q.done).length;
+      const next = oneTime.filter((q) => !q.done).sort((a, b) =>
+        (b.prog / b.target) - (a.prog / a.target))[0];
+      $("#quest-hero-done").textContent = done;
+      $("#quest-hero-total").textContent = oneTime.length;
+      $("#quest-hero-fill").style.width = `${oneTime.length ? Math.round(100 * done / oneTime.length) : 0}%`;
+      $("#quest-next").textContent = next
+        ? `Nächstes Ziel: ${next.label} · ${next.prog} / ${next.target}`
+        : "Alle Tages- und Wochenziele erledigt. Stark gespielt!";
       const dt = $("#quest-day-timer"), wt = $("#quest-week-timer");
       if (dt) dt.textContent = `· ${res.rotation?.dayName || "Tagesmix"} · neue in ${hhmm(res.msDay)}`;
       if (wt) wt.textContent = `· ${res.rotation?.weekName || "Wochenmix"} · neue in ${hhmm(res.msWeek)}`;

@@ -85,10 +85,14 @@ function rotation(pool, count, period, salt) {
 
 /** Feste Rotation, alle bekommen dieselben Aufträge. */
 function activeDailies(day = dayNow()) {
-  return rotation(DAILY_POOL, DAILIES_PER_DAY, day, "daily");
+  const reliable = rotation(DAILY_POOL.filter((x) => ["win4", "any24"].includes(x.id)), 1, day, "daily-core");
+  const rest = rotation(DAILY_POOL.filter((x) => x.id !== reliable[0].id), DAILIES_PER_DAY - 1, day, "daily");
+  return [...reliable, ...rest];
 }
 function activeWeeklies(week = weekNow()) {
-  return rotation(WEEKLY_POOL, WEEKLIES_PER_WEEK, week, "weekly");
+  const reliable = rotation(WEEKLY_POOL.filter((x) => ["win60", "play140"].includes(x.id)), 1, week, "weekly-core");
+  const rest = rotation(WEEKLY_POOL.filter((x) => x.id !== reliable[0].id), WEEKLIES_PER_WEEK - 1, week, "weekly");
+  return [...reliable, ...rest];
 }
 function rotationInfo() {
   const d = dayNow();
@@ -115,6 +119,7 @@ function ensureQuests(acc) {
   }
   if (q.week !== w) {
     for (const def of WEEKLY_POOL) { delete q.prog[def.id]; delete q.claimed[def.id]; }
+    q.weekBought = [];
     q.week = w;
   }
   return q;
@@ -128,11 +133,20 @@ function track(name, ev, n = 1, meta = null) {
   const acc = _accounts.get(name);
   if (!acc) return;
   const q = ensureQuests(acc);
-  // Gegen Farming: jedes Gebäude zählt bei Kauf-Aufträgen nur einmal am Tag.
+  // Tages- und Wochenauftrag führen getrennte Listen: ein Weiterverkauf am
+  // Folgetag darf nicht denselben Wochenauftrag erneut voranbringen.
+  let weeklyNew = n;
   if (ev === "buy_house" && meta != null) {
     q.bought = q.bought || [];
-    if (q.bought.includes(meta)) return;
-    q.bought.push(meta);
+    q.weekBought = q.weekBought || [];
+    const ids = [...new Set((Array.isArray(meta) ? meta : [meta]).map(Number))].filter(Number.isFinite);
+    const fresh = ids.filter((id) => !q.bought.includes(id));
+    const weekFresh = ids.filter((id) => !q.weekBought.includes(id));
+    if (!fresh.length && !weekFresh.length) return;
+    q.bought.push(...fresh);
+    q.weekBought.push(...weekFresh);
+    n = fresh.length;
+    weeklyNew = weekFresh.length;
   }
   const key = String(name).trim().toLowerCase();
   const matches = (def) => def.ev === ev || (def.ev === "play" && ev.startsWith("play_"));
@@ -143,7 +157,9 @@ function track(name, ev, n = 1, meta = null) {
   // One-time daily & weekly quests.
   for (const def of [...activeDailies(), ...activeWeeklies()]) {
     if (q.claimed[def.id] || !matches(def)) continue;
-    q.prog[def.id] = Math.min(def.target, (q.prog[def.id] || 0) + n);
+    const amount = ev === "buy_house" && WEEKLY_POOL.includes(def) ? weeklyNew : n;
+    if (amount <= 0) continue;
+    q.prog[def.id] = Math.min(def.target, (q.prog[def.id] || 0) + amount);
     changed = true;
     if (q.prog[def.id] >= def.target) {
       q.claimed[def.id] = true;
@@ -193,14 +209,14 @@ function listFor(name) {
   const echt = (r) => Math.round(r * happy * bremse);
 
   const view = (def) => ({
-    id: def.id, label: def.label, target: def.target, reward: echt(def.reward), grundwert: def.reward,
+    id: def.id, ev: def.ev, label: def.label, target: def.target, reward: echt(def.reward), grundwert: def.reward,
     prog: Math.min(def.target, q.prog[def.id] || 0), done: !!q.claimed[def.id],
   });
   q.rep = q.rep || {};
   const repView = (def) => {
     const r = q.rep[def.id] || { prog: 0, done: 0 };
     return {
-      id: def.id, label: def.label, target: def.target, reward: echt(def.reward), grundwert: def.reward,
+      id: def.id, ev: def.ev, label: def.label, target: def.target, reward: echt(def.reward), grundwert: def.reward,
       cap: def.cap, done: r.done, prog: Math.min(def.target, r.prog),
       maxed: r.done >= def.cap,
     };
