@@ -207,6 +207,9 @@ app.post("/api/login", (req, res) => {
   // Würde dieser Login ein neues Konto anlegen, gilt die Grenze pro IP.
   const willCreate = name && !accounts.get(name);
   if (willCreate) {
+    if (deviceId && accounts.rawAll().some((a) => a.lastDeviceId === deviceId && require("./game/verification").state(a))) {
+      return res.status(403).json({ error: "Auf diesem Browser wartet bereits ein Konto auf Identitätsprüfung. Bitte melde dich dort an." });
+    }
     const schutz = zugangsschutz.pruefeNeueAnmeldung(ip, deviceId);
     if (!schutz.ok) return res.status(429).json({ error: schutz.error });
   }
@@ -423,6 +426,8 @@ app.post("/api/admin/restore", (req, res) => {
     for (const [name, content] of Object.entries(files)) {
       // Nur flache Dateinamen, keine Pfad-Tricks ins Dateisystem.
       if (!/^[\w.\-]+$/.test(name) || name.includes("..")) continue;
+      // Ein altes Backup darf das neue Moderationsprotokoll nicht zurückdrehen.
+      if (name === "moderation-audit.jsonl" && fs.existsSync(path.join(DATA_DIR, name))) continue;
       if (typeof content !== "string") continue;
       fs.writeFileSync(path.join(DATA_DIR, name), content);
       wiederhergestellt.add(name);
@@ -435,7 +440,7 @@ app.post("/api/admin/restore", (req, res) => {
     // ihren sicheren Standardwerten neu an.
     for (const name of fs.readdirSync(DATA_DIR)) {
       const p = path.join(DATA_DIR, name);
-      if (fs.statSync(p).isFile() && !wiederhergestellt.has(name)) fs.unlinkSync(p);
+      if (name !== "moderation-audit.jsonl" && fs.statSync(p).isFile() && !wiederhergestellt.has(name)) fs.unlinkSync(p);
     }
 
     /* Bilder aus aelteren Backups fehlen einfach, dann bleibt der Ordner
@@ -463,6 +468,8 @@ app.post("/api/admin/restore", (req, res) => {
         if (fs.statSync(p).isFile() && !wiederhergestellteBilder.has(name)) fs.unlinkSync(p);
       }
     }
+    try { require("./game/moderation").record({ actor: OWNER_KEY, action: "admin:restore", details: { files: written } }); }
+    catch (err) { console.error("Restore-Protokoll fehlgeschlagen:", err); }
     // Sobald Node die Antwort vollstaendig an den Socket uebergeben hat,
     // sofort raus. Schon ein kurzes Wartefenster reicht fuer einen Spiel-Timer,
     // der seinen alten RAM-Stand wieder ueber die restaurierten Dateien schreibt.
@@ -503,7 +510,7 @@ io.on("connection", (socket) => {
   });
   // Beim Auth die letzte IP am Account merken (damit der Owner per Name IP-bannen kann).
   socket.on("auth", ({ token } = {}) => {
-    const key = accounts.verifyToken(token);
+    const key = accounts.verifyToken(token, { allowVerification: true });
     if (key) {
       const acc = accounts.get(key);
       if (acc) {
@@ -529,6 +536,7 @@ io.on("connection", (socket) => {
 /* Spielverbot und Einsatzdeckel greifen an einer Stelle fuer alle Spiele
    (game/strafen.js). Muss vor den Spielmodulen stehen, damit die Zwischen-
    schicht am Socket haengt, bevor irgendein Handler antwortet. */
+require("./game/verification").setupVerification(io, accounts);
 strafen.bremse(io, accounts);
 
 setupPoker(io, accounts);

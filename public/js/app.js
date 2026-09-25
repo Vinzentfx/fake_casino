@@ -17,7 +17,8 @@ let appVersion = null;
 let reloadRequired = false;
 
 const istBesitzerUI = () => !!(state.account && state.account.name.toLowerCase() === "vincent");
-const istModeratorUI = () => !!(state.account && state.account.rolle === "mod");
+const modLevelUI = () => istBesitzerUI() ? 4 : (Number(state.account?.modLevel) || (state.account?.rolle === "mod" ? 2 : 0));
+const istModeratorUI = () => modLevelUI() >= 1;
 const hatVerwaltungsrechte = () => istBesitzerUI() || istModeratorUI();
 
 function verwaltungUI() {
@@ -29,11 +30,17 @@ function verwaltungUI() {
   const sub = document.querySelector("#menu-admin-sub");
   const titel = document.querySelector("#admin-title");
   if (label) label.textContent = owner ? "Admin" : "Moderation";
-  if (sub) sub.textContent = owner ? "Verwaltung" : "Chat und Spieler schützen";
+  if (sub) sub.textContent = owner ? "Verwaltung" : modLevelUI() === 1 ? "Zuordnung & Prüfverlauf" : "Chat und Spieler schützen";
   if (titel) titel.textContent = owner ? "Admin" : "Moderation";
   document.querySelectorAll("[data-owner-only]").forEach((el) => {
     el.classList.toggle("hidden", !owner);
   });
+  document.querySelectorAll("[data-mod-min]").forEach((el) => {
+    el.classList.toggle("hidden", modLevelUI() < Number(el.dataset.modMin));
+  });
+  if (currentScreen === "admin" && document.querySelector("#ad-reiter .ad-reiter-knopf.active")?.classList.contains("hidden")) {
+    document.querySelector('[data-ad="uebersicht"]')?.click();
+  }
   const dauerPermanent = document.querySelector('#an-dauer option[value="0"]');
   if (dauerPermanent) dauerPermanent.hidden = !owner;
   document.querySelectorAll("#an-dauer option").forEach((o) => {
@@ -67,7 +74,7 @@ function versteckeGesperrteMenueeintraege() {
 
 // Screens, die es nur mit Account gibt. Wer einen geteilten Link oeffnet,
 // ohne eingeloggt zu sein, landet auf dem Login statt in einem leeren Spiel.
-const publicScreens = new Set(["login"]);
+const publicScreens = new Set(["login", "verification"]);
 
 window.Casino.screens.setGuard((name) => {
   if (lockedScreens.has(name)) {
@@ -75,6 +82,8 @@ window.Casino.screens.setGuard((name) => {
     return false;
   }
   if (!state.account && !publicScreens.has(name)) return false;
+  if (name === "verification" && !state.account) return false;
+  if (state.account?.verification && name !== "verification" && name !== "login") return false;
   if (name === "admin" && !hatVerwaltungsrechte()) {
     toast("Dafür brauchst du Moderator-Rechte.");
     return false;
@@ -123,7 +132,8 @@ function adminReiter() {
       if (ziel === "filter") wfLade();
       // Die Stadt hat 1292 Grundstuecke. Die baut niemand auf Verdacht auf.
       if (ziel === "werkzeug") { loadAdminLots(); ladeRegie(); ladeKosKatalog(); ladeSport(); }
-      if (ziel === "spieler") ladeStrafen();
+      if (ziel === "spieler" && modLevelUI() >= 2) ladeStrafen();
+      if (ziel === "team") ladeTeamKonsole();
     });
   });
 }
@@ -170,7 +180,7 @@ document.addEventListener("casino:screen", (e) => {
      zeichnen. Crash und die Rennbahn waren dadurch komplett tot. */
   $("#app").dataset.activeScreen = name;
   socket.emit("presence:screen", { screen: name });
-  $("#topbar").classList.toggle("hidden", name === "login");
+  $("#topbar").classList.toggle("hidden", name === "login" || name === "verification");
   if (window.Casino.chat) window.Casino.chat.update(name);
   window.scrollTo(0, 0);
 });
@@ -420,6 +430,7 @@ const TOKEN_KEY = "casino_token";
 
 function setAccount(acc, token) {
   state.account = acc;
+  window.Casino.screens.setFallback(acc.verification ? "verification" : "login");
   if (token) state.token = token;
   try {
     localStorage.setItem("casino_name", acc.name);
@@ -431,9 +442,49 @@ function setAccount(acc, token) {
   renderTopbar();
   requestPresence();
   verwaltungUI();
-  maybeShowUpdate();
+  if (!acc.verification) maybeShowUpdate();
   renderUpdateBadge();
+  if (acc.verification) { renderVerification(); showScreen("verification", { history: "replace" }); }
 }
+
+function renderVerification() {
+  const v = state.account?.verification;
+  const message = $("#verification-message"), form = $("#verification-form");
+  if (!message || !form || !v) return;
+  const pending = v.status === "pending" || v.status === "message";
+  message.textContent = v.message || (pending ? "Deine Angaben werden geprüft." : "Bitte gib deinen echten Namen und deine Stufe/Klasse an.");
+  form.classList.toggle("hidden", pending);
+}
+
+socket.on("verification:update", ({ verification } = {}) => {
+  if (!state.account) return;
+  state.account.verification = verification || null;
+  window.Casino.screens.setFallback(verification ? "verification" : "login");
+  renderVerification();
+  showScreen(verification ? "verification" : "lobby", { history: "replace" });
+});
+
+$("#verification-form")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const error = $("#verification-error");
+  error.textContent = "";
+  socket.emit("verification:submit", { realName: $("#verification-name").value.trim(), grade: $("#verification-grade").value.trim() }, (r) => {
+    if (!r?.ok) { error.textContent = r?.error || "Bitte versuch es noch einmal."; return; }
+    state.account.verification = r.verification;
+    renderVerification();
+  });
+});
+$("#verification-refresh")?.addEventListener("click", () => {
+  socket.emit("verification:state", (r) => {
+    if (!r?.ok) return toast(r?.error || "Verbindung prüfen.");
+    state.account = { ...state.account, ...r.account };
+    window.Casino.screens.setFallback(r.verification ? "verification" : "login");
+    renderVerification();
+    if (!r.verification) showScreen("lobby", { history: "replace" });
+    else toast("Noch keine Freigabe.");
+  });
+});
+$("#verification-logout")?.addEventListener("click", () => $("#logout-btn")?.click());
 
 // Update-Historie: Comeback-Fenster und Updates-Tab
 const SEEN_KEY = "casino_seen_update";
@@ -829,8 +880,11 @@ socket.on("presence:auffrischen", () => {
 socket.on("account:update", ({ account }) => {
   if (!account) return;
   state.account = { ...state.account, ...account };
+  window.Casino.screens.setFallback(state.account.verification ? "verification" : "login");
   verwaltungUI();
   renderTopbar();
+  if (state.account.verification) { renderVerification(); showScreen("verification", { history: "replace" }); }
+  else if (currentScreen === "verification") showScreen("lobby", { history: "replace" });
   if (currentScreen === "profile") renderProfile();
 });
 
@@ -1444,11 +1498,11 @@ $("#login-form").addEventListener("submit", async (e) => {
     if (data.config?.bonusCooldownMs) state.bonusCooldownMs = data.config.bonusCooldownMs;
     if (data.config?.rescueThreshold) RESCUE_THRESHOLD = data.config.rescueThreshold;
     setAccount(data.account, data.token);
-    if (data.created) maybeShowOnboarding();
+    if (data.created && !data.account.verification) maybeShowOnboarding();
     /* Die Begruessung muss vor dem Lobby-Wechsel offen sein. Sonst oeffnet
        der Tagesbericht im selben Moment ebenfalls und zwei Fenster liegen
        uebereinander. */
-    showScreen("lobby");
+    showScreen(data.account.verification ? "verification" : "lobby");
     if (data.created) toast(`Willkommen, ${data.account.name}! ${(data.account.chips || 0).toLocaleString("de-DE")} Chips geschenkt.`);
     else toast(`Willkommen zurück, ${data.account.name}!`);
     // Einbruchs-Warnung: fehlgeschlagene Login-Versuche seit dem letzten Besuch.
@@ -1712,6 +1766,7 @@ function renderLbList() {
 // Logout
 $("#logout-btn").addEventListener("click", () => {
   state.account = null;
+  window.Casino.screens.setFallback("login");
   state.token = null;
   try {
     localStorage.removeItem("casino_name");
@@ -1837,11 +1892,64 @@ socket.on("admin:kicked", ({ reason }) => {
 
 let adKonten = [];        // zuletzt geladene Liste
 let adGewaehlt = null;    // Name der geöffneten Person
+let adStatusFilter = "all";
+
+const rangName = (n) => ({ 1: "Helfer", 2: "Moderator", 3: "Leitmoderator", 4: "Besitzer" })[n] || "Spieler";
+const auditLabel = (action) => ({
+  "admin:setRolle": "Team-Rang geändert", "admin:identitySet": "Identität zugeordnet", "admin:identityHold": "Identitätsprüfung angeordnet",
+  "admin:identityReview": "Prüfung entschieden", "verification:submit": "Angaben eingereicht",
+  "admin:strafeSetzen": "Strafe verhängt", "admin:strafeAufheben": "Strafe aufgehoben", "admin:ban": "Konto gesperrt",
+  "admin:unban": "Konto entsperrt", "admin:lockPlayer": "Konto & Browser gesperrt", "admin:unlockPlayer": "Konto & Browser entsperrt",
+  "admin:kick": "Spieler getrennt", "admin:nachricht": "Nachricht gesendet", "admin:announcement": "Ansage veröffentlicht",
+  "admin:announcementClear": "Ansage entfernt", "admin:chatLeeren": "Chat geleert", "admin:deleteAccount": "Konto gelöscht",
+  "admin:setChips": "Chips gesetzt", "admin:alleChips": "Chips verteilt", "admin:clearBank": "Bank geleert",
+  "admin:ipban": "Netzwerk gesperrt", "admin:ipunban": "Netzwerk entsperrt", "admin:deviceban": "Browser gesperrt",
+  "admin:deviceunban": "Browser entsperrt", "admin:filterAdd": "Wortfilter ergänzt", "admin:filterRemove": "Wortfilter geändert",
+  "admin:bildWeg": "Bild entfernt", "admin:meldungOk": "Meldung erledigt", "admin:rename": "Spieler umbenannt",
+  "admin:clearLot": "Grundstück freigegeben", "admin:resetCity": "Stadt zurückgesetzt", "admin:resetBonus": "Bonus zurückgesetzt",
+  "admin:resetStat": "Statistik zurückgesetzt", "admin:resetAchievements": "Erfolge zurückgesetzt",
+  "admin:regieSetzen": "Regie gesetzt", "admin:regieLoeschen": "Regie entfernt", "admin:wartung": "Wartung geändert",
+  "admin:kosmetik": "Kosmetik geändert", "admin:shadowban": "Sichtbarkeit geändert", "admin:newWeek": "Neue Woche gestartet",
+  "admin:restore": "Backup wiederhergestellt", "admin:steuer": "Grundsteuer geändert", "admin:verlosung": "Verlosung gestartet",
+})[action] || action.replace(/^admin:/, "").replace(/([A-Z])/g, " $1");
+
+function ladeTeamKonsole() {
+  socket.emit("admin:team", (r) => {
+    const box = $("#ad-team-list"); if (!box) return;
+    if (!r?.ok) { box.textContent = r?.error || "Team konnte nicht geladen werden."; return; }
+    box.innerHTML = (r.team || []).map((p) => `<div class="ad-team-member"><span class="ad-team-star">${p.level === 4 ? "✦" : "◆"}</span><div><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.rank)}</small></div><i>RANG ${p.level}</i></div>`).join("");
+  });
+  socket.emit("admin:identityQueue", (r) => {
+    const box = $("#ad-identity-queue"); if (!box) return;
+    if (!r?.ok) { box.textContent = r?.error || "Prüfungen konnten nicht geladen werden."; return; }
+    box.innerHTML = r.cases?.length ? r.cases.map((c) => `<div class="ad-case"><div><b>${escapeHtml(c.name)}</b><span>${escapeHtml(c.status === "pending" ? "Wartet auf Entscheidung" : c.status === "message" ? "Nachricht gesendet" : "Angaben fehlen")}</span></div><p>${c.realName ? `${escapeHtml(c.realName)} · ${escapeHtml(c.grade)}` : "Noch keine Angaben"}</p><small>${escapeHtml(c.message || "")}</small><div class="ad-knopfreihe"><button class="chip-btn" data-case-open="${escapeHtml(c.name)}">Konto öffnen</button>${modLevelUI() >= 2 ? `${c.submittedAt && c.realName && c.grade ? `<button class="btn-secondary ad-knopf" data-case-action="approve" data-case-target="${escapeHtml(c.name)}">Bestätigen</button>` : ""}<button class="chip-btn" data-case-action="message" data-case-target="${escapeHtml(c.name)}">Nachricht</button><button class="chip-btn" data-case-action="reject" data-case-target="${escapeHtml(c.name)}">Ablehnen</button>${modLevelUI() >= 3 ? `<button class="btn-danger ad-knopf" data-case-action="banDevice" data-case-target="${escapeHtml(c.name)}">Konto & Browser sperren</button>` : ""}` : ""}</div></div>`).join("") : '<p class="muted small">Keine offenen Prüfungen.</p>';
+  });
+  ladeAudit(0);
+}
+
+let adAuditOffset = 0;
+function ladeAudit(offset = 0) {
+  socket.emit("admin:audit", { offset }, (r) => {
+    const box = $("#ad-audit-list"); if (!box) return;
+    if (!r?.ok) { box.textContent = r?.error || "Verlauf konnte nicht geladen werden."; return; }
+    const html = r.entries?.length ? r.entries.map((e) => `<div class="ad-audit-item"><time>${escapeHtml(new Date(e.at).toLocaleString("de-DE"))}</time><div><b>${escapeHtml(auditLabel(e.action))}</b><span>${escapeHtml(e.actor)}${e.target ? ` → ${escapeHtml(e.target)}` : ""}</span>${Object.keys(e.details || {}).length ? `<small>${escapeHtml(Object.entries(e.details).map(([k, v]) => `${k}: ${v}`).join(" · "))}</small>` : ""}</div></div>`).join("") : '<p class="muted small">Noch keine Änderungen seit Aktivierung des Protokolls.</p>';
+    if (!offset) box.innerHTML = html;
+    else box.insertAdjacentHTML("beforeend", html);
+    adAuditOffset = r.nextOffset ?? offset + (r.entries?.length || 0);
+    $("#ad-audit-more")?.classList.toggle("hidden", !r.hasMore);
+  });
+}
+$("#ad-audit-more")?.addEventListener("click", () => ladeAudit(adAuditOffset));
+socket.on("admin:identityChanged", () => {
+  if (currentScreen !== "admin") return;
+  loadAdminAccounts();
+  if (!document.querySelector('[data-ad-tafel="team"]')?.classList.contains("hidden")) ladeTeamKonsole();
+});
 
 function loadAdminAccounts() {
   loadAdminDashboard();
   if (istBesitzerUI()) { loadIpBans(); loadDeviceBans(); }
-  ladeStrafen();
+  if (modLevelUI() >= 2) ladeStrafen();
   socket.emit("announcement:get", (res) => {
     if (res && res.ok && res.announcement && $("#admin-announcement-text")) {
       $("#admin-announcement-text").value = res.announcement.text || "";
@@ -1864,13 +1972,15 @@ function zeichneKontenListe() {
   const list = $("#admin-account-list");
   if (!list) return;
   const suche = ($("#ad-suche")?.value || "").trim().toLowerCase();
-  const treffer = suche
-    ? adKonten.filter((p) => String(p.name).toLowerCase().includes(suche))
-    : adKonten;
+  const treffer = adKonten.filter((p) => {
+    if (adStatusFilter === "unknown" && (p.identity?.known || p.modLevel)) return false;
+    if (adStatusFilter === "pending" && !p.verification) return false;
+    return !suche || `${p.name} ${p.identity?.realName || ""}`.toLowerCase().includes(suche);
+  });
 
   const zaehler = $("#ad-treffer");
   if (zaehler) {
-    zaehler.textContent = suche
+    zaehler.textContent = suche || adStatusFilter !== "all"
       ? `${treffer.length} von ${adKonten.length}`
       : `${adKonten.length} Konten`;
   }
@@ -1883,10 +1993,11 @@ function zeichneKontenListe() {
     <button class="ad-reihe${adGewaehlt === p.name ? " aktiv" : ""}" type="button" data-konto="${escapeHtml(p.name)}">
       <span class="ad-platz">${suche ? "" : i + 1}</span>
       <span class="ad-name">${escapeHtml(p.name)}</span>
-      ${p.rolle === "mod" ? '<span class="ad-flag ad-flag-mod">Mod</span>' : ""}
+      ${p.modLevel ? `<span class="ad-flag ad-flag-mod">${escapeHtml(({ 1: "Helfer", 2: "Mod", 3: "Leitung", 4: "Besitzer" })[p.modLevel] || "Team")}</span>` : ""}
+      ${p.modLevel ? "" : p.verification ? '<span class="ad-flag ad-flag-bad">Prüfung</span>' : p.identity?.known ? '<span class="ad-flag">Bekannt</span>' : '<span class="ad-flag">Unbekannt</span>'}
       ${p.locked || p.banned ? '<span class="ad-flag ad-flag-bad">eingesperrt</span>' : ""}
       ${(p.strafen || []).map((st) => `<span class="ad-flag">${escapeHtml(st.kurz)}</span>`).join("")}
-      <b>${istBesitzerUI() ? `${Math.floor(p.chips || 0).toLocaleString("de-DE")}<i class=mk></i>` : (p.rolle === "mod" ? "Moderator" : "Spieler")}</b>
+      <b>${istBesitzerUI() ? `${Math.floor(p.chips || 0).toLocaleString("de-DE")}<i class=mk></i>` : rangName(p.modLevel)}</b>
     </button>`).join("")
     + (!suche && treffer.length > zeigen.length
       ? `<div class="muted small ad-mehr">… und ${treffer.length - zeigen.length} weitere. Zum Finden oben tippen.</div>` : "");
@@ -1907,7 +2018,8 @@ let adStrafSpiele = null;   // { id: name }
 const AD_DAUERN = [
   { v: 15, t: "15 Minuten" }, { v: 60, t: "1 Stunde" }, { v: 180, t: "3 Stunden" },
   { v: 720, t: "12 Stunden" }, { v: 1440, t: "1 Tag" }, { v: 4320, t: "3 Tage" },
-  { v: 10080, t: "7 Tage" }, { v: 0, t: "unbefristet" },
+  { v: 10080, t: "7 Tage" }, { v: 20160, t: "14 Tage" }, { v: 43200, t: "30 Tage" },
+  { v: 0, t: "unbefristet" },
 ];
 
 function adStrafRest(bis) {
@@ -1926,7 +2038,7 @@ function strafenBlock(p) {
   const arten = adStrafArten || {};
   const modArten = new Set(["sperre", "stumm", "spielsperre", "keineAuktion"]);
   const artListe = Object.keys(arten).filter((a) => istBesitzerUI() || modArten.has(a));
-  const dauern = AD_DAUERN.filter((d) => istBesitzerUI() || d.v > 0);
+  const dauern = AD_DAUERN.filter((d) => istBesitzerUI() || (d.v > 0 && d.v <= (modLevelUI() >= 3 ? 43200 : 10080)));
   return `
     <div class="ad-straf">
       <div class="cd-sub">Strafen</div>
@@ -2028,13 +2140,14 @@ function zeichnePerson(name) {
   const owner = istBesitzerUI();
   const selbst = String(p.name).toLowerCase() === "vincent";
   const geschuetzt = selbst || (!owner && p.rolle === "mod");
+  const darfModerieren = modLevelUI() >= 2;
 
   box.innerHTML = `
     <div class="ad-karte ad-person-karte">
       <div class="ad-person-kopf">
         <div>
           <b>${escapeHtml(p.name)}</b>
-          <small>${owner ? `${chips.toLocaleString("de-DE")} auf der Hand · ${bank.toLocaleString("de-DE")} auf der Bank` : (p.rolle === "mod" ? "Moderator" : "Spieler")}</small>
+          <small>${owner ? `${chips.toLocaleString("de-DE")} auf der Hand · ${bank.toLocaleString("de-DE")} auf der Bank` : rangName(p.modLevel)}</small>
         </div>
         <button class="chip-btn ad-zu" type="button" data-person-zu aria-label="Schließen">✕</button>
       </div>
@@ -2053,15 +2166,22 @@ function zeichnePerson(name) {
       </div>` : ""}
 
       <div class="ad-flags">
-        ${owner && !selbst ? `<button class="ad-schalter${p.rolle === "mod" ? " an" : ""}" type="button" data-person-tun="rolle">
-          ${p.rolle === "mod" ? "Moderator entfernen" : "Zum Moderator machen"}</button>
+        ${owner && !selbst ? `<label class="ad-rangfeld">Team-Rang
+          <select data-person-rang><option value="0"${!p.modLevel ? " selected" : ""}>Spieler</option><option value="1"${p.modLevel === 1 ? " selected" : ""}>Helfer</option><option value="2"${p.modLevel === 2 ? " selected" : ""}>Moderator</option><option value="3"${p.modLevel === 3 ? " selected" : ""}>Leitmoderator</option></select></label>
         ` : ""}${owner && !selbst ? `
         <button class="ad-schalter" type="button" data-person-tun="umbenennen">Namen ändern</button>` : ""}
-        ${geschuetzt ? "" : '<button class="ad-schalter" type="button" data-person-tun="kick">Rauswerfen</button><button class="ad-schalter" type="button" data-person-tun="schreiben">Anschreiben</button>'}
+        ${geschuetzt || !darfModerieren ? "" : '<button class="ad-schalter" type="button" data-person-tun="kick">Rauswerfen</button><button class="ad-schalter" type="button" data-person-tun="schreiben">Anschreiben</button>'}
       </div>
-      <p class="hint">${geschuetzt ? "Besitzer und andere Moderatoren sind geschützt." : (owner ? "Dauerhafte Kontosperren bleiben beim Besitzer. Zeitstrafen stehen darunter." : "Du kannst schreiben, trennen und zeitlich begrenzt moderieren.")}</p>
+      <p class="hint">${geschuetzt ? "Teamkonten sind vor Maßnahmen anderer Mods geschützt." : (owner ? "Dauerhafte Kontosperren bleiben beim Besitzer. Zeitstrafen stehen darunter." : darfModerieren ? "Du kannst schreiben, trennen und zeitlich begrenzt moderieren." : "Du kannst Identitäten zuordnen. Strafen bleiben höheren Rängen vorbehalten.")}</p>
 
-      ${geschuetzt ? "" : strafenBlock(p)}
+      ${geschuetzt ? "" : `<div class="ad-identity-panel">
+        <div class="ad-identity-top"><span>◈ IDENTITÄT</span><b>${p.identity?.known ? "Bekannt" : "Noch nicht zugeordnet"}</b>${p.verification ? `<em>${escapeHtml(p.verification.status === "pending" ? "Wartet auf Prüfung" : "Zugang angehalten")}</em>` : ""}</div>
+        <div class="ad-identity-fields"><label>Echter Name<input id="ad-real-name" maxlength="80" value="${escapeHtml(p.identity?.realName || "")}" placeholder="Nur für das Team" /></label><label>Stufe / Klasse<input id="ad-grade" maxlength="30" value="${escapeHtml(p.identity?.grade || "")}" placeholder="z. B. EF" /></label></div>
+        <div class="ad-knopfreihe"><button class="chip-btn" type="button" data-person-tun="identitySave">Zuordnung speichern</button><button class="chip-btn" type="button" data-person-tun="identityToggle">${p.identity?.known ? "Als unbekannt markieren" : "Als bekannt markieren"}</button>${darfModerieren && !p.verification ? '<button class="btn-secondary ad-knopf" type="button" data-person-tun="identityHold">Prüfung verlangen</button>' : ""}</div>
+        ${p.verification && darfModerieren ? `<p class="hint">${escapeHtml(p.verification.message || "")}</p><div class="ad-knopfreihe"><button class="btn-secondary ad-knopf" type="button" data-person-tun="identityApprove">Bestätigen</button><button class="chip-btn" type="button" data-person-tun="identityMessage">Nachricht senden</button><button class="chip-btn" type="button" data-person-tun="identityReject">Ablehnen</button>${modLevelUI() >= 3 ? '<button class="btn-danger ad-knopf" type="button" data-person-tun="identityBan">Konto & Browser sperren</button>' : ""}</div>` : ""}
+      </div>`}
+
+      ${geschuetzt || !darfModerieren ? "" : strafenBlock(p)}
 
       ${owner ? `<div class="ad-feld ad-feld-breit">
         <span>Chips setzen</span>
@@ -2112,17 +2232,26 @@ async function personTun(tun, name) {
     fertig(text); return true;
   };
 
-  if (tun === "rolle") {
+  if (tun === "identitySave" || tun === "identityToggle") {
     const p = adKonten.find((x) => x.name === name);
-    const geben = !p || p.rolle !== "mod";
-    const ok = await window.Casino.dialog.frage(
-      geben
-        ? `${name} zum Moderator machen? Die Person darf Chats und Bilder moderieren, Spieler zeitlich bestrafen, rauswerfen und Ansagen stellen. Geld, Konten, Events und Spielausgänge bleiben geschützt.`
-        : `${name} die Moderator-Rechte entziehen?`,
-      { titel: geben ? "Moderator ernennen" : "Moderator entfernen", okText: geben ? "Ernennen" : "Entfernen" });
-    if (!ok) return;
-    socket.emit("admin:setRolle", { target: name, rolle: geben ? "mod" : null }, (r) =>
-      melde(r, geben ? `${name} ist jetzt Moderator.` : `${name} ist kein Moderator mehr.`));
+    const known = tun === "identityToggle" ? !p?.identity?.known : !!p?.identity?.known;
+    socket.emit("admin:identitySet", { target: name, known, realName: $("#ad-real-name")?.value, grade: $("#ad-grade")?.value }, (r) => melde(r, "Zuordnung gespeichert."));
+    return;
+  }
+  if (tun === "identityHold") {
+    if (!await window.Casino.dialog.frage(`${name} bis zur Identitätsprüfung vom Spiel ausschließen?`, { titel: "Identität prüfen", okText: "Prüfung verlangen" })) return;
+    socket.emit("admin:identityHold", { target: name }, (r) => melde(r, "Prüfung aktiviert."));
+    return;
+  }
+  if (["identityApprove", "identityReject", "identityMessage", "identityBan"].includes(tun)) {
+    const action = ({ identityApprove: "approve", identityReject: "reject", identityMessage: "message", identityBan: "banDevice" })[tun];
+    let message = "";
+    if (action === "message") {
+      message = await window.Casino.dialog.eingabe(`Nachricht an ${name}:`, { titel: "Zugang bleibt angehalten", wert: "Komm in der großen Pause zur Bestätigung in den Pausenraum.", okText: "Senden" }) || "";
+      if (!message) return;
+    }
+    if (action === "banDevice" && !await window.Casino.dialog.frage(`${name}: Konto und zuletzt bekannten Browser sperren? Andere Konten auf demselben Browser wären ebenfalls betroffen. Das Browser-Merkmal kann technisch gelöscht werden.`, { titel: "Browser sperren", okText: "Sperren", gefahr: true })) return;
+    socket.emit("admin:identityReview", { target: name, action, message }, (r) => melde(r, "Entscheidung gespeichert."));
     return;
   }
 
@@ -2251,8 +2380,37 @@ async function personTun(tun, name) {
 }
 
 $("#ad-suche")?.addEventListener("input", zeichneKontenListe);
+document.querySelectorAll("[data-ad-filter]").forEach((button) => button.addEventListener("click", () => {
+  adStatusFilter = button.dataset.adFilter;
+  document.querySelectorAll("[data-ad-filter]").forEach((b) => b.classList.toggle("active", b === button));
+  zeichneKontenListe();
+}));
 
-document.addEventListener("click", (e) => {
+document.addEventListener("click", async (e) => {
+  const caseOpen = e.target.closest("[data-case-open]");
+  if (caseOpen) {
+    document.querySelector('[data-ad="spieler"]')?.click();
+    adStatusFilter = "all";
+    document.querySelectorAll("[data-ad-filter]").forEach((b) => b.classList.toggle("active", b.dataset.adFilter === "all"));
+    $("#ad-suche").value = caseOpen.dataset.caseOpen;
+    zeichneKontenListe(); zeichnePerson(caseOpen.dataset.caseOpen);
+    return;
+  }
+  const caseAction = e.target.closest("[data-case-action]");
+  if (caseAction) {
+    const target = caseAction.dataset.caseTarget, action = caseAction.dataset.caseAction;
+    let message = "";
+    if (action === "message") {
+      message = await window.Casino.dialog.eingabe(`Nachricht an ${target}:`, { titel: "Zugang bleibt angehalten", wert: "Komm in der großen Pause zur Bestätigung in den Pausenraum.", okText: "Senden" }) || "";
+      if (!message) return;
+    }
+    if (action === "banDevice" && !await window.Casino.dialog.frage(`${target}: Konto und den zuletzt bekannten Browser sperren? Andere Konten auf demselben Browser wären ebenfalls betroffen. Das Browser-Merkmal kann technisch gelöscht werden.`, { titel: "Browser sperren", okText: "Sperren", gefahr: true })) return;
+    socket.emit("admin:identityReview", { target, action, message }, (r) => {
+      toast(r?.ok ? "Entscheidung gespeichert." : r?.error || "Fehler.");
+      if (r?.ok) { ladeTeamKonsole(); loadAdminAccounts(); }
+    });
+    return;
+  }
   const reihe = e.target.closest("[data-konto]");
   if (reihe) {
     const name = reihe.dataset.konto;
@@ -2286,6 +2444,18 @@ document.addEventListener("click", (e) => {
   }
   const tun = e.target.closest("[data-person-tun]");
   if (tun && adGewaehlt) personTun(tun.dataset.personTun, adGewaehlt);
+});
+
+document.addEventListener("change", async (e) => {
+  const select = e.target.closest("[data-person-rang]");
+  if (!select || !adGewaehlt || !istBesitzerUI()) return;
+  const rank = Number(select.value);
+  const ok = await window.Casino.dialog.frage(`${adGewaehlt} zum Rang „${rangName(rank)}“ ändern?`, { titel: "Team-Rang festlegen", okText: "Ändern" });
+  if (!ok) return zeichnePerson(adGewaehlt);
+  socket.emit("admin:setRolle", { target: adGewaehlt, rolle: rank ? "mod" : null, level: rank }, (r) => {
+    toast(r?.ok ? `Rang geändert: ${rangName(rank)}.` : r?.error || "Fehler.");
+    loadAdminAccounts(); ladeTeamKonsole();
+  });
 });
 
 function adminMoney(n) {
@@ -2342,7 +2512,7 @@ function loadAdminDashboard() {
           <div class="ad-kachel"><div class="muted small">Konten</div><b>${d.totals?.accounts || 0}</b>
             <div class="small muted">Geldwerte bleiben privat.</div></div>
         </div>
-        <div class="ad-notiz"><span>Du kannst Ansagen stellen, Inhalte prüfen, Spieler anschreiben oder trennen und zeitlich begrenzte Strafen setzen.</span></div>`;
+        <div class="ad-notiz"><span>${modLevelUI() === 1 ? "Du kannst Spieler zuordnen und offene Prüfungen sowie den Team-Verlauf einsehen. Strafen bleiben höheren Rängen vorbehalten." : "Du kannst Ansagen stellen, Inhalte prüfen, Spieler anschreiben oder trennen und zeitlich begrenzte Strafen setzen."}</span></div>`;
       $("#admin-dash-refresh")?.addEventListener("click", loadAdminDashboard);
       return;
     }
@@ -3660,7 +3830,8 @@ $("#set-motion")?.addEventListener("change", (e) => {
     // leeren Eintrag vor dem Start landet.
     await modulenBereit;
     const deep = window.Casino.screens.fromHash();
-    const target = deep && deep !== "login" && window.Casino.screens.exists(deep) ? deep : "lobby";
+    const target = data.account.verification ? "verification"
+      : deep && deep !== "login" && window.Casino.screens.exists(deep) ? deep : "lobby";
     if (!showScreen(target, { history: "replace" })) showScreen("lobby", { history: "replace" });
   } catch {
     // Abgelaufen, widerrufen oder Konto weg: aufräumen und nach dem Passwort fragen.

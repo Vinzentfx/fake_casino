@@ -15,6 +15,7 @@ const strafen = require("./strafen");
 const regie = require("./regie");
 const wartung = require("./wartung");
 const cosmetics = require("./cosmetics");
+const moderation = require("./moderation");
 let _heist = null;
 function setHeist(h) { _heist = h; }
 let _events = {}; // { rain, quiz, vault }, die Admin-Events aus server.js
@@ -143,25 +144,25 @@ function eventZustand(mod) {
 
 function setupAdmin(io, accounts) {
   io.on("connection", (socket) => {
+    moderation.auditSocket(socket, accounts);
+    function level() { return moderation.level(accounts.get(socket.data.account), socket.data.account); }
     function isOwner() {
-      return socket.data.account === OWNER;
+      return level() === 4;
     }
 
     function isModerator() {
-      if (isOwner()) return true;
-      const acc = accounts.get(socket.data.account);
-      return !!(acc && acc.rolle === "mod");
+      return level() >= 2;
     }
 
     function istGeschuetzt(target) {
       const key = keyVon(accounts, target);
       const acc = accounts.get(key);
-      return key === OWNER || !!(acc && acc.rolle === "mod");
+      return moderation.level(acc, key) > 0;
     }
 
     socket.on("admin:dashboard", (ack) => {
       if (typeof ack !== "function") return;
-      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (level() < 1) return ack({ ok: false, error: "Kein Zugriff." });
       const ownerAnsicht = isOwner();
       const all = accounts.listAll();
       const onlineMap = new Map();
@@ -327,18 +328,24 @@ function setupAdmin(io, accounts) {
 
     socket.on("admin:listAccounts", (ack) => {
       if (typeof ack !== "function") return;
-      if (!isModerator()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (level() < 1) return ack({ ok: false, error: "Kein Zugriff." });
       const liste = accounts.listAll().map((a) => {
-        if (!isOwner()) return a;
         const intern = accounts.get(a.name);
+        const identity = {
+          known: !!intern?.identity?.known,
+          realName: intern?.identity?.realName || "",
+          grade: intern?.identity?.grade || "",
+          verification: require("./verification").state(intern),
+        };
+        if (!isOwner()) return { ...a, identity };
         const deviceKnown = !!(intern && intern.lastDeviceId);
         const deviceBanned = !!(deviceKnown && zugangsschutz.istGesperrt(intern.lastDeviceId));
-        return { ...a, deviceKnown, deviceBanned, locked: !!a.banned || deviceBanned };
+        return { ...a, identity, deviceKnown, deviceBanned, locked: !!a.banned || deviceBanned };
       });
       ack({
         ok: true,
-        accounts: isOwner() ? liste : liste.map(({ name, rolle, banned, strafen, lastSeen }) => ({
-          name, rolle, banned, strafen, lastSeen,
+        accounts: isOwner() ? liste : liste.map(({ name, rolle, modLevel, banned, strafen, lastSeen, identity, verification }) => ({
+          name, rolle, modLevel, banned, strafen, lastSeen, identity, verification,
         })),
       });
     });
@@ -391,26 +398,28 @@ function setupAdmin(io, accounts) {
 
     /* Nur der Besitzer vergibt Rollen. Die Rolle liegt am Konto und bleibt
        dadurch über Neustarts und Backups erhalten. */
-    socket.on("admin:setRolle", ({ target, rolle } = {}, ack) => {
+    socket.on("admin:setRolle", ({ target, rolle, level: requestedLevel } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
       const key = keyVon(accounts, target);
       const acc = accounts.get(key);
       if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
       if (key === OWNER) return ack({ ok: false, error: "Der Besitzer bleibt Besitzer." });
-      if (rolle === "mod") acc.rolle = "mod";
-      else delete acc.rolle;
+      const nextLevel = rolle === "mod" ? Number(requestedLevel || 2) : 0;
+      if (!Number.isInteger(nextLevel) || nextLevel < 0 || nextLevel > 3) return ack({ ok: false, error: "Ungültiger Rang." });
+      if (nextLevel) { acc.rolle = "mod"; acc.modLevel = nextLevel; }
+      else { delete acc.rolle; delete acc.modLevel; }
       accounts.save();
       for (const s of socketsVon(io, key)) {
         s.emit("account:update", { account: accounts.publicAccount(acc) });
         s.emit("admin:nachricht", {
-          titel: rolle === "mod" ? "Moderator-Rechte" : "Rolle geändert",
-          text: rolle === "mod"
-            ? "Du kannst jetzt moderieren. Geld, Konten, Events und Spielausgänge bleiben nur beim Besitzer."
+          titel: nextLevel ? "Team-Rang geändert" : "Rolle geändert",
+          text: nextLevel
+            ? `Dein Team-Rang ist jetzt ${moderation.RANKS[nextLevel]}.`
             : "Deine Moderator-Rechte wurden entfernt.",
         });
       }
-      ack({ ok: true, rolle: acc.rolle || null });
+      ack({ ok: true, rolle: acc.rolle || null, level: nextLevel });
     });
 
     socket.on("admin:setChips", ({ target, amount } = {}, ack) => {
@@ -829,7 +838,8 @@ function setupAdmin(io, accounts) {
         if (istGeschuetzt(key)) return ack({ ok: false, error: "Moderatoren können Besitzer und andere Moderatoren nicht bestrafen." });
         const dauer = Math.floor(Number(minuten) || 0);
         if (!MOD_STRAFEN.has(art)) return ack({ ok: false, error: "Diese Strafe darf nur der Besitzer setzen." });
-        if (dauer < 1 || dauer > MOD_MAX_MINUTEN) return ack({ ok: false, error: "Moderatoren dürfen Strafen für höchstens 7 Tage setzen." });
+        const max = level() >= 3 ? 30 * 24 * 60 : MOD_MAX_MINUTEN;
+        if (dauer < 1 || dauer > max) return ack({ ok: false, error: `Dein Rang erlaubt höchstens ${level() >= 3 ? 30 : 7} Tage.` });
       }
 
       const res = strafen.setze(acc, art, { minuten, wert, spiele, grund });

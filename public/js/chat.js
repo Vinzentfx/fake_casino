@@ -121,7 +121,7 @@
     leaveLobby: () => { delete dock.dataset.lobbyRoom; loadRoom("global"); },
     // Ganzes Dock ein- oder ausblenden (auf der Anmeldung ist es weg).
     update: (screen) => {
-      if (screen === "login") { dock.classList.add("hidden"); setOpen(false); return; }
+      if (screen === "login" || screen === "verification") { dock.classList.add("hidden"); setOpen(false); return; }
       dock.classList.remove("hidden");
       // In a game lobby? keep that channel; otherwise the global channel.
       if (room !== "global" && !dock.dataset.lobbyRoom) loadRoom("global");

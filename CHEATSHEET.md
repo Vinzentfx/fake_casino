@@ -761,6 +761,33 @@ Einzelgewinn, größter Verlust, meiste Runden und Pferdesiege.
 
 ## Konten und Schutz
 
+Neue Konten bleiben **ohne Einladungscode** möglich. Ein neuer Name legt beim
+Anmelden automatisch ein Konto an; bestehende Konten melden sich normal an.
+
+Das Team hat vier Stufen: **Helfer** können Konten als bekannt/unbekannt
+zuordnen und den Verlauf sehen; **Moderatoren** können zusätzlich Inhalte
+moderieren, Identitätsprüfungen anordnen und bestätigen sowie Zeitstrafen bis
+7 Tage verhängen; **Leitmoderatoren** dürfen Zeitstrafen bis 30 Tage und bei
+einer Prüfung Konto samt bekanntem Browser sperren. Der **Besitzer**
+vergibt Teamränge und behält Geld, Kontenverwaltung und Spielregie allein.
+Bereits ernannte Moderatoren bleiben auf Stufe 2.
+
+Eine Prüfung wird gezielt für ein noch unbekanntes Konto angeordnet, nicht für
+alle neuen Spieler. Bis zur Freigabe kann es sich anmelden, aber weder spielen
+noch chatten oder handeln. Die Person gibt ihren echten Namen und ihre
+Stufe/Klasse ein; erst danach kann das Team freigeben. Stattdessen kann es
+ablehnen oder eine Nachricht wie „Komm in der großen Pause zur Bestätigung in
+den Pausenraum“ schicken. Währenddessen sind in demselben Browser keine neuen
+Konten möglich; bestehende Konten können sich weiter anmelden. Die Angaben
+sind nur im Team sichtbar. Ein gelöschtes Browser-Cookie oder ein anderes Gerät
+kann technisch nicht sicher derselben Person zugeordnet werden.
+
+Der Reiter **Team & Verlauf** zeigt Ränge, offene Prüfungen und ein Protokoll
+aller neuen Admin-Maßnahmen mit Zeitpunkt, handelnder Person und Ziel. Das
+Protokoll beginnt mit Einführung dieser Funktion; ältere Aktionen lassen sich
+nicht nachträglich einem Moderator zuordnen. Echte Namen, Stufen und
+Nachrichtentexte werden nicht im Protokoll gespeichert.
+
 Ein Browser bekommt beim ersten Besuch einen zufälligen, ein Jahr gültigen
 Geräteschlüssel. Das ist kein Fingerabdruck und enthält keine Angaben über das
 Gerät. Pro Browser lassen sich höchstens **zwei neue Konten am Tag** erstellen,

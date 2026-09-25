@@ -324,7 +324,7 @@ function setupPoker(io, accounts) {
     socket.data.tableCode = null;
 
     socket.on("auth", ({ token } = {}) => {
-      const key = accounts.verifyToken(token);
+      const key = accounts.verifyToken(token, { allowVerification: true });
       const acc = key ? accounts.get(key) : null;
       /* Der Schluessel kommt aus dem Token, nicht aus dem Anzeigenamen.
          Solange sich Namen nicht aendern liessen, war beides dasselbe. Seit

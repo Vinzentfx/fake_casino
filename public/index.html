@@ -139,6 +139,23 @@
       </div>
     </section>
 
+    <section class="screen" data-screen="verification">
+      <div class="verify-card">
+        <div class="verify-seal" aria-hidden="true">✦</div>
+        <span class="verify-eyebrow">CASINO · ZUGANGSPRÜFUNG</span>
+        <h1>Ein kurzer Identitätscheck</h1>
+        <p id="verification-message">Bitte gib deinen echten Namen und deine Stufe/Klasse an. Das sieht nur das Moderationsteam.</p>
+        <form id="verification-form" class="form-col" autocomplete="off">
+          <label>Echter Name<input id="verification-name" type="text" maxlength="80" required autocomplete="name" /></label>
+          <label>Stufe / Klasse<input id="verification-grade" type="text" maxlength="30" required placeholder="z. B. EF oder 10b" /></label>
+          <div class="form-error" id="verification-error"></div>
+          <button class="btn-primary" type="submit">Zur Prüfung senden</button>
+        </form>
+        <div class="verify-actions"><button type="button" class="chip-btn" id="verification-refresh">Status prüfen</button><button type="button" class="chip-btn" id="verification-logout">Anderes Konto</button></div>
+        <small>Bis zur Freigabe sind Spiel, Chat und Handel gesperrt. Deine Angaben erscheinen nicht im Profil.</small>
+      </div>
+    </section>
+
     <!-- Lobby -->
     <section class="screen" data-screen="lobby">
       <div class="lobby-inner">
@@ -2030,10 +2047,11 @@
            Events scrollte man an der kompletten Accountliste vorbei. -->
       <nav class="ad-reiter" id="ad-reiter" role="tablist">
         <button class="ad-reiter-knopf active" data-ad="uebersicht" role="tab" aria-selected="true">Übersicht</button>
-        <button class="ad-reiter-knopf" data-ad="ansage" role="tab" aria-selected="false">Ansage</button>
+        <button class="ad-reiter-knopf" data-ad="ansage" data-mod-min="2" role="tab" aria-selected="false">Ansage</button>
         <button class="ad-reiter-knopf" data-ad="events" data-owner-only role="tab" aria-selected="false">Events</button>
         <button class="ad-reiter-knopf" data-ad="spieler" role="tab" aria-selected="false">Spieler</button>
-        <button class="ad-reiter-knopf" data-ad="filter" role="tab" aria-selected="false">Inhalte</button>
+        <button class="ad-reiter-knopf" data-ad="filter" data-mod-min="2" role="tab" aria-selected="false">Inhalte</button>
+        <button class="ad-reiter-knopf" data-ad="team" role="tab" aria-selected="false">Team & Verlauf</button>
         <button class="ad-reiter-knopf" data-ad="werkzeug" data-owner-only role="tab" aria-selected="false">Werkzeuge</button>
       </nav>
 
@@ -2115,6 +2133,7 @@
           <input id="ad-suche" type="search" maxlength="24" placeholder="Namen suchen…" autocomplete="off" />
           <span class="ad-treffer" id="ad-treffer"></span>
         </div>
+        <div class="ad-status-filter" role="group" aria-label="Konten filtern"><button class="active" type="button" data-ad-filter="all">Alle</button><button type="button" data-ad-filter="unknown">Noch nicht zugeordnet</button><button type="button" data-ad-filter="pending">In Prüfung</button></div>
         <div class="ad-liste" id="admin-account-list"><div class="muted small">Lädt…</div></div>
 
         <div class="ad-person hidden" id="ad-person"></div>
@@ -2136,11 +2155,19 @@
         <!-- Wer hat gerade etwas offen? Eine Strafe, die man vergisst, läuft
              sonst wochenlang weiter, und der Bestrafte hält es irgendwann für
              einen Fehler im Spiel. -->
-        <div class="ad-karte">
+        <div class="ad-karte" data-mod-min="2">
           <div class="ad-kopf"><b>Offene Strafen</b></div>
           <p class="hint">Alles, was gerade gilt. Antippen öffnet die Person.</p>
           <div id="ad-strafen-offen" class="ad-strafliste"><div class="muted small">-</div></div>
         </div>
+      </section>
+
+      <section class="ad-tafel hidden" data-ad-tafel="team">
+        <div class="ad-team-hero"><span>✦ TEAMKONSOLE</span><h3>Wer darf was? Was ist passiert?</h3><p>Alle Entscheidungen mit Zeitpunkt und verantwortlichem Teammitglied. Das Protokoll beginnt mit dieser Funktion.</p></div>
+        <div class="ad-rank-guide"><span><b>01 · Helfer</b> Zuordnung & Protokoll</span><span><b>02 · Moderator</b> Inhalte, 7-Tage-Strafen & Prüfungen</span><span><b>03 · Leitmoderator</b> 30-Tage-Strafen & Gerätesperren</span><span><b>04 · Besitzer</b> Ränge, Konten & Spielverwaltung</span></div>
+        <h3>Moderationsteam</h3><div class="ad-team-grid" id="ad-team-list"></div>
+        <h3>Offene Identitätsprüfungen</h3><div class="ad-case-list" id="ad-identity-queue"></div>
+        <h3>Änderungs- & Strafprotokoll</h3><div class="ad-audit-list" id="ad-audit-list"></div><button class="chip-btn hidden" type="button" id="ad-audit-more">Ältere Einträge laden</button>
       </section>
 
       <section class="ad-tafel hidden" data-ad-tafel="events">

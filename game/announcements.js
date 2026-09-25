@@ -99,7 +99,7 @@ function setupAnnouncements(io, accounts) {
     const istModerator = () => {
       if (istBesitzer()) return true;
       const acc = accounts && accounts.get(socket.data.account);
-      return !!(acc && acc.rolle === "mod");
+      return require("./moderation").level(acc, socket.data.account) >= 2;
     };
 
     /** Was der Admin-Bildschirm braucht: Stand, Verlauf, moegliche Arten. */

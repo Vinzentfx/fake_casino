@@ -172,7 +172,7 @@ function sperrText(s) {
  * Token fehlt, kaputt oder gefälscht ist, das Konto nicht mehr existiert oder
  * eine Zeitsperre laeuft.
  */
-function verifyToken(token, { ohneStrafe = false } = {}) {
+function verifyToken(token, { ohneStrafe = false, allowVerification = false } = {}) {
   if (typeof token !== "string" || !token.includes(".")) return null;
   const [b64, sig] = token.split(".");
   let payload;
@@ -189,6 +189,7 @@ function verifyToken(token, { ohneStrafe = false } = {}) {
   // Alte Tokens tragen noch den Anzeigenamen; kanonisch() faengt beides ab.
   const key = kanonisch(roh);
   if (!key || accounts[key].banned) return null;
+  if (!allowVerification && require("./verification").state(accounts[key])) return null;
   // Eine laufende Zeitsperre gilt auch fuer ein gueltiges Token, sonst kaeme
   // jeder mit gespeicherter Sitzung weiter rein.
   if (!ohneStrafe && strafen.aktiv(accounts[key], "sperre")) return null;
@@ -205,7 +206,7 @@ function verifyToken(token, { ohneStrafe = false } = {}) {
  * Weiterspielen an die Ablaufzeit stößt.
  */
 function resumeSession(token) {
-  const key = verifyToken(token);
+  const key = verifyToken(token, { allowVerification: true });
   if (!key) {
     const roh = _keyRoh(token);
     const gesperrt = roh && accounts[roh] && strafen.aktiv(accounts[roh], "sperre");
@@ -650,7 +651,9 @@ function publicAccount(acc) {
   if (!acc) return null;
   return {
     name: acc.name,
-    rolle: acc.rolle === "mod" ? "mod" : null,
+    rolle: require("./moderation").level(acc, kanonisch(acc.name)) >= 1 ? "mod" : null,
+    modLevel: require("./moderation").level(acc, kanonisch(acc.name)),
+    verification: require("./verification").state(acc),
     chips: acc.chips,
     createdAt: acc.createdAt,
     lastBonusAt: acc.lastBonusAt,
@@ -1129,7 +1132,10 @@ function deleteAccount(name) {
 function listAll() {
   return Object.values(accounts).map((a) => ({
     name: a.name,
-    rolle: a.rolle === "mod" ? "mod" : null,
+    rolle: require("./moderation").level(a, kanonisch(a.name)) >= 1 ? "mod" : null,
+    modLevel: require("./moderation").level(a, kanonisch(a.name)),
+    known: !!a.identity?.known,
+    verification: require("./verification").state(a),
     chips: a.chips,
     savings: Math.floor((a.savings && a.savings.amount) || 0),
     netWorth: _netWorth(a),
