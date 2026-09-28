@@ -9564,6 +9564,23 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 .ad-suche input { flex: 1; min-width: 0; }
 .ad-treffer { font-size: 0.76rem; color: var(--text-mute); white-space: nowrap; }
 
+.ad-list-toggle { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 56px;
+  margin: 10px 0 12px; padding: 9px 12px; border: 1px solid rgba(var(--accent-rgb), .36);
+  border-radius: 13px; background: linear-gradient(110deg, rgba(var(--accent-rgb), .12), var(--surface-sunken) 70%);
+  color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color .2s, transform .2s, background .2s; }
+.ad-list-toggle:hover { border-color: var(--accent); transform: translateY(-1px); }
+.ad-list-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ad-list-toggle-icon { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px;
+  border-radius: 10px; background: rgba(var(--accent-rgb), .18); color: var(--accent);
+  font-size: 1.35rem; line-height: 1; transition: transform .2s; }
+.ad-list-toggle.is-open .ad-list-toggle-icon { transform: rotate(180deg); }
+.ad-list-toggle-copy { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.ad-list-toggle-copy b { font-size: .86rem; }
+.ad-list-toggle-copy small { color: var(--text-dim); font-size: .72rem; }
+.ad-list-toggle-count { flex: 0 0 auto; border-radius: 99px; padding: 5px 8px;
+  background: rgba(var(--accent-rgb), .18); color: var(--accent); font-size: .69rem; font-weight: 900; }
+.ad-list-toggle-bottom { margin: 8px 0 0; }
+
 .ad-liste { display: flex; flex-direction: column; gap: 4px; margin-bottom: var(--sp-3); }
 .ad-reihe {
   display: grid;

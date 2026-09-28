@@ -1896,6 +1896,7 @@ socket.on("admin:kicked", ({ reason }) => {
 let adKonten = [];        // zuletzt geladene Liste
 let adGewaehlt = null;    // Name der geöffneten Person
 let adStatusFilter = "all";
+let adListeAusgeklappt = false;
 
 const rangName = (n) => ({ 1: "Helfer", 2: "Moderator", 3: "Leitmoderator", 4: "Besitzer" })[n] || "Spieler";
 const auditLabel = (action) => ({
@@ -2010,10 +2011,24 @@ function zeichneKontenListe() {
       : `${adKonten.length} Konten`;
   }
 
+  const normaleListe = !suche && adStatusFilter === "all";
+  const toggleSichtbar = normaleListe && treffer.length > 0;
+  const toggle = $("#ad-list-toggle");
+  if (toggle) {
+    toggle.classList.toggle("hidden", !toggleSichtbar);
+    toggle.classList.toggle("is-open", adListeAusgeklappt && toggleSichtbar);
+    toggle.setAttribute("aria-expanded", String(adListeAusgeklappt && toggleSichtbar));
+    $("#ad-list-toggle-label").textContent = adListeAusgeklappt ? "Kontenliste einklappen" : `Alle ${treffer.length} Konten aufklappen`;
+    $("#ad-list-toggle-hint").textContent = adListeAusgeklappt ? "Alle Konten sind sichtbar" : "Die Liste ist eingeklappt";
+    $("#ad-list-toggle-count").textContent = adListeAusgeklappt ? "WENIGER" : String(treffer.length);
+  }
+
+  list.classList.toggle("hidden", normaleListe && !adListeAusgeklappt);
+  if (normaleListe && !adListeAusgeklappt) { list.replaceChildren(); return; }
   if (!treffer.length) { list.innerHTML = '<div class="muted small">Kein Konto gefunden.</div>'; return; }
-  /* Ohne Suche nur die ersten 25: 78 Zeilen sind auf dem iPad ein
-     Bildschirmkilometer, und wer jemand Bestimmten sucht, tippt ohnehin. */
-  const zeigen = suche ? treffer : treffer.slice(0, 25);
+  /* Die Gesamtliste ist ein echtes Akkordeon. Suche und Statusfilter zeigen
+     ihre Treffer auch dann, wenn die Gesamtliste eingeklappt ist. */
+  const zeigen = treffer;
   list.innerHTML = zeigen.map((p, i) => `
     <button class="ad-reihe${adGewaehlt === p.name ? " aktiv" : ""}" type="button" data-konto="${escapeHtml(p.name)}">
       <span class="ad-platz">${suche ? "" : i + 1}</span>
@@ -2024,8 +2039,8 @@ function zeichneKontenListe() {
       ${(p.strafen || []).map((st) => `<span class="ad-flag">${escapeHtml(st.kurz)}</span>`).join("")}
       <b>${istBesitzerUI() ? `${Math.floor(p.chips || 0).toLocaleString("de-DE")}<i class=mk></i>` : rangName(p.modLevel)}</b>
     </button>`).join("")
-    + (!suche && treffer.length > zeigen.length
-      ? `<div class="muted small ad-mehr">… und ${treffer.length - zeigen.length} weitere. Zum Finden oben tippen.</div>` : "");
+    + (toggleSichtbar && adListeAusgeklappt
+      ? '<button class="ad-list-toggle ad-list-toggle-bottom is-open" type="button" data-ad-list-toggle aria-controls="admin-account-list" aria-expanded="true"><span class="ad-list-toggle-icon" aria-hidden="true">⌄</span><span class="ad-list-toggle-copy"><b>Kontenliste einklappen</b><small>Alle Konten wieder verbergen</small></span></button>' : "");
 }
 
 /* Strafen (Admin)
@@ -2405,6 +2420,14 @@ async function personTun(tun, name) {
 }
 
 $("#ad-suche")?.addEventListener("input", zeichneKontenListe);
+document.addEventListener("click", (e) => {
+  const button = e.target.closest("[data-ad-list-toggle]");
+  if (!button) return;
+  const fromBottom = button.classList.contains("ad-list-toggle-bottom");
+  adListeAusgeklappt = !adListeAusgeklappt;
+  zeichneKontenListe();
+  if (fromBottom) $("#ad-list-toggle")?.scrollIntoView({ behavior: "smooth", block: "center" });
+});
 document.querySelectorAll("[data-ad-filter]").forEach((button) => button.addEventListener("click", () => {
   adStatusFilter = button.dataset.adFilter;
   document.querySelectorAll("[data-ad-filter]").forEach((b) => b.classList.toggle("active", b === button));
