@@ -9688,6 +9688,34 @@ html:not(.reduce-motion) .sheet-item.hat-auktion::after { animation: se-pulsen 1
 
 .ad-ipliste, .ad-lots { margin-top: 10px; }
 
+/* Identitätsprüfung: gelb und sichtbar, ohne die vorhandenen roten/grünen
+   Menümarken oder den Abholzähler zu überdecken. */
+.admin-review-dot {
+  position: absolute; left: -5px; bottom: -5px; z-index: 2;
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid var(--bar); background: #ffd65a;
+  box-shadow: 0 0 0 2px rgba(255,214,90,.22), 0 0 12px rgba(255,214,90,.85);
+  pointer-events: none;
+}
+#admin-review-count { background: #ffd65a; color: #302100; box-shadow: 0 0 10px rgba(255,214,90,.3); }
+.admin-team-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px;
+  margin-left: 3px; padding: 0 5px; border-radius: 99px; background: #ffd65a; color: #302100;
+  font-size: .69rem; font-weight: 900; box-shadow: 0 0 12px rgba(255,214,90,.35); }
+html:not(.reduce-motion) .admin-review-dot { animation: se-pulsen 1.8s ease-in-out infinite; }
+.ad-owner-release { display: flex; gap: 14px; padding: 16px; margin: 15px 0;
+  border: 1px solid rgba(var(--bad-rgb), .38); border-radius: 16px;
+  background: linear-gradient(120deg, rgba(var(--bad-rgb), .1), var(--surface-sunken) 68%); }
+.ad-owner-release-icon { display: grid; place-items: center; align-self: start; flex: 0 0 42px;
+  width: 42px; height: 42px; border-radius: 12px; background: rgba(var(--bad-rgb), .16);
+  color: var(--bad-text); font-size: 1.8rem; line-height: 1; }
+.ad-owner-release-main { min-width: 0; flex: 1; }
+.ad-owner-release-main > label { display: block; margin-bottom: 4px; }
+.ad-owner-release-main .hint { margin: 0 0 12px; }
+.ad-owner-release-controls { display: flex; flex-wrap: wrap; gap: 9px; }
+.ad-owner-release-controls input { flex: 1 1 180px; min-width: 0; }
+.ad-owner-release-controls button { flex: 0 0 auto; }
+#ad-owner-preview { display: block; margin-top: 9px; }
+
 /* Admin-Übersicht: Kacheln statt inline gesetzter Rahmen */
 .ad-lage-kopf { margin-bottom: 4px; }
 .ad-lage-kopf h3 { margin: 0; }

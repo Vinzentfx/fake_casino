@@ -442,6 +442,7 @@ function setAccount(acc, token) {
   renderTopbar();
   requestPresence();
   verwaltungUI();
+  refreshIdentityBadge();
   if (!acc.verification) maybeShowUpdate();
   renderUpdateBadge();
   if (acc.verification) { renderVerification(); showScreen("verification", { history: "replace" }); }
@@ -829,7 +830,7 @@ socket.on("disconnect", () => {
 
 socket.on("connect", () => {
   if (verbindungWeg) { verbindungWeg = false; toast("Wieder verbunden."); }
-  if (state.token) socket.emit("auth", { token: state.token });
+  if (state.token) { socket.emit("auth", { token: state.token }); refreshIdentityBadge(); }
   socket.emit("presence:screen", { screen: currentScreen });
   socket.emit("app:version", (res) => {
     if (res && res.ok) handleAppVersion(res.version);
@@ -1766,6 +1767,7 @@ function renderLbList() {
 // Logout
 $("#logout-btn").addEventListener("click", () => {
   state.account = null;
+  setIdentityBadge(null);
   window.Casino.screens.setFallback("login");
   state.token = null;
   try {
@@ -1874,6 +1876,7 @@ socket.on("chat:geleert", ({ room } = {}) => {
 socket.on("admin:kicked", ({ reason }) => {
   toast(reason || "Du wurdest gesperrt.");
   state.account = null;
+  setIdentityBadge(null);
   state.token = null;
   try { localStorage.removeItem("casino_name"); } catch {}
   try { localStorage.removeItem(TOKEN_KEY); } catch {}
@@ -1906,7 +1909,7 @@ const auditLabel = (action) => ({
   "admin:ipban": "Netzwerk gesperrt", "admin:ipunban": "Netzwerk entsperrt", "admin:deviceban": "Browser gesperrt",
   "admin:deviceunban": "Browser entsperrt", "admin:filterAdd": "Wortfilter ergänzt", "admin:filterRemove": "Wortfilter geändert",
   "admin:bildWeg": "Bild entfernt", "admin:meldungOk": "Meldung erledigt", "admin:rename": "Spieler umbenannt",
-  "admin:clearLot": "Grundstück freigegeben", "admin:resetCity": "Stadt zurückgesetzt", "admin:resetBonus": "Bonus zurückgesetzt",
+  "admin:clearLot": "Grundstück freigegeben", "admin:clearOwnerLots": "Alle Grundstücke eines Spielers freigegeben", "admin:resetCity": "Stadt zurückgesetzt", "admin:resetBonus": "Bonus zurückgesetzt",
   "admin:resetStat": "Statistik zurückgesetzt", "admin:resetAchievements": "Erfolge zurückgesetzt",
   "admin:regieSetzen": "Regie gesetzt", "admin:regieLoeschen": "Regie entfernt", "admin:wartung": "Wartung geändert",
   "admin:kosmetik": "Kosmetik geändert", "admin:shadowban": "Sichtbarkeit geändert", "admin:newWeek": "Neue Woche gestartet",
@@ -1920,11 +1923,32 @@ function ladeTeamKonsole() {
     box.innerHTML = (r.team || []).map((p) => `<div class="ad-team-member"><span class="ad-team-star">${p.level === 4 ? "✦" : "◆"}</span><div><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.rank)}</small></div><i>RANG ${p.level}</i></div>`).join("");
   });
   socket.emit("admin:identityQueue", (r) => {
+    setIdentityBadge(r);
     const box = $("#ad-identity-queue"); if (!box) return;
     if (!r?.ok) { box.textContent = r?.error || "Prüfungen konnten nicht geladen werden."; return; }
     box.innerHTML = r.cases?.length ? r.cases.map((c) => `<div class="ad-case"><div><b>${escapeHtml(c.name)}</b><span>${escapeHtml(c.status === "pending" ? "Wartet auf Entscheidung" : c.status === "message" ? "Nachricht gesendet" : "Angaben fehlen")}</span></div><p>${c.realName ? `${escapeHtml(c.realName)} · ${escapeHtml(c.grade)}` : "Noch keine Angaben"}</p><small>${escapeHtml(c.message || "")}</small><div class="ad-knopfreihe"><button class="chip-btn" data-case-open="${escapeHtml(c.name)}">Konto öffnen</button>${modLevelUI() >= 2 ? `${c.submittedAt && c.realName && c.grade ? `<button class="btn-secondary ad-knopf" data-case-action="approve" data-case-target="${escapeHtml(c.name)}">Bestätigen</button>` : ""}<button class="chip-btn" data-case-action="message" data-case-target="${escapeHtml(c.name)}">Nachricht</button><button class="chip-btn" data-case-action="reject" data-case-target="${escapeHtml(c.name)}">Ablehnen</button>${modLevelUI() >= 3 ? `<button class="btn-danger ad-knopf" data-case-action="banDevice" data-case-target="${escapeHtml(c.name)}">Konto & Browser sperren</button>` : ""}` : ""}</div></div>`).join("") : '<p class="muted small">Keine offenen Prüfungen.</p>';
   });
   ladeAudit(0);
+}
+
+function setIdentityBadge(result) {
+  const count = result?.ok && modLevelUI() >= 2
+    ? (result.cases || []).filter((c) => c.submittedAt && c.realName && c.grade).length : 0;
+  for (const id of ["#admin-review-dot", "#admin-review-count", "#admin-team-badge"]) {
+    const el = $(id);
+    if (!el) continue;
+    el.classList.toggle("hidden", !count);
+    if (id !== "#admin-review-dot") el.textContent = String(count);
+  }
+  const btn = $("#menu-btn");
+  if (btn) btn.title = count ? `${count} Identitätsprüfung${count === 1 ? "" : "en"} warten` : "Menü öffnen";
+  const sub = $("#menu-admin-sub");
+  if (sub) sub.textContent = count ? `${count} Identitätsprüfung${count === 1 ? "" : "en"} warten` : istBesitzerUI() ? "Verwaltung" : modLevelUI() === 1 ? "Zuordnung & Prüfverlauf" : "Chat und Spieler schützen";
+}
+
+function refreshIdentityBadge() {
+  if (modLevelUI() < 2 || !state.account) { setIdentityBadge(null); return; }
+  socket.emit("admin:identityQueue", setIdentityBadge);
 }
 
 let adAuditOffset = 0;
@@ -1941,6 +1965,7 @@ function ladeAudit(offset = 0) {
 }
 $("#ad-audit-more")?.addEventListener("click", () => ladeAudit(adAuditOffset));
 socket.on("admin:identityChanged", () => {
+  refreshIdentityBadge();
   if (currentScreen !== "admin") return;
   loadAdminAccounts();
   if (!document.querySelector('[data-ad-tafel="team"]')?.classList.contains("hidden")) ladeTeamKonsole();
@@ -2610,6 +2635,10 @@ function zeichneLots() {
     : adLots;
   const zaehler = $("#ad-lot-treffer");
   if (zaehler) zaehler.textContent = `${adLots.length} im Besitz`;
+  const target = ($("#ad-owner-name")?.value || "").trim().toLowerCase();
+  const owned = target ? adLots.filter((l) => l.ownerKey === target || (l.owner || "").toLowerCase() === target).length : 0;
+  const preview = $("#ad-owner-preview");
+  if (preview) preview.textContent = target ? `${owned} Gebäude dieses Spielers gefunden` : "Spielername eingeben, um den Besitz zu prüfen.";
 
   if (!adLots.length) { list.innerHTML = '<li class="muted">Kein Gebäude im Besitz.</li>'; return; }
   if (!treffer.length) { list.innerHTML = '<li class="muted">Nichts gefunden.</li>'; return; }
@@ -2623,6 +2652,23 @@ function zeichneLots() {
 }
 
 $("#ad-lot-suche")?.addEventListener("input", zeichneLots);
+$("#ad-owner-name")?.addEventListener("input", zeichneLots);
+$("#ad-owner-clear")?.addEventListener("click", () => {
+  const target = ($("#ad-owner-name")?.value || "").trim();
+  if (!target) { toast("Bitte einen Spielernamen eingeben."); return; }
+  socket.emit("admin:cityLots", async (fresh) => {
+    if (!fresh?.ok) { toast(fresh?.error || "Besitz konnte nicht geprüft werden."); return; }
+    adLots = fresh.lots || [];
+    zeichneLots();
+    const owned = adLots.filter((l) => l.ownerKey === target.toLowerCase() || (l.owner || "").toLowerCase() === target.toLowerCase()).length;
+    if (!owned) { toast("Für diesen Spieler wurden keine Häuser gefunden."); return; }
+    if (!await window.Casino.dialog.frage(`Wirklich alle ${owned} Gebäude von ${target} freigeben? Es gibt keine Chip-Erstattung.`, { okText: "Alle freigeben", gefahr: true })) return;
+    socket.emit("admin:clearOwnerLots", { target }, (r) => {
+      if (r?.ok) { toast(`${r.removed} Gebäude von ${r.target} freigegeben.`); loadAdminLots(); }
+      else toast(r?.error || "Fehler beim Freigeben.");
+    });
+  });
+});
 
 document.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-lot]");

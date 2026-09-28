@@ -648,6 +648,17 @@ function setupAdmin(io, accounts) {
       ack(res);
     });
 
+    socket.on("admin:clearOwnerLots", ({ target } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = keyVon(accounts, target);
+      const acc = accounts.get(key);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      const res = city.adminRemoveOwner(key);
+      if (res.removed) io.emit("city:update");
+      ack({ ...res, target: acc.name });
+    });
+
     // Die ganze Stadt auf Anfang zurücksetzen (nach einer Preis-Umstellung).
     socket.on("admin:resetCity", (ack) => {
       if (typeof ack !== "function") return;

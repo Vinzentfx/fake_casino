@@ -433,9 +433,15 @@ Gebäudeklasse, der Grundfläche und dem Preisindex des Ortsteils ab.
 | Bank | 600 Mio |
 | Casino | 1,2 Mrd |
 
-* **Verkaufen** bringt 90 % zurück, die restlichen 10 % verschwinden.
-* **Übernahme:** ein fremdes Gebäude kostet 150 %. Der Vorbesitzer bekommt
-  100 %, der Rest verbrennt.
+* **Verkaufen** bringt höchstens 90 % des aktuellen Marktwerts und höchstens
+  90 % der wirklich gezahlten Chips (Kauf, Ausbau und Abgaben) abzüglich
+  früherer Börsenerlöse zurück. Damit kann ein steigender Preisindex keine
+  Verkaufsgewinne erzeugen.
+* **Übernahme:** ein fremdes Gebäude kostet 150 % des Marktwerts plus etwaige
+  Abgaben. Der Vorbesitzer bekommt höchstens den Marktwert und höchstens
+  seine noch nicht zurückerhaltenen Investitionen; der Rest verschwindet.
+* **Börsengang:** zahlt höchstens 50 % des Marktwerts und höchstens 50 % der
+  noch offenen Investition. Pro Gebäude nur einmal, auch nach Besitzerwechsel.
 * **Preisindex** je Ortsteil schwankt zwischen 0,55 und 1,9 und bewegt sich mit
   den Lokalnachrichten.
 * **Wahrzeichen** in der Nähe heben den Preis in ihrem Umkreis um 25 %.
@@ -524,9 +530,10 @@ einen dauerhaften Vorteil.
   möglich. Der Hebel vervielfacht Gewinn und Verlust; fällt der Wert deiner
   Position auf null, wird sie ohne Auszahlung liquidiert. Geht eine Firma
   pleite, verlieren Long-Positionen ihren Einsatz, Shorts werden abgerechnet.
-* **Eigener Börsengang:** Kiosk, Café, Laden, Hotel oder Fabrik können einmalig
-  gelistet werden. Du erhältst sofort 50 % des Gebäudewerts als Kapital; danach
-  ist die Aktie für alle handelbar.
+* **Eigener Börsengang:** Kiosk, Café, Laden, Hotel oder Fabrik können pro
+  Gebäude einmalig gelistet werden. Du erhältst höchstens 50 % des Marktwerts
+  und höchstens 50 % der noch offenen Investition; danach ist die Aktie für
+  alle handelbar.
 * **Markt:** Unternehmen stellen Produkte her. Die liegen im Inventar und
   lassen sich benutzen oder anderen Spielern verkaufen.
 * **Chips senden:** Absenderkonten müssen mindestens 24 Stunden alt sein und 25

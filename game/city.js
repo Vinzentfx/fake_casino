@@ -15,9 +15,9 @@
  *   Trophäen          Einzelne echte Gebäude (Bahnhof, Kirchen, Schulen und
  *                     das größte Haus je Ortsteil) mit Titel und kleinem Vorteil.
  *                     Jedes hat genau einen Besitzer.
- *   Spekulation       Jeder Ortsteil hat einen eigenen Preisindex, der driftet
- *                     und von albernen Lokalnachrichten bewegt wird. Billig
- *                     kaufen, teuer verkaufen (10 % Abschlag).
+ *   Marktpreise       Jeder Ortsteil hat einen eigenen Preisindex. Er aendert
+ *                     Wert und Miete, aber eine Auszahlung kann nie hoeher
+ *                     sein als die tatsaechlich investierten Chips.
  *   Casino und Bank   Die beiden teuersten Stücke. Das Casino kassiert den Rake,
  *                     beides lebt davon, dass die anderen spielen.
  *
@@ -26,6 +26,7 @@
 
 const path = require("path");
 const fs = require("fs");
+const finance = require("./cityFinance");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const STATE_FILE = path.join(DATA_DIR, "city.json");
@@ -99,8 +100,7 @@ const BAUZEIT_H = { pension: 2, kiosk: 4, cafe: 8, shop: 12, hotel: 24, factory:
 // sondern eine Warteschlange, die man einmal befuellt und vergisst.
 const BAUSTELLEN_MAX = 3;
 
-const SELL_SPREAD = 0.9;     // Rückkauf zu 90 % (10 % verschwinden), Spekulieren lohnt also nur bei echten Ausschlägen
-const BUYOUT_PREMIUM = 1.5;  // Übernahme: Käufer zahlt 150 %, Vorbesitzer bekommt 100 %, 50 % verbrennen
+const BUYOUT_PREMIUM = 1.5;  // Übernahme: Käufer zahlt 150 %, Vorbesitzer bekommt höchstens seine Investition zurück
 const IDX_MIN = 0.55, IDX_MAX = 1.9;
 const LANDMARK_BOOST = 1.25;
 const LANDMARK_RADIUS = 120;
@@ -114,7 +114,7 @@ function colorFor(key) {
   return PLAYER_COLORS[h % PLAYER_COLORS.length];
 }
 
-// Lokalnachrichten, die den Preisindex eines Ortsteils bewegen (Spekulation).
+// Lokalnachrichten, die den Preisindex eines Ortsteils bewegen.
 const EVENT_POOL = [
   { txt: "Schützenfest in {d}, alle wollen hin!", f: 1.15 },
   { txt: "Großbaustelle in {d}, der Lärm nervt.", f: 0.87 },
@@ -242,7 +242,7 @@ let state = loadState();
 function loadState() {
   // `aus` haelt je Gebaeude die ausgebaute Klasse, `bau` die laufenden
   // Baustellen. Beide kommen bei alten Staenden einfach leer dazu.
-  const frisch = (s) => ({ idx: {}, news: [], aus: {}, bau: {}, personal: {}, ereignis: {}, effekt: {}, zoll: {}, createdAt: Date.now(), ...s });
+  const frisch = (s) => ({ idx: {}, news: [], aus: {}, bau: {}, ipoed: {}, personal: {}, ereignis: {}, effekt: {}, zoll: {}, createdAt: Date.now(), ...s });
   try {
     const s = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
     if (s && s.v === "porta2" && s.own) return frisch(s);
@@ -366,7 +366,7 @@ function preisAls(b, cls) {
   return Math.round((price * idxOf(b._did)) / 100) * 100;
 }
 const priceOf = (b) => preisAls(b, klasseVon(b));
-const sellPriceOf = (b) => Math.round(priceOf(b) * SELL_SPREAD);
+const sellPriceOf = (b, holding) => finance.sellPayout(holding, priceOf(b));
 const ownerOf = (id) => (state.own[id] ? state.own[id].owner : null);
 
 // Abgeleitete Zahlen (zwischengespeichert, nach jeder Änderung neu)
@@ -1006,7 +1006,7 @@ function territoryDiff(before, after) {
 /**
  * Wem gehoert was.
  *
- * Die Uebernahme (150 %, Vorbesitzer bekommt den Marktwert) gab es schon
+ * Die Uebernahme (150 %, Vorbesitzer bekommt den gedeckelten Erlös) gab es schon
  * lange, aber man kam nur daran, indem man in einem Ortsteil ein bestimmtes
  * Haus antippte. Wer neu anfing, sah die Stadt als geschlossene Gesellschaft
  * und hatte kein einziges Ziel vor Augen. Diese Liste macht den Besitz und
@@ -1179,7 +1179,7 @@ function publicDistrict(id, key) {
         id: b.id, pts: b.pts, c: b.c, a: b.a, cls: klasseVon(b), n: b.n, st: b.st, lm: b.lm,
         t: b.t || null, nm: b.nm || null, lv: b.lv || null,
         trophy: b.trophy || null,
-        price, sellPrice: sellPriceOf(b),
+        price, sellPrice: o && o.owner === key ? sellPriceOf(b, o) : null,
         /* Was dieser Spieler zahlen wuerde: der Boss-Rabatt gehoert auf den
            Server. Vorher rechnete der Client den Uebernahmepreis selbst als
            price × 1,5 nach und lag falsch, sobald etwas dazukam. */
@@ -1187,7 +1187,7 @@ function publicDistrict(id, key) {
         takeoverCost: Math.ceil(price * BUYOUT_PREMIUM * (1 + fremdZoll)),
         owner: o ? o.owner : null, ownerName: o ? o.ownerName : null,
         color: o ? colorFor(o.owner) : null,
-        mine: !!o && o.owner === key, listed: !!(o && o.listed),
+        mine: !!o && o.owner === key, listed: !!(o && o.listed), ipoUsed: !!state.ipoed[b.id],
         bau: state.bau[b.id] ? { ziel: state.bau[b.id].ziel, fertig: state.bau[b.id].fertig, seit: state.bau[b.id].seit || null } : null,
         // Mieter gibt es erst ab der Pension: ein Wohnhaus vermietet sich selbst.
         mieter: mieterVon(b),
@@ -1250,12 +1250,17 @@ function ausbauStart(id, key) {
   if (!info.moeglich) return err(info.grund || "Geht hier nicht.");
   const fertig = Date.now() + info.dauerMs;
   const e = bldIndex.get(Number(id));
-  const zoll = zollFuer(key, e.b._did, info.kosten);
-  return { ok: true, cost: info.kosten + (zoll ? zoll.amount : 0), zoll, commit: () => {
+  // `ausbauInfo` enthält die Abgabe bereits. Noch einmal darauf Zoll zu
+  // rechnen würde mehr abbuchen, als der Knopf verspricht.
+  const basisPreis = Math.round(Math.max(0, preisAls(e.b, info.ziel) - priceOf(e.b)) * AUSBAU_AUFSCHLAG);
+  const zoll = zollFuer(key, e.b._did, basisPreis);
+  const cost = basisPreis + (zoll ? zoll.amount : 0);
+  return { ok: true, cost, zoll, commit: () => {
     // `seit` nur fuers Anzeigen: ohne Anfang laesst sich kein Fortschritt
     // rechnen, nur eine Restzeit, und eine Zahl ohne Balken sagt nicht, ob
     // man gerade angefangen hat oder gleich fertig ist.
     state.bau[id] = { ziel: info.ziel, fertig, seit: Date.now(), key };
+    state.own[id].costBasis = finance.basisOf(state.own[id], priceOf(e.b)) + cost;
     save();
   } };
 }
@@ -1269,8 +1274,9 @@ function buyBuilding(id, key, name) {
   const discount = isBoss(key, e.b._did) ? BOSS_DISCOUNT : 1;
   const grund = Math.round(priceOf(e.b) * discount);
   const zoll = zollFuer(key, e.b._did, grund);
-  return { ok: true, cost: grund + (zoll ? zoll.amount : 0), zoll, purchaseIds: [e.b.id], commit: () => {
-    state.own[e.b.id] = { owner: key, ownerName: name };
+  const cost = grund + (zoll ? zoll.amount : 0);
+  return { ok: true, cost, zoll, purchaseIds: [e.b.id], purchaseCost: cost, commit: () => {
+    state.own[e.b.id] = { owner: key, ownerName: name, costBasis: cost };
     save();
   } };
 }
@@ -1281,7 +1287,7 @@ function sellBuilding(id, key) {
   const o = state.own[e.b.id];
   if (!o || o.owner !== key) return err("Gehört dir nicht.");
   if (bauAn(e.b.id)) return err("Hier wird gerade gebaut. Erst fertig werden lassen.");
-  return { ok: true, gain: sellPriceOf(e.b), commit: () => { delete state.own[e.b.id]; save(); } };
+  return { ok: true, gain: sellPriceOf(e.b, o), commit: () => { delete state.own[e.b.id]; save(); } };
 }
 
 function takeover(id, key, name) {
@@ -1296,20 +1302,21 @@ function takeover(id, key, name) {
   const value = priceOf(e.b);
   const grund = Math.ceil(value * BUYOUT_PREMIUM);
   const zoll = zollFuer(key, e.b._did, grund);
+  const cost = grund + (zoll ? zoll.amount : 0);
   return {
     ok: true,
-    // Der Kaeufer zahlt den Aufschlag, der Vorbesitzer bekommt den reinen
-    // Marktwert. Die Differenz verbrennt, wie bisher.
-    cost: grund + (zoll ? zoll.amount : 0), purchaseIds: [e.b.id],
+    // Der Vorbesitzer kann höchstens seine noch nicht zurückerhaltenen
+    // Investitionen wiederbekommen. Höhere Marktpreise prägen keine Chips.
+    cost, purchaseCost: cost, purchaseIds: [e.b.id],
     zoll,
-    payout: { to: o.owner, amount: value },
-    commit: () => { state.own[e.b.id] = { owner: key, ownerName: name }; save(); },
+    payout: { to: o.owner, amount: finance.takeoverPayout(o, value) },
+    commit: () => { state.own[e.b.id] = { owner: key, ownerName: name, costBasis: cost }; save(); },
   };
 }
 
 /** Ein Straßenkauf ist eine einzige, vorab vollständig berechnete Aktion.
- *  Andere Eigentümer erhalten für jedes übernommene Haus den normalen
- *  Marktwert; Baustellen blockieren den gesamten Kauf statt eines Teilkaufs. */
+ *  Andere Eigentümer erhalten nur den gedeckelten Verkaufserlös;
+ *  Baustellen blockieren den gesamten Kauf statt eines Teilkaufs. */
 function streetPlan(districtId, street, key, name) {
   const d = MAP.districts.find((x) => x.id === districtId);
   const streetName = String(street || "");
@@ -1335,8 +1342,8 @@ function streetPlan(districtId, street, key, name) {
     commit: () => {
       /* Alle Bedingungen und die volle Deckung prüft der Aufrufer vor diesem
          Schritt. Ein Speichern genügt für das gesamte Monopol. */
-      for (const id of actions.flatMap((a) => a.purchaseIds))
-        state.own[id] = { owner: key, ownerName: name };
+      for (const a of actions) for (const id of a.purchaseIds)
+        state.own[id] = { owner: key, ownerName: name, costBasis: a.purchaseCost };
       save();
     },
   };
@@ -1355,12 +1362,17 @@ function listCompany(id, key) {
   const o = state.own[e.b.id];
   if (!o || o.owner !== key) return err("Du musst das Gebäude besitzen.");
   if (!/^(kiosk|cafe|shop|hotel|factory)$/.test(klasseVon(e.b))) return err("Nur richtige Betriebe können an die Börse.");
-  if (o.listed) return err("Schon börsennotiert.");
+  if (o.listed || state.ipoed[e.b.id]) return err("Dieses Gebäude hatte bereits einen Börsengang.");
   const t = CLASSES[klasseVon(e.b)];
   const seedPrice = Math.max(20, Math.round(priceOf(e.b) / 5000));
-  const raise = Math.round(priceOf(e.b) * 0.5);
+  const raise = finance.ipoRaise(o, priceOf(e.b));
   const name = `${o.ownerName || "Spieler"} ${t.name} AG`;
-  return { ok: true, name, seedPrice, raise, commit: () => { o.listed = true; save(); } };
+  return { ok: true, name, seedPrice, raise, commit: () => {
+    o.listed = true;
+    o.capitalRecovered = finance.recoveredOf(o) + raise;
+    state.ipoed[e.b.id] = true;
+    save();
+  } };
 }
 
 const bldExists = (id) => bldIndex.has(Number(id));
@@ -1377,13 +1389,14 @@ function bldInfo(id) {
 }
 
 function resetCity() {
-  state = { v: "porta2", own: {}, idx: {}, news: [], aus: {}, bau: {}, personal: {}, ereignis: {}, effekt: {}, zoll: {}, createdAt: Date.now() };
+  state = { v: "porta2", own: {}, idx: {}, news: [], aus: {}, bau: {}, ipoed: {}, personal: {}, ereignis: {}, effekt: {}, zoll: {}, createdAt: Date.now() };
   save();
 }
 
 function adminClearLot(id) {
   if (!state.own[id]) return { ok: false, error: "Gebäude gehört niemandem." };
   delete state.own[id];
+  delete state.bau[id];
   save();
   return { ok: true };
 }
@@ -1395,6 +1408,7 @@ function adminRemoveOwner(key) {
   for (const [id, o] of Object.entries(state.own)) {
     if (o && o.owner === key) {
       delete state.own[id];
+      delete state.bau[id];
       removed++;
     }
   }
@@ -1412,6 +1426,7 @@ function ownedLots() {
       name: c ? `${c.name}${e.district ? " · " + e.district.name : ""}` : "Gebäude",
       emoji: c ? c.emoji : "🏠",
       owner: o.ownerName || null,
+      ownerKey: o.owner,
     };
   });
 }
@@ -1434,6 +1449,32 @@ function umbenennen(key, alt, neu) {
   if (n) save();
   return n;
 }
+
+// Alte Häuser hatten keinen gespeicherten Kaufpreis. Beim ersten Start nach
+// dem Update wird der *jetzige* Marktwert einmalig als feste Basis übernommen.
+// Danach können spätere Indexsprünge die Auszahlungen nicht mehr erhöhen.
+function migrateLegacyHoldings() {
+  let changed = false;
+  if (!state.ipoed || typeof state.ipoed !== "object") { state.ipoed = {}; changed = true; }
+  for (const [id, holding] of Object.entries(state.own || {})) {
+    const entry = bldIndex.get(Number(id));
+    if (!entry || !holding) continue;
+    const value = priceOf(entry.b);
+    if (!Number.isSafeInteger(holding.costBasis) || holding.costBasis <= 0) {
+      holding.costBasis = value;
+      changed = true;
+    }
+    if (holding.listed) {
+      if (!state.ipoed[id]) { state.ipoed[id] = true; changed = true; }
+      if (!Number.isSafeInteger(holding.capitalRecovered)) {
+        holding.capitalRecovered = finance.ipoRaise(holding, value);
+        changed = true;
+      }
+    }
+  }
+  if (changed) save();
+}
+migrateLegacyHoldings();
 
 module.exports = {
   umbenennen,

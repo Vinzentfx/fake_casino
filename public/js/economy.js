@@ -5,8 +5,7 @@
    Stadt: die echte Karte von Porta Westfalica. Übersicht (Stadtteile mit
      Boss und Index), darunter der Ortsteil mit echten Häusern und Straßen.
      Besitz färbt die Karte in deiner Farbe: Straßen-Monopole, Stadtteil-Boss,
-     Trophäen, Spekulation, Wohnsitz. Entschieden wird auf dem Server.
-     Ortsteil-Spekulation, Wohnsitz. Server ist autoritativ. */
+     Trophäen, Marktpreise, Wohnsitz. Entschieden wird auf dem Server. */
 
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
@@ -541,7 +540,7 @@
 
     if (hint) {
       const teile = [`${fmt(b.besetzt)} von ${fmt(b.gesamt)} Gebäuden haben einen Besitzer, ${fmt(b.frei)} sind noch frei.`];
-      teile.push("Jedes Haus lässt sich übernehmen: du zahlst 50 % Aufschlag, der Vorbesitzer bekommt den vollen Marktwert.");
+      teile.push("Jedes Haus lässt sich übernehmen: du zahlst 50 % Aufschlag, der Vorbesitzer bekommt höchstens seine offene Investition zurück.");
       hint.textContent = teile.join(" ");
     }
 
@@ -1087,11 +1086,11 @@
     const box = $("#city-detail");
     if (!box) return;
     if (view === "overview") {
-      // In der Übersicht steht der Nachrichtenticker (Spekulation).
+      // In der Übersicht steht der Nachrichtenticker für die Marktpreise.
       let html = `<div class="cd-sub" style="margin-bottom:6px">Nachrichten aus dem Ort</div>`;
       if (overview && overview.news && overview.news.length) {
         html += overview.news.map((n) => `<div class="cd-row ${n.up ? "news-up" : "news-down"}">${escapeHtml(n.txt)}</div>`).join("");
-        html += `<p class="muted small" style="margin:8px 0 0">Nachrichten bewegen den Preisindex des Ortsteils. Billig kaufen, teuer verkaufen (Verkauf zu 90 %).</p>`;
+        html += `<p class="muted small" style="margin:8px 0 0">Nachrichten bewegen den Preisindex des Ortsteils und damit Wert und Miete. Verkauf und Übernahme zahlen nie mehr aus, als in das Gebäude investiert wurde.</p>`;
       } else {
         html += `<p class="muted small" style="margin:0">Noch nichts passiert, die Indizes driften vor sich hin. Tipp einen Stadtteil an.</p>`;
       }
@@ -1167,17 +1166,18 @@
          ohnehin ab, aber ein Knopf, der nur eine Fehlermeldung ausloest, ist
          auf dem iPad das Gleiche wie ein kaputter Knopf. */
       if (!b.bau) body += `<button class="btn-primary cd-btn" data-act="sell">Verkaufen für ${fmt(b.sellPrice)}<i class=mk></i></button>`;
-      if (!b.bau && /^(kiosk|cafe|shop|hotel|factory)$/.test(b.cls)) {
+      if (!b.bau && !b.ipoUsed && /^(kiosk|cafe|shop|hotel|factory)$/.test(b.cls)) {
         body += b.listed
           ? `<div class="cd-row" style="color:#7ec8ff">An der Börse</div>`
           : `<button class="cd-toggle" data-act="ipo">An die Börse bringen (IPO)</button>`;
       }
+      if (b.ipoUsed && !b.listed) body += `<div class="cd-row muted small">Dieses Gebäude hatte bereits einen Börsengang.</div>`;
     } else {
       /* Preis kommt vom Server: der Client rechnete hier frueher price × 1,5
          nach und haette mit der Besitzer-Staffel eine falsche Zahl gezeigt. */
       const kosten = b.takeoverCost != null ? b.takeoverCost : Math.ceil(b.price * 1.5);
       body += `<button class="btn-primary cd-btn" data-act="takeover">Übernehmen für ${fmt(kosten)}<i class=mk></i></button>`;
-      body += `<div class="cd-row muted small">50 % Aufschlag auf den Marktwert von ${fmt(b.price)}<i class=mk></i>. Der Vorbesitzer bekommt den vollen Marktwert, der Rest verfällt.</div>`;
+      body += `<div class="cd-row muted small">50 % Aufschlag auf den Marktwert von ${fmt(b.price)}<i class=mk></i>. Der Vorbesitzer bekommt höchstens seine noch nicht zurückerhaltenen Investitionen; der Rest verfällt.</div>`;
       body += staffelHinweis(false);
     }
     // Wohnsitz: geht bei jedem Gebäude und kostet nichts.

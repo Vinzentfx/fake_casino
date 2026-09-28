@@ -46,7 +46,7 @@
         <span class="level-chip" id="level-chip" style="display:none"></span>
       </div>
       <button class="menu-btn" id="menu-btn" type="button" aria-label="Menü öffnen"
-              aria-haspopup="true" aria-expanded="false"><i data-icon="menue"></i></button>
+              aria-haspopup="true" aria-expanded="false"><i data-icon="menue"></i><span id="admin-review-dot" class="admin-review-dot hidden" aria-hidden="true"></span></button>
     </div>
   </header>
 
@@ -99,7 +99,7 @@
       <button class="sheet-item" data-nav="kiste"><i class="si-icon" data-icon="geschenk"></i><b>Kisten</b><small>Kosmetik als Ziehung</small></button>
       <button class="sheet-item" data-nav="settings"><i class="si-icon" data-icon="einstellungen"></i><b>Einstellungen</b><small>Design, Budget, Sicherheit</small></button>
       <a class="sheet-item" href="/datenschutz.html"><i class="si-icon" data-icon="sperre"></i><b>Datenschutz</b><small>Was gespeichert wird</small></a>
-      <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><i class="si-icon" data-icon="admin"></i><b id="menu-admin-label">Admin</b><small id="menu-admin-sub">Verwaltung</small></button>
+      <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><i class="si-icon" data-icon="admin"></i><b id="menu-admin-label">Admin</b><small id="menu-admin-sub">Verwaltung</small><i id="admin-review-count" class="sheet-count hidden" aria-hidden="true"></i></button>
     </div>
   </nav>
   <div id="announcement-strip" class="announcement-strip hidden" aria-live="polite">
@@ -2051,7 +2051,7 @@
         <button class="ad-reiter-knopf" data-ad="events" data-owner-only role="tab" aria-selected="false">Events</button>
         <button class="ad-reiter-knopf" data-ad="spieler" role="tab" aria-selected="false">Spieler</button>
         <button class="ad-reiter-knopf" data-ad="filter" data-mod-min="2" role="tab" aria-selected="false">Inhalte</button>
-        <button class="ad-reiter-knopf" data-ad="team" role="tab" aria-selected="false">Team & Verlauf</button>
+        <button class="ad-reiter-knopf" data-ad="team" role="tab" aria-selected="false">Team & Verlauf <span id="admin-team-badge" class="admin-team-badge hidden" aria-label="Offene Identitätsprüfungen"></span></button>
         <button class="ad-reiter-knopf" data-ad="werkzeug" data-owner-only role="tab" aria-selected="false">Werkzeuge</button>
       </nav>
 
@@ -2395,7 +2395,16 @@
 
         <div class="ad-karte">
           <div class="ad-kopf"><b>Stadt</b></div>
-          <p class="hint">Gibt einzelne Gebäude wieder frei (Grundstück und Betrieb zurück an das Haus).</p>
+          <p class="hint">Gib einzelne Gebäude oder den gesamten Besitz eines Spielers frei. Bereits gezahlte Chips werden dabei nicht erstattet.</p>
+          <div class="ad-owner-release">
+            <div class="ad-owner-release-icon">⌂</div>
+            <div class="ad-owner-release-main">
+              <label for="ad-owner-name"><b>Alle Häuser eines Spielers freigeben</b></label>
+              <p class="hint">Der Besitz wird frei; Ausbauten und frühere Börsengänge bleiben am Gebäude vermerkt.</p>
+              <div class="ad-owner-release-controls"><input id="ad-owner-name" type="text" maxlength="40" placeholder="Spielername" autocomplete="off" /><button class="btn-danger ad-knopf" id="ad-owner-clear" type="button">Alle freigeben</button></div>
+              <small id="ad-owner-preview" class="muted"></small>
+            </div>
+          </div>
           <div class="ad-suche">
             <input id="ad-lot-suche" type="search" maxlength="30" placeholder="Gebäude oder Besitzer suchen…" autocomplete="off" />
             <span class="ad-treffer" id="ad-lot-treffer"></span>

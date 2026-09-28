@@ -65,6 +65,7 @@ function auditSocket(socket, accounts) {
         }
         if ("realName" in payload) details.nameGeaendert = "ja";
         if ("grade" in payload) details.stufeGeaendert = "ja";
+        if (event === "admin:clearOwnerLots") details.gebaeude = result.removed || 0;
         try {
           module.exports.record({ actor: acc ? acc.name : key, action: event, target: payload.target || payload.name || "", details });
         } catch (err) { console.error("Moderationsprotokoll konnte nicht geschrieben werden:", err); }
