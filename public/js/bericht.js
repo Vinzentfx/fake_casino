@@ -117,8 +117,14 @@
    * meldet, und nur wenn nicht schon ein anderes Fenster offen ist. Zwei
    * gestapelte Modals sind schlimmer als ein verpasster Bericht.
    */
-  function vielleicht() {
+  function vielleicht(versuch = 0) {
     if (heuteGezeigt) return;
+    /* Im Warteraum wartet die Zeitung: dort hat niemand etwas verpasst,
+       und bei der Öffnung kämen sonst drei Fenster gleichzeitig. Nach der
+       Öffnung ruft public/js/einlass.js sie als letztes auf. */
+    const einl = Casino.einlass;
+    if ((!einl || !einl.geladen()) && versuch < 20) { setTimeout(() => vielleicht(versuch + 1), 500); return; }
+    if (einl && einl.gesperrt()) return;
     const acc = Casino.getAccount();
     /* Ein Konto, das gerade erst entstanden ist, hat nichts verpasst. Sein
        erster Bildschirm gehoert dem Starter-Pass, nicht einem Rueckblick auf
@@ -129,7 +135,7 @@
       return;
     }
     const stoert = ["#onboarding-modal", "#update-modal", "#geschenk-modal"]
-      .some((s) => { const el = $(s); return el && !el.classList.contains("hidden"); });
+      .some((s) => { const el = $(s); return el && !el.classList.contains("hidden"); }) || !!document.querySelector(".dlg-overlay");
     if (stoert) return;
     socket.emit("bericht:state", (b) => {
       if (!b || !b.ok || !b.neu) return;

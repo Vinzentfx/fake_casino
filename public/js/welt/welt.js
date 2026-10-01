@@ -1431,8 +1431,9 @@
       if (knopf) { knopf.classList.add("weg"); setTimeout(() => knopf.remove(), 600); }
       if (r.account && Casino.applyAccount) Casino.applyAccount(r.account);
       Casino.sound && Casino.sound.play && Casino.sound.play(r.fertig ? "bigwin" : "marke");
-      if (r.fertig) Casino.dialog.hinweis(`Alle ${r.gesamt} goldenen Marken gefunden! Dazu gibt es ${r.chips.toLocaleString("de-DE")} Chips und den Titel „Schatzsucher“.`, { titel: "Schatz gehoben" });
-      else Casino.toast(`Goldene Marke! +${r.chips.toLocaleString("de-DE")} Chips · ${r.gefunden} von ${r.gesamt}`);
+      if (r.fertig) Casino.dialog.hinweis(r.ohneChips ? `Alle ${r.gesamt} goldenen Marken gefunden! Dafür gibt es den Titel „Schatzsucher“. Chips zahlt diese Jagd nur an Konten, die schon vor ihrem Start da waren.`
+        : `Alle ${r.gesamt} goldenen Marken gefunden! Dazu gibt es ${r.chips.toLocaleString("de-DE")} Chips und den Titel „Schatzsucher“.`, { titel: "Schatz gehoben" });
+      else Casino.toast(r.ohneChips ? `Goldene Marke! ${r.gefunden} von ${r.gesamt}` : `Goldene Marke! +${r.chips.toLocaleString("de-DE")} Chips · ${r.gefunden} von ${r.gesamt}`);
       jagdZeichnen();
     });
   }
@@ -2808,7 +2809,9 @@
     /* Auf dem Telefon im Hochformat wäre der ganze Raum ein schmaler
        Streifen mit leerem Rand darüber und darunter. Dort füllt er die
        Höhe, und die Kamera folgt seitlich. */
-    if (breite < 600) return Math.max(0.72, Math.min(1, (hoehe - OBEN) / (raum.h * T)));
+    /* Kleine Räume (Foyer, Garage) dürfen dabei etwas größer als 1 werden,
+       sonst blieb über ihnen ein breiter dunkler Streifen. */
+    if (breite < 600) return Math.max(0.72, Math.min(1.25, (hoehe - OBEN) / (raum.h * T)));
     /* Das iPad im Hochformat hatte dasselbe Problem eine Nummer größer:
        an der Breite ausgerichtet blieb oben und unten je ein Viertel
        leer. Dort darf der Raum bis 40 % größer werden, als er in die

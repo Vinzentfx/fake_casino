@@ -108,21 +108,25 @@ function setupSchnitzeljagd(io, accounts) {
       if (!fig || fig.raum !== m.raum || Math.hypot(fig.x - m.x, fig.y - m.y) > REICHWEITE) return ack({ ok: false, error: "Geh erst hin." });
       meine.push(m.id);
       const faktor = typeof accounts.faucetFactor === "function" ? accounts.faucetFactor(acc.name) : 1;
-      let chips = Math.round(PRO_MARKE * faktor);
+      /* Chips nur für Konten, die schon vor dem Start da waren. Sonst holt
+         sich ein frisches Zweitkonto 55.000 Chips und schickt sie nach
+         einem Tag weiter. Marken und Titel gibt es trotzdem. */
+      const zahlt = Number(acc.createdAt || 0) < state.start;
+      let chips = zahlt ? Math.round(PRO_MARKE * faktor) : 0;
       const fertig = meine.length >= MARKEN.length;
       if (fertig) {
-        chips += Math.round(ABSCHLUSS * faktor);
+        if (zahlt) chips += Math.round(ABSCHLUSS * faktor);
         acc.jagd = { runde: state.runde, fertig: Date.now() };
         try { require("./cosmetics").grant(acc, "title", TITEL, key); } catch {}
       }
       speichern();
-      const r = accounts.adjustChips(key, chips);
+      const r = chips > 0 ? accounts.adjustChips(key, chips) : { ok: false };
       if (fertig) {
         try { require("./achievements").check(key); } catch {}
         const c = chat();
         if (c) c.announce(io, `${acc.name} hat alle ${MARKEN.length} goldenen Marken gefunden.`);
       }
-      ack({ ok: true, chips, fertig, gefunden: meine.length, gesamt: MARKEN.length, account: r.ok ? r.account : accounts.publicAccount(acc) });
+      ack({ ok: true, chips, ohneChips: !zahlt, fertig, gefunden: meine.length, gesamt: MARKEN.length, account: r.ok ? r.account : accounts.publicAccount(acc) });
     });
   });
 

@@ -230,8 +230,10 @@
 
   /* Die Öffnung. */
   let warImWarteraum = false;
+  let berichtNachher = false;
   socket.on("einlass:auf", (d) => {
     warImWarteraum = gesperrt();
+    berichtNachher = warImWarteraum;
     const warDrin = gesperrt();
     if (!warDrin) { toast("Die Tür ist auf, das Update ist da."); laden(); return; }
     zu();
@@ -259,13 +261,26 @@
   socket.on("connect", () => setTimeout(laden, 400));
 
   /* Nach der Öffnung: Ergebnis vom Schätzglas und das Paket, je einmal. */
+  /* Die Zeitung als letztes: erst wenn kein anderes Fenster mehr offen ist. */
+  function berichtSpaeter(versuch = 0) {
+    if (!berichtNachher) return;
+    const offen = !!document.querySelector(".dlg-overlay") || ["update-modal", "onboarding-modal"].some((id) => { const el = document.getElementById(id); return el && !el.classList.contains("hidden"); });
+    if (offen && versuch < 90) { setTimeout(() => berichtSpaeter(versuch + 1), 800); return; }
+    berichtNachher = false;
+    if (Casino._berichtVielleicht) Casino._berichtVielleicht();
+  }
+
   async function nachDerOeffnung() {
     if (!st || st.zu) return;
+    // Wartet das Paket noch auf das Neuigkeiten-Fenster, kommt die Zeitung erst danach.
+    if (await paketUndErgebnis() !== "warten") berichtSpaeter();
+  }
+  async function paketUndErgebnis() {
     // Wer im Warteraum stand, bekommt jetzt das Fenster mit den Neuerungen.
     if (warImWarteraum) { warImWarteraum = false; if (Casino._maybeShowUpdate) Casino._maybeShowUpdate(); }
     // Das Paket erst, wenn das Neuigkeiten-Fenster zu ist; zwei Fenster übereinander liest niemand.
     const modal = document.getElementById("update-modal");
-    if (st.paket && !paketGefragt && modal && !modal.classList.contains("hidden")) { setTimeout(nachDerOeffnung, 700); return; }
+    if (st.paket && !paketGefragt && modal && !modal.classList.contains("hidden")) { setTimeout(nachDerOeffnung, 700); return "warten"; }
     if (st.ergebnis && st.ergebnis.meine && !ergebnisGezeigt) {
       ergebnisGezeigt = true;
       const e = st.ergebnis;

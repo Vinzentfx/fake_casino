@@ -75,3 +75,23 @@ test("aufheben nur aus der Nähe, jede Marke einmal, alle zusammen mit Titel", (
   w.steuerung.beenden();
   assert.equal(jagd.laeuft(), false);
 });
+
+test("ein Konto, das erst nach dem Start entsteht, findet Marken, bekommt aber keine Chips", () => {
+  const w = aufbau();
+  w.steuerung.starten(3);
+  accounts.login("Spaetling", "Passwort2026");
+  const acc = accounts.get("spaetling");
+  acc.createdAt = Date.now() + 1000;
+  const handler = new Map();
+  const socket = { data: { account: "spaetling" }, on(e, f) { handler.set(e, f); } };
+  jagd.setupSchnitzeljagd({ on(e, f) { if (e === "connection") f(socket); }, emit() {} }, accounts);
+  const m = jagd.MARKEN[0];
+  welt.figurVon = () => ({ raum: m.raum, x: m.x, y: m.y });
+  const vorher = acc.chips;
+  let r; handler.get("jagd:finden")({ id: m.id }, (x) => { r = x; });
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.chips, 0);
+  assert.equal(r.ohneChips, true);
+  assert.equal(acc.chips, vorher);
+  w.steuerung.beenden();
+});
