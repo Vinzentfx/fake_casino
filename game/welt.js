@@ -365,6 +365,21 @@ function setupWelt(io, accounts) {
     return neu;
   }
 
+  /* Der Einlass schiebt beim Zumachen alle ins Foyer und bei der Öffnung
+     alle wieder heraus, ins Casino. Wer frei ist (Besitzer, Testliste),
+     bleibt, wo er ist. */
+  require("./einlass").setWelt({
+    allesInsFoyer() {
+      for (const fig of figuren.values()) {
+        if (fig.raum !== "foyer" && require("./einlass").gesperrt(fig.key)) umziehen(fig, "foyer", R.raum("foyer").start, null);
+      }
+    },
+    allesAusDemFoyer() {
+      const ankunft = { ...R.raum("casino").start };
+      for (const fig of figuren.values()) if (fig.raum === "foyer") umziehen(fig, "casino", ankunft, null);
+    },
+  });
+
   // Wer länger weg ist, fängt wieder am Eingang an. Ohne Timer je Figur:
   // der wäre nach jedem Neustart ohnehin weg.
   setInterval(() => {
@@ -392,11 +407,22 @@ function setupWelt(io, accounts) {
       const jetzt = Date.now();
       let fig = figuren.get(key);
       if (fig && !sichtbar(fig) && fig.weg && jetzt - fig.weg > BEHALTEN_MS) fig = null;
+      // Während des Einlasses gibt es nur den Warteraum (game/einlass.js).
+      const imFoyer = require("./einlass").gesperrt(key);
+      // Und wer nach der Öffnung noch im Foyer stünde, käme dort nie heraus.
+      const soll = imFoyer ? "foyer" : fig && fig.raum === "foyer" ? "casino" : null;
+      if (fig && soll && fig.raum !== soll) {
+        for (const s of fig.sockets) s.leave(kanal(fig.raum));
+        const st = R.raum(soll).start, p = gestreut(R.raum(soll), st);
+        Object.assign(fig, { raum: soll, x: p.x, y: p.y, d: st.d, sitzt: null, geht: false });
+        for (const s of fig.sockets) s.join(kanal(soll));
+      }
       if (!fig) {
-        const start = R.raum("casino").start;
-        const platz = gestreut(R.raum("casino"), start);
+        const raumId = imFoyer ? "foyer" : "casino";
+        const start = R.raum(raumId).start;
+        const platz = gestreut(R.raum(raumId), start);
         fig = {
-          key, id: naechsteId++, raum: "casino",
+          key, id: naechsteId++, raum: raumId,
           x: platz.x, y: platz.y, d: start.d, geht: false, sitzt: null,
           t: jetzt, budget: 0, sockets: new Set(), weg: null, gesteTs: 0, aktiv: null, figurTs: 0,
         };
@@ -461,6 +487,16 @@ function setupWelt(io, accounts) {
          ganzen Raum lesen kann. Die kann man auch von überall antippen. */
       if (R.reichweite(d) > 0 && R.abstandZuDing(d, fig.x, fig.y) > R.reichweite(d) + NUTZ_SPIELRAUM) {
         return ack({ ok: false, error: "Geh erst etwas näher heran." });
+      }
+      if (d.ziel.einlass === "tuer") {
+        // Die Tür im Warteraum: zu, aber wer dreimal schnell klopft, bekommt etwas.
+        const k = require("./einlass").klopfen(fig.key, accounts);
+        if (k.neu) {
+          const pub = accounts.publicAccount(accounts.get(fig.key));
+          for (const s of fig.sockets) s.emit("account:update", { account: pub });
+          if (sichtbar(fig)) io.to(kanal(fig.raum)).emit("welt:aussehen", oeffentlich(fig));
+        }
+        return ack({ ok: true, ding: d.id, ziel: { einlass: "tuer", ...k } });
       }
       if (d.ziel.geheimnis) {
         const g = geheimnisFinden(fig.key, d.ziel.geheimnis);

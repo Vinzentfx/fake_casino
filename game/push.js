@@ -181,6 +181,8 @@ async function anEinen(acc, typ, payload) {
  */
 async function anAlle(typ, payload, { ausser = [] } = {}) {
   if (!_accounts || !keys) return 0;
+  // Während des Einlasses lockt keine Meldung in ein Haus, in dem man nichts tun kann.
+  if (require("./einlass").zu()) return 0;
   const raus = new Set([...(ausser || []).map((k) => String(k).toLowerCase()), ..._online]);
   let n = 0;
   for (const acc of _accounts.rawAll()) {
@@ -195,6 +197,7 @@ async function anAlle(typ, payload, { ausser = [] } = {}) {
 /** An eine bestimmte Person, auch wenn sonst niemand betroffen ist. */
 async function an(key, typ, payload) {
   if (!_accounts || !keys) return 0;
+  if (require("./einlass").zu()) return 0;
   const k = String(key || "").trim().toLowerCase();
   if (!k || _online.has(k)) return 0;
   const acc = _accounts.get(k);

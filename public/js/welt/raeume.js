@@ -383,6 +383,38 @@
     ],
   };
 
+  /* Das Foyer: der Warteraum vor einer Öffnung (game/einlass.js). Geheim,
+     also nie in der Schnellwahl, und ohne Türen: hinaus geht es nur, wenn
+     der Server bei der Öffnung alle ins Casino setzt. Die große Tür ist ein
+     Ding, an das man klopfen kann. */
+  RAEUME.foyer = {
+    id: "foyer", name: "Foyer", w: 14, h: 10, wand: 3, boden: "marmor", geheim: true,
+    flaechen: [[0.7, 3.0, 13.3, 9.4]],
+    start: { x: 7.0, y: 8.2, d: "hoch" },
+    tueren: [],
+    sitze: [
+      { id: "sofa-1", x: 1.25, y: 6.75, d: "rechts", auf: { x: 2.15, y: 6.75 } },
+      { id: "sofa-2", x: 1.25, y: 7.95, d: "rechts", auf: { x: 2.15, y: 7.95 } },
+      { id: "sessel", x: 12.6, y: 8.85, d: "hoch", auf: { x: 12.6, y: 7.95 } },
+    ],
+    dinge: [
+      { id: "einlasstuer", art: "einlasstuer", x: 7.0, y: 3.05, block: [5.5, 2.4, 8.5, 3.05],
+        nutz: { x: 7.0, y: 3.8, r: 1.0 }, label: "Zum Casino", verb: "Klopfen", ziel: { einlass: "tuer" }, fokus: { x: 7.0, y: 2.0, zoom: 2.0 } },
+      { id: "teaser", art: "teasertafel", x: 2.9, y: 3.0, block: null, breite: 3.4,
+        nutz: { x: 2.9, y: 3.8, r: 1.5 }, label: "Was kommt", verb: "Lesen", ziel: { einlass: "teaser" }, fokus: { x: 2.9, y: 1.8, zoom: 2.2 } },
+      { id: "gaestebuch", art: "gaestewand", x: 11.1, y: 3.0, block: null, breite: 3.4,
+        nutz: { x: 11.1, y: 3.8, r: 1.5 }, label: "Gästebuch", verb: "Schreiben", ziel: { einlass: "wand" }, fokus: { x: 11.1, y: 1.8, zoom: 2.2 } },
+      { id: "schaetzglas", art: "schaetzglas", x: 4.6, y: 6.6, block: [4.15, 6.1, 5.05, 6.6],
+        nutz: { x: 4.6, y: 7.3, r: 0.95 }, label: "Schätzglas", verb: "Schätzen", ziel: { einlass: "glas" }, fokus: { x: 4.6, y: 5.6, zoom: 2.4 } },
+      { id: "jukebox", art: "jukebox", x: 12.65, y: 6.0, block: [12.05, 5.3, 13.25, 6.0],
+        nutz: { x: 11.7, y: 5.7, r: 0.9 }, label: "Jukebox", verb: "Lied wählen", ziel: { jukebox: true } },
+      { id: "f-sofa", art: "sofa", x: 1.2, y: 8.6, block: [0.7, 6.1, 1.75, 8.6] },
+      { id: "f-sessel", art: "sessel", x: 12.6, y: 9.3, block: [12.1, 8.35, 13.1, 9.3] },
+      { id: "f-pflanze-l", art: "pflanze", x: 1.0, y: 3.45, block: [0.7, 3.0, 1.35, 3.45] },
+      { id: "f-pflanze-r", art: "pflanze", x: 13.0, y: 3.45, block: [12.65, 3.0, 13.3, 3.45] },
+    ],
+  };
+
   /* Hinter dem Regal im Kontor. Nicht in der Schnellwahl, nicht auf den
      Türschildern: wer hier steht, hat ihn gefunden. */
   RAEUME.tresor = {

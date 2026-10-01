@@ -95,6 +95,15 @@
       drums: { kick: "x.......x.......", hat: "....x.......x..." },
       melodie: { muster: "0.1.2.2.2...1.2.3.3.3...2.3.4.3.2.1.0...1.2.1.0.1.2.3...2.1.0...", welle: "sawtooth", gain: 0.014, filter: 2000, vibrato: 6 },
     },
+    // Fahrstuhlmusik für den Warteraum: Bossa, sanft, ein bisschen zu fröhlich.
+    fahrstuhl: {
+      bpm: 104, swing: 0.12, laut: 0.75,
+      akkorde: [[48, 52, 55, 59, 62], [45, 48, 52, 55, 60], [50, 53, 57, 60, 64], [43, 47, 50, 53, 57]],
+      pad: { welle: "sine", gain: 0.014, filter: 1800, kurz: true, muster: "x..x..x...x..x.." },
+      bass: { muster: "0..2..0.1..2..0.", welle: "triangle", gain: 0.07, oktave: -12 },
+      drums: { besen: "..x...x...x...x.", ride: "x.xx.x.xx.xx.x.x" },
+      melodie: { muster: "4...3.2...1.2.3.4.......2.......3...2.1...0.1.2.3.......4.......", welle: "sine", gain: 0.022 },
+    },
     ruhm: {
       bpm: 60, swing: 0, laut: 0.8, hall: 0.6,
       akkorde: [[48, 55, 60, 64], [45, 52, 57, 60], [41, 48, 53, 57], [43, 50, 55, 59]],
@@ -114,6 +123,7 @@
     strasse: { atmo: "stadt" },
     garage: { atmo: "garage" },
     tresor: { atmo: "tresor" },
+    foyer: { stil: "fahrstuhl" },
   };
 
   let ctx = null, bus = null, hallEin = null;
@@ -382,7 +392,7 @@
   function zielStil() {
     const r = RAUM[raumId];
     if (!r) return null;
-    if (raumId === "spielhalle" && jukebox && jukebox.bis > Date.now() && STILE[jukebox.stil]) return jukebox.stil;
+    if ((raumId === "spielhalle" || raumId === "foyer") && jukebox && jukebox.bis > Date.now() && STILE[jukebox.stil]) return jukebox.stil;
     return r.stil || null;
   }
 

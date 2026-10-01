@@ -856,6 +856,53 @@
     return { svg: svg(w, h, innen, "m-wandtafel"), w, h, html: `<div class="welt-anzeige welt-tafel" data-anzeige="${anzeige}"></div>` };
   }
   const rekordtafel = (d) => wandtafel(d, "WOCHENREKORDE", "rekorde");
+
+  /* Der Warteraum (game/einlass.js). Die große Tür zum Casino ist zu, davor
+     hängt eine rote Kordel, darüber läuft der Countdown. Bei der Öffnung
+     bekommt das Ding die Klasse „auf“: Flügel schwingen auf, die Kordel
+     fällt. */
+  function einlasstuer() {
+    const w = 150, h = 160;
+    const innen = `
+      <rect x="10" y="4" width="130" height="28" rx="5" fill="#0d0a06" stroke="#e2b656" stroke-width="1.6"/>
+      <path d="M18 160V52Q18 38 32 38H118Q132 38 132 52V160Z" fill="#2b1a0c" stroke="#e2b656" stroke-width="3"/>
+      <path d="M26 160V56Q26 46 36 46H114Q124 46 124 56V160Z" fill="#14100a"/>
+      <g class="m-fluegel l"><path d="M26 160V56Q26 46 36 46H75V160Z" fill="#5a3418" stroke="#2b1a0c" stroke-width="1"/><rect x="34" y="60" width="32" height="38" rx="3" fill="none" stroke="#e2b656" stroke-width="1.2" opacity=".8"/><rect x="34" y="108" width="32" height="40" rx="3" fill="none" stroke="#e2b656" stroke-width="1.2" opacity=".8"/><circle cx="69" cy="104" r="2.6" fill="#e2b656"/></g>
+      <g class="m-fluegel r"><path d="M75 160V46H114Q124 46 124 56V160Z" fill="#5a3418" stroke="#2b1a0c" stroke-width="1"/><rect x="84" y="60" width="32" height="38" rx="3" fill="none" stroke="#e2b656" stroke-width="1.2" opacity=".8"/><rect x="84" y="108" width="32" height="40" rx="3" fill="none" stroke="#e2b656" stroke-width="1.2" opacity=".8"/><circle cx="81" cy="104" r="2.6" fill="#e2b656"/></g>
+      <rect class="m-tuerlicht" x="73" y="46" width="4" height="114" fill="#ffe7a8" opacity=".0"/>
+      <g class="m-kordel">
+        <rect x="8" y="122" width="6" height="36" rx="2" fill="#c9a24a" stroke="#7a5c1c" stroke-width=".8"/><circle cx="11" cy="121" r="4.4" fill="#e2b656"/>
+        <rect x="136" y="122" width="6" height="36" rx="2" fill="#c9a24a" stroke="#7a5c1c" stroke-width=".8"/><circle cx="139" cy="121" r="4.4" fill="#e2b656"/>
+        <path d="M13 126Q75 156 137 126" fill="none" stroke="#9e1b2c" stroke-width="5" stroke-linecap="round"/><path d="M13 125Q75 154 137 125" fill="none" stroke="#e24a5c" stroke-width="1.4" stroke-linecap="round" opacity=".7"/>
+      </g>`;
+    return { svg: svg(w, h, innen, "m-einlasstuer"), w, h, unten: 2,
+      html: `<div class="welt-anzeige welt-einlassuhr" data-anzeige="einlass-uhr" style="left:12px;top:6px;width:126px;height:24px"></div>` };
+  }
+  const teasertafel = (d) => wandtafel(d, "WAS HINTER DER TÜR WARTET", "einlass-teaser");
+  function gaestewand(d) {
+    const z = wandtafel(d, "GÄSTEBUCH", "einlass-wand");
+    z.svg = z.svg.replace('fill="#10161a"', 'fill="#b8875a"').replace('fill="#1c252b"', 'fill="#7a5233"');
+    return z;
+  }
+  function schaetzglas() {
+    const w = 64, h = 120;
+    const farben = ["#c8243a", "#1d1d23", "#3f6fd0", "#4fb76a", "#e2b656", "#f4efe2", "#8d5bd6"];
+    let chips = "";
+    for (let r = 0; r < 9; r++) for (let i = 0; i < 6; i++) {
+      const x = 17 + i * 6 + (r % 2) * 3, y = 84 - r * 5.4;
+      chips += `<ellipse cx="${x}" cy="${y}" rx="3.2" ry="1.6" fill="${farben[(r * 3 + i * 5) % farben.length]}" stroke="#000" stroke-opacity=".25" stroke-width=".4"/>`;
+    }
+    const innen = `
+      <ellipse cx="32" cy="116" rx="24" ry="4" fill="#000" opacity=".3"/>
+      <path d="M10 116V100H54V116Z" fill="#3a2a1a" stroke="#1d140c" stroke-width="1"/><rect x="8" y="96" width="48" height="6" rx="2" fill="#5a4030"/>
+      <path d="M14 94V40Q14 32 22 30H42Q50 32 50 40V94Z" fill="#cfe9f2" fill-opacity=".18" stroke="#e8f6fb" stroke-opacity=".7" stroke-width="1.4"/>
+      ${chips}
+      <path d="M18 92V42" stroke="#fff" stroke-opacity=".35" stroke-width="2.4" stroke-linecap="round"/>
+      <rect x="18" y="22" width="28" height="9" rx="2" fill="#c9a24a" stroke="#7a5c1c" stroke-width=".8"/>
+      <rect x="15" y="104" width="34" height="9" rx="1.6" fill="#f4efe2"/><text x="32" y="111" text-anchor="middle" font-size="6.4" font-weight="900" fill="#3a2a1a" font-family="ui-rounded, system-ui">WIE VIELE?</text>`;
+    return { svg: svg(w, h, innen, "m-schaetzglas"), w, h, unten: 4,
+      html: `<div class="welt-anzeige welt-glaszahl" data-anzeige="einlass-glas" style="left:8px;top:0;width:48px;height:18px"></div>` };
+  }
   function fernseher(d) {
     const z = wandtafel(d, "LIVE", "feed-tv");
     z.svg = z.svg.replace('fill="#4a3120"', 'fill="#1d1f24"').replace('stroke="#2b1d12"', 'stroke="#0c0d10"');
@@ -1048,6 +1095,7 @@
     sessel, hocker, zeitungsstaender, spieltisch, kisten, torbogen, arcade, neonschild, pinco, greifautomat,
     wuerfeltisch, kartentisch_hilo, sitzsack, neonhocker, jukebox, getraenkeautomat, shisha, sitzkissen, ladenfront, garagentor, litfass, planenauto, werkbank, reifenstapel, pflanze, garderobe, boerse, bank, kartentisch, schreibtisch, markt, pult, regal,
     laufschrift, podest, rekordtafel, fernseher, statistikpult, seasonbanner, auftragsbrett, kalender, vitrine,
+    einlasstuer, teasertafel, gaestewand, schaetzglas,
     rennbahn, lotteriebude, fahnenmast, feuerschale, parkbank, laterne, busch, kleeblatt, tresortuer, goldstapel,
     katzenkissen, notiz,
   };

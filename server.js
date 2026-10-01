@@ -281,6 +281,7 @@ function requireOwnAccount(req, res) {
 app.post("/api/daily-bonus", (req, res) => {
   const key = requireOwnAccount(req, res);
   if (!key) return;
+  if (require("./game/einlass").gesperrt(key)) return res.status(423).json({ error: require("./game/einlass").TEXT() });
   const result = accounts.claimDailyBonus(key);
   if (!result.ok) return res.status(429).json({ error: result.error, msLeft: result.msLeft });
   achievements.check(key); // streak/chips milestones
@@ -297,6 +298,7 @@ app.post("/api/daily-bonus", (req, res) => {
 app.post("/api/rescue", (req, res) => {
   const key = requireOwnAccount(req, res);
   if (!key) return;
+  if (require("./game/einlass").gesperrt(key)) return res.status(423).json({ error: require("./game/einlass").TEXT() });
   const result = accounts.rescue(key);
   if (!result.ok) return res.status(429).json({ error: result.error, msLeft: result.msLeft });
   res.json({ amount: result.amount, account: result.account });
@@ -486,6 +488,10 @@ io.on("connection", (socket) => {
    schicht am Socket haengt, bevor irgendein Handler antwortet. */
 require("./game/verification").setupVerification(io, accounts);
 strafen.bremse(io, accounts);
+/* Der Einlass (game/einlass.js): solange er zu ist, kommt jeder nur in den
+   Warteraum. Dieselbe Art Zwischenschicht wie die Strafen. */
+const einlass = require("./game/einlass");
+einlass.bremse(io);
 
 setupPoker(io, accounts);
 setupSlots(io, accounts);
@@ -566,6 +572,8 @@ require("./game/boutique").setupBoutique(io, accounts);
 require("./game/laeden").setupLaeden(io, accounts);
 require("./game/ankauf").setupAnkauf(io, accounts);
 const schnitzeljagd = require("./game/schnitzeljagd").setupSchnitzeljagd(io, accounts);
+einlass.setJagd(schnitzeljagd);
+einlass.setupEinlass(io, accounts);
 require("./game/greifer").setupGreifer(io, accounts);
 require("./game/admin").setJagd(schnitzeljagd);
 

@@ -220,6 +220,9 @@ const TITLES = [
   // Nicht kaeuflich: kommt mit dem ersten kompletten Strassen-Monopol.
   { id: "strassenkoenig", text: "Straßenherr", cost: null, via: "Eine Straße komplett besitzen" },
   { id: "schatzsucher",   text: "Schatzsucher", cost: null, via: "Alle goldenen Marken einer Schnitzeljagd finden" },
+  // Aus dem Warteraum vor einer Öffnung (game/einlass.js).
+  { id: "premierengast",  text: "Premierengast", cost: null, via: "War vor der Eröffnung im Warteraum", limitiert: "premiere" },
+  { id: "augenmass",      text: "Augenmaß", cost: null, via: "Am Schätzglas am nächsten dran", limitiert: "einlass" },
   { id: "s2_phoenix",     text: "Phönix von Porta", cost: null, via: "Season 2, Stufe 20", season: "porta-herbst-2" },
   /*
    * Nur fuer die, die zur Wiedereroeffnung da waren. Danach gibt es ihn nie
@@ -520,6 +523,8 @@ function handelbar(art, id) {
   /* Atelierstücke sind persönliche Wochenpreise. Handel würde den ganzen
      Prägestaub-Weg abkürzen und sie wieder zu normaler Marktware machen. */
   if (item.limitiert === "staub") return false;
+  /* Premierengast sagt „ich war dabei“. Gekauft wäre das eine Lüge. */
+  if (item.limitiert === "premiere") return false;
   /* Verdienbares auch nicht: Krone fuer den Ortsteil-Boss, Strassenherr fuer
      die erste komplette Strasse. Die bleiben fuer jeden erreichbar, wer sie
      will, holt sie sich selbst, und ein Markt dafuer waere nur eine
@@ -1123,7 +1128,7 @@ function stufeVonStueck(art, id) {
    verteilt worden (Rueckkehrer gibt es 27 Mal) — die sind nicht kaeuflich,
    aber auch nicht selten, und sie als "Einzelstueck" zu zeigen waere
    geflunkert. */
-const KNAPP = new Set(["kiste", "sammlung", "rad", "auktion", "greifer"]);
+const KNAPP = new Set(["kiste", "sammlung", "rad", "auktion", "greifer", "einlass"]);
 const ATELIER_STUFEN = new Set(["selten", "episch", "legendaer"]);
 
 function stufeKennung(item) {

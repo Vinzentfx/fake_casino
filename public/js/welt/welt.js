@@ -1624,6 +1624,7 @@
       else if (z.rennen) rennAuf(d);
       else if (z.lotto) lottoAuf(d);
       else if (z.greifer) greiferAuf(d);
+      else if (z.einlass) { if (Casino.einlass) Casino.einlass.oeffne(z.einlass, z, d); }
       else if (z.bericht) { if (Casino._berichtZeigen) Casino._berichtZeigen(); }
       else if (z.auswahl) zeigeAuswahl(d, z.auswahl);
       else if (z.umzug) geheimgang(d, z.umzug);
@@ -3079,7 +3080,8 @@
 
   /* Modus: vorn, dahinter, oder aus */
   function setzeAnsicht(a) {
-    ansicht = a === "liste" ? "liste" : "welt";
+    // Im Warteraum gibt es keine Übersicht mit Spielkacheln.
+    ansicht = a === "liste" && !(Casino.einlass && Casino.einlass.gesperrt()) ? "liste" : "welt";
     try { localStorage.setItem(ANSICHT_KEY, ansicht); } catch {}
     modus(Casino.screens.current());
     if (ansicht === "welt") { window.scrollTo(0, 0); buehne.focus({ preventScroll: true }); }

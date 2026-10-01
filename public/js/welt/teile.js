@@ -646,6 +646,12 @@
         + `<circle cx="5.2" cy="-15.6" r=".55" fill="#1d1d23"/>`
         + `<path d="M2.4 -18.4l.6-2.2l1.2 1.2l1-1.8l1 1.8l1.2-1.2l.6 2.2z" fill="#f2c94c" stroke="#9a7a1c" stroke-width=".4"/><circle cx="4.2" cy="-19.6" r=".35" fill="#e5534b"/>`
         + `</g>`;
+      case "eintrittskarte": return `<g class="fg-ding" ${t}><g transform="rotate(-14 3 -8)">`
+        + `<rect x="-3.6" y="-13.4" width="13.4" height="8.6" rx="1" fill="#f2c94c" stroke="#9a7a1c" stroke-width=".6"/>`
+        + `<path d="M5.6 -13.2V-4.8" stroke="#9a7a1c" stroke-width=".5" stroke-dasharray="1 .8"/>`
+        + `<path d="M-1.8 -9.4l.9-1.8l.9 1.8l1.9.2l-1.4 1.2l.4 1.9l-1.8-1l-1.7 1l.4-1.9l-1.4-1.2z" fill="#fff6c8"/>`
+        + `<path d="M6.6 -11h2.2M6.6 -9h2.2M6.6 -7h2.2" stroke="#9a7a1c" stroke-width=".5"/>`
+        + `<path d="M-3 -12.6h4" stroke="#fff" stroke-opacity=".5" stroke-width=".6"/></g></g>`;
       case "wunderkerze": return `<g class="fg-ding" ${t}><path d="M1 2L2.6 -14" stroke="#8a929c" stroke-width="1"/><path d="M2.2 -10L2.8 -16" stroke="#3a3f47" stroke-width="1.4"/><g class="fg-funken">${[[-3, -20], [7, -21], [2, -24], [-1, -15], [6, -15], [8, -18], [-4, -17]].map(([x, y]) => `<path d="M2.8 -16L${x} ${y}" stroke="#ffe27a" stroke-width=".6"/><circle cx="${x}" cy="${y}" r=".7" fill="#fff6c8"/>`).join("")}</g><circle cx="2.8" cy="-16" r="1.6" fill="#fff" opacity=".9"/></g>`;
       case "spezi": return `<g class="fg-ding" ${t}><rect x="-1.4" y="-11" width="6.6" height="11.4" rx="1.8" fill="#4a2410" stroke="#24110a" stroke-width=".6"/><rect x=".2" y="-15.4" width="3.4" height="5" rx=".8" fill="#4a2410" stroke="#24110a" stroke-width=".5"/><rect x="-.1" y="-16.4" width="4" height="1.6" rx=".5" fill="#d24a3c"/><rect x="-1.4" y="-8" width="6.6" height="4.6" fill="#f2a33a"/><path d="M-.4 -5.6q2.6-2 4.6 0" fill="none" stroke="#d24a3c" stroke-width=".9"/><path d="M-.4 -10.4V-1" stroke="#fff" stroke-opacity=".3" stroke-width=".7"/></g>`;
       default: return null;

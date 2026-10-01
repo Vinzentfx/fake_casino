@@ -193,6 +193,8 @@ const HANDDINGE = [
   { id: "wunderkerze",   label: "Wunderkerze",        cost: null, via: "Irgendwo im Haus versteckt", motion: true },
   // Nur aus dem Greifautomaten, und dort fast nie (game/greifer.js).
   { id: "gummihuhn",     label: "Königliches Gummihuhn", cost: null, via: "Am Greifautomaten gefangen", limitiert: "greifer" },
+  // Nur in der Nacht vor einer Öffnung zu holen, an der Tür des Warteraums.
+  { id: "eintrittskarte", label: "Goldene Eintrittskarte", cost: null, via: "Beim Einlass ergattert", limitiert: "einlass" },
 ];
 
 /* Fahrzeuge. Man steht oder sitzt darauf und rollt etwas schneller als zu

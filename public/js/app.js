@@ -77,6 +77,11 @@ function versteckeGesperrteMenueeintraege() {
 const publicScreens = new Set(["login", "verification"]);
 
 window.Casino.screens.setGuard((name) => {
+  // Während des Einlasses gibt es nur den Warteraum (public/js/einlass.js).
+  if (window.Casino.einlass && window.Casino.einlass.sperrt(name)) {
+    toast(window.Casino.einlass.text());
+    return false;
+  }
   if (lockedScreens.has(name)) {
     toast("Dieses Spiel ist gerade gesperrt und kommt bald zurück.");
     return false;
@@ -97,7 +102,7 @@ window.Casino.screens.setGuard((name) => {
 window.Casino.screens.register("leaderboard", { onEnter: () => loadLeaderboard() });
 window.Casino.screens.register("profile", { onEnter: () => renderProfile() });
 window.Casino.screens.register("admin", {
-  onEnter: () => { verwaltungUI(); loadAdminAccounts(); ladeAnsage(); anVorschau(); adminReiter(); },
+  onEnter: () => { verwaltungUI(); loadAdminAccounts(); ladeAnsage(); anVorschau(); adminReiter(); einlassZeichnen(); },
   // Die Uhr der Event-Karten muss nicht weiterlaufen, wenn niemand hinsieht.
   onLeave: () => { if (typeof evUhr !== "undefined" && evUhr) { clearInterval(evUhr); evUhr = null; } },
 });
@@ -559,9 +564,17 @@ function punktHTML(item) {
  * nicht nur das neueste Update. Wer zwei Monate weg war, soll nicht raten
  * muessen, was sich geaendert hat.
  */
-function maybeShowUpdate() {
+window.Casino._maybeShowUpdate = () => maybeShowUpdate();
+function maybeShowUpdate(versuch = 0) {
   const cl = window.Casino.changelog;
   if (!cl) return;
+  /* Im Warteraum verrät das Fenster, was hinter der Tür wartet. Erst wissen,
+     ob Einlass ist; ist er es, kommt das Fenster nach der Öffnung
+     (public/js/einlass.js ruft es dann selbst). einlass.js lädt nach dieser
+     Datei, deshalb kurz warten; nach zehn Sekunden ohne Antwort zeigen. */
+  const einl = window.Casino.einlass;
+  if ((!einl || !einl.geladen()) && versuch < 20) { setTimeout(() => maybeShowUpdate(versuch + 1), 500); return; }
+  if (einl && einl.gesperrt()) return;
   const acc = state.account;
   /* Neue Spieler brauchen den aktuellen Zustand, keinen Comeback-Roman aus
      der Zeit vor ihrer Anmeldung. Wegen bewusst hochgezaehlter Sortier-IDs
@@ -3130,6 +3143,46 @@ $("#ad-wartung-zu")?.addEventListener("click", async () => {
   wartungSetzen(true);
 });
 $("#ad-wartung-auf")?.addEventListener("click", () => wartungSetzen(false));
+
+/* Einlass: Warteraum mit Countdown (game/einlass.js). Die Uhrzeit im Feld ist
+   deutsche Zeit, wie überall im Haus. */
+function einlassZeichnen() {
+  socket.emit("einlass:state", (r) => {
+    if (!r || !r.ok) return;
+    const z = $("#ad-einlass-zustand");
+    if (z) z.textContent = r.zu ? `Warteraum bis ${new Date(r.bis).toLocaleString("de-DE", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" })}` : "offen";
+    z?.classList.toggle("an", !!r.zu);
+  });
+}
+function einlassZeit() {
+  const v = $("#ad-einlass-zeit")?.value;
+  if (!v) return null;
+  // Das Feld kennt keine Zeitzone; als Berliner Wanduhrzeit lesen.
+  const [d, t] = v.split("T"), [J, M, T] = d.split("-").map(Number), [h, m] = t.split(":").map(Number);
+  const wand = Date.UTC(J, M - 1, T, h, m);
+  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Berlin", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const teile = Object.fromEntries(fmt.formatToParts(wand).map((p) => [p.type, p.value]));
+  const versatz = Date.UTC(+teile.year, +teile.month - 1, +teile.day, +teile.hour, +teile.minute) - wand;
+  return wand - versatz;
+}
+function einlassAktion(aktion) {
+  const bis = einlassZeit();
+  if (aktion !== "oeffnen" && !bis) return toast("Erst eine Uhrzeit setzen.");
+  socket.emit("admin:einlass", { aktion, bis }, (r) => {
+    if (!r || !r.ok) return toast((r && r.error) || "Fehler.");
+    toast(aktion === "oeffnen" ? "Die Tür ist auf." : "Einlass gesetzt.");
+    einlassZeichnen();
+  });
+}
+$("#ad-einlass-schieben")?.addEventListener("click", () => einlassAktion("verschieben"));
+$("#ad-einlass-zu")?.addEventListener("click", async () => {
+  if (!await window.Casino.dialog.frage("Alle außer dir und der Testliste in den Warteraum setzen, bis zur eingestellten Uhrzeit? Schätzglas und Gästebuch fangen neu an.", { titel: "Einlass", okText: "Warteraum öffnen", gefahr: true })) return;
+  einlassAktion("schliessen");
+});
+$("#ad-einlass-auf")?.addEventListener("click", async () => {
+  if (!await window.Casino.dialog.frage("Jetzt alle reinlassen? Das Schätzglas wird aufgelöst und die Schnitzeljagd startet.", { titel: "Einlass", okText: "Reinlassen" })) return;
+  einlassAktion("oeffnen");
+});
 
 /* Regie: das naechste Ergebnis setzen
    Ein Formular je Ziel, weil die Ziele nichts gemeinsam haben: Slots braucht

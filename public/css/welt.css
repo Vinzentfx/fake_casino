@@ -1934,3 +1934,69 @@ html:not(.reduce-motion) .welt-greifer svg.gewonnen { animation: gr-gewonnen 0.4
 .welt-greifer-steuer .welt-tisch-drehen:disabled { background: var(--surface-sunken); color: var(--text-dim); border-color: var(--line); }
 .m-greifer { transform-box: view-box; }
 html:not(.reduce-motion) .welt-ding.greifer-gewinn svg { animation: gr-gewonnen 0.35s ease-in-out 8 alternate; }
+
+/* Der Warteraum (public/js/einlass.js). Solange Einlass ist, gibt es keine
+   Wege hinaus: Schnellwahl, Übersicht, Bonus und alle Menüeinträge außer
+   den Einstellungen sind weg. Die Sperre selbst sitzt auf dem Server. */
+html.einlass-zu #bonus-btn,
+html.einlass-zu .welt-knoepfe [data-welt="orte"],
+html.einlass-zu .welt-knoepfe [data-welt="liste"],
+html.einlass-zu .welt-knoepfe [data-welt="starter"],
+html.einlass-zu .welt-mehr [data-mehr="liste"],
+html.einlass-zu .welt-mehr [data-mehr="starter"],
+html.einlass-zu #menu-sheet [data-nav]:not([data-nav="settings"]),
+html.einlass-zu .welt-jagd { display: none !important; }
+.einlass-band {
+  position: fixed; left: 50%; bottom: calc(86px + var(--safe-bottom, 0px)); transform: translateX(-50%); z-index: 40;
+  display: grid; justify-items: center; gap: 2px; width: min(560px, calc(100% - 32px)); padding: 10px 16px 9px;
+  border-radius: var(--r-lg); background: color-mix(in srgb, var(--surface-solid) 92%, transparent);
+  border: 1px solid #e2b656; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 18px rgba(226, 182, 86, 0.25); text-align: center; pointer-events: none;
+}
+.einlass-band.hidden { display: none; }
+.einlass-band b { color: #e2b656; font: 800 var(--fs-sm) var(--font); }
+.einlass-band span { color: var(--text); font: 900 clamp(22px, 5vw, 32px)/1.1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.04em; }
+.einlass-band small { display: none; color: var(--text-dim); font-size: var(--fs-xs); }
+@media (min-width: 1000px) { .einlass-band small { display: block; } }
+@media (max-width: 600px) { .einlass-band small { display: none; } .einlass-band { width: calc(100% - 140px); bottom: calc(80px + var(--safe-bottom, 0px)); } }
+/* Liegt eine Tafel offen, macht das Band ihr Platz. */
+html.einlass-zu:has(.einlass-tafel:not(.hidden)) .einlass-band { display: none; }
+.einlass-gross {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none;
+  color: #ffe7a8; font: 900 clamp(110px, 30vw, 240px)/1 var(--font); text-shadow: 0 0 40px rgba(226, 182, 86, 0.8), 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+.einlass-gross.hidden { display: none; }
+.einlass-gross.auf { font-size: clamp(80px, 20vw, 170px); color: #fff3c4; }
+html:not(.reduce-motion) .einlass-gross.puls { animation: einlass-puls 0.9s cubic-bezier(.2, .8, .3, 1) 1 both; }
+@keyframes einlass-puls { 0% { opacity: 0; transform: scale(1.8); } 25% { opacity: 1; transform: scale(1); } 100% { opacity: 0.15; transform: scale(0.85); } }
+html:not(.reduce-motion) .einlass-gross.auf.puls { animation: einlass-auf 3.6s ease-out 1 both; }
+@keyframes einlass-auf { 0% { opacity: 0; transform: scale(0.4); } 12% { opacity: 1; transform: scale(1.1); } 22%, 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.3); } }
+
+/* Die Tür: Flügel schwingen auf, Licht fällt heraus, die Kordel fällt. */
+.m-einlasstuer .m-fluegel { transform-box: fill-box; transition: transform 1.4s cubic-bezier(.3, .7, .3, 1); }
+.m-einlasstuer .m-fluegel.l { transform-origin: 0% 50%; }
+.m-einlasstuer .m-fluegel.r { transform-origin: 100% 50%; }
+.welt-ding.auf .m-einlasstuer .m-fluegel { transform: scaleX(0.12); }
+.m-einlasstuer .m-tuerlicht { transform-box: fill-box; transform-origin: 50% 50%; transition: opacity 1s ease 0.3s, transform 1.2s ease 0.2s; }
+.welt-ding.auf .m-einlasstuer .m-tuerlicht { opacity: 0.9; transform: scaleX(22); }
+.m-einlasstuer .m-kordel { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 0.8s cubic-bezier(.5, 0, .9, .5), opacity 0.8s; }
+.welt-ding.auf .m-einlasstuer .m-kordel { transform: translateY(16px) scaleY(0.4); opacity: 0; }
+.welt-einlassuhr { display: grid; place-items: center; color: #ffe7a8; font: 900 15px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.08em; text-shadow: 0 0 6px rgba(226, 182, 86, 0.8); }
+.welt-glaszahl { display: grid; place-items: center; border-radius: 6px; background: rgba(13, 10, 6, 0.85); color: #ffe7a8; font: 800 9px/1 var(--font); }
+.welt-tafel p small { color: #9aa4ae; font-size: 8.5px; }
+
+/* Die Tafeln im Foyer: dieselbe Hülle wie die Tische in der Welt. */
+.einlass-text { margin: 0; color: var(--text); font-size: var(--fs-sm); line-height: 1.45; }
+.einlass-form { display: flex; gap: 8px; }
+.einlass-form input { flex: 1; min-width: 0; min-height: 46px; padding: 0 12px; border-radius: var(--r-md); border: 1px solid var(--line-strong); background: var(--surface-sunken); color: var(--text); font: 600 var(--fs-md) var(--font); }
+.einlass-form button { min-height: 46px; padding: 0 16px; border-radius: var(--r-md); border: 0; background: linear-gradient(180deg, var(--accent-strong), var(--accent)); color: var(--accent-ink); font: 800 var(--fs-sm) var(--font); cursor: pointer; }
+.einlass-wandliste { display: grid; gap: 6px; max-height: 240px; overflow: auto; }
+.einlass-wandliste p { margin: 0; padding: 8px 10px; border-radius: var(--r-md); background: #f3e6c4; color: #3a2a1a; font-size: var(--fs-sm); transform: rotate(-0.4deg); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25); }
+.einlass-wandliste p:nth-child(2n) { background: #e7f0c9; transform: rotate(0.5deg); }
+.einlass-wandliste p b { margin-right: 6px; }
+.einlass-teaser { display: grid; gap: 8px; }
+.einlass-teaser div { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-sunken); border: 1px dashed var(--line); }
+.einlass-teaser div b { color: var(--text-dim); }
+.einlass-teaser div span { color: var(--text-dim); font-size: var(--fs-sm); }
+.einlass-teaser div.auf { border: 1px solid #e2b656; background: rgba(226, 182, 86, 0.08); }
+.einlass-teaser div.auf b { color: #e2b656; }
+.einlass-teaser div.auf span { color: var(--text); }

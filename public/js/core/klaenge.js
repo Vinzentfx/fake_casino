@@ -237,6 +237,9 @@
     greifer_rutscht: () => { rauschen(0.18, 0.03, 0, { freq: 2600, bis: 900, q: 2 }); tone(500, 0.25, "triangle", 0.025, 0.02, 220); },
     plumps: () => { tone(130, 0.14, "sine", 0.06, 0, 70); noise(0.05, 0.03, 0, 500, 1); },
 
+    // An eine schwere Holztür klopfen.
+    klopfen: () => { for (const d of [0, 0.16, 0.32]) { tone(110, 0.09, "sine", 0.07, d, 70); noise(0.04, 0.05, d, 700, 2); } },
+
     /* Tiere */
     tier_dackel: () => {
       for (const d of [0, 0.28]) {

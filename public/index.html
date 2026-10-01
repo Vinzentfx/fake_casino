@@ -2367,6 +2367,18 @@
           <div class="form-error" id="admin-backup-error"></div>
         </div>
 
+        <!-- Einlass: das Haus offen, aber nur der Warteraum (game/einlass.js). -->
+        <div class="ad-karte" id="ad-einlass-karte">
+          <div class="ad-kopf"><b>Einlass</b><span class="ad-zustand" id="ad-einlass-zustand">offen</span></div>
+          <p class="hint">Alle außer dir und der Testliste stehen im Warteraum, bis die Uhr abläuft. Der Server öffnet dann selbst, auch nach einem Neustart.</p>
+          <label class="ad-feld"><span>Öffnung (deutsche Zeit)</span><input id="ad-einlass-zeit" type="datetime-local" /></label>
+          <div class="ad-knopfreihe">
+            <button class="btn-secondary ad-knopf" id="ad-einlass-schieben">Zeit setzen</button>
+            <button class="btn-danger ad-knopf" id="ad-einlass-zu">Warteraum öffnen</button>
+            <button class="btn-primary ad-knopf" id="ad-einlass-auf">Jetzt reinlassen</button>
+          </div>
+        </div>
+
         <!-- Wartung
              Zwischen "läuft" und "Server aus" gab es nichts. -->
         <div class="ad-karte" id="ad-wartung-karte">
@@ -2790,5 +2802,6 @@
   <script defer src="/js/welt/welt.js"></script>
   <script defer src="/js/welt/grundform.js"></script>
   <script defer src="/js/spielklaenge.js"></script>
+  <script defer src="/js/einlass.js"></script>
 </body>
 </html>

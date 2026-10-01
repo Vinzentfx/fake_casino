@@ -25,6 +25,22 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-02",
+      datum: "2. Oktober 2026",
+      titel: "Die Tür ist auf",
+      gross: true,
+      items: [
+        { icon: "geschenk", titel: "Ein Paket zur Eröffnung",
+          text: "Zwei Tage lang liegt für jeden ein Eröffnungspaket mit Chips bereit. Einmal abholen, fertig." },
+
+        { icon: "stern", titel: "Die Schnitzeljagd läuft",
+          text: "Zwölf goldene Marken liegen in allen Räumen. Du hast drei Tage, und jeder sammelt für sich." },
+
+        { icon: "bestenliste", titel: "Wer im Warteraum war",
+          text: "Alle, die vor der Öffnung im Foyer standen, tragen jetzt den Titel „Premierengast“. Wer am Schätzglas am nächsten dran war, hat das Augenmaß bewiesen." },
+      ],
+    },
+    {
       id: "2026-10-01-d",
       datum: "1. Oktober 2026",
       titel: "Der Greifautomat greift",

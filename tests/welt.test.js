@@ -312,7 +312,7 @@ test("wer sich abmeldet, verschwindet sofort, auch ohne Trennung", (t) => {
   assert.equal(bert.hat("welt:z").length, 0);
 });
 
-test("jeder Raum ist über Türen vom Casino aus erreichbar, der Tresor nur über das Regal", () => {
+test("jeder Raum ist über Türen vom Casino aus erreichbar, der Tresor nur über das Regal, das Foyer gar nicht", () => {
   const gesehen = new Set(["casino"]);
   const offen = ["casino"];
   while (offen.length) {
@@ -321,7 +321,9 @@ test("jeder Raum ist über Türen vom Casino aus erreichbar, der Tresor nur übe
       ...r.dinge.filter((d) => d.ziel && d.ziel.tuer).map((d) => r.tueren.find((t) => t.id === d.ziel.tuer).ziel)];
     for (const z of wege) if (!gesehen.has(z)) { gesehen.add(z); offen.push(z); }
   }
-  assert.deepEqual([...gesehen].sort(), Object.keys(R.RAEUME).sort());
+  // Das Foyer ist der Warteraum vor einer Öffnung: dorthin setzt nur der Einlass.
+  assert.deepEqual([...gesehen].sort(), Object.keys(R.RAEUME).filter((r) => r !== "foyer").sort());
+  assert.equal(gesehen.has("foyer"), false, "ins Foyer führt keine Tür");
   const zuFuss = new Set(["casino"]);
   const offen2 = ["casino"];
   while (offen2.length) {
