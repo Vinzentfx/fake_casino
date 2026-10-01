@@ -620,7 +620,7 @@
      Eine Kennung aus einer Nachricht wird nur zur Klasse, wenn sie bekannt ist. */
   const GRUND_GESTEN = [{ id: "winken", name: "Winken" }, { id: "jubeln", name: "Jubeln" }];
   const GESTEN_BEKANNT = new Set([...GRUND_GESTEN.map((g) => g.id), ...R.STUECK_GESTEN.map((g) => g.id), "shisha"]);
-  const GESTE_MS = { winken: 1700, jubeln: 1700, kunststueck: 1900, hupen: 1800, ankicken: 2200, qualmen: 2400, kickflip: 1000, wheelie: 2600 };
+  const GESTE_MS = { winken: 1700, jubeln: 1700, kunststueck: 1900, hupen: 1800, ankicken: 2200, qualmen: 2400, kickflip: 1000, wheelie: 2600, quietschen: 1500 };
   const HUPE = { e_roller: "Kling kling!", bobbycar: "Möp möp!", mopedauto: "Tüt tüt!", goldmoped: "Tüüüt!", aufsitzmaeher: "Brumm brumm!", simme: "Mööööp!" };
   const KONFETTI = ["#e5534b", "#f2c94c", "#3f6fd0", "#4fb76a", "#c86bd6", "#f0a23b"];
 
@@ -636,10 +636,14 @@
     snd.play(name, { laut: Math.max(0.12, 1 - d / 12), pan: dx / 9 });
   }
   const HUPE_KLANG = { e_roller: "klingel", bobbycar: "hupe_bobby", mopedauto: "hupe_auto", goldmoped: "hupe_gold", aufsitzmaeher: "hupe_maeher", simme: "hupe_simme" };
-  const GESTE_KLANG = { qualmen: "anlassen_fehl" };
+  const GESTE_KLANG = { qualmen: "anlassen_fehl", quietschen: "gummihuhn" };
   function gesteKlang(f, art) {
     if (art === "hupen") return klang(HUPE_KLANG[(f.look.kleidung || {}).fahrzeug] || "hupe_auto", f);
     if (art === "wheelie" && (f.look.kleidung || {}).fahrzeug === "simme") return klang("wheelie_simme", f);
+    if (art === "schluerfen") {
+      const nach = { spezi: "ruelpsen", energy: "zap" }[(f.look.kleidung || {}).hand];
+      if (nach) setTimeout(() => klang(nach, f), 1800);
+    }
     klang(GESTE_KLANG[art] || art, f);
   }
 
@@ -696,6 +700,7 @@
     // Bei „Bewegung reduzieren“ nur, was man lesen muss: Hupe und Ankicken.
     if (art === "ankicken") rufen(f, "Ring-ding-ding-ding!", 2200);
     if (art === "qualmen") rufen(f, ["Rrr… rrr… *hust*", "Springt nicht an.", "Orgel, orgel… nichts.", "Pfffff."][Math.floor(Math.random() * 4)], 2400);
+    if (art === "quietschen") rufen(f, ["BWAAAAAK!", "AAAAAAAAH!", "IIIIIIIIIH!", "KRÄÄÄÄÄH!", "QUIIIIIEK!"][Math.floor(Math.random() * 5)], 1600);
     if (reduziert() && art !== "hupen") return;
     const box = document.createElement("div");
     box.className = "wf-fx";
@@ -719,7 +724,29 @@
     } else if (art === "schlecken") {
       for (let n = 0; n < 4; n++) teilchen(box, "fx-funke", mx + r(-12, 12), my + r(-10, 4), { text: "✦", "animation-delay": (0.45 + n * 0.18) + "s" });
     } else if (art === "schluerfen") {
-      for (let n = 0; n < 3; n++) teilchen(box, "fx-dampf", mx + (n - 1) * 5 + seitwaerts * 3, my - 2, { "animation-delay": (0.5 + n * 0.25) + "s" });
+      /* Trinken, nicht dampfen: Becher an den Mund, Kopf in den Nacken, es
+         gluckert, und danach wirkt das Getränk. Vorher stieg hier Dampf auf,
+         und das sah genauso aus wie die Vape. */
+      const was = (f.look.kleidung || {}).hand;
+      ["gluck", "gluck", "gluck"].forEach((t, n) => teilchen(box, "fx-gluck", mx + seitwaerts * 6 + (n - 1) * 6, my - 6, { text: t, "animation-delay": (0.55 + n * 0.3).toFixed(2) + "s" }));
+      if (was === "energy") {
+        for (let n = 0; n < 7; n++) teilchen(box, "fx-zack", kx + r(-20, 20), ky + r(-8, 16), { text: "✦", "animation-delay": (1.7 + n * 0.08).toFixed(2) + "s" });
+        setTimeout(() => { f.el.classList.add("zappelt"); setTimeout(() => f.el.classList.remove("zappelt"), 1300); rufen(f, "WOOOOH!", 1500); }, 1700);
+      } else if (was === "spezi") {
+        for (let n = 0; n < 6; n++) teilchen(box, "fx-blase", mx + seitwaerts * 4 + r(-5, 5), my, { "animation-delay": (1.5 + n * 0.1).toFixed(2) + "s", "--dx": r(-8, 8).toFixed(1) + "px" });
+        setTimeout(() => rufen(f, "*Rüüülps*", 1600), 1800);
+      } else if (was === "bubble_tea") {
+        for (let n = 0; n < 5; n++) teilchen(box, "fx-perle", hx + seitwaerts * 3, hy - 14, { "animation-delay": (0.6 + n * 0.16).toFixed(2) + "s", "--dx": r(-6, 6).toFixed(1) + "px" });
+        setTimeout(() => rufen(f, "Mmh, Perlen.", 1500), 1900);
+      } else {
+        setTimeout(() => rufen(f, "Ahh.", 1300), 1900);
+      }
+    } else if (art === "quietschen") {
+      /* Das Königliche Gummihuhn: zusammendrücken, schreien, Federn. */
+      const h = f.el.querySelectorAll(".fg-huhn");
+      h.forEach((x) => { x.classList.remove("quetscht"); void x.getBoundingClientRect(); x.classList.add("quetscht"); });
+      setTimeout(() => h.forEach((x) => x.classList.remove("quetscht")), 1300);
+      for (let n = 0; n < 6; n++) teilchen(box, "fx-feder", hx + r(-6, 6), hy - 10 + r(-6, 4), { "animation-delay": (0.15 + n * 0.07).toFixed(2) + "s", "--dx": r(-26, 26).toFixed(1) + "px" });
     } else if (art === "selfie") {
       teilchen(box, "fx-blitz", hx, hy - 4, { "animation-delay": "0.6s" });
     } else if (art === "geldregen") {
@@ -1596,6 +1623,7 @@
       else if (z.rad) radAuf(d);
       else if (z.rennen) rennAuf(d);
       else if (z.lotto) lottoAuf(d);
+      else if (z.greifer) greiferAuf(d);
       else if (z.bericht) { if (Casino._berichtZeigen) Casino._berichtZeigen(); }
       else if (z.auswahl) zeigeAuswahl(d, z.auswahl);
       else if (z.umzug) geheimgang(d, z.umzug);
@@ -1683,6 +1711,7 @@
     if (tisch.art === "rad") return zeichneRadTafel();
     if (tisch.art === "rennen") return zeichneRennTafel();
     if (tisch.art === "lotto") return zeichneLottoTafel();
+    if (tisch.art === "greifer") return zeichneGreiferTafel();
     const q = tisch.regeln.quoten || {};
     const faktor = (k) => (q[k] ? String(q[k]).replace(".", ",") + "×" : "");
     const rot = new Set(tisch.regeln.rot || []);
@@ -1791,6 +1820,7 @@
     else if (was === "rad-drehen") radDreh();
     else if (was === "renn-wetten") rennWetten();
     else if (was === "lotto-kaufen") lottoKaufen();
+    else if (was === "greifen") greifen();
     else if (was === "lotto-zufall") {
       socket.emit("lotterie:zufall", (r) => {
         if (!r || !r.ok || !tisch || tisch.art !== "lotto") return;
@@ -2204,10 +2234,211 @@
   }
 
   /* Ein Ergebnis am Tisch, für alle im Raum. */
+  /* Der Greifautomat (game/greifer.js). Die Tafel zeigt den Automaten groß:
+     Greifer mit den Pfeilen oder durch Tippen ins Glas über einen Ball
+     fahren, greifen, zusehen. Was passiert, sagt der Server; hier läuft nur
+     die Szene ab. Die Bälle stehen in raeume.js (GREIFER), dieselben, mit
+     denen der Server rechnet. */
+  const GR = R.GREIFER;
+  const BALL_FARBE = ["#ff6b9a", "#ffd34d", "#2ad4ff", "#9b6bff", "#3dffa0", "#ff8a3d", "#f4f1ea"];
+  let greiferPreis = 50;
+  function greiferAuf(d) {
+    tisch = { art: "greifer", d, x: GR.start, info: "", dreht: false };
+    ziel = null; tasten.clear();
+    fahreZu({ ...(d.fokus || { x: d.x, y: d.y - 1 }), zoom: 1.9, oben: 0.2 });
+    tischEl.classList.remove("hidden");
+    zeichneTisch();
+    socket.emit("greifer:state", (r) => { if (r && r.ok) { greiferPreis = r.preis; if (tisch && tisch.art === "greifer") greiferKnopf(); } });
+  }
+  function greiferBild() {
+    const baelle = GR.baelle.map((b, i) => {
+      const c = BALL_FARBE[i % BALL_FARBE.length];
+      return `<g class="gr-ball" data-i="${i}" style="transform:translate(${b.x}px,${b.y}px)"><circle r="9" fill="${c}" stroke="rgba(0,0,0,.35)" stroke-width="1"/><circle cx="-3" cy="-3.6" r="2.6" fill="#fff" opacity=".45"/><circle cx="-3" cy="-1" r="1.1" fill="#1d1d23"/><circle cx="3" cy="-1" r="1.1" fill="#1d1d23"/><path d="M-2.6 2.4q2.6 2.4 5.2 0" fill="none" stroke="#1d1d23" stroke-width="1" stroke-linecap="round"/></g>`;
+    }).join("");
+    return `<svg viewBox="0 0 240 200" role="img" aria-label="Greifautomat von innen">
+      <defs><clipPath id="gr-glas"><rect x="12" y="14" width="216" height="178" rx="4"/></clipPath></defs>
+      <rect x="4" y="4" width="232" height="192" rx="10" fill="#140d26" stroke="#ff4fd8" stroke-width="2"/>
+      <rect x="12" y="14" width="216" height="178" rx="4" fill="#2ad4ff" fill-opacity=".07"/>
+      <g class="gr-grund">${Array.from({ length: 12 }, (_, i) => `<path d="M${20 + i * 18} 14V192" stroke="#2ad4ff" stroke-opacity=".05"/>`).join("")}</g>
+      <rect x="14" y="112" width="44" height="80" fill="#0c0818" stroke="#2ad4ff" stroke-opacity=".6"/>
+      <path d="M14 112h44" stroke="#ffd34d" stroke-width="2"/>
+      <text x="36" y="160" text-anchor="middle" font-size="7" font-weight="900" fill="#ffd34d" opacity=".75" font-family="ui-rounded, system-ui">AUSGABE</text>
+      <rect x="58" y="179" width="168" height="13" fill="#24163f"/>
+      <g clip-path="url(#gr-glas)">${baelle}
+        <g class="gr-klaue" style="transform:translate(${tisch.x}px,${GR.oben}px)">
+          <path d="M0 -6V-220" stroke="#c0c6cc" stroke-width="1.4"/>
+          <rect x="-8" y="-8" width="16" height="7" rx="2" fill="#8a929c" stroke="#3a3f47" stroke-width=".8"/>
+          <g class="gr-finger l"><path d="M-3 -1L-11 9L-7 17" fill="none" stroke="#d6dbe0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+          <g class="gr-finger m"><path d="M0 -1V15" fill="none" stroke="#b8bec4" stroke-width="2.2" stroke-linecap="round"/></g>
+          <g class="gr-finger r"><path d="M3 -1L11 9L7 17" fill="none" stroke="#d6dbe0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+          <circle r="3.4" cy="-4" fill="#ff4fd8"/>
+        </g>
+      </g>
+      <rect x="14" y="20" width="212" height="5" rx="2" fill="#3a3f47"/>
+      <text x="120" y="12" text-anchor="middle" font-size="8" font-weight="900" fill="#ffe1f7" font-family="ui-rounded, system-ui" class="m-neon-text">GREIFER</text>
+    </svg>`;
+  }
+  const PFEIL = (r) => `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${r ? "M9 5l7 7-7 7" : "M15 5l-7 7 7 7"}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  function zeichneGreiferTafel() {
+    const acc = Casino.getAccount() || {};
+    tischEl.innerHTML = `
+      <header><div><b>Greifautomat</b><small>Guthaben ${deZahl(acc.chips || 0)}</small></div>
+        <button type="button" class="welt-tisch-zu" data-tisch="zu" aria-label="Vom Automaten weggehen">${Casino.icons ? Casino.icons.ui("schliessen") : "×"}</button></header>
+      <div class="welt-greifer">${greiferBild()}</div>
+      <div class="welt-greifer-steuer">
+        <button type="button" data-greifer="-1" aria-label="Greifer nach links">${PFEIL(false)}</button>
+        <button type="button" class="welt-tisch-drehen" data-tisch="greifen"></button>
+        <button type="button" data-greifer="1" aria-label="Greifer nach rechts">${PFEIL(true)}</button>
+      </div>
+      <p class="welt-tisch-info" aria-live="polite"></p>`;
+    greiferKnopf();
+  }
+  function greiferKnopf() {
+    if (!tisch || tisch.art !== "greifer") return;
+    const k = tischEl.querySelector('[data-tisch="greifen"]');
+    if (k) { k.disabled = tisch.dreht; k.textContent = tisch.dreht ? "Der Greifer fährt …" : `Greifen · ${deZahl(greiferPreis)}`; }
+    tischEl.querySelectorAll("[data-greifer]").forEach((b) => { b.disabled = tisch.dreht; });
+    const info = tischEl.querySelector(".welt-tisch-info");
+    if (info) info.textContent = tisch.info || "Fahr den Greifer über einen Ball und greif zu. Fast immer rutscht er wieder raus, aber ganz selten hält der Griff.";
+  }
+  const grSetzen = (el, x, y, ms, kurve = "ease-in-out") => {
+    if (!el) return;
+    el.style.transition = ms ? `transform ${ms}ms ${kurve}` : "none";
+    el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+  };
+  function greiferFahren(richtung) {
+    if (!tisch || tisch.art !== "greifer" || tisch.dreht) return;
+    tisch.x = Math.max(GR.links, Math.min(GR.rechts, tisch.x + richtung * 3));
+    grSetzen(tischEl.querySelector(".gr-klaue"), tisch.x, GR.oben, 60, "linear");
+  }
+  let greiferHalten = null;
+  tischEl.addEventListener("pointerdown", (e) => {
+    if (!tisch || tisch.art !== "greifer" || tisch.dreht) return;
+    const b = e.target.closest("[data-greifer]");
+    if (b) {
+      const r = Number(b.dataset.greifer);
+      greiferFahren(r);
+      clearInterval(greiferHalten);
+      greiferHalten = setInterval(() => greiferFahren(r), 30);
+      if (Casino.sound) Casino.sound.play("greifer_fahrt");
+      return;
+    }
+    // Ins Glas tippen: dorthin fahren.
+    const svg = e.target.closest(".welt-greifer svg");
+    if (!svg) return;
+    const box = svg.getBoundingClientRect();
+    const x = ((e.clientX - box.left) / box.width) * 240;
+    tisch.x = Math.max(GR.links, Math.min(GR.rechts, x));
+    grSetzen(tischEl.querySelector(".gr-klaue"), tisch.x, GR.oben, 350, "ease-out");
+    if (Casino.sound) Casino.sound.play("greifer_fahrt");
+  });
+  for (const ev of ["pointerup", "pointercancel", "pointerleave"]) tischEl.addEventListener(ev, () => { clearInterval(greiferHalten); greiferHalten = null; });
+
+  function greifen() {
+    if (!tisch || tisch.art !== "greifer" || tisch.dreht) return;
+    tisch.dreht = true; tisch.info = "";
+    greiferKnopf();
+    socket.emit("greifer:greifen", { x: tisch.x }, (r) => {
+      if (!tisch || tisch.art !== "greifer") return;
+      if (!r || !r.ok) { tisch.dreht = false; tisch.info = (r && r.error) || "Der Automat klemmt."; greiferKnopf(); return; }
+      if (r.account) Casino.applyAccount(r.account);
+      greiferSzene(r, () => {
+        if (!tisch || tisch.art !== "greifer") return;
+        tisch.dreht = false;
+        tisch.info = r.gewonnen ? (r.neu ? "Der Griff hat gehalten!" : `Gehalten! Das Huhn hast du schon, dafür ${deZahl(r.trost)} Chips.`)
+          : r.treffer == null ? "Daneben. Da lag nichts." : ["Rausgerutscht.", "Fast!", "So knapp.", "Der Griff war zu schwach.", "Natürlich."][Math.floor(Math.random() * 5)];
+        greiferKnopf();
+        const head = tischEl.querySelector("header small"), acc = Casino.getAccount() || {};
+        if (head) head.textContent = `Guthaben ${deZahl(acc.chips || 0)}`;
+        if (r.gewonnen && r.neu) {
+          Casino.sound && Casino.sound.play("jackpot");
+          setTimeout(() => Casino.sound && Casino.sound.play("gummihuhn"), 500);
+          Casino.dialog.hinweis("Der Griff hält, der Ball fällt in den Schacht, und darin liegt: das Königliche Gummihuhn. Es gibt kaum eins davon im Haus.\n\nNimm es in der Garderobe in die Hand. Unter Gesten kannst du es dann quietschen lassen, und zwar so, dass es der ganze Raum hört.", { titel: "Gefangen!" });
+        } else if (r.gewonnen) Casino.sound && Casino.sound.play("cash");
+      });
+    });
+  }
+
+  /* Die Szene im großen Automaten. Der Ball hängt am Greifer, bis er
+     rutscht: dann wird seine Lage in diesem Moment abgelesen und er fällt
+     von dort zurück auf seinen Platz. */
+  function greiferSzene(sz, fertig) {
+    const svg = tischEl.querySelector(".welt-greifer svg");
+    if (!svg) return fertig();
+    const klaue = svg.querySelector(".gr-klaue");
+    const ball = sz.treffer != null ? svg.querySelector(`.gr-ball[data-i="${sz.treffer}"]`) : null;
+    const b = ball ? GR.baelle[sz.treffer] : null;
+    const tiefe = b ? b.y - 15 : 168;
+    const oben = GR.oben, haken = 15;
+    const uhr = [];
+    const spaeter = (ms, f) => uhr.push(setTimeout(f, ms));
+    let haengt = !!ball;
+    const rutschen = () => {
+      if (!haengt || !ball) return;
+      haengt = false;
+      const m = /matrix\(([^)]+)\)/.exec(getComputedStyle(ball).transform || "");
+      const w = m ? m[1].split(",").map(Number) : [1, 0, 0, 1, b.x, b.y];
+      grSetzen(ball, w[4], w[5], 0);
+      void ball.getBoundingClientRect();
+      klaue.classList.add("wackelt");
+      setTimeout(() => klaue.classList.remove("wackelt"), 500);
+      klang("greifer_rutscht");
+      grSetzen(ball, b.x, b.y, 700, "cubic-bezier(.45, 0, .75, .4)");
+      setTimeout(() => {
+        ball.animate([{ transform: `translate(${b.x}px, ${b.y}px)` }, { transform: `translate(${b.x}px, ${b.y - 6}px)` }, { transform: `translate(${b.x}px, ${b.y}px)` }], { duration: 260, easing: "ease-out" });
+        klang("plumps");
+      }, 700);
+    };
+    klang("greifer_runter");
+    grSetzen(klaue, sz.x, tiefe, 950);
+    spaeter(1000, () => { klaue.classList.add("zu"); klang("greifer_zu"); });
+    spaeter(1400, () => {
+      grSetzen(klaue, sz.x, oben, 900);
+      if (haengt) grSetzen(ball, sz.x, oben + haken, 900);
+      klang("greifer_fahrt");
+    });
+    if (sz.rutscht != null && sz.rutscht < 0.5) spaeter(1400 + (sz.rutscht / 0.5) * 900, rutschen);
+    spaeter(2350, () => {
+      grSetzen(klaue, GR.start, oben, 1300);
+      if (haengt) grSetzen(ball, GR.start, oben + haken, 1300);
+      klang("greifer_fahrt");
+    });
+    if (sz.rutscht != null && sz.rutscht >= 0.5) spaeter(2350 + ((sz.rutscht - 0.5) / 0.5) * 1300, rutschen);
+    spaeter(3700, () => {
+      klaue.classList.remove("zu");
+      if (haengt && ball) {
+        // Gewonnen: der Ball fällt in den Schacht und taucht später wieder auf seinem Platz auf.
+        grSetzen(ball, GR.start, 186, 450, "cubic-bezier(.5, 0, 1, .6)");
+        setTimeout(() => {
+          ball.style.opacity = "0";
+          svg.classList.add("gewonnen");
+          setTimeout(() => { svg.classList.remove("gewonnen"); grSetzen(ball, b.x, b.y, 0); ball.style.opacity = ""; }, 2400);
+        }, 460);
+      }
+    });
+    spaeter(4300, () => fertig());
+  }
+
+  /* Der kleine Automat im Raum zeigt, was jemand gerade greift: alle sehen
+     den Greifer fahren, nur das Ende sieht man nicht so genau. */
+  function kleinerGreifer(b, sz) {
+    const g = b.querySelector(".m-greifer");
+    if (!g) return;
+    const dx = 16 + ((sz.x - GR.links) / (GR.rechts - GR.links)) * 30 - 31;
+    const setz = (x, y, ms) => { g.style.transition = `transform ${ms}ms ease-in-out`; g.style.transform = `translate(${x.toFixed(1)}px, ${y}px)`; };
+    setz(dx, 0, 300);
+    setTimeout(() => setz(dx, 26, 800), 300);
+    setTimeout(() => setz(dx, 0, 800), 1500);
+    setTimeout(() => setz(-15, 0, 1100), 2400);
+    setTimeout(() => setz(0, 0, 700), 3900);
+    if (sz.gewonnen) setTimeout(() => { b.classList.remove("greifer-gewinn"); void b.offsetWidth; b.classList.add("greifer-gewinn"); setTimeout(() => b.classList.remove("greifer-gewinn"), 3000); }, 3600);
+  }
+
   function zeigeSchau(sch) {
     if (!sch || !raum) return;
     const b = dingEls.get(sch.ding);
     if (!b) return;
+    if (sch.ding === "greifer" && sch.greifer) { kleinerGreifer(b, sch.greifer, sch.id); return; }
     if (sch.gross && (/^slot-/.test(sch.ding) || sch.spielhalle)) { explosion(b, sch); return; }
     if (sch.spielhalle) { gewinnZeigen(b, sch); return; }
     if (sch.ding === "gluecksrad") {

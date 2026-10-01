@@ -218,6 +218,25 @@
       tone(2093, 0.4, "sine", 0.012, 0.6);
     },
 
+    // Das Königliche Gummihuhn: ein langes, kehliges Quietschen mit Luft.
+    gummihuhn: () => {
+      osz(700, 0.95, { welle: "sawtooth", gain: 0.045, ueber: [[1250, 0.15], [1050, 0.45], [1350, 0.7], [600, 1]], filter: ["bandpass", 1500, 1.6], vibrato: [17, 60], an: 0.03, ab: 0.2 });
+      osz(1400, 0.95, { welle: "square", gain: 0.012, ueber: [[2500, 0.15], [2100, 0.45], [2700, 0.7], [1200, 1]], filter: ["bandpass", 2600, 3], vibrato: [17, 90], an: 0.03 });
+      rauschen(1.0, 0.025, 0, { freq: 3000, q: 1.2, an: 0.05 });
+    },
+    ruelpsen: () => {
+      osz(95, 0.65, { welle: "sawtooth", gain: 0.07, ueber: [[120, 0.2], [80, 1]], filter: ["bandpass", 420, 2.5], vibrato: [28, 18], an: 0.04 });
+      rauschen(0.6, 0.02, 0, { typ: "lowpass", freq: 600, q: 0.7 });
+    },
+    zap: () => { for (let i = 0; i < 4; i++) osz(zufall(900, 1800), 0.08, { welle: "square", gain: 0.02, delay: i * 0.07, bis: zufall(3000, 5000), filter: ["highpass", 800] }); },
+
+    /* Greifautomat */
+    greifer_fahrt: () => osz(150, 0.35, { welle: "sawtooth", gain: 0.015, filter: ["lowpass", 700], vibrato: [40, 8] }),
+    greifer_runter: () => osz(180, 0.9, { welle: "sawtooth", gain: 0.016, bis: 110, filter: ["lowpass", 600], vibrato: [40, 6] }),
+    greifer_zu: () => { klack(0, 1600, 0.05); klack(0.05, 1200, 0.03); },
+    greifer_rutscht: () => { rauschen(0.18, 0.03, 0, { freq: 2600, bis: 900, q: 2 }); tone(500, 0.25, "triangle", 0.025, 0.02, 220); },
+    plumps: () => { tone(130, 0.14, "sine", 0.06, 0, 70); noise(0.05, 0.03, 0, 500, 1); },
+
     /* Tiere */
     tier_dackel: () => {
       for (const d of [0, 0.28]) {

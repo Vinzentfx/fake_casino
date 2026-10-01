@@ -26,7 +26,7 @@
    * die Angabe, die man wirklich braucht.
    */
   const HERKUNFT = {
-    kiste: "Aus Kisten", auktion: "Auktionshaus", rad: "Glücksrad",
+    kiste: "Aus Kisten", auktion: "Auktionshaus", rad: "Glücksrad", greifer: "Greifautomat",
     comeback: "Wiedereröffnung", haus: "Vom Haus", season: "Season-Pass",
     sammlung: "Kollektion", verdienbar: "Zu verdienen", gratis: "Gratis",
     staub: "Prägeatelier",

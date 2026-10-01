@@ -25,6 +25,18 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-01-d",
+      datum: "1. Oktober 2026",
+      titel: "Der Greifautomat greift",
+      items: [
+        { icon: "pinco", titel: "Der Greifautomat funktioniert",
+          text: "Stell dich in der Spielhalle davor, fahr den Greifer über einen Ball und greif zu. Ein Versuch kostet fast nichts. Wie in echt rutscht der Ball fast immer wieder raus, gern auch kurz vor dem Schacht. Ganz selten hält der Griff, und dann liegt im Schacht etwas, das es sonst nirgends gibt." },
+
+        { icon: "kosmetik", titel: "Trinken sieht nach Trinken aus",
+          text: "Schlürfen ist kein Dampfen mehr: Becher an den Mund, Kopf in den Nacken, es gluckert. Danach wirkt das Getränk. Energy macht zappelig, aus dem Bubble Tea fliegen Perlen, und nach dem Spezi wird gerülpst." },
+      ],
+    },
+    {
       id: "2026-10-01-c",
       datum: "1. Oktober 2026",
       titel: "Das Casino hat jetzt Ton",

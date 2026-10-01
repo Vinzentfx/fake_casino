@@ -566,6 +566,7 @@ require("./game/boutique").setupBoutique(io, accounts);
 require("./game/laeden").setupLaeden(io, accounts);
 require("./game/ankauf").setupAnkauf(io, accounts);
 const schnitzeljagd = require("./game/schnitzeljagd").setupSchnitzeljagd(io, accounts);
+require("./game/greifer").setupGreifer(io, accounts);
 require("./game/admin").setJagd(schnitzeljagd);
 
 // Aufstieg: recordHand setzt acc._justLeveled, dann bekommt der Spieler Bescheid.

@@ -114,6 +114,7 @@ const SPIELE = {
   kiste:     { name: "Kisten",        vor: ["kiste:"] },
   kdl:       { name: "Kisten-Duell",  vor: ["kdl:"],                einsatz: { "kdl:erstelle": "einsatz" } },
   lotterie:  { name: "Lotterie",      vor: ["lotterie:"] },
+  greifer:   { name: "Greifautomat",  vor: ["greifer:"] },
   stocks:    { name: "Börse",         vor: ["stocks:"],             einsatz: { "stocks:open": "margin" } },
   city:      { name: "Stadt",         vor: ["city:"] },
   market:    { name: "Markt",         vor: ["market:", "item:"] },

@@ -600,9 +600,16 @@
     }
   }
 
-  /* Dinge in der Hand. Null heißt: das Chat-Zeichen oder der Chip. */
+  /* Dinge in der Hand. Null heißt: das Chat-Zeichen oder der Chip.
+     Die Lage an der Hand steht an einer Hülle AUSSEN, nicht am Stück
+     selbst: sonst dreht eine CSS-Drehung am Stück (Trinken, Gummihuhn) um
+     einen Punkt, der woanders liegt, und der Becher fliegt aus der Hand. */
   function handding(id, hx, hy) {
-    const t = `transform="translate(${hx} ${hy})"`;
+    const innen = handdingInnen(id);
+    return innen ? `<g transform="translate(${hx} ${hy})">${innen}</g>` : innen;
+  }
+  function handdingInnen(id) {
+    const t = "";
     switch (id) {
       case "kaffee": return `<g class="fg-ding" ${t}><path d="M-1.4 -9h8l-1 9h-6z" fill="#f4efe2" stroke="#6b5a45" stroke-width=".7"/><rect x="-1.8" y="-10.6" width="8.8" height="2" rx=".8" fill="#3a2a1a"/><rect x="-1" y="-6" width="7" height="3" fill="#5a9d91"/><path class="fg-dampf" d="M1.5 -12q-1 -2 .6 -3.6M4 -12q-1 -2 .6 -3.6" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width=".6"/></g>`;
       case "lutscher": return `<g class="fg-ding" ${t}><path d="M1 1V-10" stroke="#f4efe2" stroke-width="1.1"/><circle cx="1" cy="-14" r="5" fill="#f06a8a" stroke="#b3265a" stroke-width=".7"/><path d="M1 -14m-3.2 0a3.2 3.2 0 1 1 3.2 3.2a2 2 0 1 1-2-2" fill="none" stroke="#fff" stroke-width="1"/></g>`;
@@ -626,6 +633,19 @@
       case "blumenstrauss": return `<g class="fg-ding" ${t}><path d="M-.6 2L.2 -8M2.4 2L1.6 -8M1 2V-8" stroke="#2e7d4f" stroke-width=".8"/><path d="M-2 -2L1 2L4 -2L2.6 -6H-.6Z" fill="#f4efe2" stroke="#b9b3a2" stroke-width=".5"/>${[[-2, -11, "#f06a8a"], [1, -13.4, "#f9e27a"], [4, -11, "#c49bff"], [-0.4, -9, "#7ec8ff"], [2.6, -9, "#f06a8a"]].map(([x, y, c]) => `<g transform="translate(${x} ${y})">${[0, 72, 144, 216, 288].map((w) => `<circle cx="${(Math.cos((w * Math.PI) / 180) * 1.3).toFixed(2)}" cy="${(Math.sin((w * Math.PI) / 180) * 1.3).toFixed(2)}" r="1" fill="${c}"/>`).join("")}<circle r=".6" fill="#fff4c9"/></g>`).join("")}</g>`;
       case "schallplatte": return `<g class="fg-ding" ${t}><circle cx="2" cy="-9" r="7.2" fill="#15151a" stroke="#000" stroke-width=".5"/><circle cx="2" cy="-9" r="5.4" fill="none" stroke="#2c2c34" stroke-width=".5"/><circle cx="2" cy="-9" r="3.8" fill="none" stroke="#2c2c34" stroke-width=".5"/><circle cx="2" cy="-9" r="2.2" fill="#c8243a"/><circle cx="2" cy="-9" r=".6" fill="#f4f1ea"/><path d="M-2.6 -14q2-1.6 4.4-1.2" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width=".8"/></g>`;
       case "pokal": return `<g class="fg-ding" ${t}><path d="M-3 -15H7L6 -9Q5 -5 2 -5Q-1 -5 -2 -9Z" fill="#e2b656" stroke="#8e6931" stroke-width=".7"/><path d="M-3 -14Q-6 -14 -5.4 -11Q-4.6 -9 -2 -9M7 -14Q10 -14 9.4 -11Q8.6 -9 6 -9" fill="none" stroke="#e2b656" stroke-width="1.1"/><rect x="1" y="-5" width="2" height="3" fill="#c9a14a"/><rect x="-1.4" y="-2.2" width="6.8" height="2.4" rx=".6" fill="#8e6931"/><path class="fg-schimmer" d="M0 -13.6l1.4 5" stroke="#fff" stroke-opacity=".7" stroke-width=".8"/></g>`;
+      /* Das Königliche Gummihuhn: am Hals gepackt, Schnabel weit offen, und
+         eine winzige Krone, die nicht hält, was sie verspricht. */
+      case "gummihuhn": return `<g class="fg-ding fg-huhn" ${t}>`
+        + `<path d="M1.6 1.4l-.8 3M4 1.6l.4 3" stroke="#f08a24" stroke-width=".8" stroke-linecap="round"/>`
+        + `<ellipse cx="2.8" cy="-2" rx="4.6" ry="3.6" fill="#f6d83a" stroke="#b8901a" stroke-width=".6"/>`
+        + `<path d="M-1.4 -3.4q-1.6-.4-2.2 1.2q1.4.2 2.4-.2" fill="#f6d83a" stroke="#b8901a" stroke-width=".5"/>`
+        + `<path d="M5 -4.6Q6.4 -9 4.4 -13.4" fill="none" stroke="#b8901a" stroke-width="3.2" stroke-linecap="round"/><path d="M5 -4.6Q6.4 -9 4.4 -13.4" fill="none" stroke="#f6d83a" stroke-width="2.2" stroke-linecap="round"/>`
+        + `<circle cx="4.6" cy="-15" r="2.6" fill="#f6d83a" stroke="#b8901a" stroke-width=".6"/>`
+        + `<path d="M6.6 -15.8l3.6-1.6l-.6 1.6zM6.6 -14.4l3.2 1.4l-3.4-.2z" fill="#f08a24" stroke="#a8561a" stroke-width=".4"/>`
+        + `<path d="M3 -17.2q.6-1.4 1.4-.2q.6-1.4 1.4-.2q.6-1.2 1.2.2" fill="#e5534b" stroke="#a8322b" stroke-width=".4"/>`
+        + `<circle cx="5.2" cy="-15.6" r=".55" fill="#1d1d23"/>`
+        + `<path d="M2.4 -18.4l.6-2.2l1.2 1.2l1-1.8l1 1.8l1.2-1.2l.6 2.2z" fill="#f2c94c" stroke="#9a7a1c" stroke-width=".4"/><circle cx="4.2" cy="-19.6" r=".35" fill="#e5534b"/>`
+        + `</g>`;
       case "wunderkerze": return `<g class="fg-ding" ${t}><path d="M1 2L2.6 -14" stroke="#8a929c" stroke-width="1"/><path d="M2.2 -10L2.8 -16" stroke="#3a3f47" stroke-width="1.4"/><g class="fg-funken">${[[-3, -20], [7, -21], [2, -24], [-1, -15], [6, -15], [8, -18], [-4, -17]].map(([x, y]) => `<path d="M2.8 -16L${x} ${y}" stroke="#ffe27a" stroke-width=".6"/><circle cx="${x}" cy="${y}" r=".7" fill="#fff6c8"/>`).join("")}</g><circle cx="2.8" cy="-16" r="1.6" fill="#fff" opacity=".9"/></g>`;
       case "spezi": return `<g class="fg-ding" ${t}><rect x="-1.4" y="-11" width="6.6" height="11.4" rx="1.8" fill="#4a2410" stroke="#24110a" stroke-width=".6"/><rect x=".2" y="-15.4" width="3.4" height="5" rx=".8" fill="#4a2410" stroke="#24110a" stroke-width=".5"/><rect x="-.1" y="-16.4" width="4" height="1.6" rx=".5" fill="#d24a3c"/><rect x="-1.4" y="-8" width="6.6" height="4.6" fill="#f2a33a"/><path d="M-.4 -5.6q2.6-2 4.6 0" fill="none" stroke="#d24a3c" stroke-width=".9"/><path d="M-.4 -10.4V-1" stroke="#fff" stroke-opacity=".3" stroke-width=".7"/></g>`;
       default: return null;

@@ -191,6 +191,8 @@ const HANDDINGE = [
   { id: "schallplatte",  label: "Alte Schallplatte",  cost: null, via: "Irgendwo im Haus versteckt" },
   { id: "pokal",         label: "Goldener Pokal",     cost: null, via: "Irgendwo im Haus versteckt" },
   { id: "wunderkerze",   label: "Wunderkerze",        cost: null, via: "Irgendwo im Haus versteckt", motion: true },
+  // Nur aus dem Greifautomaten, und dort fast nie (game/greifer.js).
+  { id: "gummihuhn",     label: "Königliches Gummihuhn", cost: null, via: "Am Greifautomaten gefangen", limitiert: "greifer" },
 ];
 
 /* Fahrzeuge. Man steht oder sitzt darauf und rollt etwas schneller als zu

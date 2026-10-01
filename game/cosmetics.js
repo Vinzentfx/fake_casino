@@ -1123,7 +1123,7 @@ function stufeVonStueck(art, id) {
    verteilt worden (Rueckkehrer gibt es 27 Mal) — die sind nicht kaeuflich,
    aber auch nicht selten, und sie als "Einzelstueck" zu zeigen waere
    geflunkert. */
-const KNAPP = new Set(["kiste", "sammlung", "rad", "auktion"]);
+const KNAPP = new Set(["kiste", "sammlung", "rad", "auktion", "greifer"]);
 const ATELIER_STUFEN = new Set(["selten", "episch", "legendaer"]);
 
 function stufeKennung(item) {

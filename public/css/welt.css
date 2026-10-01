@@ -1883,3 +1883,54 @@ html:not(.reduce-motion) .welt-jagdmarke.weg { animation: welt-jagd-weg 0.55s ea
 @media (max-width: 430px) {
   .welt-knoepfe > .welt-musik-knopf { display: none; }
 }
+
+/* Trinken: der Becher kippt am Mund, der Kopf geht leicht in den Nacken,
+   es gluckert. Danach wirkt das Getränk (Energy zappelt, Spezi rülpst,
+   aus dem Bubble Tea fliegen Perlen). */
+html:not(.reduce-motion) .wf.g-schluerfen .fg-ding { transform-origin: 50% 80%; animation: trink-kippen 2.4s ease-in-out 1; }
+@keyframes trink-kippen { 0%, 20% { rotate: 0deg; } 32%, 62% { rotate: -50deg; } 78%, 100% { rotate: 0deg; } }
+html:not(.reduce-motion) .wf.g-schluerfen .fg-kopf { transform-box: fill-box; transform-origin: 50% 100%; animation: trink-nacken 2.4s ease-in-out 1; }
+@keyframes trink-nacken { 0%, 22% { transform: none; } 34%, 62% { transform: translateY(-0.8px) rotate(-6deg); } 78%, 100% { transform: none; } }
+.fx-gluck { color: #dff4ff; font: italic 800 8px/1 var(--font); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); white-space: nowrap; }
+html:not(.reduce-motion) .fx-gluck { animation: fx-gluck 0.9s ease-out 1 forwards; }
+@keyframes fx-gluck { 0% { opacity: 0; transform: translate(0, 0) scale(0.6); } 25% { opacity: 1; transform: translate(0, -4px) scale(1); } 100% { opacity: 0; transform: translate(0, -16px); } }
+.fx-zack { color: #f5e94a; font: 900 11px/1 var(--font); text-shadow: 0 0 4px #c8f03c; }
+html:not(.reduce-motion) .fx-zack { animation: fx-zack 0.7s ease-out 1 forwards; }
+@keyframes fx-zack { 0% { opacity: 0; transform: scale(0.3) rotate(0); } 30% { opacity: 1; transform: scale(1.3) rotate(40deg); } 100% { opacity: 0; transform: scale(0.8) rotate(90deg); } }
+.fx-blase { width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.85); background: rgba(242, 163, 58, 0.25); }
+html:not(.reduce-motion) .fx-blase { animation: fx-blase 1.1s ease-out 1 forwards; }
+@keyframes fx-blase { 0% { opacity: 0; transform: translate(0, 0) scale(0.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx, 0), -28px) scale(1.2); } }
+.fx-perle { width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #2b1a0c; box-shadow: inset -1px -1px 0 rgba(255, 255, 255, 0.25); }
+html:not(.reduce-motion) .fx-perle { animation: fx-perle 0.8s cubic-bezier(.2, .7, .4, 1) 1 forwards; }
+@keyframes fx-perle { 0% { opacity: 1; transform: translate(0, 0); } 55% { opacity: 1; transform: translate(var(--dx, 0), -18px); } 100% { opacity: 0; transform: translate(calc(var(--dx, 0px) * 2), -6px); } }
+html:not(.reduce-motion) .wf.zappelt .wf-koerper { animation: zappeln 0.09s linear 14; }
+@keyframes zappeln { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-1.6px) rotate(-1deg); } 75% { transform: translateX(1.6px) rotate(1deg); } }
+
+/* Das Königliche Gummihuhn wird zusammengedrückt und springt zurück. */
+.fg-huhn { transform-origin: 40% 100%; }
+html:not(.reduce-motion) .fg-huhn.quetscht { animation: huhn-quetschen 1.2s ease-out 1; }
+@keyframes huhn-quetschen {
+  0% { scale: 1 1; } 10% { scale: 1.25 0.6; } 22% { scale: 0.9 1.25; } 34% { scale: 1.2 0.7; }
+  46% { scale: 0.95 1.15; } 60% { scale: 1.12 0.8; } 80% { scale: 0.98 1.05; } 100% { scale: 1 1; }
+}
+
+/* Der Greifautomat, groß in der Tafel. */
+.welt-greifer { display: grid; place-items: center; }
+.welt-greifer svg { width: min(100%, 380px); height: auto; display: block; touch-action: none; cursor: pointer; border-radius: 12px; }
+.gr-finger { transform-box: fill-box; transition: rotate 0.3s ease-in-out; }
+.gr-finger.l { transform-origin: 100% 0%; rotate: 18deg; }
+.gr-finger.r { transform-origin: 0% 0%; rotate: -18deg; }
+.gr-klaue.zu .gr-finger.l, .gr-klaue.zu .gr-finger.r { rotate: 0deg; }
+html:not(.reduce-motion) .gr-klaue.wackelt .gr-finger.l { animation: gr-wackeln 0.12s linear 4 alternate; }
+html:not(.reduce-motion) .gr-klaue.wackelt .gr-finger.r { animation: gr-wackeln 0.12s linear 4 alternate-reverse; }
+@keyframes gr-wackeln { from { rotate: -8deg; } to { rotate: 10deg; } }
+html:not(.reduce-motion) .welt-greifer svg.gewonnen { animation: gr-gewonnen 0.4s ease-in-out 6 alternate; }
+@keyframes gr-gewonnen { from { filter: drop-shadow(0 0 0 #ffd34d); } to { filter: drop-shadow(0 0 14px #ffd34d) brightness(1.25); } }
+.welt-greifer-steuer { display: grid; grid-template-columns: 64px 1fr 64px; gap: 8px; }
+.welt-greifer-steuer button { min-height: 50px; border-radius: var(--r-md); border: 1px solid var(--line-strong); background: var(--surface-sunken); color: var(--text); font: 800 var(--fs-md) var(--font); cursor: pointer; touch-action: none; display: grid; place-items: center; }
+.welt-greifer-steuer button .ui-icon { width: 24px; height: 24px; }
+.welt-greifer-steuer button:disabled { opacity: 0.5; cursor: default; }
+.welt-greifer-steuer .welt-tisch-drehen { background: linear-gradient(180deg, #ff6bd9, #c43ca8); color: #fff; border-color: #ff4fd8; }
+.welt-greifer-steuer .welt-tisch-drehen:disabled { background: var(--surface-sunken); color: var(--text-dim); border-color: var(--line); }
+.m-greifer { transform-box: view-box; }
+html:not(.reduce-motion) .welt-ding.greifer-gewinn svg { animation: gr-gewonnen 0.35s ease-in-out 8 alternate; }

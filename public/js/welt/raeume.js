@@ -366,7 +366,8 @@
       { id: "neonschild", art: "neonschild", x: 8.2, y: 2.6, block: null },
       { id: "pinco", art: "pinco", x: 11.3, y: 3.45, block: [10.25, 2.4, 12.35, 3.45],
         nutz: { x: 11.3, y: 4.2, r: 1.25 }, label: "Pinco Ball", verb: "Spielen", ziel: { screen: "pinco" }, fokus: { x: 11.3, y: 2.4, zoom: 2.2 } },
-      { id: "greifer", art: "greifautomat", x: 13.9, y: 3.45, block: [13.3, 2.4, 14.5, 3.45] },
+      { id: "greifer", art: "greifautomat", x: 13.9, y: 3.45, block: [13.3, 2.4, 14.5, 3.45],
+        nutz: { x: 13.9, y: 4.15, r: 0.95 }, label: "Greifautomat", verb: "Greifen", ziel: { greifer: true }, fokus: { x: 13.9, y: 2.5, zoom: 2.4 } },
       { id: "wuerfel", art: "wuerfeltisch", x: 3.5, y: 7.6, block: [2.3, 6.6, 4.7, 7.6],
         nutz: "rand", label: "Würfelpoker", verb: "Würfeln", ziel: { screen: "wuerfel" }, fokus: { x: 3.5, y: 7.0, zoom: 2.4 } },
       { id: "hilo", art: "kartentisch_hilo", x: 12.5, y: 7.6, block: [11.3, 6.6, 13.7, 7.6],
@@ -494,6 +495,7 @@
     { id: "geldregen", name: "Geldregen", braucht: { hand: ["chipstapel", "goldbarren"] } },
     { id: "kickflip", name: "Kickflip", braucht: { fahrzeug: ["skateboard"] } },
     { id: "wheelie", name: "Wheelie", braucht: { fahrzeug: ["e_roller", "simme"] } },
+    { id: "quietschen", name: "Quietschen", braucht: { hand: ["gummihuhn"] } },
     { id: "hupen", name: "Hupen", braucht: { fahrzeug: ["e_roller", "bobbycar", "mopedauto", "goldmoped", "aufsitzmaeher", "simme"] } },
     { id: "ankicken", name: "Ankicken", braucht: { fahrzeug: ["simme"] } },
     { id: "qualmen", name: "Anlassen", braucht: { fahrzeug: ["e46"] } },
@@ -503,6 +505,18 @@
     { id: "abgehen", name: "Abgehen", braucht: { kopf: ["kopfhoerer"] } },
   ];
   const LEER = new Set(["", "keins", "keine"]);
+
+  /* Der Greifautomat (game/greifer.js), in Einheiten der großen Zeichnung
+     (240 breit). Der Server entscheidet anhand dieser Bälle, ob der Greifer
+     etwas zu fassen bekommt; der Browser zeichnet dieselben. Zwischen den
+     Bällen sind Lücken, das Zielen zählt also. */
+  const GREIFER = {
+    links: 36, rechts: 212, start: 36, oben: 34, fangweite: 7,
+    baelle: [
+      { x: 80, y: 170 }, { x: 104, y: 170 }, { x: 140, y: 170 }, { x: 176, y: 170 }, { x: 206, y: 170 },
+      { x: 122, y: 154 }, { x: 158, y: 154 },
+    ],
+  };
 
   /** Welche Stück-Gesten zu dieser Kleidung passen, in fester Reihenfolge. */
   function gestenFuer(kleidung) {
@@ -515,7 +529,7 @@
   }
 
   const api = {
-    KACHEL, FUSS, TEMPO, FAHRZEUG_FAKTOR, RAEUME, GRUNDFORM, STUECK_GESTEN,
+    KACHEL, FUSS, TEMPO, FAHRZEUG_FAKTOR, RAEUME, GRUNDFORM, STUECK_GESTEN, GREIFER,
     raum, begehbar, wegFrei, abstandZuDing, reichweite, naechstesDing, inTuer, grundform, gestenFuer,
   };
 
