@@ -31,7 +31,7 @@
       gross: true,
       items: [
         { icon: "geschenk", titel: "Ein Paket zur Eröffnung",
-          text: "Zwei Tage lang liegt für jeden ein Eröffnungspaket mit Chips bereit. Einmal abholen, fertig." },
+          text: "Zwei Tage lang liegt für alle, die vor der Öffnung schon ein Konto hatten, ein Eröffnungspaket mit Chips bereit. Einmal abholen, fertig." },
 
         { icon: "stern", titel: "Die Schnitzeljagd läuft",
           text: "Zwölf goldene Marken liegen in allen Räumen. Du hast drei Tage, und jeder sammelt für sich." },

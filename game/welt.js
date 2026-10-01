@@ -318,6 +318,7 @@ function setupWelt(io, accounts) {
       for (const id of Object.keys(R.RAEUME)) zahl[id] = 0;
       for (const f of figuren.values()) if (sichtbar(f) && zahl[f.raum] != null) zahl[f.raum]++;
       for (const id of Object.keys(R.RAEUME)) io.to(kanal(id)).emit("welt:belegung", zahl);
+      try { require("./tableManager").anwesenheitMelden(); } catch {}
     }, 300);
   }
 

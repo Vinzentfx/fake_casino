@@ -145,10 +145,14 @@ function stand(key, acc) {
     wand: (state.wand || []).slice(-WAND_MAX).map(({ name, text, t }) => ({ name, text, t })),
     meineZeile: ((state.wand || []).find((w) => w.key === k) || {}).text || "",
     ergebnis: state.ergebnis ? { ...state.ergebnis, meine: (state.schaetz[k] || {}).zahl || null } : null,
-    paket: offen && Date.now() < state.offenSeit + PAKET_MS && !state.paket[k] && acc
+    paket: offen && Date.now() < state.offenSeit + PAKET_MS && !state.paket[k] && acc && paketBerechtigt(acc)
       ? { chips: Math.round(PAKET_CHIPS * (acc ? faktor(acc) : 1)), bis: state.offenSeit + PAKET_MS } : null,
   };
 }
+/* Das Paket ist für die, die schon da waren, nicht für Konten von morgen:
+   sonst holt sich ein Zweitkonto 25.000 Chips und schickt sie nach einem
+   Tag weiter (Überweisen geht ab 24 Stunden Kontoalter). */
+const paketBerechtigt = (acc) => Number(acc.createdAt || 0) < state.offenSeit;
 let _accounts = null;
 const faktor = (acc) => (_accounts && typeof _accounts.faucetFactor === "function" ? _accounts.faucetFactor(acc.name) : 1);
 
@@ -158,6 +162,7 @@ let welt = null, jagd = null;
 const setWelt = (w) => { welt = w; };
 const setJagd = (j) => { jagd = j; };
 
+const zuletztGeschrieben = new Map();
 function setupEinlass(io, accounts) {
   _accounts = accounts;
   eingerichtet = true;
@@ -200,7 +205,8 @@ function setupEinlass(io, accounts) {
        alle ins Casino. Andersherum säße man schon drin, bevor die Tür
        aufgeht. Die Sperre ist ab jetzt schon weg. */
     io.emit("einlass:auf", { ergebnis: state.ergebnis, titel: state.titel || "", umzugIn: UMZUG_MS });
-    try { if (jagd) jagd.starten(JAGD_TAGE); } catch (e) { console.error("[einlass] Schnitzeljagd:", e.message); }
+    // Läuft schon eine, bleibt sie: ein neuer Start löscht alle bisherigen Funde.
+    try { if (jagd && !require("./schnitzeljagd").laeuft()) jagd.starten(JAGD_TAGE); } catch (e) { console.error("[einlass] Schnitzeljagd:", e.message); }
     const umzug = setTimeout(() => {
       try { if (welt) welt.allesAusDemFoyer(); } catch (e) { console.error("[einlass] Foyer leeren:", e.message); }
     }, UMZUG_MS);
@@ -267,6 +273,9 @@ function setupEinlass(io, accounts) {
       const w = wer();
       if (!w) return ack({ ok: false, error: "Nicht eingeloggt." });
       if (!zu()) return ack({ ok: false, error: "Die Wand ist schon abgehängt." });
+      // Jede Zeile geht an alle; ohne Pause ließe sich die Wand im Sekundentakt umschreiben.
+      if (Date.now() - (zuletztGeschrieben.get(w.key) || 0) < 10000) return ack({ ok: false, error: "Kurz warten, dann kannst du wieder ändern." });
+      zuletztGeschrieben.set(w.key, Date.now());
       const t = String(text || "").replace(/\s+/g, " ").trim();
       if (t.length < 2 || t.length > 60) return ack({ ok: false, error: "Zwischen 2 und 60 Zeichen." });
       const wf = require("./wortfilter").pruefe(t, "Der Eintrag");
@@ -286,6 +295,7 @@ function setupEinlass(io, accounts) {
       if (zu() || !state.offenSeit) return ack({ ok: false, error: "Erst nach der Öffnung." });
       if (Date.now() >= state.offenSeit + PAKET_MS) return ack({ ok: false, error: "Das Eröffnungspaket ist schon abgelaufen." });
       if (state.paket[w.key]) return ack({ ok: false, error: "Dein Paket hast du schon." });
+      if (!paketBerechtigt(w.acc)) return ack({ ok: false, error: "Das Eröffnungspaket gibt es für Konten, die vor der Öffnung schon da waren." });
       const chips = Math.round(PAKET_CHIPS * faktor(w.acc));
       state.paket[w.key] = Date.now();
       speichern();

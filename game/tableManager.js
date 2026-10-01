@@ -187,7 +187,22 @@ function setupPoker(io, accounts) {
     const screens = sockets.map((s) => s.data && s.data.screen).filter(Boolean);
     const game = screens.find((name) => GAME_SCREENS.has(name));
     const screen = game || screens.find((name) => name !== "lobby") || screens[0] || "lobby";
+    // Die Lobby ist ein begehbarer Raum: dann steht dort, in welchem.
+    if (screen === "lobby") {
+      const key = sockets.map((x) => x.data && x.data.account).find(Boolean);
+      const ort = key ? weltOrt(key) : null;
+      if (ort) return { screen, label: ort };
+    }
     return { screen, label: SCREEN_LABELS[screen] || "online" };
+  }
+  /* Geheime Räume (Garage, Tresor) verrät die Liste nicht. */
+  const WELT_ORT = { casino: "im Casino", kontor: "im Kontor", ruhm: "in der Ruhmeshalle", hof: "auf der Terrasse",
+    strasse: "in der Ladenstraße", spielhalle: "in der Spielhalle", foyer: "im Foyer" };
+  function weltOrt(key) {
+    try {
+      const fig = require("./welt").figurVon(key);
+      return fig && fig.sockets && fig.sockets.size ? WELT_ORT[fig.raum] || "unterwegs" : null;
+    } catch { return null; }
   }
 
   function onlinePlayers() {
@@ -223,6 +238,7 @@ function setupPoker(io, accounts) {
     return list;
   }
 
+  anwesenheitMelden = broadcastPresence;
   function broadcastPresence() {
     io.emit("presence:update", { online: onlinePlayers() });
   }
@@ -469,4 +485,6 @@ function clampInt(v, min, max, fallback) {
   return Math.max(min, Math.min(max, v));
 }
 
-module.exports = { setupPoker };
+/* Für die Welt: wechselt jemand den Raum, steht das in der Online-Liste. */
+let anwesenheitMelden = null;
+module.exports = { setupPoker, anwesenheitMelden: () => { if (anwesenheitMelden) anwesenheitMelden(); } };

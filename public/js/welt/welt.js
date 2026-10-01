@@ -1303,7 +1303,7 @@
   }
   function onlineZeichnen() {
     const n = online.length;
-    onlineKnopf.querySelector(".welt-online-zahl").textContent = `${n} online`;
+    onlineKnopf.querySelector(".welt-online-zahl").textContent = n <= 1 ? "nur du online" : `${n} online`;
     onlineKnopf.querySelector(".welt-online-koepfe").innerHTML = online.slice(0, 3).map(kopf).join("");
     onlineKnopf.classList.toggle("leer", n <= 1);
     if (onlineFeld.classList.contains("hidden")) return;
