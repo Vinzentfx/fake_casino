@@ -70,6 +70,9 @@ const GEHEIMNISSE = {
   tresorkatze: { art: "haustier", id: "tresorkatze", satz: "Die Katze blinzelt, streckt sich und läuft dir ab jetzt hinterher." },
   kleeblatt:   { art: "hand",     id: "kleeblatt",   satz: "Ein vierblättriges Kleeblatt. Du steckst es ein, es gehört jetzt dir." },
   spiegel:     { art: "brille",   id: "spiegelbrille", satz: "Dein Spiegelbild winkt zurück und reicht dir eine Brille herüber." },
+  schallplatte: { art: "hand",    id: "schallplatte", satz: "Beim dritten Drücken rattert die Jukebox, ruckelt, und unten fällt eine alte Schallplatte heraus. Die gehört jetzt dir." },
+  pokal:       { art: "hand",     id: "pokal",       satz: "Oben auf dem Podest jubelst du, als hättest du gewonnen. Jemand drückt dir einen goldenen Pokal in die Hand." },
+  wunderkerze: { art: "hand",     id: "wunderkerze", satz: "Du winkst dem Feuer zu, und aus der Glut springt ein Funke in deine Hand. Eine Wunderkerze, die nie ausgeht." },
   e46:         { art: "fahrzeug", id: "e46",         satz: "Unter der Plane steht ein alter BMW E46, Titansilber, eine Tür in Grundierung. Der Schlüssel steckt. Er gehört jetzt dir. Anspringen wird er nie." },
 };
 
@@ -84,6 +87,9 @@ function nachts(jetzt = uhr.jetzt()) {
   return h >= 22 || h < 5;
 }
 const GESTEN = new Set(["winken", "jubeln"]);
+/* Was die Jukebox spielt. Erfunden, damit niemandes Lied hier steht. */
+const LIEDER = ["„Alles auf Rot“ von den Jackpot-Jungs", "„Hebel runter“ von Lucky 7", "„Nacht in Porta“ von DJ Weserwelle",
+  "„Noch eine Runde“ von Die Croupiers", "„Goldene Spielmarke“ von Neon Royale", "„Ring-ding-ding“ von Simson Sisters"];
 
 const runde = (n) => Math.round(n * 100) / 100;
 
@@ -142,6 +148,26 @@ function setupWelt(io, accounts) {
   const verification = require("./verification");
   Object.assign(zuschauen, { io, figuren, kanal });
 
+  /* Die Spielhalle spielt mit: wer an einem ihrer Automaten oder Tische
+     gewinnt, dessen Gewinn sehen alle im Raum dort, ab dem 25-Fachen als
+     Explosion. Gemeldet wird über accounts.onHand, das jede Runde mit Spiel
+     und Einsatz durchläuft; die Spielmodule müssen dafür nichts wissen. */
+  const SPIEL_DING = { mines: "mines", towers: "towers", crash: "crash", pinco: "pinco", hilo: "hilo", wuerfel: "wuerfel" };
+  if (typeof accounts.onHand === "function") {
+    accounts.onHand((name, gewinn, _haus, spiel, meta) => {
+      const dingId = SPIEL_DING[spiel];
+      const einsatz = meta && Number(meta.einsatz);
+      if (!dingId || !(einsatz > 0) || !(gewinn > 0)) return;
+      const fig = figuren.get(String(name || "").toLowerCase());
+      if (!fig || !sichtbar(fig)) return;
+      const d = (R.raum(fig.raum).dinge || []).find((x) => x.id === dingId);
+      if (!d || R.abstandZuDing(d, fig.x, fig.y) > R.reichweite(d) + 1.5) return;
+      const auszahlung = gewinn + einsatz;
+      const vielfach = Math.round((auszahlung / einsatz) * 10) / 10;
+      io.to(kanal(fig.raum)).emit("welt:schau", { id: fig.id, ding: dingId, betrag: auszahlung, vielfach, gross: vielfach >= 25, spielhalle: true });
+    });
+  }
+
   function lookVon(acc) {
     const l = cosmetics.publicLook(acc);
     return {
@@ -198,6 +224,24 @@ function setupWelt(io, accounts) {
     io.to(kanal(fig.raum)).except(eigene).emit(ereignis, daten);
   }
 
+  /* Was die Welt für Achievements mitzählt, am Konto unter acc.welt:
+     besuchte Räume, Shisha-Runde. Danach wird geprüft, ob damit etwas
+     freigeschaltet ist (game/achievements.js). */
+  function weltFortschritt(key, aendern) {
+    const acc = accounts.get(key);
+    if (!acc) return;
+    const w = acc.welt && typeof acc.welt === "object" ? acc.welt : (acc.welt = {});
+    const vorher = JSON.stringify(w);
+    aendern(w);
+    if (JSON.stringify(w) === vorher) return;
+    accounts.save();
+    try { require("./achievements").check(key); } catch {}
+  }
+  function besucht(fig) {
+    if (R.raum(fig.raum) && R.raum(fig.raum).geheim) return;
+    weltFortschritt(fig.key, (w) => { w.raeume = w.raeume || {}; if (!w.raeume[fig.raum]) w.raeume[fig.raum] = Date.now(); });
+  }
+
   function geheimnisFinden(key, gid) {
     const g = GEHEIMNISSE[gid];
     const acc = accounts.get(key);
@@ -220,6 +264,7 @@ function setupWelt(io, accounts) {
     }
     if (fig && sichtbar(fig)) io.to(kanal(fig.raum)).emit("welt:aussehen", oeffentlich(fig));
     const zahl = Object.keys(gefunden).filter((k) => GEHEIMNISSE[k]).length;
+    try { require("./achievements").check(key); } catch {}
     try { require("./chat").announce(io, `${acc.name} hat ein Geheimnis im Haus gefunden (${zahl} von ${Object.keys(GEHEIMNISSE).length}).`); } catch {}
     const pub = accounts.publicAccount(acc);
     for (const s of io.of("/").sockets.values()) {
@@ -288,6 +333,7 @@ function setupWelt(io, accounts) {
     anAndere(fig, "welt:raus", { id: fig.id });
     for (const s of fig.sockets) s.leave(alt);
     fig.raum = zielId;
+    besucht(fig);
     const platz = gestreut(R.raum(zielId), ankunft, 0.35);
     fig.x = platz.x; fig.y = platz.y; fig.d = ankunft.d || "runter";
     fig.sitzt = null; fig.geht = false;
@@ -344,6 +390,7 @@ function setupWelt(io, accounts) {
       }
       socket.data.weltKey = key;
       fig.weg = null;
+      besucht(fig);
       Object.assign(fig, kleidung.fahrtVon(acc));
       fig.fahrzeug = kleidung.fahrzeugVon(acc);
       fig.aktiv = aktivVon(fig);
@@ -416,7 +463,19 @@ function setupWelt(io, accounts) {
         if (t.verschlossen && !(fig.torOffenBis > Date.now())) return ack({ ok: false, error: "Abgeschlossen. Dahinter ist es ganz still." });
         return ack({ ok: true, ding: d.id, ziel: { umzug: umziehen(fig, t.ziel, t.ankunft, socket) } });
       }
-      const platz = d.ziel.screen ? amTischSetzen(fig, raum, d) : null;
+      if (d.ziel.jukebox) {
+        /* Dreimal kurz hintereinander drücken, und die Jukebox spuckt etwas aus. */
+        const jetzt = Date.now();
+        fig.jukebox = fig.jukebox && jetzt - fig.jukebox.t < 4000 ? { n: fig.jukebox.n + 1, t: jetzt } : { n: 1, t: jetzt };
+        if (fig.jukebox.n >= 3) {
+          fig.jukebox = null;
+          const g = geheimnisFinden(fig.key, "schallplatte");
+          if (g) return ack({ ok: true, ding: d.id, ziel: { geheimnis: g } });
+        }
+        return ack({ ok: true, ding: d.id, ziel: { jukebox: { lied: LIEDER[Math.floor(Math.random() * LIEDER.length)] } } });
+      }
+      const platz = (d.ziel.screen || d.ziel.shisha) ? amTischSetzen(fig, raum, d) : null;
+      if (d.ziel.shisha && platz) shishaRunde(fig);
       ack({ ok: true, ding: d.id, ziel: d.ziel, ...(platz ? { platz } : {}) });
     });
 
@@ -442,6 +501,14 @@ function setupWelt(io, accounts) {
       fig.budget = 0; fig.t = Date.now();
       io.to(kanal(fig.raum)).emit("welt:z", [fig.id, fig.x, fig.y, fig.d, 0, sitz.id]);
       return { x: fig.x, y: fig.y, d: fig.d, s: sitz.id };
+    }
+
+    /* Sitzen mindestens drei an der Shisha, ist das eine Runde: jeder, der
+       dabei ist, bekommt sie gutgeschrieben (Achievement „Shisha-Runde“). */
+    function shishaRunde(fig) {
+      const dabei = [...figuren.values()].filter((f) => f.raum === fig.raum && sichtbar(f) && String(f.sitzt || "").startsWith("shisha-"));
+      if (dabei.length < 3) return;
+      for (const f of dabei) weltFortschritt(f.key, (w) => { w.shishaRunde = w.shishaRunde || Date.now(); });
     }
 
     /* Schnellwahl: hin statt nur auf. Wer im Menü „Slots“ wählt, steht danach
@@ -530,15 +597,17 @@ function setupWelt(io, accounts) {
       /* Stück-Gesten nur mit dem Stück in der Hand (oder am Kopf, unter dem
          Hintern, an der Leine). Geprüft gegen das Konto, nicht gegen das, was
          der Browser meint zu tragen. */
-      const stueck = !GESTEN.has(art) && R.STUECK_GESTEN.some((g) => g.id === art);
-      if (!GESTEN.has(art) && !stueck) return antwort({ ok: false, error: "Unbekannte Geste." });
+      // An der Shisha ziehen geht nur im Sitzen, dafür braucht es kein Stück.
+      if (art === "shisha" && !String(fig.sitzt || "").startsWith("shisha-")) return antwort({ ok: false, error: "Erst hinsetzen." });
+      const stueck = art !== "shisha" && !GESTEN.has(art) && R.STUECK_GESTEN.some((g) => g.id === art);
+      if (art !== "shisha" && !GESTEN.has(art) && !stueck) return antwort({ ok: false, error: "Unbekannte Geste." });
       if (stueck) {
         const acc = accounts.get(fig.key);
         const erlaubt = R.gestenFuer(acc ? require("./kleidung").angelegt(acc) : {}).some((g) => g.id === art);
         if (!erlaubt) return antwort({ ok: false, error: "Dafür fehlt dir das passende Stück." });
       }
       const jetzt = Date.now();
-      if (jetzt - fig.gesteTs < (stueck ? STUECK_GESTE_ABSTAND_MS : GESTE_ABSTAND_MS)) return antwort({ ok: false, error: "Kurz durchatmen." });
+      if (jetzt - fig.gesteTs < (stueck || art === "shisha" ? STUECK_GESTE_ABSTAND_MS : GESTE_ABSTAND_MS)) return antwort({ ok: false, error: "Kurz durchatmen." });
       fig.gesteTs = jetzt;
       io.to(kanal(fig.raum)).emit("welt:geste", { id: fig.id, art });
       antwort({ ok: true });
@@ -548,6 +617,18 @@ function setupWelt(io, accounts) {
         fig.torOffenBis = jetzt + GARAGE_OFFEN_MS;
         socket.emit("welt:tor", { ding: "garage", offen: true, bis: GARAGE_OFFEN_MS,
           satz: "Hinter dem Tor scheppert es. Dann quietscht es, und es geht ein Stück weit auf." });
+      }
+      /* Oben auf dem Podest der Ruhmeshalle jubeln: ein Pokal. */
+      const podest = art === "jubeln" && fig.raum === "ruhm" && R.raum("ruhm").dinge.find((x) => x.id === "podest");
+      if (podest && R.abstandZuDing(podest, fig.x, fig.y) <= 1.2) {
+        const g = geheimnisFinden(fig.key, "pokal");
+        if (g && g.neu) socket.emit("welt:geheimnis", g);
+      }
+      /* Nachts dem Feuer auf der Terrasse zuwinken: eine Wunderkerze. */
+      const feuer = art === "winken" && fig.raum === "hof" && R.raum("hof").dinge.find((x) => x.id === "feuer");
+      if (feuer && R.abstandZuDing(feuer, fig.x, fig.y) <= 1.6 && nachts()) {
+        const g = geheimnisFinden(fig.key, "wunderkerze");
+        if (g && g.neu) socket.emit("welt:geheimnis", g);
       }
       const spiegel = fig.raum === "casino" && R.raum("casino").dinge.find((x) => x.id === "garderobe");
       if (art === "winken" && spiegel && R.abstandZuDing(spiegel, fig.x, fig.y) <= 1.4) {
@@ -645,6 +726,13 @@ function setupWelt(io, accounts) {
  * Rouletttisch dreht sich und bleibt auf der gezogenen Zahl stehen. Die
  * Zahl kommt aus dem Spiel, nicht vom Browser.
  */
+/** Wo die Figur von `key` gerade steht, oder null. Für Module, die eine
+    Nähe prüfen müssen (Schnitzeljagd), ohne die Welt selbst zu kennen. */
+function figurVon(key) {
+  const f = zuschauen.figuren && zuschauen.figuren.get(String(key || "").toLowerCase());
+  return f && f.sockets && f.sockets.size ? { raum: f.raum, x: f.x, y: f.y } : null;
+}
+
 function schau(socket, dingId, daten) {
   const { io, figuren, kanal } = zuschauen;
   if (!io || !socket || !socket.data) return;
@@ -655,4 +743,4 @@ function schau(socket, dingId, daten) {
   io.to(kanal(fig.raum)).emit("welt:schau", { id: fig.id, ding: dingId, ...daten });
 }
 
-module.exports = { setupWelt, pruefeZug, saubereGrundform, GEHEIMNISSE, schau, nachts, uhr };
+module.exports = { setupWelt, pruefeZug, saubereGrundform, GEHEIMNISSE, schau, nachts, uhr, figurVon };

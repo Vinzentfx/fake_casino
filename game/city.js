@@ -433,6 +433,15 @@ function istBossIrgendwo(key) {
 /** Komplette Straßen eines Spielers (Bestenliste Straßenkönig). */
 const streetCount = (key) => getDerived().streetsByOwner[key] || 0;
 
+/** In wie vielen Ortsteilen jemand Boss ist. Für die Achievements, die
+    bei jeder gespielten Runde geprüft werden: billig, aus getDerived. */
+function bossAnzahl(key) {
+  const b = getDerived().bossByDistrict;
+  let n = 0;
+  for (const d of Object.values(b)) if (d && d.owner === key) n++;
+  return n;
+}
+
 /** Anzahl Gebäude eines Spielers (Haus-Tribut). */
 function houseCount(key) {
   return (getDerived().idsByOwner.get(key) || []).length;
@@ -1487,7 +1496,7 @@ module.exports = {
   umbenennen,
   CLASSES, TROPHIES, colorFor,
   publicOverview, publicDistrict, ownerValue, casinoOwner, bankOwner, tickMarket, fireEvent,
-  streetCount, trophiesOf, hasTrophy, bldExists, bldInfo, isBoss, istBossIrgendwo,
+  streetCount, trophiesOf, hasTrophy, bldExists, bldInfo, isBoss, istBossIrgendwo, bossAnzahl,
   houseCount, rollGoldenStreet, goldenStreet, ownsGolden, setsOf,
   territorySnapshot, territoryDiff,
   ownerBoard, ownerProperties, mieteVon, steuersatz,

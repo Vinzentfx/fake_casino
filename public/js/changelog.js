@@ -25,6 +25,30 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-01-b",
+      datum: "1. Oktober 2026",
+      titel: "Shisha, Geheimnisse und eine Schnitzeljagd",
+      items: [
+        { icon: "stern", titel: "Die Schnitzeljagd",
+          text: "Wenn sie läuft, liegen zwölf goldene Marken in allen Räumen versteckt. Lauf drüber, und sie gehören dir: jede bringt Chips, alle zusammen einen Bonus und den Titel „Schatzsucher“. Jeder sammelt für sich, du verpasst also nichts, wenn du erst später reinschaust." },
+
+        { icon: "kosmetik", titel: "Die Shisha-Ecke",
+          text: "Auf der Terrasse liegt jetzt ein Teppich mit Kissen und einer Shisha. Setz dich dazu, tipp sie an und zieh: Rauchringe für alle sichtbar. Sitzen drei oder mehr zusammen, glüht die Kohle." },
+
+        { icon: "pinco", titel: "Die Spielhalle spielt mit",
+          text: "Wer an Crash, Mines, Towers, Pinco, Würfelpoker oder Higher/Lower gewinnt, dessen Gewinn steigt für alle sichtbar über dem Automaten auf, große explodieren. An den beiden Tischen setzt du dich auf die Leuchthocker." },
+
+        { icon: "gluecksrad", titel: "Ein neues Glücksrad",
+          text: "Mit Lauflichtern, beschrifteten Feldern und einer Zunge, die beim Drehen klappert. Ist dein Dreh frei, wischst du einfach am Rad. Daneben hängt jetzt ein richtiges Leuchtschild." },
+
+        { icon: "bestenliste", titel: "Neue Geheimnisse und Achievements",
+          text: "Drei neue Geheimnisse sind im Haus versteckt. Dazu Achievements für jeden Raum, für Geheimnisse, eine Shisha-Runde, dein erstes Haustier und die Schnitzeljagd." },
+
+        { icon: "stern", titel: "Tanzfläche, Tiere und ein echter Kickflip",
+          text: "Stell dich in der Spielhalle auf die Leuchtkacheln, und deine Figur tanzt. Haustiere bemerken sich jetzt gegenseitig, Hund und Katze eher weniger gern. Und der Kickflip auf dem Skateboard dreht das Brett jetzt richtig unter den Füßen." },
+      ],
+    },
+    {
       id: "2026-10-01",
       datum: "1. Oktober 2026",
       titel: "Das Casino zum Herumlaufen",

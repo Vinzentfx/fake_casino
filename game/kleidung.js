@@ -188,6 +188,9 @@ const HANDDINGE = [
   { id: "blumenstrauss", label: "Blumenstrauß",       cost: 56_000, nur: K },
   { id: "spezi",         label: "Spezi",              cost: 12_000, nur: KIOSK, preis: 800 },
   { id: "kleeblatt",     label: "Vierblättriges Kleeblatt", cost: null, via: "Irgendwo im Haus versteckt" },
+  { id: "schallplatte",  label: "Alte Schallplatte",  cost: null, via: "Irgendwo im Haus versteckt" },
+  { id: "pokal",         label: "Goldener Pokal",     cost: null, via: "Irgendwo im Haus versteckt" },
+  { id: "wunderkerze",   label: "Wunderkerze",        cost: null, via: "Irgendwo im Haus versteckt", motion: true },
 ];
 
 /* Fahrzeuge. Man steht oder sitzt darauf und rollt etwas schneller als zu

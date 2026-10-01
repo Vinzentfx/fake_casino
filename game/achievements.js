@@ -170,7 +170,35 @@ const DEFS = [
     ziel: 1,        wert: (a) => a.solitaireClears || 0 },
   { id: "kniffel_win", emoji: "🎯", label: "Kniffel-Sieger",  desc: "Gewinne ein Kniffel-Duell",   reward: 15000,
     ziel: 1,        wert: (a) => (a.pvpWinsByGame && a.pvpWinsByGame.kniffel) || 0 },
+
+  // Die Welt. Gezählt am Konto unter acc.welt und acc.geheimnisse (game/welt.js).
+  { id: "welt_bummler", emoji: "🧭", label: "Weltenbummler",  desc: "Betritt jeden Raum im Haus, den man zu Fuß erreicht", reward: 10000,
+    ziel: offeneRaeume().length, wert: (a) => offeneRaeume().filter((r) => a.welt && a.welt.raeume && a.welt.raeume[r]).length },
+  { id: "welt_geheimnis", emoji: "🔍", label: "Neugierig",    desc: "Finde ein Geheimnis im Haus", reward: 5000,
+    ziel: 1,        wert: (a) => geheimnisse(a) },
+  { id: "welt_geheimnis_alle", emoji: "🗝️", label: "Geheimniskrämer", desc: "Finde alle Geheimnisse im Haus", reward: 250000,
+    ziel: geheimnisZahl(), wert: (a) => geheimnisse(a) },
+  { id: "welt_shisha",  emoji: "💨", label: "Shisha-Runde",    desc: "Sitz mit mindestens zwei anderen an der Shisha auf der Terrasse", reward: 10000,
+    ziel: 1,        wert: (a) => (a.welt && a.welt.shishaRunde ? 1 : 0) },
+  { id: "welt_tier",    emoji: "🐾", label: "Tierfreund",      desc: "Hol dir ein Haustier", reward: 5000,
+    ziel: 1,        wert: (a) => ((a.cosOwned && a.cosOwned.haustiere) || []).length ? 1 : 0 },
+  { id: "welt_jagd",    emoji: "🪙", label: "Schatzsucher",    desc: "Finde bei einer Schnitzeljagd alle goldenen Marken", reward: 50000,
+    ziel: 1,        wert: (a) => (a.jagd && a.jagd.fertig ? 1 : 0) },
 ];
+
+/* Die Räume, die man zu Fuß erreicht, kommen aus der Raumdatei selbst:
+   ein neuer Raum zählt damit automatisch mit. Geheime zählen nicht. */
+function offeneRaeume() {
+  try { return Object.values(require("../public/js/welt/raeume.js").RAEUME).filter((r) => !r.geheim).map((r) => r.id); } catch { return ["casino"]; }
+}
+function geheimnisZahl() {
+  try { return Object.keys(require("./welt").GEHEIMNISSE).length; } catch { return 1; }
+}
+function geheimnisse(a) {
+  let alle = {};
+  try { alle = require("./welt").GEHEIMNISSE; } catch {}
+  return Object.keys((a && a.geheimnisse) || {}).filter((k) => alle[k]).length;
+}
 
 /** Wie weit ist jemand? Immer aus denselben Zahlen wie die Freischaltung. */
 function fortschritt(d, acc, key) {
@@ -182,10 +210,12 @@ function fortschritt(d, acc, key) {
 
 const erreicht = (d, acc, key) => fortschritt(d, acc, key).roh >= (d.ziel || 1);
 
-// Günstige Stadt-Zahlen für die Prüfungen oben.
+/* Stadt-Zahlen für die Prüfungen oben. Die laufen bei JEDER gespielten
+   Runde; vorher holten sie dafür die ganze Stadtübersicht (rund 100 ms je
+   Dreh, in denen der Server für alle stand). Jetzt zwei Zahlen aus dem
+   Zwischenspeicher der Stadt. */
 function cityStats(key) {
-  const ov = city.publicOverview(key);
-  return { houses: ov.me ? ov.me.houses : 0, boss: ov.me ? ov.me.bossOf.length : 0 };
+  return { houses: city.houseCount(key), boss: city.bossAnzahl(key) };
 }
 
 let _io = null, _accounts = null;

@@ -2586,6 +2586,7 @@ function loadAdminDashboard() {
       rain: ev.rain || { active: !!ev.rainActive },
       quiz: ev.quiz || { active: !!ev.quizActive },
       vault: ev.vault || { active: !!ev.vaultActive },
+      jagd: ev.jagd || { active: false },
     };
     const laufen = Object.entries(evZustand).filter(([, z]) => z.active).length;
     // Verlosung und Kassensturz haben keinen Zustand, den man zaehlen koennte.
@@ -3524,6 +3525,13 @@ const EVENTS = [
       { k: "minutes", label: "Minuten", wert: 10, min: 1, max: 120 },
       { k: "prize", label: "Preis", wert: 100000, min: 0, schritt: 10000, geld: true },
     ],
+  },
+  {
+    /* Läuft Tage statt Minuten, jeder sammelt für sich: der passende Auftakt
+       für ein großes Update, auch für die, die erst übermorgen reinschauen. */
+    id: "jagd", name: "Schnitzeljagd", icon: "stern", ev: "admin:jagd",
+    was: "Zwölf goldene Marken liegen in allen Räumen versteckt. Jeder sammelt für sich: 2.500 Chips je Marke, alle zusammen 25.000 extra und der Titel „Schatzsucher“.",
+    felder: [{ k: "tage", label: "Tage", wert: 3, min: 1, max: 14 }],
   },
   {
     id: "heist", name: "Casino-Heist", icon: "alarm", ev: "admin:heist",

@@ -98,14 +98,14 @@
         { id: "slot-pharaoh", art: "slot", farbe: "gold", x: 7.8, y: 3.4, block: [7.25, 2.4, 8.35, 3.45],
           nutz: { x: 7.8, y: 4.1, r: 0.95 }, label: "Book of Rah", verb: "Spielen",
           ziel: { screen: "slots", maschine: "pharaoh" }, fokus: { x: 7.8, y: 2.7, zoom: 2.6 } },
-        { id: "gluecksrad", art: "rad", x: 10.2, y: 3.0, block: null,
-          nutz: { x: 10.2, y: 3.8, r: 1.2 }, label: "Glücksrad", verb: "Drehen",
-          ziel: { screen: "wheel", rad: true }, fokus: { x: 10.2, y: 1.9, zoom: 2.3 } },
-        { id: "schild", art: "schild", x: 12.4, y: 3.0, block: null },
+        { id: "gluecksrad", art: "rad", x: 9.95, y: 3.3, block: null,
+          nutz: { x: 9.95, y: 3.9, r: 1.2 }, label: "Glücksrad", verb: "Drehen",
+          ziel: { screen: "wheel", rad: true }, fokus: { x: 9.95, y: 2.0, zoom: 2.3 } },
+        { id: "schild", art: "schild", x: 12.5, y: 3.0, block: null },
         /* Die Laufschrift oben an der Rückwand zeigt den Live-Feed. Wer
            darauf tippt, landet in der Übersicht beim Feed. */
-        { id: "laufschrift", art: "laufschrift", x: 7.85, y: 1.05, block: null, breite: 11.5,
-          nutz: { x: 7.85, y: 3.9, r: 0 }, label: "Live-Feed", verb: "Ansehen", ziel: { ansicht: "feed" } },
+        { id: "laufschrift", art: "laufschrift", x: 4.4, y: 1.05, block: null, breite: 7.6,
+          nutz: { x: 4.4, y: 3.9, r: 0 }, label: "Live-Feed", verb: "Ansehen", ziel: { ansicht: "feed" } },
         /* Der Torbogen in der Rückwand führt in die Spielhalle. Vorher stand
            hier ein Automat, der eine Liste aufmachte; jetzt hat jedes der
            kleinen Spiele dahinter seinen eigenen Platz. */
@@ -240,6 +240,12 @@
     sitze: [
       { id: "bank-1", x: 7.4, y: 9.8, d: "hoch", auf: { x: 7.4, y: 8.95 } },
       { id: "bank-2", x: 8.8, y: 9.8, d: "hoch", auf: { x: 8.8, y: 8.95 } },
+      /* Die Shisha-Ecke: vier Kissen um eine Pfeife. Man setzt sich über die
+         Pfeife selbst (wie am Kartentisch), nicht über ein einzelnes Kissen. */
+      { id: "shisha-1", tisch: "shisha", x: 10.4, y: 7.95, d: "rechts", auf: { x: 10.4, y: 8.6 } },
+      { id: "shisha-2", tisch: "shisha", x: 12.8, y: 7.95, d: "links", auf: { x: 12.8, y: 8.6 } },
+      { id: "shisha-3", tisch: "shisha", x: 11.6, y: 6.85, d: "runter", auf: { x: 10.9, y: 6.6 } },
+      { id: "shisha-4", tisch: "shisha", x: 11.6, y: 9.05, d: "hoch", auf: { x: 11.6, y: 9.6 } },
     ],
     dinge: [
       { id: "rennbahn", art: "rennbahn", x: 5.2, y: 3.5, block: [2.4, 2.4, 8.0, 3.5],
@@ -249,9 +255,13 @@
       { id: "fahne", art: "fahnenmast", x: 14.4, y: 8.2, block: [14.1, 7.9, 14.7, 8.2],
         nutz: { x: 14.0, y: 8.7, r: 1.1 }, label: "Clans", verb: "Banner ansehen", ziel: { screen: "clans" }, fokus: { x: 14.4, y: 6.6, zoom: 2.2 } },
       { id: "feuer", art: "feuerschale", x: 8.1, y: 6.9, block: [7.6, 6.4, 8.6, 6.9] },
+      { id: "shisha", art: "shisha", x: 11.6, y: 7.95, block: [11.35, 7.6, 11.85, 7.95],
+        nutz: "rand", label: "Shisha", verb: "Hinsetzen", ziel: { shisha: true }, fokus: { x: 11.6, y: 7.4, zoom: 2.4 } },
+      ...[["kissen-1", 10.4, 8.05, "rot"], ["kissen-2", 12.8, 8.05, "blau"], ["kissen-3", 11.6, 6.95, "gold"], ["kissen-4", 11.6, 9.15, "gruen"]]
+        .map(([id, x, y, farbe]) => ({ id, art: "sitzkissen", farbe, x, y, block: null })),
       { id: "parkbank", art: "parkbank", x: 8.1, y: 10.4, block: [6.7, 9.5, 9.5, 10.4] },
       { id: "laterne-1", art: "laterne", x: 3.0, y: 9.9, block: [2.8, 9.7, 3.2, 9.9] },
-      { id: "laterne-2", art: "laterne", x: 11.6, y: 9.9, block: [11.4, 9.7, 11.8, 9.9] },
+      { id: "laterne-2", art: "laterne", x: 13.5, y: 9.9, block: [13.3, 9.7, 13.7, 9.9] },
       { id: "busch-1", art: "busch", x: 1.4, y: 10.3, block: [0.8, 9.8, 2.0, 10.3] },
       { id: "busch-2", art: "busch", x: 14.6, y: 10.3, block: [14.0, 9.8, 15.2, 10.3] },
       /* Klein, dunkel, ohne Leuchten. Der Hinweis erscheint erst, wenn man
@@ -340,6 +350,11 @@
     sitze: [
       { id: "sitzsack-1", x: 1.7, y: 9.4, d: "rechts", auf: { x: 2.5, y: 9.4 } },
       { id: "sitzsack-2", x: 14.3, y: 9.4, d: "links", auf: { x: 13.5, y: 9.4 } },
+      // An den Tischen sitzt man auf den Leuchthockern; der Tisch setzt einen hin.
+      { id: "wuerfel-1", tisch: "wuerfel", x: 2.75, y: 8.2, d: "hoch", auf: { x: 2.75, y: 8.75 } },
+      { id: "wuerfel-2", tisch: "wuerfel", x: 4.25, y: 8.2, d: "hoch", auf: { x: 4.25, y: 8.75 } },
+      { id: "hilo-1", tisch: "hilo", x: 11.75, y: 8.2, d: "hoch", auf: { x: 11.75, y: 8.75 } },
+      { id: "hilo-2", tisch: "hilo", x: 13.25, y: 8.2, d: "hoch", auf: { x: 13.25, y: 8.75 } },
     ],
     dinge: [
       { id: "crash", art: "arcade", spiel: "crash", x: 2.0, y: 3.45, block: [1.38, 2.4, 2.62, 3.45],
@@ -359,7 +374,8 @@
       // Hocker ohne Block, wie im Casino: wer am Tisch steht, bleibt nicht hängen.
       ...[[2.75, "#ff4fd8"], [4.25, "#2ad4ff"], [11.75, "#ffb02e"], [13.25, "#3dffa0"]]
         .map(([x, farbe], i) => ({ id: "neonhocker-" + (i + 1), art: "neonhocker", farbe, x, y: 8.25, block: null })),
-      { id: "jukebox", art: "jukebox", x: 1.35, y: 5.6, block: [0.75, 4.9, 1.95, 5.6] },
+      { id: "jukebox", art: "jukebox", x: 1.35, y: 5.6, block: [0.75, 4.9, 1.95, 5.6],
+        nutz: { x: 2.3, y: 5.3, r: 0.9 }, label: "Jukebox", verb: "Lied wählen", ziel: { jukebox: true } },
       { id: "spezi-automat", art: "getraenkeautomat", x: 14.65, y: 5.6, block: [14.1, 4.9, 15.25, 5.6] },
       { id: "sitzsack-l", art: "sitzsack", farbe: "pink", x: 1.3, y: 9.9, block: [0.75, 8.9, 1.9, 9.9] },
       { id: "sitzsack-r", art: "sitzsack", farbe: "tuerkis", x: 14.7, y: 9.9, block: [14.1, 8.9, 15.25, 9.9] },

@@ -609,8 +609,8 @@
      angelegten Stück hängen (Liste in raeume.js, der Server prüft den Besitz).
      Eine Kennung aus einer Nachricht wird nur zur Klasse, wenn sie bekannt ist. */
   const GRUND_GESTEN = [{ id: "winken", name: "Winken" }, { id: "jubeln", name: "Jubeln" }];
-  const GESTEN_BEKANNT = new Set([...GRUND_GESTEN.map((g) => g.id), ...R.STUECK_GESTEN.map((g) => g.id)]);
-  const GESTE_MS = { winken: 1700, jubeln: 1700, kunststueck: 1900, hupen: 1800, ankicken: 2200, qualmen: 2400 };
+  const GESTEN_BEKANNT = new Set([...GRUND_GESTEN.map((g) => g.id), ...R.STUECK_GESTEN.map((g) => g.id), "shisha"]);
+  const GESTE_MS = { winken: 1700, jubeln: 1700, kunststueck: 1900, hupen: 1800, ankicken: 2200, qualmen: 2400, kickflip: 1000 };
   const HUPE = { e_roller: "Kling kling!", bobbycar: "Möp möp!", mopedauto: "Tüt tüt!", goldmoped: "Tüüüt!", aufsitzmaeher: "Brumm brumm!", simme: "Mööööp!" };
   const KONFETTI = ["#e5534b", "#f2c94c", "#3f6fd0", "#4fb76a", "#c86bd6", "#f0a23b"];
 
@@ -674,7 +674,14 @@
     const [hx, hy] = figurPunkt(f, "hand");
     const [kx, ky] = figurPunkt(f, "kopf");
     const r = (a, b) => a + Math.random() * (b - a);
-    if (art === "dampfen") {
+    if (art === "shisha") {
+      /* Ziehen an der Shisha: Ringe wie bei der Vape, dazu blubbert die
+         Pfeife selbst für alle im Raum. */
+      teilchen(box, "fx-wolke", mx, my, { "--dx": seitwaerts * 6 + "px" });
+      for (let n = 0; n < 4; n++) teilchen(box, "fx-ring", mx, my, { "animation-delay": (0.5 + n * 0.38) + "s", "--dx": (seitwaerts * 10 + r(-4, 4)).toFixed(1) + "px" });
+      const sh = dingEls.get("shisha");
+      if (sh) { sh.classList.remove("blubbert"); void sh.offsetWidth; sh.classList.add("blubbert"); setTimeout(() => sh.classList.remove("blubbert"), 2200); }
+    } else if (art === "dampfen") {
       teilchen(box, "fx-wolke", mx, my, { "--dx": seitwaerts * 6 + "px" });
       for (let n = 0; n < 3; n++) {
         teilchen(box, "fx-ring", mx, my, { "animation-delay": (0.55 + n * 0.42) + "s", "--dx": (seitwaerts * 10 + r(-3, 3)).toFixed(1) + "px" });
@@ -698,6 +705,10 @@
         const [px, py] = n % 3 === 2 ? auspuff : haube;
         teilchen(box, "fx-qualm", px + r(-6, 6), py, { "animation-delay": (n * 0.16).toFixed(2) + "s", "--dx": (r(-16, 16) - seitwaerts * 8).toFixed(1) + "px", "--dy": r(-46, -26).toFixed(1) + "px" });
       }
+    } else if (art === "kickflip") {
+      // Landung: zwei Staubwolken links und rechts der Füße.
+      const s = FIG_B / 64;
+      for (const dx of [-1, 1]) teilchen(box, "fx-staub", 32 * s + dx * 10, 88 * s, { "animation-delay": "0.78s", "--dx": dx * 14 + "px" });
     } else if (art === "hupen") {
       rufen(f, HUPE[(f.look.kleidung || {}).fahrzeug] || "Tüt tüt!");
     } else if (art === "ankicken") {
@@ -779,6 +790,7 @@
     zuletztGesendet = { x: ich.x, y: ich.y, d: ich.d, g: 0, t: 0 };
     kameraSofort = true;
     anzeigenLaden();
+    jagdLaden();
   }
 
   socket.on("welt:rein", (p) => {
@@ -1206,6 +1218,80 @@
   }
   socket.on("welt:fahrt", fahrtSetzen);
 
+  /* Die Schnitzeljagd (game/schnitzeljagd.js): goldene Marken im Raum. Wer
+     drüberläuft, hebt sie auf; ein Tipp auf eine Marke läuft hin. Ob man nah
+     genug ist, entscheidet der Server an der Figur. */
+  let jagd = { aktiv: false, marken: [], gefunden: 0, gesamt: 0, bis: 0 };
+  const jagdHud = document.createElement("div");
+  jagdHud.className = "welt-jagd hidden";
+  el.querySelector(".welt-hud").appendChild(jagdHud);
+  let jagdHolt = null;
+  function jagdLaden() {
+    if (!drin || !raum) return;
+    const raumId = raum.id;
+    socket.emit("jagd:state", { raum: raumId }, (r) => {
+      if (!r || !r.ok || !raum || raum.id !== raumId) return;
+      jagd = { aktiv: r.aktiv, marken: r.marken || [], gefunden: r.gefunden, gesamt: r.gesamt, bis: r.bis };
+      jagdZeichnen();
+    });
+  }
+  function jagdZeichnen() {
+    dingeEbene.querySelectorAll(".welt-jagdmarke").forEach((m) => m.remove());
+    for (const m of jagd.marken) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "welt-jagdmarke";
+      b.dataset.jagd = m.id;
+      b.setAttribute("aria-label", "Goldene Marke aufheben");
+      b.style.transform = `translate3d(${(m.x * T - 13).toFixed(1)}px, ${(m.y * T - 26).toFixed(1)}px, 0)`;
+      b.style.zIndex = Math.round(m.y * 100);
+      dingeEbene.appendChild(b);
+    }
+    const tage = Math.max(0, Math.ceil((jagd.bis - Date.now()) / 86400000));
+    jagdHud.classList.toggle("hidden", !jagd.aktiv);
+    jagdHud.innerHTML = jagd.aktiv ? `<b>Schnitzeljagd</b><span>${jagd.gefunden} von ${jagd.gesamt}${tage ? ` · noch ${tage} ${tage === 1 ? "Tag" : "Tage"}` : ""}</span><small>${jagd.marken.length ? `${jagd.marken.length} hier im Raum` : "hier nichts mehr"}</small>` : "";
+  }
+  function jagdNah() {
+    if (!ich || jagdHolt) return;
+    const m = jagd.marken.find((x) => Math.hypot(x.x - ich.x, x.y - ich.y) < 0.75);
+    if (!m) return;
+    jagdHolt = m.id;
+    sendeZug(false);
+    socket.emit("jagd:finden", { id: m.id }, (r) => {
+      jagdHolt = null;
+      if (!r || !r.ok) return;
+      jagd.marken = jagd.marken.filter((x) => x.id !== m.id);
+      jagd.gefunden = r.gefunden;
+      const knopf = dingeEbene.querySelector(`[data-jagd="${m.id}"]`);
+      if (knopf) { knopf.classList.add("weg"); setTimeout(() => knopf.remove(), 600); }
+      if (r.account && Casino.applyAccount) Casino.applyAccount(r.account);
+      Casino.sound && Casino.sound.play && Casino.sound.play(r.fertig ? "bigwin" : "chip");
+      if (r.fertig) Casino.dialog.hinweis(`Alle ${r.gesamt} goldenen Marken gefunden! Dazu gibt es ${r.chips.toLocaleString("de-DE")} Chips und den Titel „Schatzsucher“.`, { titel: "Schatz gehoben" });
+      else Casino.toast(`Goldene Marke! +${r.chips.toLocaleString("de-DE")} Chips · ${r.gefunden} von ${r.gesamt}`);
+      jagdZeichnen();
+    });
+  }
+  socket.on("jagd:update", () => jagdLaden());
+  dingeEbeneKlick();
+  function dingeEbeneKlick() {
+    el.addEventListener("click", (e) => {
+      const m = e.target.closest && e.target.closest(".welt-jagdmarke");
+      if (!m || !bedienbar()) return;
+      const marke = jagd.marken.find((x) => x.id === m.dataset.jagd);
+      if (marke) hingehen(marke.x, marke.y, null);
+    });
+  }
+
+  /* Die Shisha glüht stärker, sobald zwei oder mehr daran sitzen. Billig
+     genug, um es alle anderthalb Sekunden nachzusehen. */
+  setInterval(() => {
+    if (!drin || !raum || raum.id !== "hof") return;
+    const sh = dingEls.get("shisha");
+    if (!sh) return;
+    const sitzen = [ich, ...andere.values()].filter((f) => f && String(f.s || "").startsWith("shisha-")).length;
+    sh.classList.toggle("runde", sitzen >= 2);
+  }, 1500);
+
   /* Die Stadt über der Welt: die Tafeln neben der Karte („Dein Imperium“,
      „Wem gehört Porta“) starten zugeklappt und gehen per Tipp auf. Das CSS
      greift nur im Fenster über der Welt; in der Übersicht bleibt alles offen. */
@@ -1402,6 +1488,8 @@
   let benutztGerade = false;
   function benutze(d) {
     if (!d || benutztGerade || !drin) return;
+    // Wer schon an der Shisha sitzt, zieht, statt sich noch einmal zu setzen.
+    if (d.ziel && d.ziel.shisha && ich && String(ich.s || "").startsWith("shisha-")) { gesteSenden("shisha"); return; }
     benutztGerade = true;
     ziel = null;
     tasten.clear();
@@ -1427,6 +1515,9 @@
       else if (z.auswahl) zeigeAuswahl(d, z.auswahl);
       else if (z.umzug) geheimgang(d, z.umzug);
       else if (z.geheimnis) geheimnisZeigen(z.geheimnis);
+      else if (z.jukebox) { Casino.toast(`♪ Die Jukebox spielt ${z.jukebox.lied}`); const jb = dingEls.get(d.id); if (jb) { jb.classList.remove("spielt"); void jb.offsetWidth; jb.classList.add("spielt"); } }
+      else if (z.shisha && res.platz) Casino.toast("Du sitzt an der Shisha. Tipp sie noch einmal an, um zu ziehen.");
+      else if (z.shisha) Casino.toast("Gerade sind alle Kissen besetzt.");
       else if (z.hinweis) Casino.dialog.hinweis(z.hinweis, { titel: d.label });
       else if (z.ansicht) zeigeInUebersicht(z.ansicht);
       else oeffne(d, z);
@@ -1487,6 +1578,7 @@
   function tischZu() {
     if (!tisch || tisch.dreht) return;
     tisch = null;
+    radWischbar();
     tischEl.classList.add("hidden");
     chipsAufFilz();
     fahreZurueck();
@@ -1496,6 +1588,7 @@
 
   function zeichneTisch() {
     if (!tisch) return;
+    radWischbar();
     if (tisch.art === "rad") return zeichneRadTafel();
     if (tisch.art === "rennen") return zeichneRennTafel();
     if (tisch.art === "lotto") return zeichneLottoTafel();
@@ -1636,6 +1729,11 @@
       const s = segmente[Number(p.dataset.feld)];
       p.setAttribute("class", "m-radfeld rs-" + (s && RAD_STUFEN.has(s.stufe) ? s.stufe : "klein"));
     });
+    // Die Felder tragen ihren Gewinn, wie auf einem echten Rad.
+    b.querySelectorAll("[data-feld-text]").forEach((t) => {
+      const s = segmente[Number(t.dataset.feldText)];
+      t.textContent = s ? String(s.label).replace("Gratis-Los", "Los") : "";
+    });
   }
 
   function radDrehen(index) {
@@ -1648,7 +1746,39 @@
     radDrehung = radDrehung - (radDrehung % 360) + 360 * 5 + (360 - (index * weite + weite / 2));
     g.style.transition = reduziert() ? "none" : `transform ${RAD_MS}ms cubic-bezier(.15, .6, .2, 1)`;
     g.style.transform = `rotate(${radDrehung}deg)`;
+    /* Während es läuft, rennen die Lichter und die Zunge klappert; danach
+       leuchtet das getroffene Feld ein paar Mal auf. */
+    b.querySelectorAll(".m-radfeld.treffer").forEach((x) => x.classList.remove("treffer"));
+    b.classList.add("dreht");
+    clearTimeout(b._radUhr);
+    b._radUhr = setTimeout(() => {
+      b.classList.remove("dreht");
+      const feld = b.querySelector(`.m-radfeld[data-feld="${index}"]`);
+      if (feld) { feld.classList.add("treffer"); setTimeout(() => feld.classList.remove("treffer"), 3200); }
+    }, reduziert() ? 150 : RAD_MS);
   }
+
+  /* Am Rad selbst drehen: ist die Tafel offen und der Dreh frei, reicht ein
+     Wisch oder ein Tipp aufs Rad. Fühlt sich mehr nach Glücksrad an als ein
+     Knopf in einer Tafel. */
+  function radWischbar() {
+    const rb = dingEls.get("gluecksrad");
+    if (rb) rb.classList.toggle("wischbar", !!(tisch && tisch.art === "rad" && tisch.zustand && tisch.zustand.canSpin && !tisch.dreht));
+  }
+  let radGriff = null;
+  raumEl.addEventListener("pointerdown", (e) => {
+    const rb = e.target.closest && e.target.closest(".welt-ding.m-rad.wischbar");
+    if (!rb) return;
+    e.stopPropagation(); e.preventDefault();
+    radGriff = { x: e.clientX, y: e.clientY };
+  }, true);
+  window.addEventListener("pointerup", (e) => {
+    if (!radGriff) return;
+    const weit = Math.hypot(e.clientX - radGriff.x, e.clientY - radGriff.y);
+    radGriff = null;
+    // Ein Wisch oder ein Tipp: beides dreht. Nur ein langes Ziehen ins Leere nicht.
+    if (weit < 400) radDreh();
+  }, true);
 
   function radAuf(d) {
     tisch = { art: "rad", d, einsaetze: [], dreht: false, info: "", zustand: null, ergebnis: null, treffer: -1 };
@@ -1679,7 +1809,7 @@
     const frei = !!(z && z.canSpin);
     const stand = !z ? "Einen Moment …"
       : tisch.dreht ? "Das Rad läuft …"
-        : frei ? "Einmal am Tag, es kostet nichts."
+        : frei ? "Einmal am Tag, gratis. Wisch am Rad oder tipp auf Drehen."
           : `Heute schon gedreht. Wieder frei in ${wartezeit(z.msLeft)}.`;
     const felder = z ? z.segments : [];
     tischEl.innerHTML = `
@@ -1958,7 +2088,8 @@
     if (!sch || !raum) return;
     const b = dingEls.get(sch.ding);
     if (!b) return;
-    if (sch.gross && /^slot-/.test(sch.ding)) { explosion(b, sch); return; }
+    if (sch.gross && (/^slot-/.test(sch.ding) || sch.spielhalle)) { explosion(b, sch); return; }
+    if (sch.spielhalle) { gewinnZeigen(b, sch); return; }
     if (sch.ding === "gluecksrad") {
       // Den eigenen Dreh fährt die Tafel selbst, sonst liefe das Rad zweimal.
       if (ich && sch.id === ich.id) return;
@@ -2012,6 +2143,22 @@
      gewonnen hat. Die Funken fliegen in einem Bogen: höchster Punkt
      bei --dy, danach fallen sie unter den Start, damit sie sichtbar
      ankommen und nicht im Nichts verschwinden. */
+  /* Ein kleiner Gewinn an einem Spielhallen-Automaten: die Zahl steigt über
+     ihm auf, der Automat blitzt kurz, ein paar Münzen springen. */
+  function gewinnZeigen(b, sch) {
+    const d = raum.dinge.find((x) => x.id === sch.ding);
+    if (!d) return;
+    const z = M.ding(d);
+    const el2 = document.createElement("div");
+    el2.className = "welt-gewinn";
+    el2.style.transform = `translate3d(${d.x * T}px, ${z.oben + 6}px, 0)`;
+    el2.innerHTML = `<b>+${(Number(sch.betrag) || 0).toLocaleString("de-DE")}</b><small>×${String(sch.vielfach).replace(".", ",")}</small>`
+      + (reduziert() ? "" : Array.from({ length: 5 }, (_, i) => `<i class="ex-muenze" style="--dx:${(i - 2) * 14}px;--dy:${-30 - (i % 2) * 14}px;--fall:30px;--rot:${(i - 2) * 160}deg;animation-delay:${i * 0.05}s"></i>`).join(""));
+    schilderEbene.appendChild(el2);
+    b.classList.remove("blitzt"); void b.offsetWidth; b.classList.add("blitzt");
+    setTimeout(() => { el2.remove(); b.classList.remove("blitzt"); }, 2600);
+  }
+
   function explosion(b, sch) {
     const d = raum.dinge.find((x) => x.id === sch.ding);
     if (!d) return;
@@ -2344,8 +2491,79 @@
       tierFolgt(ich, dt);
       for (const f of andere.values()) tierFolgt(f, dt);
       pruefeNaehe();
+      if (vorn && jetzt - letzteRunde > 400) {
+        letzteRunde = jetzt;
+        tanzflaeche();
+        tiereBegegnen(jetzt);
+      }
     }
     setzeKamera();
+  }
+
+  /* Die Tanzfläche in der Spielhalle, dieselben Maße wie die Leuchtkacheln
+     in moebel.js. Wer darauf steht und nichts tut, tanzt; die Kachel unter
+     ihm leuchtet auf. Reine Anzeige, jeder Browser rechnet selbst. */
+  const TANZ = { raum: "spielhalle", x: 5.9, y: 4.7, schritt: 0.84, spalten: 5, reihen: 4 };
+  let letzteRunde = 0;
+  function tanzflaeche() {
+    const hier = raum.id === TANZ.raum;
+    const an = new Set();
+    for (const f of [ich, ...andere.values()]) {
+      const sx = Math.floor((f.x - TANZ.x) / TANZ.schritt), sy = Math.floor((f.y - TANZ.y) / TANZ.schritt);
+      const drauf = hier && sx >= 0 && sx < TANZ.spalten && sy >= 0 && sy < TANZ.reihen;
+      const tanzt = drauf && !f.g && !f.s && !f.a && !f.el.classList.contains("reitet");
+      if (drauf) an.add(sx + sy * TANZ.spalten);
+      if (tanzt !== f.el.classList.contains("tanzt")) f.el.classList.toggle("tanzt", tanzt);
+    }
+    if (!hier) return;
+    raumEl.querySelectorAll(".wb-tanzkachel").forEach((k, i) => k.classList.toggle("unter", an.has(i)));
+  }
+
+  /* Haustiere bemerken einander. Stehen zwei Tiere still nah beieinander,
+     drehen sie sich zueinander und sagen etwas; gleiche Arten mögen sich,
+     Hund und Katze nicht, der Papagei plappert nach. Danach ist eine Weile
+     Ruhe, sonst redet ein Rudel am Tisch ununterbrochen. */
+  const LAUT = { taube: "Gurr!", hamster: "Piep!", frosch: "Quak!", dackel: "Wuff!", waschbaer: "Fiep!", gluecksschwein: "Oink!",
+    minidrache: "Fauch!", tresorkatze: "Miau!", igel: "Schnüff!", hase: "Mümmel!", schildkroete: "…", pinguin: "Kwääk!", papagei: "Hallo!" };
+  const TIER_RUHE = 25000;
+  function tierLaut(t, text, warte = 0, klasse = "begegnet") {
+    setTimeout(() => {
+      if (!t.el.isConnected) return;
+      const b = document.createElement("span");
+      b.className = "wt-laut";
+      b.textContent = text;
+      t.el.appendChild(b);
+      // Die Blase muss über den Figuren liegen, das Tier steht oft halb dahinter.
+      t.el.style.zIndex = 100000;
+      t.el.classList.remove(klasse); void t.el.offsetWidth; t.el.classList.add(klasse);
+      setTimeout(() => { b.remove(); t.el.classList.remove(klasse); t.lage = ""; }, 1700);
+    }, warte);
+  }
+  function tiereBegegnen(jetzt) {
+    const tiere = [ich, ...andere.values()].map((f) => f.tier).filter((t) => t && !t.geht && !(t.ruhe > jetzt));
+    for (let i = 0; i < tiere.length; i++) {
+      for (let j = i + 1; j < tiere.length; j++) {
+        const a = tiere[i], b = tiere[j];
+        if (a.ruhe > jetzt || b.ruhe > jetzt || Math.hypot(a.x - b.x, a.y - b.y) > 1.4) continue;
+        a.ruhe = b.ruhe = jetzt + TIER_RUHE + Math.random() * 10000;
+        a.links = b.x < a.x; b.links = a.x < b.x;
+        const art = new Set([a.id, b.id]);
+        if (a.id === b.id) {
+          tierLaut(a, "♥"); tierLaut(b, "♥", 350);
+        } else if (art.has("dackel") && art.has("tresorkatze")) {
+          const hund = a.id === "dackel" ? a : b, katze = hund === a ? b : a;
+          tierLaut(hund, "Wuff! Wuff!");
+          tierLaut(katze, "Fauch!", 450, "erschrickt");
+        } else if (art.has("papagei")) {
+          const vogel = a.id === "papagei" ? a : b, anderes = vogel === a ? b : a;
+          tierLaut(anderes, LAUT[anderes.id] || "…");
+          tierLaut(vogel, LAUT[anderes.id] || "Hallo!", 700);
+        } else {
+          tierLaut(a, LAUT[a.id] || "…");
+          tierLaut(b, LAUT[b.id] || "…", 450);
+        }
+      }
+    }
   }
 
   function eingabeVektor() {
@@ -2415,6 +2633,7 @@
     }
     if (ich.g !== warGehend || v) setzeZustand(ich);
     platziere(ich);
+    if (jagd.marken.length) jagdNah();
 
     if (jetzt < fremdGesteuertBis && !v) return;
     const geaendert = Math.abs(ich.x - zuletztGesendet.x) > 0.005 || Math.abs(ich.y - zuletztGesendet.y) > 0.005 || ich.d !== zuletztGesendet.d;
@@ -2478,7 +2697,7 @@
       aktionKnopf.classList.add("hidden");
       return;
     }
-    const verb = neu.ding ? (neu.amTisch ? "Weiterspielen" : neu.ding.verb) : "Hinsetzen";
+    const verb = neu.ding ? (neu.amTisch ? (neu.ding.ziel && neu.ding.ziel.shisha ? "Ziehen" : "Weiterspielen") : neu.ding.verb) : "Hinsetzen";
     const label = neu.ding ? neu.ding.label : (neu.sitz.id.startsWith("sofa") ? "Sofa" : "Sessel");
     let hx, hy;
     if (neu.amTisch) {

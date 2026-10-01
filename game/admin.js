@@ -219,6 +219,7 @@ function setupAdmin(io, accounts) {
             rain: eventZustand(_events.rain),
             quiz: eventZustand(_events.quiz),
             vault: eventZustand(_events.vault),
+            jagd: require("./schnitzeljagd").zustand(),
             // Die alten Felder bleiben, damit nichts bricht, was sie liest.
             heistActive: !!(_heist && typeof _heist.active === "function" && _heist.active()),
             rainActive: !!(_events.rain && _events.rain.active()),
@@ -1244,6 +1245,15 @@ function setupAdmin(io, accounts) {
       ack({ ok: true, weg, hinterlegt });
     });
 
+    /* Schnitzeljagd starten oder beenden. Läuft Tage, nicht Minuten; jeder
+       sammelt für sich, deshalb kein Vorlauf und keine Mindestzahl. */
+    socket.on("admin:jagd", ({ on, tage } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      if (!_jagd) return ack({ ok: false, error: "Die Schnitzeljagd ist nicht eingerichtet." });
+      ack({ ok: true, ...(on === false ? _jagd.beenden() : _jagd.starten(tage)) });
+    });
+
     socket.on("admin:resetAchievements", ({ target } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
@@ -1256,4 +1266,9 @@ function setupAdmin(io, accounts) {
   });
 }
 
-module.exports = { setupAdmin, setHeist, setEvents, setUmbenennen };
+/* Die Schnitzeljagd wird in server.js nach dem Admin eingerichtet und
+   reicht ihre Steuerung hier herein, wie Heist und Events. */
+let _jagd = null;
+function setJagd(j) { _jagd = j; }
+
+module.exports = { setupAdmin, setHeist, setEvents, setUmbenennen, setJagd };

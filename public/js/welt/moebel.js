@@ -59,34 +59,58 @@
      hat, weiß nur der Server; bis die Antwort da ist, wechseln sich Chips
      und Sonderfeld ab, so wie sie auch auf dem echten Rad liegen. */
   const RAD_FELDER = 12;
+  /* Das Glücksrad: Holzrand mit Lauflichtern, beschriftete Felder (die
+     Beschriftung setzt welt.js aus wheel:state), eine Zeigerzunge oben, die
+     beim Drehen über die Stifte klappert, und ein Sockel mit Schild. */
   function rad() {
-    const w = 104, h = 118;
-    const cx = 52, cy = 54, r = 44;
-    const p = (grad) => { const a = (grad * Math.PI) / 180; return `${(cx + Math.sin(a) * r).toFixed(1)} ${(cy - Math.cos(a) * r).toFixed(1)}`; };
-    let stuecke = "";
+    const w = 132, h = 154;
+    const cx = 66, cy = 68, r = 50;
+    const p = (grad, rr = r) => { const a = (grad * Math.PI) / 180; return `${(cx + Math.sin(a) * rr).toFixed(1)} ${(cy - Math.cos(a) * rr).toFixed(1)}`; };
+    let stuecke = "", texte = "", stifte = "";
     for (let i = 0; i < RAD_FELDER; i++) {
-      const a1 = (i * 360) / RAD_FELDER, a2 = ((i + 1) * 360) / RAD_FELDER;
+      const a1 = (i * 360) / RAD_FELDER, a2 = ((i + 1) * 360) / RAD_FELDER, mitte = (a1 + a2) / 2;
       stuecke += `<path class="m-radfeld rs-${i % 2 ? "sonder" : "klein"}" data-feld="${i}" d="M${cx} ${cy}L${p(a1)}A${r} ${r} 0 0 1 ${p(a2)}Z"/>`;
+      // Die Schrift liegt entlang des Radius, wie auf einem echten Rad.
+      const [tx, ty] = p(mitte, r * 0.6).split(" ");
+      texte += `<text class="m-radtext" data-feld-text="${i}" x="${tx}" y="${ty}" transform="rotate(${(mitte - 90).toFixed(1)} ${tx} ${ty})" text-anchor="middle" dominant-baseline="central"></text>`;
+      stifte += `<circle cx="${p(a1, r + 1).split(" ")[0]}" cy="${p(a1, r + 1).split(" ")[1]}" r="1.6" fill="#e2b656" stroke="#6b4b16" stroke-width=".5"/>`;
     }
+    const birnen = Array.from({ length: 24 }, (_, i) => { const a = (i / 24) * Math.PI * 2; return `<circle class="m-radbirne" style="--i:${i % 3}" cx="${(cx + Math.cos(a) * (r + 7)).toFixed(1)}" cy="${(cy + Math.sin(a) * (r + 7)).toFixed(1)}" r="2"/>`; }).join("");
     const innen = `
-      <rect x="44" y="96" width="16" height="22" fill="#5a3d27"/>
-      <circle cx="${cx}" cy="${cy}" r="${r + 5}" class="m-gold"/>
+      <defs><radialGradient id="m-rad-glanz" cx=".38" cy=".3" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".25"/></radialGradient></defs>
+      <ellipse cx="${cx}" cy="${h - 4}" rx="34" ry="4" fill="#000" opacity=".3"/>
+      <path d="M${cx - 12} ${cy + r + 4}L${cx - 26} ${h - 8}H${cx + 26}L${cx + 12} ${cy + r + 4}Z" fill="#5a3d27" stroke="#2b1a0c" stroke-width="1"/>
+      <path d="M${cx - 30} ${h - 10}H${cx + 30}V${h - 4}H${cx - 30}Z" class="m-gold"/>
+      <rect x="${cx - 24}" y="${h - 26}" width="48" height="11" rx="2" fill="#1a1d24" stroke="#e2b656" stroke-width=".8"/>
+      <text x="${cx}" y="${h - 18}" text-anchor="middle" font-size="6.4" font-weight="900" letter-spacing="1.2" fill="#f4d782" font-family="ui-rounded, system-ui">GLÜCKSRAD</text>
+      <circle cx="${cx}" cy="${cy}" r="${r + 11}" fill="#4a2e14" stroke="#2b1a0c" stroke-width="1.2"/>
+      <circle cx="${cx}" cy="${cy}" r="${r + 7}" fill="none" class="m-gold-strich" stroke-width="5"/>
+      <g class="m-radbirnen">${birnen}</g>
       <g class="m-rad-drehung" style="transform-origin:${cx}px ${cy}px">${stuecke}
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1"/></g>
-      <circle cx="${cx}" cy="${cy}" r="9" class="m-gold"/><circle cx="${cx}" cy="${cy}" r="4" fill="#fff5d6"/>
-      <path d="M${cx - 6} 2H${cx + 6}L${cx} 16Z" fill="#fff5d6" stroke="#6b4b16" stroke-width="1"/>
-      ${Array.from({ length: 12 }, (_, i) => { const a = (i / 12) * Math.PI * 2; return `<circle class="m-birne" cx="${(cx + Math.cos(a) * (r + 5)).toFixed(1)}" cy="${(cy + Math.sin(a) * (r + 5)).toFixed(1)}" r="1.8" fill="#fff3c4"/>`; }).join("")}`;
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#m-rad-glanz)" pointer-events="none"/>
+        ${texte}${stifte}</g>
+      <circle cx="${cx}" cy="${cy}" r="12" class="m-gold"/><circle cx="${cx}" cy="${cy}" r="12" fill="url(#m-rad-glanz)"/>
+      <path d="M${cx} ${cy - 7}l2 4.4 4.8.6-3.5 3.3.9 4.8-4.2-2.3-4.2 2.3.9-4.8-3.5-3.3 4.8-.6z" fill="#fff5d6" stroke="#8e6931" stroke-width=".6"/>
+      <g class="m-rad-zeiger" style="transform-origin:${cx}px 4px"><path d="M${cx - 7} 2H${cx + 7}L${cx} 20Z" fill="#d6402f" stroke="#6b1018" stroke-width="1"/><circle cx="${cx}" cy="5" r="2.6" class="m-gold"/></g>`;
     return { svg: svg(w, h, innen, "m-rad"), w, h };
   }
 
+  /* „Fake Casino“ als Leuchtschild mit Glühbirnenrahmen. Schmal genug, dass
+     es zwischen Glücksrad und Torbogen passt; vorher ragte es in beide
+     hinein, und das Flackern der Schrift sah aus wie ein Darstellungsfehler. */
   function schild() {
-    const w = 170, h = 64;
+    const w = 96, h = 78;
+    const birnen = [];
+    for (let i = 0; i < 9; i++) birnen.push([8 + i * 10, 6], [8 + i * 10, h - 12]);
+    for (let i = 1; i < 6; i++) birnen.push([6, 6 + i * 10], [w - 6, 6 + i * 10]);
     const innen = `
-      <rect x="4" y="6" width="162" height="46" rx="8" fill="#0d0f14" opacity=".55"/>
-      <rect x="4" y="6" width="162" height="46" rx="8" fill="none" class="m-akzent-linie" stroke-width="2"/>
-      <text x="85" y="28" text-anchor="middle" font-size="10" letter-spacing="4" class="m-akzent-text" font-weight="700">FAKE</text>
-      <text x="85" y="45" text-anchor="middle" font-size="17" letter-spacing="3" class="m-akzent-text m-neon" font-weight="900" font-family="Georgia, serif">CASINO</text>`;
-    return { svg: svg(w, h, innen, "m-schild"), w, h, unten: -46 };
+      <rect x="2" y="2" width="${w - 4}" height="${h - 8}" rx="8" fill="#2a0d14" stroke="#e2b656" stroke-width="2"/>
+      <rect x="10" y="12" width="${w - 20}" height="${h - 28}" rx="4" fill="#12060a"/>
+      <g class="m-schildbirnen">${birnen.map(([x, y], i) => `<circle class="m-schildbirne" style="--i:${i % 2}" cx="${x}" cy="${y}" r="2.1"/>`).join("")}</g>
+      <text x="${w / 2}" y="29" text-anchor="middle" font-size="10" letter-spacing="5" class="m-schild-fake" font-weight="800" font-family="ui-rounded, system-ui">FAKE</text>
+      <text x="${w / 2}" y="51" text-anchor="middle" font-size="19" letter-spacing="1.5" class="m-schild-casino" font-weight="900" font-family="Georgia, serif">CASINO</text>
+      <path d="M22 57H${w - 22}" stroke="#e2b656" stroke-opacity=".7" stroke-width="1"/>`;
+    return { svg: svg(w, h, innen, "m-schild"), w, h, unten: -30 };
   }
 
   function spielhalle() {
@@ -253,6 +277,41 @@
 
   /* Barhocker an den Kartentischen. Der Sitz ist rund und flach, damit
      eine Figur, die darauf sitzt, ihn von hinten fast ganz verdeckt. */
+  /* ---------- Shisha-Ecke (Terrasse) ---------- */
+
+  /* Die Pfeife: Glasbauch mit Wasser, Rauchsäule, Kopf mit Kohle und ein
+     Schlauch. Blubbert, wenn jemand zieht (Klasse von welt.js), und die
+     Kohle glüht stärker, je mehr Leute drumherum sitzen. */
+  function shisha() {
+    // Größer gezeichnet als die viewBox (46 × 92): sie soll über den Köpfen am Teppich sichtbar bleiben.
+    const w = 62, h = 124;
+    const innen = `<g transform="scale(1.35)"><ellipse cx="23" cy="88" rx="16" ry="3.4" fill="#000" opacity=".3"/>
+      <path d="M11 86Q8 70 16 62H30Q38 70 35 86Z" fill="#3a7bd5" fill-opacity=".55" stroke="#9fd3ea" stroke-width="1"/>
+      <path d="M12 78Q23 74 34 78V86H12Z" fill="#2a5aa0" fill-opacity=".7"/>
+      <g class="m-shisha-blasen"><circle cx="20" cy="80" r="1.4" fill="#cfefff"/><circle cx="25" cy="82" r="1" fill="#cfefff"/><circle cx="22" cy="76" r="1.2" fill="#cfefff"/></g>
+      <path d="M14 66Q23 70 32 66" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.2"/>
+      <rect x="21" y="26" width="4" height="36" fill="#c0c6cc" stroke="#6b7078" stroke-width=".5"/>
+      <rect x="17" y="44" width="12" height="3" rx="1.5" fill="#e2b656"/>
+      <path d="M15 24L31 24L28 14H18Z" fill="#8a4a22" stroke="#4a2410" stroke-width=".8"/>
+      <rect x="15" y="11" width="16" height="3" rx="1" fill="#c0c6cc"/>
+      <g class="m-shisha-kohle"><rect x="18" y="8" width="4" height="3" rx="1" fill="#ff6a2a"/><rect x="24" y="8" width="4" height="3" rx="1" fill="#ff8a3d"/></g>
+      <path d="M29 48Q42 50 40 64Q38 74 30 72" fill="none" stroke="#2a2d33" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M29 48Q42 50 40 64Q38 74 30 72" fill="none" stroke="#6b4bb0" stroke-width="1" stroke-linecap="round" stroke-dasharray="2 2"/>
+      <rect x="27" y="70" width="5" height="3" rx="1" fill="#e2b656"/>
+      <g class="m-shisha-rauch" fill="#e8ecf2"><circle cx="23" cy="2" r="2.6" opacity=".5"/><circle cx="26" cy="-4" r="3.2" opacity=".35"/></g></g>`;
+    return { svg: svg(w, h, innen, "m-shisha"), w, h };
+  }
+
+  function sitzkissen(ding) {
+    const w = 40, h = 26;
+    const [c, d] = { rot: ["#c8243a", "#7a1022"], blau: ["#3f6fd0", "#1d3a7a"], gold: ["#e2b656", "#8e6931"], gruen: ["#2e9e6a", "#1a5a3c"] }[ding.farbe] || ["#c8243a", "#7a1022"];
+    const innen = `<ellipse cx="20" cy="22" rx="17" ry="3.4" fill="#000" opacity=".25"/>
+      <path d="M3 16Q3 8 20 8Q37 8 37 16Q37 22 20 22Q3 22 3 16Z" fill="${c}" stroke="${d}" stroke-width="1"/>
+      <path d="M8 14Q20 10 32 14" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/>
+      <circle cx="20" cy="15" r="1.6" fill="#e2b656"/>`;
+    return { svg: svg(w, h, innen), w, h, unten: 6 };
+  }
+
   /* ---------- Ladenstraße ---------- */
 
   /* Eine Ladenfassade. Gemeinsam: Mauer, Markise, Schild, Schaufenster,
@@ -987,7 +1046,7 @@
   const ARTEN = {
     slot: automat, rad, schild, spielhalle, wettschalter, roulette, blackjack, poker, sofa, couchtisch,
     sessel, hocker, zeitungsstaender, spieltisch, kisten, torbogen, arcade, neonschild, pinco, greifautomat,
-    wuerfeltisch, kartentisch_hilo, sitzsack, neonhocker, jukebox, getraenkeautomat, ladenfront, garagentor, litfass, planenauto, werkbank, reifenstapel, pflanze, garderobe, boerse, bank, kartentisch, schreibtisch, markt, pult, regal,
+    wuerfeltisch, kartentisch_hilo, sitzsack, neonhocker, jukebox, getraenkeautomat, shisha, sitzkissen, ladenfront, garagentor, litfass, planenauto, werkbank, reifenstapel, pflanze, garderobe, boerse, bank, kartentisch, schreibtisch, markt, pult, regal,
     laufschrift, podest, rekordtafel, fernseher, statistikpult, seasonbanner, auftragsbrett, kalender, vitrine,
     rennbahn, lotteriebude, fahnenmast, feuerschale, parkbank, laterne, busch, kleeblatt, tresortuer, goldstapel,
     katzenkissen, notiz,
@@ -1104,7 +1163,8 @@
         <rect x="${8.6 * T}" y="${11.4 * T}" width="${2.8 * T}" height="${1.2 * T}" rx="10" class="wb-matte"/><text x="${10 * T}" y="${12.15 * T}" text-anchor="middle" class="wb-matte-text">WILLKOMMEN</text>`,
       kontor: `<rect x="${4.8 * T}" y="${5.2 * T}" width="${6.4 * T}" height="${3.8 * T}" rx="16" class="wb-teppich-lounge"/><rect x="${4.8 * T + 7}" y="${5.2 * T + 7}" width="${6.4 * T - 14}" height="${3.8 * T - 14}" rx="12" class="wb-teppich-rand"/>`,
       ruhm: `<rect x="${5.6 * T}" y="${5.2 * T}" width="${2.8 * T}" height="${5.3 * T}" class="wb-roter-teppich"/><rect x="${5.6 * T + 6}" y="${5.2 * T}" width="${2.8 * T - 12}" height="${5.3 * T}" class="wb-teppich-rand"/><rect x="${8.4 * T}" y="${5.1 * T}" width="${5.6 * T}" height="${1.1 * T}" class="wb-roter-teppich"/>`,
-      hof: `<path d="M0 ${6.1 * T}H${4 * T}Q${6 * T} ${6.1 * T} ${7 * T} ${7.8 * T}T${9 * T} ${9 * T}" fill="none" stroke-width="${1.1 * T}" class="wb-weg"/><circle cx="${8.1 * T}" cy="${6.6 * T}" r="${1.4 * T}" class="wb-weg-platz"/>`,
+      hof: `<path d="M0 ${6.1 * T}H${4 * T}Q${6 * T} ${6.1 * T} ${7 * T} ${7.8 * T}T${9 * T} ${9 * T}" fill="none" stroke-width="${1.1 * T}" class="wb-weg"/><circle cx="${8.1 * T}" cy="${6.6 * T}" r="${1.4 * T}" class="wb-weg-platz"/>
+        <ellipse cx="${11.6 * T}" cy="${7.9 * T}" rx="${1.5 * T}" ry="${1.15 * T}" class="wb-teppich-shisha"/><ellipse cx="${11.6 * T}" cy="${7.9 * T}" rx="${1.3 * T}" ry="${0.98 * T}" class="wb-teppich-shisha-rand"/>`,
       tresor: "",
       /* Die Spielhalle: eine Tanzfläche aus Leuchtkacheln in der Mitte und
          ein Lichtband von der Tür dorthin. */

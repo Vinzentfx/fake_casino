@@ -626,6 +626,17 @@ html:not(.reduce-motion) .ht-feuer { transform-origin: 0% 50%; animation: fg-fun
 html:not(.reduce-motion) .wt.geht .ht-kopf { transform-origin: 30% 100%; animation: fg-nicken 0.3s ease-in-out infinite alternate; }
 html:not(.reduce-motion) .wt[data-tier="frosch"].geht .ht { animation: fg-hopsen 0.35s ease-in-out infinite alternate; }
 .wt.geht-weg { opacity: 0; transition: opacity 0.3s ease; }
+/* Tiere begegnen sich: eine Sprechblase und ein kleiner Hüpfer, die Katze
+   springt dabei zurück. */
+.wt-laut { position: absolute; left: 50%; bottom: 100%; margin-bottom: 2px; padding: 1px 6px; border-radius: 8px; white-space: nowrap;
+  background: #fffaf0; color: #2a1d12; font: 800 10px/1.4 var(--font); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); transform: translateX(-50%); }
+.wt-laut::after { content: ""; position: absolute; left: 50%; top: 100%; margin-left: -3px; border: 3px solid transparent; border-top-color: #fffaf0; }
+html:not(.reduce-motion) .wt-laut { animation: wt-laut 1.7s ease-out both; }
+@keyframes wt-laut { 0% { opacity: 0; transform: translate(-50%, 4px) scale(0.6); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } 20%, 80% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(-50%, -6px); } }
+html:not(.reduce-motion) .wt.begegnet .ht { animation: wt-hupf 0.32s ease-in-out 2 alternate; }
+@keyframes wt-hupf { from { translate: 0 0; } to { translate: 0 -6px; } }
+html:not(.reduce-motion) .wt.erschrickt .ht { animation: wt-schreck 0.6s cubic-bezier(.2, .8, .4, 1) 1; }
+@keyframes wt-schreck { 0% { translate: 0 0; } 35% { translate: 7px -10px; } 100% { translate: 0 0; } }
 @keyframes fg-nicken { from { transform: translateX(0); } to { transform: translateX(1.6px); } }
 
 /* Ein Stück als Bild (Garderobe, Kisten, Markt) */
@@ -1037,6 +1048,19 @@ html:not(.reduce-motion) .fx-konfetti { animation: fx-konfetti 1.6s cubic-bezier
 .fx-note { color: #f2c94c; font: 900 13px/1 var(--font); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
 html:not(.reduce-motion) .fx-note { animation: fx-note 1.4s ease-out 1 forwards; }
 @keyframes fx-note { 0% { opacity: 0; transform: translate(0, 0) rotate(-10deg); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), -30px) rotate(12deg); } }
+/* Tanzen auf der Tanzfläche: wippen im Takt, die Arme abwechselnd hoch.
+   Eine laufende Geste geht vor. */
+html:not(.reduce-motion) .wf.tanzt:not([class*=" g-"]) .fg-leib { animation: tanz-wippen 0.5s ease-in-out infinite alternate; }
+html:not(.reduce-motion) .wf.tanzt:not([class*=" g-"]) .fg-vorne .fg-arm-r,
+html:not(.reduce-motion) .wf.tanzt:not([class*=" g-"]) .fg-hinten .fg-arm-r { animation: tanz-arm-r 1s ease-in-out infinite; }
+html:not(.reduce-motion) .wf.tanzt:not([class*=" g-"]) .fg-vorne .fg-arm-l,
+html:not(.reduce-motion) .wf.tanzt:not([class*=" g-"]) .fg-hinten .fg-arm-l { animation: tanz-arm-l 1s ease-in-out -0.5s infinite; }
+html:not(.reduce-motion) .wf.tanzt:not([class*=" g-"]) .fg-seite .fg-arm-v { animation: tanz-arm-s 1s ease-in-out infinite; }
+html:not(.reduce-motion) .wf.tanzt:not([class*=" g-"]) .fg-kopf { animation: fx-kopfnicken 0.25s ease-in-out infinite alternate; }
+@keyframes tanz-wippen { from { transform: translateY(0) rotate(-2deg); } to { transform: translateY(-4px) rotate(2deg); } }
+@keyframes tanz-arm-r { 0%, 100% { transform: rotate(-15deg); } 50% { transform: rotate(-140deg); } }
+@keyframes tanz-arm-l { 0%, 100% { transform: rotate(15deg); } 50% { transform: rotate(140deg); } }
+@keyframes tanz-arm-s { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(-150deg); } }
 html:not(.reduce-motion) .wf.g-abgehen .fg-kopf { animation: fx-kopfnicken 0.36s ease-in-out 7 alternate; }
 @keyframes fx-kopfnicken { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(1.6px) rotate(3deg); } }
 
@@ -1046,11 +1070,33 @@ html:not(.reduce-motion) .fx-feder { animation: fx-feder 1.8s ease-in-out 1 forw
 html:not(.reduce-motion) .wf.g-flattern .wf-koerper { animation: fx-abheben 2.4s ease-in-out 1; }
 @keyframes fx-abheben { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-16px); } 45% { transform: translateY(-11px); } 65% { transform: translateY(-17px); } }
 
-/* Kickflip: die Figur springt, das Brett dreht sich einmal unter ihr. */
-html:not(.reduce-motion) .wf.g-kickflip .wf-koerper { animation: fx-sprung 0.9s cubic-bezier(.3, .8, .4, 1) 1; }
-html:not(.reduce-motion) .wf.g-kickflip .fz { transform-box: fill-box; transform-origin: center; animation: fx-flip 0.62s ease-in-out 0.08s 1; }
-@keyframes fx-sprung { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-20px); } 70% { transform: translateY(-6px); } }
-@keyframes fx-flip { from { rotate: 0deg; } to { rotate: 360deg; } }
+/* Kickflip: in die Knie, abspringen, das Brett dreht sich unter den Füßen
+   einmal um die Längsachse und steigt dabei höher als die Figur, Füße
+   wieder drauf, Landung mit Federn. Körper und Brett bewegen sich getrennt;
+   vorher hüpfte beides als ein Stück und das Brett drehte sich wie ein Rad. */
+html:not(.reduce-motion) .wf.g-kickflip .fg-leib { animation: kf-koerper 0.95s cubic-bezier(.3, .7, .4, 1) 1; }
+html:not(.reduce-motion) .wf.g-kickflip .fz { transform-box: fill-box; transform-origin: center; animation: kf-brett 0.95s cubic-bezier(.3, .7, .4, 1) 1; }
+@keyframes kf-koerper {
+  0% { transform: translateY(0) scaleY(1); }
+  14% { transform: translateY(3px) scaleY(0.94); }
+  42% { transform: translateY(-30px) scaleY(1.03); }
+  62% { transform: translateY(-24px); }
+  82% { transform: translateY(2px) scaleY(0.95); }
+  100% { transform: translateY(0) scaleY(1); }
+}
+@keyframes kf-brett {
+  0%, 14% { transform: translateY(0) scaleY(1) rotate(0); }
+  28% { transform: translateY(-27px) scaleY(0.25) rotate(-8deg); }
+  38% { transform: translateY(-34px) scaleY(-1) rotate(-12deg); }
+  50% { transform: translateY(-36px) scaleY(0.2) rotate(-6deg); }
+  62% { transform: translateY(-26px) scaleY(1) rotate(0); }
+  82% { transform: translateY(1px) scaleY(1); }
+  100% { transform: translateY(0) scaleY(1); }
+}
+/* Staub bei der Landung. */
+.fx-staub { width: 14px; height: 6px; margin: -3px 0 0 -7px; border-radius: 50%; background: rgba(210, 200, 180, 0.8); opacity: 0; }
+html:not(.reduce-motion) .fx-staub { animation: fx-staub 0.6s ease-out both; }
+@keyframes fx-staub { 0% { opacity: 0.9; transform: translateX(0) scale(0.5); } 100% { opacity: 0; transform: translateX(var(--dx, 0)) scale(1.6); } }
 
 /* Hupen: das Fahrzeug federt kurz, damit man sieht, wer es war. */
 html:not(.reduce-motion) .wf.g-hupen .wf-koerper { animation: fx-federn 0.18s ease-in-out 4 alternate; }
@@ -1599,6 +1645,8 @@ html:not(.reduce-motion) .m-greifer { animation: m-greifer 6s ease-in-out infini
 .wb-tanzkachel.k1 { fill: #5a1d5e; }
 .wb-tanzkachel.k2 { fill: #164560; }
 .wb-tanzkachel.k3 { fill: #1f4a2c; }
+/* Unter einem Tänzer leuchtet die Kachel hell auf. */
+.wb-tanzkachel.unter { fill: #ff4fd8; stroke: #fff; stroke-opacity: 0.8; filter: drop-shadow(0 0 6px #ff4fd8); animation: none; }
 html:not(.reduce-motion) .wb-tanzkachel { animation: wb-kachel 4s steps(1, end) infinite; }
 html:not(.reduce-motion) .wb-tanzkachel.k1 { animation-delay: -1s; }
 html:not(.reduce-motion) .wb-tanzkachel.k2 { animation-delay: -2s; }
@@ -1712,3 +1760,76 @@ html:not(.reduce-motion) .m-kuehl { animation: m-atmen 2.4s ease-in-out infinite
 .ank-name b { font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ank-name small { color: var(--text-dim); font-size: var(--fs-xs); }
 .ank-knopf { flex: 0 0 auto; white-space: nowrap; }
+
+/* Glücksrad im Casino (moebel.js rad): Lauflichter, Beschriftung, Zeiger. */
+.m-gold-strich { stroke: var(--accent); }
+.m-radtext { fill: #fff; font: 800 6px/1 var(--font); paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); stroke-width: 1.6px; pointer-events: none; }
+.m-radfeld { filter: none; }
+.m-radbirne { fill: #fff3c4; }
+html:not(.reduce-motion) .m-radbirne { animation: m-lauflicht 1.8s steps(1, end) infinite; animation-delay: calc(var(--i) * -0.6s); }
+@keyframes m-lauflicht { 0% { fill: #fff3c4; } 33% { fill: #8a6b2a; } 66% { fill: #ffd34d; } }
+/* Steht jemand davor oder läuft das Rad, rennen die Lichter. */
+html:not(.reduce-motion) .welt-ding.m-rad.nah .m-radbirne,
+html:not(.reduce-motion) .welt-ding.m-rad.dreht .m-radbirne { animation-duration: 0.45s; }
+html:not(.reduce-motion) .welt-ding.m-rad.dreht .m-rad-zeiger { animation: m-zeiger 0.09s ease-in-out infinite alternate; }
+@keyframes m-zeiger { from { transform: rotate(-14deg); } to { transform: rotate(10deg); } }
+.welt-ding.m-rad .m-radfeld.treffer { stroke: #fff; stroke-width: 2.2; }
+html:not(.reduce-motion) .welt-ding.m-rad .m-radfeld.treffer { animation: m-treffer 0.5s ease-in-out 6 alternate; }
+@keyframes m-treffer { to { filter: brightness(1.7); } }
+.welt-ding.m-rad.wischbar { cursor: grab; }
+.welt-ding.m-rad.wischbar::after { content: "Wisch am Rad!"; position: absolute; left: 50%; top: -14px; transform: translateX(-50%); padding: 2px 8px; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6); color: #ffe27a; font: 800 9px/1.5 var(--font); white-space: nowrap; pointer-events: none; }
+html:not(.reduce-motion) .welt-ding.m-rad.wischbar::after { animation: m-atmen 1.6s ease-in-out infinite; }
+
+/* Das Leuchtschild: Glühbirnen im Wechsel, Schrift ruhig leuchtend statt flackernd. */
+.m-schild-fake { fill: #f4d782; }
+.m-schild-casino { fill: #fff1c9; filter: drop-shadow(0 0 2px #ff9a2e) drop-shadow(0 0 5px rgba(255, 140, 40, 0.6)); }
+.m-schildbirne { fill: #ffe9a8; }
+html:not(.reduce-motion) .m-schildbirne { animation: m-schildlicht 1.4s steps(1, end) infinite; animation-delay: calc(var(--i) * -0.7s); }
+@keyframes m-schildlicht { 0% { fill: #ffe9a8; } 50% { fill: #7a5a24; } }
+
+/* Shisha-Ecke auf der Terrasse */
+.wb-teppich-shisha { fill: #6b1f2e; opacity: 0.85; }
+.wb-teppich-shisha-rand { fill: none; stroke: #e2b656; stroke-width: 2; stroke-dasharray: 6 4; opacity: 0.7; }
+html:not(.reduce-motion) .m-shisha-rauch { animation: m-shisha-rauch 3.6s ease-out infinite; }
+@keyframes m-shisha-rauch { 0% { transform: translateY(4px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-10px); opacity: 0; } }
+html:not(.reduce-motion) .m-shisha-kohle { animation: m-atmen 2.4s ease-in-out infinite; }
+/* Wer zieht, lässt sie blubbern; je mehr Leute sitzen, desto heller die Kohle. */
+html:not(.reduce-motion) .welt-ding.m-shisha.blubbert .m-shisha-blasen { animation: m-blubbern 0.35s linear 6; }
+@keyframes m-blubbern { 0% { transform: translateY(2px); opacity: 0.3; } 100% { transform: translateY(-6px); opacity: 1; } }
+.welt-ding.m-shisha.runde .m-shisha-kohle rect { fill: #ffd34d; }
+.welt-ding.m-shisha.runde { filter: drop-shadow(0 0 6px rgba(255, 150, 60, 0.7)); }
+/* Die Wunderkerze sprüht. */
+html:not(.reduce-motion) .fg-funken { animation: fg-funken 0.22s steps(2, jump-none) infinite; transform-box: fill-box; transform-origin: 50% 80%; }
+@keyframes fg-funken { 50% { transform: rotate(18deg) scale(1.1); opacity: 0.75; } }
+/* Die Jukebox spielt: Noten fliegen, der Equalizer springt. */
+html:not(.reduce-motion) .welt-ding.m-jukebox.spielt .m-noten { animation: m-noten 1.6s ease-out 2; }
+@keyframes m-noten { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-18px); opacity: 0; } }
+html:not(.reduce-motion) .welt-ding.m-jukebox.spielt .m-eq { animation-duration: 0.25s; }
+/* Gewinn an einem Spielhallen-Automaten (welt:schau mit spielhalle) */
+.welt-gewinn { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 55; pointer-events: none; }
+.welt-gewinn b, .welt-gewinn small { position: absolute; left: 0; transform: translateX(-50%); white-space: nowrap; }
+.welt-gewinn b { top: -26px; padding: 2px 9px; border-radius: 999px; background: rgba(10, 6, 20, 0.85); border: 1px solid #3dffa0;
+  color: #3dffa0; font: 900 13px/1.3 var(--font); text-shadow: 0 0 8px rgba(61, 255, 160, 0.7); }
+.welt-gewinn small { top: -6px; color: #fff; font: 800 10px/1 var(--font); text-shadow: 0 1px 2px #000; }
+.welt-gewinn i { position: absolute; left: 0; top: 0; display: block; }
+html:not(.reduce-motion) .welt-gewinn b, html:not(.reduce-motion) .welt-gewinn small { animation: welt-gewinn 2.5s ease-out forwards; }
+@keyframes welt-gewinn { 0% { opacity: 0; margin-top: 10px; } 12% { opacity: 1; margin-top: 0; } 75% { opacity: 1; } 100% { opacity: 0; margin-top: -22px; } }
+html:not(.reduce-motion) .welt-ding.blitzt { animation: welt-blitzt 0.6s ease-out; }
+@keyframes welt-blitzt { 0% { filter: brightness(2); } 100% { filter: none; } }
+
+/* Schnitzeljagd: goldene Marken im Raum und der Stand oben links. */
+.welt-jagdmarke { position: absolute; left: 0; top: 0; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #fff6c8, #f4d782 35%, #c99a2e 70%, #8e6931); box-shadow: 0 0 0 2px rgba(142, 105, 49, 0.9), 0 0 14px rgba(255, 210, 90, 0.75); }
+.welt-jagdmarke::after { content: "★"; position: absolute; inset: 0; display: grid; place-items: center; color: #7a5410; font: 900 13px/1 var(--font); }
+html:not(.reduce-motion) .welt-jagdmarke { animation: welt-jagd-schweben 2.2s ease-in-out infinite; }
+@keyframes welt-jagd-schweben { 50% { margin-top: -4px; box-shadow: 0 0 0 2px rgba(142, 105, 49, 0.9), 0 0 22px rgba(255, 210, 90, 0.95); } }
+.welt-jagdmarke.weg { pointer-events: none; }
+html:not(.reduce-motion) .welt-jagdmarke.weg { animation: welt-jagd-weg 0.55s ease-in forwards; }
+@keyframes welt-jagd-weg { to { margin-top: -40px; opacity: 0; transform: scale(1.6); } }
+.welt-jagd { position: absolute; left: max(14px, env(safe-area-inset-left)); top: 84px; display: grid; gap: 1px; padding: 6px 12px; border-radius: var(--r-md);
+  background: linear-gradient(135deg, rgba(244, 215, 130, 0.22), rgba(0, 0, 0, 0.5)), var(--bar); border: 1px solid rgba(244, 215, 130, 0.6); pointer-events: none; }
+.welt-jagd.hidden { display: none; }
+.welt-jagd b { color: #f4d782; font-size: var(--fs-sm); }
+.welt-jagd span { color: var(--text); font-size: var(--fs-xs); font-weight: 700; }
+.welt-jagd small { color: var(--text-dim); font-size: 10px; }

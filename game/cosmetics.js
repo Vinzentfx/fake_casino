@@ -219,6 +219,7 @@ const TITLES = [
   { id: "legende",    text: "Legende von Porta",   cost: 1000000 },
   // Nicht kaeuflich: kommt mit dem ersten kompletten Strassen-Monopol.
   { id: "strassenkoenig", text: "Straßenherr", cost: null, via: "Eine Straße komplett besitzen" },
+  { id: "schatzsucher",   text: "Schatzsucher", cost: null, via: "Alle goldenen Marken einer Schnitzeljagd finden" },
   { id: "s2_phoenix",     text: "Phönix von Porta", cost: null, via: "Season 2, Stufe 20", season: "porta-herbst-2" },
   /*
    * Nur fuer die, die zur Wiedereroeffnung da waren. Danach gibt es ihn nie
