@@ -113,14 +113,20 @@
     if (u) u.textContent = st.zu ? uhr(rest) : "OFFEN";
     const g = document.querySelector('[data-anzeige="einlass-glas"]');
     if (g) g.textContent = `${de(st.glas.schaetzungen)} ${st.glas.schaetzungen === 1 ? "Tipp" : "Tipps"}`;
+    // Die Tafeln nur neu schreiben, wenn sich etwas ändert; der Takt läuft viermal je Sekunde.
     const t = document.querySelector('[data-anzeige="einlass-teaser"]');
     if (t) {
       const auf = st.teaser.filter((x) => x.auf).length;
-      t.innerHTML = st.teaser.map((x) => x.auf ? `<p><b>${esc(x.titel)}</b></p>` : `<p><b>???</b> in ${esc(dauer(x.in - (Date.now() - (ende - (st.rest || 0)))))}</p>`).join("")
-        + `<p><small>${auf} von ${st.teaser.length} aufgedeckt</small></p>`;
+      setzeHtml(t, st.teaser.map((x) => x.auf ? `<p><b>${esc(x.titel)}</b></p>` : `<p><b>???</b> in ${esc(dauer(x.in - (Date.now() - (ende - (st.rest || 0)))))}</p>`).join("")
+        + `<p><small>${auf} von ${st.teaser.length} aufgedeckt</small></p>`);
     }
     const w = document.querySelector('[data-anzeige="einlass-wand"]');
-    if (w) w.innerHTML = (st.wand || []).slice(-5).reverse().map((x) => `<p><b>${esc(x.name)}</b>${esc(x.text)}</p>`).join("") || "<p>Noch leer. Schreib als Erster etwas.</p>";
+    if (w) setzeHtml(w, (st.wand || []).slice(-5).reverse().map((x) => `<p><b>${esc(x.name)}</b>${esc(x.text)}</p>`).join("") || "<p>Noch leer. Schreib als Erster etwas.</p>");
+  }
+  function setzeHtml(el, inhalt) {
+    if (el._inhalt === inhalt) return;
+    el._inhalt = inhalt;
+    el.innerHTML = inhalt;
   }
 
   function freiZeichnen() {
@@ -207,6 +213,7 @@
   function klick(e) {
     if (e.target.closest('[data-einlass="zu"]')) zu();
   }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && tafelArt) zu(); });
   function senden() {
     const feld = tafel && tafel.querySelector(".einlass-form input");
     if (!feld) return;

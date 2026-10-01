@@ -2047,3 +2047,6 @@ html:not(.reduce-motion) .welt-online-feld:not(.hidden) { animation: welt-auf 0.
 .welt-online-zeile b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); }
 .welt-online-zeile small { color: var(--text-dim); font-size: var(--fs-xs); }
 .welt-online-leer { margin: 4px 6px; color: var(--text-dim); font-size: var(--fs-sm); }
+/* Die Bänder des Einlasses gehören in die Welt; über einem Spiel oder den
+   Einstellungen lägen sie auf deren Knöpfen. */
+html:not(.welt-vorn) .einlass-frei, html:not(.welt-vorn) .einlass-band { display: none !important; }

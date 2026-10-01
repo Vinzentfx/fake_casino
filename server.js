@@ -638,7 +638,9 @@ io.on("connection", (socket) => {
   socket.on("account:transfer", ({ to, amount } = {}, ack) => {
     // Zaehler fuer das Achievement "Spendabel", hochgezaehlt wird erst, wenn
     // die Ueberweisung unten tatsaechlich geklappt hat.
-    if (!ack) return;
+    // Nur eine Funktion ist ein Ack: ein Objekt an dieser Stelle warf sonst
+    // NACH der Überweisung und riss den ganzen Server mit.
+    if (typeof ack !== "function") return;
     if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
     const res = accounts.transfer(socket.data.account, to, amount);
     if (!res.ok) return ack({ ok: false, error: res.error });
