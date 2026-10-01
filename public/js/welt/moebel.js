@@ -885,24 +885,51 @@
     return z;
   }
   function schaetzglas() {
-    const w = 64, h = 120;
-    const farben = ["#c8243a", "#1d1d23", "#3f6fd0", "#4fb76a", "#e2b656", "#f4efe2", "#8d5bd6"];
+    /* Ein bauchiges Bonbonglas mit Messingdeckel, voller Spielchips. Die
+       Chips liegen nicht im Raster, sondern als Haufen: jede Reihe leicht
+       versetzt, gekippt und unterschiedlich weit gedreht, oben ein
+       unebener Rand. Fester Zufall, damit das Glas bei allen gleich aussieht. */
+    const w = 80, h = 136;
+    let saat = 46;
+    const zz = () => { saat = (saat * 9301 + 49297) % 233280; return saat / 233280; };
+    const farben = [["#c8243a", "#8e1526"], ["#1d1d23", "#000"], ["#2f62c4", "#1c3e86"], ["#3a9a5a", "#226640"], ["#e2b656", "#9a7a1c"], ["#f4efe2", "#b9b3a2"], ["#8d5bd6", "#5a3594"]];
     let chips = "";
-    for (let r = 0; r < 9; r++) for (let i = 0; i < 6; i++) {
-      const x = 17 + i * 6 + (r % 2) * 3, y = 84 - r * 5.4;
-      chips += `<ellipse cx="${x}" cy="${y}" rx="3.2" ry="1.6" fill="${farben[(r * 3 + i * 5) % farben.length]}" stroke="#000" stroke-opacity=".25" stroke-width=".4"/>`;
+    for (let r = 0; r < 12; r++) {
+      const y = 108 - r * 5.2;
+      const breite = r < 2 ? 22 : 25;
+      const anzahl = r === 11 ? 3 : 6;
+      for (let i = 0; i < anzahl; i++) {
+        const x = 40 - breite + ((i + 0.5) / 6) * breite * 2 + (zz() - 0.5) * 4 + (r % 2 ? 2 : -2);
+        const yy = y + (zz() - 0.5) * 2.4 - (r === 11 ? zz() * 2 : 0);
+        const kipp = 1.2 + zz() * 1.4, dreh = Math.round((zz() - 0.5) * 50);
+        const [f, d] = farben[Math.floor(zz() * farben.length)];
+        chips += `<g transform="translate(${x.toFixed(1)} ${yy.toFixed(1)}) rotate(${dreh})"><ellipse cy="1" rx="4.4" ry="${kipp.toFixed(1)}" fill="${d}"/><ellipse rx="4.4" ry="${kipp.toFixed(1)}" fill="${f}"/><ellipse rx="2.6" ry="${(kipp * 0.55).toFixed(1)}" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width=".7" stroke-dasharray="1.2 1.2"/></g>`;
+      }
     }
+    const glas = "M22 30Q22 24 28 24H52Q58 24 58 30Q70 36 70 54V104Q70 116 58 116H22Q10 116 10 104V54Q10 36 22 30Z";
     const innen = `
-      <ellipse cx="32" cy="116" rx="24" ry="4" fill="#000" opacity=".3"/>
-      <path d="M10 116V100H54V116Z" fill="#3a2a1a" stroke="#1d140c" stroke-width="1"/><rect x="8" y="96" width="48" height="6" rx="2" fill="#5a4030"/>
-      <path d="M14 94V40Q14 32 22 30H42Q50 32 50 40V94Z" fill="#cfe9f2" fill-opacity=".18" stroke="#e8f6fb" stroke-opacity=".7" stroke-width="1.4"/>
-      ${chips}
-      <path d="M18 92V42" stroke="#fff" stroke-opacity=".35" stroke-width="2.4" stroke-linecap="round"/>
-      <rect x="18" y="22" width="28" height="9" rx="2" fill="#c9a24a" stroke="#7a5c1c" stroke-width=".8"/>
-      <rect x="15" y="104" width="34" height="9" rx="1.6" fill="#f4efe2"/><text x="32" y="111" text-anchor="middle" font-size="6.4" font-weight="900" fill="#3a2a1a" font-family="ui-rounded, system-ui">WIE VIELE?</text>`;
+      <defs><clipPath id="m-glas-innen"><path d="${glas}"/></clipPath>
+        <linearGradient id="m-glas-schein" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".25" stop-color="#fff" stop-opacity=".05"/><stop offset=".8" stop-color="#fff" stop-opacity=".02"/><stop offset="1" stop-color="#fff" stop-opacity=".22"/></linearGradient>
+        <linearGradient id="m-glas-holz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b4527"/><stop offset="1" stop-color="#3a2414"/></linearGradient></defs>
+      <ellipse cx="40" cy="132" rx="30" ry="4" fill="#000" opacity=".3"/>
+      <path d="M8 120H72L68 132H12Z" fill="url(#m-glas-holz)" stroke="#24160c" stroke-width=".8"/>
+      <rect x="6" y="114" width="68" height="7" rx="2.4" fill="#7a5233" stroke="#24160c" stroke-width=".8"/>
+      <rect x="22" y="123" width="36" height="7" rx="1.4" fill="#e2b656" stroke="#7a5c1c" stroke-width=".6"/>
+      <text x="40" y="128.6" text-anchor="middle" font-size="4.6" font-weight="900" letter-spacing=".4" fill="#4a3412" font-family="ui-rounded, system-ui">WIE VIELE?</text>
+      <path d="${glas}" fill="#d8f0f7" fill-opacity=".12"/>
+      <g clip-path="url(#m-glas-innen)">${chips}</g>
+      <path d="${glas}" fill="url(#m-glas-schein)" stroke="#eaf7fb" stroke-opacity=".75" stroke-width="1.4"/>
+      <path d="M15 58Q15 44 22 38" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M15 66V100" stroke="#fff" stroke-opacity=".35" stroke-width="2" stroke-linecap="round"/>
+      <path d="M64 70V96" stroke="#fff" stroke-opacity=".2" stroke-width="1.4" stroke-linecap="round"/>
+      <rect x="24" y="16" width="32" height="9" rx="2.4" fill="#c9a24a" stroke="#7a5c1c" stroke-width=".8"/>
+      <path d="M27 18v5M31 18v5M35 18v5M39 18v5M43 18v5M47 18v5M51 18v5" stroke="#9a7a1c" stroke-width=".6"/>
+      <rect x="30" y="11" width="20" height="6" rx="2" fill="#e2b656" stroke="#7a5c1c" stroke-width=".7"/>
+      <path d="M54 21Q60 22 62 28" fill="none" stroke="#9a7a1c" stroke-width=".7"/>`;
     return { svg: svg(w, h, innen, "m-schaetzglas"), w, h, unten: 4,
-      html: `<div class="welt-anzeige welt-glaszahl" data-anzeige="einlass-glas" style="left:8px;top:0;width:48px;height:18px"></div>` };
+      html: `<div class="welt-anzeige welt-glaszahl" data-anzeige="einlass-glas" style="left:54px;top:27px;width:34px;height:13px"></div>` };
   }
+
   function fernseher(d) {
     const z = wandtafel(d, "LIVE", "feed-tv");
     z.svg = z.svg.replace('fill="#4a3120"', 'fill="#1d1f24"').replace('stroke="#2b1d12"', 'stroke="#0c0d10"');

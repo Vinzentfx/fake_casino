@@ -69,7 +69,12 @@
     </div>
     <div class="welt-schleier" aria-hidden="true"></div>
     <div class="welt-hud">
-      <div class="welt-ort" aria-live="polite"><b></b><small></small></div>
+      <div class="welt-links">
+        <div class="welt-ort"><b aria-live="polite"></b><small></small>
+          <button type="button" class="welt-online" data-welt="online" aria-haspopup="dialog" aria-expanded="false" aria-label="Wer im Haus online ist"><i class="welt-online-punkt" aria-hidden="true"></i><span class="welt-online-koepfe" aria-hidden="true"></span><span class="welt-online-zahl">online</span></button>
+        </div>
+        <div class="welt-online-feld hidden" role="dialog" aria-label="Wer online ist"></div>
+      </div>
       <div class="welt-knoepfe">
         <button type="button" class="welt-knopf welt-starter hidden" data-welt="starter">${Casino.icons ? Casino.icons.ui("marke") : ""}<span>Starter-Pass</span></button>
         <button type="button" class="welt-knopf" data-welt="orte" aria-haspopup="dialog">${symbolRaster()}<span>Schnellwahl</span></button>
@@ -1279,6 +1284,53 @@
     if (!musikFeld.classList.contains("hidden") && !e.target.closest(".welt-musik, .welt-musik-knopf, .welt-mehr-huelle")) musikAuf(false);
   });
 
+  /* Wer im ganzen Haus online ist. Die Liste stand nur in der alten
+     Übersicht, und seit die Lobby ein Raum ist, sah sie dort niemand mehr.
+     Jetzt eine Zeile im Ortsschild (der Raum oben, das Haus darunter), und
+     auf Tipp das kleine Feld mit allen und „Zuletzt hier“. Die Daten sind
+     dieselben wie in der Übersicht (presence:list und presence:update). */
+  const onlineKnopf = el.querySelector(".welt-online");
+  const onlineFeld = el.querySelector(".welt-online-feld");
+  let online = [], zuletzt = [];
+  const kopf = (p) => `<span class="welt-online-kopf">${Casino.spieler ? Casino.spieler.figur(p) : ""}</span>`;
+  function wannGrob(ts) {
+    const min = Math.floor((Date.now() - ts) / 60000);
+    if (min < 60) return `vor ${Math.max(1, min)} Min.`;
+    const std = Math.floor(min / 60);
+    if (std < 24) return `vor ${std} Std.`;
+    const tage = Math.floor(std / 24);
+    return tage === 1 ? "gestern" : `vor ${tage} Tagen`;
+  }
+  function onlineZeichnen() {
+    const n = online.length;
+    onlineKnopf.querySelector(".welt-online-zahl").textContent = `${n} online`;
+    onlineKnopf.querySelector(".welt-online-koepfe").innerHTML = online.slice(0, 3).map(kopf).join("");
+    onlineKnopf.classList.toggle("leer", n <= 1);
+    if (onlineFeld.classList.contains("hidden")) return;
+    const zeile = (p, rechts) => `<button type="button" class="welt-online-zeile" data-profil="${esc(p.name || "")}">${kopf(p)}<span>${Casino.spieler ? Casino.spieler.name(p, { tag: "b" }) : `<b>${esc(p.name)}</b>`}<small>${esc(rechts)}</small></span></button>`;
+    onlineFeld.innerHTML = `<b class="welt-online-titel">${n === 1 ? "1 online" : `${n} online`}</b>`
+      + (n ? online.map((p) => zeile(p, (p.status && p.status.label) || "online")).join("") : `<p class="welt-online-leer">Gerade ist niemand da.</p>`)
+      + (zuletzt.length ? `<b class="welt-online-titel">Zuletzt hier</b>` + zuletzt.slice(0, 6).map((p) => zeile(p, wannGrob(p.lastSeen))).join("") : "");
+  }
+  Casino._weltPresence = (liste, letzte) => {
+    online = Array.isArray(liste) ? liste : [];
+    if (Array.isArray(letzte)) zuletzt = letzte;
+    onlineZeichnen();
+  };
+  function onlineAuf(auf) {
+    onlineFeld.classList.toggle("hidden", !auf);
+    onlineKnopf.setAttribute("aria-expanded", String(auf));
+    if (auf) { onlineZeichnen(); if (Casino.requestPresence) Casino.requestPresence(); }
+  }
+  onlineKnopf.addEventListener("click", (e) => { e.stopPropagation(); onlineAuf(onlineFeld.classList.contains("hidden")); });
+  onlineFeld.addEventListener("click", (e) => {
+    const z = e.target.closest("[data-profil]");
+    if (z && Casino.profilOeffnen) { onlineAuf(false); Casino.profilOeffnen(z.dataset.profil); }
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (!onlineFeld.classList.contains("hidden") && !e.target.closest(".welt-online-feld, .welt-online")) onlineAuf(false);
+  });
+
   const gestenMenue = el.querySelector(".welt-gesten");
   const gestenKnopf = el.querySelector('[data-welt="gesten"]');
   function gestenAuf(auf) {
@@ -1336,7 +1388,8 @@
   let jagd = { aktiv: false, marken: [], gefunden: 0, gesamt: 0, bis: 0 };
   const jagdHud = document.createElement("div");
   jagdHud.className = "welt-jagd hidden";
-  el.querySelector(".welt-hud").appendChild(jagdHud);
+  // Unter dem Ortsschild, in derselben Spalte: wächst das Schild, rückt die Jagd nach.
+  el.querySelector(".welt-links").appendChild(jagdHud);
   let jagdHolt = null;
   function jagdLaden() {
     if (!drin || !raum) return;

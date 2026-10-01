@@ -979,12 +979,16 @@ function requestPresence() {
     renderOnlinePlayers(res.online || []);
     renderZuletztDa(res.zuletzt || []);
     if (window.Casino._lobbyPresence) window.Casino._lobbyPresence(res.online || []);
+    if (window.Casino._weltPresence) window.Casino._weltPresence(res.online || [], res.zuletzt || []);
   });
 }
+window.Casino.requestPresence = requestPresence;
+window.Casino.profilOeffnen = (name) => openPlayerProfile(name);
 
 socket.on("presence:update", ({ online } = {}) => {
   renderOnlinePlayers(online || []);
   if (window.Casino._lobbyPresence) window.Casino._lobbyPresence(online || []);
+  if (window.Casino._weltPresence) window.Casino._weltPresence(online || []);
 });
 
 /* Kommt vom Server (/api/config). Fest getippt lief er beim Anheben der

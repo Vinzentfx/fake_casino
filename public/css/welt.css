@@ -1946,20 +1946,6 @@ html.einlass-zu .welt-mehr [data-mehr="liste"],
 html.einlass-zu .welt-mehr [data-mehr="starter"],
 html.einlass-zu #menu-sheet [data-nav]:not([data-nav="settings"]),
 html.einlass-zu .welt-jagd { display: none !important; }
-.einlass-band {
-  position: fixed; left: 50%; bottom: calc(86px + var(--safe-bottom, 0px)); transform: translateX(-50%); z-index: 40;
-  display: grid; justify-items: center; gap: 2px; width: min(560px, calc(100% - 32px)); padding: 10px 16px 9px;
-  border-radius: var(--r-lg); background: color-mix(in srgb, var(--surface-solid) 92%, transparent);
-  border: 1px solid #e2b656; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 18px rgba(226, 182, 86, 0.25); text-align: center; pointer-events: none;
-}
-.einlass-band.hidden { display: none; }
-.einlass-band b { color: #e2b656; font: 800 var(--fs-sm) var(--font); }
-.einlass-band span { color: var(--text); font: 900 clamp(22px, 5vw, 32px)/1.1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.04em; }
-.einlass-band small { display: none; color: var(--text-dim); font-size: var(--fs-xs); }
-@media (min-width: 1000px) { .einlass-band small { display: block; } }
-@media (max-width: 600px) { .einlass-band small { display: none; } .einlass-band { width: calc(100% - 140px); bottom: calc(80px + var(--safe-bottom, 0px)); } }
-/* Liegt eine Tafel offen, macht das Band ihr Platz. */
-html.einlass-zu:has(.einlass-tafel:not(.hidden)) .einlass-band { display: none; }
 .einlass-gross {
   position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none;
   color: #ffe7a8; font: 900 clamp(110px, 30vw, 240px)/1 var(--font); text-shadow: 0 0 40px rgba(226, 182, 86, 0.8), 0 8px 30px rgba(0, 0, 0, 0.6);
@@ -1981,7 +1967,8 @@ html:not(.reduce-motion) .einlass-gross.auf.puls { animation: einlass-auf 3.6s e
 .m-einlasstuer .m-kordel { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 0.8s cubic-bezier(.5, 0, .9, .5), opacity 0.8s; }
 .welt-ding.auf .m-einlasstuer .m-kordel { transform: translateY(16px) scaleY(0.4); opacity: 0; }
 .welt-einlassuhr { display: grid; place-items: center; color: #ffe7a8; font: 900 15px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.08em; text-shadow: 0 0 6px rgba(226, 182, 86, 0.8); }
-.welt-glaszahl { display: grid; place-items: center; border-radius: 6px; background: rgba(13, 10, 6, 0.85); color: #ffe7a8; font: 800 9px/1 var(--font); }
+/* Das Zahlenschild hängt als kleiner Anhänger am Deckel. */
+.welt-glaszahl { display: grid; place-items: center; transform: rotate(16deg); transform-origin: 0 0; border-radius: 2px 5px 5px 2px; background: #f4efe2; border: 1px solid #b9a26a; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); color: #4a3412; font: 900 7px/1 var(--font); white-space: nowrap; }
 .welt-tafel p small { color: #9aa4ae; font-size: 8.5px; }
 
 /* Die Tafeln im Foyer: dieselbe Hülle wie die Tische in der Welt. */
@@ -2009,3 +1996,40 @@ html:not(.reduce-motion) .einlass-gross.auf.puls { animation: einlass-auf 3.6s e
 }
 .einlass-frei.hidden { display: none; }
 .einlass-frei button { flex: none; min-height: 36px; padding: 0 14px; border-radius: var(--r-pill); border: 0; background: #e2b656; color: #2b1a0c; font: 800 var(--fs-xs) var(--font); cursor: pointer; }
+
+/* Wer online ist: eine Zeile im Ortsschild, antippbar, darunter das Feld. */
+.welt-online {
+  white-space: nowrap; pointer-events: auto; display: flex; align-items: center; gap: 6px; margin: 5px -6px -3px; padding: 4px 6px;
+  border: 0; border-top: 1px solid var(--line); border-radius: 0 0 8px 8px; background: none; color: var(--text); font: 700 var(--fs-xs) var(--font); cursor: pointer; text-align: left;
+}
+.welt-online:hover, .welt-online[aria-expanded="true"] { background: rgba(var(--accent-rgb), 0.1); }
+.welt-online:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.welt-online-punkt { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px rgba(var(--good-rgb, 79, 183, 106), 0.2); }
+html:not(.reduce-motion) .welt-online:not(.leer) .welt-online-punkt { animation: online-puls 2.4s ease-in-out infinite; }
+@keyframes online-puls { 0%, 100% { box-shadow: 0 0 0 2px rgba(var(--good-rgb, 79, 183, 106), 0.25); } 50% { box-shadow: 0 0 0 5px rgba(var(--good-rgb, 79, 183, 106), 0); } }
+.welt-online-koepfe { display: flex; }
+.welt-online-koepfe .welt-online-kopf + .welt-online-kopf { margin-left: -6px; }
+.welt-online-kopf { position: relative; flex: none; width: 18px; height: 18px; border-radius: 50%; overflow: hidden; background: var(--surface-sunken); border: 1.5px solid var(--bar); }
+.welt-online-kopf .club-figure { position: absolute; left: 50%; top: -2px; width: 34px; height: 51px; transform: translateX(-50%); }
+.welt-online-kopf .club-figure svg { width: 100%; height: 100%; }
+/* Ortsschild, Online-Feld und Schnitzeljagd stehen untereinander in einer
+   Spalte; vorher lag die Jagd fest bei 84 Pixeln und rutschte unter ein
+   Schild, das höher wurde. */
+.welt-links { position: absolute; left: max(14px, env(safe-area-inset-left)); top: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; pointer-events: none; z-index: 6; }
+.welt-links .welt-ort, .welt-links .welt-jagd { position: static; }
+.welt-online-feld {
+  position: relative; display: grid; gap: 2px;
+  width: min(280px, calc(100vw - 32px)); max-height: min(60vh, 440px); overflow: auto; padding: 8px;
+  border-radius: var(--r-md); background: var(--surface-solid); border: 1px solid var(--line-strong); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45); pointer-events: auto;
+}
+.welt-online-feld.hidden { display: none; }
+html:not(.reduce-motion) .welt-online-feld:not(.hidden) { animation: welt-auf 0.18s var(--ease-out); }
+.welt-online-titel { padding: 6px 6px 4px; color: var(--text-dim); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; }
+.welt-online-zeile { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 6px; border: 0; border-radius: 10px; background: none; color: var(--text); text-align: left; cursor: pointer; }
+.welt-online-zeile:hover, .welt-online-zeile:focus-visible { background: rgba(var(--accent-rgb), 0.12); outline: none; }
+.welt-online-zeile .welt-online-kopf { width: 30px; height: 30px; }
+.welt-online-zeile .welt-online-kopf .club-figure { width: 56px; height: 84px; top: -3px; }
+.welt-online-zeile > span { display: grid; min-width: 0; }
+.welt-online-zeile b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); }
+.welt-online-zeile small { color: var(--text-dim); font-size: var(--fs-xs); }
+.welt-online-leer { margin: 4px 6px; color: var(--text-dim); font-size: var(--fs-sm); }
