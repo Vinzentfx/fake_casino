@@ -47,6 +47,19 @@
   band.setAttribute("role", "status");
   band.innerHTML = `<b></b><span></span><small>Bis dahin: schätzen, ins Gästebuch schreiben, lesen, was kommt. Und vielleicht mal an die Tür klopfen.</small>`;
   document.body.appendChild(band);
+  /* Wer frei ist (Besitzer, Testliste), sieht den Warteraum sonst gar nicht.
+     Ein schmales Band sagt, dass er läuft, und führt hinein und wieder heraus. */
+  const frei = document.createElement("div");
+  frei.className = "einlass-frei hidden";
+  frei.innerHTML = `<span></span><button type="button" data-einlass-frei="rein">Warteraum ansehen</button>`;
+  document.body.appendChild(frei);
+  frei.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-einlass-frei]");
+    if (!b) return;
+    socket.emit("einlass:ansehen", { rein: b.dataset.einlassFrei === "rein" }, (r) => {
+      if (!r || !r.ok) toast((r && r.error) || "Das ging nicht.");
+    });
+  });
   const gross = document.createElement("div");
   gross.className = "einlass-gross hidden";
   gross.setAttribute("aria-hidden", "true");
@@ -77,6 +90,8 @@
     ende = Date.now() + (r.rest || 0);
     html.classList.toggle("einlass-zu", gesperrt());
     band.classList.toggle("hidden", !gesperrt());
+    frei.classList.toggle("hidden", !(r.zu && r.frei));
+    if (r.zu && r.frei) freiZeichnen();
     if (gesperrt()) {
       band.querySelector("b").textContent = r.titel ? `${r.titel}: Einlass um ${zeitVon(r.bis)} Uhr` : `Einlass um ${zeitVon(r.bis)} Uhr`;
       // Wer schon in einem Spiel oder in der Übersicht stand, kommt zurück in den Raum.
@@ -108,6 +123,15 @@
     if (w) w.innerHTML = (st.wand || []).slice(-5).reverse().map((x) => `<p><b>${esc(x.name)}</b>${esc(x.text)}</p>`).join("") || "<p>Noch leer. Schreib als Erster etwas.</p>";
   }
 
+  function freiZeichnen() {
+    if (!st || !st.zu || !st.frei) return;
+    const imFoyer = Casino.welt && Casino.welt.zustand && Casino.welt.zustand().raum === "foyer";
+    frei.querySelector("span").textContent = `Warteraum läuft, Einlass um ${zeitVon(st.bis)} Uhr (noch ${uhr(Math.max(0, ende - Date.now()))}). Du bist frei.`;
+    const b = frei.querySelector("button");
+    b.dataset.einlassFrei = imFoyer ? "raus" : "rein";
+    b.textContent = imFoyer ? "Zurück ins Casino" : "Warteraum ansehen";
+  }
+
   let letzteSekunde = null;
   setInterval(() => {
     if (!st) return;
@@ -125,6 +149,7 @@
         }
       } else gross.classList.add("hidden");
     }
+    if (st.zu && st.frei) freiZeichnen();
     anzeigen();
   }, 250);
 

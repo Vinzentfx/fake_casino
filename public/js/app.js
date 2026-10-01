@@ -3881,8 +3881,8 @@ $("#admin-restore-input")?.addEventListener("change", async (e) => {
     // sie stehen die Clans nach dem Einspielen ohne Bild da. Beim Sichern
     // wandern sie ins Backup, beim Einspielen fielen sie bisher still unter
     // den Tisch, der Fehler faellt erst auf, wenn man das Backup braucht.
-    const res = await fetch("/api/admin/restore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: state.token, files: data.files, binaer: data.binaer || {} }) });
-    const out = await res.json();
+    const res = await fetch("/api/admin/restore", { method: "POST", headers: { "Content-Type": "application/json", "X-Casino-Token": state.token || "" }, body: JSON.stringify({ token: state.token, files: data.files, binaer: data.binaer || {} }) });
+    const out = await res.json().catch(() => ({ ok: false, error: res.status === 413 ? "Das Backup ist größer als 25 MB." : `Der Server antwortet mit ${res.status}.` }));
     if (!out.ok) throw new Error(out.error || "Wiederherstellen fehlgeschlagen.");
     toast(`${out.written} Dateien eingespielt. Der Server startet neu, die Seite lädt gleich von selbst.`);
     setTimeout(() => location.reload(), 5000);

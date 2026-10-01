@@ -50,7 +50,10 @@ const UMZUG_MS = 4000;
    Zeitpunkt geht das Haus beim Start von selbst zu; danach steht die Datei
    da (offen), und es passiert nie wieder. So ist der Deploy selbst der
    Schalter, und niemand muss nachts noch etwas drücken. */
-const GEPLANT = { bis: hauszeit.ausWandzeit(Date.UTC(2026, 9, 2, 9, 20)), titel: "Das große Herbst-Update" };
+const GEPLANT = { bis: hauszeit.ausWandzeit(Date.UTC(2026, 9, 2, 9, 25)), titel: "Das große Herbst-Update" };
+/* Zuerst stand 9:20 da, und der Server hatte seine Datei damit schon
+   angelegt. Eine Datei, die noch auf die alte Zeit wartet, rückt nach. */
+const FRUEHER = [hauszeit.ausWandzeit(Date.UTC(2026, 9, 2, 9, 20))];
 
 /* Was hinter der Tür wartet, als Rätsel. Jede Zeile deckt sich so viele
    Minuten vor der Öffnung auf. */
@@ -67,6 +70,7 @@ try {
   const roh = JSON.parse(fs.readFileSync(DATEI, "utf8"));
   if (roh && typeof roh === "object") state = roh;
 } catch {}
+if (state && state.an && FRUEHER.includes(state.bis)) state.bis = GEPLANT.bis;
 if (!state) {
   state = Date.now() < GEPLANT.bis
     ? neuerZustand(GEPLANT.bis, GEPLANT.titel)
@@ -157,7 +161,7 @@ const setJagd = (j) => { jagd = j; };
 function setupEinlass(io, accounts) {
   _accounts = accounts;
   eingerichtet = true;
-  if (!fs.existsSync(DATEI)) speichern();
+  speichern();
   const chat = () => { try { return require("./chat"); } catch { return null; } };
   const cosmetics = () => require("./cosmetics");
 
@@ -287,6 +291,15 @@ function setupEinlass(io, accounts) {
       speichern();
       const r = accounts.adjustChips(w.key, chips);
       ack({ ok: true, chips, account: r.ok ? r.account : accounts.publicAccount(w.acc) });
+    });
+
+    // Wer frei ist, kann sich den Warteraum ansehen und wieder gehen.
+    socket.on("einlass:ansehen", ({ rein } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const w = wer();
+      if (!w || !frei(w.key)) return ack({ ok: false, error: "Nur für Besitzer und Testliste." });
+      if (rein && !zu()) return ack({ ok: false, error: "Gerade ist kein Einlass." });
+      ack({ ok: !!(welt && welt.ansehen(w.key, !!rein)) });
     });
 
     // Die Verwaltung: zumachen bis, sofort öffnen, verschieben.

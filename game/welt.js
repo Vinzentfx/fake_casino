@@ -378,6 +378,15 @@ function setupWelt(io, accounts) {
       const ankunft = { ...R.raum("casino").start };
       for (const fig of figuren.values()) if (fig.raum === "foyer") umziehen(fig, "casino", ankunft, null);
     },
+    /* Wer frei ist (Besitzer, Testliste), darf sich den Warteraum ansehen
+       und wieder gehen. */
+    ansehen(key, rein) {
+      const fig = figuren.get(String(key || "").toLowerCase());
+      if (!fig) return false;
+      if (rein && fig.raum !== "foyer") umziehen(fig, "foyer", R.raum("foyer").start, null);
+      if (!rein && fig.raum === "foyer") umziehen(fig, "casino", { ...R.raum("casino").start }, null);
+      return true;
+    },
   });
 
   // Wer länger weg ist, fängt wieder am Eingang an. Ohne Timer je Figur:

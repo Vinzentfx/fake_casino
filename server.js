@@ -101,8 +101,18 @@ const appVersion = () => build.current();
 
 const app = express();
 app.set("trust proxy", true); // hinter Caddy steht die echte Client-IP in x-forwarded-for
+/* Das Einspielen nimmt bis zu 25 MB an, und das soll nur der Besitzer
+   dürfen. Geprüft wird deshalb VOR dem Einlesen, und dafür muss das Token
+   im Kopf der Anfrage stehen: im Körper ist es zu diesem Zeitpunkt noch gar
+   nicht gelesen. Genau so stand es vorher da, und dann scheiterte jedes
+   Einspielen, auch das des Besitzers, mit „Nur der Casino-Boss“ oder, weil
+   der Server mitten im Hochladen abbrach, mit „Load failed“. */
 app.use("/api/admin/restore", (req, res, next) => {
-  if (requireOwner(req, res)) next();
+  if (accounts.verifyToken(req.get("x-casino-token")) !== OWNER_KEY) {
+    res.set("Connection", "close");
+    return res.status(403).json({ error: "Nur der Casino-Boss darf das." });
+  }
+  next();
 }, express.json({ limit: "25mb" }));
 app.use(express.json({ limit: "128kb" }));
 

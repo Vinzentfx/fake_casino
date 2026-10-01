@@ -2000,3 +2000,12 @@ html:not(.reduce-motion) .einlass-gross.auf.puls { animation: einlass-auf 3.6s e
 .einlass-teaser div.auf { border: 1px solid #e2b656; background: rgba(226, 182, 86, 0.08); }
 .einlass-teaser div.auf b { color: #e2b656; }
 .einlass-teaser div.auf span { color: var(--text); }
+/* Für Besitzer und Testliste: ein schmales Band, dass der Warteraum läuft. */
+.einlass-frei {
+  position: fixed; left: 50%; bottom: calc(86px + var(--safe-bottom, 0px)); transform: translateX(-50%); z-index: 40;
+  display: flex; align-items: center; gap: 10px; max-width: calc(100% - 32px); padding: 6px 6px 6px 14px;
+  border-radius: var(--r-pill); background: color-mix(in srgb, var(--surface-solid) 92%, transparent); border: 1px solid #e2b656;
+  color: var(--text); font-size: var(--fs-xs); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.einlass-frei.hidden { display: none; }
+.einlass-frei button { flex: none; min-height: 36px; padding: 0 14px; border-radius: var(--r-pill); border: 0; background: #e2b656; color: #2b1a0c; font: 800 var(--fs-xs) var(--font); cursor: pointer; }
