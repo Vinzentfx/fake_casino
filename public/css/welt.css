@@ -1946,6 +1946,20 @@ html.einlass-zu .welt-mehr [data-mehr="liste"],
 html.einlass-zu .welt-mehr [data-mehr="starter"],
 html.einlass-zu #menu-sheet [data-nav]:not([data-nav="settings"]),
 html.einlass-zu .welt-jagd { display: none !important; }
+.einlass-band {
+  position: fixed; left: 50%; bottom: calc(86px + var(--safe-bottom, 0px)); transform: translateX(-50%); z-index: 40;
+  display: grid; justify-items: center; gap: 2px; width: min(560px, calc(100% - 32px)); padding: 10px 16px 9px;
+  border-radius: var(--r-lg); background: color-mix(in srgb, var(--surface-solid) 92%, transparent);
+  border: 1px solid #e2b656; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 18px rgba(226, 182, 86, 0.25); text-align: center; pointer-events: none;
+}
+.einlass-band.hidden { display: none; }
+.einlass-band b { color: #e2b656; font: 800 var(--fs-sm) var(--font); }
+.einlass-band span { color: var(--text); font: 900 clamp(22px, 5vw, 32px)/1.1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.04em; }
+.einlass-band small { display: none; color: var(--text-dim); font-size: var(--fs-xs); }
+@media (min-width: 1000px) { .einlass-band small { display: block; } }
+@media (max-width: 600px) { .einlass-band { width: calc(100% - 140px); bottom: calc(80px + var(--safe-bottom, 0px)); } .einlass-band b { font-size: var(--fs-xs); } }
+/* Liegt eine Tafel offen, macht das Band ihr Platz. */
+html.einlass-zu:has(.einlass-tafel:not(.hidden)) .einlass-band { display: none; }
 .einlass-gross {
   position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none;
   color: #ffe7a8; font: 900 clamp(110px, 30vw, 240px)/1 var(--font); text-shadow: 0 0 40px rgba(226, 182, 86, 0.8), 0 8px 30px rgba(0, 0, 0, 0.6);
