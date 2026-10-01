@@ -666,7 +666,7 @@
     aufsitzmaeher: { hub: 2, sitzt: true },
     goldmoped: { hub: -3, sitzt: true, auto: "#e2b656", gold: true },
     simme: { hub: -4, sitzt: true, tank: "#3c7fc0" },
-    e46: { hub: -3, sitzt: true, auto: "#aeb4bb" },
+    e46: { hub: -3, sitzt: true, auto: "#1f2d58" },
   };
 
   /* Der E-Roller ist ganz schwarz, wie die Leihroller an jeder Ecke: dickes
@@ -812,35 +812,67 @@
           + `<circle cx="32" cy="70.4" r="4.8" fill="${CHROM}" stroke="#555b63" stroke-width=".8"/><circle cx="32" cy="70.4" r="3.2" fill="#fff5c9"/><circle cx="30.8" cy="69.2" r=".9" fill="#fff"/>`;
       }
       case "e46": {
-        /* Der alte Dreier in Titansilber, mit einer Tür in Grundierung und
-           ein paar Rostflecken: er hat schon einiges hinter sich. */
-        const c = FAHRZEUG.e46.auto, d = dunkler(c, 0.35), tuer = "#7d8288", rost = "#8a4a22";
-        const felge = (cx) => `<g class="fz-rad" style="transform-origin:${cx}px 86px"><circle cx="${cx}" cy="86" r="5.6" fill="#1d1d23"/><circle cx="${cx}" cy="86" r="3.4" fill="#c0c6cc"/>${[0, 72, 144, 216, 288].map((w) => `<path d="M${cx} 86L${(cx + Math.cos((w * Math.PI) / 180) * 3.2).toFixed(2)} ${(86 + Math.sin((w * Math.PI) / 180) * 3.2).toFixed(2)}" stroke="#7d8288" stroke-width=".9"/>`).join("")}<circle cx="${cx}" cy="86" r=".9" fill="#6b7078"/></g>`;
+        /* Der Dreier nach Vorlage: Limousine in Orientblau, schwarze
+           Fensterrahmen und Scheuerleiste, Doppelscheinwerfer mit orangen
+           Blinkern, und BBS-Kreuzspeichen mit poliertem Felgenbett. */
+        const c = FAHRZEUG.e46.auto, d = dunkler(c, 0.45), hell = "#3d5794", glas = "#0f1628", schwarz = "#111317";
+        const felge = (cx, cy = 85.4) => {
+          const P = (r, w) => [(cx + Math.cos((w * Math.PI) / 180) * r).toFixed(2), (cy + Math.sin((w * Math.PI) / 180) * r).toFixed(2)];
+          // Kreuzspeichen: zwei gegenläufige Zickzacks zwischen Nabe und Bett ergeben das Gitter.
+          const zick = (versatz) => Array.from({ length: 21 }, (_, i) => P(i % 2 ? 4.6 : 2, i * 18 + versatz).join(" ")).join(" L");
+          return `<g class="fz-rad" style="transform-origin:${cx}px ${cy}px">`
+            + `<circle cx="${cx}" cy="${cy}" r="6.6" fill="#141418"/>`
+            + `<circle cx="${cx}" cy="${cy}" r="5.5" fill="#eef1f3" stroke="#9aa1a8" stroke-width=".3"/>`
+            + `<circle cx="${cx}" cy="${cy}" r="4.7" fill="#9ea5ad"/>`
+            + `<path d="M${zick(0)}M${zick(9)}" fill="none" stroke="#dde1e5" stroke-width=".45"/>`
+            + `<circle cx="${cx}" cy="${cy}" r="1.7" fill="#c9ced3" stroke="#6b7078" stroke-width=".3"/><circle cx="${cx}" cy="${cy}" r=".7" fill="#4a4f57"/>`
+            + Array.from({ length: 12 }, (_, i) => { const [x, y] = P(5.1, i * 30); return `<circle cx="${x}" cy="${y}" r=".25" fill="#7d848c"/>`; }).join("")
+            + `</g>`;
+        };
         if (seite) {
-          // Lange Haube, flaches Dach, Stufenheck: so sieht ein Dreier von der Seite aus.
-          return `<path d="M-3 84Q-4 75 -1 71L14 69.4L22 58Q23.4 56.4 25.6 56.4H38.4Q40.6 56.4 42 58.2L50.4 68.6L64 70.4Q67.4 72 66.6 84Z" fill="${c}" stroke="${d}" stroke-width="1"/>`
-            + `<path d="M16.4 68.4L23.4 59.6Q24 58.8 25.4 58.8H31.2V68.4Z" fill="#9fd3ea" fill-opacity=".42" stroke="${d}" stroke-width=".7"/><path d="M33.2 58.8H38.4Q39.6 58.8 40.4 59.8L47.6 68.4H33.2Z" fill="#9fd3ea" fill-opacity=".42" stroke="${d}" stroke-width=".7"/>`
-            + `<path d="M32.2 58.6V83H48.4V69.2L40.6 59.2Z" fill="${tuer}" fill-opacity=".8"/><path d="M33.2 58.8H38.4Q39.6 58.8 40.4 59.8L47.6 68.4H33.2Z" fill="#9fd3ea" fill-opacity=".42"/><path d="M32.2 58.6V83M16 69V83" stroke="${d}" stroke-width=".7"/>`
-            + `<path d="M-2 74.4H66" stroke="${d}" stroke-width=".7"/><rect x="26" y="71.4" width="4" height="1.2" rx=".6" fill="${d}"/><rect x="42" y="71.4" width="4" height="1.2" rx=".6" fill="${d}"/>`
-            + `<rect x="62" y="71.2" width="4.4" height="3" rx="1" fill="#fff5c9"/><rect x="-3" y="71.2" width="3.4" height="3.4" rx=".8" fill="#c8243a"/>`
-            + `<circle cx="7" cy="80" r="1.4" fill="${rost}" opacity=".8"/><circle cx="57" cy="79" r="1" fill="${rost}" opacity=".8"/><path d="M1 81q2 1 4 0" stroke="${rost}" stroke-width=".8" fill="none"/>`
-            + `${felge(9)}${felge(53)}`;
+          // Stufenheck, lange Haube, und der Knick im letzten Fenster.
+          return `<path d="M-3 83.4Q-4 75.6 -2 71.4L5 69.2L17.6 58.4Q19 57.2 21 57.2H37.6Q39.6 57.2 41 58.6L49.4 68.2L62.8 70.2Q66.8 71.4 67 75.2L66.6 83.4Z" fill="${c}" stroke="${d}" stroke-width=".9"/>`
+            + `<path d="M5.4 69.4L49.4 68.4L62.6 70.4" fill="none" stroke="${hell}" stroke-width=".7" opacity=".9"/>`
+            // Fenster mit schwarzen Rahmen und Säulen
+            + `<path d="M12.8 68.4L18.6 60Q19.4 58.6 21 58.6H38Q39.4 58.6 40.2 59.6L48 68.4Z" fill="${schwarz}"/>`
+            + `<path d="M14.6 67.6L19 61.2Q19.6 60.2 20.6 60.2H22V67.6Z" fill="${glas}"/><path d="M23.4 60.2H31.4V67.6H23.4Z" fill="${glas}"/><path d="M33.2 60.2H37.8Q38.8 60.2 39.4 61L45.6 67.6H33.2Z" fill="${glas}"/>`
+            + `<path d="M24.4 61.6l3.4 4.6M34.6 61.6l3 4" stroke="#fff" stroke-opacity=".18" stroke-width="1.4"/>`
+            // Türen, Scheuerleiste, Griffe, Spiegel
+            + `<path d="M32.4 68.4V82.6M48.2 68.6Q48.6 76 47.4 82.6M17.2 68.6Q15.6 74 16.6 82.6" fill="none" stroke="${d}" stroke-width=".6"/>`
+            + `<rect x="1" y="76.2" width="61" height="1.8" rx=".9" fill="${schwarz}"/>`
+            + `<rect x="25.6" y="70.6" width="4" height="1.1" rx=".55" fill="${schwarz}"/><rect x="40.8" y="70.6" width="4" height="1.1" rx=".55" fill="${schwarz}"/>`
+            + `<path d="M46 66.2h3.4l.6 2.2h-3.6z" fill="${schwarz}"/>`
+            // Lichter: Scheinwerfer vorn mit Blinker, Rückleuchte hinten, seitlicher Blinker
+            + `<path d="M62.2 71.4L66.4 72.4V74.4H62Z" fill="#e8eef2" stroke="${d}" stroke-width=".4"/><path d="M62 72.6h1.6v1.8H62z" fill="#f29a2e"/><rect x="55.4" y="72.4" width="2" height=".9" rx=".4" fill="#f29a2e"/>`
+            + `<path d="M-2.6 71.2L2 70.6V74H-2.8Z" fill="#c8243a" stroke="#6b1018" stroke-width=".4"/><path d="M-2.6 71.4L2 70.8V72H-2.7Z" fill="#f29a2e"/>`
+            + `<path d="M-3 80.6H67" stroke="${d}" stroke-width=".6"/><rect x="-1" y="82.2" width="4" height="1.4" rx=".7" fill="#6b7078"/>`
+            // Radhäuser dunkel, die Felgen davor
+            + `<path d="M3.4 83.4Q3.6 77.4 10 77.2Q16.4 77.4 16.6 83.4Z" fill="${schwarz}"/><path d="M45.4 83.4Q45.6 77.4 52 77.2Q58.4 77.4 58.6 83.4Z" fill="${schwarz}"/>`
+            + `${felge(10)}${felge(52)}`;
         }
         if (ansicht === "hinten") {
-          return `<path d="M6 90Q4 66 13 52Q16 46 24 46H40Q48 46 51 52Q60 66 58 90Z" fill="${c}" stroke="${d}" stroke-width="1"/><path d="M17 54Q19 50 25 50H39Q45 50 47 54L49 63H15Z" fill="#9fd3ea" fill-opacity=".38" stroke="${d}" stroke-width=".8"/>`
-            + `<path d="M9 68H20V73H13Z" fill="#c8243a" stroke="#6b1018" stroke-width=".5"/><path d="M55 68H44V73H51Z" fill="#c8243a" stroke="#6b1018" stroke-width=".5"/><path d="M10 70.4H18M54 70.4H46" stroke="#f2a33a" stroke-width=".8"/>`
-            + `<circle cx="32" cy="69" r="2" fill="#f4f4f4" stroke="#1d1d23" stroke-width=".6"/><path d="M32 67v4M30 69h4" stroke="#3f6fb5" stroke-width=".9"/>`
-            + `<rect x="24" y="75" width="16" height="5.4" rx=".8" fill="#f4f1ea" stroke="${d}" stroke-width=".5"/><text x="32" y="79.4" text-anchor="middle" font-size="3.6" font-weight="900" fill="#1d1d23" font-family="ui-rounded, system-ui">PW E 46</text>`
-            + `<circle cx="18" cy="80" r="1.2" fill="${rost}" opacity=".8"/><rect x="40" y="84" width="5" height="2.4" rx="1.2" fill="#6b7078"/>`
-            + `<rect x="6" y="86" width="9" height="6" rx="2" fill="#1d1d23"/><rect x="49" y="86" width="9" height="6" rx="2" fill="#1d1d23"/>`;
+          return `<path d="M6 90Q4 66 13 52Q16 46 24 46H40Q48 46 51 52Q60 66 58 90Z" fill="${c}" stroke="${d}" stroke-width="1"/><path d="M17 54Q19 50 25 50H39Q45 50 47 54L49 63H15Z" fill="${glas}" stroke="${schwarz}" stroke-width="1"/><path d="M22 52l4 9" stroke="#fff" stroke-opacity=".15" stroke-width="2"/>`
+            + `<path d="M13 64.6H51" stroke="${hell}" stroke-width=".7"/>`
+            // Rückleuchten: rot, innen ein oranges Feld, wie am Dreier
+            + `<path d="M8.4 66.6H22.4L21.6 73.2H10.2Z" fill="#c8243a" stroke="#5a0d14" stroke-width=".5"/><path d="M17.6 66.8H22.2L21.8 70H17.6Z" fill="#f29a2e"/><path d="M55.6 66.6H41.6L42.4 73.2H53.8Z" fill="#c8243a" stroke="#5a0d14" stroke-width=".5"/><path d="M46.4 66.8H41.8L42.2 70H46.4Z" fill="#f29a2e"/>`
+            + `<circle cx="32" cy="68.6" r="1.9" fill="#f4f4f4" stroke="${schwarz}" stroke-width=".6"/><path d="M32 66.7v3.8M30.1 68.6h3.8" stroke="#3f6fb5" stroke-width=".8"/>`
+            + `<rect x="24" y="74.4" width="16" height="5.4" rx=".8" fill="#f4f1ea" stroke="${d}" stroke-width=".5"/><rect x="24" y="74.4" width="2.2" height="5.4" fill="#2b4ea8"/><text x="33" y="78.8" text-anchor="middle" font-size="3.4" font-weight="900" fill="#1d1d23" font-family="ui-rounded, system-ui">PW E 46</text>`
+            + `<rect x="8" y="81" width="48" height="3" rx="1.2" fill="${schwarz}"/><rect x="13" y="84.6" width="4.4" height="2" rx="1" fill="#8a929c"/>`
+            + `<rect x="6" y="85.4" width="9" height="6.6" rx="2" fill="#141418"/><rect x="49" y="85.4" width="9" height="6.6" rx="2" fill="#141418"/>`;
         }
-        return `<path d="M6 90Q4 66 13 52Q16 46 24 46H40Q48 46 51 52Q60 66 58 90Z" fill="${c}" stroke="${d}" stroke-width="1"/><path d="M17 54Q19 50 25 50H39Q45 50 47 54L49 63H15Z" fill="#9fd3ea" fill-opacity=".34" stroke="${d}" stroke-width=".8"/>`
-          + `<path d="M9 67Q10 65 13 65H23L22 71H11Z" fill="#dfe6ec" stroke="${d}" stroke-width=".6"/><path d="M55 67Q54 65 51 65H41L42 71H53Z" fill="#dfe6ec" stroke="${d}" stroke-width=".6"/>`
-          + `<circle cx="14" cy="68" r="2" fill="#fff5c9"/><circle cx="19.4" cy="68" r="2" fill="#fff5c9"/><circle cx="50" cy="68" r="2" fill="#fff5c9"/><circle cx="44.6" cy="68" r="2" fill="#fff5c9"/>`
-          + `<rect x="26" y="65" width="5.4" height="7" rx="2.4" fill="#1d1d23" stroke="#c0c6cc" stroke-width=".8"/><rect x="32.6" y="65" width="5.4" height="7" rx="2.4" fill="#1d1d23" stroke="#c0c6cc" stroke-width=".8"/>`
-          + `<path d="M27.6 66.6v4M29.4 66.6v4M34.2 66.6v4M36 66.6v4" stroke="#55555c" stroke-width=".5"/><circle cx="32" cy="60.6" r="1.6" fill="#f4f4f4" stroke="#1d1d23" stroke-width=".5"/><path d="M32 59v3.2M30.4 60.6h3.2" stroke="#3f6fb5" stroke-width=".7"/>`
-          + `<rect x="10" y="76" width="44" height="5" rx="1.6" fill="${d}"/><rect x="24" y="77" width="16" height="3.6" rx=".6" fill="#f4f1ea"/><circle cx="48" cy="74" r="1.1" fill="${rost}" opacity=".8"/>`
-          + `<rect x="6" y="86" width="9" height="6" rx="2" fill="#1d1d23"/><rect x="49" y="86" width="9" height="6" rx="2" fill="#1d1d23"/>`;
+        return `<path d="M6 90Q4 66 13 52Q16 46 24 46H40Q48 46 51 52Q60 66 58 90Z" fill="${c}" stroke="${d}" stroke-width="1"/><path d="M17 54Q19 50 25 50H39Q45 50 47 54L49 63H15Z" fill="${glas}" stroke="${schwarz}" stroke-width="1"/><path d="M38 51l4 10" stroke="#fff" stroke-opacity=".15" stroke-width="2"/>`
+          + `<path d="M24 58.2h16" stroke="${schwarz}" stroke-width=".6" opacity=".7"/><path d="M14 63.6Q32 62 50 63.6" fill="none" stroke="${hell}" stroke-width=".7"/>`
+          // Scheinwerfer: je zwei runde Lampen unter einem Glas, außen der orange Blinker
+          + `<path d="M8.6 66.6Q9.4 64.6 12 64.6H24.4L23.2 71.2H10Z" fill="#2a3346" stroke="${schwarz}" stroke-width=".5"/><circle cx="15" cy="67.9" r="2.2" fill="#e8eef2" stroke="#8a929c" stroke-width=".4"/><circle cx="20.4" cy="67.9" r="2.2" fill="#e8eef2" stroke="#8a929c" stroke-width=".4"/><path d="M9 66.4Q9.6 65 11.4 65L11 71H10Z" fill="#f29a2e"/>`
+          + `<path d="M55.4 66.6Q54.6 64.6 52 64.6H39.6L40.8 71.2H54Z" fill="#2a3346" stroke="${schwarz}" stroke-width=".5"/><circle cx="49" cy="67.9" r="2.2" fill="#e8eef2" stroke="#8a929c" stroke-width=".4"/><circle cx="43.6" cy="67.9" r="2.2" fill="#e8eef2" stroke="#8a929c" stroke-width=".4"/><path d="M55 66.4Q54.4 65 52.6 65L53 71H54Z" fill="#f29a2e"/>`
+          // Doppelniere mit Chromrahmen, darüber das Zeichen
+          + `<rect x="25.6" y="64.6" width="5.8" height="6.8" rx="2.2" fill="${schwarz}" stroke="#d6dbe0" stroke-width=".9"/><rect x="32.6" y="64.6" width="5.8" height="6.8" rx="2.2" fill="${schwarz}" stroke="#d6dbe0" stroke-width=".9"/>`
+          + `<path d="M27.2 65.8v4.4M28.6 65.8v4.4M30 65.8v4.4M34 65.8v4.4M35.4 65.8v4.4M36.8 65.8v4.4" stroke="#3a3f47" stroke-width=".45"/><circle cx="32" cy="61" r="1.5" fill="#f4f4f4" stroke="${schwarz}" stroke-width=".5"/><path d="M32 59.5v3M30.5 61h3" stroke="#3f6fb5" stroke-width=".7"/>`
+          // Stoßfänger mit Kennzeichen, Lufteinlass und Nebelscheinwerfern
+          + `<rect x="8" y="73" width="48" height="9.6" rx="2.4" fill="${d}"/><rect x="24" y="73.8" width="16" height="4" rx=".6" fill="#f4f1ea"/><rect x="24" y="73.8" width="2" height="4" fill="#2b4ea8"/><text x="33" y="77" text-anchor="middle" font-size="2.9" font-weight="900" fill="#1d1d23" font-family="ui-rounded, system-ui">PW E 46</text>`
+          + `<rect x="14" y="79" width="36" height="2.2" rx="1" fill="${schwarz}"/><rect x="10" y="75" width="6" height="2.2" rx="1" fill="#cfd6dc" stroke="${schwarz}" stroke-width=".4"/><rect x="48" y="75" width="6" height="2.2" rx="1" fill="#cfd6dc" stroke="${schwarz}" stroke-width=".4"/>`
+          + `<path d="M5.4 59.6h3.6l.6 3h-3.8zM58.6 59.6H55l-.6 3h3.8z" fill="${schwarz}"/>`
+          + `<rect x="6" y="85.4" width="9" height="6.6" rx="2" fill="#141418"/><rect x="49" y="85.4" width="9" height="6.6" rx="2" fill="#141418"/>`;
       }
       case "aufsitzmaeher":
         if (seite) return `<path d="M10 84Q9 70 18 68H44Q52 68 56 76Q58 82 56 86H10Z" fill="#3f8a4a" stroke="#1d4a26" stroke-width="1"/><rect x="40" y="62" width="2" height="8" fill="#2a2d33"/><path d="M38 61.6h6" stroke="#2a2d33" stroke-width="2" stroke-linecap="round"/><path d="M12 74h40" stroke="#f2c94c" stroke-width="1.2"/>${rad(48, 88, 3.2)}${rad(20, 86.6, 5.2)}`;

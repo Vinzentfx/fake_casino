@@ -73,7 +73,7 @@ const GEHEIMNISSE = {
   schallplatte: { art: "hand",    id: "schallplatte", satz: "Beim dritten Drücken rattert die Jukebox, ruckelt, und unten fällt eine alte Schallplatte heraus. Die gehört jetzt dir." },
   pokal:       { art: "hand",     id: "pokal",       satz: "Oben auf dem Podest jubelst du, als hättest du gewonnen. Jemand drückt dir einen goldenen Pokal in die Hand." },
   wunderkerze: { art: "hand",     id: "wunderkerze", satz: "Du winkst dem Feuer zu, und aus der Glut springt ein Funke in deine Hand. Eine Wunderkerze, die nie ausgeht." },
-  e46:         { art: "fahrzeug", id: "e46",         satz: "Unter der Plane steht ein alter BMW E46, Titansilber, eine Tür in Grundierung. Der Schlüssel steckt. Er gehört jetzt dir. Anspringen wird er nie." },
+  e46:         { art: "fahrzeug", id: "e46",         satz: "Unter der Plane steht ein alter BMW E46 in Orientblau, auf BBS-Felgen. Der Schlüssel steckt. Er gehört jetzt dir. Anspringen wird er nie." },
 };
 
 /* Das Garagentor in der Ladenstraße geht nur nachts auf, und nur für
