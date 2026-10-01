@@ -331,8 +331,17 @@ app.get("/api/account/:name", (req, res) => {
   });
 });
 
+/* Die Bestenliste rechnet über alle Konten samt Stadtvermögen. Die Welt
+   fragt sie bei jeder Rückkehr in den Raum ab (Podest, Rekordtafel); bei
+   ein paar Spielern, die ständig Spiele öffnen und schließen, stand der
+   Server dadurch immer wieder kurz. Zehn Sekunden alt darf sie sein. */
+let rangliste = null, ranglisteZeit = 0;
 app.get("/api/leaderboard", (_req, res) => {
-  res.json({ leaderboard: accounts.leaderboard(10) });
+  if (!rangliste || Date.now() - ranglisteZeit > 10_000) {
+    rangliste = accounts.leaderboard(10);
+    ranglisteZeit = Date.now();
+  }
+  res.json({ leaderboard: rangliste });
 });
 
 app.post("/api/change-pin", (req, res) => {
@@ -644,6 +653,11 @@ function gracefulShutdown(sig) {
     persistSports(); // offene Wetten und Kombis sichern, damit sie den Deploy überleben
     console.log("[shutdown] Sportwetten gesichert");
   } catch (e) { console.error("[shutdown] Sichern fehlgeschlagen:", e.message); }
+  // Konten, Chronik und Gala-Lose schreiben gebündelt; was aussteht, jetzt.
+  try { accounts.saveJetzt(); } catch (e) { console.error("[shutdown] Konten nicht gesichert:", e.message); }
+  for (const m of ["./game/chronik", "./game/comeback"]) {
+    try { require(m).jetztSchreiben(); } catch {}
+  }
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 2500).unref();
 }

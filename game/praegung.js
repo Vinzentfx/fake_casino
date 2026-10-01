@@ -90,7 +90,12 @@ let sammeln = false;
    eine Buchung (game/buchungen.js) muss wissen, ob ihr Exemplar wirklich
    auf der Platte steht, bevor sie dem Käufer „gekauft“ sagt. */
 let schreibfehler = null;
+/* Jede Änderung am Register geht durch save(); daran hängt der Stand des
+   Besitzer-Index unten. Gezählt wird auch im Sammelmodus, in dem nicht
+   geschrieben wird. */
+let fassung = 0;
 function save() {
+  fassung++;
   if (sammeln) return;
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -236,10 +241,27 @@ function bestand(art, id) {
   return n;
 }
 
+/* Besitzer-Index: Schlüssel zu ihren Exemplaren. Vorher lief jede Frage
+   „welches Exemplar hat X von Y“ über alle Exemplare im Haus, und die
+   kommt bei jedem Namen in jeder Liste (Prunkstück, Garnitur). Neu gebaut
+   wird, sobald sich das Register seit dem letzten Bau geändert hat. */
+let index = null, indexFassung = -1;
+function besitzIndex() {
+  if (index && indexFassung === fassung) return index;
+  index = new Map();
+  for (const [uid, s] of Object.entries(state.stuecke)) {
+    const l = index.get(s.besitzer);
+    if (l) l.push(uid); else index.set(s.besitzer, [uid]);
+  }
+  indexFassung = fassung;
+  return index;
+}
+
 /** Das Exemplar, das `key` von diesem Stück hält. Null, wenn keins. */
 function stueckVon(key, art, id) {
-  for (const [uid, s] of Object.entries(state.stuecke)) {
-    if (s.besitzer === key && s.art === art && s.id === id) return mitSerie(uid, s);
+  for (const uid of besitzIndex().get(key) || []) {
+    const s = state.stuecke[uid];
+    if (s && s.besitzer === key && s.art === art && s.id === id) return mitSerie(uid, s);
   }
   return null;
 }
@@ -247,8 +269,9 @@ function stueckVon(key, art, id) {
 /** Alle Exemplare von `key`, als { "art:id": stueck }. */
 function alleVon(key) {
   const out = {};
-  for (const [uid, s] of Object.entries(state.stuecke)) {
-    if (s.besitzer === key) out[schluessel(s.art, s.id)] = mitSerie(uid, s);
+  for (const uid of besitzIndex().get(key) || []) {
+    const s = state.stuecke[uid];
+    if (s && s.besitzer === key) out[schluessel(s.art, s.id)] = mitSerie(uid, s);
   }
   return out;
 }

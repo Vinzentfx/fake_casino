@@ -30,7 +30,7 @@ function konto(m) {
   m.accounts.login(name, "Passwort2026");
   const key = name.toLowerCase();
   m.accounts.get(key).chips = 0;
-  m.accounts.save();
+  m.accounts.saveJetzt();
   return key;
 }
 
@@ -90,7 +90,7 @@ test("verkaufen: Chips gutgeschrieben, Stück weg, abgelegt, Exemplar gelöscht"
   const acc = m.accounts.get(key);
   m.cosmetics.grant(acc, "haustier", "dackel", key);
   acc.haustier = "dackel";
-  m.accounts.save();
+  m.accounts.saveJetzt();
   const preis = m.ankauf.preisVon("haustier", "dackel");
   const r = m.ankauf.verkaufen(m.accounts, acc, key, { art: "haustier", id: "dackel" });
   assert.equal(r.ok, true, r.error);
@@ -122,7 +122,7 @@ test("Absturz zwischen Konto und Register: der Start räumt das Exemplar nach", 
   const key = konto(m);
   const acc = m.accounts.get(key);
   m.cosmetics.grant(acc, "haustier", "katze", key);
-  m.accounts.save();
+  m.accounts.saveJetzt();
   m.buchungen._pruefung.abbruchNach = "konto";
   assert.throws(() => m.ankauf.verkaufen(m.accounts, acc, key, { art: "haustier", id: "katze" }), m.buchungen.Abbruch);
   m.buchungen._pruefung.abbruchNach = null;
@@ -139,10 +139,10 @@ test("Schreibfehler am Konto: nichts verkauft, nichts gelöscht", () => {
   m.cosmetics.grant(acc, "haustier", "frosch", key);
   acc.haustier = "frosch";
   m.accounts.save();
-  const echt = m.accounts.save;
-  m.accounts.save = () => { throw new Error("Platte voll"); };
+  const echt = m.accounts.saveJetzt;
+  m.accounts.saveJetzt = () => { throw new Error("Platte voll"); };
   const r = m.ankauf.verkaufen(m.accounts, acc, key, { art: "haustier", id: "frosch" });
-  m.accounts.save = echt;
+  m.accounts.saveJetzt = echt;
   assert.equal(r.ok, false);
   assert.equal(acc.chips, 0);
   assert.equal(acc.haustier, "frosch");

@@ -39,7 +39,8 @@ function kaeufer(m, chips = 1_000_000) {
   const key = name.toLowerCase();
   const acc = m.accounts.get(key);
   acc.chips = chips;
-  m.accounts.save();
+  // Sofort: der Käufer hatte seine Chips längst, bevor irgendetwas abstürzt.
+  m.accounts.saveJetzt();
   return { key, acc };
 }
 function zooTier(m) {
@@ -80,12 +81,12 @@ for (const [was, datei] of [["Journal", "buchungen.json"], ["Zoo", "laeden.json"
     const id = zooTier(m);
     const vorher = stand(m, key, id);
     const echt = m.buchungen._pruefung.schreiben;
-    const echtSave = m.accounts.save;
-    if (datei === "accounts.json") m.accounts.save = () => { throw new Error("Platte voll"); };
+    const echtSave = m.accounts.saveJetzt;
+    if (datei === "accounts.json") m.accounts.saveJetzt = () => { throw new Error("Platte voll"); };
     else m.buchungen._pruefung.schreiben = (d, inhalt) => { if (d.endsWith(datei)) throw new Error("Platte voll"); return echt(d, inhalt); };
     const r = m.laeden.kaufen(m.accounts, "zoo", m.accounts.get(key), key, { id });
     m.buchungen._pruefung.schreiben = echt;
-    m.accounts.save = echtSave;
+    m.accounts.saveJetzt = echtSave;
     assert.equal(r.ok, false);
     assert.match(r.error, /nichts abgebucht|Chips sind zurück/);
     // Im Speicher: alles wie vorher.

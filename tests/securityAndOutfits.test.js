@@ -90,6 +90,7 @@ test("outfit save/load is persistent and never restores sold pieces or partially
   cosmetics.grant(acc,"style","sonne","outfittest");
   assert.equal(f.call("cos:equip",{type:"style",id:"sonne"}).ok,true);
   assert.equal(f.call("cos:outfitSave",{slot:0}).ok,true);
+  accounts.saveJetzt(); // Konten speichern gebündelt; ein endender Prozess schreibt vorher
   assert.ok(JSON.parse(fs.readFileSync(path.join(root,"data/accounts.json"))).outfittest.outfits[0]);
   assert.equal(f.call("cos:equip",{type:"style",id:"standard"}).ok,true);
   assert.equal(f.call("cos:outfitWear",{slot:0}).ok,true);assert.equal(acc.nameStyle,"sonne");
@@ -160,6 +161,7 @@ test("slot bonus survives a new connection and fresh process without extra payme
   assert.equal(reconnect.call("slots:spin",{machineId:"lucky7",bet:50}).ok,false);
   assert.equal(accounts.get("bonustest").chips,chips);
   const {execFileSync}=require("node:child_process");
+  accounts.saveJetzt(); // Konten speichern gebündelt; ein endender Prozess schreibt vorher
   const code=`const a=require(${JSON.stringify(path.join(root,"game/accounts"))});process.stdout.write(JSON.stringify(a.get('bonustest').slotBonus));`;
   const loaded=JSON.parse(execFileSync(process.execPath,["-e",code],{encoding:"utf8"}));
   assert.equal(loaded.remaining,machine.freeSpins.count);

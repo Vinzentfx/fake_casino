@@ -163,9 +163,10 @@ html:not(.reduce-motion) .m-bildschirm { animation: m-atmen 1.8s ease-in-out inf
   position: absolute; left: 0; top: 0; width: 64px; height: 96px;
   will-change: transform; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-/* Ein feiner dunkler Rand um jede Figur: die Silhouette bleibt auch vor dem
-   gemusterten Teppich und vor Gold lesbar. */
-.wf .fg { filter: drop-shadow(0 0 0.8px rgba(0, 0, 0, 0.75)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25)); }
+/* Kein filter an den Figuren: ein drop-shadow auf einem SVG, dessen Beine
+   und Arme sich bewegen, muss auf dem iPad in jedem Bild neu gerechnet
+   werden, und das für jede Figur im Raum. Die Umrisse zeichnet die Figur
+   selbst (Strich an jedem Teil), der Schatten liegt am Boden. */
 .wf-koerper { position: absolute; inset: 0; }
 .wf .fg { position: absolute; inset: 0; width: 100%; height: 100%; display: none; overflow: visible; }
 .wf.r-runter .fg-vorne, .wf.r-hoch .fg-hinten, .wf.r-links .fg-seite, .wf.r-rechts .fg-seite { display: block; }

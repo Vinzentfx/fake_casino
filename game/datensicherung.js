@@ -4,8 +4,8 @@
  * Backup und Wiederherstellen des ganzen data/-Ordners.
  *
  * Sichern: alle flachen Dateien als Text, dazu die hochgeladenen Bilder als
- * base64. Vorher werden die beiden Module, die gebündelt schreiben (Chronik,
- * Gala-Lose), auf die Platte gezwungen; sonst fehlten dem Backup ihre
+ * base64. Vorher werden die Module, die gebündelt schreiben (Konten,
+ * Chronik, Gala-Lose), auf die Platte gezwungen; sonst fehlten dem Backup ihre
  * letzten Sekunden. Halbfertige Kopien (*.tmp) bleiben draußen.
  *
  * Einspielen in ZWEI Schritten. Früher schrieb der Restore die Dateien
@@ -39,6 +39,8 @@ function sichern() {
   for (const m of ["./chronik", "./comeback"]) {
     try { require(m).jetztSchreiben(); } catch {}
   }
+  // Die Konten speichern gebündelt; was noch aussteht, gehört ins Backup.
+  try { require("./accounts").saveJetzt(); } catch {}
   const files = {};
   const binaer = {};
   for (const name of fs.readdirSync(DATA_DIR)) {

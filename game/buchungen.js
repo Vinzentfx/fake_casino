@@ -58,6 +58,10 @@ function sicherSchreiben(datei, inhalt) {
 
 const pruefung = { schreiben: sicherSchreiben, abbruchNach: null };
 
+/* Eine Buchung braucht das Konto SOFORT auf der Platte, nicht gebündelt
+   (siehe accounts.save). Fehlt saveJetzt (ältere Testattrappen), tut es save. */
+const sofort = (accounts) => (accounts.saveJetzt ? accounts.saveJetzt() : accounts.save());
+
 function sichern() {
   pruefung.schreiben(DATEI, JSON.stringify({ offen }));
 }
@@ -133,7 +137,7 @@ function buche(o) {
     // Buchung im Journal, und der nächste Start räumt nach der Platte auf.
     let sauber = true;
     try { if (o.zusatz && zusatzAngewendet) o.zusatz.speichern(); } catch { sauber = false; }
-    try { accounts.save(); } catch { sauber = false; }
+    try { sofort(accounts); } catch { sauber = false; }
     if (sauber) { delete offen[bid]; try { sichern(); } catch {} }
     return { ok: false, error: meldung };
   };
@@ -154,7 +158,7 @@ function buche(o) {
       o.zusatz.speichern();
     }
     schritt("zusatz");
-    accounts.save();
+    sofort(accounts);
     schritt("konto");
   } catch (e) {
     return scheitern("Das ließ sich gerade nicht sichern. Deine Chips sind zurück.", e);
@@ -196,7 +200,7 @@ function verkaufe(o) {
   try {
     cosmetics.besitzNehmen(acc, art, id);
     acc.chips = (acc.chips || 0) + preis;
-    accounts.save();
+    sofort(accounts);
     schritt("konto");
   } catch (e) {
     if (e instanceof Abbruch) throw e;
@@ -205,7 +209,7 @@ function verkaufe(o) {
     acc.cosOwned = JSON.parse(vorher.besitz);
     for (const [f, w] of Object.entries(vorher.felder)) if (!(f in acc)) acc[f] = w;
     let sauber = true;
-    try { accounts.save(); } catch { sauber = false; }
+    try { sofort(accounts); } catch { sauber = false; }
     if (sauber) { delete offen[bid]; try { sichern(); } catch {} }
     return { ok: false, error: "Das ließ sich gerade nicht sichern. Es hat sich nichts geändert." };
   }

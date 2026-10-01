@@ -406,7 +406,18 @@ function getDerived() {
       }
     }
   }
-  derived = { monopolies, streetsByOwner, bossByDistrict, valueByOwner };
+  /* Welche Gebäude wem gehören, einmal für alle. Vorher liefen Hausanzahl,
+     Trophäen und Miete je Spieler über alle 3.400 Gebäude der Stadt, und
+     die Übersicht rief sie für jeden Besitzer auf: rund 100 ms je Aufruf,
+     in denen der ganze Server stand. Frisch ist das wie alles hier über
+     derivedDirty, das jedes save() setzt; jeder Besitzwechsel speichert. */
+  const idsByOwner = new Map();
+  for (const [id, o] of Object.entries(state.own)) {
+    if (!o) continue;
+    const l = idsByOwner.get(o.owner);
+    if (l) l.push(id); else idsByOwner.set(o.owner, [id]);
+  }
+  derived = { monopolies, streetsByOwner, bossByDistrict, valueByOwner, idsByOwner };
   derivedDirty = false;
   return derived;
 }
@@ -424,9 +435,7 @@ const streetCount = (key) => getDerived().streetsByOwner[key] || 0;
 
 /** Anzahl Gebäude eines Spielers (Haus-Tribut). */
 function houseCount(key) {
-  let n = 0;
-  for (const o of Object.values(state.own)) if (o.owner === key) n++;
-  return n;
+  return (getDerived().idsByOwner.get(key) || []).length;
 }
 
 // Goldene Straße der Woche
@@ -477,8 +486,7 @@ function ownerValue(key) {
 /** Trophäen eines Spielers: [{kind, title, emoji, name}] */
 function trophiesOf(key) {
   const out = [];
-  for (const [id, o] of Object.entries(state.own)) {
-    if (o.owner !== key) continue;
+  for (const id of getDerived().idsByOwner.get(key) || []) {
     const e = bldIndex.get(Number(id));
     if (e && e.b.trophy) out.push({ kind: e.b.trophy, ...TROPHIES[e.b.trophy], name: e.b.nm || e.b.n || e.district.name });
   }
@@ -623,8 +631,7 @@ function personalVon(key) {
 /** Miete der Betriebe und der Wohngebaeude getrennt. */
 function mietTeile(key) {
   let wohn = 0, betrieb = 0, betriebe = 0;
-  for (const [id, o] of Object.entries(state.own)) {
-    if (o.owner !== key) continue;
+  for (const id of getDerived().idsByOwner.get(key) || []) {
     const e = bldIndex.get(Number(id));
     if (!e) continue;
     // Ein laufendes Ereignis (Wasserschaden, Dreharbeiten) wirkt genau hier

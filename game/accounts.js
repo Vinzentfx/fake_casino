@@ -302,16 +302,54 @@ function raeumeStatistik(roh) {
   return roh;
 }
 
-function save() {
+/*
+ * Speichern, gebündelt.
+ *
+ * Vorher schrieb jeder Aufruf die ganze Datei sofort: ein einziger
+ * Automatendreh rief das im Schnitt 6,4 Mal (Einsatz, Gewinn, Statistik,
+ * Season, Aufträge ...), bei 200 Konten jedes Mal rund 0,8 MB. Auf Railway
+ * blockierte das den Server bei ein paar gleichzeitig drehenden Spielern so
+ * lange, dass auch die Welt ruckelte. Jetzt merkt sich `save()` nur, DASS
+ * geschrieben werden muss, und schreibt höchstens alle 250 ms einmal.
+ *
+ * Was dadurch bei einem harten Absturz verloren gehen kann, sind höchstens
+ * diese 250 ms. Beim geordneten Herunterfahren (Deploy) und bei jedem
+ * `process.exit` wird vorher geschrieben. Wer SICHER sein muss, dass der
+ * Stand auf der Platte liegt (Buchungen, Backup), ruft `saveJetzt()`: das
+ * schreibt sofort und wirft bei einem Fehler.
+ */
+const SAMMEL_MS = 250;
+let speicherPlan = null;
+let zuletztGeschrieben = 0;
+function saveJetzt() {
+  if (speicherPlan) { clearTimeout(speicherPlan); speicherPlan = null; }
   fs.mkdirSync(DATA_DIR, { recursive: true });
   /* Erst eine Kopie, dann umbenennen. Endet der Prozess mitten im
      Schreiben, bleibt die alte Datei ganz, statt halb überschrieben; eine
-     halbe Datei ließe den nächsten Start abbrechen (siehe load). Fehler
-     werfen weiter, eine Buchung muss sie sehen. */
+     halbe Datei ließe den nächsten Start abbrechen (siehe load). Kompakt
+     statt eingerückt: ein Drittel kleiner und schneller geschrieben. */
   const tmp = `${ACCOUNTS_FILE}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(accounts, null, 2));
+  fs.writeFileSync(tmp, JSON.stringify(accounts));
   fs.renameSync(tmp, ACCOUNTS_FILE);
+  zuletztGeschrieben = Date.now();
 }
+function save() {
+  if (speicherPlan) return;
+  const warten = Math.max(0, SAMMEL_MS - (Date.now() - zuletztGeschrieben));
+  speicherPlan = setTimeout(() => {
+    speicherPlan = null;
+    try { saveJetzt(); } catch (e) {
+      console.error("[accounts] Speichern fehlgeschlagen, neuer Versuch:", e.message);
+      setTimeout(save, 1000).unref();
+    }
+  }, warten);
+  if (speicherPlan.unref) speicherPlan.unref();
+}
+// Was noch aussteht, geht vor dem Ende des Prozesses auf die Platte.
+process.on("exit", () => {
+  if (!speicherPlan) return;
+  try { saveJetzt(); } catch (e) { console.error("[accounts] Letztes Speichern fehlgeschlagen:", e.message); }
+});
 
 /* Strafen haengen am Konto, gespeichert wird hier. Das Strafen-Modul darf
    accounts nicht selbst holen (Kreis beim require), deshalb bekommt es die
@@ -1394,6 +1432,7 @@ module.exports = {
   DAILY_BONUS_COOLDOWN_MS,
   RESCUE_THRESHOLD,
   save,
+  saveJetzt,
   get,
   publicAccount,
   login,
