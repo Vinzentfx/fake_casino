@@ -27,6 +27,12 @@
   let enabled = true;
   let volume = 0.8;
   let unlocked = false;
+  // Wohin tone() und noise() gerade schreiben. Normal der Master; play() mit
+  // Lautstärke oder Richtung hängt für die Dauer eines Klangs einen eigenen
+  // Regler dazwischen. Alles in einem Klang wird synchron angelegt (die
+  // Verzögerungen laufen über die Uhr des AudioContext), also reicht das.
+  let ziel = null;
+  const aus = () => ziel || master;
 
   try {
     enabled = localStorage.getItem("casino_sound") !== "off";
@@ -77,7 +83,7 @@
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), t + 0.008);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g).connect(master);
+    osc.connect(g).connect(aus());
     osc.start(t);
     osc.stop(t + dur + 0.02);
   }
@@ -99,8 +105,42 @@
     filt.Q.value = q;
     const g = c.createGain();
     g.gain.value = gain;
-    src.connect(filt).connect(g).connect(master);
+    src.connect(filt).connect(g).connect(aus());
     src.start(t);
+  }
+
+  /* Rauschen aus einem einzigen, geteilten Puffer, mit Hüllkurve und
+     wanderndem Filter. Für alles, was länger als ein Klick ist: Motor,
+     Dampf, Blubbern, ein vorbeifahrendes Auto. noise() legt dafür jedes Mal
+     einen neuen Puffer an, bei drei Sekunden sind das 130.000 Zufallszahlen. */
+  let rauschPuffer = null;
+  function rauschen(dur, gain = 0.05, delay = 0, o = {}) {
+    const c = ensureCtx();
+    if (!c) return;
+    if (!rauschPuffer) {
+      const len = c.sampleRate * 2;
+      rauschPuffer = c.createBuffer(1, len, c.sampleRate);
+      const d = rauschPuffer.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const t = c.currentTime + delay;
+    const src = c.createBufferSource();
+    src.buffer = rauschPuffer;
+    src.loop = true;
+    const filt = c.createBiquadFilter();
+    filt.type = o.typ || "bandpass";
+    filt.frequency.setValueAtTime(o.freq || 1000, t);
+    if (o.bis) filt.frequency.exponentialRampToValueAtTime(o.bis, t + dur);
+    filt.Q.value = o.q == null ? 1 : o.q;
+    const g = c.createGain();
+    const an = o.an || 0.01;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), t + an);
+    if (o.halten) g.gain.setValueAtTime(Math.max(0.0002, gain), t + an + o.halten);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filt).connect(g).connect(aus());
+    src.start(t, Math.random() * 1.5);
+    src.stop(t + dur + 0.05);
   }
 
   function click(freq = 2600, gain = 0.03) {
@@ -133,14 +173,36 @@
     countUp: () => click(3400, 0.018),
   };
 
-  function play(name) {
+  /**
+   * Einen fertigen Klang abspielen. `opt.laut` (0 bis 1) und `opt.pan`
+   * (-1 links bis 1 rechts) sind für die Welt: wer weiter weg steht, ist
+   * leiser, und was rechts passiert, kommt von rechts.
+   */
+  function play(name, opt) {
     const cue = CUES[name];
-    if (cue) cue();
+    if (!cue) return;
+    if (!opt) return cue();
+    const c = ensureCtx();
+    if (!c) return;
+    const g = c.createGain();
+    g.gain.value = Math.max(0, Math.min(1.5, opt.laut == null ? 1 : opt.laut));
+    if (opt.pan && c.createStereoPanner) {
+      const p = c.createStereoPanner();
+      p.pan.value = Math.max(-1, Math.min(1, opt.pan));
+      g.connect(p).connect(master);
+    } else g.connect(master);
+    ziel = g;
+    try { cue(); } finally { ziel = null; }
+  }
+
+  /** Weitere Klänge anmelden (core/klaenge.js). Bestehende bleiben. */
+  function def(name, fn) {
+    if (!CUES[name]) CUES[name] = fn;
   }
 
   window.Casino = window.Casino || {};
   window.Casino.sound = {
-    tone, noise, click, play,
+    tone, noise, click, play, rauschen, def,
     cues: () => Object.keys(CUES),
     isEnabled: () => enabled,
     setEnabled(on) {
@@ -148,7 +210,13 @@
       try { localStorage.setItem("casino_sound", enabled ? "on" : "off"); } catch {}
       if (!enabled && ctx) { try { ctx.suspend(); } catch {} }
       if (enabled) ensureCtx();
+      document.dispatchEvent(new CustomEvent("casino:ton", { detail: { an: enabled } }));
     },
+    /** Für core/musik.js: derselbe Kontext und derselbe Master-Regler. */
+    _kontext: () => ensureCtx(),
+    _master: () => master,
+    _aus: () => aus(),
+    entsperrt: () => unlocked,
     getVolume: () => volume,
     setVolume(v) {
       volume = Math.min(1, Math.max(0, Number(v) || 0));

@@ -414,6 +414,16 @@ function applyPrefs(prefs) {
     const box = $("#set-sound");
     if (box) box.checked = prefs.sound;
   }
+  if (window.Casino.musik && typeof prefs.musik === "boolean") {
+    window.Casino.musik.setAn(prefs.musik);
+    const box = $("#set-musik");
+    if (box) box.checked = prefs.musik;
+  }
+  if (window.Casino.musik && typeof prefs.musikVol === "number") {
+    window.Casino.musik.setLautstaerke(prefs.musikVol);
+    const slider = $("#set-musik-vol");
+    if (slider) slider.value = String(Math.round(prefs.musikVol * 100));
+  }
   if (typeof prefs.reduceMotion === "boolean") {
     document.documentElement.classList.toggle("reduce-motion", prefs.reduceMotion);
     const box = $("#set-motion");
@@ -3882,6 +3892,22 @@ document.addEventListener("casino:themechange", renderThemePicker);
       window.Casino.savePrefs({ sound: box.checked });
       if (box.checked) window.Casino.sound.play("select");
     });
+  }
+  // Musik der Welt: eigener Schalter, eigene Lautstärke (core/musik.js).
+  const musik = window.Casino.musik;
+  const mBox = $("#set-musik");
+  const mSlider = $("#set-musik-vol");
+  if (musik && mBox) {
+    mBox.checked = musik.istAn();
+    mBox.addEventListener("change", () => {
+      musik.setAn(mBox.checked);
+      window.Casino.savePrefs({ musik: mBox.checked });
+    });
+  }
+  if (musik && mSlider) {
+    mSlider.value = String(Math.round(musik.getLautstaerke() * 100));
+    mSlider.addEventListener("input", () => musik.setLautstaerke(mSlider.value / 100));
+    mSlider.addEventListener("change", () => window.Casino.savePrefs({ musikVol: musik.getLautstaerke() }));
   }
 })();
 

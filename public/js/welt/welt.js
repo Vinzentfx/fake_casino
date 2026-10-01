@@ -85,7 +85,13 @@
           <button type="button" class="welt-knopf welt-mehr-knopf" data-welt="mehr" aria-haspopup="menu" aria-expanded="false"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg><span>Mehr</span></button>
           <span class="welt-mehr hidden" role="menu"></span>
         </span>
+        <button type="button" class="welt-knopf welt-musik-knopf" data-welt="musik" aria-haspopup="dialog" aria-expanded="false" aria-label="Musik"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
         <button type="button" class="welt-knopf" data-welt="liste">${Casino.icons ? Casino.icons.ui("feed") : ""}<span>Übersicht</span></button>
+      </div>
+      <div class="welt-musik hidden" role="dialog" aria-label="Musik">
+        <label class="welt-musik-zeile"><span>Musik</span><input type="checkbox" data-musik="an"></label>
+        <label class="welt-musik-zeile"><span>Lautstärke</span><input type="range" min="0" max="100" data-musik="vol"></label>
+        <small class="welt-musik-jetzt"></small>
       </div>
       <button type="button" class="welt-aktion hidden"><b></b><small></small></button>
       <div class="welt-stick hidden" aria-hidden="true"><i></i></div>
@@ -160,7 +166,10 @@
     const h = jetzt.getHours();
     return h >= 6 && h < 10 ? "morgen" : h >= 10 && h < 17 ? "tag" : h >= 17 && h < 21 ? "abend" : "nacht";
   }
-  setInterval(() => { if (raumEl) raumEl.dataset.tageszeit = tageszeit(); }, 5 * 60 * 1000);
+  setInterval(() => {
+    if (raumEl) raumEl.dataset.tageszeit = tageszeit();
+    if (raum && Casino.musik) Casino.musik.raum(raum.id, { nacht: tageszeit() === "nacht" });
+  }, 5 * 60 * 1000);
 
   function baueRaum(r) {
     /* Eine offene Tafel gehört zu einem Ding im alten Raum. Zieht die Figur
@@ -178,6 +187,7 @@
     raumEl.dataset.raum = r.id;
     // Die Fenster über der Welt nehmen den Ton dieses Raums an (welt.css).
     document.documentElement.dataset.weltRaum = r.id;
+    if (Casino.musik) Casino.musik.raum(r.id, { nacht: tageszeit() === "nacht" });
     raumEl.dataset.tageszeit = tageszeit();
     const dinge = r.dinge.map((d) => {
       const z = M.ding(d);
@@ -610,12 +620,32 @@
      Eine Kennung aus einer Nachricht wird nur zur Klasse, wenn sie bekannt ist. */
   const GRUND_GESTEN = [{ id: "winken", name: "Winken" }, { id: "jubeln", name: "Jubeln" }];
   const GESTEN_BEKANNT = new Set([...GRUND_GESTEN.map((g) => g.id), ...R.STUECK_GESTEN.map((g) => g.id), "shisha"]);
-  const GESTE_MS = { winken: 1700, jubeln: 1700, kunststueck: 1900, hupen: 1800, ankicken: 2200, qualmen: 2400, kickflip: 1000 };
+  const GESTE_MS = { winken: 1700, jubeln: 1700, kunststueck: 1900, hupen: 1800, ankicken: 2200, qualmen: 2400, kickflip: 1000, wheelie: 2600 };
   const HUPE = { e_roller: "Kling kling!", bobbycar: "Möp möp!", mopedauto: "Tüt tüt!", goldmoped: "Tüüüt!", aufsitzmaeher: "Brumm brumm!", simme: "Mööööp!" };
   const KONFETTI = ["#e5534b", "#f2c94c", "#3f6fd0", "#4fb76a", "#c86bd6", "#f0a23b"];
 
+  /* Ein Klang aus der Welt. Von der eigenen Figur voll; von anderen leiser,
+     je weiter weg, und aus der Richtung, in der sie stehen. Liegt ein Spiel
+     über der Welt, bleibt sie still. */
+  function klang(name, f) {
+    const snd = Casino.sound;
+    if (!snd || !snd.play || !vorn) return;
+    if (!f || !ich || f === ich) return snd.play(name);
+    const dx = f.x - ich.x, d = Math.hypot(dx, f.y - ich.y);
+    if (d > 14) return;
+    snd.play(name, { laut: Math.max(0.12, 1 - d / 12), pan: dx / 9 });
+  }
+  const HUPE_KLANG = { e_roller: "klingel", bobbycar: "hupe_bobby", mopedauto: "hupe_auto", goldmoped: "hupe_gold", aufsitzmaeher: "hupe_maeher", simme: "hupe_simme" };
+  const GESTE_KLANG = { qualmen: "anlassen_fehl" };
+  function gesteKlang(f, art) {
+    if (art === "hupen") return klang(HUPE_KLANG[(f.look.kleidung || {}).fahrzeug] || "hupe_auto", f);
+    if (art === "wheelie" && (f.look.kleidung || {}).fahrzeug === "simme") return klang("wheelie_simme", f);
+    klang(GESTE_KLANG[art] || art, f);
+  }
+
   function geste(f, art) {
     if (!GESTEN_BEKANNT.has(art)) return;
+    gesteKlang(f, art);
     const k = "g-" + art;
     for (const c of [...f.el.classList]) if (c.startsWith("g-")) f.el.classList.remove(c);
     void f.el.offsetWidth;
@@ -705,6 +735,11 @@
         const [px, py] = n % 3 === 2 ? auspuff : haube;
         teilchen(box, "fx-qualm", px + r(-6, 6), py, { "animation-delay": (n * 0.16).toFixed(2) + "s", "--dx": (r(-16, 16) - seitwaerts * 8).toFixed(1) + "px", "--dy": r(-46, -26).toFixed(1) + "px" });
       }
+    } else if (art === "wheelie") {
+      // Am Hinterrad spritzt ein bisschen Staub, solange das Vorderrad oben ist.
+      const s = FIG_B / 64;
+      const hx = f.d === "rechts" ? 14 * s : f.d === "links" ? 50 * s : 32 * s;
+      for (let n = 0; n < 5; n++) teilchen(box, "fx-staub", hx, 90 * s, { "animation-delay": (0.25 + n * 0.3).toFixed(2) + "s", "--dx": (f.d === "links" ? 1 : f.d === "rechts" ? -1 : r(-1, 1)) * r(10, 18) + "px" });
     } else if (art === "kickflip") {
       // Landung: zwei Staubwolken links und rechts der Füße.
       const s = FIG_B / 64;
@@ -791,7 +826,17 @@
     kameraSofort = true;
     anzeigenLaden();
     jagdLaden();
+    if (Casino.musik) Casino.musik.jukebox(res.musik && res.musik.stil, res.musik && res.musik.rest);
   }
+
+  /* Die Jukebox in der Spielhalle: jemand anderes hat ein Lied gewählt. */
+  socket.on("welt:musik", (m) => {
+    if (!m || !raum || !Casino.musik) return;
+    Casino.musik.jukebox(m.stil, m.rest);
+    const f = andere.get(m.von);
+    klang("jukebox", f);
+    if (m.titel) Casino.toast(`♪ ${f && f.look ? f.look.name + " legt auf: " : "Die Jukebox spielt "}${m.titel}`);
+  });
 
   socket.on("welt:rein", (p) => {
     if (!drin || !p || (ich && p.id === ich.id)) return;
@@ -1149,6 +1194,7 @@
       if (!el.querySelector('[data-welt="starter"]').classList.contains("hidden")) eintraege.push(["starter", "Starter-Pass"]);
       eintraege.push(["gesten", "Gesten"]);
       if (fahrt.fahrzeug) eintraege.push(["fahrt", fahrt.auf ? "Absteigen" : "Aufsteigen"]);
+      eintraege.push(["musik", "Musik"]);
       eintraege.push(["liste", "Übersicht"]);
       mehrMenue.innerHTML = eintraege.map(([was, text]) => `<button type="button" role="menuitem" data-mehr="${was}">${esc(text)}</button>`).join("");
     }
@@ -1163,12 +1209,48 @@
     mehrAuf(false);
     const was = b.dataset.mehr;
     if (was === "gesten") gestenRadAuf();
+    else if (was === "musik") musikAuf(true);
     else el.querySelector(`[data-welt="${was}"]`)?.click();
   });
   document.addEventListener("pointerdown", (e) => {
     if (!mehrMenue.classList.contains("hidden") && !e.target.closest(".welt-mehr-huelle")) mehrAuf(false);
   });
   mehrMenue.addEventListener("keydown", (e) => { if (e.key === "Escape") { mehrAuf(false); mehrKnopf.focus(); } });
+
+  /* Musik direkt in der Welt: an, aus und lauter, ohne erst in die
+     Einstellungen zu wechseln. Dieselben Werte wie dort, und gespeichert
+     wird am Konto wie dort. */
+  const musikFeld = el.querySelector(".welt-musik");
+  const musikKnopf = el.querySelector('[data-welt="musik"]');
+  const STIL_NAME = { lounge: "Lounge", synthwave: "Synthwave", chiptune: "Chiptune", disco: "Disco", house: "House", swing: "Swing", polka: "Polka", ruhm: "Fanfaren" };
+  function musikAuf(auf) {
+    const m = Casino.musik;
+    if (!m) return;
+    if (auf) {
+      musikFeld.querySelector('[data-musik="an"]').checked = m.istAn();
+      musikFeld.querySelector('[data-musik="vol"]').value = String(Math.round(m.getLautstaerke() * 100));
+      const z = m.zustand();
+      musikFeld.querySelector(".welt-musik-jetzt").textContent = !Casino.sound.isEnabled() ? "Der Ton ist in den Einstellungen aus."
+        : z.stil ? `Läuft: ${STIL_NAME[z.stil] || z.stil}${z.jukebox ? " (Jukebox)" : ""}` : z.atmo ? "Hier draußen hörst du nur die Umgebung." : "";
+    }
+    musikFeld.classList.toggle("hidden", !auf);
+    musikKnopf.setAttribute("aria-expanded", String(auf));
+  }
+  musikFeld.addEventListener("change", (e) => {
+    const m = Casino.musik;
+    if (!m) return;
+    if (e.target.dataset.musik === "an") { m.setAn(e.target.checked); Casino.savePrefs && Casino.savePrefs({ musik: e.target.checked }); }
+    if (e.target.dataset.musik === "vol") Casino.savePrefs && Casino.savePrefs({ musikVol: m.getLautstaerke() });
+    const box = document.getElementById("set-musik"), sl = document.getElementById("set-musik-vol");
+    if (box) box.checked = m.istAn();
+    if (sl) sl.value = String(Math.round(m.getLautstaerke() * 100));
+  });
+  musikFeld.addEventListener("input", (e) => {
+    if (e.target.dataset.musik === "vol" && Casino.musik) Casino.musik.setLautstaerke(e.target.value / 100);
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (!musikFeld.classList.contains("hidden") && !e.target.closest(".welt-musik, .welt-musik-knopf, .welt-mehr-huelle")) musikAuf(false);
+  });
 
   const gestenMenue = el.querySelector(".welt-gesten");
   const gestenKnopf = el.querySelector('[data-welt="gesten"]');
@@ -1191,6 +1273,7 @@
     else if (was === "gesten") gestenAuf(gestenMenue.classList.contains("hidden"));
     else if (was === "fahrt") aufsitzen();
     else if (was === "mehr") mehrAuf(mehrMenue.classList.contains("hidden"));
+    else if (was === "musik") musikAuf(musikFeld.classList.contains("hidden"));
     else if (was === "starter") {
       setzeAnsicht("liste");
       setTimeout(() => document.getElementById("starter-pass")?.scrollIntoView({ behavior: reduziert() ? "auto" : "smooth", block: "center" }), 60);
@@ -1208,12 +1291,14 @@
     fahrtKnopf.setAttribute("aria-pressed", String(fahrt.auf));
     fahrtKnopf.querySelector("span").textContent = fahrt.auf ? "Absteigen" : "Aufsteigen";
   }
+  const FAHRT_KLANG = { mopedauto: "motor_an", goldmoped: "motor_an", aufsitzmaeher: "motor_an", e_roller: "elektro_an", skateboard: "rollen", hoverboard: "schweben", bobbycar: "rollen" };
   function aufsitzen() {
     if (!drin || !fahrt.fahrzeug) return;
     socket.emit("welt:aufsitzen", { an: !fahrt.auf }, (res) => {
       if (!res || !res.ok) { if (res && res.error && res.error !== "Langsam.") Casino.toast(res.error); return; }
       fahrtSetzen(res);
       if (ich && !reduziert()) sprungZeigen(ich);
+      klang(fahrt.auf ? (FAHRT_KLANG[fahrt.fahrzeug] || "aufsteigen") : "aufsteigen");
     });
   }
   socket.on("welt:fahrt", fahrtSetzen);
@@ -1265,7 +1350,7 @@
       const knopf = dingeEbene.querySelector(`[data-jagd="${m.id}"]`);
       if (knopf) { knopf.classList.add("weg"); setTimeout(() => knopf.remove(), 600); }
       if (r.account && Casino.applyAccount) Casino.applyAccount(r.account);
-      Casino.sound && Casino.sound.play && Casino.sound.play(r.fertig ? "bigwin" : "chip");
+      Casino.sound && Casino.sound.play && Casino.sound.play(r.fertig ? "bigwin" : "marke");
       if (r.fertig) Casino.dialog.hinweis(`Alle ${r.gesamt} goldenen Marken gefunden! Dazu gibt es ${r.chips.toLocaleString("de-DE")} Chips und den Titel „Schatzsucher“.`, { titel: "Schatz gehoben" });
       else Casino.toast(`Goldene Marke! +${r.chips.toLocaleString("de-DE")} Chips · ${r.gefunden} von ${r.gesamt}`);
       jagdZeichnen();
@@ -1515,7 +1600,13 @@
       else if (z.auswahl) zeigeAuswahl(d, z.auswahl);
       else if (z.umzug) geheimgang(d, z.umzug);
       else if (z.geheimnis) geheimnisZeigen(z.geheimnis);
-      else if (z.jukebox) { Casino.toast(`♪ Die Jukebox spielt ${z.jukebox.lied}`); const jb = dingEls.get(d.id); if (jb) { jb.classList.remove("spielt"); void jb.offsetWidth; jb.classList.add("spielt"); } }
+      else if (z.jukebox) {
+        Casino.toast(`♪ Die Jukebox spielt ${z.jukebox.lied}`);
+        klang("jukebox");
+        if (Casino.musik && z.jukebox.musik) Casino.musik.jukebox(z.jukebox.musik.stil, z.jukebox.musik.rest);
+        const jb = dingEls.get(d.id);
+        if (jb) { jb.classList.remove("spielt"); void jb.offsetWidth; jb.classList.add("spielt"); }
+      }
       else if (z.shisha && res.platz) Casino.toast("Du sitzt an der Shisha. Tipp sie noch einmal an, um zu ziehen.");
       else if (z.shisha) Casino.toast("Gerade sind alle Kissen besetzt.");
       else if (z.hinweis) Casino.dialog.hinweis(z.hinweis, { titel: d.label });
@@ -1736,6 +1827,34 @@
     });
   }
 
+  /* Die Zunge klappert an jeder Feldgrenze. Gemessen wird am echten Winkel
+     des Rads, nicht an einer nachgerechneten Kurve: dann passt der Tick
+     auch, wenn sich die Animation einmal ändert. */
+  function radKlappern(g) {
+    clearInterval(g._klapper);
+    if (reduziert()) return;
+    const weite = 360 / (radSegmente.length || 12);
+    const winkel = () => {
+      const m = getComputedStyle(g).transform;
+      const w = /matrix\(([^,]+),\s*([^,]+)/.exec(m || "");
+      return w ? (Math.atan2(Number(w[2]), Number(w[1])) * 180 / Math.PI + 360) % 360 : 0;
+    };
+    let vorher = winkel(), seit = performance.now();
+    g._klapper = setInterval(() => {
+      const jetzt = winkel();
+      let delta = (jetzt - vorher + 360) % 360;
+      if (delta > 180) delta -= 360;
+      if (Math.floor(jetzt / weite) !== Math.floor(vorher / weite) && Math.abs(delta) > 0.01) klang("rad_tick", dingFigur("gluecksrad"));
+      vorher = jetzt;
+      if (performance.now() - seit > RAD_MS + 200) clearInterval(g._klapper);
+    }, 25);
+  }
+  /* Ein Ding als Klangquelle: dieselbe Rechnung wie für eine Figur. */
+  function dingFigur(id) {
+    const d = raum && raum.dinge.find((x) => x.id === id);
+    return d ? { x: d.x, y: d.y } : null;
+  }
+
   function radDrehen(index) {
     const b = dingEls.get("gluecksrad");
     const g = b && b.querySelector(".m-rad-drehung");
@@ -1750,6 +1869,7 @@
        leuchtet das getroffene Feld ein paar Mal auf. */
     b.querySelectorAll(".m-radfeld.treffer").forEach((x) => x.classList.remove("treffer"));
     b.classList.add("dreht");
+    radKlappern(g);
     clearTimeout(b._radUhr);
     b._radUhr = setTimeout(() => {
       b.classList.remove("dreht");
@@ -2165,6 +2285,7 @@
     const z = M.ding(d);
     const f = ich && sch.id === ich.id ? ich : andere.get(sch.id);
     const name = f && f.look ? f.look.name : "";
+    klang("explosion", f || null);
     const box = document.createElement("div");
     box.className = "welt-explosion";
     box.style.transform = `translate3d(${d.x * T}px, ${z.oben + z.h * 0.42}px, 0)`;
@@ -2213,7 +2334,7 @@
 
   function geheimnisZeigen(g) {
     if (!g) return;
-    Casino.sound && Casino.sound.play && Casino.sound.play(g.neu ? "win" : "tick");
+    Casino.sound && Casino.sound.play && Casino.sound.play(g.neu ? "geheimnis" : "tick");
     const text = g.neu ? `${g.satz}\n\nNeu in deiner Sammlung: ${g.label}. Geheimnis ${g.zahl} von ${g.von}.` : g.satz;
     Casino.dialog.hinweis(text, { titel: g.neu ? "Gefunden!" : "Schon entdeckt" });
   }
@@ -2360,6 +2481,7 @@
     tasten.clear();
     sendeZug(false);
     el.classList.add("welt-blende");
+    klang("tuer");
     socket.emit("welt:tuer", { tuer: t.id }, (res) => {
       const fertig = () => { wechselt = false; el.classList.remove("welt-blende"); };
       if (!res || !res.ok) {
@@ -2526,9 +2648,10 @@
   const LAUT = { taube: "Gurr!", hamster: "Piep!", frosch: "Quak!", dackel: "Wuff!", waschbaer: "Fiep!", gluecksschwein: "Oink!",
     minidrache: "Fauch!", tresorkatze: "Miau!", igel: "Schnüff!", hase: "Mümmel!", schildkroete: "…", pinguin: "Kwääk!", papagei: "Hallo!" };
   const TIER_RUHE = 25000;
-  function tierLaut(t, text, warte = 0, klasse = "begegnet") {
+  function tierLaut(t, text, warte = 0, klasse = "begegnet", ton = null) {
     setTimeout(() => {
       if (!t.el.isConnected) return;
+      klang(ton || (text === "♥" ? "tier_herz" : "tier_" + t.id), t);
       const b = document.createElement("span");
       b.className = "wt-laut";
       b.textContent = text;
@@ -2553,11 +2676,11 @@
         } else if (art.has("dackel") && art.has("tresorkatze")) {
           const hund = a.id === "dackel" ? a : b, katze = hund === a ? b : a;
           tierLaut(hund, "Wuff! Wuff!");
-          tierLaut(katze, "Fauch!", 450, "erschrickt");
+          tierLaut(katze, "Fauch!", 450, "erschrickt", "tier_fauchen");
         } else if (art.has("papagei")) {
           const vogel = a.id === "papagei" ? a : b, anderes = vogel === a ? b : a;
           tierLaut(anderes, LAUT[anderes.id] || "…");
-          tierLaut(vogel, LAUT[anderes.id] || "Hallo!", 700);
+          tierLaut(vogel, LAUT[anderes.id] || "Hallo!", 700, "begegnet", "tier_" + anderes.id);
         } else {
           tierLaut(a, LAUT[a.id] || "…");
           tierLaut(b, LAUT[b.id] || "…", 450);
@@ -2737,6 +2860,7 @@
     const istLobby = screen === "lobby";
     const warVorn = vorn;
     vorn = !aus && istLobby && ansicht === "welt";
+    if (Casino.musik) Casino.musik.vorn(vorn);
     // Zurück aus einem Spiel: Tafeln und Kurse sofort frisch, nicht erst beim nächsten Takt.
     if (vorn && !warVorn && drin && raum) anzeigenLaden();
     html.classList.toggle("welt-an", !aus);

@@ -25,6 +25,24 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-01-c",
+      datum: "1. Oktober 2026",
+      titel: "Das Casino hat jetzt Ton",
+      items: [
+        { icon: "stern", titel: "Musik in jedem Raum",
+          text: "Lounge im Casino, Synthwave in der Spielhalle, Vögel oder Grillen auf der Terrasse, Verkehr in der Ladenstraße. An der Jukebox wählst du das Lied für alle in der Spielhalle. Lauter, leiser oder aus über das Notensymbol oben in der Welt oder in den Einstellungen." },
+
+        { icon: "kosmetik", titel: "Fahrzeuge, Vapes und Tiere klingen",
+          text: "Jede Hupe klingt nach ihrem Fahrzeug, die Simme knattert beim Ankicken, der E46 orgelt. Vape und Shisha zischen und blubbern, Haustiere bellen, miauen und quaken sich an. Wer weiter weg steht, ist leiser." },
+
+        { icon: "pinco", titel: "Mehr Spiele mit Ton",
+          text: "Schach, Memory, Solitär, Poker, Kniffel, Pferderennen, Lotterie und das Glücksrad haben jetzt Klänge, dazu Heist, Chip-Regen und Quiz." },
+
+        { icon: "stern", titel: "Der E-Roller ist neu",
+          text: "Ganz in Schwarz, mit Akku unter dem Trittbrett, Klappgelenk und Anzeige am Lenker. Und er kann jetzt ein Wheelie, die Simme übrigens auch." },
+      ],
+    },
+    {
       id: "2026-10-01-b",
       datum: "1. Oktober 2026",
       titel: "Shisha, Geheimnisse und eine Schnitzeljagd",

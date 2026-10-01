@@ -1736,6 +1736,14 @@
           <input type="range" id="set-volume" min="0" max="100" value="80" class="settings-range" />
         </label>
         <label class="toggle-row">
+          <span>Musik in der Welt<small class="toggle-note">Je Raum eine eigene Stimmung, in der Spielhalle wählt die Jukebox. Im Spiel ist sie aus.</small></span>
+          <input type="checkbox" id="set-musik" checked />
+        </label>
+        <label class="toggle-row">
+          <span>Musik-Lautstärke</span>
+          <input type="range" id="set-musik-vol" min="0" max="100" value="55" class="settings-range" />
+        </label>
+        <label class="toggle-row">
           <span>Bewegung reduzieren<small class="toggle-note">Weniger Deko-Animationen. Spielabläufe bleiben.</small></span>
           <input type="checkbox" id="set-motion" />
         </label>
@@ -2706,6 +2714,8 @@
   <script defer src="/js/core/theme.js"></script>
   <script defer src="/js/core/screens.js"></script>
   <script defer src="/js/core/sound.js"></script>
+  <script defer src="/js/core/klaenge.js"></script>
+  <script defer src="/js/core/musik.js"></script>
   <script defer src="/js/core/fx.js"></script>
   <script defer src="/js/core/player.js"></script>
   <!-- Die Figur wird schon von der Online-Liste gebraucht, bevor die Welt lädt. -->
@@ -2779,5 +2789,6 @@
   <script defer src="/js/welt/moebel.js"></script>
   <script defer src="/js/welt/welt.js"></script>
   <script defer src="/js/welt/grundform.js"></script>
+  <script defer src="/js/spielklaenge.js"></script>
 </body>
 </html>

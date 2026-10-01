@@ -87,9 +87,19 @@ function nachts(jetzt = uhr.jetzt()) {
   return h >= 22 || h < 5;
 }
 const GESTEN = new Set(["winken", "jubeln"]);
-/* Was die Jukebox spielt. Erfunden, damit niemandes Lied hier steht. */
-const LIEDER = ["„Alles auf Rot“ von den Jackpot-Jungs", "„Hebel runter“ von Lucky 7", "„Nacht in Porta“ von DJ Weserwelle",
-  "„Noch eine Runde“ von Die Croupiers", "„Goldene Spielmarke“ von Neon Royale", "„Ring-ding-ding“ von Simson Sisters"];
+/* Was die Jukebox spielt. Erfunden, damit niemandes Lied hier steht. Der
+   Stil ist der Name in public/js/core/musik.js; der Browser spielt ihn. */
+const LIEDER = [
+  { titel: "„Alles auf Rot“ von den Jackpot-Jungs", stil: "disco" },
+  { titel: "„Hebel runter“ von Lucky 7", stil: "chiptune" },
+  { titel: "„Nacht in Porta“ von DJ Weserwelle", stil: "synthwave" },
+  { titel: "„Noch eine Runde“ von Die Croupiers", stil: "swing" },
+  { titel: "„Goldene Spielmarke“ von Neon Royale", stil: "house" },
+  { titel: "„Ring-ding-ding“ von Simson Sisters", stil: "polka" },
+];
+/* Ein Lied läuft drei Minuten, dann wieder die Raummusik. Gemerkt nur im
+   Speicher: nach einem Neustart spielt die Halle ihre eigene Musik. */
+const LIED_MS = 3 * 60 * 1000;
 
 const runde = (n) => Math.round(n * 100) / 100;
 
@@ -143,6 +153,7 @@ const saubereGrundform = R.grundform;
 
 function setupWelt(io, accounts) {
   const figuren = new Map();   // Kontoschlüssel: Figur
+  const jukeboxen = new Map(); // Raum: { lied, bis }
   let naechsteId = 1;
   const kanal = (raumId) => "welt:" + raumId;
   const verification = require("./verification");
@@ -208,7 +219,15 @@ function setupWelt(io, accounts) {
     for (const f of figuren.values()) {
       if (f !== fig && f.raum === fig.raum && sichtbar(f)) andere.push(oeffentlich(f));
     }
-    return { ok: true, ich: fig.id, raum: fig.raum, pos: { x: fig.x, y: fig.y, d: fig.d, s: fig.sitzt || 0 }, look: oeffentlich(fig).look, spieler: andere, fahrt: fahrtZustand(fig) };
+    return { ok: true, ich: fig.id, raum: fig.raum, pos: { x: fig.x, y: fig.y, d: fig.d, s: fig.sitzt || 0 }, look: oeffentlich(fig).look, spieler: andere, fahrt: fahrtZustand(fig), musik: musikVon(fig.raum) };
+  }
+
+  /* Was die Jukebox im Raum gerade spielt, mit Restzeit statt Uhrzeit:
+     die Uhr im Browser muss nicht stimmen. */
+  function musikVon(raumId) {
+    const j = jukeboxen.get(raumId);
+    if (!j || j.bis <= Date.now()) return null;
+    return { titel: j.lied.titel, stil: j.lied.stil, rest: j.bis - Date.now() };
   }
 
   /* Für den eigenen Knopf: welches Fahrzeug angelegt ist und ob man drauf sitzt. */
@@ -472,7 +491,14 @@ function setupWelt(io, accounts) {
           const g = geheimnisFinden(fig.key, "schallplatte");
           if (g) return ack({ ok: true, ding: d.id, ziel: { geheimnis: g } });
         }
-        return ack({ ok: true, ding: d.id, ziel: { jukebox: { lied: LIEDER[Math.floor(Math.random() * LIEDER.length)] } } });
+        // Nicht zweimal dasselbe hintereinander.
+        const alt = jukeboxen.get(fig.raum);
+        const auswahl = LIEDER.filter((l) => !alt || l !== alt.lied);
+        const lied = auswahl[Math.floor(Math.random() * auswahl.length)];
+        jukeboxen.set(fig.raum, { lied, bis: jetzt + LIED_MS });
+        const musik = musikVon(fig.raum);
+        anAndere(fig, "welt:musik", { ...musik, von: fig.id });
+        return ack({ ok: true, ding: d.id, ziel: { jukebox: { lied: lied.titel, musik } } });
       }
       const platz = (d.ziel.screen || d.ziel.shisha) ? amTischSetzen(fig, raum, d) : null;
       if (d.ziel.shisha && platz) shishaRunde(fig);

@@ -493,6 +493,7 @@
     { id: "selfie", name: "Selfie", braucht: { hand: ["handy", "kamera"] } },
     { id: "geldregen", name: "Geldregen", braucht: { hand: ["chipstapel", "goldbarren"] } },
     { id: "kickflip", name: "Kickflip", braucht: { fahrzeug: ["skateboard"] } },
+    { id: "wheelie", name: "Wheelie", braucht: { fahrzeug: ["e_roller", "simme"] } },
     { id: "hupen", name: "Hupen", braucht: { fahrzeug: ["e_roller", "bobbycar", "mopedauto", "goldmoped", "aufsitzmaeher", "simme"] } },
     { id: "ankicken", name: "Ankicken", braucht: { fahrzeug: ["simme"] } },
     { id: "qualmen", name: "Anlassen", braucht: { fahrzeug: ["e46"] } },

@@ -1093,6 +1093,39 @@ html:not(.reduce-motion) .wf.g-kickflip .fz { transform-box: fill-box; transform
   82% { transform: translateY(1px) scaleY(1); }
   100% { transform: translateY(0) scaleY(1); }
 }
+/* Wheelie: das Vorderrad hoch, eine Weile auf dem Hinterrad balancieren,
+   dann zurück mit einem kleinen Federn. Gedreht wird um das Hinterrad;
+   das liegt von der Seite gesehen hinten unten, also je nach Richtung
+   links oder rechts. Von vorn und hinten hebt sich die Figur nur an. */
+html:not(.reduce-motion) .wf.g-wheelie.r-rechts .wf-koerper { transform-origin: 22% 93%; animation: wheelie-r 2.5s cubic-bezier(.3, .7, .4, 1) 1; }
+html:not(.reduce-motion) .wf.g-wheelie.r-links .wf-koerper { transform-origin: 78% 93%; animation: wheelie-l 2.5s cubic-bezier(.3, .7, .4, 1) 1; }
+html:not(.reduce-motion) .wf.g-wheelie:is(.r-runter, .r-hoch) .wf-koerper { transform-origin: 50% 100%; animation: wheelie-v 2.5s ease-in-out 1; }
+@keyframes wheelie-r {
+  0%, 100% { transform: rotate(0); }
+  14% { transform: rotate(-19deg); }
+  30% { transform: rotate(-14deg); }
+  48% { transform: rotate(-18deg); }
+  66% { transform: rotate(-13deg); }
+  84% { transform: rotate(-16deg); }
+  93% { transform: rotate(1.5deg); }
+}
+@keyframes wheelie-l {
+  0%, 100% { transform: rotate(0); }
+  14% { transform: rotate(19deg); }
+  30% { transform: rotate(14deg); }
+  48% { transform: rotate(18deg); }
+  66% { transform: rotate(13deg); }
+  84% { transform: rotate(16deg); }
+  93% { transform: rotate(-1.5deg); }
+}
+@keyframes wheelie-v {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  14% { transform: translateY(-5px) scaleY(1.03) rotate(-2deg); }
+  40% { transform: translateY(-4px) rotate(2deg); }
+  66% { transform: translateY(-5px) rotate(-2deg); }
+  88% { transform: translateY(-4px) rotate(1deg); }
+  94% { transform: translateY(1px) scaleY(0.97); }
+}
 /* Staub bei der Landung. */
 .fx-staub { width: 14px; height: 6px; margin: -3px 0 0 -7px; border-radius: 50%; background: rgba(210, 200, 180, 0.8); opacity: 0; }
 html:not(.reduce-motion) .fx-staub { animation: fx-staub 0.6s ease-out both; }
@@ -1833,3 +1866,20 @@ html:not(.reduce-motion) .welt-jagdmarke.weg { animation: welt-jagd-weg 0.55s ea
 .welt-jagd b { color: #f4d782; font-size: var(--fs-sm); }
 .welt-jagd span { color: var(--text); font-size: var(--fs-xs); font-weight: 700; }
 .welt-jagd small { color: var(--text-dim); font-size: 10px; }
+
+/* Musik in der Welt: ein kleines Feld unter den Knöpfen. */
+.welt-musik-knopf { padding: 8px 11px; }
+.welt-musik {
+  position: absolute; right: 16px; top: 64px; z-index: 6; display: grid; gap: 10px; width: min(260px, calc(100vw - 32px));
+  padding: 12px 14px; border-radius: var(--r-md); background: var(--surface-solid); border: 1px solid var(--line-strong);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4); pointer-events: auto;
+}
+.welt-musik.hidden { display: none; }
+.welt-musik-zeile { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; color: var(--text); font: 600 var(--fs-sm) var(--font); }
+.welt-musik-zeile input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--accent); }
+.welt-musik-zeile input[type="range"] { flex: 1; max-width: 150px; accent-color: var(--accent); }
+.welt-musik-jetzt { color: var(--text-dim); font-size: var(--fs-xs); }
+.welt-musik-jetzt:empty { display: none; }
+@media (max-width: 430px) {
+  .welt-knoepfe > .welt-musik-knopf { display: none; }
+}

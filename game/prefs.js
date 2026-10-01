@@ -21,6 +21,9 @@ const DEFAULTS = {
   sound: true,
   volume: 0.8,
   reduceMotion: false,
+  // Musik in der Welt, getrennt von den Soundeffekten.
+  musik: true,
+  musikVol: 0.55,
   favorites: [],
   // Zuletzt gelesener Update-Eintrag. Gehoert an den Account und nicht nur in
   // den localStorage: Safari raeumt bei Seiten, die man laenger nicht besucht
@@ -43,6 +46,10 @@ function sanitize(input, current = {}) {
     out.volume = Math.min(1, Math.max(0, input.volume));
   }
   if (typeof input.reduceMotion === "boolean") out.reduceMotion = input.reduceMotion;
+  if (typeof input.musik === "boolean") out.musik = input.musik;
+  if (typeof input.musikVol === "number" && Number.isFinite(input.musikVol)) {
+    out.musikVol = Math.min(1, Math.max(0, input.musikVol));
+  }
   if (typeof input.tourGesehen === "boolean") out.tourGesehen = input.tourGesehen;
   if (typeof input.seenUpdate === "string" && /^[0-9A-Za-z-]{1,40}$/.test(input.seenUpdate)) {
     out.seenUpdate = input.seenUpdate;

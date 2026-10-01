@@ -649,12 +649,15 @@
     e46: { hub: -3, sitzt: true, auto: "#aeb4bb" },
   };
 
-  // Griffe, Schutzbleche und Anzeige des E-Rollers: eine Farbe, die man von weitem erkennt.
-  const ROLLER = "#2bd49a";
+  /* Der E-Roller ist ganz schwarz, wie die Leihroller an jeder Ecke: dickes
+     Trittbrett mit dem Akku darunter, schräge Lenkstange mit Anzeige,
+     Schutzbleche über beiden Rädern. Farbig bleiben nur die Lichter. */
+  const ROLLER = { rahmen: "#18191d", kante: "#3a3d44", griff: "#0c0d0f", rad: "#0f1012", nabe: "#2e3137" };
 
-  function rad(cx, cy, r, farbe = "#1d1d23") {
-    return `<g class="fz-rad" style="transform-origin:${cx}px ${cy}px"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${farbe}"/><circle cx="${cx}" cy="${cy}" r="${r * 0.42}" fill="#c0c6cc"/><path d="M${cx - r * 0.7} ${cy}h${r * 1.4}" stroke="#6b7078" stroke-width=".5"/></g>`;
+  function rad(cx, cy, r, farbe = "#1d1d23", nabe = "#c0c6cc") {
+    return `<g class="fz-rad" style="transform-origin:${cx}px ${cy}px"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${farbe}"/><circle cx="${cx}" cy="${cy}" r="${r * 0.42}" fill="${nabe}"/><path d="M${cx - r * 0.7} ${cy}h${r * 1.4}" stroke="#6b7078" stroke-width=".5"/></g>`;
   }
+  const rollerRad = (cx, cy) => rad(cx, cy, 3.7, ROLLER.rad, ROLLER.nabe);
 
   /* Die Simme. Man sitzt rittlings drauf, also zeichnet sie die Beine
      selbst: ausgestellt von vorn und hinten, angewinkelt von der Seite. */
@@ -681,13 +684,17 @@
         if (seite) return `<path d="M12 85.6h40q2.4 0 3-2.2M12 85.6q-2.4 0-3-2.2" fill="none" stroke="#6b4a2e" stroke-width="2.2" stroke-linecap="round"/><rect x="12" y="84.4" width="40" height="2.6" rx="1.3" fill="#c8453c"/>${rad(17, 89.4, 2.2, "#f2c94c")}${rad(47, 89.4, 2.2, "#f2c94c")}`;
         return `<rect x="21" y="84.6" width="22" height="2.8" rx="1.4" fill="#c8453c" stroke="#6b2320" stroke-width=".6"/><rect x="22" y="87.6" width="4" height="3" rx="1.2" fill="#f2c94c"/><rect x="38" y="87.6" width="4" height="3" rx="1.2" fill="#f2c94c"/>`;
       case "e_roller":
-        if (seite) return `${rad(15.6, 89, 3.2)}<path d="M11.6 88Q12 84.4 15.6 84.4" fill="none" stroke="${ROLLER}" stroke-width="1.4"/><rect x="11.2" y="85.4" width="1.6" height="1.4" fill="#e5534b"/><rect x="15" y="84.6" width="32" height="3" rx="1.4" fill="#2a2d33"/><path class="fz-led" d="M17 88.8h28" stroke="#42f5a7" stroke-width="1.2" opacity="0"/>`;
-        /* Von vorn und hinten war vom Roller nur ein Strich auf Handhöhe
-           übrig: Brett unter den Schuhen, Stange in Hosenfarbe. Jetzt ragt
-           das Brett seitlich heraus, und von hinten steht der Lenker
-           breiter als die Schultern hinter dem Körper. */
-        return `<rect x="17" y="84.6" width="30" height="3.6" rx="1.6" fill="#2a2d33" stroke="#15171b" stroke-width=".5"/><path d="M18.4 85.4h27.2" stroke="#6b7078" stroke-width=".6"/><path class="fz-led" d="M18.6 88.6h26.8" stroke="#42f5a7" stroke-width="1.2" opacity="0"/>`
-          + (ansicht === "hinten" ? `<path d="M9.6 66.2h44.8" stroke="#1d1d23" stroke-width="2.6" stroke-linecap="round"/><rect x="9" y="64.6" width="6.4" height="3.2" rx="1.4" fill="${ROLLER}"/><rect x="48.6" y="64.6" width="6.4" height="3.2" rx="1.4" fill="${ROLLER}"/>` : "");
+        if (seite) return `${rollerRad(14.6, 88.6)}`
+          // Hinteres Schutzblech mit Bremslicht, dann das dicke Trittbrett mit Akku darunter.
+          + `<path d="M9.4 88.2Q9.6 83.6 14.6 83.4H18" fill="none" stroke="${ROLLER.rahmen}" stroke-width="1.7" stroke-linecap="round"/><rect x="8.4" y="85.6" width="1.8" height="1.6" rx=".5" fill="#e5534b"/>`
+          + `<path d="M16.4 82.8H46.4Q48.4 82.8 48.4 84.8V85.4Q48.4 87.4 46.4 87.4H16.4Q14.6 87.4 14.6 85.6V84.6Q14.6 82.8 16.4 82.8Z" fill="${ROLLER.rahmen}"/>`
+          + `<path d="M17 83.4H46" stroke="${ROLLER.kante}" stroke-width=".7"/><path d="M20 87.2H42L40.4 89H21.6Z" fill="${ROLLER.griff}"/><path d="M24 85.2h10" stroke="${ROLLER.kante}" stroke-width=".5"/>`
+          + `<path class="fz-led" d="M18 89.4h26" stroke="#42f5a7" stroke-width="1.2" opacity="0"/>`;
+        /* Von vorn und hinten: das Brett ragt seitlich unter den Schuhen
+           heraus, und von hinten steht der Lenker breiter als die Schultern
+           hinter dem Körper. */
+        return `<rect x="17" y="84.2" width="30" height="4.2" rx="1.8" fill="${ROLLER.rahmen}" stroke="${ROLLER.griff}" stroke-width=".5"/><path d="M18.6 85h26.8" stroke="${ROLLER.kante}" stroke-width=".7"/><path class="fz-led" d="M18.6 89h26.8" stroke="#42f5a7" stroke-width="1.2" opacity="0"/>`
+          + (ansicht === "hinten" ? `<path d="M9.6 66.2h44.8" stroke="${ROLLER.rahmen}" stroke-width="2.6" stroke-linecap="round"/><rect x="8.6" y="64.4" width="7" height="3.6" rx="1.6" fill="${ROLLER.griff}"/><rect x="48.4" y="64.4" width="7" height="3.6" rx="1.6" fill="${ROLLER.griff}"/>` : "");
       case "hoverboard":
         return `<g class="fz-schweben"><ellipse cx="32" cy="91.6" rx="${seite ? 12 : 17}" ry="2" fill="#42c6f5" opacity=".35"/><rect x="${seite ? 22 : 15}" y="84.8" width="${seite ? 20 : 34}" height="3.4" rx="1.7" fill="#f4f4f4" stroke="#6b7078" stroke-width=".6"/>${seite ? rad(32, 88.6, 3.2, "#2a2d33") : `<rect x="13" y="83.6" width="5" height="7" rx="2.4" fill="#2a2d33"/><rect x="46" y="83.6" width="5" height="7" rx="2.4" fill="#2a2d33"/>`}<path d="M${seite ? 24 : 18} 86.4h${seite ? 16 : 28}" stroke="#42c6f5" stroke-width=".9"/></g>`;
       case "bobbycar":
@@ -724,14 +731,21 @@
         return `<path d="M20 89.6h24" stroke="#8a929c" stroke-width="1.6"/><rect x="17.4" y="87.8" width="4.6" height="4.4" rx="1.6" fill="#f2c94c" stroke="#9a7a1c" stroke-width=".5"/><rect x="42" y="87.8" width="4.6" height="4.4" rx="1.6" fill="#f2c94c" stroke="#9a7a1c" stroke-width=".5"/>`
           + `<path d="M22.4 86.6Q22.6 91.4 32 91.4Q41.4 91.4 41.6 86.6L39.6 87.6Q32 89.2 24.4 87.6Z" fill="#c8453c" stroke="#6b2320" stroke-width=".7"/><path d="M27 89.4h10" stroke="#f4f1ea" stroke-width=".9" stroke-linecap="round"/>`;
       case "e_roller":
-        if (seite) return `<path d="M47 85.6L45 62.6" stroke="#6b7078" stroke-width="1.8"/><path d="M41.4 62.2h6.4" stroke="#1d1d23" stroke-width="2.2" stroke-linecap="round"/><rect x="40.4" y="60.8" width="4.4" height="2.8" rx="1.2" fill="${ROLLER}"/>${rad(47.4, 89, 3.2)}<path d="M43.2 88Q43.6 84.6 47.4 84.4Q51 84.6 51.6 88" fill="none" stroke="${ROLLER}" stroke-width="1.4"/><circle cx="45.8" cy="68" r="1.4" fill="#fff5c9" stroke="#3a3f47" stroke-width=".5"/>`;
+        if (seite) return `${rollerRad(49, 88.6)}`
+          // Vorderes Schutzblech, dann die schräge Lenkstange mit Klappgelenk, Licht und Anzeige.
+          + `<path d="M45 87.6Q45.4 83.6 49 83.4Q53 83.6 53.6 87.2" fill="none" stroke="${ROLLER.rahmen}" stroke-width="1.6" stroke-linecap="round"/>`
+          + `<path d="M48.4 86.6L45 62.4" stroke="${ROLLER.rahmen}" stroke-width="2.4" stroke-linecap="round"/><path d="M47.6 84.4L44.8 64.6" stroke="${ROLLER.kante}" stroke-width=".6"/>`
+          + `<rect x="45.6" y="79.4" width="3.4" height="2.6" rx=".8" fill="${ROLLER.griff}" transform="rotate(-8 47.3 80.7)"/>`
+          + `<path d="M40.4 62.2h7.6" stroke="${ROLLER.rahmen}" stroke-width="2.3" stroke-linecap="round"/><rect x="39.6" y="60.9" width="4.2" height="2.6" rx="1.1" fill="${ROLLER.griff}"/>`
+          + `<rect x="43.4" y="63" width="3.4" height="1.8" rx=".5" fill="#0a0b0d" stroke="${ROLLER.kante}" stroke-width=".4"/><path d="M44 63.9h1.6" stroke="#9fe7ff" stroke-width=".5" opacity=".7"/>`
+          + `<path d="M46.4 70.4l2.2-.6v2.4l-2.2-.4z" fill="#fff5c9" stroke="${ROLLER.griff}" stroke-width=".4"/>`;
         // Hinterrad mit Schutzblech und Rücklicht: der Teil, der auf den Betrachter zeigt.
-        if (ansicht === "hinten") return `<rect x="29" y="85.6" width="6" height="7.4" rx="2.6" fill="#1d1d23"/><path d="M27.6 87.6Q27.6 83.2 32 83.2Q36.4 83.2 36.4 87.6" fill="none" stroke="${ROLLER}" stroke-width="1.8"/><rect x="29.4" y="81.6" width="5.2" height="2" rx=".8" fill="#e5534b"/><rect x="30.4" y="82" width="3.2" height=".8" fill="#ffb3ad"/>`;
-        return `<rect x="30" y="67" width="4" height="21" rx="1.4" fill="#3a3f47"/><path d="M31 68.6V86" stroke="#8a929c" stroke-width=".7"/><path class="fz-led" d="M33.2 72V84" stroke="#42f5a7" stroke-width=".9" opacity="0"/>`
-          + `<path d="M11.6 66.2h40.8" stroke="#1d1d23" stroke-width="2.6" stroke-linecap="round"/><rect x="11" y="64.6" width="6.6" height="3.2" rx="1.4" fill="${ROLLER}"/><rect x="46.4" y="64.6" width="6.6" height="3.2" rx="1.4" fill="${ROLLER}"/>`
-          + `<rect x="29" y="62.8" width="6" height="3.6" rx="1" fill="#1d1d23"/><rect x="29.9" y="63.6" width="4.2" height="2" rx=".5" fill="${ROLLER}" opacity=".85"/>`
-          + `<circle cx="32" cy="70.6" r="2.6" fill="#fff5c9" stroke="#3a3f47" stroke-width=".9"/><circle cx="31.4" cy="70" r=".8" fill="#fff"/>`
-          + `<rect x="29.2" y="85.4" width="5.6" height="7.6" rx="2.6" fill="#1d1d23"/><path d="M27.8 87.4Q27.8 83.4 32 83.4Q36.2 83.4 36.2 87.4" fill="none" stroke="${ROLLER}" stroke-width="1.8"/>`;
+        if (ansicht === "hinten") return `<rect x="28.8" y="85.2" width="6.4" height="7.8" rx="2.8" fill="${ROLLER.rad}"/><path d="M27.4 87.6Q27.4 83 32 83Q36.6 83 36.6 87.6" fill="none" stroke="${ROLLER.rahmen}" stroke-width="2"/><rect x="29.2" y="81.4" width="5.6" height="2.2" rx=".8" fill="#e5534b"/><rect x="30.4" y="81.9" width="3.2" height=".8" fill="#ffb3ad"/>`;
+        return `<rect x="29.8" y="66.6" width="4.4" height="21.4" rx="1.6" fill="${ROLLER.rahmen}"/><path d="M31 68.4V86" stroke="${ROLLER.kante}" stroke-width=".7"/><path class="fz-led" d="M33.2 72V84" stroke="#42f5a7" stroke-width=".9" opacity="0"/>`
+          + `<path d="M11.6 66.2h40.8" stroke="${ROLLER.rahmen}" stroke-width="2.6" stroke-linecap="round"/><rect x="10.6" y="64.4" width="7" height="3.6" rx="1.6" fill="${ROLLER.griff}"/><rect x="46.4" y="64.4" width="7" height="3.6" rx="1.6" fill="${ROLLER.griff}"/>`
+          + `<rect x="28.6" y="62.4" width="6.8" height="4" rx="1.2" fill="#0a0b0d" stroke="${ROLLER.kante}" stroke-width=".5"/><path d="M30.2 64.4h3.6" stroke="#9fe7ff" stroke-width=".6" opacity=".7"/>`
+          + `<circle cx="32" cy="70.8" r="2.6" fill="#fff5c9" stroke="${ROLLER.griff}" stroke-width=".9"/><circle cx="31.4" cy="70.2" r=".8" fill="#fff"/>`
+          + `<rect x="28.8" y="85.2" width="6.4" height="7.8" rx="2.8" fill="${ROLLER.rad}"/><path d="M27.4 87.4Q27.4 83.2 32 83.2Q36.6 83.2 36.6 87.4" fill="none" stroke="${ROLLER.rahmen}" stroke-width="2"/>`;
       case "bobbycar":
         if (seite) return `<path d="M11 86Q10 76 18 74L38 73Q46 72 52 78Q54 83 52 86Z" fill="#d93a33" stroke="#7a1b17" stroke-width=".9"/><path d="M40 74L43 66" stroke="#2a2d33" stroke-width="1.6"/><path d="M40.6 66.2h5" stroke="#2a2d33" stroke-width="2" stroke-linecap="round"/><circle cx="50" cy="79" r="1.6" fill="#fff5c9"/>`;
         if (ansicht === "hinten") return `<path d="M15 88Q14 76 22 74H42Q50 76 49 88Z" fill="#d93a33" stroke="#7a1b17" stroke-width=".9"/><rect x="26" y="78" width="12" height="3" rx="1" fill="#f4f1ea"/>`;
