@@ -13,7 +13,7 @@
 
 const crypto = require("crypto");
 const lobby = require("./lobby");
-const { numColor, payoutFactor, VALID_TYPES, MIN_BET, MAX_TOTAL, WHEEL_SEQ } = require("./roulette");
+const { numColor, payoutFactor, validValue, VALID_TYPES, MIN_BET, MAX_TOTAL, WHEEL_SEQ } = require("./roulette");
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const MAX_PLAYERS = 8;
@@ -116,16 +116,17 @@ function leave(socket) {
 }
 
 function validateBet(b) {
+  if (!b || typeof b !== "object" || Array.isArray(b)) return null;
   const amount = Math.floor(Number(b.amount));
   if (!VALID_TYPES.has(b.type) || !Number.isFinite(amount) || amount < MIN_BET) return null;
   if (b.type === "number") {
-    const v = Math.floor(Number(b.value));
-    if (v < 0 || v > 36) return null;
+    const v = Number(b.value);
+    if (!validValue(b.value, 0, 36)) return null;
     return { type: "number", value: v, amount };
   }
   if (b.type === "dozen" || b.type === "column") {
-    const v = Math.floor(Number(b.value));
-    if (v < 1 || v > 3) return null;
+    const v = Number(b.value);
+    if (!validValue(b.value, 1, 3)) return null;
     return { type: b.type, value: v, amount };
   }
   return { type: b.type, amount };
@@ -190,6 +191,8 @@ function setupRouletteLobby(io, accounts) {
       if (player.staked + bet.amount > MAX_TOTAL) return typeof ack === "function" && ack({ ok: false, error: "Max. 50.000 Chips Gesamteinsatz." });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < bet.amount) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips." });
+      const limitError = require("./strafen").einsatzFehler(acc, player.staked + bet.amount);
+      if (limitError) return typeof ack === "function" && ack({ ok: false, error: limitError });
       const r = accounts.adjustChips(socket.data.account, -bet.amount);
       socket.emit("account:update", { account: r.account });
       player.bets.push(bet);

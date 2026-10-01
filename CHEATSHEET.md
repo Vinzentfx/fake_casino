@@ -1,12 +1,51 @@
 # Spickzettel
 
 Alle Regeln, Quoten und Grenzen des Casinos auf einen Blick. Alles ist
-Spielgeld, es gibt keine Ein- und keine Auszahlung. Die Zahlen stehen genau so
-im Code (Stand 22. September 2026). Ändert sich dort etwas, gehört es hierhin.
+Spielgeld, es gibt keine Ein- und keine Auszahlung. Stand: **30. September 2026**. Regeln und Zahlen beschreiben die vorhandenen
+Systeme. Auszahlungsquoten sind nur dort als berechnet bezeichnet, wo sie
+tatsächlich mathematisch geprüft wurden; Schätzungen sind keine Garantie.
 
 **RTP** ist die Auszahlungsquote: Welcher Anteil der Einsätze kommt auf lange
-Sicht zurück? 98 % heißt, das Haus behält im Schnitt 2 %. In einzelnen Runden
-kann trotzdem alles passieren.
+Sicht zurück? 98 % heißt: Unter den genannten Regeln kommen langfristig im Mittel 98 von
+100 eingesetzten Chips zurück. Das ist keine Gewinnchance und kein Versprechen
+für eine einzelne Sitzung. Strategie, Rundung, Auszahlungsdeckel und Zusatzboni
+können das Ergebnis verändern. **Auszahlung enthält den Einsatz; Netto ist
+Auszahlung minus Einsatz.** 2× bei 100 Einsatz bedeutet 200 zurück, also 100 Gewinn.
+
+
+## Schnell zurechtfinden
+
+* **Spielen:** Einsatz und maximale Auszahlung vor jeder Runde ansehen. Ein
+  hoher Multiplikator bedeutet nicht automatisch eine hohe Gewinnchance.
+* **Mit Freunden:** Offene Räume sind für gleichzeitiges Spielen; versetzte
+  Sudoku-Duelle können nacheinander gespielt werden.
+* **Dein Look:** In der Garderobe eigene Stücke anlegen oder fehlende
+  anprobieren. Die Vorschau verändert weder Besitz noch Gewinnchancen.
+* **Sammeln:** Kisten zeigen ihren Inhalt und die Chancen. Doppelte werden
+  zu Prägestaub. Seltenheit, Seriennummer und Edition sind verschiedene Dinge.
+* **Überblick:** Der Tagesbericht bündelt offene Belohnungen, eigene Duelle
+  und Ereignisse seit deinem letzten Besuch.
+* **Verbindung weg:** Erst wieder verbinden und den angezeigten Stand prüfen.
+  Eine ausbleibende Antwort ist kein Beleg, dass ein Einsatz nicht gebucht wurde.
+  Nicht mehrfach dieselbe Aktion auslösen; bei Unklarheiten Spiel und Zeitpunkt
+  dem Team nennen. Wiederaufnahme ist noch nicht in jedem Spiel gleich geregelt.
+
+### Fairness und Grenzen richtig lesen
+
+**Berechnet:** Roulette ergibt sich direkt aus 37 gleich wahrscheinlichen
+Feldern. **Strategieabhängig:** Blackjack und Würfelpoker hängen von deinen
+Entscheidungen ab. **Schätzung:** Slot-Quoten sind Richtwerte aus der bisherigen
+Abstimmung, keine hier neu zertifizierten Vollberechnungen.
+
+Boni sind separat: Cashback, Aufgaben, Events und Gewinneffekte gehören nicht
+automatisch zur angegebenen Grundquote. Ein Auszahlungsdeckel kann die Quote
+bei hohen Einsätzen und langen Serien deutlich senken. Vergangene Ergebnisse
+ändern bei unabhängigen Zufallsrunden nicht die Chance der nächsten Runde.
+
+Ein Sitzungsbudget ist eine **Verlusterinnerung**, keine harte Einsatzsperre.
+Es warnt anhand der Nettobilanz der Sitzung. Gewinne gleichen dabei Verluste
+aus; nach 90 Minuten ohne Runde beginnt eine neue Sitzung. Es gibt keine
+Strategie, die in jeder Runde einen Gewinn garantiert.
 
 ## Inhalt
 
@@ -66,8 +105,13 @@ den Pass nicht nachträglich.
   die Miete nicht von der Vermögensbremse gekürzt: du hast dafür bezahlt.
 * **Sammel-Sets:** zum Beispiel Stadtbekannt (2.000) oder ein Kaffee-Kartell
   (3.000 je Ortsteil).
-* **Cashback:** 10 % deiner Verluste seit der letzten Abholung, höchstens
-  25.000.
+* **Cashback:** 10 % des insgesamt noch nicht vergüteten Nettoverlusts aus
+  Hausspielen, höchstens 25.000 je Stunden-Bonus. Gewinne werden gegengerechnet;
+  bereits gezahltes Cashback bleibt vorgemerkt. Wiederholtes Abholen zahlt
+  denselben Verlust nicht noch einmal. Mit der Kirche gelten 15 % und ein
+  Deckel von 50.000 je Abholung. Ergebnisse aus Spielen gegen andere Spieler
+  zählen nicht. Bei älteren Konten wird der noch offene Verluststand einmalig
+  übernommen; frühere Auszahlungen lassen sich nicht rückwirkend rekonstruieren.
 
 **Login-Kalender.** Sieben Tage in Folge: 2.000, 3.000, 5.000, 8.000, 12.000,
 20.000, 50.000. Einen Tag ausgelassen heißt zurück auf Tag 1. Mit einem
@@ -271,7 +315,9 @@ Alle vier Automaten sind frei spielbar, Freischalten gibt es nicht mehr.
   alles. Viele kleine Treffer, keine Freispiele.
 * **Gem Storm:** Linien von links. Drei Scatter starten 10 Freispiele mit
   doppeltem Multiplikator, mehr Scatter geben mehr Freispiele. Die Freispiele
-  lassen sich für das 18-fache des Einsatzes kaufen.
+  lassen sich für das 18-fache des Einsatzes kaufen. Offene Freispiele werden
+  am Konto gespeichert und nach Wiederverbindung am selben Automaten fortgesetzt.
+  Solange sie laufen, kann kein anderer Automat einen bezahlten Dreh starten.
 * **Algen Abyss:** Mystery-Algen decken alle dasselbe Symbol auf oder werden zu
   Golden Sharks. Jeder Shark trägt eine Münze, der Stapel rutscht Reihe für
   Reihe nach unten, der Multiplikator steigt mit. Drei Scatter geben 4
@@ -279,14 +325,18 @@ Alle vier Automaten sind frei spielbar, Freischalten gibt es nicht mehr.
   die Freispiele erhalten. Nicht kaufbar.
 * **Book of Rah:** das Buch ist Wild und Scatter. Drei Bücher geben 10
   Freispiele mit einem ausgelosten Symbol, das sich über die Walze ausdehnt.
-  Der großzügigste Automat im Haus.
+  Die höhere angegebene Grundquote ist kein Versprechen für deine Sitzung.
 
-**Gemeinsamer Jackpot.** 0,5 % jedes bezahlten Drehs wandern in einen Topf, der
-bei 10.000 Chips startet. Die Chance auf den Jackpot liegt bei 1 zu 50
-Millionen pro Dreh, und jeder Dreh an jedem Automaten zählt.
+**Gemeinsamer Jackpot.** 0,5 % jedes bezahlten Grundspiel-Drehs wandern in
+einen Topf, der bei 10.000 Chips startet. Die Trefferchance pro solchem Dreh
+ist Einsatz ÷ 50.000.000: bei 100 Chips also 1 zu 500.000, bei 1.000 Chips
+1 zu 50.000. Freispiele und Vorführ-Drehs nehmen nicht teil. Höhere Einsätze
+erhöhen zugleich den möglichen Verlust; eine Gewinngarantie entsteht nicht.
 
 **Slots-Duell.** Zwei Spieler, derselbe Automat, je 20 Drehs. Wer mehr Chips
-holt, gewinnt den Pot. Kein Rake bei Duellen gegen einen Bot.
+holt, gewinnt den Pot. Maßgeblich sind die vor dem Beitritt angezeigten Pot- und Gebührenregeln.
+Solange eine bezahlte Partie läuft, kann dasselbe Konto kein weiteres Duell
+starten oder einem anderen beitreten – auch nicht aus einem zweiten Tab.
 
 ## Blackjack
 
@@ -294,7 +344,8 @@ holt, gewinnt den Pot. Kein Rake bei Duellen gegen einen Bot.
 * Der Dealer zieht bei Soft 17 und bleibt ab Hard 17 stehen.
 * Blackjack zahlt 3 zu 2, Verdoppeln auf die ersten zwei Karten, einmal
   teilen, keine Versicherung.
-* Einsatz 10 bis 2.000.000. Bester RTP im Haus, knapp unter 100 %.
+* Einsatz 10 bis 2.000.000. Die Auszahlungsquote hängt von deiner Strategie und diesen Tischregeln ab;
+  eine vollständige optimale Quote ist hier noch nicht neu berechnet.
 * In der Lobby sitzt man zusammen, aber jeder spielt gegen seinen eigenen Dealer.
 
 Faustregeln: ab 17 stehen bleiben, gegen eine schwache Dealerkarte (2 bis 6)
@@ -319,12 +370,12 @@ Europäisch, eine einzige Null.
 
 | Spiel | RTP | Einsatz | Höchster Gewinn |
 |---|---|---|---|
-| Mines | 98 % | 50 bis 50.000 | 2 Mio |
-| Towers | 98 % | 50 bis 50.000 | 2 Mio |
-| Crash | 97 % | 50 bis 250.000 | 120-facher Einsatz |
+| Mines | 98 % vor Gewinnbegrenzung | 50 bis 50.000 | 2 Mio |
+| Towers | 98 % vor Gewinnbegrenzung | 50 bis 50.000 | 2 Mio |
+| Crash | 97 % | 50 bis 250.000 | unter 120-facher Einsatz |
 | Pinco Ball | 98 % | 50 bis 100.000 | 15,23-facher Einsatz |
 | Higher/Lower | 98 % je Schritt | 50 bis 50.000 | 2 Mio |
-| Würfelpoker | rund 96,7 % | 50 bis 50.000 | 2 Mio |
+| Würfelpoker | strategieabhängig; siehe unten | 50 bis 50.000 | 2 Mio |
 
 * **Mines:** 25 Felder, 1 bis 24 Minen frei wählbar. Jedes sichere Feld erhöht
   den Multiplikator, auszahlen geht jederzeit.
@@ -332,26 +383,37 @@ Europäisch, eine einzige Null.
   von 4 sicher), Mittel (2 von 3), Schwer (1 von 2), Experte (1 von 3),
   Meister (1 von 4).
 * **Crash:** eine Runde für alle. 7 Sekunden Wettfenster, dann steigt die
-  Rakete. Vor dem Knall aussteigen, sonst ist der Einsatz weg. Deckel bei 120x.
+  Rakete. Vor dem Knall aussteigen, sonst ist der Einsatz weg. Der Crashpunkt
+  liegt höchstens bei 120x; eine Auto-Auszahlung muss darunter liegen. Ein
+  Ziel genau am Crashpunkt verliert.
 * **Pinco Ball:** bis zu 8 Spieler werfen gleichzeitig. Mittleres Brett hat 10
   Reihen (außen 7,33x), großes Brett 14 Reihen (außen 15,23x). In der Mitte
   liegen die Felder unter 1.
 * **Higher/Lower:** raten, ob die nächste Karte höher oder tiefer liegt. Jeder
   Schritt zahlt fair minus 2 %. Gleicher Rang ist ein Push. Ein Schritt kann den
   Multiplikator nie senken.
-* **Würfelpoker:** fünf Würfel, zweimal nachwerfen.
+* **Würfelpoker:** fünf Würfel, **ein Nachwurf**. Du kannst beliebige Würfel
+  halten oder direkt abrechnen. Die Halteempfehlung prüft alle 32 möglichen
+  Entscheidungen gegen die aktuelle Tabelle und den gewählten Einsatz. Die
+  neu kalibrierte Auszahlung beträgt bei optimalem Spiel rechnerisch rund
+  **95,85 %** vor Cashback und anderen Boni, berechnet für Einsätze ohne
+  Rundungsverlust. Andere Strategien und Rundung können die Quote senken.
 
-| Blatt | Zahlt | Chance |
-|---|---|---|
-| Fünf gleiche | 25x | 1 zu 77 |
-| Große Straße | 3x | 1 zu 13 |
-| Full House | 2,5x | 1 zu 11 |
-| Vier gleiche | 2,5x | 1 zu 8 |
+Die Trefferhäufigkeit beim Würfelpoker hängt von der Haltestrategie ab. Die
+folgenden Werte sind Auszahlungen, keine strategieunabhängigen Chancen.
+
+| Blatt | Auszahlung einschließlich Einsatz |
+|---|---|
+| Fünf gleiche | 22x |
+| Große Straße | 2,6x |
+| Full House | 2,3x |
+| Vier gleiche | 2,15x |
 
 ## Lotterie
 
-* Vier Zahlen aus 16 ankreuzen, ein Los kostet 2.000 Chips, höchstens 10 Lose
-  pro Ziehung und Person.
+* Genau vier verschiedene ganze Zahlen aus 16 ankreuzen, ein Los kostet 2.000 Chips, höchstens 10 Lose
+  pro Ziehung und Person. Ein persönlicher Einsatzdeckel gilt für die Summe
+  der gekauften Lose dieser Ziehung; geschenkte Lose verbrauchen ihn nicht.
 * Ziehung jeden Abend um 20 Uhr.
 * 4 Richtige gewinnen den Jackpot, 3 Richtige zahlen das 10-fache des
   Lospreises, 2 Richtige den Einsatz zurück.
@@ -365,11 +427,16 @@ Europäisch, eine einzige Null.
 * Echte Spiele aus Bundesliga, Premier League und La Liga, dazu simulierte
   Füllspiele, damit immer etwas läuft.
 * Märkte: Sieger (1X2), über oder unter 2,5 Tore, beide treffen.
-* 8 % Hausmarge stecken in den Quoten, also rund 92 % RTP.
+* Die Quoten enthalten eine Hausmarge. Daraus folgt nicht pauschal eine
+  garantierte Auszahlungsquote von 92 %: Markt, Schätzung und Kombiwette zählen.
 * Einsatz 50 bis 500.000, höchstens 5 Spiele nehmen gleichzeitig Wetten an.
 * Kombiwetten multiplizieren die Quoten, alle Tipps müssen stimmen.
 * Cash-out vor dem Abpfiff ist möglich, der Wert richtet sich nach dem Stand.
 * Abgesagte oder verschobene Spiele werden erstattet.
+* Der Server prüft den Anpfiff auch beim tatsächlichen Setzen der Wette.
+  Offene Wetten, Cash-outs und Abrechnungen werden sofort für einen Neustart
+  gesichert. Wartende Wetten auf echte Spiele bleiben bis zum nächsten Abruf
+  erhalten; entfallene simulierte Spiele werden einmalig erstattet.
 
 ## Rennbahn
 
@@ -404,8 +471,15 @@ Europäisch, eine einzige Null.
   Herausforderung wartet 48 Stunden, jede angefangene Partie höchstens 30
   Minuten. Nimmt niemand an, kommt der Einsatz zurück; höchstens drei offene
   Herausforderungen je Spieler.
-* **Sudoku:** 15 Minuten Zeitlimit, danach entscheidet, wer mehr Felder richtig
-  hat. Drei Schwierigkeiten mit 45, 34 oder 28 vorgegebenen Zahlen.
+* **Sudoku:** Jedes neue Rätsel hat genau eine Lösung. Im Live-Race gilt ein
+  Zeitlimit von 15 Minuten; eine vollständige gültige Lösung gewinnt sofort.
+  Danach entscheiden Punkte für noch unvollständige Raster: ein richtiges
+  selbst ausgefülltes Feld gibt einen Punkt, ein falsches kostet zwei. Raster
+  mit widersprüchlichen Zahlen zählen nicht. Vorgaben bringen keine Punkte;
+  eine vollständige Lösung zählt 81 Punkte. Im versetzten Duell ergibt ein
+  Gleichstand bei null oder weniger Punkten keinen Zeitsieg; beide Einsätze
+  kommen zurück. Die Stufen haben 45, 34 oder 28
+  Vorgaben. Die Zahl der Vorgaben ist nur eine grobe Schwierigkeitsschätzung.
 * **Schach:** gewertete Blitzpartien mit 3+2, 5+0 oder 10+5 Minuten und
   Elo-Wertung ab 1.000. Laufende öffentliche Partien können Zuschauer öffnen.
 * **Kniffel:** Beide haben sieben Wertungsfelder und bis zu drei Würfe pro
@@ -534,8 +608,9 @@ einen dauerhaften Vorteil.
   Gebäude einmalig gelistet werden. Du erhältst höchstens 50 % des Marktwerts
   und höchstens 50 % der noch offenen Investition; danach ist die Aktie für
   alle handelbar.
-* **Markt:** Unternehmen stellen Produkte her. Die liegen im Inventar und
-  lassen sich benutzen oder anderen Spielern verkaufen.
+* **Kosmetikmarkt:** Spieler handeln geprägte Cosmetic-Exemplare. Preis,
+  Herkunft, Seriennummer und Gebühren vor dem Kauf prüfen. Angebotspreise
+  anderer Spieler sind keine garantierten Wiederverkaufswerte.
 * **Chips senden:** Absenderkonten müssen mindestens 24 Stunden alt sein und 25
   Spielrunden haben. Pro Kalendertag lassen sich höchstens 100.000 Chips senden.
   Der frühere Name eines umbenannten Empfängers funktioniert weiterhin.
@@ -566,9 +641,17 @@ Zwölf Arten: Profilbild, Namensfarbe, Namensstil, Rahmen, Aura, Titel,
 Gewinn-Effekt, Eintritts-Spruch, Profilbanner, Namensschild, Kartenrücken und
 **Chat-Zeichen**.
 
-**Es gibt keinen Laden mehr.** Kosmetik kommt aus **Kisten** und vom
-**Markt**. Der Bildschirm „Sammlung“ zeigt nur noch, was du hast (zum
-Anlegen) und was es gibt (mit der Herkunft daneben).
+**Es gibt keinen Laden mehr.** Kosmetik kommt unter anderem aus **Kisten**, vom **Markt**, aus
+**Season**, **Kollektionen**, **Auktion** und **Prägeatelier**. Die **Garderobe** zeigt zuerst deinen Look. „Meine Stücke“ filtert deinen
+Besitz, „Alles entdecken“ zeigt auch fehlende Stücke zur Anprobe. Suche und
+Kategoriefilter helfen beim Finden. Drei Looks lassen sich auf deinem Konto
+speichern und später wieder anlegen. Ein gespeicherter Look gewährt keinen
+Besitz: Fehlt inzwischen ein Stück, bleibt dein aktueller Look unverändert.
+
+Die Clubfigur zeigt vorhandene Cosmetics in größerer Form: Der Namensstil
+bestimmt die Jackenfarbe, der Rahmen ein Kopf-Accessoire, die Aura den Schein.
+In der Lobby sehen Freunde dieselbe Figur. Die Figur ist eine erste visuelle
+Übersetzung deiner vorhandenen Ausstattung, kein zusätzlicher Kauf.
 
 **Kisten.** Was drin sein kann und wie wahrscheinlich, steht an jeder Kiste.
 Gezogen wird auf dem Server. **Tipp auf eine Kiste**, und du siehst jedes
@@ -650,14 +733,14 @@ Nummer an deinem Namen — im Chat, in der Bestenliste, am Tisch, in der Stadt.
 Dafür muss niemand online sein.
 
 **Garnituren.** Tragen kannst du immer nur zwölf Stücke, also ist jedes
-weitere für die Außenwirkung wertlos — es sei denn, du sammelst **eine
-Familie**. Wer **drei Stücke derselben Familie gleichzeitig angelegt** hat,
+weitere ein Baustein für andere Kombinationen. Stücke einer **Familie**
+geben zusätzlich einen sichtbaren Zusammenhalt. Wer **drei Stücke derselben Familie gleichzeitig angelegt** hat,
 bekommt eine Marke am Namen, mit dem Namen der Familie und der Zahl; ab fünf
 leuchtet sie. Sie hängt wie das Prunkstück am Namen und ist damit überall zu
 sehen.
 
-Sieben Familien: Gala (13 Stücke), Auktionshaus (10), Season 2 (8),
-Einzelstücke (4), Haus (3), Kollektion (3), Fortuna (3). In der Sammlung
+Acht Familien: Gala, Auktionshaus, Season 2, Einzelstücke, Haus,
+Kollektion, Fortuna und Prägeatelier. In der Sammlung
 steht für jede, wie viele es gibt, wie viele du hast und wie viele du gerade
 trägst.
 
@@ -747,6 +830,27 @@ Was im Schaufenster steht, ist hinterlegt: es verschwindet aus deinem Besitz
 und wird abgelegt, wenn du es getragen hast. Zurücknehmen geht jederzeit und
 kostet nichts. Ein Stück, das du schon hast, kannst du nicht kaufen.
 
+### Was macht ein Cosmetic besonders?
+
+| Begriff | Bedeutung |
+|---|---|
+| Seltenheit | Wie häufig die Gegenstandsart im jeweiligen Kistenpool vorkommt |
+| Serienklasse | Welche zufällige Nummer genau dein Exemplar erhalten hat |
+| Edition | Ob die Gesamtausgabe oder der Ausgabezeitraum begrenzt ist |
+| Garnitur | Mehrere gleichzeitig angelegte Stücke derselben Familie |
+| Kollektion | Bestimmte Stücke besitzen, um eine Sammlung zu vervollständigen |
+
+Eine seltene Nummer verbessert keine Spielchance. Namensstil, Rahmen, Aura
+und Profilbild prägen deinen Auftritt; Kartenrücken und Gewinneffekte wirken
+in den passenden Spielen. Nicht jede Kategorie ist überall sichtbar. Für
+einen klaren Look lieber zwei passende Akzente kombinieren als alle Effekte
+gleichzeitig einschalten.
+
+**Einfacher Einstieg:** Tageskiste öffnen, einen Fund anprobieren, dazu einen
+passenden Stil wählen. Erst danach auf eine Garnitur oder ein Atelierstück
+hinarbeiten. Atelierpreise von 160/420/950 Staub sind längerfristige Ziele;
+allein aus kostenlosen Duplikaten braucht das günstigste Stück 32 Funde.
+
 ## Rekorde und Achievements
 
 **Wochenrekorde** zählen nicht die Höhe des Gewinns, sondern das Vielfache des
@@ -767,6 +871,12 @@ freigeschaltete Abzeichen lässt sich in der Bestenliste tragen.
 Einzelgewinn, größter Verlust, meiste Runden und Pferdesiege.
 
 ## Konten und Schutz
+
+**Sitzungen:** Ein Passwortwechsel beendet bestehende Sitzungen auf allen
+Geräten. Anschließend mit dem neuen Passwort anmelden. Beim Sicherheitsupdate
+vom 29. September werden ältere gespeicherte Anmeldungen einmalig ungültig;
+Spielstände und Besitz werden dadurch nicht gelöscht. Private Raum-Chats
+sind nur für angemeldete Mitglieder des jeweiligen Raums lesbar.
 
 Neue Konten bleiben **ohne Einladungscode** möglich. Ein neuer Name legt beim
 Anmelden automatisch ein Konto an; bestehende Konten melden sich normal an.
@@ -810,6 +920,12 @@ zurückgesetzt oder ein anderes Gerät verwendet, kann eine reine Gerätesperre
 technisch nicht sicher wiedererkannt werden; deshalb bleibt die Kontosperre der
 zweite Teil.
 
+Eine **Spielsperre** verhindert neue Einsätze im betroffenen Spiel. Bereits
+bezahlte Runden können zu Ende gespielt oder verlassen werden; Rückzahlungen
+und Auszahlungen bleiben erreichbar. Bei einem **Einsatzdeckel** zählt der
+gesamte Betrag einer Runde: etwa der volle Bonus-Kaufpreis, alle Wetten am
+Roulette-Tisch oder nach Double/Split der gesamte Blackjack-Einsatz.
+
 ## Alle Grenzen auf einen Blick
 
 | Spiel | Mindesteinsatz | Höchsteinsatz | Deckel je Runde |
@@ -819,7 +935,7 @@ zweite Teil.
 | Slots | 50 | 250.000 | keiner |
 | Mines | 50 | 50.000 | 2 Mio |
 | Towers | 50 | 50.000 | 2 Mio |
-| Crash | 50 | 250.000 | 120-facher Einsatz |
+| Crash | 50 | 250.000 | unter 120-facher Einsatz |
 | Pinco Ball | 50 | 100.000 | keiner |
 | Higher/Lower | 50 | 50.000 | 2 Mio |
 | Würfelpoker | 50 | 50.000 | 2 Mio |

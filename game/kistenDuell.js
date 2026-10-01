@@ -170,6 +170,7 @@ function ansicht(d) {
 }
 
 function liste(key) {
+  raeumeAuf();
   const out = [];
   for (const d of duelle.values()) {
     if (d.status === "fertig") continue;
@@ -186,6 +187,7 @@ function sende() { if (_io) _io.emit("kdl:update"); }
    ------------------------------------------------------------------ */
 
 function erstelle(key, { einsatz, budget, kisten: auswahl } = {}) {
+  raeumeAuf();
   const acc = _accounts.get(key);
   if (!acc) return err("Nicht eingeloggt.");
 
@@ -225,6 +227,7 @@ function erstelle(key, { einsatz, budget, kisten: auswahl } = {}) {
 }
 
 function beitreten(key, id, auswahl) {
+  raeumeAuf();
   const d = duelle.get(id);
   if (!d || d.status !== "offen") return err("Diese Herausforderung gibt es nicht mehr.");
   if (d.spieler.some((s) => s.key === key)) return err("Das ist deine eigene Herausforderung.");
@@ -235,12 +238,8 @@ function beitreten(key, id, auswahl) {
      nicht greifen: sie liest den Einsatz aus der NACHRICHT, und beim
      Beitreten steht darin nur eine Duell-Kennung. Ohne diese Zeile waere der
      Deckel umgangen, sobald jemand anders ein grosses Duell aufmacht. */
-  try {
-    const max = require("./strafen").deckel(acc);
-    if (max && d.einsatz > max) {
-      return err(`Dein Einsatz ist auf ${max.toLocaleString("de-DE")} Chips gedeckelt.`);
-    }
-  } catch {}
+  const limitError = require("./strafen").einsatzFehler(acc, d.einsatz);
+  if (limitError) return err(limitError);
 
   const gewaehlt = pruefeAuswahl(auswahl, d.budget);
   if (!gewaehlt) return err(`Such dir zwischen einer und ${MAX_KISTEN} Kisten aus, die ins Budget passen.`);
@@ -419,13 +418,24 @@ function ende(d, abbruch = false) {
 function raeumeAuf() {
   const jetzt = Date.now();
   let weg = 0;
+  const erstattet = new Set();
   for (const d of [...duelle.values()]) {
     if (d.status !== "offen" || d.bisAt > jetzt) continue;
     _accounts.adjustChips(d.spieler[0].key, d.einsatz);
+    erstattet.add(d.spieler[0].key);
     duelle.delete(d.id);
     weg++;
   }
-  if (weg) { _accounts.save(); sichere(); sende(); }
+  if (weg) {
+    _accounts.save(); sichere();
+    if (_io) for (const sock of _io.of("/").sockets.values()) {
+      const key = sock.data && sock.data.account;
+      if (!erstattet.has(key)) continue;
+      const acc = _accounts.get(key);
+      if (acc) sock.emit("account:update", { account: _accounts.publicAccount(acc) });
+    }
+    sende();
+  }
 }
 
 function setupKistenDuell(io, accounts) {

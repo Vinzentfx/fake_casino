@@ -196,12 +196,12 @@
   function renderResult(s) {
     const r = s.result, me = getAccount(), myName = me && me.name;
     const emoji = $("#sdk-result-emoji"), title = $("#sdk-result-title"), sub = $("#sdk-result-sub");
-    if (r.tie) { emoji.textContent = "🤝"; title.textContent = "Unentschieden!"; sub.textContent = `Einsatz zurück (${fmt(s.buyIn)} Chips je Spieler).`; }
+    const line = r.players.map((p) => `${escapeHtml(p.name)}: ${p.score ?? p.correct} Punkte${p.finished ? " ✓" : ""}`).join(" · ");
+    if (r.tie) { emoji.textContent = "🤝"; title.textContent = "Unentschieden!"; sub.innerHTML = `Einsatz zurück (${fmt(s.buyIn)} Chips je Spieler).<br>${line}`; }
     else {
       const iWon = myName && r.winner && r.winner.toLowerCase() === myName.toLowerCase();
       emoji.textContent = iWon ? "🏆" : "😔";
       title.textContent = iWon ? "Gewonnen!" : `${escapeHtml(r.winner)} gewinnt`;
-      const line = r.players.map((p) => `${escapeHtml(p.name)}: ${p.correct} richtig${p.finished ? " ✓" : ""}`).join(" · ");
       sub.innerHTML = (iWon ? `+${fmt(r.payout)}<i class=mk></i> (Pot ${fmt(r.pot)}, Rake ${fmt(r.rake)})` : `Pot ${fmt(r.pot)}<i class=mk></i> an ${escapeHtml(r.winner)}`) +
         `<br>${line}` + (r.walkover ? "<br><span class='muted'>Gegner hat aufgegeben.</span>" : "");
     }

@@ -114,6 +114,27 @@ const KISTEN = {
    * genauso wie bei der Schwarzen Kiste. Das Limitierte ist der Reiz, nicht
    * ein schlechterer Kurs.
    */
+  /*
+   * Die Kleiderkiste: alles, was die Figur trägt.
+   *
+   * Eigener Topf wie bei der Gala, aber ohne Stichtag. Wer Kleidung will,
+   * weiß damit, wohin; und die Stufen der anderen Kisten werden nicht mit
+   * neunzig neuen Stücken verdünnt, was jedem, der dort ein bestimmtes
+   * Stück sucht, die Chance darauf gedrittelt hätte.
+   *
+   * Günstig, weil fast alles darin gewöhnlich oder selten ist, und weil
+   * eine Figur erst mit vier, fünf Teilen nach jemandem aussieht.
+   */
+  kleider: {
+    id: "kleider", label: "Kleiderkiste", preis: 35_000,
+    text: "Klamotten, Schuhe, Brillen und Accessoires, dazu Hoverboard, Mini-Drache und das goldene 45er. Haustiere, Fahrzeuge und Snacks gibt es in der Ladenstraße.",
+    eigenerTopf: "kleider",
+    /* So verteilt, dass ein bestimmtes Stück jeder höheren Stufe auch je
+       Stück seltener ist. Vorher lag ein bestimmtes seltenes Teil (48 im
+       Topf, 28 %) bei 0,58 % und damit UNTER einem epischen (11 im Topf,
+       10 %) mit 0,91 %. Jetzt: 1,47 / 0,83 / 0,68 / 0,20 / 0,05 %. */
+    chancen: { gewoehnlich: 50, selten: 40, episch: 7.5, legendaer: 2.2, mythisch: 0.3 },
+  },
   gala: {
     id: "gala", label: "Gala-Kiste", preis: 250_000,
     text: "Roter Teppich, Blitzlicht, Konfetti. Dreizehn Stücke, die es nur hier gibt — und nur bis zum Stichtag.",
@@ -161,12 +182,9 @@ const SCHAU = {
 };
 const SCHAU_MS = SCHAU.aufbau + SCHAU.platzen + SCHAU.bahn + SCHAU.rollen + SCHAU.halten + SCHAU.landung;
 
-const LISTEN = () => ({
-  avatar: cosmetics.AVATARS, color: cosmetics.COLORS, style: cosmetics.STYLES,
-  frame: cosmetics.FRAMES, title: cosmetics.TITLES, effect: cosmetics.EFFEKTE,
-  spruch: cosmetics.SPRUECHE, banner: cosmetics.BANNER, schild: cosmetics.SCHILDER,
-  aura: cosmetics.AUREN, karte: cosmetics.KARTEN, zeichen: cosmetics.ZEICHEN,
-});
+/* Alle Arten aus dem Katalog, auch die Kleidung. Eine eigene Aufzählung
+   hier hätte die neun neuen Arten nie in eine Kiste gelassen. */
+const LISTEN = () => Object.fromEntries(Object.entries(cosmetics.KATALOG).map(([art, t]) => [art, Object.values(t)]));
 
 /**
  * Alle ziehbaren Stücke, nach Stufe sortiert. Einmal beim Start gebaut.
@@ -257,6 +275,9 @@ function oeffentlich(acc) {
     kisten: Object.values(KISTEN).filter(laeuft).map((k) => ({
       id: k.id, label: k.label, preis: k.preis, text: k.text, frei: !!k.frei,
       limitiert: !!k.limitiert, bis: k.bis || 0,
+      /* Wohin die Kiste im Bildschirm gehört: Kleidung für die Figur ist
+         etwas anderes als Kosmetik am Namen und stand sonst mitten dazwischen. */
+      bereich: k.eigenerTopf === "kleider" ? "figur" : k.limitiert ? "limitiert" : "kosmetik",
       /* Wann die Gratiskiste wieder geht. Ohne die Zahl drückt man und
          bekommt eine Absage, ohne zu wissen, wie lange noch. */
       wiederAb: k.frei && acc && acc.kisten && acc.kisten[k.id] ? acc.kisten[k.id] + k.pauseMs : 0,
@@ -375,6 +396,10 @@ function oeffne(accounts, key, kistenId) {
   } else if ((acc.chips || 0) < kiste.preis) {
     return { ok: false, error: "Nicht genug Chips." };
   }
+  if (kiste.preis) {
+    const limitError = require("./strafen").einsatzFehler(acc, kiste.preis);
+    if (limitError) return { ok: false, error: limitError };
+  }
 
   const t = topfVon(kiste);
   const stufe = zieheStufe(kiste);
@@ -388,6 +413,11 @@ function oeffne(accounts, key, kistenId) {
     acc.kisten[kiste.id] = Date.now();
   }
   const neu = cosmetics.grant(acc, treffer.art, treffer.id, key);
+  if (neu && kiste.frei) {
+    // Gratis gezogen: der Ankauf zahlt dafür nur den kleinen Satz (game/ankauf.js).
+    const ex = praegung.stueckVon(key, treffer.art, treffer.id);
+    if (ex) praegung.markiereGratis(ex.uid);
+  }
   let staub = 0;
   if (!neu) {
     // Schon im Besitz: Prägestaub statt eines zweiten, unsichtbaren Exemplars.

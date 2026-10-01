@@ -29,6 +29,7 @@ class PokerTable {
     this.currentBet = 0;
     this.minRaise = bigBlind;
     this.toAct = -1;
+    this.turnSerial = 0;
     this.handActive = false;
     this.log = [];
     this.lastResult = null; // { board, reveals:[{seat,name,hole,handName}], winners:[{name,amount}] }
@@ -98,6 +99,7 @@ class PokerTable {
 
   startHand() {
     if (!this.canStart()) return false;
+    this.turnSerial++;
 
     this.board = [];
     this.pot = 0;
@@ -262,6 +264,7 @@ class PokerTable {
       return { ok: false, error: "Unbekannte Aktion." };
     }
 
+    this.turnSerial++;
     this.checkHandProgress(idx);
     return { ok: true };
   }

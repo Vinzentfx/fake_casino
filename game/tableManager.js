@@ -9,6 +9,7 @@
  */
 
 const { PokerTable } = require("./pokerTable");
+const { scheduleTurnTimer: updateTurnTimer } = require("./pokerTurnTimer");
 const { decide: botDecide, BOT_NAMES } = require("./pokerBot");
 const lobby = require("./lobby");
 
@@ -79,7 +80,7 @@ function setupPoker(io, accounts) {
   function broadcast(code) {
     const entry = tables.get(code);
     if (!entry) return;
-    scheduleTurnTimer(entry); // Auto-Fold-Timer für den, der dran ist, (neu) stellen
+    scheduleTurnTimer(entry); // Nur ein neuer Spielzug erhält eine neue Frist.
     for (const sock of entry.sockets) {
       const viewerId = sock.data.account || null;
       const st = entry.table.getStateFor(viewerId);
@@ -96,21 +97,11 @@ function setupPoker(io, accounts) {
 
   // Wer trödelt, foldet automatisch, damit niemand den Tisch einfrieren kann.
   function scheduleTurnTimer(entry) {
-    const { table } = entry;
-    clearTimeout(entry.turnTimer);
-    entry.turnDeadline = null;
-    if (!table.handActive || table.toAct < 0) return;
-    const idx = table.toAct;
-    const seat = table.seats[idx];
-    if (!seat || seat.isBot) return; // Bots handeln über scheduleBots
-    entry.turnDeadline = Date.now() + TURN_MS;
-    entry.turnTimer = setTimeout(() => {
-      if (!tables.has(table.code) || !table.handActive || table.toAct !== idx) return;
-      const toCall = table.currentBet - seat.bet;
-      table.act(seat.id, toCall > 0 ? "fold" : "check", 0); // automatisch folden (oder gratis checken)
-      broadcast(table.code);
-      scheduleBots(entry);
-    }, TURN_MS);
+    updateTurnTimer(entry, {
+      duration: TURN_MS,
+      isPresent: () => tables.get(entry.table.code) === entry,
+      onExpire: () => { broadcast(entry.table.code); scheduleBots(entry); },
+    });
   }
 
   function destroyIfEmpty(code) {
@@ -184,6 +175,7 @@ function setupPoker(io, accounts) {
     /* Kisten und Auktionshaus haben gefehlt, seit es sie gibt: wer dort
        sass, stand in der Anwesenheitsliste als "online". */
     kiste: "bei den Kisten",
+    laeden: "in der Ladenstraße",
     auktion: "im Auktionshaus",
     season: "beim Season-Pass",
   };
@@ -221,6 +213,7 @@ function setupPoker(io, accounts) {
         frame: pub.frame,
         title: pub.title,
         schild: pub.schild,
+        figur: pub.figur,
         level: pub.level ? { level: pub.level.level, emoji: pub.level.emoji, color: pub.level.color } : null,
         clan: (() => { try { return require("./clans").tagOf(key); } catch { return null; } })(),
         status,
@@ -408,6 +401,8 @@ function setupPoker(io, accounts) {
       const amount = clampInt(buyIn, table.bigBlind, cap, Math.min(cap, table.bigBlind * 50));
       if (amount < table.bigBlind || amount > acc.chips)
         return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Buy-in." });
+      const limitError = require("./strafen").einsatzFehler(acc, amount);
+      if (limitError) return typeof ack === "function" && ack({ ok: false, error: limitError });
 
       const deduct = accounts.adjustChips(socket.data.account, -amount);
       if (!deduct.ok) return typeof ack === "function" && ack({ ok: false, error: deduct.error });

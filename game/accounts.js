@@ -51,10 +51,9 @@ const STREET_TRIBUTE_CAP = 10; // höchstens 10 Straßen zahlen (max. +20.000/h)
 // Häuser 101 bis 232 exakt nichts brachten, während sie ihn in der
 // Vermögensbremse trotzdem nach unten zogen.
 
-// Cashback wie beim Treueprogramm echter Casinos: ein Teil der Verluste an
-// Hausspielen seit der letzten Abholung kommt mit dem nächsten Bonus zurück.
-// Kann nie mehr sein als tatsächlich verloren wurde, lässt sich also nicht
-// farmen. Die Kirche (Trophäe) hebt beide Werte an ("Segen").
+// Cashback auf den saldierten Nettoverlust aus Hausspielen. Bereits gezahltes
+// Cashback bleibt vorgemerkt, damit häufiges Abholen und spätere Gewinnrunden
+// nicht erneut dieselben Verluste belohnen. Die Kirche erhöht Satz und Deckel.
 const CASHBACK_RATE = 0.10;
 const CASHBACK_CAP = 25000;          // je Abholung
 const CASHBACK_RATE_BLESSED = 0.15;  // Kirche
@@ -146,11 +145,27 @@ function loadSecret() {
 // wer spielt, schiebt die Frist also immer weiter.
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-/** Signiertes Token für einen Kontonamen ausstellen, ohne Zustand auf dem Server. */
+/** Signiertes Token ausstellen und an die widerrufbare Sitzungsepoche des Kontos binden. */
 function issueToken(name) {
-  const payload = `${normalizeName(name)}|${Date.now()}`;
+  const key = kanonisch(name);
+  const acc = key && get(key);
+  if (!acc) return null;
+  if (!acc.sessionEpoch) {
+    acc.sessionEpoch = crypto.randomBytes(24).toString("hex");
+    save();
+  }
+  const payload = JSON.stringify({ key, epoch: acc.sessionEpoch, at: Date.now() });
   const sig = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
   return Buffer.from(payload).toString("base64") + "." + sig;
+}
+
+const sessionListeners = new Set();
+function onSessionRevoked(fn) { sessionListeners.add(fn); return () => sessionListeners.delete(fn); }
+function revokeSessions(key) {
+  const acc = get(key);
+  if (acc) acc.sessionEpoch = crypto.randomBytes(24).toString("hex");
+  save();
+  for (const fn of sessionListeners) fn(key);
 }
 
 /**
@@ -185,9 +200,13 @@ function verifyToken(token, { ohneStrafe = false, allowVerification = false } = 
   const sigBuf = Buffer.from(sig || "", "hex");
   const expBuf = Buffer.from(expected, "hex");
   if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
-  const [roh, issuedAt] = payload.split("|");
-  // Alte Tokens tragen noch den Anzeigenamen; kanonisch() faengt beides ab.
-  const key = kanonisch(roh);
+  let session;
+  try { session = JSON.parse(payload); } catch { return null; }
+  if (!session || typeof session.key !== "string" || typeof session.epoch !== "string") return null;
+  const { key, at: issuedAt } = session;
+  // Legacy tokens are deliberately invalidated once. Recreating a name never
+  // recreates its old random session generation.
+  if (!Object.hasOwn(accounts, key) || accounts[key].sessionEpoch !== session.epoch) return null;
   if (!key || accounts[key].banned) return null;
   if (!allowVerification && require("./verification").state(accounts[key])) return null;
   // Eine laufende Zeitsperre gilt auch fuer ein gueltiges Token, sonst kaeme
@@ -285,7 +304,13 @@ function raeumeStatistik(roh) {
 
 function save() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2));
+  /* Erst eine Kopie, dann umbenennen. Endet der Prozess mitten im
+     Schreiben, bleibt die alte Datei ganz, statt halb überschrieben; eine
+     halbe Datei ließe den nächsten Start abbrechen (siehe load). Fehler
+     werfen weiter, eine Buchung muss sie sehen. */
+  const tmp = `${ACCOUNTS_FILE}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(accounts, null, 2));
+  fs.renameSync(tmp, ACCOUNTS_FILE);
 }
 
 /* Strafen haengen am Konto, gespeichert wird hier. Das Strafen-Modul darf
@@ -800,13 +825,15 @@ function claimDailyBonus(name) {
   // Sammel-Sets (Stadtbekannt, Kaffee-Kartell …).
   const setList = city.setsOf(key);
   const sets = setList.reduce((s, x) => s + x.tribute, 0);
-  // Cashback seit der letzten Abholung, wer den Segen der Kirche hat, bekommt mehr.
+  // Bereits ausgezahlte Beträge bleiben auch nach einer Gewinnrunde verrechnet.
+  // Bei alten Konten wird nur der noch offene Verluststand übernommen; früher
+  // ausgezahltes Cashback ist rückwirkend nicht sicher rekonstruierbar.
+  cashbackStand(acc);
   const blessed = city.hasTrophy(key, "kirche");
-  const cashback = Math.min(
-    blessed ? CASHBACK_CAP_BLESSED : CASHBACK_CAP,
-    Math.floor((acc.lossSince || 0) * (blessed ? CASHBACK_RATE_BLESSED : CASHBACK_RATE))
-  );
-  acc.lossSince = 0;
+  const rate = blessed ? CASHBACK_RATE_BLESSED : CASHBACK_RATE;
+  const fellig = Math.max(0, Math.floor(Math.max(0, -acc.cashbackNet) * rate) - acc.cashbackPaid);
+  const cashback = Math.min(blessed ? CASHBACK_CAP_BLESSED : CASHBACK_CAP, fellig);
+  acc.cashbackPaid += cashback;
   // Bremse für die Reichen (ohne Cashback, das ist durch die eigenen Verluste
   // begrenzt und kein Gratisgeld).
   /*
@@ -895,9 +922,22 @@ const CASINO_RAKE = 0.05; // 5 % der Verluste an Hausspielen gehen an den Casino
 const handListeners = [];
 const onHand = (cb) => handListeners.push(cb);
 
+function cashbackStand(acc) {
+  if (!Number.isFinite(acc.cashbackNet)) {
+    acc.cashbackNet = -Math.max(0, Number(acc.lossSince) || 0);
+    acc.cashbackPaid = 0;
+  }
+  if (!Number.isFinite(acc.cashbackPaid)) acc.cashbackPaid = 0;
+  delete acc.lossSince;
+}
+
 function recordHand(name, winnings, house = true, game = null, meta = null) {
   const acc = get(name);
   if (!acc) return;
+  if (house && Number.isFinite(winnings)) {
+    cashbackStand(acc);
+    acc.cashbackNet += winnings;
+  }
   touchSeen(name);
   acc.stats = acc.stats || { gamesPlayed: 0, handsWon: 0, biggestWin: 0, biggestLoss: 0 };
   if (acc.stats.biggestLoss === undefined) acc.stats.biggestLoss = 0;
@@ -921,7 +961,6 @@ function recordHand(name, winnings, house = true, game = null, meta = null) {
     const loss = -winnings;
     if (loss > acc.stats.biggestLoss) acc.stats.biggestLoss = loss;
     if (house) {
-      acc.lossSince = (acc.lossSince || 0) + loss; // daraus wird das Cashback
       // Hausvorteil für den Casino-Besitzer: ein Teil des Verlusts wird sein Einkommen.
       const owner = city.casinoOwner();
       if (owner && owner !== normalizeName(name)) {
@@ -1018,7 +1057,7 @@ function changePin(name, oldPin, newPin) {
   if (next.length < PASS_MIN_NEW || next.length > PASS_MAX)
     return { ok: false, error: `Neues Passwort: ${PASS_MIN_NEW} bis ${PASS_MAX} Zeichen.` };
   acc.pinHash = hashPin(next, acc.salt);
-  save();
+  revokeSessions(kanonisch(name));
   return { ok: true };
 }
 
@@ -1124,6 +1163,7 @@ function deleteAccount(name) {
     const res = require("./clans").adminRemoveMember(key);
     clanChanged = !!(res && res.changed);
   } catch {}
+  revokeSessions(key);
   delete accounts[key];
   save();
   return { ok: true, cityRemoved, clanChanged };
@@ -1340,7 +1380,13 @@ function meldeStand(io, ...keys) {
   return n;
 }
 
+function publicProfile(acc) {
+  const { verification, prefs, ...profile } = publicAccount(acc);
+  return profile;
+}
+
 module.exports = {
+  publicProfile, onSessionRevoked,
   meldeStand,
   STARTING_CHIPS,
   touchSeen,

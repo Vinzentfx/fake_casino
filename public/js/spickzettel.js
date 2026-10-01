@@ -18,7 +18,7 @@
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text, ziel) =>
-        `<a href="${esc(ziel)}"${ziel.startsWith("#") ? "" : ' target="_blank" rel="noopener"'}>${text}</a>`);
+        /^(#|https?:\/\/)/i.test(ziel) ? `<a href="${esc(ziel)}"${ziel.startsWith("#") ? "" : ' target="_blank" rel="noopener"'}>${text}</a>` : text);
   }
 
   const zelle = (zeile) => zeile.replace(/^\||\|$/g, "").split("|").map((z) => z.trim());
@@ -87,6 +87,18 @@
     return out.join("\n");
   }
 
+  function suche() {
+    const query = ($("#spick-search")?.value || "").trim().toLocaleLowerCase("de");
+    let count = 0;
+    document.querySelectorAll(".spick-abschnitt").forEach(section => {
+      const show = !query || section.textContent.toLocaleLowerCase("de").includes(query);
+      section.hidden = !show;
+      if (show) count++;
+    });
+    $("#spick-result").textContent = query ? `${count} ${count === 1 ? "passender Abschnitt" : "passende Abschnitte"}` : "Regeln, Chancen und Systeme · Stand 29. September 2026";
+  }
+  $("#spick-search")?.addEventListener("input", suche);
+
   async function lade() {
     const ziel = $("#spick-inhalt");
     if (!ziel || geladen) return;
@@ -94,7 +106,17 @@
       const res = await fetch("/api/spickzettel", { cache: "no-cache" });
       if (!res.ok) throw new Error("nicht erreichbar");
       ziel.innerHTML = baue(await res.text());
+      let section;
+      for (const node of [...ziel.childNodes]) {
+        if (!section || node.nodeName === "H2") {
+          section = document.createElement("section");
+          section.className = "spick-abschnitt";
+          ziel.append(section);
+        }
+        section.append(node);
+      }
       geladen = true;
+      suche();
     } catch {
       ziel.innerHTML = '<p class="muted small">Der Spickzettel ist gerade nicht zu erreichen.</p>';
     }
@@ -106,6 +128,7 @@
     const a = e.target.closest('a[href^="#"]');
     if (!a) return;
     e.preventDefault();
+    $("#spick-search").value = ""; suche();
     document.getElementById(a.getAttribute("href").slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 

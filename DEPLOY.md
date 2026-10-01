@@ -57,6 +57,10 @@ Owner-Backup-Knopf im Admin-Bildschirm. Er ruft `POST /api/admin/backup` auf
 und lädt den kompletten `data/`-Ordner als eine JSON-Datei herunter, inklusive
 `.secret` und der hochgeladenen Clan-Wappen. Über `POST /api/admin/restore`
 spielt man so eine Datei wieder ein. Beides geht nur mit dem Konto des Besitzers.
+Das Einspielen legt das Backup zuerst in `data/.wiederherstellung` ab; der
+Server beendet sich, Railway startet neu, und erst der neue Prozess tauscht
+die Dateien ein, bevor er sie liest. Startet der Dienst danach nicht von
+selbst neu, bleibt das Backup dort liegen, bis er gestartet wird.
 
 Vor größeren Deploys ein Backup ziehen und auf dem Mac aufheben. Genau so
 wurden beim Umzug die 70 Konten wiederhergestellt.
@@ -67,14 +71,37 @@ Stehen bei Railway im Projekt unter Variables.
 
 | Variable | Bedeutung |
 |---|---|
-| `FOOTBALL_DATA_TOKEN` | Zugang zu football-data.org für echte Fußballspiele. **Fehlt sie, laufen nur simulierte Spiele.** Seit 13.9.2026 lässt sich der Schlüssel auch im Admin-Bildschirm unter „Werkzeuge > Echte Fußballspiele" eintragen; er liegt dann in `data/sport-zugang.json`. Eine gesetzte Umgebungsvariable hat Vorrang, dann ist das Feld gesperrt. |
+| `FOOTBALL_DATA_TOKEN` | Zugang zu football-data.org für echte Fußballspiele. **Fehlt sie, laufen nur simulierte Spiele.** Auf Railway als Service-Variable hinterlegen und die Änderung deployen. Der Admin-Bildschirm unter „Werkzeuge > Echte Fußballspiele“ kann den Schlüssel alternativ in `data/sport-zugang.json` speichern; ohne dauerhaftes Volume kann diese Datei bei einem Deploy verschwinden. Eine gesetzte Umgebungsvariable hat Vorrang. |
 | `FOOTBALL_DATA_COMPS` | Welche Wettbewerbe, auf dem alten Server war es `BL1,PL,PD` |
 | `SPORTS_SIM` | auf `off` setzen, um die simulierten Füllspiele auszublenden |
 | `PORT` | setzt Railway selbst |
 | `APP_VERSION` | optional, ersetzt den Fingerabdruck über den Inhalt |
 | `NODE_ENV` | alles außer `production` gilt als Entwicklung (`game/buildinfo.js`) |
 
-Eine geänderte Variable startet den Dienst bei Railway neu.
+Geänderte Variablen werden bei Railway zunächst vorgemerkt und nach dem Deploy
+im neu gestarteten Dienst wirksam.
+
+### Wenn echte Sportwetten fehlen
+
+Im Casino als Besitzer unter **Team & Verlauf → Werkzeuge → Echte Fußballspiele**
+„Jetzt holen“ drücken und die Antworten der Wettbewerbe prüfen. „Kein Zugang“
+bedeutet, dass `FOOTBALL_DATA_TOKEN` im laufenden Railway-Service fehlt und auch
+keine gespeicherte Datei geladen wurde. Den vorhandenen Schlüssel in Railway
+beim **richtigen Service und der richtigen Umgebung** unter **Variables** als
+`FOOTBALL_DATA_TOKEN` eintragen; die Änderung anschließend deployen. Den
+Schlüssel nie ins Repository oder in eine öffentliche Nachricht kopieren.
+
+HTTP 400 mit der Anbieter-Meldung „Your API token is invalid“ heißt, dass der
+gespeicherte Schlüssel ungültig oder unvollständig ist. Den vollständigen
+API-Schlüssel im football-data.org-Konto nachsehen und neu eintragen. HTTP 401
+heißt ebenfalls, dass die API den Schlüssel nicht akzeptiert. HTTP 403 heißt,
+dass der Wettbewerb für diesen Schlüssel nicht freigeschaltet ist; die
+Wettbewerbsliste (`FOOTBALL_DATA_COMPS`) und den Tarif beim Anbieter prüfen.
+HTTP 429 bedeutet zu viele Abrufe; nach der Sperrfrist erneut prüfen.
+Antworten mit HTTP 200 und null Spielen können bei einer leeren Terminspanne
+normal sein; die App fragt zwei Tage zurück bis zehn Tage voraus ab. Der
+Admin-Bildschirm zeigt den letzten Abruf und die Anzahl pro Wettbewerb, ohne
+den geheimen Schlüssel auszugeben.
 
 ## Lokal entwickeln
 

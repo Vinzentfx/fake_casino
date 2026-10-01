@@ -227,6 +227,9 @@ function einliefern(key, uid, mindest) {
   const acc = accounts.get(key);
   if (!acc) return { ok: false, error: "Nicht eingeloggt." };
   if (strafen.aktiv(acc, "keineAuktion")) return { ok: false, error: "Du darfst gerade nichts einliefern." };
+  const startgebot = mindest == null || mindest === "" ? START_GEBOT : Number(mindest);
+  if (!Number.isSafeInteger(startgebot) || startgebot < START_GEBOT)
+    return { ok: false, error: `Das Startgebot muss eine ganze Zahl ab ${de(START_GEBOT)} Chips sein.` };
   const st = praegung.stueck(uid);
   if (!st || st.besitzer !== key) return { ok: false, error: "Das Stück gehört dir nicht." };
   if (!cosmetics.handelbar(st.art, st.id)) return { ok: false, error: "Dieses Stück lässt sich nicht handeln." };
@@ -254,7 +257,6 @@ function einliefern(key, uid, mindest) {
   if (state.schlange.length >= EINLIEFER_MAX) return { ok: false, error: "Die Warteschlange ist voll. Versuch es morgen wieder." };
   if ((acc.chips || 0) < EINLIEFER_GEBUEHR) return { ok: false, error: `Die Einliefergebühr von ${de(EINLIEFER_GEBUEHR)} Chips fehlt dir.` };
 
-  const m = Math.max(START_GEBOT, Math.round(Number(mindest) || 0));
   /* Aus der Hand geben, genau wie im Markt: sonst traegt man weiter, was
      unter dem Hammer steht. */
   if (!cosmetics.besitzNehmen(acc, st.art, st.id)) return { ok: false, error: "Das Stück gehört dir nicht." };
@@ -267,7 +269,7 @@ function einliefern(key, uid, mindest) {
     label: cosmetics.label(st.art, st.id),
     nr: st.nr,
     serie: st.serie,
-    mindest: m,
+    mindest: startgebot,
     seit: Date.now(),
   });
   save();
@@ -374,7 +376,7 @@ function starteEingeliefertes() {
   state.letztesVomHaus = false;
   save();
   try {
-    chat.announce(io, `Auktionshaus: ${e.name} bringt ${ART_NAME[e.art] || e.art} „${e.label}“ ${serienText(st.nr, st.serie)} unter den Hammer. `
+    chat.announce(io, `Auktionshaus: ${e.name} bringt ${ART_NAME[e.art] || cosmetics.ART_NAME[e.art] || e.art} „${e.label}“ ${serienText(st.nr, st.serie)} unter den Hammer. `
       + `Startgebot ${de(e.mindest)} Chips, Zuschlag ${endeText(state.los.endet)}.`);
   } catch {}
   try {

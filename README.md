@@ -55,11 +55,11 @@ Glücksrad gibt es im ganzen Casino nur sieben Mal.
 
 Alles, was Chips bewegt, entscheidet der Server. Der Browser schickt nur
 "ich möchte drehen", sonst könnte man sich über die Entwicklertools selbst
-Geld geben. Jedes Spiel hat eine festgelegte Auszahlungsquote, meistens 97
-bis 98 Prozent, und die habe ich mit Simulationen geprüft. Beim Würfelpoker
-hat die erste Simulation nie gezielt auf Straßen gespielt und die Quote
-deshalb völlig falsch eingeschätzt. Seitdem rechne ich gegen mehrere
-Spielweisen.
+Geld geben. Regeln und Auszahlungsquoten unterscheiden sich je Spiel; die
+Zahlen im Spickzettel trennen mathematisch geprüfte Werte von Schätzungen.
+Beim Würfelpoker sind alle möglichen Ausgangswürfe und Halteentscheidungen
+vollständig durchgerechnet. Der Server berechnet seinen Tipp aus derselben
+Auszahlungstabelle, die auch für die Abrechnung gilt.
 
 Weil selten alle gleichzeitig online sind, laufen die meisten Duelle
 versetzt: man spielt seine Runde, und der andere spielt dieselbe Aufgabe

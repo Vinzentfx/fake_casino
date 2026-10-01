@@ -161,7 +161,7 @@
     if (!stand) return;
     renderSerienlotterie();
     const chips = (window.Casino.getAccount() || {}).chips || 0;
-    $("#ki-liste").innerHTML = stand.kisten.map((k) => {
+    const karte = (k) => {
       const wartet = k.frei && k.wiederAb > Date.now();
       const zuTeuer = !k.frei && chips < k.preis;
       const gesperrt = wartet || zuTeuer;
@@ -195,7 +195,26 @@
           ${knopfText}${k.frei || gesperrt ? "" : "<i class=mk></i>"}
         </button>
       </div>`;
+    };
+    /* Drei Bereiche statt einer Reihe: was nur kurz da ist, die Kisten für
+       den Namen, und die Kleidung für die Figur mit dem Schaufenster daneben.
+       Vorher stand die Kleiderkiste einfach zwischen Holz und Messing. */
+    const BEREICHE = [
+      ["limitiert", "Nur für kurze Zeit", ""],
+      ["kosmetik", "Kosmetik für deinen Namen", "Namensstile, Rahmen, Titel, Auren und alles, was überall an deinem Namen hängt."],
+      ["figur", "Für deine Figur", "Kleidung, Fahrzeuge und Haustiere. Was deine Figur im Raum trägt."],
+    ];
+    const liste = $("#ki-liste");
+    liste.classList.add("gruppiert");
+    liste.innerHTML = BEREICHE.map(([id, titel, text]) => {
+      const ks = stand.kisten.filter((k) => (k.bereich || "kosmetik") === id);
+      if (!ks.length) return "";
+      return `<section class="ki-bereich ki-bereich-${id}">
+        <header class="ki-bereich-kopf"><h3>${escapeHtml(titel)}</h3>${text ? `<p>${escapeHtml(text)}</p>` : ""}</header>
+        <div class="ki-bereich-liste">${ks.map(karte).join("")}${id === "figur" ? `<div class="ki-schaufenster" id="ki-schaufenster"><p class="muted small">Lädt…</p></div>` : ""}</div>
+      </section>`;
     }).join("");
+    ladeSchaufenster();
 
     /* Die Legende zaehlt den DAUERHAFTEN Vorrat. Eine limitierte Kiste
        bringt ihren eigenen mit, und die Zahlen hier zusammenzuwerfen
@@ -211,6 +230,75 @@
       + `Doppelte Funde werden zu Prägestaub. Damit prägst du in der Sammlung exklusive Atelierstücke. `
       + `Alles Neue lässt sich auf dem Markt weitergeben.</p>`;
   }
+
+  /*
+   * Das Schaufenster der Woche (game/boutique.js): vier Kleidungsstücke zum
+   * festen Preis, für das eine Stück, das man gezielt will. Jedes an der
+   * eigenen Figur gezeigt, damit man sieht, wie es aussähe.
+   */
+  let schaufenster = null;
+  function ladeSchaufenster() {
+    socket.emit("boutique:state", (r) => {
+      if (!r || !r.ok) return;
+      schaufenster = r;
+      zeichneSchaufenster();
+    });
+  }
+  function zeichneSchaufenster() {
+    const box = $("#ki-schaufenster");
+    if (!box || !schaufenster) return;
+    const acc = window.Casino.getAccount() || {};
+    const chips = acc.chips || 0;
+    const tage = Math.max(1, Math.ceil((schaufenster.bis - Date.now()) / 86400000));
+    box.innerHTML = `<div class="ki-sf-kopf"><b>Schaufenster der Woche</b><small>Noch ${tage} ${tage === 1 ? "Tag" : "Tage"}, dann liegt etwas anderes aus.</small></div>
+      <div class="ki-sf-liste">${schaufenster.stuecke.map((x) => {
+        const vorschau = window.Casino.figur ? window.Casino.figur.stueckVorschau(x.art, x.id, acc) : "";
+        const knopf = x.hat ? `<span class="ki-sf-hat">Hast du</span>`
+          : `<button type="button" class="ki-sf-kauf" data-sf-kauf="${escapeHtml(x.art)}:${escapeHtml(x.id)}" ${chips < x.preis ? "disabled" : ""}>${fmt(x.preis)}<i class=mk></i></button>`;
+        return `<div class="ki-sf-stueck cos-tier-${escapeHtml(x.stufe === "kiste" ? "einzel" : x.stufe)}">
+          <span class="ki-sf-bild">${vorschau}</span><b>${escapeHtml(x.label)}</b>${knopf}</div>`;
+      }).join("")}</div>
+      <p class="muted small ki-sf-fuss">Jede Woche zwei seltene und zwei epische Stücke zum festen Preis, für das eine Stück, das du gezielt willst.</p>
+      ${stangeHtml(acc, chips)}`;
+  }
+
+  /* Die Kleiderstange (game/boutique.js): alles Gewöhnliche, dauerhaft, zu
+     60 % des Werts. Gefiltert nach Art, damit man nicht durch 34 Teile
+     scrollt, um eine Hose zu finden. */
+  let stangeArt = "alle";
+  function stangeHtml(acc, chips) {
+    const liste = schaufenster.stange || [];
+    if (!liste.length) return "";
+    const namen = schaufenster.artNamen || {};
+    const arten = [...new Set(liste.map((x) => x.art))];
+    const sicht = stangeArt === "alle" ? liste : liste.filter((x) => x.art === stangeArt);
+    const offen = liste.filter((x) => !x.hat).length;
+    return `<div class="ki-stange">
+      <div class="ki-sf-kopf"><b>Kleiderstange</b><small>Alles Gewöhnliche, immer da, unter dem Wert. ${offen ? `${offen} Teile fehlen dir noch.` : "Du hast alles von der Stange."}</small></div>
+      <div class="ki-stange-filter" role="tablist" aria-label="Art">${["alle", ...arten].map((a) => `<button type="button" role="tab" class="ki-stange-art" data-stange-art="${escapeHtml(a)}" aria-selected="${a === stangeArt}">${escapeHtml(a === "alle" ? "Alle" : namen[a] || a)}</button>`).join("")}</div>
+      <div class="ki-stange-liste">${sicht.map((x) => {
+        const vorschau = window.Casino.figur ? window.Casino.figur.stueckVorschau(x.art, x.id, acc) : "";
+        const knopf = x.hat ? `<span class="ki-sf-hat">Hast du</span>`
+          : `<button type="button" class="ki-sf-kauf" data-sf-kauf="${escapeHtml(x.art)}:${escapeHtml(x.id)}" data-sf-quelle="stange" ${chips < x.preis ? "disabled" : ""}>${fmt(x.preis)}<i class=mk></i></button>`;
+        return `<div class="ki-sf-stueck"><span class="ki-sf-bild">${vorschau}</span><b>${escapeHtml(x.label)}</b>${knopf}</div>`;
+      }).join("")}</div>
+    </div>`;
+  }
+  document.addEventListener("click", (e) => {
+    const f = e.target.closest("[data-stange-art]");
+    if (f) { stangeArt = f.dataset.stangeArt; zeichneSchaufenster(); return; }
+    const b = e.target.closest("[data-sf-kauf]");
+    if (!b) return;
+    const [art, id] = b.dataset.sfKauf.split(":");
+    b.disabled = true;
+    socket.emit("boutique:kaufen", { art, id, quelle: b.dataset.sfQuelle || null }, (r) => {
+      if (!r || !r.ok) { b.disabled = false; window.Casino.toast((r && r.error) || "Ging nicht."); return; }
+      if (r.account) window.Casino.applyAccount(r.account);
+      window.Casino.sound && window.Casino.sound.play && window.Casino.sound.play("win");
+      window.Casino.toast(`${r.label} gehört jetzt dir. Anlegen kannst du es in der Garderobe.`);
+      ladeSchaufenster();
+    });
+  });
 
   /** Ein Feld auf der Bahn. Gleiche Vorschau wie im Laden und auf dem Markt. */
   function feld(f, treffer) {

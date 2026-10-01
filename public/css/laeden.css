@@ -1,0 +1,133 @@
+/* Ladenstraße: Zoohandlung, Autohaus, Kiosk (public/js/laeden.js).
+   Grundflächen aus den Tokens; jeder Laden hat dazu eine Eigenfarbe wie
+   die Automaten (--ld), damit man ohne Lesen weiß, wo man steht. */
+
+[data-screen="laeden"] { --ld: #3f9a5a; --ld-rgb: 63, 154, 90; }
+[data-screen="laeden"][data-laden="autohaus"] { --ld: #2f7ae0; --ld-rgb: 47, 122, 224; }
+[data-screen="laeden"][data-laden="kiosk"] { --ld: #e0a21c; --ld-rgb: 224, 162, 28; }
+
+.ld-wrap { display: grid; gap: 14px; }
+/* Über der Welt ein kompaktes Fenster statt einer ganzen Seite. */
+html.welt-fenster #app > .screen[data-screen="laeden"].active { max-width: min(880px, 100%); }
+.ld-fassade { flex: 0 0 auto; height: 92px; aspect-ratio: var(--seiten, 1.6); margin: -4px 0 -16px; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45)); }
+.ld-fassade svg { width: 100%; height: 100%; display: block; }
+.ld-kopf { align-items: flex-end; }
+.ld-kopf > div:not(.ld-fassade):not(.ld-reiter) { flex: 1; min-width: 140px; }
+.ld-kopf { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px;
+  padding: 16px 18px; border-radius: 18px; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, rgba(var(--ld-rgb), 0.32), rgba(var(--ld-rgb), 0.06) 60%), var(--surface);
+  border: 1px solid rgba(var(--ld-rgb), 0.45); }
+/* Die Markise über dem Kopf: Streifen in der Ladenfarbe. */
+.ld-kopf::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 10px;
+  background: repeating-linear-gradient(90deg, var(--ld) 0 22px, rgba(255, 255, 255, 0.85) 22px 44px); opacity: 0.85; }
+[data-laden="autohaus"] .ld-kopf::before { background: linear-gradient(90deg, transparent, var(--ld), transparent); height: 3px; }
+.ld-kicker { display: block; color: var(--text-dim); font: 800 11px/1.4 var(--font); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 6px; }
+.ld-titel { margin: 0; font-size: var(--fs-xl); letter-spacing: 0.01em; }
+.ld-reiter { display: flex; gap: 6px; padding: 4px; border-radius: var(--r-pill); background: rgba(0, 0, 0, 0.22); border: 1px solid var(--line); }
+.ld-tab { min-height: 38px; padding: 8px 14px; border-radius: var(--r-pill); border: 0; background: none; color: var(--text-dim); font: 800 var(--fs-sm) var(--font); cursor: pointer; }
+.ld-tab[aria-selected="true"] { background: var(--ld); color: #fff; box-shadow: 0 4px 14px rgba(var(--ld-rgb), 0.45); }
+.ld-unter { margin: -4px 2px 0; color: var(--text-dim); font-size: var(--fs-sm); }
+.ld-laedt, .ld-leer { padding: 40px 0; text-align: center; color: var(--text-dim); }
+.ld-zwischen { margin: 10px 2px 0; font-size: var(--fs-sm); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+.ld-hat { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 6px 12px; border-radius: 12px;
+  color: var(--good); background: rgba(var(--good-rgb, 80, 200, 120), 0.12); font: 700 var(--fs-sm) var(--font); text-align: center; }
+.ld-kauf { width: 100%; }
+
+.ld-stufe { display: inline-block; padding: 1px 8px; border-radius: var(--r-pill); font: 800 10px/1.6 var(--font); letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid currentColor; }
+.st-gewoehnlich { color: #9aa4ae; } .st-selten { color: #5ea8e0; } .st-episch { color: #c86bd6; }
+.st-legendaer { color: #f4d782; } .st-mythisch { color: #e0705e; } .st-einzel { color: #b6ff4d; }
+
+/* ---------- Zoohandlung ---------- */
+.ld-lieferung { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.ld-lieferung small { color: var(--text-dim); font-weight: 700; }
+.ld-lieferung p { margin: 2px 0 0; font-size: var(--fs-sm); }
+.ld-lkw { flex: 0 0 96px; }
+.ld-lkw svg { width: 96px; height: auto; display: block; }
+html:not(.reduce-motion) .ld-lkw svg { animation: ld-rollen 3.4s ease-in-out infinite; }
+@keyframes ld-rollen { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+
+.ld-gehege-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.ld-gehege { display: grid; gap: 10px; padding: 12px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); position: relative; }
+.ld-gehege.fuer-dich { border-color: var(--ld); box-shadow: 0 0 0 1px rgba(var(--ld-rgb), 0.4), 0 10px 26px rgba(var(--ld-rgb), 0.2); }
+.ld-gehege.leer .ld-gehege-bild { filter: grayscale(0.7) brightness(0.8); }
+/* Das Gehege: Gras, ein Zaun und das Tier, das darin herumtrippelt. */
+.ld-gehege-bild { position: relative; height: 128px; border-radius: 14px; overflow: hidden;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 18px, rgba(120, 80, 40, 0.55) 18px 21px) 0 100% / 100% 34px no-repeat,
+    linear-gradient(transparent 60%, rgba(120, 80, 40, 0.55) 60% 64%, transparent 64%) 0 100% / 100% 34px no-repeat,
+    linear-gradient(180deg, #bfe3f2 0 45%, #8cc96a 45% 100%); }
+.ld-tier { position: absolute; left: 50%; bottom: 14px; width: 104px; height: 84px; margin-left: -52px; }
+.ld-tier .ht { width: 100%; height: 100%; display: block; overflow: visible; }
+html:not(.reduce-motion) .ld-tier { animation: ld-trippeln 4.6s ease-in-out infinite; }
+html:not(.reduce-motion) .ld-tier .ht-bein { animation: fg-schritt 0.32s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: top center; }
+@keyframes ld-trippeln { 0%, 100% { transform: translateX(-26px); } 45% { transform: translateX(26px); } 50% { transform: translateX(26px) scaleX(-1); } 95% { transform: translateX(-26px) scaleX(-1); } }
+.ld-gehege-text h3 { margin: 0 0 4px; font-size: var(--fs-lg); }
+.ld-gehege-text small { display: block; margin-top: 4px; color: var(--text-dim); font-size: var(--fs-xs); }
+.ld-bestand { height: 6px; margin-top: 8px; border-radius: 3px; background: rgba(0, 0, 0, 0.3); overflow: hidden; }
+.ld-bestand i { display: block; height: 100%; background: linear-gradient(90deg, var(--ld), color-mix(in srgb, var(--ld) 60%, #fff)); }
+
+.ld-bewohner { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.ld-bewohner li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.ld-bewohner li.heute { border-color: rgba(var(--ld-rgb), 0.55); }
+.ld-bewohner li.hat { opacity: 0.6; }
+.ld-bewohner li > span:nth-child(2) { flex: 1; display: grid; }
+.ld-bewohner small { color: var(--text-dim); font-size: var(--fs-xs); }
+.ld-mini { flex: 0 0 46px; height: 36px; }
+.ld-mini .ht { width: 100%; height: 100%; display: block; }
+
+/* ---------- Autohaus ---------- */
+.ld-level { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.ld-level b { padding: 4px 12px; border-radius: var(--r-pill); background: var(--ld); color: #fff; }
+.ld-level span { color: var(--text-dim); font-size: var(--fs-sm); }
+.ld-wagen-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.ld-wagen { display: grid; gap: 10px; padding: 12px; border-radius: 18px; border: 1px solid var(--line);
+  background: radial-gradient(120% 70% at 50% 0%, rgba(var(--ld-rgb), 0.16), transparent 70%), var(--surface); }
+.ld-wagen.zu .ld-wagen-bild { filter: grayscale(0.55) brightness(0.7); }
+.ld-wagen-bild .fg-leib, .ld-wagen-bild .fz-beine, .ld-wagen-bild .fg-schatten { display: none; }
+.ld-wagen.probe { border-color: var(--ld); box-shadow: 0 0 0 1px rgba(var(--ld-rgb), 0.45); }
+/* Der Drehteller im Schauraum, mit einem Scheinwerfer von oben. */
+.ld-drehteller { position: relative; height: 140px; border-radius: 14px; overflow: hidden;
+  background: radial-gradient(60% 80% at 50% 0%, rgba(255, 246, 200, 0.25), transparent 70%), linear-gradient(180deg, #1c2230, #0e121a); }
+.ld-teller { position: absolute; left: 14%; right: 14%; bottom: 10px; height: 18px; border-radius: 50%;
+  background: radial-gradient(ellipse, #4a5262, #262c38 70%); box-shadow: 0 0 18px rgba(var(--ld-rgb), 0.45); }
+.ld-wagen-bild { position: absolute; left: 50%; bottom: 8px; width: 210px; margin-left: -105px; z-index: 1; }
+.ld-wagen-bild .fg-stueck, .ld-wagen-bild svg { width: 100%; height: auto; display: block; }
+html:not(.reduce-motion) .ld-wagen:not(.zu) .ld-wagen-bild { animation: ld-wippen 3s ease-in-out infinite; }
+@keyframes ld-wippen { 50% { transform: translateY(-3px); } }
+.ld-wagen-text h3 { margin: 0 0 4px; font-size: var(--fs-lg); }
+.ld-wagen-text small { display: block; margin-top: 4px; color: var(--text-dim); font-size: var(--fs-xs); }
+.ld-knoepfe { display: grid; gap: 6px; }
+.ld-probe { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-radius: 18px; border: 1px solid var(--ld);
+  background: linear-gradient(90deg, rgba(var(--ld-rgb), 0.2), transparent), var(--surface); }
+.ld-probe-figur { flex: 0 0 auto; width: 110px; }
+.ld-probe-figur .club-figure { display: block; width: 110px; }
+.ld-probe small { color: var(--text-dim); font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.ld-probe b { display: block; font-size: var(--fs-lg); }
+.ld-probe p { margin: 4px 0 0; color: var(--text-dim); font-size: var(--fs-sm); }
+
+/* ---------- Kiosk ---------- */
+.ld-tresen { padding: 14px; border-radius: 20px; border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(var(--ld-rgb), 0.14), transparent 40%), var(--surface); }
+.ld-schild-kiosk { display: inline-block; margin-bottom: 12px; padding: 6px 14px; border-radius: 10px; background: #d6402f; color: #fff6d8; font: 900 var(--fs-sm) var(--font); transform: rotate(-1.5deg); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+.ld-regal { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.ld-ware { display: grid; justify-items: center; gap: 6px; padding: 10px; border-radius: 16px; background: rgba(0, 0, 0, 0.18); border: 1px solid var(--line); text-align: center; }
+.ld-ware.hat { opacity: 0.75; }
+.ld-ware-bild { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, rgba(var(--ld-rgb), 0.35), rgba(var(--ld-rgb), 0.05) 70%); }
+.ld-ware-bild .fg-stueck, .ld-ware-bild svg { width: 92px; height: 92px; display: block; }
+.ld-ware b { font-size: var(--fs-sm); }
+.ld-ware .ld-kauf { padding: 8px 10px; font-size: var(--fs-sm); white-space: nowrap; }
+.ld-kauf .betrag { white-space: nowrap; }
+html:not(.reduce-motion) .ld-ware:hover .ld-ware-bild { transform: scale(1.06) rotate(-3deg); transition: transform 0.2s; }
+
+@media (max-width: 600px) {
+  .ld-kopf { padding: 14px 12px 12px; }
+  .ld-fassade { height: 64px; margin-bottom: -10px; }
+  .ld-reiter { width: 100%; }
+  .ld-tab { flex: 1; padding: 8px 6px; font-size: var(--fs-xs); }
+  .ld-gehege-raster, .ld-wagen-raster { grid-template-columns: 1fr; }
+  .ld-regal { grid-template-columns: repeat(2, 1fr); }
+  .ld-lieferung { align-items: flex-start; }
+  .ld-lkw { flex-basis: 64px; }
+  .ld-lkw svg { width: 64px; }
+}

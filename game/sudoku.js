@@ -4,14 +4,14 @@
  * Sudoku-Race, live gegeneinander. Beide bekommen im selben Moment dasselbe
  * Rätsel und füllen um die Wette. Wer zuerst eine gültige volle Lösung abgibt,
  * bekommt den Topf (beide Buy-ins) minus Rake. Läuft vorher die Zeit ab,
- * gewinnt, wer mehr richtige Felder hat, bei genau gleich vielen gibt es die
- * Einsätze zurück.
+ * gewinnt die hoehere Teilwertung; Gleichstand gibt die Einsaetze zurueck.
  *
  * Nur gegeneinander (Chips wandern zwischen den Spielern, der Rake
  * verschwindet), also nicht farmbar. Die Lösung liegt auf dem Server und prüft
  * die Abgaben, der Client sieht sie nie.
  *
- * Match und Lobby wie in memory.js. Schwierigkeit = Anzahl vorgegebener Zahlen.
+ * Match und Lobby wie in memory.js. Die Stufe bestimmt die Zahl der Vorgaben;
+ * jedes neu erzeugte Raetsel hat genau eine Loesung.
  */
 
 const crypto = require("crypto");
@@ -21,7 +21,7 @@ const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const RAKE = 0.10;
 const MIN_BUYIN = 50;
 const MAX_BUYIN = 1_000_000;
-const TIME_MS = 15 * 60 * 1000; // Zeitlimit, danach entscheiden die richtigen Felder
+const TIME_MS = 15 * 60 * 1000; // Zeitlimit, danach entscheiden die Punkte
 
 const DIFFICULTIES = { easy: 45, medium: 34, hard: 28 }; // givens (clues) shown
 const DEFAULT_DIFF = "medium";
@@ -48,17 +48,70 @@ function fill(g) {
   }
   return false;
 }
+
+const BIT_COUNT = Array.from({ length: 512 }, (_, n) => {
+  let count = 0;
+  while (n) { n &= n - 1; count++; }
+  return count;
+});
+
+/** Zaehlt hoechstens zwei Loesungen. MRV waehlt stets das engste freie Feld. */
+function countSolutions(grid) {
+  const rows = new Array(9).fill(0), cols = new Array(9).fill(0), boxes = new Array(9).fill(0);
+  const work = grid.slice();
+  for (let i = 0; i < 81; i++) {
+    const n = work[i];
+    if (!n) continue;
+    if (!Number.isInteger(n) || n < 1 || n > 9) return 0;
+    const r = (i / 9) | 0, c = i % 9, b = 3 * ((r / 3) | 0) + ((c / 3) | 0);
+    const bit = 1 << (n - 1);
+    if ((rows[r] | cols[c] | boxes[b]) & bit) return 0;
+    rows[r] |= bit; cols[c] |= bit; boxes[b] |= bit;
+  }
+  function search() {
+    let target = -1, choices = 0, fewest = 10;
+    for (let i = 0; i < 81; i++) {
+      if (work[i]) continue;
+      const r = (i / 9) | 0, c = i % 9, b = 3 * ((r / 3) | 0) + ((c / 3) | 0);
+      const available = 511 & ~(rows[r] | cols[c] | boxes[b]);
+      const count = BIT_COUNT[available];
+      if (!count) return 0;
+      if (count < fewest) { target = i; choices = available; fewest = count; if (count === 1) break; }
+    }
+    if (target === -1) return 1;
+    const r = (target / 9) | 0, c = target % 9, b = 3 * ((r / 3) | 0) + ((c / 3) | 0);
+    let solutions = 0;
+    for (let bits = choices; bits; bits &= bits - 1) {
+      const bit = bits & -bits;
+      work[target] = 1 + Math.log2(bit);
+      rows[r] |= bit; cols[c] |= bit; boxes[b] |= bit;
+      solutions += search();
+      rows[r] &= ~bit; cols[c] &= ~bit; boxes[b] &= ~bit;
+      if (solutions >= 2) break;
+    }
+    work[target] = 0;
+    return Math.min(solutions, 2);
+  }
+  return search();
+}
+
 function makePuzzle(diff) {
   const givens = DIFFICULTIES[diff] || DIFFICULTIES[DEFAULT_DIFF];
-  const solution = new Array(81).fill(0);
-  fill(solution);
-  const puzzle = solution.slice();
-  let remove = 81 - givens;
-  for (const i of shuffled([...Array(81).keys()])) {
-    if (remove <= 0) break;
-    puzzle[i] = 0; remove--;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const solution = new Array(81).fill(0);
+    fill(solution);
+    const puzzle = solution.slice();
+    let remove = 81 - givens;
+    for (const i of shuffled([...Array(81).keys()])) {
+      if (remove <= 0) break;
+      const given = puzzle[i];
+      puzzle[i] = 0;
+      if (countSolutions(puzzle) === 1) remove--;
+      else puzzle[i] = given;
+    }
+    if (remove === 0) return { puzzle, solution };
   }
-  return { puzzle, solution };
+  throw new Error("Eindeutiges Sudoku konnte nicht erzeugt werden.");
 }
 /** Ein Raster ist gelöst, wenn jedes Feld 1 bis 9 ist, die Vorgaben unverändert sind
  * und jede Zeile, Spalte und jeder 3×3-Block jede Zahl genau einmal hat. */
@@ -82,11 +135,27 @@ function isSolved(grid, puzzle) {
   if (!groupsOk((bx, k) => (3 * ((bx / 3) | 0) + ((k / 3) | 0)) * 9 + (3 * (bx % 3) + (k % 3)))) return false; // Blöcke
   return true;
 }
-function correctCount(grid, solution) {
-  if (!Array.isArray(grid)) return 0;
-  let n = 0;
-  for (let i = 0; i < 81; i++) if (grid[i] && grid[i] === solution[i]) n++;
-  return n;
+/** Teilwertung ohne Ratevorteil: falsche Zahlen kosten zwei Punkte.
+ * Widerspruechliche Raster bekommen keine Punkte; Vorgaben zaehlen nicht. */
+function scoreGrid(grid, puzzle, solution) {
+  const empty = { punkte: 0, richtig: 0, falsch: 0, geloest: false, valid: false };
+  if (!Array.isArray(grid) || grid.length !== 81) return empty;
+  const rows = new Array(9).fill(0), cols = new Array(9).fill(0), boxes = new Array(9).fill(0);
+  let richtig = 0, falsch = 0, filled = 0;
+  for (let i = 0; i < 81; i++) {
+    const n = grid[i];
+    if (!Number.isInteger(n) || n < 0 || n > 9 || (puzzle[i] && n !== puzzle[i])) return empty;
+    if (!n) continue;
+    filled++;
+    const r = (i / 9) | 0, c = i % 9, b = 3 * ((r / 3) | 0) + ((c / 3) | 0);
+    const bit = 1 << (n - 1);
+    if ((rows[r] | cols[c] | boxes[b]) & bit) return empty;
+    rows[r] |= bit; cols[c] |= bit; boxes[b] |= bit;
+    if (!puzzle[i]) { if (n === solution[i]) richtig++; else falsch++; }
+  }
+  const geloest = filled === 81;
+  return { punkte: geloest ? 81 : richtig - 2 * falsch,
+    richtig: geloest ? 81 : richtig, falsch: geloest ? 0 : falsch, geloest, valid: true };
 }
 function filledCount(grid, puzzle) {
   if (!Array.isArray(grid) || !Array.isArray(puzzle)) return 0;
@@ -171,7 +240,7 @@ function setupSudoku(io, accounts) {
     else { broadcast(match.code); lobby.changed(); }
   }
 
-  // settle(match)                    : Zeit abgelaufen, die richtigen Felder entscheiden.
+  // settle(match)                    : Zeit abgelaufen, die Teilwertung entscheidet.
   // settle(match, { winner })          : dieser Spieler hat gewonnen (mit Rake).
   // settle(match, { winner, walkover }) : der Gegner ist weg, ganzer Topf ohne Rake.
   function settle(match, opts = {}) {
@@ -184,8 +253,8 @@ function setupSudoku(io, accounts) {
     let winner = opts.winner || null;
     if (!winner && players.length === 2) {
       const [a, b] = players;
-      if (a.correct > b.correct) winner = a;
-      else if (b.correct > a.correct) winner = b;
+      if (a.score > b.score) winner = a;
+      else if (b.score > a.score) winner = b;
     }
 
     let rake = 0, payout = 0;
@@ -201,7 +270,7 @@ function setupSudoku(io, accounts) {
     match.result = {
       winner: winner ? winner.name : null, tie: !winner,
       pot: match.pot, rake, payout, walkover,
-      players: players.map((p) => ({ name: p.name, correct: p.correct, finished: p.finished })),
+      players: players.map((p) => ({ name: p.name, correct: p.correct, score: p.score, finished: p.finished })),
     };
     for (const p of players) {
       if (p.socket) { const a = accounts.get(p.id); if (a) p.socket.emit("account:update", { account: accounts.publicAccount(a) }); }
@@ -217,7 +286,7 @@ function setupSudoku(io, accounts) {
     for (const p of match.players.values()) {
       accounts.adjustChips(p.id, -match.buyIn);
       match.pot += match.buyIn;
-      p.correct = 0; p.filled = filledCount(puzzle, puzzle); p.finished = false;
+      p.correct = 0; p.score = 0; p.filled = filledCount(puzzle, puzzle); p.finished = false;
       if (p.socket) { const a = accounts.get(p.id); p.socket.emit("account:update", { account: accounts.publicAccount(a) }); }
     }
     match.state = "playing";
@@ -264,6 +333,8 @@ function setupSudoku(io, accounts) {
       if (!DIFFICULTIES[difficulty]) difficulty = DEFAULT_DIFF;
       const a = acc(socket);
       if (!a || a.chips < buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      const limitError = require("./strafen").einsatzFehler(a, buyIn);
+      if (limitError) return typeof ack === "function" && ack({ ok: false, error: limitError });
 
       leaveCurrent(socket);
       const code = makeCode();
@@ -291,6 +362,8 @@ function setupSudoku(io, accounts) {
         return typeof ack === "function" && ack({ ok: false, error: "Match ist voll." });
       const a = acc(socket);
       if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      const limitError = require("./strafen").einsatzFehler(a, match.buyIn);
+      if (limitError) return typeof ack === "function" && ack({ ok: false, error: limitError });
 
       leaveCurrent(socket);
       match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, correct: 0, filled: 0, finished: false });
@@ -310,6 +383,8 @@ function setupSudoku(io, accounts) {
       for (const p of match.players.values()) {
         const a = accounts.get(p.id);
         if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` });
+        const limitError = require("./strafen").einsatzFehler(a, match.buyIn);
+        if (limitError) return typeof ack === "function" && ack({ ok: false, error: `${p.name}: ${limitError}` });
       }
       typeof ack === "function" && ack({ ok: true });
       startGame(match);
@@ -322,9 +397,11 @@ function setupSudoku(io, accounts) {
       const me = match.players.get(socket.data.account);
       if (!me) return typeof ack === "function" && ack({ ok: false, error: "Nicht im Match." });
       const g = Array.isArray(grid) ? grid.map((v) => Math.floor(Number(v)) || 0) : [];
-      me.correct = correctCount(g, match.solution);
-      me.filled = filledCount(g, match.puzzle);
-      if (isSolved(g, match.puzzle)) {
+      const score = scoreGrid(g, match.puzzle, match.solution);
+      me.correct = score.richtig;
+      me.score = score.punkte;
+      me.filled = score.valid ? filledCount(g, match.puzzle) : filledCount(match.puzzle, match.puzzle);
+      if (score.geloest) {
         me.finished = true;
         typeof ack === "function" && ack({ ok: true, solved: true });
         settle(match, { winner: me }); // die erste gültige volle Lösung gewinnt (mit Rake)
@@ -339,7 +416,7 @@ function setupSudoku(io, accounts) {
       if (!match || match.state !== "done") return typeof ack === "function" && ack({ ok: false, error: "Kein beendetes Spiel." });
       const connected = [...match.players.values()].filter((p) => p.socket);
       if (connected.length !== 2) return typeof ack === "function" && ack({ ok: false, error: "Gegner ist nicht mehr da." });
-      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); const limitError = require("./strafen").einsatzFehler(a, match.buyIn); if (limitError) return typeof ack === "function" && ack({ ok: false, error: `${p.name}: ${limitError}` }); }
       match.rematchWant = match.rematchWant || [];
       if (!match.rematchWant.includes(socket.data.account)) match.rematchWant.push(socket.data.account);
       typeof ack === "function" && ack({ ok: true });
@@ -361,7 +438,7 @@ function setupSudoku(io, accounts) {
  * dasselbe Raetsel, am Ende werden zwei Ergebnisse verglichen. Also laeuft es
  * jetzt zusaetzlich versetzt ueber game/asyncDuell.js.
  *
- * Gewertet wird erst die Zahl richtiger Felder, dann die Zeit. Wer loest,
+ * Gewertet werden erst die Punkte, dann die Zeit. Wer loest,
  * gewinnt also gegen jeden, der nicht geloest hat, egal wie schnell der war.
  */
 function zeitText(ms) {
@@ -372,6 +449,7 @@ function zeitText(ms) {
 require("./asyncDuell").registriere({
   id: "sudoku",
   label: "Sudoku",
+  zeitNurBeiPositivenPunkten: true,
   erzeuge({ difficulty } = {}) {
     const diff = DIFFICULTIES[difficulty] ? difficulty : DEFAULT_DIFF;
     const { puzzle, solution } = makePuzzle(diff);
@@ -383,14 +461,13 @@ require("./asyncDuell").registriere({
   },
   bewerte(geheim, einsendung, ms) {
     const grid = Array.isArray(einsendung) ? einsendung.map((v) => Math.floor(Number(v)) || 0) : [];
-    const korrekt = correctCount(grid, geheim.solution);
-    const geloest = isSolved(grid, geheim.puzzle);
+    const score = scoreGrid(grid, geheim.puzzle, geheim.solution);
     return {
-      punkte: korrekt,
+      punkte: score.punkte,
       ms,
-      text: geloest ? `Gelöst in ${zeitText(ms)}` : `${korrekt} von 81 richtig, ${zeitText(ms)}`,
+      text: score.geloest ? `Gelöst in ${zeitText(ms)}` : `${score.richtig} richtig, ${score.falsch} falsch · ${score.punkte} Punkte, ${zeitText(ms)}`,
     };
   },
 });
 
-module.exports = { setupSudoku, SUDOKU_RAKE: RAKE, _isSolved: isSolved, _makePuzzle: makePuzzle };
+module.exports = { setupSudoku, SUDOKU_RAKE: RAKE, _isSolved: isSolved, _makePuzzle: makePuzzle, _countSolutions: countSolutions, _scoreGrid: scoreGrid };

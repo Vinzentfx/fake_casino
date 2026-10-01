@@ -167,6 +167,8 @@ function setupSolitaire(io, accounts) {
       if (typeof ack !== "function") return;
       const a = acc(socket);
       if (!a) return ack({ ok: false, error: "Nicht eingeloggt." });
+      if (socket.data.solitaire && !socket.data.solitaire.over && !socket.data.solitaire.free)
+        return ack({ ok: false, error: "Beende erst dein bezahltes Solitär-Spiel." });
       if (free) {
         // Frei spielen: kein Einsatz, leichtes Spiel (1er-Ziehen), unbegrenzt umdrehen, schaffbar.
         socket.data.solitaire = { state: E.deal({ draw: 1, recycles: Infinity }), bet: 0, free: true, over: false };
@@ -220,6 +222,8 @@ function setupSolitaire(io, accounts) {
         return typeof ack === "function" && ack({ ok: false, error: `Buy-in zwischen ${RACE_MIN_BUYIN} und ${RACE_MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       const a = acc(socket);
       if (!a || a.chips < buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      const limitError = require("./strafen").einsatzFehler(a, buyIn);
+      if (limitError) return typeof ack === "function" && ack({ ok: false, error: limitError });
       raceLeave(socket);
       const code = makeCode();
       const match = {
@@ -243,6 +247,8 @@ function setupSolitaire(io, accounts) {
       if (match.players.size >= 2 && !match.players.has(socket.data.account)) return typeof ack === "function" && ack({ ok: false, error: "Match ist voll." });
       const a = acc(socket);
       if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      const limitError = require("./strafen").einsatzFehler(a, match.buyIn);
+      if (limitError) return typeof ack === "function" && ack({ ok: false, error: limitError });
       raceLeave(socket);
       match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, state: null });
       socket.join(code); socket.data.solraceCode = code;
@@ -256,7 +262,7 @@ function setupSolitaire(io, accounts) {
       if (match.host !== socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Nur der Host startet." });
       if (match.state !== "waiting") return typeof ack === "function" && ack({ ok: false, error: "Läuft bereits." });
       if (match.players.size !== 2) return typeof ack === "function" && ack({ ok: false, error: "Warte auf 2 Spieler." });
-      for (const p of match.players.values()) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      for (const p of match.players.values()) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); const limitError = require("./strafen").einsatzFehler(a, match.buyIn); if (limitError) return typeof ack === "function" && ack({ ok: false, error: `${p.name}: ${limitError}` }); }
       typeof ack === "function" && ack({ ok: true });
       raceStart(match);
     });
@@ -278,7 +284,7 @@ function setupSolitaire(io, accounts) {
       if (!match || match.state !== "done") return typeof ack === "function" && ack({ ok: false, error: "Kein beendetes Spiel." });
       const connected = [...match.players.values()].filter((p) => p.socket);
       if (connected.length !== 2) return typeof ack === "function" && ack({ ok: false, error: "Gegner ist nicht mehr da." });
-      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); const limitError = require("./strafen").einsatzFehler(a, match.buyIn); if (limitError) return typeof ack === "function" && ack({ ok: false, error: `${p.name}: ${limitError}` }); }
       match.rematchWant = match.rematchWant || [];
       if (!match.rematchWant.includes(socket.data.account)) match.rematchWant.push(socket.data.account);
       typeof ack === "function" && ack({ ok: true });

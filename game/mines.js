@@ -106,7 +106,7 @@ function setupMines(io, accounts) {
       g.over = true;
       games.delete(key);
       if (g.revealed.length > 0) {
-        const payout = Math.floor(g.bet * multiplier(g.mines, g.revealed.length));
+        const payout = Math.min(MAX_WIN, Math.floor(g.bet * multiplier(g.mines, g.revealed.length)));
         accounts.adjustChips(key, payout);
         accounts.recordHand(key, payout - g.bet, true, "mines", { einsatz: g.bet });
       } else {

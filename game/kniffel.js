@@ -178,6 +178,8 @@ function setupKniffel(io, accounts) {
     p.halten = Array(WUERFEL).fill(false);
     p.wuerfeUebrig = WUERFE_PRO_ZUG - 1;
     p.zugBis = Date.now() + ZUG_MS;
+    p.zugNummer = (p.zugNummer || 0) + 1;
+    const zugNummer = p.zugNummer;
     clearTimeout(p.timer);
     /*
      * Wer nicht eintraegt, blockiert sonst die ganze Partie. Nach Ablauf
@@ -186,7 +188,7 @@ function setupKniffel(io, accounts) {
      */
     p.timer = setTimeout(() => {
       const s = p.spieler.get(key);
-      if (!s || p.phase !== "laeuft") return;
+      if (!s || p.phase !== "laeuft" || p.dran !== key || p.zugNummer !== zugNummer) return;
       const frei = FELDER.find((f) => s.blatt[f.id] == null);
       if (frei) eintragen(p, key, frei.id, true);
     }, ZUG_MS + 1000);
@@ -288,6 +290,8 @@ function setupKniffel(io, accounts) {
       if (!p) return ack({ ok: false, error: "Diese Partie gibt es nicht." });
       if (p.phase !== "warten") return ack({ ok: false, error: "Die Partie läuft schon." });
       if (p.spieler.size >= 2) return ack({ ok: false, error: "Schon voll." });
+      const limitError = require("./strafen").einsatzFehler(accounts.get(key()), p.einsatz);
+      if (limitError) return ack({ ok: false, error: limitError });
       const abzug = accounts.adjustChips(key(), -p.einsatz);
       if (!abzug.ok) return ack({ ok: false, error: abzug.error });
 
@@ -307,6 +311,7 @@ function setupKniffel(io, accounts) {
       const p = meine();
       const antwort = (r) => typeof ack === "function" && ack(r);
       if (!p || p.phase !== "laeuft" || p.dran !== key()) return antwort({ ok: false, error: "Du bist nicht dran." });
+      if (Date.now() >= p.zugBis) return antwort({ ok: false, error: "Deine Zugzeit ist abgelaufen." });
       const i = Math.floor(Number(index));
       if (!(i >= 0 && i < WUERFEL)) return antwort({ ok: false, error: "Welcher Würfel?" });
       p.halten[i] = !p.halten[i];
@@ -319,6 +324,7 @@ function setupKniffel(io, accounts) {
       const p = meine();
       const antwort = (r) => typeof ack === "function" && ack(r);
       if (!p || p.phase !== "laeuft" || p.dran !== key()) return antwort({ ok: false, error: "Du bist nicht dran." });
+      if (Date.now() >= p.zugBis) return antwort({ ok: false, error: "Deine Zugzeit ist abgelaufen." });
       if (p.wuerfeUebrig < 1) return antwort({ ok: false, error: "Keine Würfe mehr, trag ein." });
       p.wuerfel = p.wuerfel.map((x, i) => (p.halten[i] ? x : wurf()));
       p.wuerfeUebrig -= 1;
@@ -331,8 +337,9 @@ function setupKniffel(io, accounts) {
       const p = meine();
       const antwort = (r) => typeof ack === "function" && ack(r);
       if (!p || p.phase !== "laeuft" || p.dran !== key()) return antwort({ ok: false, error: "Du bist nicht dran." });
-      p.letzteAktion = Date.now();
+      if (Date.now() >= p.zugBis) return antwort({ ok: false, error: "Deine Zugzeit ist abgelaufen." });
       if (!eintragen(p, key(), String(feld || ""))) return antwort({ ok: false, error: "Das Feld ist schon belegt." });
+      p.letzteAktion = Date.now();
       antwort({ ok: true });
     });
 

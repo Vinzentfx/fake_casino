@@ -88,6 +88,13 @@ function setupPvp(io, accounts) {
     return code ? matches.get(code) : null;
   }
 
+  function playingFor(key) {
+    for (const match of matches.values()) {
+      if (match.state === "playing" && match.players.has(key)) return match;
+    }
+    return null;
+  }
+
   function leaveCurrent(socket) {
     const match = currentMatch(socket);
     if (!match) return;
@@ -163,6 +170,7 @@ function setupPvp(io, accounts) {
   io.on("connection", (socket) => {
     socket.on("pvp:create", ({ buyIn } = {}, ack) => {
       if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (playingFor(socket.data.account)) return typeof ack === "function" && ack({ ok: false, error: "Beende zuerst dein laufendes Duell." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return typeof ack === "function" && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       const acc = accounts.get(socket.data.account);
@@ -196,6 +204,7 @@ function setupPvp(io, accounts) {
     // einzeln aufgedeckt (800 ms nach jedem Dreh des Spielers), damit es sich live anfühlt.
     socket.on("pvp:createBot", ({ buyIn } = {}, ack) => {
       if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (playingFor(socket.data.account)) return typeof ack === "function" && ack({ ok: false, error: "Beende zuerst dein laufendes Duell." });
       buyIn = Math.floor(Number(buyIn));
       if (!Number.isFinite(buyIn) || buyIn < MIN_BUYIN || buyIn > MAX_BUYIN) return typeof ack === "function" && ack({ ok: false, error: `Buy-in zwischen ${MIN_BUYIN} und ${MAX_BUYIN.toLocaleString("de-DE")} Chips.` });
       const acc = accounts.get(socket.data.account);
@@ -259,6 +268,7 @@ function setupPvp(io, accounts) {
 
     socket.on("pvp:join", ({ code } = {}, ack) => {
       if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
+      if (playingFor(socket.data.account)) return typeof ack === "function" && ack({ ok: false, error: "Beende zuerst dein laufendes Duell." });
       code = String(code || "").trim().toUpperCase();
       const match = matches.get(code);
       if (!match) return typeof ack === "function" && ack({ ok: false, error: "Match nicht gefunden." });
@@ -267,6 +277,8 @@ function setupPvp(io, accounts) {
         return typeof ack === "function" && ack({ ok: false, error: "Match ist voll." });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      const limitError = require("./strafen").einsatzFehler(acc, match.buyIn);
+      if (limitError) return typeof ack === "function" && ack({ ok: false, error: limitError });
 
       leaveCurrent(socket);
       match.players.set(socket.data.account, {
@@ -292,6 +304,8 @@ function setupPvp(io, accounts) {
       for (const p of players) {
         const acc = accounts.get(p.id);
         if (!acc || acc.chips < match.buyIn) return ack && typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` });
+        const limitError = require("./strafen").einsatzFehler(acc, match.buyIn);
+        if (limitError) return ack && typeof ack === "function" && ack({ ok: false, error: `${p.name}: ${limitError}` });
       }
       // Zufälliger Automat für beide (Freischaltungen egal), fester Einsatz = sein Minimum.
       match.machineId = randomMachineId();

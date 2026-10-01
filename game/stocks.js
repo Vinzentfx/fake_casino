@@ -231,9 +231,11 @@ function setupStocks(io, accounts) {
       if (typeof ack !== "function") return;
       const acc = key() && accounts.get(key());
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
-      const r = open(key(), sym, dir, margin, lev);
+      const cost = Math.floor(Number(margin));
+      if (!Number.isFinite(cost) || cost < 1000) return ack({ ok: false, error: "Ungültiger Einsatz." });
+      if (cost > acc.chips) return ack({ ok: false, error: "Nicht genug Chips." });
+      const r = open(key(), sym, dir, cost, lev);
       if (!r.ok) return ack(r);
-      if (acc.chips < r.cost) { delete market.positions[r.id]; return ack({ ok: false, error: "Nicht genug Chips." }); }
       const res = accounts.adjustChips(key(), -r.cost);
       ack({ ok: true, account: res.account, ...snapshot(key()) });
     });

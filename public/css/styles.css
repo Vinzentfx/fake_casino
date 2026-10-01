@@ -4212,7 +4212,12 @@ html:not(.reduce-motion) .fo-rad { animation: pl-spin 9s linear infinite; }
   text-align: center;
 }
 .update-more b { color: var(--accent-strong); }
-.update-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+/* Die Knöpfe bleiben am unteren Rand der Karte stehen. Bei einem langen
+   Update lagen sie sonst unter zehn Einträgen, und wer nicht bis ganz nach
+   unten scrollte, fand keinen Weg aus dem Fenster. */
+.update-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap;
+  position: sticky; bottom: -22px; margin: 0 -22px -22px; padding: 14px 22px 22px;
+  background: linear-gradient(180deg, rgba(20, 26, 36, 0), #141a24 38%); }
 .update-actions .btn-primary { flex: 1; min-width: 150px; }
 .update-actions .chip-btn { flex: 1; min-width: 150px; }
 
@@ -6153,7 +6158,7 @@ html.reduce-motion .tw-flip { transition: none; }
    html:not(.reduce-motion). Wer in den Einstellungen Bewegung
    reduziert hat, sieht dieselben Farben, nur still. */
 .pl-name { font-weight: 700; }
-.pl-ava { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+.pl-ava { flex-shrink: 0; aspect-ratio: 1; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
 .pl-text { display: inline-flex; flex-direction: column; min-width: 0; }
 .pl-title {
   font-size: var(--fs-xs);
@@ -8558,8 +8563,11 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
    Weggelassen wird, was doppelt da ist: der eigene Name steht im Profil, und
    das Bild daneben zeigt ohnehin, wer man ist. */
 @media (max-width: 430px) {
-  .topbar { gap: 6px; }
-  .topbar-right { gap: 6px; }
+  .topbar { gap: 6px; flex-wrap: wrap; }
+  .topbar-right { gap: 6px; flex: 1; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .topbar .buff-strip { order: 3; flex-basis: 100%; }
+  .topbar .buff-strip:empty { display: none; }
+  .balance { white-space: nowrap; }
   .profile-chip #player-name { display: none; }
   #bonus-btn { padding-left: 9px; padding-right: 9px; }
   .balance { padding-left: 9px; padding-right: 9px; font-size: var(--fs-sm); }
@@ -8567,6 +8575,7 @@ button > i[data-icon] .ui-icon { width: 18px; height: 18px; }
 /* Ganz schmal: auch die Wortmarke geht, das Zeichen allein trägt. */
 @media (max-width: 360px) {
   .brand span { display: none; }
+  .profile-chip #level-chip { display: none !important; }
 }
 
 /* Wortfilter (Admin) */
@@ -12003,8 +12012,8 @@ html:not(.reduce-motion) .cos-pass-foil { animation: cos-foil 7s ease-in-out inf
   font-size: 0.6rem;
   letter-spacing: 0.14em; text-transform: uppercase;
 }
-.cos-pass-portrait { grid-area: bild; position: relative; }
-.cos-pass-portrait .pl-ava { font-size: 2.6rem; }
+.cos-pass-portrait { grid-area: bild; position: relative; align-self:center; justify-self:start; min-width:0; }
+.cos-pass-portrait .pl-ava { font-size: 2.6rem; width:1.9em; height:1.9em; flex:none; }
 .cos-pass-person {
   grid-area: person;
   position: relative;

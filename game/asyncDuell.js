@@ -50,6 +50,7 @@ let _io = null, _accounts = null;
  *
  * erzeuge(opts)                    gibt { aufgabe, geheim, label }
  * bewerte(geheim, einsendung, ms)  gibt { punkte, ms, text }, mehr Punkte gewinnen
+ * zeitNurBeiPositivenPunkten: true   bei null Punkten kein Sieg nur wegen der Zeit
  * abrechnen(d, { sieger, ausgang }) optional, siehe unten
  * keinPot: true                    optional, siehe unten
  *
@@ -185,13 +186,20 @@ function erstelle(key, { spiel, einsatz, optionen = {} } = {}) {
     return { ok: false, error: `Höchstens ${MAX_OFFEN_PRO_SPIELER} offene Herausforderungen gleichzeitig.` };
   }
 
+  let aufgabe, geheim, label;
+  try {
+    ({ aufgabe, geheim, label } = adapter.erzeuge({ ...optionen, einsatz }));
+  } catch (e) {
+    console.error(`asyncDuell: Aufgabe für ${spiel} konnte nicht erstellt werden.`, e.message);
+    return { ok: false, error: "Die Aufgabe konnte nicht erstellt werden. Bitte versuche es erneut." };
+  }
+
   const r = _accounts.adjustChips(key, -einsatz);
   if (!r.ok) return { ok: false, error: r.error };
 
   /* Der Einsatz geht mit in den Adapter. Beim Kisten-Duell IST er die
      Aufgabe (so viel darfst du in Kisten stecken), und ohne ihn muesste der
      Adapter ihn aus einer zweiten Quelle raten. */
-  const { aufgabe, geheim, label } = adapter.erzeuge({ ...optionen, einsatz });
   const id = neueId();
   const jetzt = Date.now();
   state.offen[id] = {
@@ -219,6 +227,8 @@ function nimmAn(key, id) {
   const acc = _accounts.get(key);
   if (!acc) return { ok: false, error: "Nicht eingeloggt." };
   if (acc.chips < d.einsatz) return { ok: false, error: "Nicht genug Chips." };
+  const limitError = require("./strafen").einsatzFehler(acc, d.einsatz);
+  if (limitError) return { ok: false, error: limitError };
 
   const r = _accounts.adjustChips(key, -d.einsatz);
   if (!r.ok) return { ok: false, error: r.error };
@@ -233,6 +243,7 @@ function nimmAn(key, id) {
 
 /** Ergebnis abgeben. Der Server bewertet, der Client meldet nur seine Eingabe. */
 function gibAb(key, id, einsendung) {
+  raeumeAuf();
   const d = state.offen[id];
   if (!d) return { ok: false, error: "Diese Herausforderung gibt es nicht mehr." };
   const adapter = ADAPTER[d.spiel];
@@ -270,13 +281,14 @@ function entscheide(id, opts = {}) {
   const d = state.offen[id];
   if (!d) return {};
   const a = d.erstellerErgebnis, b = d.gegnerErgebnis;
+  const adapter = ADAPTER[d.spiel] || {};
   let sieger = null;   // "ersteller" | "gegner" | null (unentschieden)
   if (opts.aufgabe || !b) sieger = "ersteller";
   else if (!a) sieger = "gegner";
   else if (b.punkte !== a.punkte) sieger = b.punkte > a.punkte ? "gegner" : "ersteller";
-  else if (b.ms !== a.ms) sieger = b.ms < a.ms ? "gegner" : "ersteller";
+  else if (b.ms !== a.ms && (!adapter.zeitNurBeiPositivenPunkten || a.punkte > 0))
+    sieger = b.ms < a.ms ? "gegner" : "ersteller";
 
-  const adapter = ADAPTER[d.spiel] || {};
   const pot = d.einsatz * 2;
   let rake = 0, auszahlung = 0;
   if (adapter.keinPot) {

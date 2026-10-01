@@ -20,6 +20,7 @@
 const crypto = require("crypto");
 const regie = require("./regie");
 const liveops = require("./liveops");
+const { einsatzFehler } = require("./strafen");
 
 // Machine definitions
 
@@ -900,9 +901,22 @@ function evaluateSpin(machine, bet, session, forceGrid = null) {
 
 // Socket wiring (single-player, account-backed)
 
+/* Ab diesem Vielfachen des Einsatzes explodiert der Automat in der Welt.
+   Fünfundzwanzig ist selten genug, dass es etwas bedeutet. */
+const GROSS_AB = 25;
+
 function setupSlots(io, accounts) {
   io.on("connection", (socket) => {
-    socket.on("slots:machines", (ack) => typeof ack === "function" && ack({ machines: publicMachines(), jackpot: jackpotPot() }));
+    const bonusState = () => {
+      const bonus = accounts.get(socket.data.account)?.slotBonus;
+      return bonus && bonus.remaining > 0 ? { active: true, machineId: bonus.machineId, bet: bonus.bet, remaining: bonus.remaining, multiplier: bonus.multiplier || 1, special: bonus.special || null } : null;
+    };
+    socket.on("slots:machines", (ack) => typeof ack === "function" && ack({ machines: publicMachines(), jackpot: jackpotPot(), bonus: bonusState() }));
+    socket.on("slots:state", (ack) => {
+      if (typeof ack !== "function") return;
+      if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
+      ack({ ok: true, bonus: bonusState() });
+    });
 
     // Automaten für das angemeldete Konto freischalten.
     /*
@@ -932,16 +946,20 @@ function setupSlots(io, accounts) {
       ack({ ok: true, account: res.account });
     });
 
-    socket.on("slots:spin", ({ machineId, bet } = {}, ack) => {
+    socket.on("slots:spin", ({ machineId, bet, expectedFree } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
       const machine = MACHINE_BY_ID[machineId];
       if (!machine) return ack({ ok: false, error: "Unbekannter Automat." });
       if (!darfSpielen(machine, socket.data.account)) return ack({ ok: false, error: "Automat noch nicht freigeschaltet." });
 
-      const sess = socket.data.slots;
+      const account = accounts.get(socket.data.account);
+      if (!account) return ack({ ok: false, error: "Bitte erneut einloggen." });
+      const sess = account.slotBonus;
+      if (sess?.remaining > 0 && sess.machineId !== machineId) return ack({ ok: false, error: "Bitte zuerst deine offenen Freispiele am anderen Automaten beenden." });
       const session = sess && sess.machineId === machineId && sess.remaining > 0 ? sess : null;
       const inFree = !!session;
+      if (typeof expectedFree === "boolean" && expectedFree !== inFree) return ack({ ok: false, error: "Deine Freispiele haben sich auf einem anderen Gerät geändert. Der Stand wird aktualisiert." });
 
       bet = Math.floor(Number(bet));
       if (!inFree && !machine.bets.includes(bet)) return ack({ ok: false, error: "Ungültiger Einsatz." });
@@ -964,7 +982,7 @@ function setupSlots(io, accounts) {
         forced = teaseGrid(machine, inFree ? session.bet : bet);
       }
       let { result, session: newSession, totalWin } = evaluateSpin(machine, bet, session, forced);
-      socket.data.slots = newSession;
+      account.slotBonus = newSession;
 
       // Glücksklee / Goldbarren: Gewinne erhöhen. Die Zahlen im Ergebnis mit
       // skalieren, damit die Hochzähl-Animation zum gebuchten Betrag passt.
@@ -1017,7 +1035,13 @@ function setupSlots(io, accounts) {
         ? { machineId, amount: totalWin, steps: 0 }
         : null;
 
+      accounts.save(); // includes remaining bonus even for zero-win showcase rounds
       ack({ ...result, balance, jackpotPot: jackpotPot(), winBoost: boost > 1 ? boost : 1, canGamble: !!socket.data.gamble });
+      // Ein großer Gewinn knallt in der Welt am Automaten, für alle im Raum.
+      const vielfach = totalWin / Math.max(1, spinBet);
+      if (totalWin > 0 && (vielfach >= GROSS_AB || jackpotWin > 0)) {
+        try { require("./welt").schau(socket, "slot-" + machineId, { gross: true, vielfach: Math.floor(vielfach), betrag: totalWin, jackpot: jackpotWin > 0 }); } catch {}
+      }
     });
 
     // Risiko / Gamble: 50/50 auf Rot oder Schwarz, Gewinn verdoppelt sich,
@@ -1032,6 +1056,8 @@ function setupSlots(io, accounts) {
       if (guess !== "red" && guess !== "black") return ack({ ok: false, error: "Rot oder Schwarz?" });
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < g.amount) return ack({ ok: false, error: "Nicht genug Chips für den Einsatz." });
+      const limitError = einsatzFehler(acc, g.amount);
+      if (limitError) return ack({ ok: false, error: limitError });
       const deduct = accounts.adjustChips(socket.data.account, -g.amount);
       if (!deduct.ok) return ack({ ok: false, error: deduct.error });
       const card = crypto.randomInt(2) === 0 ? "red" : "black";
@@ -1065,24 +1091,27 @@ function setupSlots(io, accounts) {
       const machine = MACHINE_BY_ID[machineId];
       if (!machine || !machine.buyBonus || !machine.freeSpins) return ack({ ok: false, error: "Kein Bonus-Kauf hier." });
       if (!darfSpielen(machine, socket.data.account)) return ack({ ok: false, error: "Automat noch nicht freigeschaltet." });
-      if (socket.data.slots && socket.data.slots.remaining > 0) return ack({ ok: false, error: "Freispiele laufen schon." });
+      if (accounts.get(socket.data.account)?.slotBonus?.remaining > 0) return ack({ ok: false, error: "Freispiele laufen schon." });
       bet = Math.floor(Number(bet));
       if (!machine.bets.includes(bet)) return ack({ ok: false, error: "Ungültiger Einsatz." });
       const cost = bet * machine.buyBonus;
       const acc = accounts.get(socket.data.account);
       if (!acc || acc.chips < cost) return ack({ ok: false, error: "Nicht genug Chips für den Bonus-Kauf." });
-      const deduct = accounts.adjustChips(socket.data.account, -cost);
-      if (!deduct.ok) return ack({ ok: false, error: deduct.error });
-      // Der Kauf ist ein echter Verlust: zählt für Statistik, Rake, Cashback und
-      // Wochenbilanz (die Freispiele verbuchen ihre Gewinne danach als reinen Gewinn).
-      accounts.recordHand(socket.data.account, -cost, true, "slots");
-      socket.data.gamble = null; // alter Risiko-Anspruch verfällt
-      socket.data.slots = {
+      const limitError = einsatzFehler(acc, cost);
+      if (limitError) return ack({ ok: false, error: limitError });
+      const previous = acc.slotBonus;
+      acc.slotBonus = {
         machineId, bet, remaining: machine.freeSpins.count,
         multiplier: machine.freeSpins.persistentMultiplier ? 1 : machine.freeSpins.multiplier,
         special: machine.expandingSpecial ? pickSpecial(machine) : undefined,
       };
-      ack({ ok: true, cost, balance: deduct.account.chips, freeSpins: { active: true, remaining: machine.freeSpins.count, multiplier: socket.data.slots.multiplier, special: socket.data.slots.special || null } });
+      // The chip write persists the purchased entitlement in the same account.
+      const deduct = accounts.adjustChips(socket.data.account, -cost);
+      if (!deduct.ok) { acc.slotBonus = previous; return ack({ ok: false, error: deduct.error }); }
+      accounts.recordHand(socket.data.account, -cost, true, "slots");
+      socket.data.gamble = null;
+
+      ack({ ok: true, cost, balance: deduct.account.chips, freeSpins: { active: true, remaining: machine.freeSpins.count, multiplier: acc.slotBonus.multiplier, special: acc.slotBonus.special || null } });
     });
   });
 }

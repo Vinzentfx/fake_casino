@@ -77,14 +77,16 @@ const ARTEN = {
 
 /* Spiele und ihre Ereignisse
 
-   Das Spielverbot und der Einsatzdeckel greifen an einer Stelle (der Bremse
-   unten) und nicht in zwanzig Spielmodulen. Dafuer braucht es die Zuordnung
+   Das Spielverbot und einfache Einsaetze greifen an der Bremse unten.
+   Einsatzkosten, die erst aus Serverzustand entstehen (Bonus-Kauf, Beitritt,
+   Double/Split), werden zusaetzlich unmittelbar vor der Buchung geprueft.
+   Dafuer braucht es die Zuordnung
    von Ereignis-Vorsilbe zu Spiel und das Feld, in dem der Einsatz steht.
 
    Neues Spiel? Eine Zeile hier, sonst laesst sich es nicht sperren und der
    Deckel gilt dort nicht. */
 const SPIELE = {
-  slots:     { name: "Slots",         vor: ["slots:"],              einsatz: { "slots:spin": "bet", "slots:buyBonus": "bet" } },
+  slots:     { name: "Slots",         vor: ["slots:"],              einsatz: { "slots:spin": "bet" } },
   crash:     { name: "Crash",         vor: ["crash:"],              einsatz: { "crash:bet": "amount" } },
   roulette:  { name: "Roulette",      vor: ["roulette:", "rlobby:"], einsatz: { "roulette:spin": "@bets" } },
   blackjack: { name: "Blackjack",     vor: ["bj:", "bjlobby:"],     einsatz: { "bj:deal": "bet" } },
@@ -102,12 +104,13 @@ const SPIELE = {
   memory:    { name: "Memory",        vor: ["memory:"],             einsatz: { "memory:create": "buyIn" } },
   solitaire: { name: "Solitär",       vor: ["sol:", "solrace:"],    einsatz: { "sol:start": "bet", "solrace:create": "buyIn" } },
   chess:     { name: "Schach",        vor: ["chess:"],              einsatz: { "chess:create": "buyIn" } },
-  sudoku:    { name: "Sudoku",        vor: ["sudoku:"] },
+  sudoku:    { name: "Sudoku",        vor: ["sudoku:"],            einsatz: { "sudoku:create": "buyIn" } },
   /* Kisten und Kisten-Duell haben lange gefehlt, und das waren ausgerechnet
      die teuersten Knoepfe im Haus: eine Kiste kostet bis 250.000, ein Duell
      setzt bis zu einer Million. Ohne Eintrag liess sich beides weder sperren
      noch deckeln. Die Kiste hat keinen Einsatz IM Ereignis — der Preis haengt
-     an der Kiste, nicht an der Nachricht — deshalb dort nur die Sperre. */
+     an der Kiste, nicht an der Nachricht. Der Deckel wird beim Oeffnen vor
+     der Abbuchung geprueft. */
   kiste:     { name: "Kisten",        vor: ["kiste:"] },
   kdl:       { name: "Kisten-Duell",  vor: ["kdl:"],                einsatz: { "kdl:erstelle": "einsatz" } },
   lotterie:  { name: "Lotterie",      vor: ["lotterie:"] },
@@ -130,6 +133,38 @@ const SPIELE = {
    bekommt, sieht einen leeren Bildschirm ohne Erklaerung und meldet einen
    Fehler. */
 const NUR_LESEN = /:(state|config|machines|init|history|legal|leaderboards|list|zufall|inhalt)$/;
+
+/* Diese Nachrichten koennen nur eine bereits bezahlte Runde fortsetzen,
+   beenden oder einen Einsatz zurueckgeben. Die Spielmodule pruefen selbst,
+   ob die Runde dem Konto gehoert und noch aktiv ist. Neue Einsaetze bleiben
+   auch waehrend einer laufenden Partie gesperrt. */
+const ABSCHLUSS = new Set([
+  "crash:cashout", "rlobby:clear", "rlobby:spin", "rlobby:leave",
+  "mines:reveal", "mines:revealRandom", "mines:cashout",
+  "towers:pick", "towers:cashout", "hilo:tipp", "hilo:cashout",
+  "wuerfel:halten", "wuerfel:nachwurf", "wuerfel:stehen",
+  "poker:action", "poker:stand", "poker:leave",
+  "pvp:spin", "pvp:leave", "duell:submit",
+  "kniffel:halten", "kniffel:wurf", "kniffel:eintragen", "kniffel:aufgeben",
+  "memory:flip", "memory:leave", "chess:move", "chess:resign", "chess:leave",
+  "sudoku:update", "sudoku:leave", "sol:move", "sol:giveup",
+  "solrace:move", "solrace:leave", "kdl:abbrechen", "sports:cashout",
+  "horses:sprint",
+  "bjlobby:leave",
+]);
+
+function istAbschluss(ev, packet, acc) {
+  if (ABSCHLUSS.has(ev)) return true;
+  if (ev === "bj:action") {
+    return ["hit", "stand"].includes(packet[1] && packet[1].action);
+  }
+  if (ev === "slots:spin") {
+    const daten = packet[1];
+    const bonus = acc.slotBonus;
+    return !!(daten && daten.expectedFree === true && bonus && bonus.remaining > 0 && bonus.machineId === daten.machineId);
+  }
+  return false;
+}
 
 const spielVon = new Map();   // je Vorsilbe: Spiel-id
 for (const [id, s] of Object.entries(SPIELE)) for (const v of s.vor) spielVon.set(v, id);
@@ -289,6 +324,14 @@ function deckel(acc) {
   return s ? Math.max(1, Math.floor(s.wert || 1)) : 0;
 }
 
+/** Fehlertext, wenn die gesamte neue Spielverpflichtung den Deckel sprengt. */
+function einsatzFehler(acc, betrag) {
+  const max = deckel(acc);
+  return max && betrag > max
+    ? `Dein Einsatz ist auf ${max.toLocaleString("de-DE")} Chips gedeckelt.`
+    : null;
+}
+
 /** Ist dieses Spiel fuer dieses Konto gesperrt? Gibt die Strafe zurueck. */
 function spielGesperrt(acc, spielId) {
   const s = aktiv(acc, "spielsperre");
@@ -310,14 +353,14 @@ function spielGesperrt(acc, spielId) {
 function bremse(io, accounts) {
   io.on("connection", (socket) => {
     socket.use((packet, next) => {
-      /* Diese Zwischenschicht sieht jedes eingehende Ereignis. Ein Fehler
-         darin traefe also nicht ein Spiel, sondern alle auf einmal: lieber
-         durchlassen als alles anhalten. */
+      /* Bei einem internen Fehler darf eine Einsatz- oder Spielverbotspruefung
+         nicht stillschweigend umgangen werden. */
       try {
         return pruefe(packet, next);
       } catch (e) {
-        console.error("[strafen] Bremse uebersprungen:", e && e.message);
-        return next();
+        console.error("[strafen] Bremse fehlgeschlagen:", e && e.message);
+        const ack = typeof packet[packet.length - 1] === "function" ? packet[packet.length - 1] : null;
+        if (ack) ack({ ok: false, error: "Spielprüfung vorübergehend nicht möglich." });
       }
     });
 
@@ -334,14 +377,15 @@ function bremse(io, accounts) {
 
       const ack = typeof packet[packet.length - 1] === "function" ? packet[packet.length - 1] : null;
       const stop = (error) => (ack ? ack({ ok: false, error }) : undefined);
+      const abschluss = istAbschluss(ev, packet, acc);
 
       const sperre = spielGesperrt(acc, spiel);
-      if (sperre) {
+      if (sperre && !abschluss) {
         return stop(`${SPIELE[spiel].name} ist für dich gesperrt (${restText(sperre)})${sperre.grund ? `: ${sperre.grund}` : "."}`);
       }
 
       const max = deckel(acc);
-      if (max) {
+      if (max && !abschluss) {
         const feld = (SPIELE[spiel].einsatz || {})[ev];
         if (feld) {
           const daten = packet[1] && typeof packet[1] === "object" ? packet[1] : {};
@@ -372,5 +416,5 @@ function marken(acc) {
 module.exports = {
   ARTEN, SPIELE,
   setSpeichern, aktiv, alle, setze, hebeAuf, alleAufheben,
-  restText, satz, pechTrifft, deckel, spielGesperrt, spielZuEvent, marken, bremse,
+  restText, satz, pechTrifft, deckel, einsatzFehler, spielGesperrt, spielZuEvent, marken, bremse,
 };

@@ -33,6 +33,11 @@ function payoutFactor(type, value, number) {
 const VALID_TYPES = new Set(["number","red","black","odd","even","low","high","dozen","column"]);
 const MIN_BET = 50;
 const MAX_TOTAL = 50000;
+function validValue(raw, min, max) {
+  if (typeof raw !== "number" && (typeof raw !== "string" || !raw.trim())) return false;
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= min && value <= max;
+}
 
 function setupRoulette(io, accounts) {
   io.on("connection", (socket) => {
@@ -45,16 +50,19 @@ function setupRoulette(io, accounts) {
       let totalBet = 0;
       const clean = [];
       for (const b of bets) {
+        if (!b || typeof b !== "object" || Array.isArray(b)) return ack({ ok: false, error: "Ungültige Wette." });
         const amount = Math.floor(Number(b.amount));
         if (!VALID_TYPES.has(b.type) || !Number.isFinite(amount) || amount < MIN_BET)
           return ack({ ok: false, error: "Ungültige Wette." });
         if (b.type === "number") {
-          const v = Math.floor(Number(b.value));
-          if (v < 0 || v > 36) return ack({ ok: false, error: "Zahl zwischen 0 und 36." });
+          const v = Number(b.value);
+          if (!validValue(b.value, 0, 36))
+            return ack({ ok: false, error: "Zahl zwischen 0 und 36." });
           clean.push({ type: "number", value: v, amount });
         } else if (b.type === "dozen" || b.type === "column") {
-          const v = Math.floor(Number(b.value));
-          if (v < 1 || v > 3) return ack({ ok: false, error: "Wert zwischen 1 und 3." });
+          const v = Number(b.value);
+          if (!validValue(b.value, 1, 3))
+            return ack({ ok: false, error: "Wert zwischen 1 und 3." });
           clean.push({ type: b.type, value: v, amount });
         } else {
           clean.push({ type: b.type, amount });
@@ -102,6 +110,8 @@ function setupRoulette(io, accounts) {
       // Jeden Dreh verbuchen (Gewinn oder Verlust), damit gamesPlayed stimmt.
       accounts.recordHand(socket.data.account, totalReturn - totalBet, true, "roulette", { einsatz: totalBet });
 
+      // Wer in der Welt am Tisch steht, dessen Rad dreht sich dort für alle.
+      try { require("./welt").schau(socket, "roulette", { zahl: number, farbe: color, gewinn: totalReturn - totalBet }); } catch {}
       ack({
         ok: true,
         number,
@@ -119,5 +129,5 @@ function setupRoulette(io, accounts) {
 
 module.exports = {
   setupRoulette, WHEEL_SEQ, RED_NUMS: [...RED_NUMS],
-  numColor, payoutFactor, VALID_TYPES, MIN_BET, MAX_TOTAL,
+  numColor, payoutFactor, validValue, VALID_TYPES, MIN_BET, MAX_TOTAL,
 };

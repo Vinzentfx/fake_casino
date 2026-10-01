@@ -98,6 +98,19 @@
     if (market === "btts") return sel === "yes" ? "Beide" : "Keiner";
     return sel;
   }
+  /* Ein kleines Wappen je Verein: zwei Farben und die Anfangsbuchstaben,
+     fest aus dem Namen gerechnet, damit derselbe Verein immer gleich aussieht. */
+  const WAPPEN_FARBEN = ["#c8243a", "#1d4fa8", "#f2c94c", "#1f7a4a", "#f4f1ea", "#1d1d23", "#7a3cf0", "#f08a3a", "#23a197", "#8e1f2b"];
+  function wappen(name) {
+    let h = 0;
+    for (const c of String(name || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const a = WAPPEN_FARBEN[h % WAPPEN_FARBEN.length];
+    let b = WAPPEN_FARBEN[(h >>> 4) % WAPPEN_FARBEN.length];
+    if (b === a) b = WAPPEN_FARBEN[(h + 3) % WAPPEN_FARBEN.length];
+    const kurz = String(name || "?").split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+    return `<i class="sb-wappen" style="--w1:${a};--w2:${b}" aria-hidden="true">${escapeHtml(kurz)}</i>`;
+  }
+
   function statusHtml(m) {
     if (m.state === "live") return `<span class="sb-live">LIVE${m.minute ? ` ${m.minute}'` : ""}</span>`;
     if (m.state === "pending") return `<span class="sb-pending">⏳ läuft · Ergebnis folgt</span>`;
@@ -251,7 +264,7 @@
       }).join("");
       return `<div class="sb-match${m.real ? " sb-real-match" : ""}" data-id="${m.id}">
         <div class="sb-head"><span>${m.leagueEmoji} ${escapeHtml(m.league)}${m.real ? ' <span class="sb-real">ECHT</span>' : ""}</span>${statusHtml(m)}</div>
-        <div class="sb-teams"><span>${escapeHtml(m.home)}</span>${showScore ? `<b class="sb-score">${m.score.h} : ${m.score.a}</b>` : `<span class="sb-vs">vs</span>`}<span>${escapeHtml(m.away)}</span></div>
+        <div class="sb-teams"><span class="sb-team">${wappen(m.home)}<span>${escapeHtml(m.home)}</span></span>${showScore ? `<b class="sb-score">${m.score.h} : ${m.score.a}</b>` : `<span class="sb-vs">vs</span>`}<span class="sb-team sb-team-gast"><span>${escapeHtml(m.away)}</span>${wappen(m.away)}</span></div>
         ${markets}
         ${myb ? `<div class="sb-myb">${myb}</div>` : ""}
       </div>`;

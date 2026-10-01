@@ -1,17 +1,6 @@
 "use strict";
 
-/**
- * Kosmetik-Shop.
- *
- * Vorher gab es hier zwei Regler: ein Emoji und eine flache Schriftfarbe.
- * Beides sieht bei allen gleich aus, und nach zwei Wochen war es niemandem
- * mehr eine Anzeige wert. Dazu kommen jetzt Namensstile (Verlauf, teilweise
- * bewegt), Titel und Rahmen ums Bild.
- *
- * Wichtig ist die Vorschau ganz oben: eine Animation kauft man nicht auf
- * Verdacht. Sie zeigt den eigenen Namen mit dem, was gerade angetippt ist,
- * bevor Chips fliessen.
- */
+/** Sammlung, Anprobe und gespeicherte Looks. Besitzänderungen prüft der Server. */
 (function () {
   const { socket, toast, applyAccount, escapeHtml } = window.Casino;
   const Casino = window.Casino;
@@ -19,6 +8,7 @@
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
 
   let stand = null;
+  let filter = "owned";
   let vorschau = null;   // { type, id }, nur angesehen, nicht gekauft
 
   /*
@@ -40,6 +30,7 @@
     comeback: "Wiedereröffnung", haus: "Vom Haus", season: "Season-Pass",
     sammlung: "Kollektion", verdienbar: "Zu verdienen", gratis: "Gratis",
     staub: "Prägeatelier",
+    zoo: "Zoohandlung", autohaus: "Autohaus", kiosk: "Kiosk",
     /* Nur noch über den Markt: die Namensfarben entstehen nicht mehr neu. */
     markt: "Nur noch Markt",
   };
@@ -140,10 +131,13 @@
     const gesperrt = !x.owned && x.herkunft !== "gratis";
     const stufe = stufeVon(x);
     return `<button class="cos-item ${x.equipped ? "equipped" : ""}${gesperrt ? " locked" : ""} ${klasse}"
-        data-type="${type}" data-id="${x.id}" data-owned="${x.owned ? 1 : 0}" data-locked="${gesperrt ? 1 : 0}">
+        aria-label="${escapeHtml(nameVon(type, x.id))} – ${x.equipped ? "angelegt" : x.owned ? "anlegen" : "anprobieren"}" aria-pressed="${!!x.equipped}"
+        data-search="${escapeHtml((nameVon(type, x.id) + " " + (HERKUNFT[x.herkunft] || "")).toLowerCase())}"
+        data-type="${type}" data-id="${x.id}" data-owned="${x.owned ? 1 : 0}" data-locked="${gesperrt ? 1 : 0}" data-gratis="${x.cost === 0 ? 1 : 0}">
         ${marke(x)}
         ${nummer(x)}
         ${inhalt}
+        ${["avatar", "color", "frame"].includes(type) ? `<span class="cos-piece-name">${escapeHtml(x.label || x.id)}</span>` : ""}
         <span class="cos-tier cos-tier-${stufe}" aria-hidden="true"></span>
         <small class="kos-preis">${preisHtml(x)}</small>
       </button>`;
@@ -176,54 +170,82 @@
       zeichen: vorschau && vorschau.type === "zeichen" ? vorschau.id : acc.zeichen || null,
       prunk: acc.prunk || null,
       badge: acc.badge || null,
+      figur: acc.figur || null,
+      /* Anprobe von Kleidung: das eine Stück ersetzt, was an seinem Platz
+         liegt, der Rest bleibt, wie er angelegt ist. */
+      kleidung: vorschau && vorschau.type === "set"
+        ? { ...(acc.kleidung || {}), ...Object.fromEntries(vorschau.teile.map((t) => [t.art, t.id])) }
+        : vorschau && kleidungsTopf(vorschau.type)
+        ? { ...(acc.kleidung || {}), [vorschau.type]: vorschau.id }
+        : acc.kleidung || {},
+      stilSet: acc.stilSet || null,
       /* Die Garnitur rechnet der Server aus dem ANGELEGTEN aus, nicht aus
          der Vorschau: wer gerade etwas anprobiert, traegt es ja noch
          nicht. Die Karte zeigt deshalb den echten Stand. */
       garnitur: (stand && stand.garnitur) || null,
     };
 
-    const alle = Object.values(listen()).flat();
-    const besessen = alle.filter((x) => x.owned).length;
+    // Die Kleidung zählt mit: sonst stand oben „1 / 142“, während die Leiste darunter ein Dutzend eigene Stücke zeigte.
+    const kleidung = (stand.kleidungArten || []).flatMap((a) => stand[a.topf] || []);
+    const alle = [...Object.values(listen()).flat(), ...kleidung];
+    const besessen = alle.filter((x) => x.owned && x.cost !== 0).length;
     const gepraegt = alle.filter((x) => x.owned && x.praegung && x.praegung.nr).length;
-    const gesamt = alle.filter((x) => x.id !== "keiner" && x.id !== "keins" && x.id !== "standard" && x.id !== "haus" && x.id !== "smile" && x.id !== "white" && x.id !== "konfetti").length;
-    const prunk = p.prunk && p.prunk.label && p.prunk.nr
-      ? `<div class="cos-pass-trophy">
-          <span class="cos-pass-trophy-kicker">Dein Prunkstück</span>
-          <b>${escapeHtml(p.prunk.label)}</b><small>${escapeHtml((p.prunk.serie && p.prunk.serie.label) || "Klassische Serie")} · #${escapeHtml(Casino.spieler.serienCode(p.prunk))}</small>
-        </div>`
-      : `<div class="cos-pass-trophy leer">
-          <span class="cos-pass-trophy-kicker">Dein Prunkstück</span>
-          <b>Der erste Fund wartet.</b><small>Geprägte Stücke werden hier zu deinem Erkennungszeichen.</small>
-        </div>`;
-    const details = [
-      ["Stil", p.nameStyle ? nameVon("style", p.nameStyle) : "Klassisch"],
-      ["Rahmen", p.frame ? nameVon("frame", p.frame) : "Ohne"],
-      ["Aura", p.aura ? nameVon("aura", p.aura) : "Ohne"],
-      ["Zeichen", p.zeichen ? nameVon("zeichen", p.zeichen) : "Ohne"],
-    ];
+    const gesamt = alle.filter(x => x.cost !== 0).length;
+    const details = [["Stil", p.nameStyle ? nameVon("style", p.nameStyle) : "Clubgrün"], ["Rahmen", p.frame ? nameVon("frame", p.frame) : "Ohne"], ["Aura", p.aura ? nameVon("aura", p.aura) : "Ohne"]];
+    /* Was davon an der Figur zu sehen ist: der Rahmen wird zur
+       Kopfbedeckung, das Chat-Zeichen zum Gegenstand in der Hand. */
+    if (Casino.figur) {
+      const traegt = Casino.figur.beschreibung(p);
+      const handding = p.kleidung && p.kleidung.hand && p.kleidung.hand !== "keins"
+        ? (kleidungsTopf("hand") || []).find((x) => x.id === p.kleidung.hand) : null;
+      details.push(["Auf dem Kopf", traegt.kopf || "Nichts"], ["In der Hand", handding ? handding.label : traegt.hand]);
+      if (p.stilSet && p.stilSet.label) details.push(["Style-Set", p.stilSet.label]);
+    }
+    $("#cos-collection-count").innerHTML = `<b>${besessen}<span> / ${gesamt}</span></b><small>Sammlerstücke · ${gepraegt} geprägt</small>`;
+    $("#cos-collection-note").textContent = besessen ? "Eigene Stücke anlegen oder fehlende unverbindlich anprobieren." : "Deine Grundausstattung ist bereit. Unter „Alles entdecken“ kannst du die Sammlung anprobieren.";
+    box.innerHTML = `<div class="wardrobe-stage"${p.banner ? ` data-banner="${escapeHtml(p.banner)}"` : ""}>
+      <div class="wardrobe-stage-label"><span class="club-kicker">${vorschau ? "ANPROBE" : "ANGELEGT"}</span><h3>${vorschau ? escapeHtml(vorschau.type === "set" ? vorschau.label : nameVon(vorschau.type, vorschau.id)) : "Dein Look"}</h3></div>
+      <div class="wardrobe-model">${Casino.spieler.figur(p)}<div class="wardrobe-name">${Casino.spieler.name(p)}${Casino.spieler.title(p)}</div></div>
+      <div class="wardrobe-swatches">${details.map(([k,v]) => `<span><small>${escapeHtml(k)}</small><b>${escapeHtml(v)}</b></span>`).join("")}</div>
+      ${vorschau ? '<div class="wardrobe-preview-note"><p>Nicht angelegt. Dein Look bleibt erhalten.</p><button type="button" class="club-button" id="cos-reset-preview">Anprobe beenden</button></div>' : ''}
+    </div>
+    <div class="wardrobe-context"><span>Im Chat</span><div>${Casino.spieler.avatar(p)}<div>${Casino.spieler.name(p)}${Casino.spieler.zeichen(p)}<p>Bereit für eine Runde.</p></div></div></div>`;
+  }
 
-    box.innerHTML = `
-      <div class="cos-atelier-kopf">
-        <div><span class="cos-eyebrow">${vorschau ? "Vorschau" : "Dein Auftritt"}</span>
-          <b>${vorschau ? "So würde dieses Stück wirken" : "Nicht nur besitzen. Wiedererkennbar sein."}</b></div>
-        <span class="cos-sammlung-zaehler"><strong>${besessen}</strong> / ${gesamt} Stücke</span>
-      </div>
-      <div class="cos-pass"${p.banner ? ` data-banner="${escapeHtml(p.banner)}"` : ""}>
-        <div class="cos-pass-foil" aria-hidden="true"></div>
-        <div class="cos-pass-brand"><span>FAKE CASINO</span><i>Spielerkarte</i></div>
-        <div class="cos-pass-portrait">${Casino.spieler.avatar(p)}</div>
-        <div class="cos-pass-person">${Casino.spieler.zeichen(p)}${Casino.spieler.name(p)}${Casino.spieler.prunk(p)}${Casino.spieler.garnitur(p)}${Casino.spieler.title(p)}</div>
-        ${prunk}
-      </div>
-      <div class="cos-atelier-info">
-        <div class="cos-atelier-stats">
-          <span><b>${gepraegt}</b><small>geprägt</small></span>
-          <span><b>${(stand.sammlungen || []).filter((k) => k.komplett).length}</b><small>Kollektionen</small></span>
-          <span><b>${p.badge || "—"}</b><small>Auszeichnung</small></span>
-        </div>
-        <div class="cos-atelier-details">${details.map(([label, value]) =>
-          `<span><i>${escapeHtml(label)}</i><b>${escapeHtml(value)}</b></span>`).join("")}</div>
-      </div>`;
+  function filterWardrobe() {
+    const query = ($("#cos-search")?.value || "").trim().toLowerCase();
+    const nurSets = kategorie === "sets";
+    const category = nurSets ? "all" : kategorie;
+    const sets = $("#cos-sets"), hinweis = $("#cos-sets-hinweis");
+    if (sets) sets.hidden = !nurSets;
+    if (hinweis) hinweis.hidden = nurSets || !!query || category !== "all";
+    if (nurSets) {
+      document.querySelectorAll(".wardrobe-category").forEach((section) => { section.hidden = true; });
+      const fertig = ((stand && stand.sets) || []).filter((st) => st.teile.every((t) => t.hat)).length;
+      $("#cos-results").textContent = `${fertig} von ${((stand && stand.sets) || []).length} Sets komplett. Unvollständige kannst du als Ganzes anprobieren.`;
+      document.querySelectorAll("[data-wardrobe]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.wardrobe === filter)));
+      return;
+    }
+    let count = 0;
+    document.querySelectorAll(".wardrobe-category").forEach(section => {
+      let visible = 0;
+      section.querySelectorAll(".cos-item").forEach(item => {
+        const show = (filter === "all" || item.dataset.owned === "1") && (category === "all" || item.dataset.type === category) && (!query || item.dataset.search.includes(query));
+        item.hidden = !show;
+        if (show) visible++;
+      });
+      section.hidden = !visible;
+      section.classList.toggle("has-many-pieces", visible > 2);
+      count += visible;
+    });
+    $("#cos-results").textContent = count ? `${count} auswählbare Stücke${filter === "owned" ? " einschließlich deiner Grundausstattung" : " zum Anlegen oder Anprobieren"}.` : "Keine passenden Stücke. Ändere die Suche oder entdecke alle Stücke.";
+    document.querySelectorAll("[data-wardrobe]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.wardrobe === filter)));
+  }
+
+  function renderOutfits() {
+    const host = $("#cos-outfits");
+    if (!host) return;
+    host.innerHTML = (stand.outfits || []).map(o => `<div class="wardrobe-slot"><span class="wardrobe-slot-number">0${o.slot + 1}</span><div><b>Look ${o.slot + 1}</b><small>${o.saved ? "Gespeichert" : "Noch frei"}</small></div><button type="button" data-outfit-wear="${o.slot}" ${o.saved ? "" : "disabled"} aria-label="Look ${o.slot + 1} anlegen">Anlegen</button><button type="button" data-outfit-save="${o.slot}" aria-label="Aktuellen Look auf Platz ${o.slot + 1} ${o.saved ? "ersetzen" : "speichern"}">${o.saved ? "Ersetzen" : "Speichern"}</button></div>`).join("");
   }
 
   function render(s) {
@@ -282,10 +304,168 @@
     setze("#cos-colors", s.colors.map((x) => knopf("color", x,
       `<span class="cos-swatch" style="background:${x.color || "#e8e8e8"}"></span>`)).join(""));
 
+    renderKleidung(s);
+    renderSets(s);
     renderPrunk();
     renderSammlungen();
     renderFamilien();
     renderVorschau();
+    renderOutfits();
+    renderKategorien();
+    filterWardrobe();
+  }
+
+  /*
+   * Kategorien als Leiste. Vorher war die Kategorie ein Auswahlmenü, und
+   * die fünfzehn Style-Sets standen VOR den eigenen Stücken: wer eine Hose
+   * anlegen wollte, scrollte erst über drei iPad-Bildschirme voller Sets.
+   * Jetzt ist jede Kategorie ein Tipp, die Leiste bleibt beim Scrollen oben,
+   * und die Sets sind eine eigene Ansicht. Das Auswahlmenü bleibt als
+   * Zustand im Dokument, damit Suche und Filter nur eine Quelle haben.
+   */
+  let kategorie = "all";
+  function renderKategorien() {
+    const tools = document.querySelector('[data-screen="cosmetics"] .wardrobe-tools');
+    const auswahl = $("#cos-category");
+    if (!tools || !auswahl) return;
+    let leiste = $("#cos-kategorien");
+    if (!leiste) {
+      leiste = document.createElement("nav");
+      leiste.id = "cos-kategorien";
+      leiste.className = "cos-kategorien";
+      leiste.setAttribute("aria-label", "Kategorien");
+      tools.after(leiste);
+    }
+    const zaehle = (typ) => {
+      const k = [...document.querySelectorAll(`#cos-catalogue .cos-item[data-type="${typ}"]`)].filter((x) => x.dataset.gratis !== "1");
+      return [k.filter((x) => x.dataset.owned === "1").length, k.length];
+    };
+    const sets = (stand && stand.sets) || [];
+    const fertig = sets.filter((st) => st.teile.every((t) => t.hat)).length;
+    const eintraege = [{ id: "all", label: "Alles" }];
+    if (sets.length) eintraege.push({ id: "sets", label: "Style-Sets", zahl: `${fertig}/${sets.length}` });
+    for (const o of auswahl.options) {
+      if (o.value === "all") continue;
+      const [hat, alle] = zaehle(o.value);
+      eintraege.push({ id: o.value, label: o.textContent, zahl: alle ? `${hat}/${alle}` : "" });
+    }
+    leiste.innerHTML = eintraege.map((e) => `<button type="button" data-kategorie="${escapeHtml(e.id)}" aria-pressed="${e.id === kategorie}">${escapeHtml(e.label)}${e.zahl ? `<small>${e.zahl}</small>` : ""}</button>`).join("");
+    let hinweis = $("#cos-sets-hinweis");
+    if (!hinweis && sets.length) {
+      hinweis = document.createElement("button");
+      hinweis.type = "button";
+      hinweis.id = "cos-sets-hinweis";
+      hinweis.className = "cos-sets-hinweis";
+      hinweis.dataset.kategorie = "sets";
+      $("#cos-catalogue").before(hinweis);
+    }
+    if (hinweis) {
+      const traegt = sets.find((st) => st.teile.every((t) => t.traegt));
+      hinweis.innerHTML = `<b>Style-Sets</b><span>${fertig} von ${sets.length} komplett${traegt ? ` · du trägst ${escapeHtml(traegt.label)}` : ""}</span><em>Ansehen ›</em>`;
+    }
+  }
+
+  function kategorieWaehlen(id) {
+    kategorie = id;
+    const auswahl = $("#cos-category");
+    if (auswahl && [...auswahl.options].some((o) => o.value === id)) auswahl.value = id;
+    else if (auswahl) auswahl.value = "all";
+    document.querySelectorAll("[data-kategorie]").forEach((b) => b.hasAttribute("aria-pressed") && b.setAttribute("aria-pressed", String(b.dataset.kategorie === id)));
+    filterWardrobe();
+    // Der Anfang der Auswahl soll sichtbar sein, nicht die Mitte der alten Liste.
+    const ziel = $("#cos-kategorien");
+    if (ziel && ziel.getBoundingClientRect().top < 0) ziel.scrollIntoView({ block: "start" });
+    const aktiv = ziel && ziel.querySelector('[aria-pressed="true"]');
+    if (aktiv) aktiv.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+
+  /*
+   * Kleidung: Frisur, Oberteil, Hose, Schuhe, Brille, Accessoire, Handding,
+   * Fahrzeug, Haustier. Die Abschnitte entstehen aus der Liste, die der
+   * Server mitschickt (`kleidungArten`), und stehen ganz oben: das ist,
+   * was man im Raum an der Figur sieht.
+   */
+  const HINWEIS_KLEIDUNG = {
+    kopf: "Ohne Kopfbedeckung trägt deine Figur, was ihr Rahmen hergibt.",
+    frisur: "Ersetzt die Frisur der Grundform, die Haarfarbe bleibt.",
+    oberteil: "Die Clubjacke färbt sich nach deinem Namensstil, alles andere hat seine eigene Farbe.",
+    fahrzeug: "Darauf rollst du im Raum etwas schneller, am Spiel ändert das nichts. Skateboard und Fahrzeuge mit Hupe bringen eine eigene Geste mit.",
+    haustier: "Läuft dir im Raum hinterher und macht unter „Gesten“ ein Kunststück.",
+    hand: "Ohne Handding hältst du dein Chat-Zeichen oder einen Chip. Was eine Geste freischaltet, steht an der Kachel; du findest sie im Raum unter „Gesten“.",
+  };
+  /* Welche Geste ein Stück im Raum freischaltet. Die Liste steht in
+     public/js/welt/raeume.js, dieselbe, die der Server prüft. */
+  function gesteHinweis(art, id) {
+    const R = Casino.weltRaeume;
+    if (!R || !R.gestenFuer || id === "keins" || id === "keine") return "";
+    const g = R.gestenFuer({ [art]: id });
+    return g.length ? `<span class="cos-geste">Geste: ${escapeHtml(g.map((x) => x.name).join(", "))}</span>` : "";
+  }
+  function kleidungsTopf(art) {
+    const a = stand && (stand.kleidungArten || []).find((x) => x.art === art);
+    return a ? stand[a.topf] || [] : null;
+  }
+  function renderKleidung(s) {
+    const katalog = $("#cos-catalogue");
+    if (!katalog || !s.kleidungArten) return;
+    const acc = Casino.getAccount() || {};
+    const auswahl = $("#cos-category");
+    let davor = katalog.firstChild;
+    s.kleidungArten.forEach(({ art, topf, name }, i) => {
+      let sek = katalog.querySelector(`.wardrobe-category[data-category="${art}"]`);
+      if (!sek) {
+        sek = document.createElement("section");
+        sek.className = "wardrobe-category wardrobe-kleidung";
+        sek.dataset.category = art;
+        sek.innerHTML = `<h3 class="section-title" style="margin-top:14px">${escapeHtml(name)}</h3>`
+          + (HINWEIS_KLEIDUNG[art] ? `<p class="hint" style="margin-top:-4px">${escapeHtml(HINWEIS_KLEIDUNG[art])}</p>` : "")
+          + `<div class="cos-grid cos-grid-wide"></div>`;
+        katalog.insertBefore(sek, davor);
+        if (auswahl && !auswahl.querySelector(`option[value="${art}"]`)) {
+          const o = document.createElement("option");
+          o.value = art; o.textContent = name;
+          auswahl.insertBefore(o, auswahl.options[1 + i] || null);
+        }
+      }
+      davor = sek.nextSibling;
+      sek.querySelector(".cos-grid").innerHTML = (s[topf] || []).map((x) => knopf(art, x,
+        `<span class="cos-kleidung-demo">${Casino.figur ? Casino.figur.stueckVorschau(art, x.id, acc) : ""}</span>`
+        + `<span class="cos-banner-label">${escapeHtml(x.label)}</span>`
+        + gesteHinweis(art, x.id))).join("");
+    });
+  }
+
+  /*
+   * Style-Sets. Wer alle Teile eines Sets gleichzeitig trägt, bekommt den
+   * Namen des Sets über den Kopf. Hier steht, was dazugehört, was man schon
+   * hat, und ein Knopf, der alles auf einmal anlegt.
+   */
+  function renderSets(s) {
+    const katalog = $("#cos-catalogue");
+    if (!katalog || !Array.isArray(s.sets)) return;
+    let box = $("#cos-sets");
+    if (!box) {
+      box = document.createElement("section");
+      box.id = "cos-sets";
+      box.className = "cos-sets";
+      katalog.parentNode.insertBefore(box, katalog);
+    }
+    const acc = Casino.getAccount() || {};
+    box.innerHTML = `<div class="cos-sets-kopf"><span class="club-kicker">STYLE-SETS</span><h3>Ganze Looks</h3><p>Trägst du alle Teile eines Sets, steht sein Name über deiner Figur.</p></div>`
+      + `<div class="cos-sets-liste">${s.sets.map((st) => {
+        const hat = st.teile.filter((t) => t.hat).length;
+        const traegt = st.teile.every((t) => t.traegt);
+        const komplett = hat === st.teile.length;
+        const fehlt = st.teile.filter((t) => !t.hat).map((t) => t.label);
+        return `<article class="cos-set${traegt ? " getragen" : ""}${komplett ? " komplett" : ""}">
+          <header><b>${escapeHtml(st.label)}</b><small>${hat} / ${st.teile.length}</small></header>
+          <p>${escapeHtml(st.text)}</p>
+          <div class="cos-set-teile">${st.teile.map((t) => `<span class="cos-set-teil${t.hat ? " hat" : ""}${t.traegt ? " traegt" : ""}">${Casino.figur ? Casino.figur.stueckVorschau(t.art, t.id, acc) : ""}<small>${escapeHtml(t.label)}</small></span>`).join("")}</div>
+          ${traegt ? `<span class="cos-set-status">Getragen</span>`
+            : komplett ? `<button type="button" class="club-button" data-set-anlegen="${escapeHtml(st.id)}">Set anlegen</button>`
+            : `<span class="cos-set-status">Fehlt: ${escapeHtml(fehlt.join(", "))}</span><button type="button" class="club-button cos-set-probe" data-set-probe="${escapeHtml(st.id)}">Anprobieren</button>`}
+        </article>`;
+      }).join("")}</div>`;
   }
 
   /*
@@ -435,6 +615,9 @@
       }).join("");
   }
 
+  /* Filter, Anprobe und gespeicherte Looks behandelt der Klick-Listener
+     weiter unten. Hier standen sie ein zweites Mal, und damit ging jedes
+     Speichern oder Anlegen eines Looks zweimal an den Server. */
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-prunk]");
     if (!b) return;
@@ -447,12 +630,22 @@
     });
   });
 
+  /* Zur Anprobe nur dann scrollen, wenn die Vorschau nicht schon im Bild
+     steht. Auf breiten Bildschirmen klebt sie links, dort sprang die Seite
+     sonst bei jedem Tipp nach oben und man verlor die Stelle in der Liste. */
+  function vorschauZeigen() {
+    const box = $("#cos-preview");
+    if (!box) return;
+    const r = box.getBoundingClientRect();
+    if (r.top < 0 || r.top > window.innerHeight * 0.6) box.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function handle(el) {
     const type = el.dataset.type, id = el.dataset.id;
     if (el.dataset.locked === "1") {
       const liste = { style: stand.styles, title: stand.titles, frame: stand.frames, avatar: stand.avatars,
         color: stand.colors, effect: stand.effects, spruch: stand.sprueche, banner: stand.banner,
-        schild: stand.schilder, aura: stand.auren, karte: stand.karten, zeichen: stand.zeichen }[type] || [];
+        schild: stand.schilder, aura: stand.auren, karte: stand.karten, zeichen: stand.zeichen }[type] || kleidungsTopf(type) || [];
       const x = liste.find((i) => i.id === id);
       /* Gesperrt heisst jetzt "hast du nicht", nicht mehr "kostet Chips".
          Antippen zeigt es trotzdem in der Vorschau: man soll sehen koennen,
@@ -461,10 +654,18 @@
         vorschau = { type, id };
         Casino.sound.play("tick");
         renderVorschau();
-        $("#cos-preview")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        vorschauZeigen();
         return;
       }
-      const woher = x && x.herkunft === "kiste"
+      /* Was aus einem Laden in der Ladenstraße kommt, öffnet gleich den
+         Laden: dort steht der Preis, und man kann es sofort holen. */
+      if (x && ["zoo", "autohaus", "kiosk"].includes(x.herkunft)) {
+        if (Casino._ladenWunsch) Casino._ladenWunsch(x.herkunft);
+        return Casino.showScreen("laeden");
+      }
+      const woher = x && x.nur === "kleider"
+        ? "Das kommt aus der Kleiderkiste oder, wenn es diese Woche ausliegt, aus dem Schaufenster daneben. Beides im Menü unter „Kisten“. Sonst auf dem Markt von jemandem, der es hat."
+        : x && x.herkunft === "kiste"
         ? "Das kommt aus den Kisten. Im Menü unter „Kisten“, oder auf dem Markt von jemandem, der es hat."
         : x && x.via ? x.via + "." : "Gibt es hier nicht.";
       return toast(woher);
@@ -485,12 +686,12 @@
       vorschau = { type, id };
       Casino.sound.play("tick");
       renderVorschau();
-      $("#cos-preview")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      vorschauZeigen();
       return;
     }
     socket.emit("cos:equip", { type, id }, (r) => {
       if (!r || !r.ok) { toast((r && r.error) || "Fehler."); return; }
-      if (r.account) applyAccount(r.account);
+      if (r.account) { applyAccount(r.account); const tok = localStorage.getItem("casino_token"); if (tok) socket.emit("auth", { token: tok }); }
       vorschau = null;
       Casino.sound.play("select");
       toast("Angelegt.");
@@ -509,10 +710,55 @@
   }
 
   document.addEventListener("input", (e) => {
+    if (e.target.id === "cos-search") filterWardrobe();
     if (e.target.id === "cos-spruch-text") zeigeSpruchVorschau();
   });
 
+  $("#cos-category")?.addEventListener("change", (e) => kategorieWaehlen(e.target.value));
   document.addEventListener("click", (e) => {
+    const mode = e.target.closest("[data-wardrobe]");
+    if (mode) { filter = mode.dataset.wardrobe; filterWardrobe(); return; }
+    if (e.target.closest("#cos-reset-preview")) { vorschau = null; renderVorschau(); return; }
+    const outfit = e.target.closest("[data-outfit-save], [data-outfit-wear]");
+    if (outfit) {
+      const saving = outfit.hasAttribute("data-outfit-save");
+      const slot = Number(saving ? outfit.dataset.outfitSave : outfit.dataset.outfitWear);
+      outfit.disabled = true;
+      socket.emit(saving ? "cos:outfitSave" : "cos:outfitWear", { slot }, r => {
+        outfit.disabled = false;
+        if (!r?.ok) return toast(r?.error || "Look konnte nicht gespeichert werden.");
+        if (r.account) { applyAccount(r.account); const tok = localStorage.getItem("casino_token"); if (tok) socket.emit("auth", { token: tok }); }
+        vorschau = null;
+        render(r);
+        toast(saving ? "Dein angelegter Look ist gespeichert." : "Look angelegt.");
+      });
+      return;
+    }
+    const kat = e.target.closest("[data-kategorie]");
+    if (kat) { kategorieWaehlen(kat.dataset.kategorie); return; }
+    const probe = e.target.closest("[data-set-probe]");
+    if (probe && stand) {
+      const st = (stand.sets || []).find((x) => x.id === probe.dataset.setProbe);
+      if (st) {
+        vorschau = { type: "set", id: st.id, label: st.label, teile: st.teile.map((t) => ({ art: t.art, id: t.id })) };
+        Casino.sound.play("tick");
+        renderVorschau();
+        vorschauZeigen();
+      }
+      return;
+    }
+    const setKnopf = e.target.closest("[data-set-anlegen]");
+    if (setKnopf) {
+      socket.emit("cos:setAnlegen", { set: setKnopf.dataset.setAnlegen }, (r) => {
+        if (!r || !r.ok) return toast((r && r.error) || "Ging nicht.");
+        if (r.account) { applyAccount(r.account); const tok = localStorage.getItem("casino_token"); if (tok) socket.emit("auth", { token: tok }); }
+        vorschau = null;
+        Casino.sound.play("select");
+        toast("Set angelegt.");
+        render(r);
+      });
+      return;
+    }
     if (e.target.id === "cos-spruch-save") {
       const feld = $("#cos-spruch-text");
       socket.emit("cos:spruchText", { text: feld.value }, (r) => {
@@ -526,6 +772,8 @@
     if (el) handle(el);
   });
 
+  // Die Grundform (public/js/welt/grundform.js) zeichnet die Vorschau neu.
+  window.Casino._cosVorschau = () => renderVorschau();
   window.Casino._loadCosmetics = (skipDust = false) => {
     vorschau = null;
     socket.emit("cos:state", (s) => { if (s && s.ok) render(s); });

@@ -17,7 +17,7 @@
   const Casino = window.Casino;
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => Math.floor(n).toLocaleString("de-DE");
-  const mx = (n) => Number(n || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const mx = (n) => Number(n || 0).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
   const VERLAUF_KEY = "casino_wuerfel_verlauf";
   let stand = null;
@@ -57,10 +57,9 @@
     box.innerHTML = `<h3 class="wp-tab-titel">Was zahlt</h3>` +
       tabelle.map((t) => `
         <div class="wp-tab-zeile${t.id === jetzt ? " aktiv" : ""}">
-          <b>${t.label}</b><em>${t.chance}</em><span>${mx(t.zahlt)}×</span>
+          <b>${t.label}</b><span>${mx(t.zahlt)}×</span>
         </div>`).join("") +
-      `<p class="wp-tab-fuss muted small">Alles darunter ist verloren. Die Chancen gelten,
-       wenn du gezielt darauf spielst. Höchstgewinn ${Casino.betrag(grenzen.maxWin)} pro Runde.</p>`;
+      `<p class="wp-tab-fuss muted small">Trefferchancen hängen davon ab, was du hältst. Der Tipp zeigt die mathematisch beste Wahl für deinen Einsatz. Höchstgewinn ${Casino.betrag(grenzen.maxWin)} pro Runde.</p>`;
   }
 
   function zeichne(v) {
@@ -88,9 +87,10 @@
       if (v.halten && v.halten[i]) b.classList.add("gehalten");
       // Vorschlag nur zeigen, solange man noch entscheiden kann.
       if (!v.over && v.vorschlag && v.vorschlag[i] && !(v.halten && v.halten[i])) b.classList.add("empfohlen");
+      if (!v.over && v.vorschlag && !v.vorschlag[i] && v.halten && v.halten[i]) b.classList.add("nicht-empfohlen");
       b.disabled = !!v.over;
       b.innerHTML = wuerfelSvg(augen) +
-        `<span class="wp-marke">${v.halten && v.halten[i] ? "gehalten" : (!v.over && v.vorschlag && v.vorschlag[i] ? "halten?" : "")}</span>`;
+        `<span class="wp-marke">${v.halten && v.halten[i] ? (!v.over && v.vorschlag && !v.vorschlag[i] ? "lösen?" : "gehalten") : (!v.over && v.vorschlag && v.vorschlag[i] ? "halten?" : "")}</span>`;
       box.appendChild(b);
     });
 
@@ -102,7 +102,7 @@
     $("#wp-hinweis").textContent = v.over
       ? ""
       : (v.nachwuerfe > 0
-        ? "Tippe die Würfel an, die bleiben sollen. Dann nachwerfen."
+        ? (v.vorschlag?.every(Boolean) ? "Der aktuelle Wurf ist am besten: Du kannst direkt stehen bleiben." : "Goldene Markierung halten, abweichende gehaltene Würfel lösen. Dann nachwerfen.")
         : "Kein Nachwurf mehr.");
 
     $("#wp-nachwurf").disabled = !v.nachwuerfe;

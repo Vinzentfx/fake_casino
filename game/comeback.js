@@ -107,6 +107,13 @@ function speichereBald() {
   sparTimer = setTimeout(() => { sparTimer = null; save(); }, 5000);
   if (sparTimer.unref) sparTimer.unref();
 }
+/** Gebündelte Lose sofort sichern, für das Backup. */
+function jetztSchreiben() {
+  if (!sparTimer) return;
+  clearTimeout(sparTimer);
+  sparTimer = null;
+  save();
+}
 
 /*
  * Was im Paket steckt, an einer Stelle.
@@ -284,4 +291,4 @@ function setup(io, accounts) {
   });
 }
 
-module.exports = { setup, starte, stoppeGala, publicState, xpFaktor, geschenkOffen, galaLaeuft };
+module.exports = { setup, starte, stoppeGala, publicState, xpFaktor, geschenkOffen, galaLaeuft, jetztSchreiben };

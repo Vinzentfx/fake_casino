@@ -24,16 +24,18 @@
     },
     {
       icon: "slots",
-      titel: "Die Lobby",
-      text: "Spiele stehen jetzt nach Kategorie sortiert, jedes mit eigener Farbe und Logo. Der Stern rechts unten heftet dir ein Spiel nach oben. Und auf der Kachel siehst du, wer gerade dort spielt.",
+      titel: "Das Casino ist ein Raum",
+      text: "Du läufst mit deiner Figur durch das Casino und siehst, wer gerade da ist. Am Computer mit WASD oder den Pfeiltasten, auf dem iPad ziehst du mit dem Finger. Vor einem Automaten oder Tisch erscheint ein Hinweis, mit E oder dem großen Knopf geht es los. Durch die Tür rechts kommst du ins Kontor mit Stadtkarte, Börse und Bank.",
       ziel: "lobby",
-      knopf: "Zur Lobby",
+      ansicht: "welt",
+      knopf: "In den Raum",
     },
     {
       icon: "bestenliste",
       titel: "Wochenrekorde",
-      text: "Jedes Spiel merkt sich eine Woche lang die beste Runde, mit Namen. Gewertet wird das Vielfache deines Einsatzes, nicht die Höhe des Gewinns: mit 200 Chips hast du dieselbe Chance wie jemand mit zwei Millionen. Du findest sie in der Lobby unter den Spielen.",
+      text: "Jedes Spiel merkt sich eine Woche lang die beste Runde, mit Namen. Gewertet wird das Vielfache deines Einsatzes, nicht die Höhe des Gewinns: mit 200 Chips hast du dieselbe Chance wie jemand mit zwei Millionen. Du findest sie unter „Übersicht“, dort stehen auch alle Spiele als Liste.",
       ziel: "lobby",
+      ansicht: "liste",
       knopf: "Ansehen",
     },
     {
@@ -125,10 +127,11 @@
       return;
     }
     if (e.target.closest("#tour-goto")) {
-      const ziel = SCHRITTE[i].ziel;
+      const { ziel, ansicht } = SCHRITTE[i];
       schliesse();
       if (ziel === "sudoku" && Casino._sudokuDuelle) Casino._sudokuDuelle();
       else if (ziel) Casino.screens.show(ziel);
+      if (ansicht && Casino.welt) Casino.welt.setzeAnsicht(ansicht);
       return;
     }
   });

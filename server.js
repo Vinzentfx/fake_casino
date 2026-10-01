@@ -15,6 +15,9 @@ const http = require("http");
 const express = require("express");
 const { Server } = require("socket.io");
 
+// Ein eingespieltes Backup wartet auf den Neustart. Getauscht wird, bevor
+// irgendein Spielmodul seine Datei liest (game/datensicherung.js).
+require("./game/datensicherung").ausstehendeEinspielen();
 const accounts = require("./game/accounts");
 const { setupPoker } = require("./game/tableManager");
 const { setupSlots } = require("./game/slots");
@@ -77,6 +80,7 @@ const { setupResponsible } = require("./game/responsible");
 const { setupEventCalendar } = require("./game/eventCalendar");
 const { setupPraegestaub } = require("./game/praegestaub");
 const { setupOnboarding } = require("./game/onboarding");
+const { setupWelt } = require("./game/welt");
 
 const PORT = process.env.PORT || 3000;
 const build = require("./game/buildinfo");
@@ -97,7 +101,10 @@ const appVersion = () => build.current();
 
 const app = express();
 app.set("trust proxy", true); // hinter Caddy steht die echte Client-IP in x-forwarded-for
-app.use(express.json({ limit: "25mb" })); // Restore-Upload = kompletter data/-Ordner als JSON
+app.use("/api/admin/restore", (req, res, next) => {
+  if (requireOwner(req, res)) next();
+}, express.json({ limit: "25mb" }));
+app.use(express.json({ limit: "128kb" }));
 
 /**
  * index.html wird nicht statisch ausgeliefert, sondern einmal eingelesen und
@@ -300,11 +307,11 @@ app.get("/api/account/:name", (req, res) => {
   if (!acc) return res.status(404).json({ error: "Account nicht gefunden." });
   // Komplette öffentliche Statistik: Konto, Stadt-Imperium, Achievements. Kann
   // jeder ansehen, ist ein Spiel unter Freunden und die Bestenliste verlinkt hierher.
-  const key = req.params.name.trim().toLowerCase();
+  const key = accounts.kanonisch(req.params.name);
   const cityMe = city.publicOverview(key).me;
   const achList = achievements.listFor(key);
   res.json({
-    account: accounts.publicAccount(acc),
+    account: accounts.publicProfile(acc),
     clan: (() => { try { return require("./game/clans").tagOf(key); } catch { return null; } })(),
     city: cityMe ? {
       houses: cityMe.houses, value: cityMe.value, streets: cityMe.streets,
@@ -377,121 +384,53 @@ app.get("/bilder/:datei", (req, res) => {
 
 app.post("/api/admin/backup", (req, res) => {
   if (!requireOwner(req, res)) return;
-  const files = {};   // Textdateien, wie bisher
-  const binaer = {};  // Bilder als base64, seit es hochgeladene Wappen gibt
+  let inhalt;
   try {
-    for (const name of fs.readdirSync(DATA_DIR)) {
-      const p = path.join(DATA_DIR, name);
-      const st = fs.statSync(p);
-      if (st.isFile()) {
-        files[name] = fs.readFileSync(p, "utf8"); // JSON-Dateien + .secret (Token-Schlüssel)
-        continue;
-      }
-      /* Ein Unterordner. Bis hierher las das Backup nur flache Dateien und
-         nur als UTF-8, hochgeladene Bilder waeren also gar nicht erst
-         mitgekommen, und nach dem ersten Wiederherstellen haetten alle
-         Clans ihr Wappen verloren. Genau ein Ordner ist vorgesehen, und
-         die Dateinamen darin sind vom Server selbst vergeben. */
-      if (!st.isDirectory() || name !== "bilder") continue;
-      for (const datei of fs.readdirSync(p)) {
-        const dp = path.join(p, datei);
-        try {
-          if (!fs.statSync(dp).isFile()) continue;
-          binaer[`bilder/${datei}`] = fs.readFileSync(dp).toString("base64");
-        } catch {}
-      }
-    }
+    inhalt = require("./game/datensicherung").sichern();
   } catch (e) {
     return res.status(500).json({ error: "Backup fehlgeschlagen: " + e.message });
   }
-  res.json({ ok: true, kind: "fakecasino-backup", createdAt: new Date().toISOString(), version: appVersion(), files, binaer });
+  res.json({ ok: true, kind: "fakecasino-backup", createdAt: new Date().toISOString(), version: appVersion(), ...inhalt });
 });
 
 app.post("/api/admin/restore", (req, res) => {
   if (!requireOwner(req, res)) return;
-  const files = req.body.files;
-  if (!files || typeof files !== "object" || !files["accounts.json"]) {
-    return res.status(400).json({ error: "Das ist kein Fake-Casino-Backup (accounts.json fehlt)." });
-  }
+  let written;
   try {
-    // Erst alles pruefen. Sonst koennte eine kaputte JSON-Datei den laufenden
-    // Stand schon halb ueberschrieben haben, bevor der Fehler auffaellt.
-    for (const [name, content] of Object.entries(files)) {
-      if (!/^[\w.\-]+$/.test(name) || name.includes("..") || typeof content !== "string") continue;
-      if (name.endsWith(".json")) JSON.parse(content);
-    }
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    let written = 0;
-    const wiederhergestellt = new Set();
-    for (const [name, content] of Object.entries(files)) {
-      // Nur flache Dateinamen, keine Pfad-Tricks ins Dateisystem.
-      if (!/^[\w.\-]+$/.test(name) || name.includes("..")) continue;
-      // Ein altes Backup darf das neue Moderationsprotokoll nicht zurückdrehen.
-      if (name === "moderation-audit.jsonl" && fs.existsSync(path.join(DATA_DIR, name))) continue;
-      if (typeof content !== "string") continue;
-      fs.writeFileSync(path.join(DATA_DIR, name), content);
-      wiederhergestellt.add(name);
-      written += 1;
-    }
-
-    // Ein Restore ist ein Schnappschuss, kein Zusammenmischen. Dateien aus
-    // spaeteren Tests oder neueren Funktionen duerfen nicht neben dem alten
-    // Stand liegen bleiben. Fehlende Dateien legen die Module beim Start mit
-    // ihren sicheren Standardwerten neu an.
-    for (const name of fs.readdirSync(DATA_DIR)) {
-      const p = path.join(DATA_DIR, name);
-      if (name !== "moderation-audit.jsonl" && fs.statSync(p).isFile() && !wiederhergestellt.has(name)) fs.unlinkSync(p);
-    }
-
-    /* Bilder aus aelteren Backups fehlen einfach, dann bleibt der Ordner
-       leer und die Clans stehen ohne Wappen da, statt dass das Einspielen
-       scheitert. */
-    const binaer = req.body.binaer;
-    const bilderDir = path.join(DATA_DIR, "bilder");
-    const wiederhergestellteBilder = new Set();
-    if (binaer && typeof binaer === "object") {
-      fs.mkdirSync(bilderDir, { recursive: true });
-      for (const [pfad, b64] of Object.entries(binaer)) {
-        // Genau ein Ordner, ein flacher Dateiname darin, nichts sonst.
-        const m = /^bilder\/([\w.\-]+)$/.exec(String(pfad));
-        if (!m || m[1].includes("..") || typeof b64 !== "string") continue;
-        try {
-          fs.writeFileSync(path.join(bilderDir, m[1]), Buffer.from(b64, "base64"));
-          wiederhergestellteBilder.add(m[1]);
-          written += 1;
-        } catch {}
-      }
-    }
-    if (fs.existsSync(bilderDir)) {
-      for (const name of fs.readdirSync(bilderDir)) {
-        const p = path.join(bilderDir, name);
-        if (fs.statSync(p).isFile() && !wiederhergestellteBilder.has(name)) fs.unlinkSync(p);
-      }
-    }
-    try { require("./game/moderation").record({ actor: OWNER_KEY, action: "admin:restore", details: { files: written } }); }
-    catch (err) { console.error("Restore-Protokoll fehlgeschlagen:", err); }
-    // Sobald Node die Antwort vollstaendig an den Socket uebergeben hat,
-    // sofort raus. Schon ein kurzes Wartefenster reicht fuer einen Spiel-Timer,
-    // der seinen alten RAM-Stand wieder ueber die restaurierten Dateien schreibt.
-    res.once("finish", () => {
-      console.log("Backup eingespielt, Server startet neu, um die Daten zu laden.");
-      process.exit(1);
-    });
-    res.json({ ok: true, written, restarting: true });
+    // Prüft jede JSON-Datei, bevor irgendetwas geschrieben wird, und legt
+    // das Backup in den Wartebereich. Eingetauscht wird beim Neustart.
+    written = require("./game/datensicherung").einspielenVorbereiten(req.body.files, req.body.binaer);
   } catch (e) {
+    if (e.code === "KEIN_BACKUP") return res.status(400).json({ error: e.message });
     return res.status(500).json({ error: "Wiederherstellen fehlgeschlagen: " + e.message });
   }
-  // Alle Module halten ihren Zustand im RAM und wuerden die frisch geschriebenen
-  // Dateien beim naechsten save() wieder ueberschreiben. Der finish-Handler oben
-  // beendet deshalb sofort mit Fehlercode; Railway "On Failure" startet neu.
+  try { require("./game/moderation").record({ actor: OWNER_KEY, action: "admin:restore", details: { files: written } }); }
+  catch (err) { console.error("Restore-Protokoll fehlgeschlagen:", err); }
+  /* Der Prozess endet, Railway („On Failure“) startet neu, und der neue
+     Prozess tauscht den Wartebereich ein, bevor er etwas liest. Was dieser
+     Prozess bis dahin noch speichert, landet in data/ und wird beim Tausch
+     überschrieben. */
+  res.once("finish", () => {
+    console.log("Backup liegt bereit, Server startet neu, um es einzuspielen.");
+    process.exit(1);
+  });
+  res.json({ ok: true, written, restarting: true });
 });
 
 // Server und Socket.IO
 
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, { maxHttpBufferSize: 600_000 });
+accounts.onSessionRevoked((key) => {
+  for (const socket of io.of("/").sockets.values()) {
+    if (socket.data.account !== key) continue;
+    socket.emit("admin:kicked", { reason: "Deine Sitzung wurde beendet. Bitte neu anmelden." });
+    socket.disconnect(true);
+  }
+});
 io.sockets.setMaxListeners(50); // viele Spielmodule hängen je einen connection-Listener an
 io.on("connection", (socket) => {
+  require("./game/socketSafety").protectSocket(socket);
   socket.setMaxListeners(80);
   // IP-Bann-Gate: gesperrte IPs werden sofort getrennt.
   socket.data.ip = ipbans.ipOf(socket);
@@ -611,6 +550,12 @@ asyncDuell.setup(io, accounts);
 comeback.setup(io, accounts);
 quests.setupQuests(io, accounts);
 liveops.setup(io, accounts, heist);
+// Nach setupPoker: die Welt liest socket.data.screen, das dort gesetzt wird.
+setupWelt(io, accounts);
+// Das Schaufenster der Woche: vier Kleidungsstücke zum festen Preis.
+require("./game/boutique").setupBoutique(io, accounts);
+require("./game/laeden").setupLaeden(io, accounts);
+require("./game/ankauf").setupAnkauf(io, accounts);
 
 // Aufstieg: recordHand setzt acc._justLeveled, dann bekommt der Spieler Bescheid.
 accounts.onHand((name) => {

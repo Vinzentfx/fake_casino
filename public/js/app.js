@@ -908,7 +908,7 @@ function renderOnlinePlayers(players = []) {
     const clan = p.clan ? `<small class="online-clan">[${escapeHtml(p.clan)}]</small>` : "";
     const status = p.status && p.status.label ? escapeHtml(p.status.label) : "online";
     return `<button class="online-player${schildKlasse(p)}" type="button" data-player-profile="${escapeHtml(p.name || "")}" title="${escapeHtml(p.name || "?")} ansehen">` +
-      window.Casino.spieler.avatar(p) + window.Casino.spieler.name(p, { tag: "b" }) + window.Casino.spieler.prunk(p) + window.Casino.spieler.garnitur(p) +
+      window.Casino.spieler.figur(p) + window.Casino.spieler.name(p, { tag: "b" }) + window.Casino.spieler.prunk(p) + window.Casino.spieler.garnitur(p) +
       `${clan}${level}<em>${p.title ? escapeHtml(p.title) : status}</em></button>`;
   }).join("");
 }
@@ -935,7 +935,7 @@ function renderZuletztDa(liste = []) {
   el.classList.remove("hidden");
   el.innerHTML = '<span class="muted small">Zuletzt hier:</span>' + liste.map((p) =>
     `<button class="online-player last-player${schildKlasse(p)}" type="button" data-player-profile="${escapeHtml(p.name || "")}">` +
-      window.Casino.spieler.avatar(p) + window.Casino.spieler.name(p, { tag: "b" }) + window.Casino.spieler.prunk(p) + window.Casino.spieler.garnitur(p) +
+      window.Casino.spieler.figur(p) + window.Casino.spieler.name(p, { tag: "b" }) + window.Casino.spieler.prunk(p) + window.Casino.spieler.garnitur(p) +
       `<em>${wann(p.lastSeen)}</em></button>`).join("");
 }
 
@@ -1338,6 +1338,18 @@ socket.on("social:challengeDeclined", ({ by, label } = {}) => {
  * Achievements fehlen (was jemand nicht geschafft hat, geht niemanden etwas
  * an), und statt "Abmelden" stehen dort Statistik und Herausfordern.
  */
+/* Die Figur auf der Spielerkarte, und in Worten, was sie trägt. Wer in der
+   Welt auf jemanden tippt, will genau das wissen: was ist das für ein Hut. */
+function spielerLook(acc) {
+  const F = window.Casino.figur;
+  if (!F) return "";
+  const traegt = F.beschreibung(acc);
+  const zeilen = [["Auf dem Kopf", traegt.kopf || "Nichts"], ["In der Hand", traegt.hand]];
+  return `<div class="pf-look">${window.Casino.spieler.figur(acc)}<dl>`
+    + zeilen.map(([k, v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd></div>`).join("")
+    + `</dl></div>`;
+}
+
 async function openPlayerProfile(name) {
   const modal = $("#player-profile-modal");
   const body = $("#player-profile-body");
@@ -1410,6 +1422,8 @@ async function openPlayerProfile(name) {
         </div>
         <div class="level-box">${levelHtml(acc.level)}</div>
       </div>
+
+      ${spielerLook(acc)}
 
       <div class="pf-stats">
         ${kachel("Guthaben", zahl(acc.chips) + "<i class=mk></i>")}
@@ -1620,6 +1634,8 @@ let heroChipsAngezeigt = null;
 function renderHero() {
   const acc = state.account;
   if (!acc) return;
+  const me = $("#club-me");
+  if (me && window.Casino.spieler) me.innerHTML = window.Casino.spieler.figur(acc) + `<span>${window.Casino.spieler.name(acc)}<small>Deinen Look ändern</small></span>`;
   const el = $("#hero-chips");
   if (el) {
     const ziel = acc.chips || 0;
@@ -1829,7 +1845,7 @@ $("#change-pin-form").addEventListener("submit", async (e) => {
   try {
     await api("/api/change-pin", { name: state.account.name, oldPin, newPin });
     $("#cp-old").value = ""; $("#cp-new").value = ""; $("#cp-confirm").value = "";
-    toast("PIN erfolgreich geändert!");
+    toast("Passwort geändert. Bitte auf allen Geräten neu anmelden.");
   } catch (err) {
     errEl.textContent = err.message;
   }
@@ -1913,7 +1929,7 @@ const auditLabel = (action) => ({
   "admin:clearLot": "Grundstück freigegeben", "admin:clearOwnerLots": "Alle Grundstücke eines Spielers freigegeben", "admin:resetCity": "Stadt zurückgesetzt", "admin:resetBonus": "Bonus zurückgesetzt",
   "admin:resetStat": "Statistik zurückgesetzt", "admin:resetAchievements": "Erfolge zurückgesetzt",
   "admin:regieSetzen": "Regie gesetzt", "admin:regieLoeschen": "Regie entfernt", "admin:wartung": "Wartung geändert",
-  "admin:kosmetik": "Kosmetik geändert", "admin:shadowban": "Sichtbarkeit geändert", "admin:newWeek": "Neue Woche gestartet",
+  "admin:kosmetik": "Kosmetik geändert", "admin:xp": "XP geändert", "admin:kosmetikAlle": "Alle Kosmetik entfernt", "admin:shadowban": "Sichtbarkeit geändert", "admin:newWeek": "Neue Woche gestartet",
   "admin:restore": "Backup wiederhergestellt", "admin:steuer": "Grundsteuer geändert", "admin:verlosung": "Verlosung gestartet",
 })[action] || action.replace(/^admin:/, "").replace(/([A-Z])/g, " $1");
 
@@ -2231,6 +2247,16 @@ function zeichnePerson(name) {
         </div>
       </div>
 
+      <div class="ad-feld ad-feld-breit">
+        <span>XP geben oder nehmen · Level ${Number(p.level) || 1} mit ${Math.floor(p.xp || 0).toLocaleString("de-DE")} XP · Season ${Math.floor(p.seasonXp || 0).toLocaleString("de-DE")} XP</span>
+        <div class="ad-zeile">
+          <select id="ad-xp-art" aria-label="Welche XP"><option value="level">Level-XP</option><option value="season">Season-XP</option></select>
+          <input id="ad-xp" type="number" inputmode="numeric" min="1" step="100" value="1000" aria-label="Menge" />
+          <button class="btn-secondary ad-knopf" type="button" data-person-tun="xpGeben">Geben</button>
+          <button class="chip-btn" type="button" data-person-tun="xpNehmen">Nehmen</button>
+        </div>
+      </div>
+
       <div class="ad-knopfreihe">
         <button class="chip-btn" type="button" data-person-tun="bank">Bank leeren</button>
         <button class="chip-btn" type="button" data-person-tun="bonus">Geschenke wieder frei</button>
@@ -2250,6 +2276,7 @@ function zeichnePerson(name) {
         <b>Nicht rückgängig zu machen</b>
         <div class="ad-knopfreihe">
           <button class="btn-danger ad-knopf" type="button" data-person-tun="achievements">Achievements zurücksetzen</button>
+          <button class="btn-danger ad-knopf" type="button" data-person-tun="kosmetikAlle"${p.kosmetikZahl ? "" : " disabled"}>Alle Kosmetik entfernen (${Number(p.kosmetikZahl) || 0})</button>
           <button class="btn-danger ad-knopf" type="button" data-person-tun="loeschen">Konto löschen</button>
         </div>
       </div>`}
@@ -2300,6 +2327,23 @@ async function personTun(tun, name) {
     if (!Number.isFinite(betrag) || betrag < 0) { if (fehler) fehler.textContent = "Ungültiger Betrag."; return; }
     socket.emit("admin:setChips", { target: name, amount: betrag }, (r) =>
       melde(r, `${name}: ${betrag.toLocaleString("de-DE")} Chips.`));
+    return;
+  }
+  if (tun === "xpGeben" || tun === "xpNehmen") {
+    const menge = parseInt($("#ad-xp")?.value, 10);
+    const art = $("#ad-xp-art")?.value === "season" ? "season" : "level";
+    if (!Number.isFinite(menge) || menge <= 0) { if (fehler) fehler.textContent = "Ungültige Menge."; return; }
+    const nehmen = tun === "xpNehmen";
+    const wort = art === "season" ? "Season-XP" : "Level-XP";
+    socket.emit("admin:xp", { target: name, art, delta: nehmen ? -menge : menge }, (r) =>
+      melde(r, `${name}: ${nehmen ? "−" : "+"}${menge.toLocaleString("de-DE")} ${wort}, jetzt ${Math.floor((r && r.xp) || 0).toLocaleString("de-DE")}${art === "season" ? ` (Stufe ${r && r.stufe})` : ` (Level ${r && r.level})`}.`));
+    return;
+  }
+  if (tun === "kosmetikAlle") {
+    const p = adKonten.find((x) => x.name === name) || {};
+    if (!await window.Casino.dialog.frage(`${name} alle ${Number(p.kosmetikZahl) || 0} Kosmetik-Stücke wegnehmen? Angelegtes wird abgelegt, die Exemplare verschwinden aus dem Register. Was gerade im Markt oder Auktionshaus liegt, bleibt dort.`, { titel: "Alle Kosmetik entfernen", okText: "Alles entfernen", gefahr: true })) return;
+    socket.emit("admin:kosmetikAlle", { target: name }, (r) =>
+      melde(r, `${name}: ${(r && r.weg) || 0} Stücke entfernt${r && r.hinterlegt ? `, ${r.hinterlegt} liegen noch im Markt oder Auktionshaus` : ""}.`));
     return;
   }
   if (tun === "lock" || tun === "unlock") {

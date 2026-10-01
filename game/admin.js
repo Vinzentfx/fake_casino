@@ -127,6 +127,12 @@ function keyVon(accounts, target) {
 }
 
 /** Alle Sockets eines Kontos. */
+// Das Level steht in publicAccount als Bündel ({ level, xp, title, ... }).
+function levelVon(accounts, acc) {
+  const l = accounts.publicAccount(acc).level;
+  return l && typeof l === "object" ? l.level : Number(l) || 1;
+}
+
 function socketsVon(io, key) {
   const k = String(key || "").toLowerCase();
   return Array.from(io.of("/").sockets.values()).filter((s) => s.data && s.data.account === k);
@@ -338,9 +344,16 @@ function setupAdmin(io, accounts) {
           verification: require("./verification").state(intern),
         };
         if (!isOwner()) return { ...a, identity };
+        // XP und Kosmetik fuer die Personenkarte, damit man sieht, was man aendert.
+        const fortschritt = intern ? {
+          level: levelVon(accounts, intern),
+          xp: Math.floor(intern.xp || 0),
+          seasonXp: intern.season && intern.season.id === require("./season").SEASON.id ? Math.floor(intern.season.xp || 0) : 0,
+          kosmetikZahl: Object.values(intern.cosOwned || {}).reduce((n, l) => n + (Array.isArray(l) ? l.length : 0), 0),
+        } : {};
         const deviceKnown = !!(intern && intern.lastDeviceId);
         const deviceBanned = !!(deviceKnown && zugangsschutz.istGesperrt(intern.lastDeviceId));
-        return { ...a, identity, deviceKnown, deviceBanned, locked: !!a.banned || deviceBanned };
+        return { ...a, ...fortschritt, identity, deviceKnown, deviceBanned, locked: !!a.banned || deviceBanned };
       });
       ack({
         ok: true,
@@ -1177,6 +1190,60 @@ function setupAdmin(io, accounts) {
     });
 
     // Achievements eines Spielers löschen (zum Testen, ausgezahlte Belohnungen bleiben).
+    /* XP geben oder nehmen. Zwei Sorten: das Level am Konto (bleibt fuer
+       immer) und die Season-XP (zaehlt nur bis zum Ende der Season). Ein
+       negativer Wert nimmt, unter null geht es nicht. */
+    socket.on("admin:xp", ({ target, art, delta } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = keyVon(accounts, target);
+      const acc = accounts.get(key);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      const d = Math.trunc(Number(delta));
+      if (!Number.isFinite(d) || d === 0 || Math.abs(d) > 100_000_000) return ack({ ok: false, error: "Ungültige Menge." });
+      if (art === "season") {
+        const r = require("./season").adminXp(key, d);
+        if (!r) return ack({ ok: false, error: "Season nicht bereit." });
+        return ack({ ok: true, xp: r.xp, stufe: r.stufe });
+      }
+      if (art !== "level") return ack({ ok: false, error: "Unbekannte XP-Art." });
+      const vorher = levelVon(accounts, acc);
+      acc.xp = Math.max(0, Math.floor(acc.xp || 0) + d);
+      const nachher = levelVon(accounts, acc);
+      if (nachher > vorher) acc._justLeveled = nachher;
+      accounts.save();
+      for (const s of socketsVon(io, key)) s.emit("account:update", { account: accounts.publicAccount(acc) });
+      ack({ ok: true, xp: acc.xp, level: nachher });
+    });
+
+    /* Alle Kosmetik eines Kontos weg, in einem Zug. Laeuft Stueck fuer
+       Stueck ueber adminNimm, damit Praegung und angelegte Felder genauso
+       aufgeraeumt werden wie beim einzelnen Wegnehmen. Was gerade im Markt
+       oder im Auktionshaus liegt, steht nicht in cosOwned und bleibt dort;
+       die Antwort nennt, wie viele das sind. */
+    socket.on("admin:kosmetikAlle", ({ target } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });
+      const key = keyVon(accounts, target);
+      const acc = accounts.get(key);
+      if (!acc) return ack({ ok: false, error: "Account nicht gefunden." });
+      if (moderation.level(acc, key) === 4) return ack({ ok: false, error: "Das eigene Konto nicht." });
+      let weg = 0;
+      for (const [art, topf] of Object.entries(cosmetics.TOPF)) {
+        const liste = (acc.cosOwned && acc.cosOwned[topf]) || [];
+        for (const id of [...liste]) {
+          if (cosmetics.adminNimm(acc, art, id).ok) weg++;
+          // Unbekannte Kennungen aus alten Staenden kennt adminNimm nicht; sie gehen trotzdem.
+          else { const i = liste.indexOf(id); if (i >= 0) { liste.splice(i, 1); weg++; } }
+        }
+      }
+      let hinterlegt = 0;
+      try { hinterlegt = Object.keys(require("./praegung").alleVon(key)).length; } catch {}
+      accounts.save();
+      for (const s of socketsVon(io, key)) s.emit("account:update", { account: accounts.publicAccount(acc) });
+      ack({ ok: true, weg, hinterlegt });
+    });
+
     socket.on("admin:resetAchievements", ({ target } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!isOwner()) return ack({ ok: false, error: "Kein Zugriff." });

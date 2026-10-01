@@ -15,6 +15,9 @@
   <link rel="stylesheet" href="/css/tokens.css" />
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/fx.css" />
+  <link rel="stylesheet" href="/css/club.css" />
+  <link rel="stylesheet" href="/css/welt.css" />
+  <link rel="stylesheet" href="/css/laeden.css" />
   <script>
     /* Theme so früh wie möglich setzen, noch vor dem ersten Zeichnen.
        Sonst blitzt beim Laden kurz das Standard-Grün auf, bevor das
@@ -93,7 +96,7 @@
     <div class="sheet-group">
       <span class="sheet-label">Du</span>
       <button class="sheet-item" data-nav="profile"><i class="si-icon" data-icon="profil"></i><b>Profil</b><small>Guthaben, Erfolge, Abmelden</small></button>
-      <button class="sheet-item" data-nav="cosmetics"><i class="si-icon" data-icon="kosmetik"></i><b>Sammlung</b><small>Was du hast, anlegen</small></button>
+      <button class="sheet-item" data-nav="cosmetics"><i class="si-icon" data-icon="kosmetik"></i><b>Garderobe</b><small>Deine Figur und gespeicherte Looks</small></button>
       <button class="sheet-item" data-nav="auktion"><i class="si-icon" data-icon="auktion"></i><b>Auktionshaus</b><small id="menu-auktion-sub">Was es nur einmal gibt</small></button>
       <button class="sheet-item" data-nav="market"><i class="si-icon" data-icon="warenkorb"></i><b>Markt</b><small>Geprägte Stücke von Spieler zu Spieler</small></button>
       <button class="sheet-item" data-nav="kiste"><i class="si-icon" data-icon="geschenk"></i><b>Kisten</b><small>Kosmetik als Ziehung</small></button>
@@ -185,6 +188,11 @@
 
         <!-- Kopf: Guthaben, Fortschritt und die zwei Dinge, die man beim
              Reinkommen wirklich anklickt (Bonus abholen, Aufträge ansehen). -->
+        <section class="club-welcome" aria-label="Dein Auftritt im Club">
+          <div class="club-welcome-copy"><span class="club-kicker">DEIN PLATZ IM CLUB</span><h2>Schön, dass du da bist.</h2><p>Eine Runde spielen. Leute treffen. Deinen Look zeigen.</p><button class="club-button" data-nav="cosmetics" type="button">In die Garderobe <span aria-hidden="true">↗</span></button></div>
+          <button class="club-welcome-player" id="club-me" data-nav="cosmetics" type="button" aria-label="Deinen Look ändern"></button>
+          <span class="club-room-sign" aria-hidden="true">FAKE CASINO<br><b>THE CLUB</b></span>
+        </section>
         <section class="hero">
           <div class="hero-main">
             <span class="hero-label">Dein Guthaben</span>
@@ -200,6 +208,18 @@
               <span class="hero-btn-icon" data-icon="quests"></span>
               <span class="hero-btn-text"><b>Aufträge</b><small id="hero-quests-sub">Tages- und Wochenziele</small></span>
             </button>
+          </div>
+        </section>
+
+        <section class="club-guests" aria-label="Im Club"><div class="club-guests-heading"><span class="club-kicker">GEMEINSAM HIER</span><h2>Im Club</h2></div>
+          <div class="online-strip" id="online-strip">
+            <span class="online-dot"></span>
+            <b id="online-count">0 online</b>
+            <div class="online-list" id="online-list">
+              <span class="muted small">Lädt…</span>
+            </div>
+            <button class="chip-btn" id="ruf-btn" type="button" hidden><i data-icon="rufen"></i> Mitspieler rufen</button>
+            <div class="online-last hidden" id="online-last"></div>
           </div>
         </section>
 
@@ -260,15 +280,7 @@
             <div class="muted small">Lädt…</div>
           </div>
 
-          <div class="online-strip" id="online-strip">
-            <span class="online-dot"></span>
-            <b id="online-count">0 online</b>
-            <div class="online-list" id="online-list">
-              <span class="muted small">Lädt…</span>
-            </div>
-            <button class="chip-btn" id="ruf-btn" type="button" hidden><i data-icon="rufen"></i> Mitspieler rufen</button>
-            <div class="online-last hidden" id="online-last"></div>
-          </div>
+
         </section>
       </div>
     </section>
@@ -639,8 +651,8 @@
     <section class="screen" data-screen="sports">
       <div class="sb-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <h2 style="text-align:center;margin:4px 0 2px"><i data-icon="sports"></i>Sportwetten</h2>
-        <p class="muted small" style="text-align:center;margin:0 0 10px">Echte Spiele aus Bundesliga, Premier League und La Liga (echtes Ergebnis zählt) + simulierte Ligen für sofortige Action · du siehst, worauf andere tippen</p>
+        <h2 class="sb-titel" style="text-align:center;margin:4px 0 2px"><i data-icon="sports"></i>Sportwetten</h2>
+        <p class="muted small sb-intro" style="text-align:center;margin:0 0 10px">Bundesliga, Premier League und La Liga mit echten Ergebnissen, dazu simulierte Ligen für sofort. Du siehst, worauf die anderen tippen.</p>
         <div id="sb-slip-panel" class="sb-slip-panel hidden"></div>
         <nav id="sb-leagues" class="cat-tabs" aria-label="Ligen"></nav>
         <div id="sb-matches" class="sb-matches"></div>
@@ -1404,10 +1416,92 @@
     <!-- Kosmetik -->
     <section class="screen" data-screen="cosmetics">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-      <h2 class="screen-title"><i data-icon="kosmetik"></i>Sammlung</h2>
+      <h2 class="screen-title"><i data-icon="kosmetik"></i>Sammlung & Garderobe</h2>
       <div class="tafel">
-        <p class="muted small">Dein persönliches Archiv. Jedes Fundstück trägt eine zufällige Seriennummer; besondere Muster sind seltener als das Stück selbst. Antippen legt an, was du besitzt, und zeigt, was dir noch fehlt.</p>
+        <p class="wardrobe-intro">Deine Fundstücke, gespeicherten Looks und nächsten Sammelziele.</p>
 
+        <div class="wardrobe-layout">
+        <aside class="wardrobe-sidebar" aria-label="Dein Look und gespeicherte Outfits">
+        <div class="cos-preview" id="cos-preview"></div>
+        <details class="wardrobe-outfits"><summary>Gespeicherte Looks <span>3 Plätze</span></summary><div id="cos-outfits"></div></details>
+        </aside>
+        <section class="wardrobe-collection" aria-label="Deine Sammlung">
+          <header class="collection-heading"><div><span class="club-kicker">DEIN INVENTAR</span><h3>Sammlung</h3></div><div id="cos-collection-count" class="collection-count"></div></header>
+          <p id="cos-collection-note" class="collection-note"></p>
+        <div class="wardrobe-tools">
+          <div class="wardrobe-tabs" role="group" aria-label="Besitzfilter"><button type="button" data-wardrobe="owned" aria-pressed="true">Meine Stücke</button><button type="button" data-wardrobe="all" aria-pressed="false">Alles entdecken</button></div>
+          <label class="wardrobe-search">Stück suchen<input id="cos-search" type="search" placeholder="Name oder Herkunft …" autocomplete="off"></label>
+          <label>Kategorie<select id="cos-category"><option value="all">Alle Kategorien</option><option value="style">Namensstile</option><option value="frame">Rahmen</option><option value="avatar">Avatare</option><option value="aura">Auren</option><option value="title">Titel</option><option value="zeichen">Chat-Zeichen</option><option value="banner">Banner</option><option value="effect">Gewinn-Effekte</option><option value="karte">Kartenrücken</option><option value="schild">Namensschilder</option><option value="spruch">Sprüche</option><option value="color">Farben</option></select></label>
+        </div>
+        <p class="wardrobe-results" id="cos-results" role="status"></p>
+        <div id="cos-catalogue">
+<section class="wardrobe-category" data-category="style">        <h3 class="section-title" style="margin-top:14px">Namensstile</h3>
+        <p class="hint" style="margin-top:-4px">Ersetzt die flache Farbe. Die bewegten stehen still, wenn du in den Einstellungen „Bewegung reduzieren“ anhast.</p>
+        <div class="cos-grid cos-grid-wide" id="cos-styles"></div>
+
+</section>
+<section class="wardrobe-category" data-category="frame">        <h3 class="section-title" style="margin-top:14px">Rahmen</h3>
+        <div class="cos-grid" id="cos-frames"></div>
+
+</section>
+<section class="wardrobe-category" data-category="avatar">        <h3 class="section-title" style="margin-top:14px">Avatare</h3>
+        <div class="cos-grid" id="cos-avatars"></div>
+
+</section>
+<section class="wardrobe-category" data-category="aura">        <h3 class="section-title" style="margin-top:14px">Aura</h3>
+        <p class="hint" style="margin-top:-4px">Läuft dauerhaft um dein Bild, überall wo du auftauchst. Kein einmaliger Effekt.</p>
+        <div class="cos-grid cos-grid-wide" id="cos-auren"></div>
+
+</section>
+<section class="wardrobe-category" data-category="title">        <h3 class="section-title" style="margin-top:14px">Titel</h3>
+        <p class="hint" style="margin-top:-4px">Eine Zeile unter deinem Namen, überall wo du auftauchst.</p>
+        <div class="cos-grid cos-grid-wide" id="cos-titles"></div>
+
+</section>
+<section class="wardrobe-category" data-category="zeichen">        <h3 class="section-title" style="margin-top:14px">Chat-Zeichen</h3>
+        <p class="hint" style="margin-top:-4px">Ein Symbol vor jeder deiner Nachrichten. Sichtbar, wenn du im Chat schreibst.</p>
+        <div class="cos-grid" id="cos-zeichen"></div>
+
+</section>
+<section class="wardrobe-category" data-category="banner">        <h3 class="section-title" style="margin-top:14px">Profil-Banner</h3>
+        <div class="cos-grid cos-grid-wide" id="cos-banner"></div>
+
+</section>
+<section class="wardrobe-category" data-category="effect">        <h3 class="section-title" style="margin-top:14px">Gewinn-Effekt</h3>
+        <p class="hint" style="margin-top:-4px">Was passiert, wenn du groß gewinnst. Antippen spielt ihn einmal ab.</p>
+        <div class="cos-grid cos-grid-wide" id="cos-effects"></div>
+
+</section>
+<section class="wardrobe-category" data-category="karte">        <h3 class="section-title" style="margin-top:14px">Kartenrücken</h3>
+        <p class="hint" style="margin-top:-4px">Deine verdeckten Karten in Poker, Blackjack, Solitär und Memory. Nur auf deinem Bildschirm.</p>
+        <div class="cos-grid cos-grid-wide" id="cos-karten"></div>
+
+</section>
+<section class="wardrobe-category" data-category="schild">        <h3 class="section-title" style="margin-top:14px">Namensschild</h3>
+        <p class="hint" style="margin-top:-4px">Färbt deine ganze Zeile in der Online-Liste und der Bestenliste, nicht nur den Ring ums Bild.</p>
+        <div class="cos-grid cos-grid-wide" id="cos-schilder"></div>
+
+</section>
+<section class="wardrobe-category" data-category="spruch">        <h3 class="section-title" style="margin-top:14px">Eintritts-Spruch</h3>
+        <p class="hint" style="margin-top:-4px">Eine Zeile im Chat, wenn du reinkommst. Höchstens einmal pro Stunde, damit ein Verbindungsabbruch keine Ansage wird.</p>
+        <div class="cos-grid cos-grid-wide" id="cos-sprueche"></div>
+        <div class="cos-eigen hidden" id="cos-spruch-eigen">
+          <label class="mem-label">Dein eigener Satz. Dein Name steht immer davor.
+            <input id="cos-spruch-text" type="text" maxlength="60" placeholder="z. B. „räumt heute den Laden leer.“" />
+          </label>
+          <div class="cos-eigen-vorschau" id="cos-spruch-vorschau"></div>
+          <button class="btn-primary" id="cos-spruch-save" type="button">Satz speichern</button>
+        </div>
+
+</section>
+<section class="wardrobe-category" data-category="color">        <h3 class="section-title" style="margin-top:14px">Namensfarben</h3>
+        <p class="hint" style="margin-top:-4px">Wirkt nur, solange kein Namensstil angelegt ist.</p>
+        <div class="cos-grid" id="cos-colors"></div>
+</section>        </div>
+        </section>
+        </div>
+        <div class="collection-extras-heading"><span class="club-kicker">WEITERSAMMELN</span><h3>Deine nächsten Ziele</h3></div>
+        <details class="wardrobe-extras"><summary>Prägeatelier <span>Prägestaub gegen Wochenstücke eintauschen</span></summary>
         <section class="staub-atelier" id="staub-atelier">
           <div class="staub-glanz" aria-hidden="true">✦</div>
           <header class="staub-kopf">
@@ -1420,11 +1514,9 @@
           <div class="form-error" id="staub-error"></div>
         </section>
 
-        <!-- Vorschau. Ohne sie kauft man eine Animation, ohne sie je gesehen
-             zu haben, und merkt erst hinterher, dass sie einem nicht gefällt. -->
-        <div class="cos-preview" id="cos-preview"></div>
-
-        <h3 class="section-title">Dein Prunkstück</h3>
+</details>
+        <details class="wardrobe-extras"><summary>Dein Prunkstück <span>Ein Fundstück mit deiner Seriennummer zeigen</span></summary>
+<h3 class="section-title">Dein Prunkstück</h3>
         <p class="hint" style="margin-top:-4px">Ein geprägtes Stück, das mit seiner Nummer an deinem Namen hängt: im Chat, in der Bestenliste, am Tisch, in der Stadt. Dafür muss niemand online sein.</p>
         <div id="cos-prunk" class="cos-prunk"></div>
 
@@ -1434,6 +1526,8 @@
           für die Außenwirkung wertlos — außer man sammelt eine Familie
           und legt sie zusammen an.
         -->
+        </details>
+        <details class="wardrobe-extras"><summary>Garnituren & Kollektionen <span>Zusammengehörige Stücke und Belohnungen</span></summary>
         <h3 class="section-title" style="margin-top:14px">Garnituren</h3>
         <p class="hint" style="margin-top:-4px">Trag drei Stücke aus derselben Familie gleichzeitig, und eine Marke hängt an deinem Namen, überall. Ab fünf leuchtet sie.</p>
         <div id="cos-familien" class="cos-familien"></div>
@@ -1442,57 +1536,7 @@
         <p class="hint" style="margin-top:-4px">Sechs Fundstücke öffnen jeweils ein Archiv-Siegel. Hinter dem letzten wartet eine Trophäe, die auf keinem anderen Weg entsteht.</p>
         <div id="cos-sammlungen" class="cos-sammlungen"></div>
 
-        <h3 class="section-title" style="margin-top:14px">Chat-Zeichen</h3>
-        <p class="hint" style="margin-top:-4px">Ein Symbol vor jeder deiner Nachrichten. Der Chat ist die einzige Fläche, die jeder liest, auch Stunden später.</p>
-        <div class="cos-grid" id="cos-zeichen"></div>
-
-        <h3 class="section-title" style="margin-top:14px">Namensstile</h3>
-        <p class="hint" style="margin-top:-4px">Ersetzt die flache Farbe. Die bewegten stehen still, wenn du in den Einstellungen „Bewegung reduzieren“ anhast.</p>
-        <div class="cos-grid cos-grid-wide" id="cos-styles"></div>
-
-        <h3 class="section-title" style="margin-top:14px">Titel</h3>
-        <p class="hint" style="margin-top:-4px">Eine Zeile unter deinem Namen, überall wo du auftauchst.</p>
-        <div class="cos-grid cos-grid-wide" id="cos-titles"></div>
-
-        <h3 class="section-title" style="margin-top:14px">Rahmen</h3>
-        <div class="cos-grid" id="cos-frames"></div>
-
-        <h3 class="section-title" style="margin-top:14px">Gewinn-Effekt</h3>
-        <p class="hint" style="margin-top:-4px">Was passiert, wenn du groß gewinnst. Antippen spielt ihn einmal ab.</p>
-        <div class="cos-grid cos-grid-wide" id="cos-effects"></div>
-
-        <h3 class="section-title" style="margin-top:14px">Aura</h3>
-        <p class="hint" style="margin-top:-4px">Läuft dauerhaft um dein Bild, überall wo du auftauchst. Kein einmaliger Effekt.</p>
-        <div class="cos-grid cos-grid-wide" id="cos-auren"></div>
-
-        <h3 class="section-title" style="margin-top:14px">Kartenrücken</h3>
-        <p class="hint" style="margin-top:-4px">Deine verdeckten Karten in Poker, Blackjack, Solitär und Memory. Nur auf deinem Bildschirm.</p>
-        <div class="cos-grid cos-grid-wide" id="cos-karten"></div>
-
-        <h3 class="section-title" style="margin-top:14px">Namensschild</h3>
-        <p class="hint" style="margin-top:-4px">Färbt deine ganze Zeile in der Online-Liste und der Bestenliste, nicht nur den Ring ums Bild.</p>
-        <div class="cos-grid cos-grid-wide" id="cos-schilder"></div>
-
-        <h3 class="section-title" style="margin-top:14px">Eintritts-Spruch</h3>
-        <p class="hint" style="margin-top:-4px">Eine Zeile im Chat, wenn du reinkommst. Höchstens einmal pro Stunde, damit ein Verbindungsabbruch keine Ansage wird.</p>
-        <div class="cos-grid cos-grid-wide" id="cos-sprueche"></div>
-        <div class="cos-eigen hidden" id="cos-spruch-eigen">
-          <label class="mem-label">Dein eigener Satz. Dein Name steht immer davor.
-            <input id="cos-spruch-text" type="text" maxlength="60" placeholder="z. B. „räumt heute den Laden leer.“" />
-          </label>
-          <div class="cos-eigen-vorschau" id="cos-spruch-vorschau"></div>
-          <button class="btn-primary" id="cos-spruch-save" type="button">Satz speichern</button>
-        </div>
-
-        <h3 class="section-title" style="margin-top:14px">Profil-Banner</h3>
-        <div class="cos-grid cos-grid-wide" id="cos-banner"></div>
-
-        <h3 class="section-title" style="margin-top:14px">Avatare</h3>
-        <div class="cos-grid" id="cos-avatars"></div>
-
-        <h3 class="section-title" style="margin-top:14px">Namensfarben</h3>
-        <p class="hint" style="margin-top:-4px">Wirkt nur, solange kein Namensstil angelegt ist.</p>
-        <div class="cos-grid" id="cos-colors"></div>
+        </details>
       </div>
     </section>
 
@@ -1661,6 +1705,7 @@
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
       <h2 class="screen-title"><i data-icon="frage"></i>Spickzettel</h2>
       <p class="muted small" style="margin-top:-6px">Alle Regeln, Quoten und Grenzen. Tippe im Inhalt einen Punkt an, um dorthin zu springen.</p>
+      <label class="spick-search">Im Spickzettel suchen<input id="spick-search" type="search" placeholder="Zum Beispiel Cashback, Kisten oder Blackjack" autocomplete="off"></label><p id="spick-result" class="small muted" role="status"></p>
       <div id="spick-inhalt" class="spick"><p class="muted small">Lädt…</p></div>
     </section>
 
@@ -1936,10 +1981,34 @@
 
         <h3 style="margin:16px 0 6px">Was du anbieten kannst</h3>
         <div class="mkt-inventory" id="mkt-inventory"><p class="muted small">Lädt…</p></div>
+
+        <!-- Ankauf: das Haus nimmt Unnötiges zurück. Inhalt baut js/ankauf.js. -->
+        <section class="ank" id="ank" aria-labelledby="ank-titel">
+          <h3 id="ank-titel" style="margin:20px 0 4px">Ans Haus abgeben</h3>
+          <p class="muted small ank-intro" id="ank-intro">Lädt…</p>
+          <div class="ank-filter" id="ank-filter" role="tablist" aria-label="Art"></div>
+          <div class="ank-liste" id="ank-liste"></div>
+        </section>
       </div>
     </section>
 
     <!-- Kisten: Kosmetik als Ziehung -->
+    <!-- Ladenstraße: Zoohandlung, Autohaus, Kiosk. Inhalt baut js/laeden.js. -->
+    <section class="screen" data-screen="laeden">
+      <div class="ld-wrap">
+        <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+        <header class="ld-kopf">
+          <div><small class="ld-kicker">Ladenstraße</small><h2 class="ld-titel">Zoohandlung</h2></div>
+          <div class="ld-reiter" role="tablist" aria-label="Läden">
+            <button type="button" role="tab" class="ld-tab" data-laden="zoo" aria-selected="true">Zoohandlung</button>
+            <button type="button" role="tab" class="ld-tab" data-laden="autohaus" aria-selected="false">Autohaus</button>
+            <button type="button" role="tab" class="ld-tab" data-laden="kiosk" aria-selected="false">Kiosk</button>
+          </div>
+        </header>
+        <div class="ld-inhalt" aria-live="polite"></div>
+      </div>
+    </section>
+
     <section class="screen" data-screen="kiste">
       <div class="ki-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
@@ -2609,13 +2678,16 @@
   </div>
 
   <!-- Tagesbericht -->
+  <!-- Der Tagesbericht als Zeitung. Inhalt baut js/bericht.js, die Texte kommen vom Server. -->
   <div id="bericht-modal" class="update-modal hidden">
-    <div class="update-card tb-card">
-      <div class="update-emoji" data-icon="ansage"></div>
-      <h2>Tagesbericht</h2>
-      <p class="muted small tb-zeitraum" id="bericht-zeitraum"></p>
+    <div class="update-card tb-card zeitung" role="dialog" aria-labelledby="zt-titel">
+      <header class="zt-kopf">
+        <div class="zt-zeile"><span id="zt-ausgabe"></span><span id="zt-datum"></span></div>
+        <h2 class="zt-titel" id="zt-titel">Casino-Kurier</h2>
+        <div class="zt-zeile zt-unter"><span>Unabhängig, ehrlich, ohne echtes Geld</span><span class="tb-zeitraum" id="bericht-zeitraum"></span></div>
+      </header>
       <div id="bericht-inhalt"></div>
-      <button class="btn-primary" id="bericht-close" style="width:100%">Los geht's</button>
+      <button class="zt-weiter" id="bericht-close" type="button">Zeitung zuklappen</button>
     </div>
   </div>
 
@@ -2636,6 +2708,10 @@
   <script defer src="/js/core/sound.js"></script>
   <script defer src="/js/core/fx.js"></script>
   <script defer src="/js/core/player.js"></script>
+  <!-- Die Figur wird schon von der Online-Liste gebraucht, bevor die Welt lädt. -->
+  <script defer src="/js/welt/teile.js"></script>
+  <script defer src="/js/welt/haustiere.js"></script>
+  <script defer src="/js/welt/figur.js"></script>
   <script defer src="/js/core/bet.js"></script>
   <script defer src="/js/core/dialog.js"></script>
   <script defer src="/js/core/icons.js"></script>
@@ -2694,7 +2770,14 @@
   <script defer src="/js/bank.js"></script>
   <script defer src="/js/stocks.js"></script>
   <script defer src="/js/market.js"></script>
+  <script defer src="/js/ankauf.js"></script>
   <script defer src="/js/kiste.js"></script>
+  <script defer src="/js/laeden.js"></script>
   <script defer src="/js/spickzettel.js"></script>
+  <!-- Die begehbare Welt. raeume.js liest auch der Server (game/welt.js). -->
+  <script defer src="/js/welt/raeume.js"></script>
+  <script defer src="/js/welt/moebel.js"></script>
+  <script defer src="/js/welt/welt.js"></script>
+  <script defer src="/js/welt/grundform.js"></script>
 </body>
 </html>

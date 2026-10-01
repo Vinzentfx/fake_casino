@@ -21,7 +21,9 @@ function accrueSavings(acc, now = Date.now()) {
   s.amount = Math.min(SAVINGS_CAP, Math.max(0, Math.floor(s.amount)));
   // Reiche werden getapert (wie alle anderen Faucets), Zins ist neu erzeugtes Geld.
   const f = _accounts && _accounts.faucetFactor ? _accounts.faucetFactor(acc.name) : 1;
-  const interest = Math.floor(s.amount * SAVINGS_RATE_PER_MS * Math.max(0, now - s.since) * f);
+  const accrued = s.amount * SAVINGS_RATE_PER_MS * Math.max(0, now - s.since) * f + (Number(s.remainder) || 0);
+  const interest = Math.floor(accrued);
+  s.remainder = s.amount + interest >= SAVINGS_CAP ? 0 : accrued - interest;
   if (interest > 0) s.amount = Math.min(SAVINGS_CAP, s.amount + interest);
   s.since = now;
 }

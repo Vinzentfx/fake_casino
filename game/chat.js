@@ -51,6 +51,8 @@ function setupChat(io, accounts) {
     socket.on("chat:history", ({ room } = {}, ack) => {
       if (typeof ack !== "function") return;
       room = String(room || "global");
+      if (!socket.data.account || !accounts.get(socket.data.account)) return ack({ ok: false, error: "Nicht eingeloggt." });
+      if (room !== "global" && !socket.rooms.has(room)) return ack({ ok: false, error: "Du bist nicht in dieser Lobby." });
       ack({ ok: true, room, messages: history(room) });
     });
 

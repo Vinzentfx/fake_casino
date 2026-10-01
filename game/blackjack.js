@@ -17,6 +17,7 @@
 const crypto = require("crypto");
 const { makeDeck, shuffle, SUITS } = require("./cards");
 const bjLobby = require("./blackjackLobby");
+const { einsatzFehler } = require("./strafen");
 
 const DECKS = 6;
 const RESHUFFLE_THRESHOLD = 52;
@@ -157,11 +158,14 @@ function handSnapshot(session) {
 // Spielablauf
 
 function startHand(session, bet, accounts) {
+  if (session.phase === "player") return { ok: false, error: "Beende erst deine laufende Hand." };
   const acc = accounts.get(session.name);
   if (!acc) return { ok: false, error: "Account nicht gefunden." };
   if (bet < 10 || !Number.isFinite(bet)) return { ok: false, error: "Mindesteinsatz: 10 Chips." };
   if (bet > acc.chips) return { ok: false, error: "Nicht genug Chips." };
   if (bet > 2000000) return { ok: false, error: "Maximaleinsatz: 2.000.000 Chips." };
+  const limitError = einsatzFehler(acc, bet);
+  if (limitError) return { ok: false, error: limitError };
 
   const r = accounts.adjustChips(session.name, -bet);
   if (!r.ok) return { ok: false, error: r.error };
@@ -227,6 +231,8 @@ function playerAction(session, action, accounts) {
   } else if (action === "double") {
     if (hand.cards.length !== 2) return { ok: false, error: "Double nur mit 2 Karten." };
     if (acc.chips < hand.bet) return { ok: false, error: "Nicht genug Chips." };
+    const limitError = einsatzFehler(acc, session.playerHands.reduce((sum, h) => sum + h.bet, 0) + hand.bet);
+    if (limitError) return { ok: false, error: limitError };
     accounts.adjustChips(session.name, -hand.bet);
     hand.bet *= 2;
     hand.doubled = true;
@@ -239,6 +245,8 @@ function playerAction(session, action, accounts) {
     if (hand.cards.length !== 2) return { ok: false, error: "Split nur mit 2 Karten." };
     if (cardValue(hand.cards[0]) !== cardValue(hand.cards[1])) return { ok: false, error: "Nur gleiche Karten splitten." };
     if (acc.chips < hand.bet) return { ok: false, error: "Nicht genug Chips für Split." };
+    const limitError = einsatzFehler(acc, session.playerHands.reduce((sum, h) => sum + h.bet, 0) + hand.bet);
+    if (limitError) return { ok: false, error: limitError };
     accounts.adjustChips(session.name, -hand.bet);
     session.split = true;
     const [c1, c2] = hand.cards;

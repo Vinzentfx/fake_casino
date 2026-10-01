@@ -58,7 +58,7 @@ const GEWINN_2 = 1;
 const ZIEHUNG_STUNDE = 20;  // jeden Abend um 20 Uhr
 
 let io = null, accounts = null;
-let state = { jackpot: JACKPOT_START, lose: {}, letzte: null, naechste: 0, nr: 1 };
+let state = { jackpot: JACKPOT_START, lose: {}, gekauft: {}, letzte: null, naechste: 0, nr: 1 };
 
 function naechsteZiehung(ab = Date.now()) {
   const d = new Date(ab);
@@ -73,6 +73,10 @@ function load() {
     state = {
       jackpot: Number(roh.jackpot) || JACKPOT_START,
       lose: roh.lose && typeof roh.lose === "object" ? roh.lose : {},
+      // Vor dieser Version gab es keine Kennzeichnung geschenkter Lose.
+      // Bestehende Lose gelten fuer die laufende Ziehung vorsichtig als bezahlt.
+      gekauft: roh.gekauft && typeof roh.gekauft === "object" ? roh.gekauft
+        : Object.fromEntries(Object.entries(roh.lose || {}).map(([key, tipps]) => [key, Array.isArray(tipps) ? tipps.length : 0])),
       letzte: roh.letzte || null,
       naechste: Number(roh.naechste) || 0,
       nr: Number(roh.nr) || 1,
@@ -101,11 +105,12 @@ function ziehe() {
 
 /** Prueft und normalisiert einen Tipp. */
 function pruefeTipp(zahlen) {
-  if (!Array.isArray(zahlen)) return null;
+  if (!Array.isArray(zahlen) || zahlen.length !== TIPPS) return null;
   const s = new Set();
   for (const z of zahlen) {
-    const n = Math.floor(Number(z));
-    if (!Number.isFinite(n) || n < 1 || n > ZAHLEN_BIS) return null;
+    if (typeof z !== "number" && (typeof z !== "string" || !z.trim())) return null;
+    const n = Number(z);
+    if (!Number.isInteger(n) || n < 1 || n > ZAHLEN_BIS) return null;
     s.add(n);
   }
   if (s.size !== TIPPS) return null;
@@ -188,6 +193,7 @@ function ziehungDurchfuehren() {
   };
   state.nr += 1;
   state.lose = {};
+  state.gekauft = {};
   state.naechste = naechsteZiehung();
   save();
 
@@ -305,12 +311,16 @@ function setupLotterie(_io, _accounts) {
       // Denselben Tipp zweimal zu kaufen ist erlaubt, aber selten gewollt.
       if (meine.some((t) => t.join() === tipp.join())) return ack({ ok: false, error: "Diesen Tipp hast du schon." });
       if (a.chips < LOSPREIS) return ack({ ok: false, error: "Nicht genug Chips." });
+      const bezahlt = Math.max(0, Math.floor(Number(state.gekauft[key]) || 0));
+      const limitError = require("./strafen").einsatzFehler(a, (bezahlt + 1) * LOSPREIS);
+      if (limitError) return ack({ ok: false, error: limitError });
 
       const abzug = accounts.adjustChips(key, -LOSPREIS);
       if (!abzug.ok) return ack({ ok: false, error: abzug.error });
 
       state.jackpot = Math.min(JACKPOT_MAX, state.jackpot + Math.floor(LOSPREIS * JACKPOT_ANTEIL));
       state.lose[key] = meine.concat([tipp]);
+      state.gekauft[key] = bezahlt + 1;
       save();
 
       ack({ ok: true, tipp, account: abzug.account, ...oeffentlich(key) });

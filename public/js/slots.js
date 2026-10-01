@@ -91,6 +91,11 @@
       machines = (res && res.machines) || [];
       renderMachineGrid();
       updateJackpotLine(res && res.jackpot);
+      if (res?.bonus && !pvpMode && !machine) {
+        wunschAutomat = null;
+        openMachine(res.bonus.machineId);
+        toast("Deine gespeicherten Freispiele sind bereit.");
+      } else wunschOeffnen();
     });
   }
   function updateJackpotLine(pot) {
@@ -163,6 +168,9 @@
     // mit echter Mittelreihe). Positioniert wird nach dem Layout.
     $("#payline").style.display = machine.mode === "lines" && machine.rows % 2 === 1 ? "" : "none";
     requestAnimationFrame(() => {
+      // Wer sofort wieder geht (etwa zurück in den Raum), hat den Automaten
+      // schon geschlossen, bevor dieses Bild kommt.
+      if (!machine) return;
       measureCells();
       positionPayline();
     });
@@ -180,7 +188,26 @@
     const autoBtn = $("#auto-roll");
     if (autoBtn) { autoBtn.classList.remove("active"); autoBtn.style.display = lockBet ? "none" : ""; }
     if (pvpMode) $("#machine-title").textContent = machine.name + " (Duell)";
+    else restoreBonus();
   }
+  function restoreBonus() {
+    const id = machine?.id;
+    if (!id || pvpMode) return;
+    socket.emit("slots:state", r => {
+      if (!r?.ok || machine?.id !== id || pvpMode) return;
+      if (r.bonus && r.bonus.machineId === id) {
+        freeActive = true;
+        const index = machine.bets.indexOf(r.bonus.bet);
+        if (index >= 0) betIndex = index;
+        updateBet(); updateFreeBadge(r.bonus);
+      } else {
+        freeActive = false;
+        $("#free-badge").classList.remove("show");
+      }
+    });
+  }
+  socket.on("connect", () => { if (machine && !pvpMode) restoreBonus(); });
+
   function closeMachine() {
     autoRoll = false;
     const ab = $("#auto-roll");
@@ -201,10 +228,29 @@
     closeMachine();
   });
 
+  /* Wer in der Welt vor einem bestimmten Automaten steht und ihn benutzt,
+     will genau diesen spielen und ihn nicht erst aus der Liste suchen. */
+  let wunschAutomat = null;
+  window.Casino._slotsWunsch = (id) => { wunschAutomat = String(id || "") || null; };
+  function wunschOeffnen() {
+    const id = wunschAutomat;
+    wunschAutomat = null;
+    if (!id || pvpMode) return;
+    const m = machines.find((x) => x.id === id);
+    if (!m || (machine && machine.id === id)) return;
+    if (machine) {
+      if (spinning || freeActive) return;
+      closeMachine();
+    }
+    if (isMachineUnlocked(m)) openMachine(id);
+    else tryUnlock(m);
+  }
+
   const slotsScreen = document.querySelector('[data-screen="slots"]');
   new MutationObserver(() => {
     if (slotsScreen.classList.contains("active")) {
       if (!machines.length) loadMachines();
+      else wunschOeffnen();
     } else if (machine && !spinning && !freeActive) {
       closeMachine();
     }
@@ -367,13 +413,14 @@
     startRoll();
 
     const event = pvpMode ? "pvp:spin" : "slots:spin";
-    const res = await new Promise((resolve) => socket.emit(event, { machineId: machine.id, bet }, resolve));
+    const res = await new Promise((resolve) => socket.emit(event, { machineId: machine.id, bet, expectedFree: wasFree }, resolve));
 
     if (!res || !res.ok) {
       stopRatchet();
       buildReels(true);
       if (!wasFree) { if (pvpMode) { pvp.chips += bet; updateHud(); } else window.Casino.adjustChips(bet); }
       toast((res && res.error) || "Spin fehlgeschlagen.");
+      if (!pvpMode) restoreBonus();
       spinning = false;
       setControlsEnabled(true);
       return;

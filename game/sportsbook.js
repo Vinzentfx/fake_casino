@@ -329,7 +329,7 @@ const SIM_ENABLED = process.env.SPORTS_SIM !== "off";
 // Taktschleife
 function setupSportsbook(io, accounts) {
   loadSports(accounts); // offene Wetten, Kombis und Ergebnisse von vor dem Neustart zurückholen
-  setInterval(persistSports, 60000).unref(); // regelmäßig sichern (ein Absturz kostet höchstens 60 s)
+  setInterval(persistSports, 60000).unref(); // zusätzliche Sicherung für laufende Spiele
   if (SIM_ENABLED) while (matches.size < MAX_OPEN) staggerCreate();
 
   function staggerCreate() {
@@ -376,6 +376,7 @@ function setupSportsbook(io, accounts) {
           m.minute = 90; m.score = { h: m.finalH, a: m.finalA };
           settle(m, accounts, io);
           m.state = "done"; m.doneAt = now;
+          persistSports();
           changed = true;
         }
       } else if (m.state === "done" && now - m.doneAt > DONE_LINGER_MS) {
@@ -404,14 +405,24 @@ function setupSportsbook(io, accounts) {
         if (!res.ok) {
           console.warn(`[sports] ${code} fixtures HTTP ${res.status}`);
           fdStand.wettbewerbe[code] = { status: res.status, spiele: 0, ts: Date.now() };
-          /* 403 heisst bei football-data.org fast immer: der Schluessel taugt,
-             aber nicht fuer diesen Wettbewerb (der kostenlose Zugang deckt
-             zwoelf davon ab). Das ist etwas anderes als ein falscher
-             Schluessel, und der Unterschied gehoert in die Meldung. */
+          // football-data.org liefert bei einem ungültigen Token HTTP 400 mit
+          // einer JSON-Meldung. Bisher wurde 400 pauschal als Zugangsfehler
+          // bezeichnet; bei anderen 400ern ist eher die Anfrage fehlerhaft.
+          let apiError = "";
+          try {
+            const body = await res.json();
+            apiError = String(body?.message || body?.error || "");
+          } catch {}
           fdStand.fehler = res.status === 403
             ? `${code}: kein Zugriff mit diesem Schlüssel (HTTP 403).`
-            : res.status === 400 || res.status === 401
-              ? `Zugang wird nicht angenommen (HTTP ${res.status}).`
+            : res.status === 400 && /api token is invalid|invalid.*token/i.test(apiError)
+              ? "Der gespeicherte football-data.org-Schlüssel ist ungültig. Bitte den vollständigen API-Schlüssel neu eintragen (HTTP 400)."
+            : res.status === 401
+              ? "Der football-data.org-Schlüssel wird nicht angenommen (HTTP 401)."
+            : res.status === 400
+              ? `${code}: ungültige Anfrage an football-data.org (HTTP 400).`
+            : res.status === 429
+              ? "Abruflimit bei football-data.org erreicht (HTTP 429). Bitte später erneut versuchen."
               : `${code}: HTTP ${res.status}`;
           continue;
         }
@@ -457,10 +468,10 @@ function setupSportsbook(io, accounts) {
     if (st === "IN_PLAY" || st === "PAUSED") { m.state = "live"; m.score = score; m.minute = am.minute || 0; }
     else if (st === "FINISHED" || st === "AWARDED") {
       m.score = score;
-      if (!m.settled) { m.settled = true; settle(m, accounts, io); m.state = "done"; m.doneAt = Date.now(); }
+      if (!m.settled) { m.settled = true; settle(m, accounts, io); m.state = "done"; m.doneAt = Date.now(); persistSports(); }
     } else if (st === "CANCELLED" || st === "POSTPONED" || st === "SUSPENDED") {
       // Spiel findet nicht statt: Einzelwetten zurück, Kombis ungültig, Spiel raus.
-      if (!m.settled) { m.settled = true; voidMatch(m, accounts, io); matches.delete(id); }
+      if (!m.settled) { m.settled = true; voidMatch(m, accounts, io); matches.delete(id); persistSports(); }
     } else m.state = Date.now() < m.kickoff ? "open" : "pending"; // TIMED/SCHEDULED: entweder offen oder angepfiffen und ohne Ergebnis
   }
 
@@ -486,9 +497,10 @@ function setupSportsbook(io, accounts) {
     socket.on("sports:bet", ({ matchId, market, selection, amount } = {}, ack) => {
       if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Bitte zuerst einloggen." });
       const m = matches.get(Number(matchId));
-      if (!m || m.state !== "open") return typeof ack === "function" && ack({ ok: false, error: "Wetten geschlossen." });
+      if (!m || m.state !== "open" || Date.now() >= m.kickoff) return typeof ack === "function" && ack({ ok: false, error: "Wetten geschlossen." });
+      if (!Object.hasOwn(m.markets, market)) return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Markt." });
       const mk = m.markets[market];
-      if (!mk || !(selection in mk.sels)) return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Markt." });
+      if (!Object.hasOwn(mk.sels, selection)) return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Markt." });
       amount = Math.floor(Number(amount));
       if (!Number.isFinite(amount) || amount < MIN_BET) return typeof ack === "function" && ack({ ok: false, error: `Mindesteinsatz ${MIN_BET} Chips.` });
       if (amount > MAX_BET) return typeof ack === "function" && ack({ ok: false, error: `Maximaleinsatz ${MAX_BET.toLocaleString("de-DE")} Chips.` });
@@ -498,6 +510,7 @@ function setupSportsbook(io, accounts) {
       const r = accounts.adjustChips(socket.data.account, -amount);
       const odds = mk.sels[selection];
       m.bets.push({ id: crypto.randomUUID(), user: socket.data.account, name: acc.name, market, selection, amount, odds });
+      persistSports();
       feed.unshift({ name: acc.name, match: `${m.home} vs ${m.away}`, sel: selLabel(market, selection, m), amount, odds });
       if (feed.length > FEED_MAX) feed.length = FEED_MAX;
       require("./quests").track(socket.data.account, "bet_sport"); // der Auftrag zählt beim Setzen
@@ -510,7 +523,8 @@ function setupSportsbook(io, accounts) {
     socket.on("sports:cashout", ({ matchId, betId } = {}, ack) => {
       if (!socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Nicht eingeloggt." });
       const m = matches.get(Number(matchId));
-      if (!m || (m.state !== "open" && m.state !== "live")) return typeof ack === "function" && ack({ ok: false, error: "Cash-out gerade nicht möglich." });
+      if (!m || (m.state !== "open" && m.state !== "live") || (m.state === "open" && Date.now() >= m.kickoff))
+        return typeof ack === "function" && ack({ ok: false, error: "Cash-out gerade nicht möglich." });
       const i = m.bets.findIndex((b) => b.id === betId && b.user === socket.data.account);
       if (i < 0) return typeof ack === "function" && ack({ ok: false, error: "Wette nicht gefunden." });
       const b = m.bets[i];
@@ -518,6 +532,7 @@ function setupSportsbook(io, accounts) {
       const r = accounts.adjustChips(socket.data.account, refund);
       accounts.recordHand(socket.data.account, refund - b.amount, true, "sportwetten"); // Gewinn/Verlust verbuchen
       m.bets.splice(i, 1);
+      persistSports();
       typeof ack === "function" && ack({ ok: true, refund, account: r.account });
       io.emit("sports:update");
     });
@@ -535,9 +550,10 @@ function setupSportsbook(io, accounts) {
       const clean = [];
       for (const leg of legs || []) {
         const m = matches.get(Number(leg && leg.matchId));
-        if (!m || m.state !== "open") return typeof ack === "function" && ack({ ok: false, error: "Ein Spiel nimmt keine Wetten mehr an." });
+        if (!m || m.state !== "open" || Date.now() >= m.kickoff) return typeof ack === "function" && ack({ ok: false, error: "Ein Spiel nimmt keine Wetten mehr an." });
+        if (!Object.hasOwn(m.markets, leg.market)) return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Tipp in der Kombi." });
         const mk = m.markets[leg.market];
-        if (!mk || !(leg.selection in mk.sels)) return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Tipp in der Kombi." });
+        if (!Object.hasOwn(mk.sels, leg.selection)) return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Tipp in der Kombi." });
         const key = m.id + ":" + leg.market;
         if (seen.has(key)) return typeof ack === "function" && ack({ ok: false, error: "Pro Spiel & Markt nur ein Tipp." });
         seen.add(key);
@@ -555,6 +571,7 @@ function setupSportsbook(io, accounts) {
       if (!acc || acc.chips < amount) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips." });
       const r = accounts.adjustChips(socket.data.account, -amount);
       combos.push({ id: crypto.randomUUID(), user: socket.data.account, name: acc.name, legs: clean, amount, comboOdds, settled: false, won: null, payout: 0 });
+      persistSports();
       feed.unshift({ name: acc.name, match: `${clean.length}er-Kombi`, sel: `${clean.length} Tipps`, amount, odds: comboOdds });
       if (feed.length > FEED_MAX) feed.length = FEED_MAX;
       require("./quests").track(socket.data.account, "bet_sport");
@@ -635,7 +652,7 @@ function settleCombos(accounts, io) {
     changed = true;
   }
   if (combos.length > 300) combos.splice(0, combos.length - 300);
-  if (changed) io.emit("sports:update");
+  if (changed) { persistSports(); io.emit("sports:update"); }
 }
 
 const order = (s) => (s === "live" ? 0 : s === "pending" ? 1 : s === "open" ? 2 : 3);
@@ -692,11 +709,16 @@ function teamChances(strength, oppStrength = 75) {
 
 // Persistence: open bets/combos + results survive restarts/deploys
 function persistSports() {
+  let tempFile;
   try {
     const singles = [];
     for (const m of matches.values()) {
       if (m.state === "done") continue; // abgerechnete Wetten sind schon ausgezahlt
       for (const b of m.bets) singles.push({ ...b, matchId: m.id });
+    }
+    // Nach einem Neustart warten echte Wetten zunächst auf den nächsten API-Abruf.
+    for (const [matchId, bets] of restoreSingles) {
+      for (const b of bets) singles.push({ ...b, matchId });
     }
     const data = {
       combos: combos.filter((c) => !c.settled),
@@ -705,8 +727,13 @@ function persistSports() {
       savedAt: Date.now(),
     };
     fs.mkdirSync(path.dirname(SPORTS_FILE), { recursive: true });
-    fs.writeFileSync(SPORTS_FILE, JSON.stringify(data));
-  } catch (e) { console.warn("[sports] persist failed:", e.message); }
+    tempFile = `${SPORTS_FILE}.${process.pid}.${crypto.randomUUID()}.tmp`;
+    fs.writeFileSync(tempFile, JSON.stringify(data));
+    fs.renameSync(tempFile, SPORTS_FILE);
+  } catch (e) {
+    if (tempFile) { try { fs.rmSync(tempFile, { force: true }); } catch {} }
+    console.warn("[sports] persist failed:", e.message);
+  }
 }
 
 function settleRestoredSingle(b, accounts) {
@@ -745,6 +772,9 @@ function loadSports(accounts) {
       accounts.adjustChips(b.user, b.amount); // Sim-Spiel ist weg, Einsatz zurück
     }
   }
+  // Rückzahlungen und bereits abgerechnete Wetten dürfen nach einem weiteren
+  // Neustart nicht erneut aus dem alten Snapshot eingelesen werden.
+  persistSports();
 }
 
 /* Admin: Zustand und Zugang */

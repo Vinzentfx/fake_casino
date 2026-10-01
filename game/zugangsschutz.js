@@ -38,7 +38,9 @@ function cookie(req, name) {
   const raw = String((req.headers && req.headers.cookie) || "");
   for (const teil of raw.split(";")) {
     const i = teil.indexOf("=");
-    if (i > -1 && teil.slice(0, i).trim() === name) return decodeURIComponent(teil.slice(i + 1).trim());
+    if (i > -1 && teil.slice(0, i).trim() === name) {
+      try { return decodeURIComponent(teil.slice(i + 1).trim()); } catch { return ""; }
+    }
   }
   return "";
 }

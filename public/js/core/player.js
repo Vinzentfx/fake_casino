@@ -185,6 +185,10 @@
     if (!stueck) return "";
     const { art, id, label, text, emoji, color } = stueck;
     const wer = opts.name || "Du";
+    /* Kleidung zeigt die eigene Figur mit genau diesem Stück. */
+    if (Casino.figur && Casino.figur.KLEIDUNG_ARTEN.includes(art)) {
+      return Casino.figur.stueckVorschau(art, id, (Casino.getAccount && Casino.getAccount()) || {});
+    }
     const l = esc(label || id);
     switch (art) {
       case "style":
@@ -215,5 +219,15 @@
     }
   }
 
-  Casino.spieler = { name, avatar, title, chip, prunk, garnitur, zeichen, kosVorschau, serienCode, serienRang, serienBadge };
+  /* Die Clubfigur. Gezeichnet wird sie in public/js/welt/figur.js, dort
+     kann sie sich auch drehen und laufen. Hier steht nur die ruhige
+     Vorderansicht für Listen, Profil und Garderobe, damit man überall
+     dieselbe Figur sieht wie im Raum. */
+  function figur(p = {}) {
+    const aura = p.aura && AUREN.has(p.aura) ? " has-aura" : "";
+    const bild = Casino.figur ? Casino.figur.vorschau(p) : "";
+    return `<span class="club-figure club-figure-welt${aura}" aria-hidden="true">${bild}</span>`;
+  }
+
+  Casino.spieler = { figur, name, avatar, title, chip, prunk, garnitur, zeichen, kosVorschau, serienCode, serienRang, serienBadge };
 })();

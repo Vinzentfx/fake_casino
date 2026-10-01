@@ -1283,8 +1283,19 @@
 
   // Beim Betreten der Screens (ruft der Router auf)
   window.Casino._loadWork = loadWork;
+  /* Wer am Kartentisch in der Welt auf einen Ortsteil tippt, landet direkt
+     dort und nicht erst in der Übersicht. */
+  let ortsteilWunsch = null;
+  window.Casino._stadtOrtsteil = (id) => { ortsteilWunsch = String(id || "") || null; };
   window.Casino._loadBusinesses = () => {
     view = "overview"; district = null; selectedId = null; vb = null;
+    if (ortsteilWunsch) {
+      const id = ortsteilWunsch;
+      ortsteilWunsch = null;
+      loadCity();
+      loadDistrict(id);
+      return;
+    }
     loadCity();
   };
 })();

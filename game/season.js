@@ -332,4 +332,26 @@ function offeneStufen(acc) {
   return st.rewards.filter((r) => r.unlocked && !r.claimed).length;
 }
 
-module.exports = { setupSeason, addXp, fokusHeute, levelVonXp, offeneStufen, SEASON };
+/**
+ * Season-XP von Hand verschieben, für den Admin-Bildschirm.
+ *
+ * Ohne Fokus, Serie, Clan und Tagesdeckel: das ist keine erspielte XP,
+ * sondern eine Korrektur, und sie soll genau so ankommen, wie sie getippt
+ * wurde. Der Clan bekommt bewusst nichts mit, sonst verschöbe jede Korrektur
+ * auch den Clan-Krieg. Schon abgeholte Stufen bleiben abgeholt, auch wenn
+ * die XP danach darunter fällt; zurückbuchen ließe sich die Belohnung ohnehin
+ * nicht sauber.
+ */
+function adminXp(name, delta) {
+  if (!_accounts) return null;
+  const key = String(name || "").trim().toLowerCase();
+  const acc = _accounts.get(key);
+  if (!acc) return null;
+  const s = ensure(acc);
+  s.xp = Math.max(0, (s.xp || 0) + Math.trunc(Number(delta) || 0));
+  _accounts.save();
+  emitState(key);
+  return { xp: s.xp, stufe: levelVonXp(s.xp) };
+}
+
+module.exports = { setupSeason, addXp, adminXp, fokusHeute, levelVonXp, offeneStufen, SEASON };

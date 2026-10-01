@@ -29,23 +29,21 @@
     return `Seit deinem letzten Bericht vor ${t} Tagen.`;
   }
 
-  function abschnitt(titel, inhalt) {
-    if (!inhalt) return "";
-    return `<div class="tb-block"><h3 class="tb-h">${esc(titel)}</h3>${inhalt}</div>`;
-  }
-
+  /*
+   * Der Bericht als Zeitung: Kopf mit Ausgabe und Datum, darunter die
+   * Anzeigen (was auf einen wartet, antippbar), eine Schlagzeile, die
+   * übrigen Meldungen in zwei Spalten und ein Kasten mit den Zahlen.
+   * Die Sätze kommen weiter fertig vom Server; hier wird nur gesetzt.
+   */
   function zeichne(b) {
     const kopf = $("#bericht-zeitraum");
     if (kopf) kopf.textContent = zeitraum(b);
-
-    const abholbar = b.abholbar.length
-      ? `<div class="tb-liste">${b.abholbar.map((a) => `
-          <button class="tb-zeile tb-tun" type="button" ${a.nav ? `data-nav="${esc(a.nav)}"` : ""} ${a.tun ? `data-tun="${esc(a.tun)}"` : ""}>
-            <span class="tb-sym tb-sym-gold">${sym(a.icon)}</span>
-            <span class="tb-text"><b>${esc(a.titel)}</b><small>${esc(a.text)}</small></span>
-            <span class="tb-pfeil" aria-hidden="true">›</span>
-          </button>`).join("")}</div>`
-      : "";
+    const heute = new Date();
+    const datum = $("#zt-datum");
+    if (datum) datum.textContent = heute.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const ausgabe = $("#zt-ausgabe");
+    // Eine laufende Nummer, wie sie eine Zeitung hat: Tage seit Jahresbeginn.
+    if (ausgabe) ausgabe.textContent = `Ausgabe Nr. ${Math.floor((heute - new Date(heute.getFullYear(), 0, 0)) / 86400000)}`;
 
     /*
      * Wer etwas getan hat, steht hier mit seinem Aussehen.
@@ -60,28 +58,34 @@
       return `<span class="tb-wer">${Casino.spieler.avatar(p.look)}`
         + `${Casino.spieler.zeichen(p.look)}${Casino.spieler.prunk(p.look)}${Casino.spieler.garnitur(p.look)}</span>`;
     };
-    const punkte = b.punkte.length
-      ? `<div class="tb-liste">${b.punkte.map((p) => `
-          <div class="tb-zeile${p.leise ? " tb-leise" : ""}">
-            <span class="tb-sym">${sym(p.icon)}</span>
-            <span class="tb-text">${esc(p.text)}</span>
-            ${wer(p)}
-          </div>`).join("")}</div>`
-      : `<p class="muted small tb-nichts">Nichts Großes passiert. Dann bist du jetzt der Erste.</p>`;
 
-    const zahlen = b.zahlen.length
-      ? `<div class="tb-liste">${b.zahlen.map((z) => `
-          <${z.nav ? "button" : "div"} class="tb-zeile${z.nav ? " tb-tun" : ""}" ${z.nav ? `type="button" data-nav="${esc(z.nav)}"` : ""}>
-            <span class="tb-sym">${sym(z.icon)}</span>
-            <span class="tb-text"><small>${esc(z.label)}</small><b>${esc(z.wert)}</b>${z.sub ? `<small>${esc(z.sub)}</small>` : ""}</span>
-            ${z.nav ? '<span class="tb-pfeil" aria-hidden="true">›</span>' : ""}
-          </${z.nav ? "button" : "div"}>`).join("")}</div>`
+    const anzeigen = b.abholbar.length
+      ? `<section class="zt-anzeigen"><h3 class="zt-rubrik">${b.marken.gesamt === 1 ? "Anzeige: Eine Sache wartet auf dich" : `Anzeigen: ${b.marken.gesamt || b.abholbar.length} Sachen warten auf dich`}</h3>
+          <div class="zt-anzeigen-liste">${b.abholbar.map((a) => `
+            <button class="zt-anzeige" type="button" ${a.nav ? `data-nav="${esc(a.nav)}"` : ""} ${a.tun ? `data-tun="${esc(a.tun)}"` : ""}>
+              <span class="tb-sym">${sym(a.icon)}</span><b>${esc(a.titel)}</b><small>${esc(a.text)}</small>
+            </button>`).join("")}</div></section>`
       : "";
 
-    $("#bericht-inhalt").innerHTML =
-      abschnitt(b.marken.gesamt === 1 ? "Eine Sache wartet auf dich" : b.marken.gesamt ? `${b.marken.gesamt} Sachen warten auf dich` : "", abholbar) +
-      abschnitt("Das war los", punkte) +
-      abschnitt("Stand jetzt", zahlen);
+    const [aufmacher, ...rest] = b.punkte;
+    const meldungen = aufmacher
+      ? `<article class="zt-aufmacher${aufmacher.leise ? " tb-leise" : ""}"><h3>${esc(aufmacher.text)}</h3>${wer(aufmacher)}</article>`
+        + (rest.length ? `<div class="zt-spalten">${rest.map((p) => `
+            <p class="zt-meldung${p.leise ? " tb-leise" : ""}"><span class="tb-sym">${sym(p.icon)}</span>${esc(p.text)}${wer(p)}</p>`).join("")}</div>` : "")
+      : `<article class="zt-aufmacher"><h3>Ruhiger Tag im Casino</h3><p class="zt-leit">Nichts Großes passiert. Dann bist du jetzt der Erste.</p></article>`;
+
+    const zahlen = b.zahlen.length
+      ? `<aside class="zt-kasten"><h4>Zahlen des Tages</h4>${b.zahlen.map((z) => `
+          <${z.nav ? "button" : "div"} class="zt-zahl" ${z.nav ? `type="button" data-nav="${esc(z.nav)}"` : ""}>
+            <span>${esc(z.label)}</span><b>${esc(z.wert)}</b>${z.sub ? `<small>${esc(z.sub)}</small>` : ""}
+          </${z.nav ? "button" : "div"}>`).join("")}</aside>`
+      : "";
+
+    /* Wenig los: die Zahlen nicht als hohe Spalte neben einer einzigen
+       Schlagzeile (das ließ links eine leere halbe Seite), sondern quer
+       darunter. */
+    const quer = b.punkte.length <= 2;
+    $("#bericht-inhalt").innerHTML = anzeigen + `<div class="zt-blatt${quer ? " quer" : ""}"><div class="zt-haupt">${meldungen}</div>${zahlen}</div>`;
   }
 
   function oeffne(b) {
@@ -142,6 +146,9 @@
     if (zeile.dataset.tun === "paket" && Casino._zeigePaket) { Casino._zeigePaket(); return; }
     if (zeile.dataset.nav) Casino.screens.show(zeile.dataset.nav);
   });
+
+  // Der Zeitungsständer am Eingang in der Welt liest dieselbe Zeitung.
+  Casino._berichtZeigen = zeige;
 
   document.getElementById("menu-bericht")?.addEventListener("click", () => {
     Casino.menuSchliessen?.();

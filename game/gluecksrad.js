@@ -231,6 +231,8 @@ function setup(io, accounts) {
       if (!socket.data.account) return ack({ ok: false, error: "Nicht eingeloggt." });
       const r = drehe(socket.data.account);
       ack(r);
+      // Wer vor dem Rad in der Welt steht, dessen Dreh sehen alle im Raum.
+      if (r.ok) { try { require("./welt").schau(socket, "gluecksrad", { titel: r.titel || null, index: r.index }); } catch {} }
       // Ein neues Fortuna aendert das Rad fuer alle (ein Stueck weniger).
       if (r.ok && r.art === "fortuna") io.emit("wheel:fortuna", { rest: r.rest });
     });

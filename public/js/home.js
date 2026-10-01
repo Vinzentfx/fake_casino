@@ -40,7 +40,7 @@
   const GAMES = [
     // Casino: gegen das Haus
     { id: "slots",      name: "Slots",          sub: "Vier Automaten, von zahm bis wild", icon: "🎰", cat: "casino", h: 42 },
-    { id: "blackjack",  name: "Blackjack",      sub: "21 schlagen. Bester Schnitt im Haus", icon: "♠️", cat: "casino", h: 152 },
+    { id: "blackjack",  name: "Blackjack",      sub: "Ziehen, halten, teilen: Richtung 21", icon: "♠️", cat: "casino", h: 152 },
     { id: "roulette",   name: "Roulette",       sub: "Europäisch, eine einzige Null",     icon: "🎡", cat: "casino", h: 2 },
     { id: "crash",      name: "Crash",          sub: "Aussteigen, bevor es knallt",       icon: "🚀", cat: "casino", h: 22 },
     { id: "mines",      name: "Mines",          sub: "Edelsteine sammeln, Bomben meiden", icon: "💣", cat: "casino", h: 268 },
@@ -71,10 +71,11 @@
     /* `sym` nur dort, wo das Symbol anders heisst als der Bildschirm: die
        Kennung muss der Screen-Name sein (die Kachel navigiert darueber),
        das Zeichen heisst in core/icons.js aber nach dem, was es zeigt. */
+    { id: "laeden",     name: "Ladenstraße",    sub: "Zoo, Autohaus und Kiosk",           icon: "🏪", sym: "laden",     cat: "sammeln", h: 140 },
     { id: "kiste",      name: "Kisten",         sub: "Kosmetik als Ziehung, dazu Duelle", icon: "🎁", sym: "geschenk",  cat: "sammeln", h: 45 },
     { id: "market",     name: "Markt",          sub: "Geprägte Stücke von Spieler zu Spieler", icon: "🛒", sym: "warenkorb", cat: "sammeln", h: 160 },
     { id: "auktion",    name: "Auktionshaus",   sub: "Ein Los am Tag, Zuschlag um halb neun", icon: "🔨", cat: "sammeln", h: 288 },
-    { id: "cosmetics",  name: "Sammlung",       sub: "Was du hast, anlegen und zeigen",   icon: "🎨", sym: "kosmetik",  cat: "sammeln", h: 320 },
+    { id: "cosmetics",  name: "Garderobe",      sub: "Deine Figur, deine Stücke, deine Looks",   icon: "🎨", sym: "kosmetik",  cat: "sammeln", h: 320 },
   ];
 
   const GAME_BY_ID = new Map(GAMES.map((g) => [g.id, g]));

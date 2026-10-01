@@ -86,12 +86,17 @@ let sammeln = false;
  * Geprägt wird ein paar Mal am Tag, nicht ein paar Mal je Sekunde. Der
  * Schreibvorgang kostet hier nichts.
  */
+/* Der letzte Schreibfehler, oder null. Gespeichert wird weiter still, aber
+   eine Buchung (game/buchungen.js) muss wissen, ob ihr Exemplar wirklich
+   auf der Platte steht, bevor sie dem Käufer „gekauft“ sagt. */
+let schreibfehler = null;
 function save() {
   if (sammeln) return;
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(FILE, JSON.stringify(state));
-  } catch {}
+    schreibfehler = null;
+  } catch (e) { schreibfehler = e; }
 }
 const saveJetzt = save;
 
@@ -220,6 +225,8 @@ function serienRegeln() {
  * bleibt in `vergeben` aber dauerhaft gesperrt. So können nie zwei Besitzer
  * in ihrer Historie dasselbe Exemplar beanspruchen.
  */
+function ausgegeben(art, id) { return belegteNummern(art, id).size; }
+
 function bestand(art, id) {
   const k = schluessel(art, id);
   let n = 0;
@@ -294,6 +301,18 @@ function uebertragen(uid, nachKey, nachName, preis = 0, at = Date.now()) {
  * Die Nummer bleibt vergeben. Sonst bekäme das nächste geprägte Stück
  * dieselbe, und zwei Leute hätten irgendwann beide die Nummer 3.
  */
+/* Ein Exemplar aus einer Gratiskiste (Tageskiste) trägt das als Merkmal,
+   für immer, auch nach einem Handel. Der Ankauf zahlt dafür nur den
+   kleinen Satz: sonst wäre die Tageskiste über den Ankauf ein zweiter
+   Stundenbonus. */
+function markiereGratis(uid) {
+  const s = state.stuecke[uid];
+  if (!s) return false;
+  s.gratis = true;
+  save();
+  return true;
+}
+
 function entpraegen(uid) {
   if (!state.stuecke[uid]) return false;
   delete state.stuecke[uid];
@@ -390,7 +409,8 @@ function migriereSerien() {
 migriereSerien();
 
 module.exports = {
-  praegen, uebertragen, entpraegen, stueckVon, alleVon, stueck, bestand,
+  ausgegeben, praegen, uebertragen, entpraegen, stueckVon, alleVon, stueck, bestand,
+  letzterSchreibfehler: () => schreibfehler, markiereGratis,
   umbenennen, nachtragen, serieVon, serienRegeln,
   _intern: { serienRang, zieheRang, zieheNummer, migriereSerien, POOLS, SERIEN },
 };

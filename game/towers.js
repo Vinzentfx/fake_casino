@@ -97,7 +97,7 @@ function setupTowers(io, accounts) {
       games.delete(key);
       const diff = DIFFICULTIES[g.diffKey];
       if (g.level > 0) {
-        const payout = Math.floor(g.bet * multiplier(diff, g.level));
+        const payout = Math.min(MAX_WIN, Math.floor(g.bet * multiplier(diff, g.level)));
         accounts.adjustChips(key, payout);
         accounts.recordHand(key, payout - g.bet, true, "towers", { einsatz: g.bet });
       } else {

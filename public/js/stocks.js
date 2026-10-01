@@ -20,6 +20,9 @@
     socket.emit("stocks:state", (res) => {
       if (!res || !res.ok) return;
       data = res;
+      // Aus der Welt: wer auf der Kurstafel eine Zeile antippt, landet bei dieser Aktie.
+      if (wunsch && data.stocks.some((s) => s.sym === wunsch)) selected = wunsch;
+      wunsch = null;
       if (!selected && data.stocks.length) selected = data.stocks[0].sym;
       render();
     });
@@ -180,5 +183,7 @@
   });
 
   // Ruft der Router auf, wenn die Börse aufgeht.
+  let wunsch = null;
+  window.Casino._aktieWunsch = (sym) => { wunsch = String(sym || "") || null; };
   window.Casino._loadStocks = load;
 })();

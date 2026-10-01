@@ -14,6 +14,7 @@
 
 const praegung = require("./praegung");
 const sammlungen = require("./sammlungen");
+const kleidung = require("./kleidung");
 
 /* Die Namen braucht es wirklich: ohne sie steht in jeder Liste, die nicht
    das Emoji zeichnen kann, die rohe Kennung ("clown Nr. 2"). */
@@ -459,6 +460,13 @@ const TOPF = { avatar: "avatars", color: "colors", style: "styles", frame: "fram
 const KATALOG = { avatar: avaById, color: colById, style: styById, frame: frmById, title: titById,
   effect: effById, spruch: sprById, banner: banById, schild: schById, aura: aurById, karte: karById,
   zeichen: zeiById };
+/* Die Kleidung der Figur (game/kleidung.js) hängt sich hier an. Danach
+   laufen Besitz, Prägung, Markt, Kisten und Looks für sie genauso wie für
+   alles andere, ohne dass eine dieser Stellen die neuen Arten kennen muss. */
+for (const [art, a] of Object.entries(kleidung.ARTEN)) {
+  TOPF[art] = a.topf;
+  KATALOG[art] = Object.fromEntries(a.liste.map((x) => [x.id, x]));
+}
 
 /* Was eine Nummer bekommt und was gehandelt werden darf
  *
@@ -492,11 +500,14 @@ function praegbar(art, id) {
      entsteht jedes Stueck erst in dem Moment, in dem es jemand aus einer
      Kiste zieht; damit ist auch bei der frueheren Ladenware eine zufaellige
      Serienpraegung etwas wert. */
-  return !!item && item.cost !== 0;
+  // Ladenware aus Autohaus und Kiosk gibt es unbegrenzt, eine Nummer daran wäre ein Witz.
+  return !!item && item.cost !== 0 && !kleidung.istLadenware(item);
 }
 function handelbar(art, id) {
   const item = KATALOG[art] ? KATALOG[art][id] : null;
   if (!item || item.cost === 0) return false;
+  // Ladenware kann jeder im Laden kaufen; ein Markt dafür wäre ein zweiter Preis.
+  if (kleidung.istLadenware(item)) return false;
   /* `haus` sind die Stuecke, die der Besitzer persoenlich vergibt.
      Handelbar waeren sie nur sehr seltene Ware, die sich der naechste
      Reiche einfach kauft, und damit genau nicht mehr das, wofuer sie
@@ -579,6 +590,7 @@ function setupCosmetics(io, accounts) {
          diese Rolle hat jetzt die Herkunft. */
       const herkunftVon = (item) => {
         if (item.cost === 0) return "gratis";
+        if (item.nur === kleidung.ZOO || item.nur === kleidung.AUTOHAUS || item.nur === kleidung.KIOSK) return item.nur;
         if (item.nichtInKisten) return "markt";
         if (item.cost != null) return "kiste";
         if (item.limitiert) return item.limitiert;   // auktion, rad, comeback, kiste, haus
@@ -632,6 +644,7 @@ function setupCosmetics(io, accounts) {
       };
       return {
         chips: acc.chips,
+        outfits: [0, 1, 2].map(slot => ({ slot, saved: !!acc.outfits?.[slot], savedAt: acc.outfits?.[slot]?.savedAt || null })),
         fristen: { season: seasonEnde, comeback: comebackEnde },
         fortuna: { rest: radRest, max: FORTUNA_MAX },
         serien: praegung.serienRegeln(),
@@ -647,6 +660,19 @@ function setupCosmetics(io, accounts) {
         auren: AUREN.map((x) => ({ ...x, owned: hat("aura", x.id), equipped: (acc.aura || "keine") === x.id, ...mitPraegung("aura")(x) })),
         karten: KARTEN.map((x) => ({ ...x, owned: hat("karte", x.id), equipped: (acc.karte || "haus") === x.id, ...mitPraegung("karte")(x) })),
         zeichen: ZEICHEN.map((x) => ({ ...x, owned: hat("zeichen", x.id), equipped: (acc.zeichen || "keins") === x.id, ...mitPraegung("zeichen")(x) })),
+        ...Object.fromEntries(Object.entries(kleidung.ARTEN).map(([art, a]) => [a.topf,
+          a.liste.map((x) => ({ ...x, owned: hat(art, x.id), equipped: (acc[a.feld] || a.leer) === x.id, ...mitPraegung(art)(x) }))])),
+        /* Die Style-Sets mit Stand: welche Teile man hat, welche man trägt. */
+        sets: kleidung.SETS.map((st) => ({
+          id: st.id, label: st.label, text: st.text,
+          teile: st.teile.map(([art, id]) => ({ art, id, label: label(art, id), artName: ART_NAME[art],
+            hat: hat(art, id), traegt: acc[kleidung.ARTEN[art].feld] === id, stufe: stufeVonStueck(art, id) })),
+        })),
+        stilSet: kleidung.setVon(acc),
+        /* Welche Kleidungsarten es gibt und wie ihre Liste hier heisst. Die
+           Garderobe baut ihre Abschnitte daraus, statt sie ein zweites Mal
+           aufzuzählen. */
+        kleidungArten: Object.entries(kleidung.ARTEN).map(([art, a]) => ({ art, topf: a.topf, name: a.name })),
         prunk: acc.prunk || null,
         garnitur: garniturVon(acc),
         /* Fuer jede Familie: wie viele es gibt, wie viele man hat, wie
@@ -673,6 +699,52 @@ function setupCosmetics(io, accounts) {
         spruchMax: SPRUCH_MAX,
       };
     }
+
+    socket.on("cos:outfitSave", ({ slot } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct();
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      if (!Number.isInteger(slot) || slot < 0 || slot > 2) return ack({ ok: false, error: "Unbekannter Outfitplatz." });
+      const items = {};
+      for (const [art, field] of Object.entries(ANGELEGT)) {
+        const list = Object.values(KATALOG[art]);
+        const item = list.find(x => (art === "avatar" ? x.emoji : art === "color" ? x.color : x.id) === acc[field])
+          || list.find(x => x.cost === 0);
+        if (!item || !hatStueck(acc, art, item.id)) return ack({ ok: false, error: "Ein angelegtes Stück ist nicht mehr verfügbar." });
+        items[art] = item.id;
+      }
+      if (!Array.isArray(acc.outfits)) acc.outfits = [null, null, null];
+      acc.outfits = acc.outfits.slice(0, 3);
+      acc.outfits[slot] = { items, savedAt: Date.now() };
+      accounts.save();
+      ack({ ok: true, ...state(acc) });
+    });
+
+    socket.on("cos:outfitWear", ({ slot } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct();
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      if (!Number.isInteger(slot) || slot < 0 || slot > 2) return ack({ ok: false, error: "Unbekannter Outfitplatz." });
+      const outfit = acc.outfits && acc.outfits[slot];
+      if (!outfit || !outfit.items) return ack({ ok: false, error: "Hier ist noch kein Look gespeichert." });
+      const patch = {};
+      // Validate the entire outfit before changing anything. Selling one part
+      // must neither grant it back nor leave a half-applied outfit behind.
+      for (const [art, field] of Object.entries(ANGELEGT)) {
+        const id = outfit.items[art];
+        /* Looks von vor der Kleidung kennen diese Arten nicht. Dort bleibt
+           angelegt, was gerade angelegt ist. */
+        if (id === undefined && kleidung.ARTEN[art]) continue;
+        const item = KATALOG[art][id];
+        if (!item || !hatStueck(acc, art, id)) return ack({ ok: false, error: "Ein Stück dieses Looks fehlt oder wird angeboten. Dein aktueller Look bleibt angelegt." });
+        patch[field] = art === "avatar" ? item.emoji : art === "color" ? item.color
+          : kleidung.ARTEN[art] ? (id === kleidung.ARTEN[art].leer ? null : id)
+          : item.cost === 0 ? null : id;
+      }
+      Object.assign(acc, patch);
+      accounts.save();
+      ack({ ok: true, ...state(acc), account: accounts.publicAccount(acc) });
+    });
 
     socket.on("cos:state", (ack) => {
       if (typeof ack !== "function") return;
@@ -751,6 +823,27 @@ function setupCosmetics(io, accounts) {
       else if (type === "aura") acc.aura = id === "keine" ? null : id;
       else if (type === "karte") acc.karte = id === "haus" ? null : id;
       else if (type === "zeichen") acc.zeichen = id === "keins" ? null : id;
+      else if (kleidung.ARTEN[type]) {
+        const a = kleidung.ARTEN[type];
+        acc[a.feld] = id === a.leer ? null : id;
+      }
+      accounts.save();
+      ack({ ok: true, ...state(acc), account: accounts.publicAccount(acc) });
+    });
+
+    /* Ein ganzes Set auf einmal anlegen. Nur wenn alle Teile da sind:
+       ein halbes Set anzulegen und den Rest still wegzulassen, sähe aus,
+       als hätte der Knopf nicht funktioniert. */
+    socket.on("cos:setAnlegen", ({ set } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const acc = acct(); if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const st = kleidung.SETS.find((x) => x.id === String(set || ""));
+      if (!st) return ack({ ok: false, error: "Dieses Set gibt es nicht." });
+      const fehlt = st.teile.filter(([art, id]) => !hatStueck(acc, art, id));
+      if (fehlt.length) {
+        return ack({ ok: false, error: `Dir fehlt noch: ${fehlt.map(([art, id]) => label(art, id)).join(", ")}.` });
+      }
+      for (const [art, id] of st.teile) acc[kleidung.ARTEN[art].feld] = id;
       accounts.save();
       ack({ ok: true, ...state(acc), account: accounts.publicAccount(acc) });
     });
@@ -766,15 +859,20 @@ function grant(acc, type, id, key) {
   if (!acc || !item) return false;
   const list = ensureOwned(acc)[TOPF[type]];
   if (list.includes(id)) return false;
+  const ownerKey = key || normKey(acc);
+  // A listed piece is still owned in the mint ledger. It must count as a
+  // duplicate, although it is temporarily unavailable for wearing.
+  if (praegbar(type, id)) {
+    if (praegung.stueckVon(ownerKey, type, id)) return false;
+    const minted = praegung.praegen(type, id, ownerKey, acc.name);
+    if (!minted) return false;
+  }
   list.push(id);
   /* Und die Nummer dazu. Der Schluessel kommt vom Aufrufer, wenn er ihn hat;
      sonst aus dem Namen. Das ist die eine Stelle, an der das vertretbar ist:
      grant() bekommt nur das Konto gereicht, und ein frisch vergebenes Stueck
      ohne Nummer waere schlimmer als eins mit einem Schluessel aus dem Namen.
      Nach einer Umbenennung zieht praegung.umbenennen die Kette nach. */
-  if (praegbar(type, id)) {
-    try { praegung.praegen(type, id, key || normKey(acc), acc.name); } catch {}
-  }
   /* Und nachsehen, ob damit gerade eine Kollektion voll geworden ist. Hier
      und nicht an den fuenf Aufrufstellen von grant(): sonst fehlt die
      Pruefung genau an der sechsten, die als naechstes dazukommt. */
@@ -827,7 +925,7 @@ function hatStueck(acc, art, id) {
 
 /* Nur als Rueckfall in grant(): der Schluessel eines Kontos, wenn der
    Aufrufer keinen mitgibt. accounts.js hier zu requiren waere ein Kreis. */
-const normKey = (acc) => String((acc && acc.name) || "").trim().toLowerCase();
+const normKey = (acc) => String((acc && (acc._key || acc.name)) || "").trim().toLowerCase();
 
 /* Admin: Stuecke von Hand geben und wegnehmen
 
@@ -857,6 +955,7 @@ function adminKatalog() {
 const ANGELEGT = { avatar: "avatar", color: "nameColor", style: "nameStyle", frame: "frame",
   title: "title", effect: "winEffect", spruch: "spruch", banner: "banner", schild: "schild",
   aura: "aura", karte: "karte", zeichen: "zeichen" };
+for (const [art, a] of Object.entries(kleidung.ARTEN)) ANGELEGT[art] = a.feld;
 
 /* Besitz umhaengen, ohne die Praegung anzufassen
  *
@@ -938,6 +1037,7 @@ const ART_NAME = {
   banner: "Profilbanner", schild: "Namensschild", aura: "Aura", karte: "Kartenrücken",
   zeichen: "Chat-Zeichen",
 };
+for (const [art, a] of Object.entries(kleidung.ARTEN)) ART_NAME[art] = a.name;
 
 function vorschauDaten(art, id) {
   const item = KATALOG[art] ? KATALOG[art][id] : null;
@@ -1170,6 +1270,18 @@ function publicLook(acc) {
     // Steht vor jeder Chat-Nachricht. Die Flaeche, die jeder liest.
     zeichen: acc.zeichen || null,
     winEffect: acc.winEffect || null,
+    /* Haut, Haare, Frisur und Hose der Figur. Kostet nichts und gehört
+       niemandem, reist aber mit, damit Garderobe, Profil und Welt
+       dieselbe Figur zeigen. Geprüft in public/js/welt/raeume.js. */
+    figur: acc.figur ? require("../public/js/welt/raeume.js").grundform(acc.figur) : null,
+    /* Was die Figur trägt, und ob daraus ein ganzes Set wird. Nur die
+       angelegten Teile, damit Chat und Listen nicht jedes Mal neun leere
+       Felder mitschleppen. */
+    kleidung: kleidung.angelegt(acc),
+    stilSet: kleidung.setVon(acc),
+    /* In Worten, für die Spielerkarte: wer auf jemanden tippt, will wissen,
+       was das für ein Hut ist, nicht welche Kennung er hat. */
+    traegt: Object.entries(kleidung.angelegt(acc)).map(([art, id]) => [ART_NAME[art] || art, label(art, id)]),
   };
 }
 
@@ -1207,14 +1319,10 @@ const FORTUNA_STUECKE = [
 ];
 
 function fortunaVergeben(accounts) {
-  let n = 0;
-  try {
-    for (const a of accounts.rawAll()) {
-      const l = a.cosOwned && a.cosOwned.styles;
-      if (Array.isArray(l) && l.includes("rad_fortuna")) n++;
-    }
-  } catch {}
-  return n;
+  // Issuance survives listing, transfer and destruction. Legacy holdings are
+  // included until their first mint migration has completed.
+  const legacy = accounts.rawAll().filter(a => (a.cosOwned?.styles || []).includes("rad_fortuna")).length;
+  return Math.max(legacy, praegung.ausgegeben("style", "rad_fortuna"));
 }
 
 const hatFortuna = (acc) => !!(acc && acc.cosOwned && Array.isArray(acc.cosOwned.styles)
@@ -1234,5 +1342,5 @@ function gibFortuna(acc) {
   return erhalten;
 }
 
-module.exports = { setupCosmetics, grant, label, ZEICHEN, ART_NAME, stufeVonStueck, garniturVon, FAMILIEN, GARNITUR_AB, vorschauDaten, prunkVon, stufeKennung, hatStueck, sammlungAnsage, praegbar, handelbar, praegeText, praegungNachtragen,
+module.exports = { TOPF, KATALOG, setupCosmetics, grant, label, ZEICHEN, ART_NAME, stufeVonStueck, garniturVon, FAMILIEN, GARNITUR_AB, vorschauDaten, prunkVon, stufeKennung, hatStueck, sammlungAnsage, praegbar, handelbar, praegeText, praegungNachtragen,
   besitzGeben, besitzNehmen, adminKatalog, adminGib, adminNimm, publicLook, eintrittsSpruch, saubererSpruch, SPRUCH_MAX, AVATARS, COLORS, STYLES, FRAMES, TITLES, EFFEKTE, SPRUECHE, BANNER, SCHILDER, AUREN, KARTEN, FORTUNA_MAX, FORTUNA_STUECKE, fortunaVergeben, hatFortuna, gibFortuna };

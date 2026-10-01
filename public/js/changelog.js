@@ -25,6 +25,34 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-01",
+      datum: "1. Oktober 2026",
+      titel: "Das Casino zum Herumlaufen",
+      gross: true,
+      items: [
+        { icon: "slots", titel: "Die Lobby ist eine Welt",
+          text: "Du läufst mit deiner Figur durch Casino, Kontor, Ruhmeshalle, Terrasse, Spielhalle und Ladenstraße und siehst, wer gerade da ist. Spiele öffnen sich direkt am Automaten oder Tisch, die Schnellwahl bringt dich mit einem Tipp hin." },
+
+        { icon: "kosmetik", titel: "Kleidung für deine Figur",
+          text: "Hüte, Frisuren, Oberteile, Kleider, Schuhe, Brillen, Fahrzeuge und Haustiere, dazu Style-Sets und Gesten zu deinen Stücken. Gewöhnliches hängt dauerhaft an der Kleiderstange, Besonderes im Schaufenster der Woche und in der Kleiderkiste." },
+
+        { icon: "stern", titel: "Die Ladenstraße",
+          text: "Hinter der Terrasse: im Zoo kommen montags und donnerstags neue Tiere, die du benennen kannst, im Autohaus gibt es Fahrzeuge ab deinem Level, am Kiosk Snacks ab 500 Chips. Mit M oder dem Knopf oben steigst du ab und wieder auf." },
+
+        { icon: "pinco", titel: "Spielhalle und mehr im Raum",
+          text: "Crash, Mines, Towers, Pinco Ball, Würfelpoker und Higher/Lower haben eigene Automaten in der Neon-Spielhalle. Roulette, Glücksrad, Rennwetten und Lotterie spielst du direkt im Raum, und alle sehen zu." },
+
+        { icon: "slots", titel: "Automaten im Vollbild",
+          text: "Jeder Automat steht in seiner eigenen Szene über den ganzen Bildschirm, und bei einem großen Gewinn explodiert er im Raum für alle sichtbar." },
+
+        { icon: "warenkorb", titel: "Ans Haus abgeben",
+          text: "Im Markt nimmt das Haus Stücke, die du nicht mehr willst, für ein Viertel ihres Werts zurück, bis zu zehn am Tag." },
+
+        { icon: "ansage", titel: "Der Casino-Kurier",
+          text: "Der Tagesbericht ist jetzt eine Zeitung, auch am Zeitungsständer neben der Eingangstür." },
+      ],
+    },
+    {
       /*
        * Ein Eintrag fuer das ganze Update.
        *

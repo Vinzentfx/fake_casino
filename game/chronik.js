@@ -40,16 +40,24 @@ let schreibZeit = null;
 
 /* Gesammelt schreiben. Ein Renntag setzt ein Dutzend Eintraege in wenigen
    Sekunden ab; jeder einzeln waere ein eigener Dateischreibvorgang. */
+function schreiben() {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(FILE, JSON.stringify({ v: 1, items: state.items }));
+  } catch {}
+}
 function save() {
   if (schreibZeit) return;
-  schreibZeit = setTimeout(() => {
-    schreibZeit = null;
-    try {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-      fs.writeFileSync(FILE, JSON.stringify({ v: 1, items: state.items }));
-    } catch {}
-  }, 1500);
+  schreibZeit = setTimeout(() => { schreibZeit = null; schreiben(); }, 1500);
   if (schreibZeit.unref) schreibZeit.unref();
+}
+/** Was noch auf das gesammelte Schreiben wartet, sofort auf die Platte.
+    Für das Backup: sonst fehlen ihm die letzten Sekunden. */
+function jetztSchreiben() {
+  if (!schreibZeit) return;
+  clearTimeout(schreibZeit);
+  schreibZeit = null;
+  schreiben();
 }
 
 function aufraeumen() {
@@ -122,4 +130,4 @@ function umbenennen(alt, neu) {
   return n;
 }
 
-module.exports = { notiere, seit, anzahl, umbenennen };
+module.exports = { notiere, seit, anzahl, umbenennen, jetztSchreiben };

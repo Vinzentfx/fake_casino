@@ -806,7 +806,7 @@ function setupHorses(_io, _accounts) {
     socket.on("horses:bet", ({ lane, type, amount } = {}, ack) => {
       if (typeof ack !== "function") return;
       if (!key()) return ack({ ok: false, error: "Bitte zuerst einloggen." });
-      if (race.phase !== "betting") return ack({ ok: false, error: "Wetten sind zu, das Rennen läuft." });
+      if (race.phase !== "betting" || Date.now() >= race.endsAt) return ack({ ok: false, error: "Wetten sind zu, das Rennen läuft." });
       lane = Math.floor(Number(lane));
       amount = Math.floor(Number(amount));
       if (!race.field[lane]) return ack({ ok: false, error: "Unbekanntes Pferd." });
@@ -817,6 +817,8 @@ function setupHorses(_io, _accounts) {
       if (onHorse + amount > MAX_PER_HORSE) return ack({ ok: false, error: `Max. ${MAX_PER_HORSE.toLocaleString("de-DE")} Chips auf ein Pferd.` });
       const staked = mine.reduce((s, b) => s + b.amount, 0);
       if (staked + amount > MAX_PER_RACE) return ack({ ok: false, error: `Max. ${MAX_PER_RACE.toLocaleString("de-DE")} Chips Gesamteinsatz pro Rennen.` });
+      const limitError = require("./strafen").einsatzFehler(me(), staked + amount);
+      if (limitError) return ack({ ok: false, error: limitError });
       const deduct = accounts.adjustChips(key(), -amount);
       if (!deduct.ok) return ack({ ok: false, error: "Nicht genug Chips." });
       const odds = type === "win" ? race.odds[lane].win : race.odds[lane].place;
@@ -851,6 +853,9 @@ function setupHorses(_io, _accounts) {
         return ack({ ok: false, error: "Schon angemeldet." });
       if (race.entries.length >= FIELD_SIZE) return ack({ ok: false, error: "Nächstes Rennen ist voll." });
       if (!["front", "closer", "stayer"].includes(tactic)) tactic = "stayer";
+      const queued = race.entries.filter((entry) => store.horses[entry.horseId]?.owner === key()).length;
+      const limitError = require("./strafen").einsatzFehler(accounts.get(key()), (queued + 1) * ENTRY_FEE);
+      if (limitError) return ack({ ok: false, error: limitError });
       const deduct = accounts.adjustChips(key(), -ENTRY_FEE);
       if (!deduct.ok) return ack({ ok: false, error: `Startgeld ${ENTRY_FEE.toLocaleString("de-DE")} Chips fehlt.` });
       accounts.recordHand(key(), -ENTRY_FEE, true, "horses");

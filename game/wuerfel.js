@@ -1,31 +1,9 @@
 "use strict";
 
 /**
- * Würfelpoker, Einzelspieler, serverseitig entschieden.
- *
- * Fuenf Wuerfel, ein Wurf, dann darfst du beliebige Wuerfel behalten und den
- * Rest einmal neu werfen. Was am Ende liegt, zahlt nach fester Tabelle.
- *
- * Warum nur ein Nachwurf, und warum diese Tabelle:
- *
- * Mit zwei Nachwuerfen liegt praktisch jede Runde bei "drei gleiche oder
- * besser", simuliert kamen "vier gleiche" in 21 % der Runden. Eine Tabelle,
- * die darauf noch etwas auszahlt, muesste so klein sein, dass vier gleiche
- * das 1,25-fache bringen. Das fuehlt sich falsch an. Mit einem Nachwurf sind
- * die Haende selten genug fuer Auszahlungen, die sich lohnen.
- *
- * Die Tabelle folgt der echten Seltenheit in diesem Spiel, nicht dem
- * Poker-Rang. Wer Wuerfel halten darf, kommt viel leichter an eine Strasse
- * als die Poker-Rangfolge vermuten laesst: gezielt gespielt faellt die grosse
- * Strasse in 8 % der Runden, vier gleiche in 12 %. Deshalb liegen sie hier
- * dicht beieinander. Die Chancen stehen in der Oberflaeche, damit niemand
- * nach Poker-Gefuehl rechnet und sich getaeuscht fuehlt.
- *
- * Kalibriert per Simulation (250.000 Runden je Strategie) gegen drei
- * Spielweisen: Gruppen jagen, Strassen jagen, gemischt. Die beste kommt auf
- * 96,7 %, naives Spiel auf rund 86 %. Dass gutes Spiel mehr bringt, ist
- * Absicht; damit der Abstand nicht an fehlender Information liegt, schlaegt
- * die Oberflaeche vor, welche Wuerfel sich zu halten lohnen.
+ * Würfelpoker: ein Startwurf und höchstens ein Nachwurf.
+ * Auszahlung und Haltehilfe werden aus derselben Tabelle berechnet. Die
+ * Kalibrierung wird kombinatorisch getestet statt geschätzt.
  */
 
 const crypto = require("crypto");
@@ -39,12 +17,13 @@ const IDLE_SETTLE_MS = 10 * 60 * 1000;
  * verloren. Bewusst keine Trostpreise: sie muessten so klein sein, dass sie
  * sich wie ein Verlust anfuehlen ("du gewinnst 0,25x"). */
 const TABELLE = [
-  { id: "fuenf",  label: "Fünf gleiche",   zahlt: 25,  chance: "1 zu 77" },
-  { id: "grosse", label: "Große Straße",   zahlt: 3,   chance: "1 zu 13" },
-  { id: "full",   label: "Full House",     zahlt: 2.5, chance: "1 zu 11" },
-  { id: "vier",   label: "Vier gleiche",   zahlt: 2.5, chance: "1 zu 8" },
+  { id: "fuenf",  label: "Fünf gleiche",   zahlt: 22 },
+  { id: "grosse", label: "Große Straße",   zahlt: 2.6 },
+  { id: "full",   label: "Full House",     zahlt: 2.3 },
+  { id: "vier",   label: "Vier gleiche",   zahlt: 2.15 },
 ];
 const ZAHLT = Object.fromEntries(TABELLE.map((t) => [t.id, t.zahlt]));
+function auszahlung(bet, kat) { return Math.min(MAX_WIN, Math.floor(bet * Math.round((ZAHLT[kat] || 0) * 100) / 100)); }
 
 const wurf = () => 1 + crypto.randomInt(6);
 
@@ -83,26 +62,46 @@ const NAMEN = {
   kleine: "Kleine Straße", drei: "Drei gleiche", zweiPaar: "Zwei Paare", paar: "Ein Paar", nichts: "Nichts",
 };
 
-/**
- * Welche Wuerfel wuerde ein vernuenftiger Spieler halten?
- *
- * Nur ein Vorschlag fuer die Oberflaeche, niemand muss ihm folgen. Er
- * existiert, damit der Abstand zwischen gutem und naivem Spiel nicht daran
- * haengt, ob jemand die Wahrscheinlichkeiten im Kopf hat.
- */
-function vorschlag(w) {
-  const c = zaehle(w);
-  let beste = 0, augen = 0;
-  for (let f = 1; f <= 6; f++) if (c[f] > beste) { beste = c[f]; augen = f; }
-  const f = folge(c);
-  // Vier zu einer Strasse schlaegt ein blosses Paar.
-  if (f.laenge >= 4 && beste < 3) {
-    const gesucht = new Set(f.werte), schon = new Set();
-    return w.map((x) => { if (gesucht.has(x) && !schon.has(x)) { schon.add(x); return true; } return false; });
+/** Erwartete Auszahlung für festgehaltene Würfel. Jeder Nachwurf ist gleich wahrscheinlich. */
+function erwartung(gehalten, bet, memo) {
+  const key = gehalten.join("");
+  if (memo.has(key)) return memo.get(key);
+  const zahl = gehalten.reduce((summe, n) => summe + n, 0);
+  let wert;
+  if (zahl === WUERFEL) {
+    const hand = gehalten.flatMap((n, i) => Array(n).fill(i + 1));
+    wert = auszahlung(bet, kategorie(hand));
+  } else {
+    wert = 0;
+    for (let i = 0; i < 6; i++) {
+      gehalten[i]++;
+      wert += erwartung(gehalten, bet, memo) / 6;
+      gehalten[i]--;
+    }
   }
-  if (beste >= 2) return w.map((x) => x === augen);
-  return w.map(() => false);
+  memo.set(key, wert);
+  return wert;
 }
+
+function optimaleWahl(w, bet = 100) {
+  const memo = new Map();
+  let besteMaske = 0, besterWert = -1, besteAnzahl = -1;
+  for (let maske = 0; maske < (1 << WUERFEL); maske++) {
+    const gehalten = Array(6).fill(0);
+    let anzahl = 0;
+    for (let i = 0; i < WUERFEL; i++) if (maske & (1 << i)) {
+      gehalten[w[i] - 1]++;
+      anzahl++;
+    }
+    const wert = erwartung(gehalten, bet, memo);
+    if (wert > besterWert + 1e-9 || (Math.abs(wert - besterWert) <= 1e-9 && anzahl > besteAnzahl)) {
+      besterWert = wert; besteMaske = maske; besteAnzahl = anzahl;
+    }
+  }
+  return { halten: w.map((_, i) => !!(besteMaske & (1 << i))), wert: besterWert };
+}
+
+function vorschlag(w, bet = 100) { return optimaleWahl(w, bet).halten; }
 
 function setupWuerfel(io, accounts) {
   const spiele = new Map();
@@ -119,7 +118,7 @@ function setupWuerfel(io, accounts) {
 
   function abrechnen(key, g) {
     const kat = kategorie(g.wuerfel);
-    const payout = Math.min(MAX_WIN, Math.floor(g.bet * (ZAHLT[kat] || 0)));
+    const payout = auszahlung(g.bet, kat);
     g.over = true; g.kategorie = kat; g.payout = payout;
     spiele.delete(key);
     if (payout > 0) accounts.adjustChips(key, payout);
@@ -143,8 +142,8 @@ function setupWuerfel(io, accounts) {
         wurf: g.wurf, nachwuerfe: g.nachwuerfe, over: g.over,
         kategorie: kat, kategorieName: NAMEN[kat],
         zahlt: ZAHLT[kat] || 0,
-        moeglich: Math.min(MAX_WIN, Math.floor(g.bet * (ZAHLT[kat] || 0))),
-        vorschlag: g.over ? null : vorschlag(g.wuerfel),
+        moeglich: auszahlung(g.bet, kat),
+        vorschlag: g.over ? null : vorschlag(g.wuerfel, g.bet),
         tabelle: TABELLE, maxWin: MAX_WIN,
         ...extra,
       };
@@ -235,4 +234,4 @@ function setupWuerfel(io, accounts) {
   });
 }
 
-module.exports = { setupWuerfel, _intern: { kategorie, vorschlag, TABELLE, ZAHLT, NAMEN, MIN_BET, MAX_BET, MAX_WIN } };
+module.exports = { setupWuerfel, _intern: { kategorie, vorschlag, optimaleWahl, auszahlung, TABELLE, ZAHLT, NAMEN, MIN_BET, MAX_BET, MAX_WIN } };

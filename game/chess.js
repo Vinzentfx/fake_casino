@@ -196,9 +196,10 @@ function setupChess(io, accounts) {
 
   function finish(match, { winner, draw, reason }) {
     if (match.state === "done") return;
+    const finalClocks = liveClocks(match);
     match.state = "done";
     if (match.clockTimer) { clearInterval(match.clockTimer); match.clockTimer = null; }
-    match.clocks = liveClocks(match); // anhalten
+    match.clocks = finalClocks; // anhalten
     const players = [...match.players.values()];
     const walkover = reason === "walkover";
 
@@ -274,6 +275,8 @@ function setupChess(io, accounts) {
       if (!TIME_CONTROLS[tc]) tc = DEFAULT_TC;
       const a = acc(socket);
       if (!a || a.chips < buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      const limitError = require("./strafen").einsatzFehler(a, buyIn);
+      if (limitError) return typeof ack === "function" && ack({ ok: false, error: limitError });
       leaveCurrent(socket);
       const code = makeCode();
       ensureChessStats(a);
@@ -299,6 +302,8 @@ function setupChess(io, accounts) {
       if (match.players.size >= 2 && !match.players.has(socket.data.account)) return typeof ack === "function" && ack({ ok: false, error: "Match ist voll." });
       const a = acc(socket);
       if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: "Nicht genug Chips für den Buy-in." });
+      const limitError = require("./strafen").einsatzFehler(a, match.buyIn);
+      if (limitError) return typeof ack === "function" && ack({ ok: false, error: limitError });
       leaveCurrent(socket);
       ensureChessStats(a);
       match.players.set(socket.data.account, { id: socket.data.account, name: a.name, socket, color: null, rating: a.chessRating });
@@ -313,7 +318,7 @@ function setupChess(io, accounts) {
       if (match.host !== socket.data.account) return typeof ack === "function" && ack({ ok: false, error: "Nur der Host startet." });
       if (match.state !== "waiting") return typeof ack === "function" && ack({ ok: false, error: "Läuft bereits." });
       if (match.players.size !== 2) return typeof ack === "function" && ack({ ok: false, error: "Warte auf 2 Spieler." });
-      for (const p of match.players.values()) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      for (const p of match.players.values()) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); const limitError = require("./strafen").einsatzFehler(a, match.buyIn); if (limitError) return typeof ack === "function" && ack({ ok: false, error: `${p.name}: ${limitError}` }); }
       typeof ack === "function" && ack({ ok: true });
       startGame(match);
     });
@@ -340,8 +345,9 @@ function setupChess(io, accounts) {
       // Erst die verbrauchte Bedenkzeit abziehen, ist sie aus, ist das Spiel verloren.
       const now = Date.now();
       const turn = match.game.turn();
-      match.clocks[turn] = Math.max(0, match.clocks[turn] - (now - match.turnStart));
-      if (match.clocks[turn] <= 0) {
+      const restzeit = Math.max(0, match.clocks[turn] - (now - match.turnStart));
+      if (restzeit <= 0) {
+        match.clocks[turn] = 0;
         const winnerP = [...match.players.values()].find((p) => p.color !== turn);
         finish(match, { winner: winnerP, reason: "timeout" });
         return typeof ack === "function" && ack({ ok: false, error: "Zeit abgelaufen." });
@@ -350,7 +356,7 @@ function setupChess(io, accounts) {
       try { mv = match.game.move({ from, to, promotion: promotion || "q" }); }
       catch { mv = null; }
       if (!mv) return typeof ack === "function" && ack({ ok: false, error: "Ungültiger Zug." });
-      match.clocks[turn] += match.inc; // Zeitgutschrift
+      match.clocks[turn] = restzeit + match.inc; // Zeitgutschrift
       match.turnStart = now;
       match.lastMove = { from: mv.from, to: mv.to };
       typeof ack === "function" && ack({ ok: true });
@@ -370,6 +376,12 @@ function setupChess(io, accounts) {
     socket.on("chess:resign", (ack) => {
       const match = currentMatch(socket);
       if (!match || match.state !== "playing") return typeof ack === "function" && ack({ ok: false, error: "Kein laufendes Spiel." });
+      const turn = match.game.turn();
+      if (liveClocks(match)[turn] <= 0) {
+        const winnerP = [...match.players.values()].find((p) => p.color !== turn);
+        finish(match, { winner: winnerP, reason: "timeout" });
+        return typeof ack === "function" && ack({ ok: false, error: "Zeit abgelaufen." });
+      }
       const me = match.players.get(socket.data.account);
       const opp = [...match.players.values()].find((p) => p.id !== socket.data.account);
       if (me && opp) finish(match, { winner: opp, reason: "resign" });
@@ -381,7 +393,7 @@ function setupChess(io, accounts) {
       if (!match || match.state !== "done") return typeof ack === "function" && ack({ ok: false, error: "Kein beendetes Spiel." });
       const connected = [...match.players.values()].filter((p) => p.socket);
       if (connected.length !== 2) return typeof ack === "function" && ack({ ok: false, error: "Gegner ist nicht mehr da." });
-      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); }
+      for (const p of connected) { const a = accounts.get(p.id); if (!a || a.chips < match.buyIn) return typeof ack === "function" && ack({ ok: false, error: `${p.name} hat nicht genug Chips.` }); const limitError = require("./strafen").einsatzFehler(a, match.buyIn); if (limitError) return typeof ack === "function" && ack({ ok: false, error: `${p.name}: ${limitError}` }); }
       match.rematchWant = match.rematchWant || [];
       if (!match.rematchWant.includes(socket.data.account)) match.rematchWant.push(socket.data.account);
       typeof ack === "function" && ack({ ok: true });

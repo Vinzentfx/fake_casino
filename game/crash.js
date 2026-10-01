@@ -126,7 +126,9 @@ function setupCrash(io, accounts) {
       const m = mAt(elapsed);
       // Auto-Auszahlungen, die ihr Ziel erreicht haben.
       for (const [key, b] of Object.entries(state.bets)) {
-        if (!b.cashedAt && b.target && m >= b.target && b.target <= state.crashPoint) {
+        // Gleichstand mit dem Crashpunkt ist zu spät: Ziel und Crash werden
+        // zum selben Zeitpunkt erreicht, unabhängig vom 100-ms-Server-Takt.
+        if (!b.cashedAt && b.target && m >= b.target && b.target < state.crashPoint) {
           const payout = cashOut(key, b.target);
           const s = onlineSocket(key);
           // Den Kontostand mitschicken. Ohne ihn blieb nach einem
@@ -160,7 +162,7 @@ function setupCrash(io, accounts) {
       if (typeof ack !== "function") return;
       const a = acc(socket);
       if (!a) return ack({ ok: false, error: "Nicht eingeloggt." });
-      if (state.phase !== "betting") return ack({ ok: false, error: "Gerade geht kein Einsatz, warte auf die nächste Runde." });
+      if (state.phase !== "betting" || Date.now() >= state.endsAt) return ack({ ok: false, error: "Gerade geht kein Einsatz, warte auf die nächste Runde." });
       const key = socket.data.account;
       if (state.bets[key]) return ack({ ok: false, error: "Du hast diese Runde schon gesetzt." });
       amount = Math.floor(Number(amount));
@@ -169,6 +171,7 @@ function setupCrash(io, accounts) {
       if (a.chips < amount) return ack({ ok: false, error: "Nicht genug Chips." });
       let tgt = target != null ? Math.floor(Number(target) * 100) / 100 : null;
       if (tgt != null && (!Number.isFinite(tgt) || tgt < 1.01)) tgt = null;
+      if (tgt != null && tgt >= MAX_CRASH) return ack({ ok: false, error: `Auto-Auszahlung muss unter ${MAX_CRASH}× liegen.` });
       const res = accounts.adjustChips(key, -amount);
       if (!res.ok) return ack({ ok: false, error: res.error });
       state.bets[key] = { name: a.name, amount, target: tgt, cashedAt: null };
@@ -183,8 +186,9 @@ function setupCrash(io, accounts) {
       const key = socket.data.account;
       const b = state.bets[key];
       if (!b || b.cashedAt) return ack({ ok: false, error: "Nichts zum Auszahlen." });
-      const m = mAt(Date.now() - state.startAt);
-      if (m > state.crashPoint) return ack({ ok: false, error: "Zu spät, schon geplatzt!" });
+      const elapsed = Date.now() - state.startAt;
+      const m = mAt(elapsed);
+      if (elapsed >= crashTimeMs(state.crashPoint)) return ack({ ok: false, error: "Zu spät, schon geplatzt!" });
       const payout = cashOut(key, m);
       ack({ ok: true, mult: m, payout, account: accounts.publicAccount(accounts.get(key)) });
       broadcast("crash:round");

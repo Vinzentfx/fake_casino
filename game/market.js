@@ -188,7 +188,7 @@ function zuruecknehmen(accounts, key, id) {
   if (a.verkaeufer !== key) return err("Das ist nicht dein Angebot.");
   const acc = accounts.get(key);
   const st = praegung.stueck(a.uid);
-  if (!acc || !st) return err("Geht gerade nicht.");
+  if (!acc || !st || st.besitzer !== a.verkaeufer) return err("Das Angebot ist nicht mehr gültig.");
   cosmetics.besitzGeben(acc, st.art, st.id);
   accounts.save();
   delete store.angebote[id];
@@ -203,18 +203,22 @@ function kaufen(accounts, key, id) {
   const acc = accounts.get(key);
   const verk = accounts.get(a.verkaeufer);
   const st = praegung.stueck(a.uid);
-  if (!acc || !st) return err("Geht gerade nicht.");
+  if (!acc || !st || st.besitzer !== a.verkaeufer) return err("Das Angebot ist nicht mehr gültig.");
+  /* Ohne auflösbares Verkäuferkonto (alter Schlüssel, gelöschtes Konto)
+     ginge der Erlös ins Leere, der Käufer hätte aber bezahlt. Solche
+     Angebote ruhen, bis der Besitzer von Hand geklärt ist. */
+  if (!verk) return err("Der Verkäufer lässt sich gerade nicht zuordnen. Das Angebot ruht, bis das geklärt ist.");
   if ((acc.chips || 0) < a.preis) return err("Nicht genug Chips.");
   /* Wer das Stück schon hat, kann kein zweites davon tragen: `cosOwned` ist
      eine Liste ohne Doppelte, das zweite Exemplar wäre unsichtbar und für
      immer weg. */
   const owned = (acc.cosOwned || {})[TOPF_VON[st.art]] || [];
-  if (owned.includes(st.id)) return err("Du hast dieses Stück schon.");
+  if (owned.includes(st.id) || praegung.stueckVon(key, st.art, st.id)) return err("Du besitzt dieses Stück schon, möglicherweise als Angebot.");
 
   const gebuehr = Math.round(a.preis * GEBUEHR);
   const anVerkaeufer = a.preis - gebuehr;
   accounts.adjustChips(key, -a.preis);
-  if (verk) accounts.adjustChips(a.verkaeufer, anVerkaeufer);
+  accounts.adjustChips(a.verkaeufer, anVerkaeufer);
   cosmetics.besitzGeben(acc, st.art, st.id);
   accounts.save();
   praegung.uebertragen(a.uid, key, acc.name, a.preis);
@@ -237,9 +241,10 @@ function kaufen(accounts, key, id) {
    kleinere Übel, und falsch werden kann sie nur, wenn eine neue Art dazukommt
    — dann fehlt hier ein Eintrag und das Stück lässt sich schlicht nicht
    kaufen, statt still im Nichts zu landen. */
-const TOPF_VON = { avatar: "avatars", color: "colors", style: "styles", frame: "frames",
-  title: "titles", effect: "effects", spruch: "sprueche", banner: "banner",
-  schild: "schilder", aura: "auren", karte: "karten", zeichen: "zeichen" };
+/* Seit der Kleidung kommt die Liste aus dem Katalog selbst: neun neue Arten
+   auf einmal hier nachzutragen ist genau der Fall, vor dem der Kommentar
+   oben warnt. */
+const TOPF_VON = require("./cosmetics").TOPF;
 
 /**
  * Der Verkäufer heißt jetzt anders.
