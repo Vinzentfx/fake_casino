@@ -93,8 +93,7 @@
       updateJackpotLine(res && res.jackpot);
       if (res?.bonus && !pvpMode && !machine) {
         wunschAutomat = null;
-        openMachine(res.bonus.machineId);
-        toast("Deine gespeicherten Freispiele sind bereit.");
+        openMachine(res.bonus.machineId); // sagt selbst, dass die Freispiele weiterlaufen
       } else wunschOeffnen();
     });
   }
@@ -188,25 +187,43 @@
     const autoBtn = $("#auto-roll");
     if (autoBtn) { autoBtn.classList.remove("active"); autoBtn.style.display = lockBet ? "none" : ""; }
     if (pvpMode) $("#machine-title").textContent = machine.name + " (Duell)";
-    else restoreBonus();
+    else restoreBonus(true);
   }
-  function restoreBonus() {
+  /*
+   * Den Stand vom Server holen: Freispiele und Guthaben.
+   *
+   * `weiter` heißt: liegen noch Freispiele an, laufen sie von selbst weiter.
+   * Vorher blieben sie nach einem Verbindungsabbruch einfach stehen: die
+   * Antwort auf den laufenden Dreh kam nie an, der Automat stand für immer
+   * auf „dreht gerade“, und auch die zurückgekehrte Verbindung setzte nichts
+   * fort. Die Freispiele lagen sicher am Konto, nur drehen ging nicht mehr.
+   * Höchstens dreimal hintereinander von selbst, damit ein Server, der
+   * gerade gar nicht dreht, keine Endlosschleife auslöst.
+   */
+  let selbstWeiter = 0;
+  function restoreBonus(weiter = false) {
     const id = machine?.id;
     if (!id || pvpMode) return;
     socket.emit("slots:state", r => {
       if (!r?.ok || machine?.id !== id || pvpMode) return;
+      if (typeof r.balance === "number") window.Casino.setChips(r.balance);
       if (r.bonus && r.bonus.machineId === id) {
         freeActive = true;
         const index = machine.bets.indexOf(r.bonus.bet);
         if (index >= 0) betIndex = index;
         updateBet(); updateFreeBadge(r.bonus);
+        if (weiter && !spinning && selbstWeiter < 3) {
+          selbstWeiter++;
+          toast(`Deine Freispiele laufen weiter: noch ${r.bonus.remaining}.`);
+          setTimeout(() => { if (machine?.id === id && freeActive && !spinning) doSpin(); }, 900);
+        }
       } else {
         freeActive = false;
         $("#free-badge").classList.remove("show");
       }
     });
   }
-  socket.on("connect", () => { if (machine && !pvpMode) restoreBonus(); });
+  socket.on("connect", () => { if (machine && !pvpMode) restoreBonus(true); });
 
   function closeMachine() {
     autoRoll = false;
@@ -413,19 +430,26 @@
     startRoll();
 
     const event = pvpMode ? "pvp:spin" : "slots:spin";
-    const res = await new Promise((resolve) => socket.emit(event, { machineId: machine.id, bet, expectedFree: wasFree }, resolve));
+    /* Höchstens 15 Sekunden auf die Antwort warten. Bricht die Verbindung
+       mitten im Dreh ab, käme sie sonst nie, und der Automat bliebe für
+       immer stehen. Ob der Dreh auf dem Server noch durchging, sagt danach
+       restoreBonus mit dem echten Stand. */
+    const res = await new Promise((resolve) => socket.timeout(15000).emit(event, { machineId: machine.id, bet, expectedFree: wasFree },
+      (err, r) => resolve(err ? { ok: false, verbindung: true, error: "Die Verbindung war kurz weg. Der Stand wird neu geholt." } : r)));
 
     if (!res || !res.ok) {
       stopRatchet();
       buildReels(true);
       if (!wasFree) { if (pvpMode) { pvp.chips += bet; updateHud(); } else window.Casino.adjustChips(bet); }
       toast((res && res.error) || "Spin fehlgeschlagen.");
-      if (!pvpMode) restoreBonus();
+      // Nach einem Verbindungsabbruch laufen offene Freispiele von selbst weiter, nach einem echten Fehler nicht.
+      if (!pvpMode) restoreBonus(!!(res && res.verbindung));
       spinning = false;
       setControlsEnabled(true);
       return;
     }
 
+    selbstWeiter = 0;
     await landRoll(res.displayGrid || res.grid);
     stopRatchet();
     await revealMystery(res);

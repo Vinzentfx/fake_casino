@@ -915,7 +915,10 @@ function setupSlots(io, accounts) {
     socket.on("slots:state", (ack) => {
       if (typeof ack !== "function") return;
       if (!socket.data.account) return ack({ ok: false, error: "Bitte zuerst einloggen." });
-      ack({ ok: true, bonus: bonusState() });
+      /* Mit Guthaben: nach einem Verbindungsabbruch kam die Antwort auf den
+         letzten Dreh vielleicht nie an, und oben stand der alte Stand. */
+      const acc = accounts.get(socket.data.account);
+      ack({ ok: true, bonus: bonusState(), balance: acc ? acc.chips : null });
     });
 
     // Automaten für das angemeldete Konto freischalten.

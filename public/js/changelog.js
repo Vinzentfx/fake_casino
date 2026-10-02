@@ -25,6 +25,15 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-03",
+      datum: "3. Oktober 2026",
+      titel: "Freispiele gehen nicht mehr verloren",
+      items: [
+        { icon: "slots", titel: "Freispiele nach einem Verbindungsabbruch",
+          text: "Riss die Verbindung mitten in den Freispielen ab, blieb der Automat stehen, und man kam nicht mehr weiter. Jetzt laufen sie von selbst weiter, sobald die Verbindung zurück ist, und auch, wenn du den Automaten später wieder öffnest." },
+      ],
+    },
+    {
       id: "2026-10-02",
       datum: "2. Oktober 2026",
       titel: "Die Tür ist auf",
