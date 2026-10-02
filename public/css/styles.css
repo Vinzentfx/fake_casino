@@ -12914,3 +12914,9 @@ html:not(.reduce-motion) .sch-staub_schmelzkern { animation: staub-schmelze 4.2s
 html:not(.reduce-motion) .au-staub_sternenschmiede::before { animation: pl-spin 5.8s linear infinite; }
 html:not(.reduce-motion) .au-staub_sternenschmiede::after { animation: staub-funkenbahn 2.2s ease-in-out infinite; }
 @keyframes staub-funkenbahn { 0%,100% { transform: rotate(0deg) scale(.75); opacity: .45; } 50% { transform: rotate(180deg) scale(1.18); opacity: 1; } }
+
+/* Ein offenes Stadt-Ereignis über der Karte (economy.js). Leer nimmt es keinen Platz. */
+.city-ereignis:empty { display: none; }
+.city-ereignis { margin: 0 0 12px; }
+.city-ereignis > .cd-row { margin: 0; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--accent) !important; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
+.city-ereignis > .cd-row > b::before { content: "Stadt-Ereignis · "; color: var(--text-dim); font-weight: 600; }

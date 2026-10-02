@@ -38,6 +38,12 @@
 
         { icon: "bestenliste", titel: "Wer im Warteraum war",
           text: "Alle, die vor der Öffnung im Foyer standen, tragen jetzt den Titel „Premierengast“. Wer am Schätzglas am nächsten dran war, hat das Augenmaß bewiesen." },
+
+        { icon: "bestenliste", titel: "Das Podium zählt alles",
+          text: "Die Bestenliste der Reichsten und das Podium in der Ruhmeshalle rechnen jetzt mit dem ganzen Vermögen: Chips, Bank, Häuser und Aktien. Wer sein Geld in die Stadt steckt, fällt nicht mehr herunter." },
+
+        { icon: "businesses", titel: "Stadt-Ereignisse sind wieder zu sehen",
+          text: "Wartet in der Stadt eine Entscheidung auf dich, steht sie jetzt direkt über der Karte." },
       ],
     },
     {

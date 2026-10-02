@@ -481,6 +481,11 @@
   function renderEmpire(me) {
     const box = $("#biz-buffs");
     if (!box) return;
+    /* Das Ereignis steht in einem eigenen Kasten über der Karte. Im
+       Imperium war es über der Welt zugeklappt und damit unsichtbar, obwohl
+       es das Einzige in der Stadt ist, das auf eine Entscheidung wartet. */
+    const evBox = $("#city-ereignis");
+    if (evBox) evBox.innerHTML = ereignisKarte(me);
     if (!me || !me.houses) {
       box.innerHTML = `<p class="muted small" style="margin:0;text-align:center">Noch kein Besitz. Kauf dein erstes Haus. Wem eine ganze Straße gehört, dem färbt sie die Karte ein.</p>`;
       return;
@@ -517,7 +522,7 @@
       list += `<button class="empire-item" data-goto-d="${p.did}" data-goto-b="${p.id}">${p.emoji} ${escapeHtml(p.label)}<small>${escapeHtml(p.districtName)} · ${fmt(p.price)}<i class=mk></i></small></button>`;
     }
     list += `</div></details>`;
-    box.innerHTML = ereignisKarte(me) + chips.join("") + mietzeile + list;
+    box.innerHTML = (evBox ? "" : ereignisKarte(me)) + chips.join("") + mietzeile + list;
   }
 
   // "Wem gehört Porta"
@@ -630,6 +635,20 @@
       document.querySelector(".city-map-box").scrollIntoView({ behavior: "smooth", block: "center" });
     });
   }
+
+  // Die Wahl beim Stadt-Ereignis steht im eigenen Kasten über der Karte.
+  $("#city-ereignis")?.addEventListener("click", (e) => {
+    const item = e.target.closest("[data-ereignis]");
+    if (!item) return;
+    item.disabled = true;
+    socket.emit("city:ereignis", { wahl: item.dataset.ereignis }, (res) => {
+      item.disabled = false;
+      if (!res || !res.ok) { toast((res && res.error) || "Ging nicht."); return; }
+      applyAccount(res.account);
+      toast(res.meldung || "Erledigt.");
+      loadCity();
+    });
+  });
 
   // Aus der Immobilienliste direkt zum Gebäude auf der Karte springen.
   $("#biz-buffs").addEventListener("click", (e) => {

@@ -1013,7 +1013,10 @@ function recordHand(name, winnings, house = true, game = null, meta = null) {
 }
 
 const LEADERBOARD_CATS = {
-  rich:    { sort: (a) => a.chips,                    label: "Reichste", icon: "chip" },
+  /* Nach dem ganzen Vermögen (Chips, Bank, Immobilien, Aktien), wie es auch
+     im Profil steht. Nur die Chips zu zählen hieß: wer sein Geld in Häuser
+     steckt, fällt vom Podium, obwohl er reicher ist als alle darauf. */
+  rich:    { sort: (a) => _netWorth(a),               label: "Größtes Vermögen", icon: "chip" },
   level:   { sort: (a) => levelFromXp(a.xp || 0),      label: "Höchstes Level", icon: "level" },
   week:    { sort: (a) => a.weeklyNet || 0,           label: "Spieler der Woche", icon: "season" },
   estate:  { sort: (a) => city.ownerValue(schluesselVon(a)), label: "Immobilien-Mogul", icon: "businesses" },
