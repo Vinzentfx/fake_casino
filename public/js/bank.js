@@ -22,9 +22,15 @@
     if (!p || !state) return;
     if (document.activeElement && document.activeElement.id === "sav-amount") return; // don't wipe typing
     const bal = state.savings || 0;
-    const ratePct = ((state.savingsRatePerDay || 0) * 100).toFixed(2);
+    // Der persönliche Satz nach der Vermögensbremse, nicht der allgemeine.
+    const satz = state.savingsRatePerDayEffektiv != null ? state.savingsRatePerDayEffektiv : state.savingsRatePerDay || 0;
+    const ratePct = (satz * 100).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+    const gebremst = state.savingsFaktor != null && state.savingsFaktor < 0.999;
+    const allgemein = ((state.savingsRatePerDay || 0) * 100).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 3 });
     p.innerHTML = `
-      <div class="stat-row"><span>Guthaben (${ratePct} %/Tag)</span><b class="pos">${fmt(bal)}<i class=mk></i></b></div>
+      <div class="stat-row"><span>Guthaben (${ratePct} %/Tag für dich)</span><b class="pos">${fmt(bal)}<i class=mk></i></b></div>
+      ${bal > 0 ? `<div class="stat-row" style="border:none"><span>Zinsen am Tag</span><b>etwa +${fmt(state.savingsProTag || 0)}<i class=mk></i></b></div>` : ""}
+      ${gebremst ? `<p class="muted small" style="margin:4px 0 6px">Weil dein Vermögen groß ist, bekommst du nur ${Math.round(state.savingsFaktor * 100)} % des allgemeinen Satzes von ${allgemein} %. Das gilt für alle Gratis-Einnahmen gleich.</p>` : ""}
       <div class="stat-row" style="border:none"><span>Limit</span><b>${fmt(state.savingsCap || 0)}<i class=mk></i></b></div>
       <label class="bank-input-row"><span>Betrag</span><input id="sav-amount" type="number" min="1" value="1000" /></label>
       <div style="display:flex;gap:8px;margin-top:10px">

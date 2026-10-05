@@ -157,7 +157,7 @@
       else knopf = `<button type="button" class="btn-primary ld-kauf" data-kauf="${escapeHtml(x.id)}">Kaufen · ${betrag(x.preis)}</button>`;
       return `<article class="ld-wagen${x.offen ? "" : " zu"}${probe === x.id ? " probe" : ""}">
         <div class="ld-drehteller"><span class="ld-wagen-bild">${wagenBild(x.id)}</span><i class="ld-teller"></i></div>
-        <div class="ld-wagen-text"><h3>${escapeHtml(x.label)}</h3>${stufe(x)}<small>Ab Level ${x.ab}</small></div>
+        <div class="ld-wagen-text"><h3>${escapeHtml(x.label)}</h3>${stufe(x)}<small>${x.hat ? "" : `${betrag(x.preis)}, `}ab Level ${x.ab}</small></div>
         <div class="ld-knoepfe">
           ${x.hat ? "" : `<button type="button" class="chip-btn" data-probe="${escapeHtml(x.id)}">${probe === x.id ? "Probefahrt beenden" : "Probefahrt"}</button>`}
           ${knopf}

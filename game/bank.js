@@ -29,10 +29,18 @@ function accrueSavings(acc, now = Date.now()) {
 }
 function savingsState(acc) {
   accrueSavings(acc);
+  const guthaben = (acc.savings && acc.savings.amount) || 0;
+  /* Der Satz, der wirklich gutgeschrieben wird: nach der Vermögensbremse,
+     wie oben in accrueSavings. Vorher stand in der Bank nur der allgemeine
+     Satz, und wer gebremst lief, bekam ein Viertel dessen, was dort stand. */
+  const f = _accounts && _accounts.faucetFactor ? _accounts.faucetFactor(acc.name) : 1;
   return {
-    savings: (acc.savings && acc.savings.amount) || 0,
+    savings: guthaben,
     savingsRatePerHour: SAVINGS_RATE_PER_HOUR,
     savingsRatePerDay: SAVINGS_RATE_PER_DAY,
+    savingsRatePerDayEffektiv: SAVINGS_RATE_PER_DAY * f,
+    savingsFaktor: f,
+    savingsProTag: Math.max(0, Math.min(SAVINGS_CAP - guthaben, Math.floor(guthaben * SAVINGS_RATE_PER_DAY * f))),
     savingsCap: SAVINGS_CAP,
   };
 }

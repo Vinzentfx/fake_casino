@@ -114,7 +114,7 @@
         <span class="mkt-leer-symbol">${window.Casino.icons.ui("kosmetik")}</span>
         <b>Kein handelbares Stück frei</b>
         <span>Für ein Angebot brauchst du ein geprägtes Cosmetic, das du gerade nicht trägst und noch nicht eingestellt hast.</span>
-        <small class="mkt-leer-note">Neue Stücke findest du in Kisten, Auktionen und Belohnungen – einen Laden gibt es nicht.</small></div>`;
+        <small class="mkt-leer-note">Neue Stücke findest du in Kisten, im Auktionshaus, als Belohnung und in den Läden. Fahrzeuge und Kioskware aus der Ladenstraße lassen sich nicht weiterverkaufen.</small></div>`;
       return;
     }
     const voll = stand.offen >= stand.maxJeSpieler;

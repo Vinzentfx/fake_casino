@@ -124,7 +124,10 @@
       const gedeckelt = grenzen.maxWin && einsatz > 0 && mult * einsatz > grenzen.maxWin;
       // Deutsch formatiert wie ueberall sonst: "×256.901,12" statt
       // "×256901.12". toFixed liefert englische Schreibweise.
-      mlab.textContent = "×" + mult.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Ab tausend ohne Nachkommastellen: "×256.901,12" war breiter als die
+      // Spalte, und auf dem Handy schob das die Kacheln aus der Reihe.
+      const stellen = mult >= 1000 ? 0 : 2;
+      mlab.textContent = "×" + mult.toLocaleString("de-DE", { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
       if (gedeckelt) mlab.classList.add("tw-gedeckelt");
       rowEl.appendChild(mlab);
 
@@ -166,6 +169,12 @@
       }
       board.appendChild(rowEl);
     }
+    /* Alle Reihen bekommen die Breite der längsten Beschriftung, sonst
+       beginnen die Kacheln einer Reihe weiter rechts als die darunter. */
+    const labs = [...board.querySelectorAll(".tw-mult-lab")];
+    board.style.removeProperty("--tw-lab");
+    const breit = Math.max(0, ...labs.map((l) => l.scrollWidth));
+    if (breit) board.style.setProperty("--tw-lab", breit + "px");
 
     /*
      * Der Deckel als sichtbare Zeile, nicht als title-Tooltip: auf dem iPad

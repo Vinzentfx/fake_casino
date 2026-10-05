@@ -5827,7 +5827,8 @@ html.reduce-motion .mem-flip { transition: none; }
 .tw-row.climbed { opacity: 1; }
 .tw-row.climbed .tw-mult-lab { color: #7fd6a0; }
 .tw-mult-lab {
-  flex: 0 0 64px; text-align: right; font-size: 0.8rem; font-weight: 800;
+  flex: 0 0 var(--tw-lab, auto); min-width: 44px; text-align: right; font-size: 0.8rem; font-weight: 800;
+  white-space: nowrap;
   color: #b7a7d8; font-variant-numeric: tabular-nums;
 }
 .tw-row.active .tw-mult-lab { color: var(--accent-strong); }
@@ -5838,11 +5839,21 @@ html.reduce-motion .mem-flip { transition: none; }
   animation: twDragonBob 1.2s ease-in-out infinite alternate;
 }
 @keyframes twDragonBob { from { transform: translateY(-58%) scaleX(-1); } to { transform: translateY(-42%) scaleX(-1); } }
-.tw-tiles { display: flex; gap: 6px; flex: 1; }
+/* min-width: 0 an Leiste und Kacheln: ohne das errechnete sich aus
+   Mindesthöhe und Seitenverhältnis eine Mindestbreite von rund 99 Pixeln je
+   Kachel, und auf dem Handy lag die vierte Kachel rechts außerhalb. */
+.tw-tiles { display: flex; gap: 6px; flex: 1; min-width: 0; }
+@media (max-width: 480px) {
+  .towers-board { padding: 12px 6px 10px; }
+  .tw-row { gap: 5px; padding: 3px 2px; }
+  .tw-mult-lab { font-size: 0.72rem; }
+  .tw-tiles { gap: 4px; }
+}
 /* Kacheln mit zwei Seiten, wie in Mines: der Deckel klappt um, dahinter liegt
    die gezeichnete Seite. */
 .tw-tile {
   flex: 1;
+  min-width: 0;
   aspect-ratio: 2.6 / 1;
   min-height: 38px;
   padding: 0;

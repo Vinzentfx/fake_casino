@@ -196,9 +196,16 @@
        Kopfbedeckung, das Chat-Zeichen zum Gegenstand in der Hand. */
     if (Casino.figur) {
       const traegt = Casino.figur.beschreibung(p);
-      const handding = p.kleidung && p.kleidung.hand && p.kleidung.hand !== "keins"
-        ? (kleidungsTopf("hand") || []).find((x) => x.id === p.kleidung.hand) : null;
-      details.push(["Auf dem Kopf", traegt.kopf || "Nichts"], ["In der Hand", handding ? handding.label : traegt.hand]);
+      /* Zuerst die angelegte Kleidung, dieselbe, die die Figur zeichnet.
+         Vorher kam der Kopf nur aus der alten Regel „Rahmen wird zur Mütze“,
+         und mit einer Beanie auf dem Kopf stand hier „Nichts“. */
+      const ausKleidung = (art) => {
+        const id = p.kleidung && p.kleidung[art];
+        if (!id || id === "keins" || id === "keine") return null;
+        const x = (kleidungsTopf(art) || []).find((k) => k.id === id);
+        return x ? x.label : null;
+      };
+      details.push(["Auf dem Kopf", ausKleidung("kopf") || traegt.kopf || "Nichts"], ["In der Hand", ausKleidung("hand") || traegt.hand]);
       if (p.stilSet && p.stilSet.label) details.push(["Style-Set", p.stilSet.label]);
     }
     $("#cos-collection-count").innerHTML = `<b>${besessen}<span> / ${gesamt}</span></b><small>Sammlerstücke · ${gepraegt} geprägt</small>`;

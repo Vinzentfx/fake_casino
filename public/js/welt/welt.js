@@ -139,7 +139,8 @@
   fensterZu.type = "button";
   fensterZu.className = "welt-fenster-zu";
   fensterZu.innerHTML = `<span aria-hidden="true">‹</span> In den Raum`;
-  fensterZu.addEventListener("click", () => Casino.showScreen("lobby"));
+  // „In den Raum“ heißt Raum: auch wer zuletzt die Übersicht gewählt hatte, landet in der Welt.
+  fensterZu.addEventListener("click", () => { setzeAnsicht("welt"); Casino.showScreen("lobby"); });
   document.body.appendChild(fensterZu);
 
   /* "‹ Lobby" führt jetzt zurück an den Platz im Raum. Die Beschriftung

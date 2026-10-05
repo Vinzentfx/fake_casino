@@ -25,6 +25,27 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-05",
+      datum: "5. Oktober 2026",
+      titel: "Durchsicht: nichts geht mehr verloren",
+      items: [
+        { icon: "speichern", titel: "Offene Runden überstehen einen Neustart",
+          text: "Mines, Towers, Higher/Lower, Würfelpoker, Blackjack und Solitär merken sich eine laufende Runde jetzt auch über ein Update hinweg. Wer drei Diamanten aufgedeckt hatte, findet sie danach wieder und kann auszahlen. Laufende Partien zu zweit (Schach, Memory, Kniffel, Poker und die anderen) bekommen vor einem Neustart ihren Einsatz zurück." },
+
+        { icon: "warenkorb", titel: "Markt und Börse buchen sicherer",
+          text: "Ein Kauf auf dem Markt und eine Position an der Börse werden jetzt so gespeichert, dass ein Neustart im falschen Moment weder Chips noch ein Stück verschluckt." },
+
+        { icon: "towers", titel: "Towers passt aufs Handy",
+          text: "Auf schmalen Bildschirmen lag die vierte Kachel einer Reihe außerhalb des Bilds. Jetzt passt jede Reihe, und die Multiplikatoren stehen in einer sauberen Spalte." },
+
+        { icon: "chip", titel: "Bankzinsen ehrlich angezeigt",
+          text: "Die Bank zeigt jetzt den Zinssatz, der bei dir wirklich ankommt, und wie viel das am Tag ungefähr ist." },
+
+        { icon: "kosmetik", titel: "Kleinigkeiten",
+          text: "Die Garderobe nennt Kopfbedeckungen wie die Mütze jetzt beim Namen. „In den Raum“ führt aus jedem Fenster zurück in die Welt. Das Autohaus zeigt auch bei gesperrten Fahrzeugen den Preis, und die Hilfetexte im Markt und im Auktionshaus stimmen wieder." },
+      ],
+    },
+    {
       id: "2026-10-03",
       datum: "3. Oktober 2026",
       titel: "Freispiele gehen nicht mehr verloren",
