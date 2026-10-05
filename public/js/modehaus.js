@@ -250,6 +250,10 @@
   /* Chips ändern sich (Miete, Gewinn in einem anderen Tab): Knöpfe neu. */
   socket.on("account:update", () => { if (Casino.screens.current() === "modehaus" && daten && !laeuft) kabineNeu(); });
 
+  /* Von der Kleiderstange im Raum kommt man an die Stange, von den Puppen
+     ans Schaufenster. */
+  Casino._modehausReiter = (r) => { if (r === "fenster" || r === "stange") reiter = r; };
+
   Casino.screens.register("modehaus", { onEnter: laden });
   if (Casino.screens.current() === "modehaus") laden();
 })();

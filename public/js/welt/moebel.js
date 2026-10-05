@@ -317,7 +317,9 @@
   /* Eine Ladenfassade. Gemeinsam: Mauer, Markise, Schild, Schaufenster,
      Tür. Was im Fenster liegt, zeigt, was es drinnen gibt. */
   function ladenfront(ding) {
-    const [x1, , x2] = ding.block;
+    /* `front` ist die gezeichnete Breite, wenn der Block kürzer ist (beim
+       Modehaus endet er vor der Tür, damit man hineingehen kann). */
+    const [x1, , x2] = ding.front || ding.block;
     const w = Math.round((x2 - x1) * T) + 6, h = 164;
     const art = ding.laden;
     const F = {
@@ -715,6 +717,76 @@
         <path d="M20 44Q10 40 2 34Q14 32 20 44Z" fill="#357a40"/>
       </g>`;
     return { svg: svg(w, h, innen, "m-pflanze"), w, h };
+  }
+
+  /* Das Modehaus von innen. Die Umkleide steht an der Rückwand: zwei
+     Kabinen mit Samtvorhang, dazwischen der große Spiegel mit Glühbirnen. */
+  function umkleide(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 6, h = 158;
+    const kb = Math.round(w * 0.3), mx = w / 2;
+    const vorhang = (x, b) => `<rect x="${x}" y="30" width="${b}" height="${h - 38}" fill="#3a2430" stroke="#1d1218" stroke-width="1.2"/>
+      <path d="M${x - 2} 30H${x + b + 2}" stroke="#c9a24a" stroke-width="3" stroke-linecap="round"/>
+      ${Array.from({ length: Math.round(b / 7) }, (_, i) => `<path d="M${x + 3 + i * 7} 33Q${x + 6 + i * 7} ${h / 2 + 10} ${x + 3 + i * 7 + (i % 2 ? 2 : -1)} ${h - 10}" stroke="${i % 2 ? "#a3283c" : "#7a1b2a"}" stroke-width="7" fill="none"/>`).join("")}
+      <path d="M${x} ${h - 10}H${x + b}" stroke="#4a0f18" stroke-width="3"/>`;
+    const birnen = Array.from({ length: 5 }, (_, i) => {
+      const y = 46 + i * 20;
+      return `<circle cx="${mx - 34}" cy="${y}" r="3.4" fill="#fff1c4" stroke="#e2b656" stroke-width=".8"/><circle cx="${mx + 34}" cy="${y}" r="3.4" fill="#fff1c4" stroke="#e2b656" stroke-width=".8"/>`;
+    }).join("");
+    const innen = `<rect x="2" y="${h - 6}" width="${w - 4}" height="6" fill="#000" opacity=".25"/>
+      <rect x="3" y="12" width="${w - 6}" height="20" rx="3" fill="#141217" stroke="#b8923e" stroke-width="1.2"/>
+      <text x="${mx}" y="26" text-anchor="middle" font-size="11" font-weight="900" letter-spacing="3" fill="#f2d27a" font-family="ui-rounded, system-ui">UMKLEIDE</text>
+      ${vorhang(6, kb)}${vorhang(w - 6 - kb, kb)}
+      <path d="M${mx - 30} ${h - 10}V60Q${mx - 30} 36 ${mx} 36Q${mx + 30} 36 ${mx + 30} 60V${h - 10}Z" fill="#b8923e" stroke="#6e5520" stroke-width="1.4"/>
+      <path d="M${mx - 25} ${h - 14}V62Q${mx - 25} 42 ${mx} 42Q${mx + 25} 42 ${mx + 25} 62V${h - 14}Z" fill="#2c4a52"/>
+      <path class="m-spiegelschein" d="M${mx - 18} 58L${mx - 6} 52L${mx - 22} ${h - 40}L${mx - 25} ${h - 52}Z" fill="#fff" opacity=".22"/>
+      ${birnen}
+      <rect x="${mx - 36}" y="${h - 12}" width="72" height="5" rx="2" fill="#6e5520"/>`;
+    return { svg: svg(w, h, innen, "m-umkleide"), w, h, unten: 6 };
+  }
+
+  /* Drei Schaufensterpuppen auf einem runden Podest, jede in einem
+     anderen Kleid. */
+  function puppen(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 6, h = 132;
+    const puppe = (px, kleid, oben, hut) => `<g>
+      <path d="M${px} ${h - 18}V${h - 28}" stroke="#c9b9a8" stroke-width="2"/>
+      <circle cx="${px}" cy="30" r="8" fill="#ece4d8" stroke="#b9ab98" stroke-width=".8"/>
+      ${hut ? `<path d="M${px - 13} 26H${px + 13}M${px - 7} 26Q${px - 7} 14 ${px} 14Q${px + 7} 14 ${px + 7} 26" fill="${hut}" stroke="#1d1d23" stroke-width="1.4"/>` : ""}
+      <rect x="${px - 2.5}" y="37" width="5" height="5" fill="#ece4d8"/>
+      <path d="M${px - 14} 46Q${px} 40 ${px + 14} 46L${px + 12} 66L${px + 20} ${h - 28}H${px - 20}L${px - 12} 66Z" fill="${kleid}" stroke="#1d1d23" stroke-width="1"/>
+      ${oben ? `<path d="M${px - 14} 46Q${px} 40 ${px + 14} 46L${px + 13} 70H${px - 13}Z" fill="${oben}" stroke="#1d1d23" stroke-width="1"/><path d="M${px} 44V70" stroke="#1d1d23" stroke-width=".8"/>` : ""}
+      <path d="M${px - 14} 47L${px - 19} 72M${px + 14} 47L${px + 19} 72" stroke="#ece4d8" stroke-width="4" stroke-linecap="round"/></g>`;
+    const mx = w / 2, ab = Math.min(52, w / 3.2);
+    const innen = `<ellipse cx="${mx}" cy="${h - 10}" rx="${w / 2 - 6}" ry="9" fill="#000" opacity=".25"/>
+      <path class="m-spot" d="M${mx - 18} 0L${8} ${h - 14}H${w - 8}L${mx + 18} 0Z" fill="#ffe7b0" opacity=".12"/>
+      <ellipse cx="${mx}" cy="${h - 16}" rx="${w / 2 - 8}" ry="10" fill="#2a2230" stroke="#b8923e" stroke-width="2"/>
+      <ellipse cx="${mx}" cy="${h - 19}" rx="${w / 2 - 14}" ry="7" fill="#3b2b36"/>
+      ${puppe(mx - ab, "#c8243a", null, null)}${puppe(mx, "#2b3a55", "#e2b656", "#1d1d23")}${puppe(mx + ab, "#3f9a5a", null, "#f4f1ea")}`;
+    return { svg: svg(w, h, innen, "m-puppen"), w, h, unten: 8 };
+  }
+
+  /* Eine Kleiderstange auf Rollen, voll behängt. */
+  function kleiderstange(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 6, h = 104;
+    const farben = ding.farben || ["#f4f1ea", "#3f6fd0", "#c86bd6", "#e8812b", "#2a2f38", "#d6402f", "#4fb76a"];
+    const n = Math.max(4, Math.round((w - 24) / 15));
+    const teile = Array.from({ length: n }, (_, i) => {
+      const x = 14 + i * ((w - 28) / (n - 1));
+      const f = farben[i % farben.length];
+      const lang = i % 3 === 1 ? 46 : 34;
+      return `<path d="M${x} 20v4l-7 5h14l-7-5" fill="none" stroke="#c0c6cc" stroke-width=".9"/>
+        <path d="M${x - 8} 29H${x + 8}L${x + 9} ${29 + lang}H${x - 9}Z" fill="${f}" stroke="#1d1d23" stroke-width=".8"/>
+        <path d="M${x - 3} 29l3 5 3-5" fill="none" stroke="#1d1d23" stroke-width=".6" opacity=".6"/>`;
+    }).join("");
+    const innen = `<ellipse cx="${w / 2}" cy="${h - 4}" rx="${w / 2 - 6}" ry="4" fill="#000" opacity=".22"/>
+      <path d="M8 18V${h - 10}M${w - 8} 18V${h - 10}M4 18H${w - 4}" stroke="#c0c6cc" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M2 ${h - 10}H16M${w - 16} ${h - 10}H${w - 2}" stroke="#8a9198" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="4" cy="${h - 6}" r="3" fill="#23262b"/><circle cx="14" cy="${h - 6}" r="3" fill="#23262b"/><circle cx="${w - 14}" cy="${h - 6}" r="3" fill="#23262b"/><circle cx="${w - 4}" cy="${h - 6}" r="3" fill="#23262b"/>
+      ${teile}`;
+    return { svg: svg(w, h, innen, "m-kleiderstange"), w, h, unten: 2 };
   }
 
   function garderobe() {
@@ -1145,7 +1217,7 @@
     laufschrift, podest, rekordtafel, fernseher, statistikpult, seasonbanner, auftragsbrett, kalender, vitrine,
     einlasstuer, teasertafel, gaestewand, schaetzglas,
     rennbahn, lotteriebude, fahnenmast, feuerschale, parkbank, laterne, busch, kleeblatt, tresortuer, goldstapel,
-    katzenkissen, notiz,
+    katzenkissen, notiz, umkleide, puppen, kleiderstange,
   };
 
   /** Ein Ding als Weltrechteck: wo es steht, wie groß es ist, wie es aussieht. */

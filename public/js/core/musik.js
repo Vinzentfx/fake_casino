@@ -119,6 +119,7 @@
     kontor: { stil: "lounge", leiser: 0.55 },
     ruhm: { stil: "ruhm" },
     spielhalle: { stil: "synthwave" },
+    modehaus: { stil: "lounge", leiser: 0.7 },
     hof: { atmo: "draussen" },
     strasse: { atmo: "stadt" },
     garage: { atmo: "garage" },

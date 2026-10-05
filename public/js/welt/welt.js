@@ -1705,6 +1705,7 @@
     const los = () => {
       if (zielDaten.maschine && Casino._slotsWunsch) Casino._slotsWunsch(zielDaten.maschine);
       if (zielDaten.laden && Casino._ladenWunsch) Casino._ladenWunsch(zielDaten.laden);
+      if (zielDaten.reiter && Casino._modehausReiter) Casino._modehausReiter(zielDaten.reiter);
       if (zielDaten.screen === "businesses" && ortsteilWunsch && Casino._stadtOrtsteil) Casino._stadtOrtsteil(ortsteilWunsch);
       if (zielDaten.screen === "stocks" && aktieWunsch && Casino._aktieWunsch) Casino._aktieWunsch(aktieWunsch);
       ortsteilWunsch = null; aktieWunsch = null;

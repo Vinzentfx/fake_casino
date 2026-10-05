@@ -25,6 +25,15 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-05-d",
+      datum: "5. Oktober 2026",
+      titel: "Das Modehaus hat eine Tür",
+      items: [
+        { icon: "modehaus", titel: "Alles fürs Aussehen an einem Ort",
+          text: "Das Modehaus in der Ladenstraße kann man jetzt betreten. Drinnen steht hinten die Umkleide mit dem großen Spiegel, in der Mitte das Schaufenster der Woche an Puppen, links und rechts Kleiderstangen, und hinter der Tresortür warten die Kisten. Einfach hinlaufen und antippen." },
+      ],
+    },
+    {
       id: "2026-10-05-c",
       datum: "5. Oktober 2026",
       titel: "Modehaus und Tresorraum",

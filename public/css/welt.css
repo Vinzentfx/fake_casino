@@ -685,6 +685,7 @@ html[data-welt-raum="kontor"] { --raum-ton: 68, 46, 26; }
 html[data-welt-raum="ruhm"] { --raum-ton: 52, 48, 60; }
 html[data-welt-raum="hof"], html[data-welt-raum="strasse"] { --raum-ton: 18, 34, 58; }
 html[data-welt-raum="spielhalle"] { --raum-ton: 40, 16, 66; }
+html[data-welt-raum="modehaus"] { --raum-ton: 58, 30, 50; }
 html[data-welt-raum="tresor"], html[data-welt-raum="garage"] { --raum-ton: 38, 40, 44; }
 
 /* Bildschirme über der Welt: ein Fenster statt einer Webseite.

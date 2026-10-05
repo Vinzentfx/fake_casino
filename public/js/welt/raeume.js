@@ -285,6 +285,10 @@
         label: "Zur Terrasse", schild: { x: 1.0, y: 5.3 } },
       /* Hinter dem Garagentor. Zu Fuß kommt man nie hinein: das Tor
          selbst ist der Weg, und es ist abgeschlossen, bis man weiß wie. */
+      /* Die Tür des Modehauses ist Teil seiner Fassade (moebel.js zeichnet
+         sie); wie bei der Spielhalle geht man von vorn senkrecht hinein. */
+      { id: "zum-modehaus", x1: 18.5, y1: 2.95, x2: 19.2, y2: 3.32, ziel: "modehaus", ankunft: { x: 8.0, y: 9.7, d: "hoch" },
+        label: "Modehaus", schild: { x: 18.85, y: 3.75 } },
       { id: "zur-garage", versteckt: true, verschlossen: true, x1: 19.6, y1: 2.4, x2: 21.2, y2: 3.5, ziel: "garage", ankunft: { x: 4.5, y: 5.7, d: "hoch" } },
     ],
     sitze: [
@@ -298,8 +302,9 @@
         nutz: { x: 9.4, y: 4.3, r: 1.8 }, label: "Autohaus", verb: "Reingehen", ziel: { screen: "laeden", laden: "autohaus" }, fokus: { x: 9.4, y: 2.4, zoom: 1.9 } },
       { id: "kiosk", art: "ladenfront", laden: "kiosk", x: 14.0, y: 3.5, block: [12.6, 2.4, 15.4, 3.5],
         nutz: { x: 14.0, y: 4.3, r: 1.3 }, label: "Kiosk", verb: "Was holen", ziel: { screen: "laeden", laden: "kiosk" }, fokus: { x: 14.0, y: 2.5, zoom: 2.2 } },
-      { id: "modehaus", art: "ladenfront", laden: "modehaus", x: 17.5, y: 3.5, block: [15.6, 2.4, 19.4, 3.5],
-        nutz: { x: 17.5, y: 4.3, r: 1.6 }, label: "Modehaus", verb: "Reingehen", ziel: { screen: "modehaus" }, fokus: { x: 17.5, y: 2.4, zoom: 1.9 } },
+      /* Der Block endet vor der Tür, sonst käme man nicht hinein. */
+      { id: "modehaus", art: "ladenfront", laden: "modehaus", x: 17.5, y: 3.5, block: [15.6, 2.4, 18.45, 3.5], front: [15.6, 2.4, 19.4, 3.5],
+        nutz: { x: 17.5, y: 4.3, r: 1.6 }, label: "Modehaus", verb: "Reingehen", ziel: { tuer: "zum-modehaus" } },
       /* Klein, ohne Leuchten, der Hinweis erst ganz nah. Wer rüttelt, hört
          nichts; auf das Kritzeln am Tor muss man selbst kommen. */
       { id: "garage", art: "garagentor", x: 20.4, y: 3.5, block: [19.6, 2.4, 21.2, 3.5], geheim: true,
@@ -312,6 +317,45 @@
       { id: "laterne-s3", art: "laterne", x: 17.6, y: 9.9, block: [17.4, 9.7, 17.8, 9.9] },
       { id: "kuebel-1", art: "pflanze", x: 6.4, y: 4.0, block: [6.2, 3.7, 6.6, 4.0] },
       { id: "kuebel-2", art: "pflanze", x: 12.4, y: 4.0, block: [12.25, 3.7, 12.55, 4.0] },
+    ],
+  };
+
+  /*
+   * Das Modehaus von innen: alles, was mit Aussehen zu tun hat, an einem
+   * Ort. Hinten die Umkleide mit dem Spiegel (Garderobe), in der Mitte das
+   * Schaufenster und die Kleiderstangen (Modehaus), rechts die Tresortür
+   * mit den Kisten. Die Bildschirme sind dieselben wie überall, der Raum
+   * ist nur der Weg dorthin.
+   */
+  RAEUME.modehaus = {
+    id: "modehaus", name: "Modehaus", w: 16, h: 11, wand: 3, boden: "marmor",
+    flaechen: [[0.7, 3.0, 15.3, 10.4], [7.2, 9.6, 8.8, 11.0]],
+    start: { x: 8.0, y: 9.7, d: "hoch" },
+    tueren: [
+      { id: "zur-strasse", x1: 7.2, y1: 10.6, x2: 8.8, y2: 11.0, ziel: "strasse", ankunft: { x: 18.85, y: 3.9, d: "runter" },
+        label: "Zur Ladenstraße", schild: { x: 8.0, y: 10.2 } },
+    ],
+    /* Das Sofa für die, die warten, bis jemand aus der Kabine kommt. */
+    sitze: [
+      { id: "mode-sofa-1", x: 1.25, y: 7.55, d: "rechts", auf: { x: 2.15, y: 7.55 } },
+      { id: "mode-sofa-2", x: 1.25, y: 8.75, d: "rechts", auf: { x: 2.15, y: 8.75 } },
+    ],
+    dinge: [
+      { id: "umkleide", art: "umkleide", x: 3.4, y: 3.5, block: [1.3, 2.4, 5.5, 3.5],
+        nutz: { x: 3.4, y: 4.3, r: 1.5 }, label: "Umkleide", verb: "Umziehen", ziel: { screen: "garderobe" }, fokus: { x: 3.4, y: 2.6, zoom: 2.0 } },
+      { id: "puppen", art: "puppen", x: 8.0, y: 4.6, block: [6.5, 4.0, 9.5, 4.6],
+        nutz: { x: 8.0, y: 5.3, r: 1.4 }, label: "Schaufenster der Woche", verb: "Ansehen", ziel: { screen: "modehaus", reiter: "fenster" }, fokus: { x: 8.0, y: 3.9, zoom: 2.2 } },
+      { id: "stange-1", art: "kleiderstange", x: 4.6, y: 7.0, block: [3.5, 6.7, 5.7, 7.0],
+        nutz: "rand", label: "Kleiderstange", verb: "Stöbern", ziel: { screen: "modehaus", reiter: "stange" }, fokus: { x: 4.6, y: 6.4, zoom: 2.3 } },
+      { id: "stange-2", art: "kleiderstange", x: 11.4, y: 7.0, block: [10.3, 6.7, 12.5, 7.0], farben: ["#2a2f38", "#e5534b", "#f2c94c", "#7ec8e3", "#f4f1ea", "#8a5a2b"],
+        nutz: "rand", label: "Kleiderstange", verb: "Stöbern", ziel: { screen: "modehaus", reiter: "stange" }, fokus: { x: 11.4, y: 6.4, zoom: 2.3 } },
+      { id: "mode-tresor", art: "tresortuer", x: 12.6, y: 3.0, block: null,
+        nutz: { x: 12.6, y: 3.8, r: 1.3 }, label: "Tresor", verb: "Kisten öffnen", ziel: { screen: "kiste" }, fokus: { x: 12.6, y: 2.2, zoom: 2.0 } },
+      { id: "mode-kisten", art: "kisten", x: 14.5, y: 4.3, block: [13.8, 3.7, 15.2, 4.3],
+        nutz: "rand", label: "Kisten", verb: "Öffnen", ziel: { screen: "kiste" } },
+      { id: "mode-sofa", art: "sofa", x: 1.2, y: 9.4, block: [0.7, 6.9, 1.75, 9.4] },
+      { id: "mode-pflanze-1", art: "pflanze", x: 1.2, y: 4.0, block: [1.0, 3.7, 1.4, 4.0] },
+      { id: "mode-pflanze-2", art: "pflanze", x: 14.8, y: 9.9, block: [14.6, 9.6, 15.0, 9.9] },
     ],
   };
 
