@@ -122,6 +122,7 @@
         <div class="gd-anprobe-knoepfe">
           ${eigen.length ? `<button type="button" class="btn-primary" data-gd-eigene>${eigen.length === proben.length ? "Anziehen" : "Eigene anziehen"}</button>` : ""}
           ${fremd.some(({ x }) => LAEDEN.has(x.herkunft)) ? `<button type="button" class="btn-secondary" data-gd-laden="${esc(fremd.find(({ x }) => LAEDEN.has(x.herkunft)).x.herkunft)}">Zum Laden</button>` : ""}
+          ${fremd.some(({ x }) => x.nur === "kleider") ? `<button type="button" class="btn-secondary" data-nav="modehaus">Modehaus</button>` : ""}
           ${fremd.some(({ x }) => !LAEDEN.has(x.herkunft)) ? `<button type="button" class="btn-secondary" data-nav="kiste">Kisten</button><button type="button" class="btn-secondary" data-nav="market">Markt</button>` : ""}
           <button type="button" class="chip-btn" data-gd-ausziehen>Ausziehen</button>
         </div>
@@ -160,7 +161,7 @@
     if (x.herkunft === "zoo") return "Zoohandlung";
     if (x.herkunft === "autohaus") return "Autohaus";
     if (x.herkunft === "kiosk") return "Kiosk";
-    if (x.nur === "kleider") return "Kleiderkiste, Kleiderstange oder Markt";
+    if (x.nur === "kleider") return "Modehaus, Kleiderkiste oder Markt";
     if (x.herkunft === "kiste") return "Kisten oder Markt";
     return x.via || "Anderswo";
   }

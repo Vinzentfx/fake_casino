@@ -19,6 +19,8 @@
   <link rel="stylesheet" href="/css/welt.css" />
   <link rel="stylesheet" href="/css/laeden.css" />
   <link rel="stylesheet" href="/css/garderobe.css" />
+  <link rel="stylesheet" href="/css/modehaus.css" />
+  <link rel="stylesheet" href="/css/tresor.css" />
   <script>
     /* Theme so früh wie möglich setzen, noch vor dem ersten Zeichnen.
        Sonst blitzt beim Laden kurz das Standard-Grün auf, bevor das
@@ -102,6 +104,7 @@
       <button class="sheet-item" data-nav="auktion"><i class="si-icon" data-icon="auktion"></i><b>Auktionshaus</b><small id="menu-auktion-sub">Was es nur einmal gibt</small></button>
       <button class="sheet-item" data-nav="market"><i class="si-icon" data-icon="warenkorb"></i><b>Markt</b><small>Geprägte Stücke von Spieler zu Spieler</small></button>
       <button class="sheet-item" data-nav="kiste"><i class="si-icon" data-icon="geschenk"></i><b>Kisten</b><small>Kosmetik als Ziehung</small></button>
+      <button class="sheet-item" data-nav="modehaus"><i class="si-icon" data-icon="modehaus"></i><b>Modehaus</b><small>Schaufenster und Kleiderstange</small></button>
       <button class="sheet-item" data-nav="settings"><i class="si-icon" data-icon="einstellungen"></i><b>Einstellungen</b><small>Design, Budget, Sicherheit</small></button>
       <a class="sheet-item" href="/datenschutz.html"><i class="si-icon" data-icon="sperre"></i><b>Datenschutz</b><small>Was gespeichert wird</small></a>
       <button class="sheet-item" id="menu-admin" data-nav="admin" style="display:none"><i class="si-icon" data-icon="admin"></i><b id="menu-admin-label">Admin</b><small id="menu-admin-sub">Verwaltung</small><i id="admin-review-count" class="sheet-count hidden" aria-hidden="true"></i></button>
@@ -1415,6 +1418,12 @@
       </div>
     </section>
 
+    <!-- Modehaus in der Ladenstraße: Schaufenster, Kleiderstange, Umkleidekabine. Inhalt baut js/modehaus.js. -->
+    <section class="screen" data-screen="modehaus">
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <div class="mh" id="mh"></div>
+    </section>
+
     <!-- Garderobe: die Figur vor dem Spiegel. Inhalt baut js/garderobe.js. -->
     <section class="screen" data-screen="garderobe">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
@@ -2032,11 +2041,14 @@
     <section class="screen" data-screen="kiste">
       <div class="ki-wrap">
         <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-        <div class="ki-titel">
-          <div class="ph-icon" data-icon="geschenk"></div>
-          <h2>Kisten</h2>
-          <p class="muted small">Erst fällt das Stück. Dann wird seine vierstellige Seriennummer geprägt.</p>
-        </div>
+        <header class="ki-titel tr-kopf">
+          <div class="tr-tuer" aria-hidden="true"><span class="tr-rad"><i></i><i></i><i></i></span></div>
+          <div class="tr-kopf-text">
+            <small class="tr-kicker">Tresorraum</small>
+            <h2>Kisten</h2>
+            <p class="muted small">Erst fällt das Stück. Dann wird seine vierstellige Seriennummer geprägt.</p>
+          </div>
+        </header>
 
         <div class="ki-serienlotterie" id="ki-serienlotterie"></div>
 
@@ -2814,6 +2826,7 @@
   <script defer src="/js/welt/welt.js"></script>
   <script defer src="/js/welt/grundform.js"></script>
   <script defer src="/js/garderobe.js"></script>
+  <script defer src="/js/modehaus.js"></script>
   <script defer src="/js/spielklaenge.js"></script>
   <script defer src="/js/einlass.js"></script>
 </body>

@@ -272,20 +272,20 @@
   };
 
   /*
-   * Die Ladenstraße hinter der Terrasse: Zoohandlung, Autohaus und Kiosk,
-   * jeder mit eigener Fassade (game/laeden.js). Ganz hinten rechts ein
-   * altes Garagentor, das nach nichts aussieht.
+   * Die Ladenstraße hinter der Terrasse: Zoohandlung, Autohaus, Kiosk und
+   * Modehaus, jeder mit eigener Fassade (game/laeden.js, game/boutique.js).
+   * Ganz hinten rechts ein altes Garagentor, das nach nichts aussieht.
    */
   RAEUME.strasse = {
-    id: "strasse", name: "Ladenstraße", w: 18, h: 11, wand: 3, boden: "pflaster", himmel: true,
-    flaechen: [[0.7, 3.0, 17.3, 10.4], [0.0, 5.8, 2.0, 7.4]],
+    id: "strasse", name: "Ladenstraße", w: 22, h: 11, wand: 3, boden: "pflaster", himmel: true,
+    flaechen: [[0.7, 3.0, 21.3, 10.4], [0.0, 5.8, 2.0, 7.4]],
     start: { x: 1.4, y: 6.6, d: "rechts" },
     tueren: [
       { id: "zur-terrasse", x1: 0.0, y1: 5.8, x2: 0.4, y2: 7.4, ziel: "hof", ankunft: { x: 14.8, y: 6.4, d: "links" },
         label: "Zur Terrasse", schild: { x: 1.0, y: 5.3 } },
       /* Hinter dem Garagentor. Zu Fuß kommt man nie hinein: das Tor
          selbst ist der Weg, und es ist abgeschlossen, bis man weiß wie. */
-      { id: "zur-garage", versteckt: true, verschlossen: true, x1: 15.6, y1: 2.4, x2: 17.2, y2: 3.5, ziel: "garage", ankunft: { x: 4.5, y: 5.7, d: "hoch" } },
+      { id: "zur-garage", versteckt: true, verschlossen: true, x1: 19.6, y1: 2.4, x2: 21.2, y2: 3.5, ziel: "garage", ankunft: { x: 4.5, y: 5.7, d: "hoch" } },
     ],
     sitze: [
       { id: "strassenbank-1", x: 2.6, y: 9.8, d: "hoch", auf: { x: 2.6, y: 8.95 } },
@@ -298,15 +298,18 @@
         nutz: { x: 9.4, y: 4.3, r: 1.8 }, label: "Autohaus", verb: "Reingehen", ziel: { screen: "laeden", laden: "autohaus" }, fokus: { x: 9.4, y: 2.4, zoom: 1.9 } },
       { id: "kiosk", art: "ladenfront", laden: "kiosk", x: 14.0, y: 3.5, block: [12.6, 2.4, 15.4, 3.5],
         nutz: { x: 14.0, y: 4.3, r: 1.3 }, label: "Kiosk", verb: "Was holen", ziel: { screen: "laeden", laden: "kiosk" }, fokus: { x: 14.0, y: 2.5, zoom: 2.2 } },
+      { id: "modehaus", art: "ladenfront", laden: "modehaus", x: 17.5, y: 3.5, block: [15.6, 2.4, 19.4, 3.5],
+        nutz: { x: 17.5, y: 4.3, r: 1.6 }, label: "Modehaus", verb: "Reingehen", ziel: { screen: "modehaus" }, fokus: { x: 17.5, y: 2.4, zoom: 1.9 } },
       /* Klein, ohne Leuchten, der Hinweis erst ganz nah. Wer rüttelt, hört
          nichts; auf das Kritzeln am Tor muss man selbst kommen. */
-      { id: "garage", art: "garagentor", x: 16.4, y: 3.5, block: [15.6, 2.4, 17.2, 3.5], geheim: true,
-        nutz: { x: 16.4, y: 4.2, r: 0.75 }, label: "Altes Garagentor", verb: "Rütteln", ziel: { tuer: "zur-garage" } },
+      { id: "garage", art: "garagentor", x: 20.4, y: 3.5, block: [19.6, 2.4, 21.2, 3.5], geheim: true,
+        nutz: { x: 20.4, y: 4.2, r: 0.75 }, label: "Altes Garagentor", verb: "Rütteln", ziel: { tuer: "zur-garage" } },
       { id: "litfass", art: "litfass", x: 9.4, y: 7.5, block: [9.0, 7.0, 9.8, 7.5] },
       { id: "strassenbank", art: "parkbank", x: 3.3, y: 10.4, block: [1.9, 9.5, 4.7, 10.4] },
       { id: "laterne-s1", art: "laterne", x: 6.4, y: 9.9, block: [6.2, 9.7, 6.6, 9.9] },
       { id: "laterne-s2", art: "laterne", x: 12.6, y: 9.9, block: [12.4, 9.7, 12.8, 9.9] },
-      { id: "busch-s1", art: "busch", x: 16.6, y: 10.3, block: [16.0, 9.8, 17.2, 10.3] },
+      { id: "busch-s1", art: "busch", x: 20.6, y: 10.3, block: [20.0, 9.8, 21.2, 10.3] },
+      { id: "laterne-s3", art: "laterne", x: 17.6, y: 9.9, block: [17.4, 9.7, 17.8, 9.9] },
       { id: "kuebel-1", art: "pflanze", x: 6.4, y: 4.0, block: [6.2, 3.7, 6.6, 4.0] },
       { id: "kuebel-2", art: "pflanze", x: 12.4, y: 4.0, block: [12.25, 3.7, 12.55, 4.0] },
     ],
@@ -319,7 +322,7 @@
     flaechen: [[0.7, 3.0, 8.3, 6.4], [3.7, 5.6, 5.3, 7.0]],
     start: { x: 4.5, y: 5.7, d: "hoch" },
     tueren: [
-      { id: "raus", x1: 3.7, y1: 6.6, x2: 5.3, y2: 7.0, ziel: "strasse", ankunft: { x: 16.4, y: 4.3, d: "runter" },
+      { id: "raus", x1: 3.7, y1: 6.6, x2: 5.3, y2: 7.0, ziel: "strasse", ankunft: { x: 20.4, y: 4.3, d: "runter" },
         label: "Raus", schild: { x: 4.5, y: 6.2 } },
     ],
     sitze: [],

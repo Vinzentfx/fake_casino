@@ -185,6 +185,7 @@ function setupPoker(io, accounts) {
     stats: "bei Statistiken",
     cosmetics: "in der Sammlung",
     garderobe: "in der Garderobe",
+    modehaus: "im Modehaus",
     calendar: "im Kalender",
     wheel: "am Glücksrad",
     transfer: "sendet Chips",

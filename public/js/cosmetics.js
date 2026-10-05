@@ -671,7 +671,7 @@
         return Casino.showScreen("laeden");
       }
       const woher = x && x.nur === "kleider"
-        ? "Das kommt aus der Kleiderkiste oder, wenn es diese Woche ausliegt, aus dem Schaufenster daneben. Beides im Menü unter „Kisten“. Sonst auf dem Markt von jemandem, der es hat."
+        ? "Das kommt aus der Kleiderkiste bei den Kisten oder aus dem Modehaus in der Ladenstraße, an der Kleiderstange oder wenn es diese Woche im Schaufenster liegt. Sonst auf dem Markt von jemandem, der es hat."
         : x && x.herkunft === "kiste"
         ? "Das kommt aus den Kisten. Im Menü unter „Kisten“, oder auf dem Markt von jemandem, der es hat."
         : x && x.via ? x.via + "." : "Gibt es hier nicht.";

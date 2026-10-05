@@ -301,6 +301,12 @@
       <path d="M4.4 21c0-4 3.4-6.6 7.6-6.6s7.6 2.6 7.6 6.6" ${S}/>`,
 
     // Palette mit Farbklecksen: Kosmetik ist Aussehen.
+    // Kleid auf der Puppe: Modehaus.
+    modehaus: `<circle cx="12" cy="4.2" r="1.7" ${S}/>
+      <path d="M9.2 7.4h5.6l-.9 4.2 3.6 8.4H6.5l3.6-8.4-.9-4.2Z" ${S}/>
+      <path d="M9.9 11.6h4.2" ${S}/>
+      <path d="M7.6 17.4h8.8l1 2.6H6.6Z" ${A}/>`,
+
     // Kleiderbügel mit Haken.
     garderobe: `<path d="M12 8.2V7.4a1.9 1.9 0 1 0-1.9-1.9" ${S}/>
       <path d="M12 8.2 3.4 15.1c-.9.7-.4 2.1.7 2.1h15.8c1.1 0 1.6-1.4.7-2.1L12 8.2Z" ${S}/>

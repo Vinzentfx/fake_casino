@@ -324,6 +324,7 @@
       zoo:      { wand: "#d9e8c9", rand: "#8fb07a", streifen: ["#3f9a5a", "#f4f1ea"], schild: "#2f6e43", text: "ZOOHANDLUNG", schrift: "#fff6d8" },
       autohaus: { wand: "#2a2f38", rand: "#11151b", streifen: null, schild: "#1f5fbf", text: "AUTOHAUS", schrift: "#ffffff" },
       kiosk:    { wand: "#f2d24a", rand: "#b8901c", streifen: ["#d6402f", "#f4f1ea"], schild: "#d6402f", text: "KIOSK", schrift: "#fff6d8" },
+      modehaus: { wand: "#2a2230", rand: "#b8923e", streifen: ["#1d1d23", "#f4f1ea"], schild: "#141217", text: "MODEHAUS", schrift: "#f2d27a" },
     }[art] || {};
     const mx = w / 2;
     const fensterX = 12, fensterB = w - 24 - (art === "kiosk" ? 0 : 46), fensterY = 66, fensterH = 66;
@@ -376,12 +377,32 @@
         <rect x="${fensterX}" y="${fensterY + fensterH - 18}" width="${fensterB}" height="18" fill="#8a5a2b" stroke="${F.rand}"/>
         <rect class="m-kuehl" x="${fensterX + 6}" y="${fensterY + fensterH - 15}" width="${fensterB - 12}" height="4" rx="1" fill="#9fe7ff" opacity=".6"/>
         <rect x="${w - 30}" y="${h - 46}" width="22" height="30" rx="2" fill="#f4f1ea" stroke="#999"/><text x="${w - 19}" y="${h - 34}" text-anchor="middle" font-size="5.4" font-weight="900" fill="#d6402f">SPEZI</text><text x="${w - 19}" y="${h - 27}" text-anchor="middle" font-size="5" font-weight="800" fill="#1d1d23">KALT!</text>`;
+    } else if (art === "modehaus") {
+      /* Zwei Puppen im warmen Licht, rechts eine Stange mit Bügeln. */
+      const fx = fensterX, fy = fensterY, fb = fensterB, fh = fensterH;
+      innen += `<rect x="${fx + 3}" y="${fy + 3}" width="${fb - 6}" height="${fh - 6}" fill="#3b2b36"/>
+        <path class="m-spot" d="M${fx + fb * 0.3} ${fy + 3}L${fx + 6} ${fy + fh - 3}H${fx + fb * 0.66}L${fx + fb * 0.42} ${fy + 3}Z" fill="#ffe7b0" opacity=".16"/>
+        <rect x="${fx + 3}" y="${fy + fh - 9}" width="${fb - 6}" height="6" fill="#5a4048"/>`;
+      const puppe = (px, kleid, oben) => `<g class="m-puppe">
+        <path d="M${px} ${fy + fh - 9}V${fy + fh - 16}" stroke="#c9b9a8" stroke-width="1.4"/><ellipse cx="${px}" cy="${fy + fh - 9}" rx="6" ry="1.6" fill="#c9b9a8"/>
+        <circle cx="${px}" cy="${fy + 13}" r="4.6" fill="#ece4d8"/><path d="M${px - 1.6} ${fy + 17}h3.2v3h-3.2z" fill="#ece4d8"/>
+        <path d="M${px - 8} ${fy + 22}Q${px} ${fy + 18} ${px + 8} ${fy + 22}L${px + 7} ${fy + 34}L${px + 12} ${fy + fh - 17}H${px - 12}L${px - 7} ${fy + 34}Z" fill="${kleid}" stroke="#1d1d23" stroke-width=".6"/>
+        ${oben ? `<path d="M${px - 8} ${fy + 22}Q${px} ${fy + 18} ${px + 8} ${fy + 22}L${px + 7} ${fy + 35}H${px - 7}Z" fill="${oben}" stroke="#1d1d23" stroke-width=".6"/><path d="M${px} ${fy + 21}V${fy + 35}" stroke="#1d1d23" stroke-width=".5"/>` : ""}</g>`;
+      innen += puppe(fx + fb * 0.2, "#c8243a", null) + puppe(fx + fb * 0.45, "#2b3a55", "#e2b656");
+      const sx1 = fx + fb * 0.62, sx2 = fx + fb - 7;
+      innen += `<path d="M${sx1} ${fy + 14}H${sx2}M${sx1 + 2} ${fy + 14}V${fy + fh - 9}M${sx2 - 2} ${fy + 14}V${fy + fh - 9}" stroke="#d8c08a" stroke-width="1.4"/>`
+        + [0, 1, 2, 3].map((i) => {
+          const hx = sx1 + 8 + i * ((sx2 - sx1 - 14) / 3);
+          const f = ["#f4f1ea", "#3f9a5a", "#c86bd6", "#e8812b"][i];
+          return `<path d="M${hx} ${fy + 14}v3l-5 3h10l-5-3" fill="none" stroke="#d8c08a" stroke-width=".7"/><rect x="${hx - 5}" y="${fy + 20}" width="10" height="${18 + (i % 2) * 6}" rx="1.5" fill="${f}" stroke="#1d1d23" stroke-width=".5"/>`;
+        }).join("");
+      innen += `<text x="${fx + fb / 2}" y="${fy + fh - 13}" text-anchor="middle" font-size="6.5" font-weight="900" letter-spacing="1.2" fill="#f2d27a">NEUE AUSLAGE</text>`;
     }
     innen += `<path d="M${fensterX + 4} ${fensterY + 6}L${fensterX + 18} ${fensterY + 6}L${fensterX + 6} ${fensterY + 26}Z" fill="#fff" opacity=".12"/>`;
     // Tür
     if (art !== "kiosk") {
       const tx = w - 46;
-      innen += `<rect x="${tx}" y="${fensterY - 4}" width="34" height="${h - fensterY - 10}" rx="2" fill="${art === "autohaus" ? "#9fd3ea" : "#6b4423"}" fill-opacity="${art === "autohaus" ? 0.35 : 1}" stroke="${F.rand}" stroke-width="2"/>
+      innen += `<rect x="${tx}" y="${fensterY - 4}" width="34" height="${h - fensterY - 10}" rx="2" fill="${art === "autohaus" ? "#9fd3ea" : art === "modehaus" ? "#141217" : "#6b4423"}" fill-opacity="${art === "autohaus" ? 0.35 : 1}" stroke="${F.rand}" stroke-width="2"/>
         <rect x="${tx + 5}" y="${fensterY + 4}" width="24" height="30" rx="2" fill="#9fd3ea" fill-opacity=".45"/>
         <circle cx="${tx + 28}" cy="${fensterY + 44}" r="1.8" fill="#e2b656"/>
         <text x="${tx + 17}" y="${fensterY + 22}" text-anchor="middle" font-size="6" font-weight="900" fill="#1d1d23">OFFEN</text>`;

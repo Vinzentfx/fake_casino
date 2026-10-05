@@ -25,6 +25,18 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-05-c",
+      datum: "5. Oktober 2026",
+      titel: "Modehaus und Tresorraum",
+      items: [
+        { icon: "modehaus", titel: "Ein Modehaus in der Ladenstraße",
+          text: "Neben dem Kiosk hat ein Modehaus aufgemacht. Im Schaufenster stehen die Stücke der Woche an Puppen, an der Kleiderstange hängt alles Gewöhnliche auf Bügeln. In der Umkleidekabine probierst du alles an deiner eigenen Figur an, auch mehrere Teile zusammen, und kaufst erst dann." },
+
+        { icon: "geschenk", titel: "Die Kisten stehen im Tresor",
+          text: "Der Kisten-Bildschirm ist jetzt ein Tresorraum. Jede Kiste steht auf einem eigenen Podest, das Licht darüber hat die Farbe der besten Stufe, die drin sein kann, und die Kiste auf Zeit steht hinter Glas. Schaufenster und Kleiderstange findest du nicht mehr hier, sondern im Modehaus." },
+      ],
+    },
+    {
       id: "2026-10-05-b",
       datum: "5. Oktober 2026",
       titel: "Die neue Garderobe",

@@ -72,6 +72,7 @@
        Kennung muss der Screen-Name sein (die Kachel navigiert darueber),
        das Zeichen heisst in core/icons.js aber nach dem, was es zeigt. */
     { id: "laeden",     name: "Ladenstraße",    sub: "Zoo, Autohaus und Kiosk",           icon: "🏪", sym: "laden",     cat: "sammeln", h: 140 },
+    { id: "modehaus",   name: "Modehaus",       sub: "Schaufenster, Kleiderstange, Umkleide", icon: "👗", cat: "sammeln", h: 330 },
     { id: "kiste",      name: "Kisten",         sub: "Kosmetik als Ziehung, dazu Duelle", icon: "🎁", sym: "geschenk",  cat: "sammeln", h: 45 },
     { id: "market",     name: "Markt",          sub: "Geprägte Stücke von Spieler zu Spieler", icon: "🛒", sym: "warenkorb", cat: "sammeln", h: 160 },
     { id: "auktion",    name: "Auktionshaus",   sub: "Ein Los am Tag, Zuschlag um halb neun", icon: "🔨", cat: "sammeln", h: 288 },

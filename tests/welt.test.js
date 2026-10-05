@@ -362,7 +362,7 @@ test("das Garagentor geht nur nachts und nur nach dem Hupen auf, dahinter steht 
   konto.fahrzeug = "bobbycar";
   anna.frage("welt:betreten", {});
   const fig = w.welt.figuren.get("anna");
-  fig.raum = "strasse"; fig.x = 16.4; fig.y = 4.2;
+  fig.raum = "strasse"; fig.x = 20.4; fig.y = 4.2;
   // Tagsüber: hupen bringt nichts, rütteln auch nicht.
   welt.uhr.jetzt = () => Date.parse("2026-10-01T12:00:00+02:00");
   assert.equal(anna.frage("welt:geste", { art: "hupen" }).ok, true);
