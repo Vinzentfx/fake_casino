@@ -80,12 +80,14 @@ function verkaufen(accounts, acc, key, { art, id } = {}) {
   if (preis == null) return { ok: false, error: "Das nimmt das Haus nicht an." };
   const n = verbraucht(acc);
   if (n >= JE_TAG) return { ok: false, error: `Heute hat das Haus schon ${JE_TAG} Stücke von dir genommen. Morgen wieder.` };
-  const r = buchungen.verkaufe({ accounts, cosmetics, praegung, key, acc, art, id, preis });
-  if (!r.ok) return r;
-  // Die Tageszahl hängt am Konto; gespeichert wird sie mit der nächsten Buchung
-  // oder gleich hier. Ein verlorener Zähler kostet höchstens einen Ankauf mehr.
+  /* Der Tageszähler steht vor der Buchung am Konto und geht damit im selben
+     Schreibvorgang auf die Platte wie Chips und Stück. Vorher wurde er erst
+     danach gebündelt gespeichert, und ein Abbruch dazwischen schenkte einen
+     Ankauf. Scheitert die Buchung, wird er zurückgesetzt. */
+  const zaehlerVorher = acc.ankauf;
   acc.ankauf = { tag: heute(), n: n + 1 };
-  try { accounts.save(); } catch {}
+  const r = buchungen.verkaufe({ accounts, cosmetics, praegung, key, acc, art, id, preis });
+  if (!r.ok) { acc.ankauf = zaehlerVorher; return r; }
   return { ok: true, preis, label: cosmetics.label(art, id), rest: JE_TAG - n - 1 };
 }
 

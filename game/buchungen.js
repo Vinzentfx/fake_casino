@@ -230,14 +230,46 @@ function hinterlegt(uid) {
   return false;
 }
 
+/*
+ * Für andere Module (der Markt): eine Buchung vormerken, als erledigt
+ * austragen, und beim Start eine eigene Wiederaufnahme. Dieselbe Regel wie
+ * bei den Läden: erst steht die Buchung im Journal, dann wird geändert, und
+ * beim Start entscheidet das Konto auf der Platte, wie es ausgeht.
+ */
+const eigeneWiederaufnahme = {};
+/** Wirft, wenn das Journal nicht geschrieben werden kann: dann darf nichts passieren. */
+function vormerken(eintrag) {
+  const bid = crypto.randomBytes(8).toString("hex");
+  offen[bid] = { ...eintrag, bid, ts: Date.now() };
+  try { sichern(); } catch (e) { delete offen[bid]; throw e; }
+  return bid;
+}
+function erledigt(bid) {
+  delete offen[bid];
+  try { sichern(); } catch (e) { console.error("[buchungen] Journal nicht aufgeräumt:", e.message); }
+}
+function beiOffenerBuchung(quelle, fn) { eigeneWiederaufnahme[quelle] = fn; }
+
 /**
  * Offene Buchungen beim Start zu Ende bringen. Läuft, bevor jemand
  * verbunden ist. `zusatz[quelle]` kennt den Zustand außerhalb des Kontos:
  * { angewendet(e), anwenden(e), zurueck(e), speichern() }.
  */
 function wiederaufnehmen({ accounts, cosmetics, praegung, zusatz = {} }) {
+  // Der Markt meldet seine Wiederaufnahme beim Laden an; sicherstellen, dass er geladen ist.
+  try { require("./market"); } catch {}
   const ergebnis = [];
   for (const e of Object.values(offen)) {
+    const eigen = eigeneWiederaufnahme[e.quelle];
+    if (eigen) {
+      try {
+        ergebnis.push({ bid: e.bid, ausgang: eigen(e) || "abgeschlossen" });
+        delete offen[e.bid];
+      } catch (err) {
+        console.error(`[buchungen] ${e.bid} ließ sich nicht wiederaufnehmen:`, err.message);
+      }
+      continue;
+    }
     const acc = accounts.get(e.key);
     const liste = acc && acc.cosOwned && acc.cosOwned[cosmetics.TOPF[e.art]];
     const kontoHat = Array.isArray(liste) && liste.includes(e.id);
@@ -282,4 +314,4 @@ function wiederaufnehmen({ accounts, cosmetics, praegung, zusatz = {} }) {
   return ergebnis;
 }
 
-module.exports = { buche, verkaufe, wiederaufnehmen, sicherSchreiben, schreiben, Abbruch, _pruefung: pruefung, _offen: () => offen };
+module.exports = { buche, verkaufe, wiederaufnehmen, vormerken, erledigt, beiOffenerBuchung, sicherSchreiben, schreiben, Abbruch, _pruefung: pruefung, _offen: () => offen };

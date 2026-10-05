@@ -48,19 +48,32 @@ function newCompany(sym, seed) {
 
 let market = load();
 
+/* Fehlt die Datei, ist ein neuer Markt richtig. Ist sie da und kaputt,
+   bricht der Start ab: sonst ersetzte der nächste save() alle offenen
+   Positionen still durch einen leeren Markt, samt den Chips darin. */
 function load() {
+  let roh;
   try {
-    const m = JSON.parse(fs.readFileSync(FILE, "utf8"));
-    if (m && m.stocks && m.positions) return m;
-  } catch {}
-  return generate();
+    roh = fs.readFileSync(FILE, "utf8");
+  } catch (e) {
+    if (e.code === "ENOENT") return generate();
+    throw new Error(`[stocks] ${FILE} ist nicht lesbar: ${e.message}`);
+  }
+  let m;
+  try { m = JSON.parse(roh); } catch (e) { throw new Error(`[stocks] ${FILE} ist beschädigt: ${e.message}`); }
+  if (!m || typeof m !== "object" || !m.stocks || !m.positions) throw new Error(`[stocks] ${FILE} hat keine Kurse oder Positionen.`);
+  return m;
 }
 
+/* Über eine Kopie und Umbenennen (buchungen.sicherSchreiben): ein Abbruch
+   mitten im Schreiben lässt die alte Datei ganz, statt sie halb zu
+   überschreiben. Ein Fehler wird gemeldet, nicht verschluckt. */
 function save() {
   try {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(FILE, JSON.stringify(market, null, 2));
-  } catch {}
+    require("./buchungen").sicherSchreiben(FILE, JSON.stringify(market));
+  } catch (e) {
+    console.error("[stocks] speichern fehlgeschlagen:", e.message);
+  }
 }
 
 function generate() {
@@ -234,9 +247,20 @@ function setupStocks(io, accounts) {
       const cost = Math.floor(Number(margin));
       if (!Number.isFinite(cost) || cost < 1000) return ack({ ok: false, error: "Ungültiger Einsatz." });
       if (cost > acc.chips) return ack({ ok: false, error: "Nicht genug Chips." });
+      /* Erst abbuchen und das Konto SOFORT sichern, dann die Position anlegen.
+         Vorher lag die Position sofort auf der Platte, die Abbuchung erst mit
+         dem gebündelten Speichern bis zu 250 ms später: ein Neustart in diesem
+         Fenster schenkte die Position. So kann ein Abbruch höchstens kosten,
+         nie drucken. */
+      const res = accounts.adjustChips(key(), -cost);
+      if (!res.ok) return ack({ ok: false, error: res.error });
+      try { accounts.saveJetzt(); } catch {}
       const r = open(key(), sym, dir, cost, lev);
-      if (!r.ok) return ack(r);
-      const res = accounts.adjustChips(key(), -r.cost);
+      if (!r.ok) {
+        const zurueck = accounts.adjustChips(key(), cost);
+        try { accounts.saveJetzt(); } catch {}
+        return ack({ ...r, account: zurueck.account });
+      }
       ack({ ok: true, account: res.account, ...snapshot(key()) });
     });
 
@@ -244,9 +268,11 @@ function setupStocks(io, accounts) {
       if (typeof ack !== "function") return;
       const acc = key() && accounts.get(key());
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      // Die Position ist schon weg (close speichert sofort); die Auszahlung jetzt auch sofort sichern.
       const r = close(key(), id);
       if (!r.ok) return ack(r);
       const res = accounts.adjustChips(key(), r.payout);
+      try { accounts.saveJetzt(); } catch {}
       ack({ ok: true, payout: r.payout, margin: r.margin, account: res.account, ...snapshot(key()) });
     });
   });
@@ -255,9 +281,12 @@ function setupStocks(io, accounts) {
   // Liquidierte benachrichtigen und allen den neuen Stand schicken.
   setInterval(() => {
     const { liquidated } = tick();
+    let gezahlt = false;
     for (const ev of liquidated) {
-      if (ev.payout > 0) accounts.adjustChips(ev.owner, ev.payout); // Short wird bei der Pleite ausgezahlt
+      if (ev.payout > 0) { accounts.adjustChips(ev.owner, ev.payout); gezahlt = true; } // Short wird bei der Pleite ausgezahlt
     }
+    // Die Positionen sind schon aus der Datei; die Auszahlungen dazu gleich sichern.
+    if (gezahlt) { try { accounts.saveJetzt(); } catch {} }
     for (const s of io.of("/").sockets.values()) {
       const k = s.data && s.data.account;
       const mine = liquidated.filter((e) => e.owner === k);

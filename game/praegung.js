@@ -98,10 +98,10 @@ function save() {
   fassung++;
   if (sammeln) return;
   try {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(FILE, JSON.stringify(state));
+    // Über eine Kopie und Umbenennen: ein Abbruch mitten im Schreiben lässt die alte Datei ganz.
+    require("./buchungen").sicherSchreiben(FILE, JSON.stringify(state));
     schreibfehler = null;
-  } catch (e) { schreibfehler = e; }
+  } catch (e) { schreibfehler = e; console.error("[praegung] speichern fehlgeschlagen:", e.message); }
 }
 const saveJetzt = save;
 

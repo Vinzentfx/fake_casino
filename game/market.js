@@ -56,23 +56,32 @@ const MIN_PREIS = 1000;
 const MAX_PREIS = 100_000_000; // gegen den vertippten Preis, nicht gegen Absicht
 const MAX_JE_SPIELER = 5;      // so viele Angebote darf einer gleichzeitig haben
 
+/* Fehlt die Datei, ist ein leerer Markt richtig. Ist sie da und kaputt,
+   bricht der Start ab: sonst ersetzte der nächste save() alle Angebote still
+   durch einen leeren Markt, und die hinterlegten Stücke hingen im Nichts. */
 function load() {
+  let roh;
   try {
-    const m = JSON.parse(fs.readFileSync(FILE, "utf8"));
-    if (m && m.angebote) return m;
-    // Der alte Produktmarkt. Seine Angebote beschreiben Gegenstände, die es
-    // nicht mehr gibt; sie werden nicht übernommen, sondern fallen weg.
-    if (m && m.offers) return { v: 2, angebote: {}, next: 1 };
-  } catch {}
-  return { v: 2, angebote: {}, next: 1 };
+    roh = fs.readFileSync(FILE, "utf8");
+  } catch (e) {
+    if (e.code === "ENOENT") return { v: 2, angebote: {}, next: 1 };
+    throw new Error(`[market] ${FILE} ist nicht lesbar: ${e.message}`);
+  }
+  let m;
+  try { m = JSON.parse(roh); } catch (e) { throw new Error(`[market] ${FILE} ist beschädigt: ${e.message}`); }
+  if (m && m.angebote) return m;
+  // Der alte Produktmarkt. Seine Angebote beschreiben Gegenstände, die es
+  // nicht mehr gibt; sie werden nicht übernommen, sondern fallen weg.
+  if (m && m.offers) return { v: 2, angebote: {}, next: 1 };
+  throw new Error(`[market] ${FILE} hat keine Angebotsliste.`);
 }
 
+const buchungen = require("./buchungen");
 let store = load();
+/* Über eine Kopie und Umbenennen; ein Fehler wirft, damit eine Buchung
+   (unten) nicht „erledigt“ sagt, was gar nicht auf der Platte steht. */
 function save() {
-  try {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(FILE, JSON.stringify(store));
-  } catch {}
+  require("./buchungen").sicherSchreiben(FILE, JSON.stringify(store));
 }
 
 const err = (error) => ({ ok: false, error });
@@ -173,12 +182,27 @@ function anbieten(accounts, key, uid, preis) {
   const p = Math.round(Number(preis) || 0);
   if (!Number.isFinite(p) || p < MIN_PREIS) return err(`Mindestens ${de(MIN_PREIS)} Chips.`);
   if (p > MAX_PREIS) return err(`Höchstens ${de(MAX_PREIS)} Chips.`);
-  // Aus der Hand geben: erst jetzt, nachdem alles geprüft ist.
-  if (!cosmetics.besitzNehmen(acc, st.art, st.id)) return err("Das Stück gehört dir nicht.");
-  accounts.save();
+  /* Aus der Hand geben, als Buchung (game/buchungen.js): erst das Konto
+     sichern (Stück weg), dann das Angebot. Bricht es dazwischen ab, gibt der
+     nächste Start das Stück zurück, statt es im Nichts hängen zu lassen. */
   const id = String(store.next++);
-  store.angebote[id] = { uid, preis: p, verkaeufer: key, verkaeuferName: acc.name, seit: Date.now() };
-  save();
+  const angebot = { uid, preis: p, verkaeufer: key, verkaeuferName: acc.name, seit: Date.now() };
+  let bid;
+  try { bid = buchungen.vormerken({ quelle: "markt", schritt: "angebot", key, art: st.art, id: st.id, angebot: id, daten: angebot }); }
+  catch { return err("Gerade lässt sich nichts einstellen. Es hat sich nichts geändert."); }
+  if (!cosmetics.besitzNehmen(acc, st.art, st.id)) { buchungen.erledigt(bid); return err("Das Stück gehört dir nicht."); }
+  try {
+    accounts.saveJetzt();
+    store.angebote[id] = angebot;
+    save();
+  } catch (e) {
+    console.error("[market] Angebot nicht gesichert:", e.message);
+    delete store.angebote[id];
+    cosmetics.besitzGeben(acc, st.art, st.id);
+    try { accounts.saveJetzt(); buchungen.erledigt(bid); } catch {}
+    return err("Das ließ sich gerade nicht sichern. Das Stück ist wieder bei dir.");
+  }
+  buchungen.erledigt(bid);
   return { ok: true, id, art: st.art, stueckId: st.id, nr: st.nr, serie: st.serie, label: cosmetics.label(st.art, st.id), preis: p };
 }
 
@@ -189,10 +213,23 @@ function zuruecknehmen(accounts, key, id) {
   const acc = accounts.get(key);
   const st = praegung.stueck(a.uid);
   if (!acc || !st || st.besitzer !== a.verkaeufer) return err("Das Angebot ist nicht mehr gültig.");
-  cosmetics.besitzGeben(acc, st.art, st.id);
-  accounts.save();
-  delete store.angebote[id];
-  save();
+  /* Umgekehrt zum Einstellen: erst das Angebot weg, dann das Stück zurück
+     ans Konto. Andersherum stünde es nach einem Abbruch zugleich am Konto
+     und im Schaufenster, und ein Käufer bekäme ein zweites Exemplar. */
+  let bid;
+  try { bid = buchungen.vormerken({ quelle: "markt", schritt: "rueck", key, art: st.art, id: st.id, angebot: id, daten: a }); }
+  catch { return err("Gerade lässt sich nichts zurücknehmen. Es hat sich nichts geändert."); }
+  try {
+    delete store.angebote[id];
+    save();
+    cosmetics.besitzGeben(acc, st.art, st.id);
+    accounts.saveJetzt();
+  } catch (e) {
+    console.error("[market] Rücknahme nicht gesichert:", e.message);
+    // Die Buchung bleibt im Journal; der nächste Start bringt sie zu Ende.
+    return err("Das ließ sich gerade nicht sichern. Es wird beim nächsten Start nachgeholt.");
+  }
+  buchungen.erledigt(bid);
   return { ok: true, label: cosmetics.label(st.art, st.id) };
 }
 
@@ -217,13 +254,34 @@ function kaufen(accounts, key, id) {
 
   const gebuehr = Math.round(a.preis * GEBUEHR);
   const anVerkaeufer = a.preis - gebuehr;
-  accounts.adjustChips(key, -a.preis);
-  accounts.adjustChips(a.verkaeufer, anVerkaeufer);
+  /* Ein Kauf ändert drei Dateien (Konten, Prägeregister, Markt) und ist
+     deshalb eine Buchung (game/buchungen.js). Käufer und Verkäufer stehen
+     beide im Konto, das zuerst und sofort gesichert wird: es entscheidet
+     beim nächsten Start, ob der Kauf gilt. Danach Exemplar und Angebot. */
+  let bid;
+  try { bid = buchungen.vormerken({ quelle: "markt", schritt: "kauf", key, name: acc.name, verkaeufer: a.verkaeufer, art: st.art, id: st.id, uid: a.uid, angebot: id, preis: a.preis }); }
+  catch { return err("Gerade lässt sich nichts kaufen. Es wurde nichts abgebucht."); }
+  const vorher = { kaeufer: acc.chips, verkaeufer: verk.chips };
+  acc.chips = (acc.chips || 0) - a.preis;
+  verk.chips = (verk.chips || 0) + anVerkaeufer;
   cosmetics.besitzGeben(acc, st.art, st.id);
-  accounts.save();
-  praegung.uebertragen(a.uid, key, acc.name, a.preis);
-  delete store.angebote[id];
-  save();
+  try {
+    accounts.saveJetzt();
+  } catch (e) {
+    console.error("[market] Kauf nicht gesichert:", e.message);
+    acc.chips = vorher.kaeufer;
+    verk.chips = vorher.verkaeufer;
+    cosmetics.besitzNehmen(acc, st.art, st.id);
+    try { accounts.saveJetzt(); buchungen.erledigt(bid); } catch {}
+    return err("Das ließ sich gerade nicht sichern. Es wurde nichts abgebucht.");
+  }
+  // Ab hier gilt der Kauf; was jetzt noch scheitert, zieht der nächste Start nach.
+  try {
+    praegung.uebertragen(a.uid, key, acc.name, a.preis);
+    delete store.angebote[id];
+    save();
+    buchungen.erledigt(bid);
+  } catch (e) { console.error("[market] Kauf nachzuziehen beim nächsten Start:", e.message); }
   return {
     ok: true,
     // Die uid mit zurück: der Client will genau diese Kachel hervorheben,
@@ -246,6 +304,41 @@ function kaufen(accounts, key, id) {
    oben warnt. */
 const TOPF_VON = require("./cosmetics").TOPF;
 
+/*
+ * Eine abgebrochene Marktbuchung beim Start zu Ende bringen. Das Konto auf
+ * der Platte entscheidet, wie bei den Läden:
+ *   angebot  Stück nicht mehr am Konto: das Angebot muss stehen, sonst kommt
+ *            das Stück zurück. Noch am Konto: es gibt kein Angebot.
+ *   rueck    Angebot noch da: nichts passiert. Angebot weg: das Stück gehört
+ *            wieder ans Konto.
+ *   kauf     Käufer hat das Stück: Exemplar umschreiben, Angebot weg.
+ *            Sonst ist nichts passiert, das Angebot bleibt.
+ */
+buchungen.beiOffenerBuchung("markt", (e) => {
+  const accounts = require("./accounts");
+  const acc = accounts.get(e.key);
+  if (!acc) return "ohne Konto liegen gelassen";
+  const hat = ((acc.cosOwned || {})[TOPF_VON[e.art]] || []).includes(e.id);
+  const da = !!store.angebote[e.angebot];
+  if (e.schritt === "angebot") {
+    if (!hat && !da) { cosmetics.besitzGeben(acc, e.art, e.id); accounts.saveJetzt(); return "Stück zurück"; }
+    if (hat && da) { delete store.angebote[e.angebot]; save(); return "Angebot entfernt"; }
+    return "abgeschlossen";
+  }
+  if (e.schritt === "rueck") {
+    if (!da && !hat) { cosmetics.besitzGeben(acc, e.art, e.id); accounts.saveJetzt(); return "Stück zurück"; }
+    return "abgeschlossen";
+  }
+  if (e.schritt === "kauf") {
+    if (!hat) return "nicht gekauft";
+    const st = praegung.stueck(e.uid);
+    if (st && st.besitzer !== e.key) praegung.uebertragen(e.uid, e.key, e.name || acc.name, e.preis);
+    if (da) { delete store.angebote[e.angebot]; save(); }
+    return "Kauf nachgezogen";
+  }
+  return "unbekannt";
+});
+
 /**
  * Der Verkäufer heißt jetzt anders.
  *
@@ -257,7 +350,7 @@ function umbenennen(key, alt, neu) {
   for (const a of Object.values(store.angebote)) {
     if (a.verkaeufer === key && a.verkaeuferName !== neu) { a.verkaeuferName = neu; n++; }
   }
-  if (n) save();
+  if (n) { try { save(); } catch (e) { console.error("[market] Umbenennung nicht gesichert:", e.message); } }
   return n;
 }
 
@@ -329,4 +422,4 @@ function setupMarket(io, accounts) {
   });
 }
 
-module.exports = { setupMarket, oeffentlich, umbenennen, istHinterlegt, GEBUEHR };
+module.exports = { setupMarket, oeffentlich, umbenennen, istHinterlegt, GEBUEHR, _intern: { anbieten, kaufen, zuruecknehmen, store: () => store } };
