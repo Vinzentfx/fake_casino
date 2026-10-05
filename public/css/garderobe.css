@@ -1,0 +1,246 @@
+/* Garderobe: die Figur vor dem Spiegel (public/js/garderobe.js).
+   Flächen und Linien aus den Tokens, der Spiegelrahmen in der Akzentfarbe,
+   damit er in allen drei Paletten zum Haus passt. Fest gesetzt ist nur das
+   warme Licht der Glühbirnen, wie die Eigenfarben der Automaten. */
+
+html.welt-fenster #app > .screen[data-screen="garderobe"].active { max-width: min(1060px, 100%); }
+
+.gd { display: grid; gap: 14px; --birne: #fff1c4; }
+.gd-laedt { padding: 60px 0; text-align: center; color: var(--text-dim); }
+.gd-kicker { display: block; color: var(--text-dim); font: 800 11px/1.4 var(--font); letter-spacing: 0.14em; text-transform: uppercase; }
+
+.gd-kopf { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 4px 2px 0; }
+.gd-kopf h2 { margin: 0; font-size: var(--fs-xl); }
+
+/* ---------- Bühne: Fächer links, Spiegel, Fächer rechts ---------- */
+.gd-buehne {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 330px) minmax(0, 1fr);
+  gap: 14px; align-items: center;
+}
+.gd-faecher { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.gd-fach {
+  position: relative; display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 10px;
+  min-height: 64px; padding: 6px 10px 6px 6px; border-radius: 14px; text-align: left; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); color: inherit; font: inherit;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.gd-rechts .gd-fach { grid-template-columns: minmax(0, 1fr) 52px; text-align: right; padding: 6px 6px 6px 10px; }
+.gd-rechts .gd-fach-bild { order: 2; }
+.gd-fach:active { transform: scale(0.98); }
+.gd-fach.an { border-color: var(--accent); background: linear-gradient(90deg, var(--accent-soft), transparent), var(--surface); box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.35); }
+.gd-rechts .gd-fach.an { background: linear-gradient(270deg, var(--accent-soft), transparent), var(--surface); }
+.gd-fach.probe { border-style: dashed; border-color: rgba(var(--accent-rgb), 0.7); }
+.gd-fach-bild { width: 52px; height: 52px; border-radius: 11px; overflow: hidden; display: grid; place-items: center; background: var(--surface-sunken); }
+.gd-fach-bild .fg-stueck { width: 52px; height: 52px; }
+.gd-fach-bild.leer::after { content: ""; width: 18px; height: 2px; border-radius: 2px; background: var(--line-strong); }
+.gd-fach-text { min-width: 0; display: grid; gap: 1px; }
+.gd-fach-text small { color: var(--text-mute); font: 700 10px/1.3 var(--font); letter-spacing: 0.08em; text-transform: uppercase; }
+.gd-fach-text b { font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gd-fach-zahl {
+  position: absolute; top: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: var(--r-pill);
+  display: grid; place-items: center; font: 800 10px/1 var(--font); font-style: normal;
+  background: var(--surface-solid); border: 1px solid var(--line-strong); color: var(--text-dim);
+}
+.gd-links .gd-fach-zahl { right: -6px; }
+.gd-rechts .gd-fach-zahl { left: -6px; }
+
+/* ---------- Spiegel ---------- */
+.gd-mitte { display: grid; gap: 10px; min-width: 0; }
+.gd-spiegel { position: relative; }
+/* Bogenspiegel: oben rund, unten gerade, Rahmen in der Akzentfarbe. */
+.gd-glas {
+  position: relative; aspect-ratio: 3 / 4.3; overflow: hidden;
+  border-radius: 160px 160px 16px 16px;
+  border: 9px solid transparent;
+  /* Die Glasebenen liegen auf einer deckenden Fläche (padding-box), sonst
+     scheint der goldene Rahmen von unten durch das ganze Glas. */
+  background:
+    radial-gradient(70% 55% at 50% 72%, rgba(var(--accent-rgb), 0.16), transparent 70%) padding-box,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.3)) padding-box,
+    linear-gradient(var(--surface-solid), var(--surface-solid)) padding-box,
+    linear-gradient(160deg, var(--accent-strong), var(--accent) 35%, rgba(var(--accent-rgb), 0.45) 60%, var(--accent-strong)) border-box;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.55), 0 14px 34px rgba(0, 0, 0, 0.45);
+}
+/* Ein schräger Lichtstreif über dem Glas, damit es nach Spiegel aussieht. */
+.gd-schein {
+  position: absolute; inset: -20% -40%; pointer-events: none; z-index: 3;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.09) 44%, transparent 50%, transparent 56%, rgba(255, 255, 255, 0.05) 59%, transparent 63%);
+}
+.gd-boden {
+  position: absolute; left: 14%; right: 14%; bottom: 7%; height: 14%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(var(--accent-rgb), 0.28), rgba(0, 0, 0, 0.35) 70%, transparent);
+}
+.gd-figur { position: absolute; left: 0; right: 0; bottom: 11%; display: flex; justify-content: center; align-items: flex-end; z-index: 2; }
+.gd .wf.gd-wf { position: relative; left: auto; top: auto; width: 58%; height: auto; aspect-ratio: 2 / 3; cursor: default; will-change: auto; }
+.gd .gd-wf .fg { overflow: visible; }
+html:not(.reduce-motion) .gd-wf.r-runter .fg-oben { animation: fg-atmen 4.2s ease-in-out infinite; }
+html:not(.reduce-motion) .gd-wf.gd-neu .wf-koerper { animation: gd-pop 0.5s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes gd-pop { 0% { transform: scale(0.94) translateY(4px); } 60% { transform: scale(1.04) translateY(-3px); } 100% { transform: none; } }
+.gd-tier { position: absolute; bottom: 0; left: 63%; width: 22%; aspect-ratio: 1.25; z-index: 1; }
+.gd-tier .ht { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* Glühbirnen an beiden Seiten des Rahmens. */
+.gd-rahmen { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.gd-rahmen i {
+  position: absolute; width: 11px; height: 11px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fff, var(--birne) 55%, rgba(var(--accent-rgb), 0.9));
+  box-shadow: 0 0 10px 2px rgba(255, 236, 180, 0.55);
+}
+.gd-rahmen i:nth-child(-n+5) { left: -2px; }
+.gd-rahmen i:nth-child(n+6) { right: -2px; }
+.gd-rahmen i:nth-child(1), .gd-rahmen i:nth-child(6) { top: 32%; }
+.gd-rahmen i:nth-child(2), .gd-rahmen i:nth-child(7) { top: 47%; }
+.gd-rahmen i:nth-child(3), .gd-rahmen i:nth-child(8) { top: 62%; }
+.gd-rahmen i:nth-child(4), .gd-rahmen i:nth-child(9) { top: 77%; }
+.gd-rahmen i:nth-child(5), .gd-rahmen i:nth-child(10) { top: 92%; }
+html:not(.reduce-motion) .gd-spiegel.probe .gd-rahmen i { animation: gd-birne 1.6s ease-in-out infinite; }
+html:not(.reduce-motion) .gd-spiegel.probe .gd-rahmen i:nth-child(even) { animation-delay: -0.8s; }
+@keyframes gd-birne { 50% { box-shadow: 0 0 4px 1px rgba(255, 236, 180, 0.3); filter: brightness(0.8); } }
+
+.gd-set, .gd-probe-marke {
+  position: absolute; top: 14%; left: 50%; transform: translateX(-50%); z-index: 5; white-space: nowrap;
+  padding: 4px 12px; border-radius: var(--r-pill); font: 800 11px/1.4 var(--font); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.gd-set { background: rgba(0, 0, 0, 0.45); color: var(--accent-strong); border: 1px solid rgba(var(--accent-rgb), 0.5); }
+.gd-probe-marke { background: var(--accent); color: var(--accent-ink); }
+
+.gd-spiegel-leiste { display: flex; align-items: center; gap: 8px; }
+.gd-rund {
+  flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line-strong); color: var(--text);
+}
+.gd-rund svg { width: 20px; height: 20px; }
+.gd-gesten { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; }
+.gd-gesten::-webkit-scrollbar { display: none; }
+.gd-gesten .chip-btn { flex: 0 0 auto; white-space: nowrap; }
+
+/* Was gerade nur im Spiegel hängt. */
+.gd-anprobe {
+  display: grid; gap: 10px; padding: 12px; border-radius: 14px;
+  background: var(--surface); border: 1px dashed rgba(var(--accent-rgb), 0.6);
+}
+.gd-anprobe-text b { font-size: var(--fs-sm); }
+.gd-anprobe-text ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.gd-anprobe-text li { display: flex; justify-content: space-between; gap: 10px; font-size: var(--fs-sm); }
+.gd-anprobe-text li small { color: var(--text-dim); text-align: right; }
+.gd-anprobe-knoepfe { display: flex; flex-wrap: wrap; gap: 6px; }
+.gd-anprobe-knoepfe .btn-primary, .gd-anprobe-knoepfe .btn-secondary { flex: 1 1 auto; min-height: 40px; padding: 8px 12px; }
+
+/* ---------- Schrank ---------- */
+.gd-schrank { display: grid; gap: 12px; padding: 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.gd-reiter { display: flex; gap: 4px; padding: 4px; border-radius: var(--r-pill); background: var(--surface-sunken); border: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.gd-reiter::-webkit-scrollbar { display: none; }
+.gd-reiter button {
+  flex: 1 0 auto; min-height: 38px; padding: 8px 14px; border-radius: var(--r-pill); border: 0; background: none; cursor: pointer;
+  color: var(--text-dim); font: 800 var(--fs-sm) var(--font);
+}
+.gd-reiter button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.gd-schrank-inhalt { display: grid; gap: 12px; }
+.gd-schrank-kopf { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.gd-schrank-kopf h3 { margin: 0; font-size: 1.1rem; }
+.gd-zahl { color: var(--text-dim); font: 700 var(--fs-sm) var(--font); }
+.gd-hinweis { margin: -4px 0 0; color: var(--text-dim); font-size: var(--fs-sm); line-height: 1.5; }
+.gd-umschalter { display: flex; gap: 4px; padding: 3px; border-radius: var(--r-pill); background: var(--surface-sunken); border: 1px solid var(--line); }
+.gd-umschalter button {
+  min-height: 34px; padding: 6px 12px; border-radius: var(--r-pill); border: 0; background: none; cursor: pointer;
+  color: var(--text-dim); font: 700 var(--fs-sm) var(--font);
+}
+.gd-umschalter button small { opacity: 0.75; margin-left: 2px; }
+.gd-umschalter button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); box-shadow: 0 0 0 1px var(--line-strong); }
+
+.gd-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; }
+/* Ein Stück im Schrank. Die Farbe der Stufe kommt aus .st-* (laeden.css),
+   hier nur über currentColor an der Kante, damit es keine zweite Liste gibt. */
+.gd-stueck {
+  position: relative; display: grid; justify-items: center; align-content: start; gap: 3px;
+  padding: 8px 8px 10px; border-radius: 14px; cursor: pointer; text-align: center;
+  background: var(--surface-2); border: 1px solid var(--line); color: inherit; font: inherit;
+  transition: transform 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.gd-stueck:active { transform: scale(0.97); }
+.gd-stueck-bild { width: 100%; height: 92px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-sunken); overflow: hidden; }
+.gd-stueck-bild .fg-stueck { width: 88px; height: 88px; }
+.gd-stueck b { font-size: var(--fs-sm); line-height: 1.25; margin-top: 4px; }
+.gd-stueck small { color: var(--text-dim); font-size: 11px; }
+.gd-stueck .gd-stufe { font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; font-size: 10px; }
+.gd-stueck .gd-geste { color: var(--accent); }
+.gd-status {
+  margin-top: 4px; padding: 3px 10px; border-radius: var(--r-pill); font: 800 11px/1.4 var(--font);
+  background: var(--surface-sunken); color: var(--text-dim);
+}
+.gd-stueck.traegt { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.45), 0 8px 20px rgba(var(--accent-rgb), 0.15); }
+.gd-stueck.traegt .gd-status { background: var(--accent); color: var(--accent-ink); }
+.gd-stueck.spiegel { border-style: dashed; border-color: rgba(var(--accent-rgb), 0.75); }
+.gd-stueck.spiegel .gd-status { color: var(--accent); }
+.gd-stueck.fremd .gd-stueck-bild { opacity: 0.72; }
+.gd-stueck.fremd:not(.spiegel) b { color: var(--text-dim); }
+.gd-ohne { color: var(--text-mute); font: 700 var(--fs-sm) var(--font); }
+.gd-stueck .serie-badge { position: absolute; top: 6px; right: 6px; z-index: 1; }
+.gd-mehr {
+  justify-self: center; min-height: 40px; padding: 8px 16px; border-radius: var(--r-pill); cursor: pointer;
+  background: none; border: 1px dashed var(--line-strong); color: var(--text-dim); font: 700 var(--fs-sm) var(--font);
+}
+
+/* Sets */
+.gd-sets { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.gd-set-karte { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); }
+.gd-set-karte header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.gd-set-karte header small { color: var(--text-dim); font-weight: 700; }
+.gd-set-karte p { margin: 0; color: var(--text-dim); font-size: var(--fs-sm); line-height: 1.45; }
+.gd-set-karte.komplett { border-color: rgba(var(--accent-rgb), 0.5); }
+.gd-set-karte.traegt { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.45); }
+.gd-set-karte .gd-status { justify-self: start; }
+.gd-set-karte.traegt .gd-status { background: var(--accent); color: var(--accent-ink); }
+.gd-set-teile { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.gd-set-teil { display: grid; justify-items: center; gap: 2px; padding: 4px; border-radius: 10px; background: var(--surface-sunken); opacity: 0.5; }
+.gd-set-teil.hat { opacity: 1; box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.35); }
+.gd-set-teil .fg-stueck { width: 48px; height: 48px; }
+.gd-set-teil small { font-size: 10px; line-height: 1.2; text-align: center; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; max-width: 100%; white-space: nowrap; }
+
+/* Looks */
+.gd-looks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.gd-look { position: relative; display: grid; justify-items: center; gap: 6px; padding: 12px 10px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); }
+.gd-look.frei { border-style: dashed; }
+.gd-look-nr { position: absolute; top: 8px; left: 10px; font: 800 var(--fs-sm) var(--font-num); color: var(--text-mute); }
+.gd-look-figur { width: 84px; height: 126px; display: grid; place-items: end center; }
+.gd-look-figur svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.gd-look small { color: var(--text-dim); font-size: 11px; }
+.gd-look-knoepfe { display: grid; gap: 6px; width: 100%; }
+.gd-look-knoepfe button { min-height: 38px; padding: 6px 8px; }
+
+/* Verweis aus der Sammlung hierher. */
+.wardrobe-zur-garderobe {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; width: 100%; margin-top: 12px;
+  padding: 12px 14px; border-radius: 14px; text-align: left; cursor: pointer; color: inherit; font: inherit;
+  background: linear-gradient(135deg, var(--accent-soft), transparent), var(--surface); border: 1px solid var(--line-strong);
+}
+.wardrobe-zur-garderobe span { grid-column: 1; color: var(--text-dim); font-size: var(--fs-sm); }
+.wardrobe-zur-garderobe em { grid-column: 2; grid-row: 1 / 3; font-style: normal; font-size: 1.4rem; color: var(--accent); }
+
+/* ---------- Schmal: Spiegel oben, Fächer als Leisten darunter ---------- */
+@media (max-width: 760px) {
+  .gd-buehne { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .gd-mitte { order: -1; width: min(100%, 300px); justify-self: center; }
+  .gd-glas { width: min(100%, 250px); justify-self: center; margin: 0 auto; }
+  .gd-spiegel { display: grid; justify-items: center; }
+  .gd-rahmen { left: 50%; width: min(100%, 250px); transform: translateX(-50%); }
+  .gd-spiegel-leiste { justify-content: center; }
+  .gd-faecher { flex-direction: row; overflow-x: auto; scrollbar-width: none; padding: 8px 2px 2px; margin: 0 -2px; }
+  .gd-faecher::-webkit-scrollbar { display: none; }
+  .gd-fach, .gd-rechts .gd-fach { flex: 0 0 148px; grid-template-columns: 44px minmax(0, 1fr); text-align: left; padding: 5px 8px 5px 5px; min-height: 56px; }
+  .gd-rechts .gd-fach-bild { order: 0; }
+  .gd-fach-bild, .gd-fach-bild .fg-stueck { width: 44px; height: 44px; }
+  .gd-rechts .gd-fach-zahl { left: auto; right: -4px; }
+  .gd-links .gd-fach-zahl { right: -4px; }
+  .gd-fach-zahl { top: -6px; }
+  .gd-looks { grid-template-columns: minmax(0, 1fr); }
+  .gd-look { grid-template-columns: 70px minmax(0, 1fr); justify-items: start; align-items: center; }
+  .gd-look-figur { width: 64px; height: 96px; grid-row: 1 / 3; }
+  .gd-look-nr { left: auto; right: 10px; }
+}
+@media (max-width: 420px) {
+  .gd-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gd-schrank { padding: 10px; }
+}

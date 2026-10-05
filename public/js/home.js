@@ -75,7 +75,8 @@
     { id: "kiste",      name: "Kisten",         sub: "Kosmetik als Ziehung, dazu Duelle", icon: "🎁", sym: "geschenk",  cat: "sammeln", h: 45 },
     { id: "market",     name: "Markt",          sub: "Geprägte Stücke von Spieler zu Spieler", icon: "🛒", sym: "warenkorb", cat: "sammeln", h: 160 },
     { id: "auktion",    name: "Auktionshaus",   sub: "Ein Los am Tag, Zuschlag um halb neun", icon: "🔨", cat: "sammeln", h: 288 },
-    { id: "cosmetics",  name: "Garderobe",      sub: "Deine Figur, deine Stücke, deine Looks",   icon: "🎨", sym: "kosmetik",  cat: "sammeln", h: 320 },
+    { id: "garderobe",  name: "Garderobe",      sub: "Vor dem Spiegel umziehen, Sets und Looks", icon: "👕", cat: "sammeln", h: 25 },
+    { id: "cosmetics",  name: "Sammlung",       sub: "Alle Stücke, Prunkstück, Kollektionen",  icon: "🎨", sym: "kosmetik",  cat: "sammeln", h: 320 },
   ];
 
   const GAME_BY_ID = new Map(GAMES.map((g) => [g.id, g]));

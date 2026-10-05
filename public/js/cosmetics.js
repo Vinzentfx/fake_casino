@@ -779,8 +779,8 @@
     if (el) handle(el);
   });
 
-  // Die Grundform (public/js/welt/grundform.js) zeichnet die Vorschau neu.
-  window.Casino._cosVorschau = () => renderVorschau();
+  // Die Grundform (public/js/welt/grundform.js) meldet eine geänderte Figur.
+  document.addEventListener("casino:figur", () => { if (stand) renderVorschau(); });
   window.Casino._loadCosmetics = (skipDust = false) => {
     vorschau = null;
     socket.emit("cos:state", (s) => { if (s && s.ok) render(s); });

@@ -85,7 +85,7 @@
       dinge: [
         { id: "garderobe", art: "garderobe", x: 1.7, y: 3.35, block: [0.7, 2.4, 2.75, 3.45],
           nutz: { x: 1.7, y: 4.05, r: 1.25 }, label: "Garderobe", verb: "Umziehen",
-          ziel: { screen: "cosmetics" }, fokus: { x: 1.7, y: 2.6, zoom: 2.1 } },
+          ziel: { screen: "garderobe" }, fokus: { x: 1.7, y: 2.6, zoom: 2.1 } },
         { id: "slot-lucky7", art: "slot", farbe: "rot", x: 3.9, y: 3.4, block: [3.35, 2.4, 4.45, 3.45],
           nutz: { x: 3.9, y: 4.1, r: 0.95 }, label: "Lucky 7s", verb: "Spielen",
           ziel: { screen: "slots", maschine: "lucky7" }, fokus: { x: 3.9, y: 2.7, zoom: 2.6 } },

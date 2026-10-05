@@ -604,7 +604,7 @@
     if (!box) return;
     if (!f.a) { box.classList.add("hidden"); box.innerHTML = ""; setzeZustand(f); return; }
     const spiel = (Casino._games || []).find((g) => g.id === f.a);
-    const text = spiel ? spiel.name : ({ profile: "Profil", settings: "Einstellungen", cosmetics: "Garderobe", leaderboard: "Bestenliste", stats: "Statistik", quests: "Aufträge", season: "Season-Pass", calendar: "Kalender", wheel: "Glücksrad", clans: "Clans", transfer: "Chips senden", suggest: "Vorschläge", spickzettel: "Spickzettel", updates: "Updates" })[f.a] || "beschäftigt";
+    const text = spiel ? spiel.name : ({ profile: "Profil", settings: "Einstellungen", cosmetics: "Sammlung", garderobe: "Garderobe", leaderboard: "Bestenliste", stats: "Statistik", quests: "Aufträge", season: "Season-Pass", calendar: "Kalender", wheel: "Glücksrad", clans: "Clans", transfer: "Chips senden", suggest: "Vorschläge", spickzettel: "Spickzettel", updates: "Updates" })[f.a] || "beschäftigt";
     const sym = Casino.icons ? (Casino.icons.icon(spiel && spiel.sym ? spiel.sym : f.a) || Casino.icons.ui("uhr")) : "";
     box.innerHTML = `${sym || ""}<span>${esc(text)}</span>`;
     box.classList.remove("hidden");

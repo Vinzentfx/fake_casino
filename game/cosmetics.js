@@ -563,6 +563,20 @@ function ensureOwned(acc) {
   return o;
 }
 
+/* Wie ein gespeicherter Look aussieht, für das kleine Bild in der
+   Garderobe. Nur was die Figur zeigt: Kleidung, Jackenfarbe (Namensstil),
+   Mütze (Rahmen), Ding in der Hand (Chat-Zeichen) und Aura. */
+function outfitLook(o) {
+  if (!o || !o.items) return null;
+  const i = o.items;
+  const kl = {};
+  for (const [art, a] of Object.entries(kleidung.ARTEN)) {
+    if (typeof i[art] === "string" && i[art] !== a.leer) kl[art] = i[art];
+  }
+  const oder = (id, leer) => (typeof id === "string" && id !== leer ? id : null);
+  return { kleidung: kl, nameStyle: oder(i.style, "standard"), frame: oder(i.frame, "keiner"), zeichen: oder(i.zeichen, "keins"), aura: oder(i.aura, "keine") };
+}
+
 function setupCosmetics(io, accounts) {
   io.on("connection", (socket) => {
     const acct = () => (socket.data.account ? accounts.get(socket.data.account) : null);
@@ -650,7 +664,7 @@ function setupCosmetics(io, accounts) {
       };
       return {
         chips: acc.chips,
-        outfits: [0, 1, 2].map(slot => ({ slot, saved: !!acc.outfits?.[slot], savedAt: acc.outfits?.[slot]?.savedAt || null })),
+        outfits: [0, 1, 2].map(slot => ({ slot, saved: !!acc.outfits?.[slot], savedAt: acc.outfits?.[slot]?.savedAt || null, look: outfitLook(acc.outfits?.[slot]) })),
         fristen: { season: seasonEnde, comeback: comebackEnde },
         fortuna: { rest: radRest, max: FORTUNA_MAX },
         serien: praegung.serienRegeln(),

@@ -301,6 +301,11 @@
       <path d="M4.4 21c0-4 3.4-6.6 7.6-6.6s7.6 2.6 7.6 6.6" ${S}/>`,
 
     // Palette mit Farbklecksen: Kosmetik ist Aussehen.
+    // Kleiderbügel mit Haken.
+    garderobe: `<path d="M12 8.2V7.4a1.9 1.9 0 1 0-1.9-1.9" ${S}/>
+      <path d="M12 8.2 3.4 15.1c-.9.7-.4 2.1.7 2.1h15.8c1.1 0 1.6-1.4.7-2.1L12 8.2Z" ${S}/>
+      <path d="M7 17.2v2.3h10v-2.3" ${A}/>`,
+
     kosmetik: `<path d="M12 3.2c5 0 8.8 3.4 8.8 7.8 0 2.6-2 3.6-3.8 3.6h-1.6c-1.2 0-2 .8-2 1.8 0 .5.2.9.4 1.3.3.4.4.8.4 1.2 0 1-.8 1.9-2.2 1.9-4.9 0-8.8-3.9-8.8-8.8S7.1 3.2 12 3.2Z" ${S}/>
       <circle cx="8.2" cy="9.4" r="1.25" ${A}/>
       <circle cx="12.6" cy="7.4" r="1.25" fill="currentColor" opacity=".55"/>

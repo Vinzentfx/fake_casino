@@ -25,6 +25,21 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-05-b",
+      datum: "5. Oktober 2026",
+      titel: "Die neue Garderobe",
+      items: [
+        { icon: "garderobe", titel: "Umziehen vor dem Spiegel",
+          text: "Die Garderobe hat einen eigenen Raum bekommen. Deine Figur steht groß im Spiegel, drumherum ein Fach für jede Stelle vom Kopf bis zum Haustier. Tipp ein Fach an, und daneben liegt alles, was dort hineinpasst. Was dir gehört, ziehst du mit einem Tipp an." },
+
+        { icon: "kosmetik", titel: "Anprobieren, was dir noch fehlt",
+          text: "Fremde Stücke hängen nur im Spiegel, und du kannst mehrere davon kombinieren. Darunter steht, wo es sie gibt. Ganze Style-Sets lassen sich auf einmal anprobieren, die Figur dreht sich auf Knopfdruck, und Gesten wie Hupen oder Schlürfen kannst du direkt vor dem Spiegel ausprobieren." },
+
+        { icon: "speichern", titel: "Looks mit Bild",
+          text: "Deine drei gespeicherten Looks zeigen jetzt, wie sie aussehen. Haut, Haare und Hose stellst du im Reiter „Figur“ ein. Alles für deinen Namen, das Prunkstück und die Kollektionen findest du weiter in der Sammlung." },
+      ],
+    },
+    {
       id: "2026-10-05",
       datum: "5. Oktober 2026",
       titel: "Durchsicht: nichts geht mehr verloren",

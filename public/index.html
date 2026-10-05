@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="/css/club.css" />
   <link rel="stylesheet" href="/css/welt.css" />
   <link rel="stylesheet" href="/css/laeden.css" />
+  <link rel="stylesheet" href="/css/garderobe.css" />
   <script>
     /* Theme so früh wie möglich setzen, noch vor dem ersten Zeichnen.
        Sonst blitzt beim Laden kurz das Standard-Grün auf, bevor das
@@ -96,7 +97,8 @@
     <div class="sheet-group">
       <span class="sheet-label">Du</span>
       <button class="sheet-item" data-nav="profile"><i class="si-icon" data-icon="profil"></i><b>Profil</b><small>Guthaben, Erfolge, Abmelden</small></button>
-      <button class="sheet-item" data-nav="cosmetics"><i class="si-icon" data-icon="kosmetik"></i><b>Garderobe</b><small>Deine Figur und gespeicherte Looks</small></button>
+      <button class="sheet-item" data-nav="garderobe"><i class="si-icon" data-icon="garderobe"></i><b>Garderobe</b><small>Deine Figur, Sets und Looks</small></button>
+      <button class="sheet-item" data-nav="cosmetics"><i class="si-icon" data-icon="kosmetik"></i><b>Sammlung</b><small>Alle Stücke, Prunkstück, Kollektionen</small></button>
       <button class="sheet-item" data-nav="auktion"><i class="si-icon" data-icon="auktion"></i><b>Auktionshaus</b><small id="menu-auktion-sub">Was es nur einmal gibt</small></button>
       <button class="sheet-item" data-nav="market"><i class="si-icon" data-icon="warenkorb"></i><b>Markt</b><small>Geprägte Stücke von Spieler zu Spieler</small></button>
       <button class="sheet-item" data-nav="kiste"><i class="si-icon" data-icon="geschenk"></i><b>Kisten</b><small>Kosmetik als Ziehung</small></button>
@@ -189,8 +191,8 @@
         <!-- Kopf: Guthaben, Fortschritt und die zwei Dinge, die man beim
              Reinkommen wirklich anklickt (Bonus abholen, Aufträge ansehen). -->
         <section class="club-welcome" aria-label="Dein Auftritt im Club">
-          <div class="club-welcome-copy"><span class="club-kicker">DEIN PLATZ IM CLUB</span><h2>Schön, dass du da bist.</h2><p>Eine Runde spielen. Leute treffen. Deinen Look zeigen.</p><button class="club-button" data-nav="cosmetics" type="button">In die Garderobe <span aria-hidden="true">↗</span></button></div>
-          <button class="club-welcome-player" id="club-me" data-nav="cosmetics" type="button" aria-label="Deinen Look ändern"></button>
+          <div class="club-welcome-copy"><span class="club-kicker">DEIN PLATZ IM CLUB</span><h2>Schön, dass du da bist.</h2><p>Eine Runde spielen. Leute treffen. Deinen Look zeigen.</p><button class="club-button" data-nav="garderobe" type="button">In die Garderobe <span aria-hidden="true">↗</span></button></div>
+          <button class="club-welcome-player" id="club-me" data-nav="garderobe" type="button" aria-label="Deinen Look ändern"></button>
           <span class="club-room-sign" aria-hidden="true">FAKE CASINO<br><b>THE CLUB</b></span>
         </section>
         <section class="hero">
@@ -1413,17 +1415,23 @@
       </div>
     </section>
 
+    <!-- Garderobe: die Figur vor dem Spiegel. Inhalt baut js/garderobe.js. -->
+    <section class="screen" data-screen="garderobe">
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <div class="gd" id="gd"></div>
+    </section>
+
     <!-- Kosmetik -->
     <section class="screen" data-screen="cosmetics">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
-      <h2 class="screen-title"><i data-icon="kosmetik"></i>Sammlung & Garderobe</h2>
+      <h2 class="screen-title"><i data-icon="kosmetik"></i>Sammlung</h2>
       <div class="tafel">
-        <p class="wardrobe-intro">Deine Fundstücke, gespeicherten Looks und nächsten Sammelziele.</p>
+        <p class="wardrobe-intro">Deine Fundstücke, dein Prunkstück und die nächsten Sammelziele.</p>
 
         <div class="wardrobe-layout">
         <aside class="wardrobe-sidebar" aria-label="Dein Look und gespeicherte Outfits">
         <div class="cos-preview" id="cos-preview"></div>
-        <details class="wardrobe-outfits"><summary>Gespeicherte Looks <span>3 Plätze</span></summary><div id="cos-outfits"></div></details>
+        <button type="button" class="wardrobe-zur-garderobe" data-nav="garderobe"><b>Zur Garderobe</b><span>Figur vor dem Spiegel umziehen, Style-Sets und gespeicherte Looks</span><em>›</em></button>
         </aside>
         <section class="wardrobe-collection" aria-label="Deine Sammlung">
           <header class="collection-heading"><div><span class="club-kicker">DEIN INVENTAR</span><h3>Sammlung</h3></div><div id="cos-collection-count" class="collection-count"></div></header>
@@ -2805,6 +2813,7 @@
   <script defer src="/js/welt/moebel.js"></script>
   <script defer src="/js/welt/welt.js"></script>
   <script defer src="/js/welt/grundform.js"></script>
+  <script defer src="/js/garderobe.js"></script>
   <script defer src="/js/spielklaenge.js"></script>
   <script defer src="/js/einlass.js"></script>
 </body>

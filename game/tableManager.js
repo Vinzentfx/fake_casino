@@ -184,6 +184,7 @@ function setupPoker(io, accounts) {
     profile: "im Profil",
     stats: "bei Statistiken",
     cosmetics: "in der Sammlung",
+    garderobe: "in der Garderobe",
     calendar: "im Kalender",
     wheel: "am Glücksrad",
     transfer: "sendet Chips",

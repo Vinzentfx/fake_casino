@@ -2,6 +2,7 @@
 
 /*
  * Die Grundform der Figur in der Garderobe: Haut, Haare, Frisur, Hose.
+ * Die Garderobe (public/js/garderobe.js) hängt sie in ihren Reiter „Figur“.
  *
  * Sie kostet nichts und ist kein Besitz. Wer neu dazukommt, soll vom ersten
  * Abend an eine Figur haben, die nach ihm aussieht, und nicht erst nach der
@@ -17,13 +18,9 @@
   const F = Casino.figur;
   const esc = (s) => Casino.escapeHtml ? Casino.escapeHtml(s) : String(s);
 
-  const vorschau = document.getElementById("cos-preview");
-  if (!vorschau) return;
-
-  const box = document.createElement("details");
-  box.className = "wardrobe-outfits welt-grundform";
-  box.open = true;
-  vorschau.after(box);
+  /* Wohin gezeichnet wird, entscheidet die Garderobe (`zeichne(el)`). Früher
+     hing die Grundform fest unter der Vorschau in der Sammlung. */
+  let box = null;
 
   const FELDER = [
     { feld: "haut", titel: "Haut", farben: F.HAUT },
@@ -41,9 +38,11 @@
     return { haut: g.haut || 0, haar: g.haar || 0, frisur: g.frisur || 0, hose: g.hose || 0 };
   }
 
-  function zeichne() {
+  function zeichne(ziel) {
+    if (ziel) box = ziel;
+    if (!box || !box.isConnected) return;
     const g = aktuell();
-    box.innerHTML = `<summary>Deine Figur <span>kostenlos</span></summary>
+    box.innerHTML = `
       <div class="gf">
         <p class="gf-hinweis">Haut, Haare und Hose gehören dir von Anfang an. Jacke, Kopfbedeckung und das Ding in der Hand kommen aus deiner Sammlung.</p>
         ${FELDER.map(({ feld, titel, farben }) => `
@@ -62,8 +61,11 @@
       </div>`;
   }
 
-  box.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-feld]");
+  /* Die Figur hat sich geändert: Spiegel und Welt zeichnen neu. */
+  const melden = () => document.dispatchEvent(new CustomEvent("casino:figur"));
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest(".gf [data-feld]");
     if (!b) return;
     const acc = Casino.getAccount();
     if (!acc) return;
@@ -73,7 +75,7 @@
     // durchprobiert, schickt eine Nachricht und nicht fünf.
     Casino.applyAccount({ figur: neu });
     zeichne();
-    if (Casino._cosVorschau) Casino._cosVorschau();
+    melden();
     if (Casino.welt) Casino.welt.eigeneFigurNeu({ figur: neu });
     clearTimeout(speicherTimer);
     speicherTimer = setTimeout(() => speichern(neu), 900);
@@ -91,12 +93,11 @@
         Casino.applyAccount({ figur: gesichert });
         gesichert = null;
         zeichne();
-        if (Casino._cosVorschau) Casino._cosVorschau();
+        melden();
       }
     });
   }
 
-  document.addEventListener("casino:screen", (e) => { if (e.detail.screen === "cosmetics") zeichne(); });
-  Casino.socket.on("account:update", () => { if (Casino.screens.current() === "cosmetics" && !speicherTimer) zeichne(); });
-  zeichne();
+  Casino.socket.on("account:update", () => { if (!speicherTimer) zeichne(); });
+  Casino.grundform = { zeichne };
 })();
