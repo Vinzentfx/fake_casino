@@ -101,7 +101,8 @@ function setupHilo(io, accounts) {
   }
 
   // Am Account statt am Socket: ein Neuladen darf keine Runde kosten.
-  const spiele = new Map();
+  // Je Konto eine Runde, auch auf der Platte (game/offeneRunden.js): ein Neustart kostet sie nicht mehr.
+  const spiele = require("./offeneRunden").karte("hilo");
 
   /** Verlassene Runden abrechnen, damit kein Einsatz haengen bleibt. */
   setInterval(() => {
@@ -174,6 +175,8 @@ function setupHilo(io, accounts) {
 
       const abzug = accounts.adjustChips(key, -einsatz);
       if (!abzug.ok) return ack({ ok: false, error: abzug.error });
+      // Erst der Einsatz sicher auf der Platte, dann die Runde: so druckt kein Neustart Chips.
+      try { accounts.saveJetzt(); } catch {}
 
       const deck = neuesDeck();
       const g = { deck, karte: deck.pop(), bet: einsatz, mult: 1, treffer: 0, over: false, lastAt: Date.now() };
@@ -198,6 +201,7 @@ function setupHilo(io, accounts) {
 
       // Gleicher Rang: Push. Karte weg, Multiplikator bleibt, weiter geht's.
       if (neu.r === alt.r) {
+        spiele.merke(key);
         return ack(sicht(g, { ergebnis: "push", alt: { ...alt, text: kartenText(alt) } }));
       }
 
@@ -231,6 +235,7 @@ function setupHilo(io, accounts) {
         }));
       }
 
+      spiele.merke(key);
       ack(sicht(g, { ergebnis: "treffer", schrittMult: s, alt: { ...alt, text: kartenText(alt) } }));
     });
 

@@ -104,7 +104,8 @@ function optimaleWahl(w, bet = 100) {
 function vorschlag(w, bet = 100) { return optimaleWahl(w, bet).halten; }
 
 function setupWuerfel(io, accounts) {
-  const spiele = new Map();
+  // Je Konto eine Runde, auch auf der Platte (game/offeneRunden.js): ein Neustart kostet sie nicht mehr.
+  const spiele = require("./offeneRunden").karte("wuerfel");
 
   // Wer mitten in der Runde geht: nach fester Frist abrechnen, wie sie liegt.
   setInterval(() => {
@@ -175,6 +176,8 @@ function setupWuerfel(io, accounts) {
 
       const abzug = accounts.adjustChips(key, -einsatz);
       if (!abzug.ok) return ack({ ok: false, error: abzug.error });
+      // Erst der Einsatz sicher auf der Platte, dann die Runde: so druckt kein Neustart Chips.
+      try { accounts.saveJetzt(); } catch {}
 
       const g = {
         bet: einsatz, wuerfel: Array.from({ length: WUERFEL }, wurf),
@@ -196,6 +199,7 @@ function setupWuerfel(io, accounts) {
       if (!(i >= 0 && i < WUERFEL)) return ack({ ok: false, error: "Welcher Würfel?" });
       g.halten[i] = !g.halten[i];
       g.lastAt = Date.now();
+      spiele.merke(socket.data.account);
       ack(sicht(g));
     });
 

@@ -56,6 +56,23 @@ function setupSolitaire(io, accounts) {
 
   // PvP race
   const matches = new Map();
+  // Beim Herunterfahren: laufende Partien abbrechen, jeder bekommt seinen Buy-in zurück (game/herunterfahren.js).
+  require("./herunterfahren").anmelden("Solitär-Rennen", () => {
+    let n = 0;
+    for (const match of matches.values()) {
+      if (match.state !== "playing") continue;
+      match.state = "done";
+    if (match.timer) { clearInterval(match.timer); clearTimeout(match.timer); match.timer = null; }
+      for (const p of match.players.values()) if (p.id && accounts.get(p.id)) { accounts.adjustChips(p.id, match.buyIn); n++; }
+    }
+    return n;
+  });
+  /* Bezahlte Solo-Partien hängen am Konto und liegen auf der Platte
+     (game/offeneRunden.js). Vorher hingen sie am Socket: schon ein Neuladen
+     der Seite kostete den Einsatz. Freie Partien bleiben am Socket, sie
+     kosten nichts. */
+  const soloSpiele = require("./offeneRunden").karte("solitaire");
+  const soloVon = (socket) => socket.data.solitaire || (socket.data.account ? soloSpiele.get(socket.data.account) : null);
   function makeCode() {
     let code;
     do { code = Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join(""); }
@@ -167,8 +184,12 @@ function setupSolitaire(io, accounts) {
       if (typeof ack !== "function") return;
       const a = acc(socket);
       if (!a) return ack({ ok: false, error: "Nicht eingeloggt." });
-      if (socket.data.solitaire && !socket.data.solitaire.over && !socket.data.solitaire.free)
-        return ack({ ok: false, error: "Beende erst dein bezahltes Solitär-Spiel." });
+      // Eine bezahlte Partie läuft noch (auch von vor einem Neuladen): die geht weiter.
+      const laufend = soloSpiele.get(socket.data.account);
+      if (laufend && !laufend.over) {
+        socket.data.solitaire = laufend;
+        return ack({ ...soloView(laufend), weiter: true });
+      }
       if (free) {
         // Frei spielen: kein Einsatz, leichtes Spiel (1er-Ziehen), unbegrenzt umdrehen, schaffbar.
         socket.data.solitaire = { state: E.deal({ draw: 1, recycles: Infinity }), bet: 0, free: true, over: false };
@@ -180,13 +201,16 @@ function setupSolitaire(io, accounts) {
       if (a.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
       const r = accounts.adjustChips(socket.data.account, -bet);
       if (!r.ok) return ack({ ok: false, error: r.error });
+      // Erst der Einsatz sicher auf der Platte, dann die Partie: so druckt kein Neustart Chips.
+      try { accounts.saveJetzt(); } catch {}
       socket.data.solitaire = { state: E.deal({ draw: SOLO_DRAW, recycles: SOLO_RECYCLES }), bet, free: false, over: false };
+      soloSpiele.set(socket.data.account, socket.data.solitaire);
       ack({ ...soloView(socket.data.solitaire), account: r.account });
     });
 
     socket.on("sol:move", (m, ack) => {
       if (typeof ack !== "function") return;
-      const g = socket.data.solitaire;
+      const g = soloVon(socket);
       if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
       const res = applyMove(g.state, m);
       if (!res.ok) return ack({ ...soloView(g), moveError: res.error });
@@ -198,18 +222,22 @@ function setupSolitaire(io, accounts) {
           return ack({ ...soloView(g, { won: true, payout: 0 }) });
         }
         const payout = g.bet * WIN_MULT;
+        // Erst vergessen, dann auszahlen: eine Partie auf der Platte heißt immer „noch nicht ausgezahlt“.
+        soloSpiele.delete(socket.data.account);
         const r = accounts.adjustChips(socket.data.account, payout);
         accounts.recordHand(socket.data.account, payout - g.bet, true, "solitaire"); // läuft über onHand weiter bis achievements.check
         return ack({ ...soloView(g, { won: true, payout }), account: r.account });
       }
+      if (!g.free) soloSpiele.merke(socket.data.account);
       ack(soloView(g));
     });
 
     socket.on("sol:giveup", (ack) => {
       if (typeof ack !== "function") return;
-      const g = socket.data.solitaire;
+      const g = soloVon(socket);
       if (!g || g.over) return ack({ ok: false, error: "Kein aktives Spiel." });
       g.over = true;
+      if (!g.free) soloSpiele.delete(socket.data.account);
       if (!g.free) accounts.recordHand(socket.data.account, -g.bet, true, "solitaire"); // aufgegeben = verloren (nur mit Einsatz)
       ack({ ...soloView(g, { gaveUp: true }) });
     });

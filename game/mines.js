@@ -95,7 +95,12 @@ const IDLE_SETTLE_MS = 30 * 60_000; // verlassene Spiele nach 30 Min auto-abrech
 function setupMines(io, accounts) {
   // Spiele am Account statt am Socket, Reload/Abriss kostet keinen Einsatz
   // mehr; der Client nimmt das laufende Spiel per mines:state wieder auf.
-  const games = new Map(); // je Kontoschlüssel: Spiel
+  /* Je Kontoschlüssel ein Spiel, und seit dem Neustart-Verlust auch auf
+     der Platte (game/offeneRunden.js): die Minen als Liste, nicht als Set. */
+  const games = require("./offeneRunden").karte("mines", {
+    ein: (g) => ({ ...g, mineSet: [...g.mineSet] }),
+    aus: (g) => ({ ...g, mineSet: new Set(g.mineSet) }),
+  });
 
   // Verlassene Spiele: mindestens ein Feld aufgedeckt, dann automatisch auszahlen, sonst Einsatz zurück.
   setInterval(() => {
@@ -162,6 +167,8 @@ function setupMines(io, accounts) {
       if (a.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
       const res = accounts.adjustChips(socket.data.account, -bet);
       if (!res.ok) return ack({ ok: false, error: res.error });
+      // Erst der Einsatz sicher auf der Platte, dann die Runde: so druckt kein Neustart Chips.
+      try { accounts.saveJetzt(); } catch {}
       const g = { bet, mines, mineSet: pickMines(mines), revealed: [], over: false, lastAt: Date.now() };
       games.set(socket.data.account, g);
       ack({ ...view(g), account: res.account });
@@ -187,6 +194,7 @@ function setupMines(io, accounts) {
 
       if (hitBomb) {
         g.over = true;
+        games.delete(socket.data.account);
         accounts.recordHand(socket.data.account, -g.bet, true, "mines");
         const mineSet = shadow ? fakeMineSet(g, tile) : [...g.mineSet];
         return ack({ ...view(g, { bust: true, tile, mineSet }) });
@@ -196,10 +204,12 @@ function setupMines(io, accounts) {
       if (g.revealed.length >= TILES - g.mines) {
         const payout = Math.min(MAX_WIN, Math.floor(g.bet * multiplier(g.mines, g.revealed.length)));
         g.over = true;
+        games.delete(socket.data.account);
         const r = accounts.adjustChips(socket.data.account, payout);
         accounts.recordHand(socket.data.account, payout - g.bet, true, "mines", { einsatz: g.bet });
         return ack({ ...view(g, { tile, cleared: true, payout, mineSet: [...g.mineSet] }), account: r.account });
       }
+      games.merke(socket.data.account);
       ack({ ...view(g, { tile }) });
     }
 
@@ -232,6 +242,8 @@ function setupMines(io, accounts) {
       const mult = multiplier(g.mines, g.revealed.length);
       const payout = Math.min(MAX_WIN, Math.floor(g.bet * mult));
       g.over = true;
+      // Erst vergessen, dann auszahlen: eine Runde auf der Platte heißt immer „noch nicht ausgezahlt“.
+      games.delete(socket.data.account);
       const r = accounts.adjustChips(socket.data.account, payout);
       accounts.recordHand(socket.data.account, payout - g.bet, true, "mines", { einsatz: g.bet });
       ack({ ...view(g, { cashedOut: true, payout, mult, mineSet: [...g.mineSet] }), account: r.account });

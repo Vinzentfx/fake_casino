@@ -121,8 +121,10 @@ test("a paid solitaire round cannot be replaced by a new or free game", () => {
   assert.equal(first.ok, true);
   const before = f.account.chips;
   const state = f.socket.data.solitaire;
-  assert.equal(f.call("sol:start", { bet: 100, free: false }).ok, false);
-  assert.equal(f.call("sol:start", { free: true }).ok, false);
+  // Ein neuer Start ersetzt die bezahlte Partie nicht, er setzt sie fort: nichts
+  // wird abgebucht, es bleibt dieselbe. So kommt man auch nach einem Neuladen wieder dran.
+  assert.equal(f.call("sol:start", { bet: 100, free: false }).weiter, true);
+  assert.equal(f.call("sol:start", { free: true }).weiter, true);
   assert.equal(f.account.chips, before);
   assert.equal(f.socket.data.solitaire, state);
   assert.equal(f.call("sol:giveup").ok, true);

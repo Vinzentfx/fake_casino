@@ -169,6 +169,17 @@ function filledCount(grid, puzzle) {
 
 function setupSudoku(io, accounts) {
   const matches = new Map();
+  // Beim Herunterfahren: laufende Partien abbrechen, jeder bekommt seinen Buy-in zurück (game/herunterfahren.js).
+  require("./herunterfahren").anmelden("Sudoku", () => {
+    let n = 0;
+    for (const match of matches.values()) {
+      if (match.state !== "playing") continue;
+      match.state = "done";
+    if (match.timer) { clearInterval(match.timer); clearTimeout(match.timer); match.timer = null; }
+      for (const p of match.players.values()) if (p.id && accounts.get(p.id)) { accounts.adjustChips(p.id, match.buyIn); n++; }
+    }
+    return n;
+  });
 
   function makeCode() {
     let code;

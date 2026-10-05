@@ -374,7 +374,18 @@ function setupBlackjack(io, accounts) {
   // Sessions hängen am Account, nicht am Socket: Reload/Verbindungsabriss
   // mitten in der Hand kostet den Einsatz nicht mehr, bj:init nach dem
   // Reconnect liefert die laufende Hand einfach wieder aus.
-  const sessions = new Map(); // je Kontoschlüssel: Sitzung
+  /* Je Kontoschlüssel eine Sitzung, und eine laufende Hand auch auf der
+     Platte (game/offeneRunden.js): ein Neustart kostet den Einsatz nicht mehr. */
+  const sessions = require("./offeneRunden").karte("blackjack");
+  /* Nach jeder Aktion: erst das Konto sichern (Einsatz, Verdoppeln, Auszahlung),
+     dann die Hand. Eine fertige Hand braucht niemand mehr auf der Platte. */
+  function sichern(key) {
+    if (!key) return;
+    try { accounts.saveJetzt(); } catch {}
+    const s = sessions.get(key);
+    if (s && s.phase === "player") sessions.merke(key);
+    else if (s) sessions.delete(key);
+  }
   const IDLE_STAND_MS = 30 * 60_000;
   const freshSession = () => ({ shoe: null, phase: "betting", playerHands: [], dealerCards: [],
                                 activeHand: 0, split: false, message: "", name: null, lastAt: Date.now() });
@@ -383,10 +394,11 @@ function setupBlackjack(io, accounts) {
   // Dealer spielt aus, Gewinn/Verlust wird normal verbucht.
   setInterval(() => {
     const now = Date.now();
-    for (const [, s] of sessions) {
+    for (const [key, s] of [...sessions]) {
       if (s.phase !== "player" || now - (s.lastAt || 0) < IDLE_STAND_MS) continue;
       for (let i = 0; i < 8 && s.phase === "player"; i++) playerAction(s, "stand", accounts);
       s.reported = true; // keine verspätete Lobby-Meldung ohne Socket
+      sichern(key);
     }
   }, 60_000).unref();
 
@@ -430,6 +442,7 @@ function setupBlackjack(io, accounts) {
       const betN = Math.round(Number(bet));
       const result = startHand(session, betN, accounts);
       push();
+      if (socket.data.account) sichern(socket.data.account);
       typeof cb === "function" && cb(result);
     });
 
@@ -439,6 +452,7 @@ function setupBlackjack(io, accounts) {
       if (!session.name) return typeof cb === "function" && cb({ ok: false, error: "Nicht eingeloggt." });
       const result = playerAction(session, action, accounts);
       push();
+      if (socket.data.account) sichern(socket.data.account);
       typeof cb === "function" && cb(result);
     });
   });

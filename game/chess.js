@@ -50,6 +50,17 @@ function ensureChessStats(acc) {
 
 function setupChess(io, accounts) {
   const matches = new Map();
+  // Beim Herunterfahren: laufende Partien abbrechen, jeder bekommt seinen Buy-in zurück (game/herunterfahren.js).
+  require("./herunterfahren").anmelden("Schach", () => {
+    let n = 0;
+    for (const match of matches.values()) {
+      if (match.state !== "playing") continue;
+      match.state = "done";
+    if (match.clockTimer) { clearInterval(match.clockTimer); clearTimeout(match.clockTimer); match.clockTimer = null; }
+      for (const p of match.players.values()) if (p.id && accounts.get(p.id)) { accounts.adjustChips(p.id, match.buyIn); n++; }
+    }
+    return n;
+  });
   const acc = (s) => (s.data.account ? accounts.get(s.data.account) : null);
 
   function makeCode() {

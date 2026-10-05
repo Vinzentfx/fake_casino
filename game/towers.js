@@ -83,7 +83,12 @@ function setupTowers(io, accounts) {
   // Spiele hängen am Account, nicht am Socket: Tab-Reload/Verbindungsabriss
   // mitten im Lauf kostet nicht mehr Einsatz + aufgelaufenen Multiplikator,
   // der Client holt das laufende Spiel per towers:state zurück.
-  const games = new Map(); // je Kontoschlüssel: Spiel
+  /* Je Kontoschlüssel ein Spiel, auch auf der Platte (game/offeneRunden.js):
+     die Fallen je Reihe als Listen, nicht als Sets. */
+  const games = require("./offeneRunden").karte("towers", {
+    ein: (g) => ({ ...g, traps: g.traps.map((t) => [...t]) }),
+    aus: (g) => ({ ...g, traps: g.traps.map((t) => new Set(t)) }),
+  });
 
   // Verlassene Spiele (30 Min ohne Aktion): ab Ebene 1 automatisch auszahlen zum
   // aktuellen Multiplikator, auf Ebene 0 Einsatz zurück. Kein Vorteil erzielbar
@@ -153,6 +158,8 @@ function setupTowers(io, accounts) {
       if (a.chips < bet) return ack({ ok: false, error: "Nicht genug Chips." });
       const res = accounts.adjustChips(socket.data.account, -bet);
       if (!res.ok) return ack({ ok: false, error: res.error });
+      // Erst der Einsatz sicher auf der Platte, dann die Runde: so druckt kein Neustart Chips.
+      try { accounts.saveJetzt(); } catch {}
       const g = { bet, diffKey, traps: rollTraps(diff), level: 0, picks: [], over: false, lastAt: Date.now() };
       games.set(socket.data.account, g);
       ack({ ...view(g), account: res.account });
@@ -174,6 +181,7 @@ function setupTowers(io, accounts) {
 
       if (hitTrap) {
         g.over = true;
+        games.delete(socket.data.account);
         g.bustRow = g.level;
         g.bustTile = tile;
         accounts.recordHand(socket.data.account, -g.bet, true, "towers");
@@ -189,10 +197,12 @@ function setupTowers(io, accounts) {
       if (g.level >= ROWS) {
         const payout = Math.min(MAX_WIN, Math.floor(g.bet * multiplier(diff, g.level)));
         g.over = true;
+        games.delete(socket.data.account);
         const r = accounts.adjustChips(socket.data.account, payout);
         accounts.recordHand(socket.data.account, payout - g.bet, true, "towers", { einsatz: g.bet });
         return ack({ ...view(g, { tile, row: g.level - 1, cleared: true, payout, trapLayout: g.traps.map((s) => [...s]) }), account: r.account });
       }
+      games.merke(socket.data.account);
       ack({ ...view(g, { tile, row: g.level - 1 }) });
     });
 
@@ -205,6 +215,8 @@ function setupTowers(io, accounts) {
       const mult = multiplier(diff, g.level);
       const payout = Math.min(MAX_WIN, Math.floor(g.bet * mult));
       g.over = true;
+      // Erst vergessen, dann auszahlen: eine Runde auf der Platte heißt immer „noch nicht ausgezahlt“.
+      games.delete(socket.data.account);
       const r = accounts.adjustChips(socket.data.account, payout);
       accounts.recordHand(socket.data.account, payout - g.bet, true, "towers", { einsatz: g.bet });
       ack({ ...view(g, { cashedOut: true, payout, mult, trapLayout: g.traps.map((s) => [...s]) }), account: r.account });

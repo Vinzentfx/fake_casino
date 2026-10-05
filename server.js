@@ -502,6 +502,16 @@ strafen.bremse(io, accounts);
    Warteraum. Dieselbe Art Zwischenschicht wie die Strafen. */
 const einlass = require("./game/einlass");
 einlass.bremse(io);
+/* Läuft das Herunterfahren, nimmt der Server nichts mehr an: die offenen
+   Einsätze sind dann schon zurückgebucht, und eine neue Runde in diesen zwei
+   Sekunden ginge mit dem Prozess verloren. */
+io.on("connection", (socket) => {
+  socket.use((packet, next) => {
+    if (!shuttingDown) return next();
+    const ack = typeof packet[packet.length - 1] === "function" ? packet[packet.length - 1] : null;
+    if (ack) ack({ ok: false, error: "Das Casino startet gerade neu. Gleich wieder da." });
+  });
+});
 
 setupPoker(io, accounts);
 setupSlots(io, accounts);
@@ -676,6 +686,13 @@ function gracefulShutdown(sig) {
     persistSports(); // offene Wetten und Kombis sichern, damit sie den Deploy überleben
     console.log("[shutdown] Sportwetten gesichert");
   } catch (e) { console.error("[shutdown] Sichern fehlgeschlagen:", e.message); }
+  /* Live-Partien halten Einsätze nur im Speicher: zurückbuchen, bevor die
+     Konten geschrieben werden (game/herunterfahren.js). Einzelspiele wie
+     Mines liegen auf der Platte und laufen nach dem Start weiter. */
+  try {
+    const bericht = require("./game/herunterfahren").alleAbschliessen();
+    if (bericht.length) console.log("[shutdown] Einsätze zurückgebucht:", bericht.join(", "));
+  } catch (e) { console.error("[shutdown] Rückbuchung fehlgeschlagen:", e.message); }
   // Konten, Chronik und Gala-Lose schreiben gebündelt; was aussteht, jetzt.
   try { accounts.saveJetzt(); } catch (e) { console.error("[shutdown] Konten nicht gesichert:", e.message); }
   for (const m of ["./game/chronik", "./game/comeback"]) {

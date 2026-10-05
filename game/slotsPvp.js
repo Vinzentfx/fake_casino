@@ -25,6 +25,16 @@ const MIN_BET = BET_LEVELS[0];
 
 function setupPvp(io, accounts) {
   const matches = new Map(); // je Code: Match
+  // Beim Herunterfahren: laufende Partien abbrechen, jeder bekommt seinen Buy-in zurück (game/herunterfahren.js).
+  require("./herunterfahren").anmelden("Slot-Duell", () => {
+    let n = 0;
+    for (const match of matches.values()) {
+      if (match.state !== "playing") continue;
+      match.state = "done";
+      for (const p of match.players.values()) if (p.id && accounts.get(p.id)) { accounts.adjustChips(p.id, match.buyIn); n++; }
+    }
+    return n;
+  });
 
   function makeCode() {
     let code;

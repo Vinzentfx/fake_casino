@@ -66,6 +66,24 @@ function setupPoker(io, accounts) {
   _io = io;
   /** je Code: { table, sockets:Set<Socket>, timer } */
   const tables = new Map();
+  /* Beim Herunterfahren: jeder Mensch am Tisch bekommt seinen Stapel zurück,
+     und mitten in einer Hand auch das, was er in diese Hand schon gesetzt
+     hat; die Hand gilt als nicht gespielt. Die Chips der Bots gehören dem
+     Haus und verschwinden mit ihnen (game/herunterfahren.js). */
+  require("./herunterfahren").anmelden("Poker", () => {
+    let n = 0;
+    for (const entry of tables.values()) {
+      const t = entry.table;
+      t.seats.forEach((s, i) => {
+        if (!s || s.isBot || !accounts.get(s.id)) return;
+        const betrag = (s.chips || 0) + (t.handActive ? (s.committed || 0) : 0);
+        if (betrag > 0) { accounts.adjustChips(s.id, betrag); n++; }
+        t.seats[i] = null;
+      });
+      t.handActive = false;
+    }
+    return n;
+  });
 
   function makeCode() {
     let code;

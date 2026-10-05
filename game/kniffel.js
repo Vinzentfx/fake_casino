@@ -79,6 +79,17 @@ const alleGesetzt = (blatt) => FELDER.every((f) => blatt[f.id] != null);
 
 function setupKniffel(io, accounts) {
   const partien = new Map(); // je Code: Partie
+  // Beim Herunterfahren: offene Partien abbrechen, jeder bekommt seinen Einsatz zurück (game/herunterfahren.js).
+  require("./herunterfahren").anmelden("Kniffel", () => {
+    let n = 0;
+    for (const p of partien.values()) {
+      if (p.phase === "vorbei") continue;
+      p.phase = "vorbei";
+      clearTimeout(p.timer);
+      for (const s of p.spieler.values()) if (accounts.get(s.key)) { accounts.adjustChips(s.key, p.einsatz); n++; }
+    }
+    return n;
+  });
 
   function makeCode() {
     let c;

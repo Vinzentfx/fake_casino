@@ -133,6 +133,12 @@ function validateBet(b) {
 }
 
 function setupRouletteLobby(io, accounts) {
+  // Beim Herunterfahren: alle gesetzten, noch nicht gedrehten Wetten zurück (game/herunterfahren.js).
+  require("./herunterfahren").anmelden("Roulette-Lobby", () => {
+    let n = 0;
+    for (const room of rooms.values()) for (const p of room.players.values()) if (p.staked > 0) { refund(room, p); n++; }
+    return n;
+  });
   ioRef = io;
   accountsRef = accounts;
 
