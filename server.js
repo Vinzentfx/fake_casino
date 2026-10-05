@@ -420,9 +420,11 @@ app.post("/api/admin/restore", (req, res) => {
   try {
     // Prüft jede JSON-Datei, bevor irgendetwas geschrieben wird, und legt
     // das Backup in den Wartebereich. Eingetauscht wird beim Neustart.
-    written = require("./game/datensicherung").einspielenVorbereiten(req.body.files, req.body.binaer);
+    written = require("./game/datensicherung").einspielenVorbereiten(req.body.files, req.body.binaer, { erzwingen: req.body.erzwingen === true });
   } catch (e) {
     if (e.code === "KEIN_BACKUP") return res.status(400).json({ error: e.message });
+    // Unvollständig: erst nach ausdrücklicher Bestätigung im Admin-Bildschirm.
+    if (e.code === "UNVOLLSTAENDIG") return res.status(409).json({ error: e.message, fehlen: e.fehlen, unvollstaendig: true });
     return res.status(500).json({ error: "Wiederherstellen fehlgeschlagen: " + e.message });
   }
   try { require("./game/moderation").record({ actor: OWNER_KEY, action: "admin:restore", details: { files: written } }); }
