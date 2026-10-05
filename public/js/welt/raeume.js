@@ -328,7 +328,7 @@
    * ist nur der Weg dorthin.
    */
   RAEUME.modehaus = {
-    id: "modehaus", name: "Modehaus", w: 16, h: 11, wand: 3, boden: "marmor",
+    id: "modehaus", name: "Modehaus", w: 16, h: 11, wand: 3, boden: "fischgrat", wandStil: "boutique",
     flaechen: [[0.7, 3.0, 15.3, 10.4], [7.2, 9.6, 8.8, 11.0]],
     start: { x: 8.0, y: 9.7, d: "hoch" },
     tueren: [
@@ -356,6 +356,9 @@
       { id: "mode-sofa", art: "sofa", x: 1.2, y: 9.4, block: [0.7, 6.9, 1.75, 9.4] },
       { id: "mode-pflanze-1", art: "pflanze", x: 1.2, y: 4.0, block: [1.0, 3.7, 1.4, 4.0] },
       { id: "mode-pflanze-2", art: "pflanze", x: 14.8, y: 9.9, block: [14.6, 9.6, 15.0, 9.9] },
+      { id: "kasse", art: "theke", x: 13.9, y: 7.6, block: [12.9, 7.1, 14.9, 7.6],
+        nutz: "rand", label: "Kasse", verb: "Zum Schaufenster", ziel: { screen: "modehaus", reiter: "fenster" } },
+      { id: "taschenvitrine", art: "taschenvitrine", x: 12.6, y: 9.8, block: [12.1, 9.4, 13.1, 9.8] },
     ],
   };
 

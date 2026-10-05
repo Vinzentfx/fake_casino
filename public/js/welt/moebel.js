@@ -789,6 +789,40 @@
     return { svg: svg(w, h, innen, "m-kleiderstange"), w, h, unten: 2 };
   }
 
+  /* Die Kasse: Tresen mit Marmorplatte, Kasse, Tütenstapel und Blumen. */
+  function theke(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 6, h = 86;
+    const innen = `<rect x="2" y="${h - 6}" width="${w - 4}" height="6" fill="#000" opacity=".25"/>
+      <rect x="4" y="34" width="${w - 8}" height="${h - 40}" rx="3" fill="#2a2230" stroke="#141217" stroke-width="1.2"/>
+      ${[0.25, 0.5, 0.75].map((f) => `<path d="M${w * f} 40V${h - 10}" stroke="#b8923e" stroke-width="1" opacity=".6"/>`).join("")}
+      <rect x="0" y="28" width="${w}" height="9" rx="3" fill="#efe9df" stroke="#b9ab98" stroke-width="1"/>
+      <path d="M8 31q20 4 40 0t40 2" stroke="#cfc6b8" stroke-width=".8" fill="none"/>
+      <rect x="${w - 46}" y="10" width="30" height="20" rx="3" fill="#3a3f47" stroke="#1d1d23" stroke-width="1"/><rect x="${w - 42}" y="13" width="22" height="8" rx="1" fill="#7ee0b0" class="m-kasse"/>
+      <rect x="${w - 48}" y="24" width="34" height="5" rx="1" fill="#23262b"/>
+      <path d="M14 28V12h16v16" fill="#f4f1ea" stroke="#1d1d23" stroke-width=".8"/><path d="M18 12q4-6 8 0" fill="none" stroke="#b8923e" stroke-width="1.2"/>
+      <text x="22" y="23" text-anchor="middle" font-size="5" font-weight="900" fill="#2a2230">MH</text>
+      <path d="M34 28V16h12v12" fill="#c8243a" stroke="#1d1d23" stroke-width=".8"/><path d="M37 16q3-5 6 0" fill="none" stroke="#1d1d23" stroke-width="1"/>
+      <rect x="${w / 2 - 4}" y="16" width="8" height="12" rx="2" fill="#bcd3dc" opacity=".8"/>
+      <circle cx="${w / 2 - 3}" cy="12" r="3" fill="#e5534b"/><circle cx="${w / 2 + 3}" cy="11" r="3" fill="#f2c94c"/><circle cx="${w / 2}" cy="7" r="3" fill="#c86bd6"/>`;
+    return { svg: svg(w, h, innen, "m-theke"), w, h, unten: 2 };
+  }
+
+  /* Eine Glasvitrine auf einem Sockel, darin eine Tasche und Sneaker. */
+  function taschenvitrine() {
+    const w = 58, h = 92;
+    const innen = `<ellipse cx="29" cy="${h - 4}" rx="24" ry="4" fill="#000" opacity=".25"/>
+      <rect x="10" y="52" width="38" height="${h - 58}" fill="#2a2230" stroke="#b8923e" stroke-width="1.2"/>
+      <rect x="6" y="48" width="46" height="6" rx="1" fill="#b8923e"/>
+      <rect x="8" y="8" width="42" height="42" fill="#bcd3dc" fill-opacity=".18" stroke="#d8e6ea" stroke-width="1.2"/>
+      <path d="M22 26q7-10 14 0" fill="none" stroke="#e2b656" stroke-width="2"/>
+      <rect x="18" y="26" width="22" height="16" rx="3" fill="#c8243a" stroke="#1d1d23" stroke-width=".8"/><rect x="26" y="30" width="6" height="3" rx="1" fill="#e2b656"/>
+      <path d="M14 47h12q4 0 4-3h-7l-3-4h-6z" fill="#f4f1ea" stroke="#1d1d23" stroke-width=".6"/>
+      <path d="M32 47h12q4 0 4-3h-7l-3-4h-6z" fill="#f4f1ea" stroke="#1d1d23" stroke-width=".6"/>
+      <path class="m-glanz" d="M12 12L20 12L12 26Z" fill="#fff" opacity=".35"/>`;
+    return { svg: svg(w, h, innen, "m-taschenvitrine"), w, h, unten: 2 };
+  }
+
   function garderobe() {
     const w = 100, h = 118;
     const jacke = (x, farbe) => `<path d="M${x} 44l-9 5v26h18v-26z" fill="${farbe}" stroke="#16241f" stroke-width="1"/><path d="M${x - 3} 44l3 5 3-5" fill="none" stroke="#e8e2cc" stroke-width=".8"/><path d="M${x} 38v6" stroke="#9aa0a6" stroke-width="1.2"/>`;
@@ -1217,7 +1251,7 @@
     laufschrift, podest, rekordtafel, fernseher, statistikpult, seasonbanner, auftragsbrett, kalender, vitrine,
     einlasstuer, teasertafel, gaestewand, schaetzglas,
     rennbahn, lotteriebude, fahnenmast, feuerschale, parkbank, laterne, busch, kleeblatt, tresortuer, goldstapel,
-    katzenkissen, notiz, umkleide, puppen, kleiderstange,
+    katzenkissen, notiz, umkleide, puppen, kleiderstange, theke, taschenvitrine,
   };
 
   /** Ein Ding als Weltrechteck: wo es steht, wie groß es ist, wie es aussieht. */
@@ -1245,6 +1279,10 @@
         return { id, defs: `<pattern id="${id}" width="40" height="24" patternUnits="userSpaceOnUse"><rect width="40" height="24" class="wb-pflaster"/><path d="M0 .5H40M0 12.5H40M10 0V12M30 0V12M0 12V24M20 12V24" class="wb-pflaster-fuge"/></pattern>` };
       case "neon":
         return { id, defs: `<pattern id="${id}" width="48" height="48" patternUnits="userSpaceOnUse"><rect width="48" height="48" class="wb-neonboden"/><path d="M0 .5H48M.5 0V48" class="wb-neonraster"/><circle cx="0" cy="0" r="1.6" class="wb-neonpunkt"/><circle cx="24" cy="24" r=".8" class="wb-neonpunkt b"/></pattern>` };
+      case "fischgrat":
+        /* Parkett im Fischgrät: zwei Dielen je Kachel, die eine nach links,
+           die andere nach rechts geneigt, darunter dieselbe noch einmal. */
+        return { id, defs: `<pattern id="${id}" width="48" height="32" patternUnits="userSpaceOnUse"><rect width="48" height="32" class="wb-fg-a"/><path d="M24 16L48 0V16L24 32Z" class="wb-fg-b"/><path d="M0 0L24 16V32M48 0L24 16M0 16L24 32L48 16" class="wb-fg-fuge"/></pattern>` };
       case "stein":
         return { id, defs: `<pattern id="${id}" width="48" height="48" patternUnits="userSpaceOnUse"><rect width="48" height="48" class="wb-stein"/><path d="M0 24H48M24 0V24M12 24V48M36 24V48" class="wb-fuge-stein"/></pattern>` };
       default:
@@ -1268,6 +1306,37 @@
         <rect x="0" y="${wand - 16}" width="${W}" height="16" class="wb-hecke"/>
         ${Array.from({ length: Math.ceil(W / 24) }, (_, i) => `<rect x="${i * 24 + 2}" y="${wand - 30}" width="4" height="26" class="wb-zaun"/>`).join("")}
         <rect x="0" y="${wand - 26}" width="${W}" height="3" class="wb-zaun"/>`;
+    }
+    /* Das Modehaus: Streifentapete, goldener Schriftzug, zwei gerahmte
+       Modeplakate und ein Wandregal mit Schuhen und Taschen. Wo die Dinge
+       stehen, steht in raeume.js; die Wand lässt ihnen den Platz. */
+    if (r.wandStil === "boutique") {
+      const plakat = (xt, farbe, hut) => {
+        const x = xt * T;
+        return `<g class="wb-plakat"><rect x="${x - 19}" y="58" width="38" height="54" class="wb-gold"/><rect x="${x - 16}" y="61" width="32" height="48" fill="#efe6d6"/>
+          <circle cx="${x}" cy="74" r="4.5" fill="#2a2230"/>${hut ? `<path d="M${x - 8} 71H${x + 8}M${x - 4} 71V66H${x + 4}V71" stroke="#2a2230" stroke-width="2" fill="#2a2230"/>` : ""}
+          <path d="M${x - 7} 80Q${x} 77 ${x + 7} 80L${x + 5} 90L${x + 10} 104H${x - 10}L${x - 5} 90Z" fill="${farbe}"/>
+          <path d="M${x - 12} 106H${x + 12}" stroke="#2a2230" stroke-width=".8"/></g>`;
+      };
+      const regalX = 14.1 * T, regalB = 1.7 * T;
+      const schuh = (x, y, f) => `<path d="M${x} ${y}h10q4 0 4 -3h-6l-3 -4h-5z" fill="${f}" stroke="#1d1d23" stroke-width=".6"/>`;
+      const tasche = (x, y, f) => `<path d="M${x + 2} ${y - 9}q4 -6 8 0" fill="none" stroke="${f}" stroke-width="1.4"/><rect x="${x}" y="${y - 9}" width="12" height="9" rx="1.5" fill="${f}" stroke="#1d1d23" stroke-width=".6"/>`;
+      const streifen = Array.from({ length: Math.ceil(W / 24) }, (_, i) => `<rect x="${i * 24}" y="16" width="11" height="${wand - 62}" class="wb-boutique-streifen"/>`).join("");
+      return `<rect x="0" y="0" width="${W}" height="${wand}" class="wb-boutique-wand"/>${streifen}
+        <rect x="0" y="0" width="${W}" height="10" class="wb-gold"/>
+        <rect x="0" y="10" width="${W}" height="6" class="wb-wand-dunkel"/>
+        <path d="M${W / 2 - 150} 34H${W / 2 - 112}M${W / 2 + 112} 34H${W / 2 + 150}" class="wb-boutique-linie"/>
+        <text x="${W / 2}" y="43" text-anchor="middle" class="wb-boutique-schrift">MODEHAUS</text>
+        ${plakat(6.0, "#c8243a", false)}${plakat(10.35, "#2b3a55", true)}
+        <g class="wb-wandregal">
+          <rect x="${regalX}" y="58" width="${regalB}" height="4" class="wb-gold"/><rect x="${regalX}" y="92" width="${regalB}" height="4" class="wb-gold"/>
+          ${schuh(regalX + 6, 58, "#f4f1ea")}${schuh(regalX + 26, 58, "#c8243a")}${schuh(regalX + 50, 58, "#2a2f38")}
+          ${tasche(regalX + 8, 92, "#e2b656")}${tasche(regalX + 30, 92, "#8d5bd6")}${tasche(regalX + 52, 92, "#3f9a5a")}
+        </g>
+        <g class="wb-leuchte"><ellipse cx="${0.65 * T}" cy="${wand - 92}" rx="22" ry="30" class="wb-lichtkegel"/><path d="M${0.65 * T - 7} ${wand - 108}h14l-3 11h-8z" class="wb-gold"/></g>
+        <rect x="0" y="${wand - 46}" width="${W}" height="2" class="wb-gold"/>
+        <rect x="0" y="${wand - 44}" width="${W}" height="32" class="wb-boutique-sockel"/>
+        <rect x="0" y="${wand - 12}" width="${W}" height="12" class="wb-sockel"/>`;
     }
     /* Die Spielhalle: dunkle Wand mit Leuchtröhren statt Gold und Lampen. */
     if (r.neon) {
@@ -1329,6 +1398,13 @@
     const extras = {
       casino: `<rect x="${2.1 * T}" y="${6.8 * T}" width="${2.6 * T}" height="${3 * T}" rx="18" class="wb-teppich-lounge"/><rect x="${2.1 * T + 6}" y="${6.8 * T + 6}" width="${2.6 * T - 12}" height="${3 * T - 12}" rx="14" class="wb-teppich-rand"/>
         <rect x="${8.6 * T}" y="${11.4 * T}" width="${2.8 * T}" height="${1.2 * T}" rx="10" class="wb-matte"/><text x="${10 * T}" y="${12.15 * T}" text-anchor="middle" class="wb-matte-text">WILLKOMMEN</text>`,
+      /* Ein Laufsteg von der Tür bis zu den Puppen, mit Lichtern an beiden
+         Kanten, und ein runder Teppich vor dem Sofa. */
+      modehaus: `<rect x="${7.0 * T}" y="${5.0 * T}" width="${2.0 * T}" height="${6.0 * T}" class="wb-laufsteg"/>
+        <path d="M${7.0 * T + 3} ${5.0 * T}V${11 * T}M${9.0 * T - 3} ${5.0 * T}V${11 * T}" class="wb-laufsteg-kante"/>
+        ${Array.from({ length: 10 }, (_, i) => { const y = (5.35 + i * 0.58) * T; return `<circle cx="${7.0 * T + 9}" cy="${y}" r="2.6" class="wb-laufsteg-licht"/><circle cx="${9.0 * T - 9}" cy="${y}" r="2.6" class="wb-laufsteg-licht"/>`; }).join("")}
+        <ellipse cx="${3.3 * T}" cy="${8.15 * T}" rx="${1.55 * T}" ry="${1.35 * T}" class="wb-boutique-teppich"/>
+        <ellipse cx="${3.3 * T}" cy="${8.15 * T}" rx="${1.55 * T - 8}" ry="${1.35 * T - 8}" class="wb-teppich-rand"/>`,
       kontor: `<rect x="${4.8 * T}" y="${5.2 * T}" width="${6.4 * T}" height="${3.8 * T}" rx="16" class="wb-teppich-lounge"/><rect x="${4.8 * T + 7}" y="${5.2 * T + 7}" width="${6.4 * T - 14}" height="${3.8 * T - 14}" rx="12" class="wb-teppich-rand"/>`,
       ruhm: `<rect x="${5.6 * T}" y="${5.2 * T}" width="${2.8 * T}" height="${5.3 * T}" class="wb-roter-teppich"/><rect x="${5.6 * T + 6}" y="${5.2 * T}" width="${2.8 * T - 12}" height="${5.3 * T}" class="wb-teppich-rand"/><rect x="${8.4 * T}" y="${5.1 * T}" width="${5.6 * T}" height="${1.1 * T}" class="wb-roter-teppich"/>`,
       hof: `<path d="M0 ${6.1 * T}H${4 * T}Q${6 * T} ${6.1 * T} ${7 * T} ${7.8 * T}T${9 * T} ${9 * T}" fill="none" stroke-width="${1.1 * T}" class="wb-weg"/><circle cx="${8.1 * T}" cy="${6.6 * T}" r="${1.4 * T}" class="wb-weg-platz"/>

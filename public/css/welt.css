@@ -791,6 +791,23 @@ html:not(.reduce-motion) .wb-stern.blinkt { animation: m-blinken 2.6s steps(2, j
 .wb-hecke { fill: #1f4526; }
 .wb-zaun { fill: #6b5a45; }
 .wb-roter-teppich { fill: #8e1f2b; }
+/* Modehaus: Fischgrät, Streifentapete und Laufsteg. Feste Töne wie in der
+   Spielhalle, mit dem Theme gemischt, damit alle drei Paletten passen. */
+.wb-fg-a { fill: color-mix(in srgb, #9a6a44 88%, var(--bg-1)); }
+.wb-fg-b { fill: color-mix(in srgb, #916240 88%, var(--bg-1)); }
+.wb-fg-fuge { fill: none; stroke: rgba(60, 36, 20, 0.45); stroke-width: 0.7; }
+.wb-boutique-wand { fill: color-mix(in srgb, #3a2533 88%, var(--bg-1)); }
+.wb-boutique-streifen { fill: rgba(255, 220, 160, 0.05); }
+.wb-boutique-sockel { fill: color-mix(in srgb, #241820 90%, var(--bg-1)); }
+.wb-boutique-schrift { fill: #e2c77a; font: 900 24px/1 ui-rounded, system-ui, sans-serif; letter-spacing: 9px; }
+.wb-boutique-linie { stroke: #e2c77a; stroke-width: 1.5; }
+.wb-boutique-teppich { fill: color-mix(in srgb, #5b2a45 85%, var(--bg-1)); }
+.wb-laufsteg { fill: #17131b; }
+.wb-laufsteg-kante { stroke: #c9a24a; stroke-width: 2; fill: none; }
+.wb-laufsteg-licht { fill: #fff1c4; filter: drop-shadow(0 0 3px rgba(255, 230, 160, 0.9)); }
+html:not(.reduce-motion) .wb-laufsteg-licht { animation: wb-laufsteg 3.2s ease-in-out infinite; }
+html:not(.reduce-motion) .wb-laufsteg-licht:nth-of-type(4n) { animation-delay: -1.6s; }
+@keyframes wb-laufsteg { 50% { opacity: 0.45; } }
 html:not(.reduce-motion) .m-flammen { transform-box: fill-box; transform-origin: 50% 100%; animation: fg-flackern 0.6s ease-in-out infinite alternate; }
 html:not(.reduce-motion) .m-flagge { animation: fg-wehen 1.4s ease-in-out infinite alternate; }
 html:not(.reduce-motion) .m-pferd { animation: m-pferd 3s linear infinite; }
