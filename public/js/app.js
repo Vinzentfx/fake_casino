@@ -919,7 +919,7 @@ socket.on("account:update", ({ account }) => {
 
 // Nur bekannte Schilder durchlassen: ein alter Wert aus einer Nachricht darf
 // keine fremde Klasse ins Dokument schreiben.
-const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma", "auk_tresor", "sml_wesergold", "gezeiten", "gala_samt"]);
+const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma", "auk_tresor", "sml_wesergold", "gezeiten", "gala_samt", "staub_schmelzkern", "geh_schluesselloch"]);
 const schildKlasse = (p) => (p && SCHILDER.has(p.schild) ? " sch-" + p.schild : "");
 
 function renderOnlinePlayers(players = []) {
@@ -1743,11 +1743,14 @@ async function claimRescue() {
 $("#rescue-btn").addEventListener("click", claimRescue);
 
 // Leaderboard (multi-category, tabbed)
-const LB_ORDER = ["rich", "level", "horses", "estate", "streets", "bigwin", "bigloss", "games"];
+const LB_ORDER = ["rich", "level", "raetsel", "horses", "estate", "streets", "bigwin", "bigloss", "games"];
 // Wie der Wert einer Kategorie angezeigt wird (Standard: Chips).
-const LB_UNIT = { level: (v) => `Level ${v}`, streets: (v) => `${v} ${v === 1 ? "Straße" : "Straßen"}`, games: (v) => `${v.toLocaleString("de-DE")} Spiele`, horses: (v) => `${v} ${v === 1 ? "Sieg" : "Siege"}` };
+const LB_UNIT = { level: (v) => `Level ${v}`, streets: (v) => `${v} ${v === 1 ? "Straße" : "Straßen"}`, games: (v) => `${v.toLocaleString("de-DE")} Spiele`, horses: (v) => `${v} ${v === 1 ? "Sieg" : "Siege"}`,
+  raetsel: (v) => { const n = Math.floor(v); return `${n} ${n === 1 ? "Geheimnis" : "Geheimnisse"}`; } };
 let lbData = null;
 let lbActiveCat = "rich";
+// Von außen die Kategorie vorwählen, etwa aus dem Buch der Geheimnisse.
+window.Casino._lbKategorie = (cat) => { if (LB_ORDER.includes(cat)) lbActiveCat = cat; };
 
 async function loadLeaderboard() {
   const list = $("#leaderboard-list");

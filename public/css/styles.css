@@ -12936,3 +12936,67 @@ html:not(.reduce-motion) .au-staub_sternenschmiede::after { animation: staub-fun
 .city-ereignis { margin: 0 0 12px; }
 .city-ereignis > .cd-row { margin: 0; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--accent) !important; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
 .city-ereignis > .cd-row > b::before { content: "Stadt-Ereignis · "; color: var(--text-dim); font-weight: 600; }
+
+/*
+ * Die Meilensteine im Buch der Geheimnisse (GEH_MEILENSTEINE in
+ * game/welt.js). Vier Arten, damit man sie auf vier Wegen sieht: Schild in
+ * den Listen, Rahmen am Bild, Aura drumherum, Stil am Namen.
+ */
+
+/* Schlüsselloch (drei Funde): dunkles Holz, rechts ein Schlüsselloch aus
+   Messing. Steht still. */
+.sch-geh_schluesselloch {
+  background:
+    radial-gradient(circle at calc(100% - 10px) 40%, #e2b656 0 2.6px, transparent 3px),
+    linear-gradient(#e2b656, #e2b656) calc(100% - 8.8px) 58% / 2.4px 6px no-repeat,
+    linear-gradient(150deg, #4a3120, #1d120a);
+  border-color: #c9a14a !important;
+  color: #f4e3b8 !important;
+  padding-right: 18px !important;
+}
+
+/* Kompassrose (sechs Funde): ein dunkler Ring mit vier goldenen Marken,
+   darin eine Nadel, die hin und her sucht. */
+.fr-geh_kompass { --rahmen-farbe: #2b2f36; position: relative; }
+.fr-geh_kompass::before, .fr-geh_kompass::after {
+  content: ""; position: absolute; pointer-events: none; border-radius: 50%;
+}
+.fr-geh_kompass::before {
+  inset: -4px;
+  background: conic-gradient(from -6deg, #e2b656 0deg 12deg, transparent 12deg 84deg, #c9a14a 84deg 96deg, transparent 96deg 174deg,
+    #c9a14a 174deg 186deg, transparent 186deg 264deg, #c9a14a 264deg 276deg, transparent 276deg);
+  -webkit-mask: radial-gradient(circle, transparent 58%, #000 60%);
+  mask: radial-gradient(circle, transparent 58%, #000 60%);
+}
+.fr-geh_kompass::after {
+  left: 50%; top: -5px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 1px;
+  background: linear-gradient(#c8243a 50%, #f4f1ea 50%);
+  transform-origin: 50% calc(0.95em + 5px);
+}
+html:not(.reduce-motion) .fr-geh_kompass::after { animation: geh-nadel 5s ease-in-out infinite; }
+@keyframes geh-nadel { 0%, 100% { transform: rotate(-14deg); } 40% { transform: rotate(22deg); } 70% { transform: rotate(-4deg); } }
+
+/* Glühwürmchen (neun Funde): ein paar grüngelbe Lichter, die um das Bild
+   ziehen und glimmen. Nur transform und opacity, das kostet nichts. */
+.au-geh_gluehwurm::before, .au-geh_gluehwurm::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 0.16em; height: 0.16em; margin: -0.08em 0 0 -0.08em;
+  /* Das Element selbst bleibt unsichtbar in der Mitte, die Lichter sind
+     seine Schatten außen herum: sonst säße eins mitten auf dem Bild. */
+  border-radius: 50%; background: transparent; pointer-events: none; z-index: 2;
+  box-shadow: 0.9em -0.35em 0 0 #e8ff9a, -0.85em 0.45em 0 -0.02em #d4f57a, 0.25em 0.95em 0 -0.03em #e8ff9a, -0.45em -0.9em 0 -0.03em #d4f57a;
+}
+.au-geh_gluehwurm::after { transform: rotate(140deg); opacity: 0.75; }
+html:not(.reduce-motion) .au-geh_gluehwurm::before { animation: geh-schwirren 7s linear infinite, geh-glimmen 2.2s ease-in-out infinite; }
+html:not(.reduce-motion) .au-geh_gluehwurm::after { animation: geh-schwirren 9.5s linear infinite reverse, geh-glimmen 3.1s ease-in-out infinite 0.8s; }
+@keyframes geh-schwirren { from { transform: rotate(0deg) translateY(-0.12em); } 50% { transform: rotate(180deg) translateY(0.12em); } to { transform: rotate(360deg) translateY(-0.12em); } }
+@keyframes geh-glimmen { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+/* Geheimtinte (zwölf Funde): dunkle Tinte, und eine warme Welle lässt den
+   Namen kurz golden aufscheinen. */
+.nm-geh_tinte {
+  /* Tinte, aber hell genug für die drei dunklen Paletten. */
+  background-image: linear-gradient(100deg, #5a74a8 0%, #7088bd 38%, #f2d27a 48%, #e2b656 52%, #7088bd 62%, #5a74a8 100%);
+  background-size: 300% 100%;
+}
+html:not(.reduce-motion) .nm-geh_tinte { animation: pl-sweep 4.6s ease-in-out infinite; }
+html[data-theme] .nm-geh_tinte { filter: drop-shadow(0 0 1px rgba(242, 210, 122, 0.35)); }

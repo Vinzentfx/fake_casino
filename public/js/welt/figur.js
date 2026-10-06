@@ -50,6 +50,7 @@
     rad_fortuna: "#d9b557", kiste_lack: "#b8323a", adm_zensiert: "#26262b", sml_glutkern: "#b5461f",
     hochspannung: "#e8c93a", gala_gravur: "#b29558", gala_rampenlicht: "#e6d3a3", staub_quecksilber: "#aab3bf",
     regenbogen: "url(#fg-regenbogen)", auk_hologramm: "url(#fg-hologramm)", aurora: "url(#fg-aurora)",
+    geh_tinte: "#2b3a55",
   };
   const JACKE_GRUND = "#5a9d91";
 
@@ -58,7 +59,7 @@
   const HAND = new Set(["stern", "flagge", "ziel", "blitz", "edelstein", "krone", "bombe", "totenkopf", "auk_marke",
     "hai", "klingen", "tresor", "gala_konfetti", "gala_stern", "staub_siegel"]);
   const AUREN = new Set(["auk_goldstaub", "auk_leere", "kiste_funken", "adm_eklipse", "sml_nachtschwarm",
-    "kiste_ringsystem", "gala_konfetti", "staub_sternenschmiede"]);
+    "kiste_ringsystem", "gala_konfetti", "staub_sternenschmiede", "geh_gluehwurm"]);
 
   const MUETZE_NAME = {
     silber: "Strickmütze", gold: "Krone", neon: "Neon-Kopfhörer", rotierend: "Propellermütze", flamme: "Flammenschopf",

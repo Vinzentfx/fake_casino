@@ -27,11 +27,11 @@
   const STILE = new Set(["sonne", "eis", "gift", "beere", "puls", "schimmer",
     "neon", "regenbogen", "feuer", "glitch", "vanta", "splitter", "krone", "s2_bernstein", "s2_phoenix",
     "rad_fortuna", "auk_hologramm", "kiste_lack", "adm_zensiert", "sml_glutkern",
-    "aurora", "hochspannung", "gala_gravur", "gala_rampenlicht", "staub_quecksilber"]);
+    "aurora", "hochspannung", "gala_gravur", "gala_rampenlicht", "staub_quecksilber", "geh_tinte"]);
   const RAHMEN = new Set(["silber", "gold", "neon", "rotierend", "flamme", "sterne", "s2_wolf",
-    "rad_fortuna", "adm_orbit", "uhrwerk", "kiste_sprung", "gala_kranz", "staub_zahnkranz"]);
+    "rad_fortuna", "adm_orbit", "uhrwerk", "kiste_sprung", "gala_kranz", "staub_zahnkranz", "geh_kompass"]);
   const AUREN = new Set(["auk_goldstaub", "auk_leere", "kiste_funken", "adm_eklipse", "sml_nachtschwarm",
-    "kiste_ringsystem", "gala_konfetti", "staub_sternenschmiede"]);
+    "kiste_ringsystem", "gala_konfetti", "staub_sternenschmiede", "geh_gluehwurm"]);
 
   /**
    * Der Name mit Farbe oder Stil.

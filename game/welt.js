@@ -86,6 +86,20 @@ const GEHEIMNISSE = {
   zylinder:    { art: "kopf",     id: "zylinder",    ort: "Kostümfundus", schwer: 3, satz: "Unter dem Deckel liegt Staub, ein Programmheft von 1987 und ein alter Zylinder. Er passt, als hätte er auf dich gewartet." },
 };
 
+/* Mehr als das Stück in der Hand. Jedes Geheimnis gibt dazu einen eigenen
+   Titel (`geh_<kennung>` in cosmetics.js), und wer drei, sechs, neun und
+   zwölf gefunden hat, bekommt je ein Stück einer anderen Art: Schild,
+   Rahmen, Aura, Namensstil. So sieht man die Funde an jemandem, auch wenn
+   er gerade nichts in der Hand hält. Das Weserlicht hat seinen eigenen
+   Titel, den gibt die Ehrentafel. */
+const GEH_MEILENSTEINE = [
+  { ab: 3, art: "schild", id: "geh_schluesselloch", name: "Schild" },
+  { ab: 6, art: "frame", id: "geh_kompass", name: "Rahmen" },
+  { ab: 9, art: "aura", id: "geh_gluehwurm", name: "Aura" },
+  { ab: 12, art: "style", id: "geh_tinte", name: "Namensstil" },
+];
+const titelVon = (gid) => (gid === "weserlicht" ? "weserlicht" : "geh_" + gid);
+
 /* Die Schneiderpuppe im Atelier will von allen vier Seiten vermessen
    werden. Welche Seite man gerade misst, ergibt sich daraus, wo man steht.
    Gemerkt nur im Speicher an der Figur, und nur zwei Minuten lang: wer
@@ -300,6 +314,26 @@ function setupWelt(io, accounts) {
     weltFortschritt(fig.key, (w) => { w.raeume = w.raeume || {}; if (!w.raeume[fig.raum]) w.raeume[fig.raum] = Date.now(); });
   }
 
+  /* Vergibt, was zu den Funden eines Kontos gehört und noch fehlt: Titel
+     und Meilensteine. Läuft bei jedem Fund und beim Betreten der Welt, so
+     bekommen auch die nachgetragen, die schon vor dieser Zeile etwas
+     gefunden hatten. Gibt zurück, was neu dazugekommen ist. */
+  function belohnen(acc, key) {
+    const gefunden = acc.geheimnisse && typeof acc.geheimnisse === "object" ? acc.geheimnisse : {};
+    const ids = Object.keys(gefunden).filter((k) => GEHEIMNISSE[k]);
+    const neu = [];
+    for (const gid of ids) {
+      if (gid === "weserlicht") continue;
+      if (cosmetics.grant(acc, "title", titelVon(gid), key)) neu.push({ name: "Titel", label: cosmetics.label("title", titelVon(gid)) });
+    }
+    for (const m of GEH_MEILENSTEINE) {
+      if (ids.length >= m.ab && cosmetics.grant(acc, m.art, m.id, key)) {
+        neu.push({ name: m.name, label: cosmetics.label(m.art, m.id), ab: m.ab });
+      }
+    }
+    return neu;
+  }
+
   function geheimnisFinden(key, gid) {
     const g = GEHEIMNISSE[gid];
     const acc = accounts.get(key);
@@ -322,13 +356,15 @@ function setupWelt(io, accounts) {
     }
     if (fig && sichtbar(fig)) io.to(kanal(fig.raum)).emit("welt:aussehen", oeffentlich(fig));
     const zahl = Object.keys(gefunden).filter((k) => GEHEIMNISSE[k]).length;
+    const dazu = belohnen(acc, key);
+    if (dazu.length) accounts.save();
     try { require("./achievements").check(key); } catch {}
     try { require("./chat").announce(io, `${acc.name} hat ein Geheimnis im Haus gefunden (${zahl} von ${Object.keys(GEHEIMNISSE).length}).`); } catch {}
     const pub = accounts.publicAccount(acc);
     for (const s of io.of("/").sockets.values()) {
       if (s.data && s.data.account === key) s.emit("account:update", { account: pub });
     }
-    return { neu: true, label, satz: g.satz, zahl, von: Object.keys(GEHEIMNISSE).length };
+    return { neu: true, label, satz: g.satz, zahl, von: Object.keys(GEHEIMNISSE).length, dazu };
   }
 
   function figVon(socket) {
@@ -450,6 +486,14 @@ function setupWelt(io, accounts) {
       const acc = key ? accounts.get(key) : null;
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
       if (verification.state(acc)) return ack({ ok: false, error: "Erst nach der Freigabe." });
+      /* Wer schon vor den Titeln und Meilensteinen etwas gefunden hatte,
+         bekommt sie hier nachgetragen, leise und einmal. */
+      const nachgetragen = belohnen(acc, key);
+      if (nachgetragen.length) {
+        accounts.save();
+        socket.emit("account:update", { account: accounts.publicAccount(acc) });
+        socket.emit("welt:nachgetragen", nachgetragen);
+      }
 
       if (socket.data.weltKey && socket.data.weltKey !== key) abmelden(socket);
 
@@ -674,12 +718,19 @@ function setupWelt(io, accounts) {
       if (!ack) return;
       const acc = socket.data.account && accounts.get(socket.data.account);
       if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const nachgetragen = belohnen(acc, socket.data.account);
+      if (nachgetragen.length) {
+        accounts.save();
+        socket.emit("account:update", { account: accounts.publicAccount(acc) });
+      }
       const gefunden = acc.geheimnisse && typeof acc.geheimnisse === "object" ? acc.geheimnisse : {};
+      const zahlGefunden = Object.keys(gefunden).filter((k) => GEHEIMNISSE[k]).length;
+      const meilensteine = GEH_MEILENSTEINE.map((m) => ({ ab: m.ab, name: m.name, label: cosmetics.label(m.art, m.id), erreicht: zahlGefunden >= m.ab }));
       const liste = Object.entries(GEHEIMNISSE).map(([id, g]) => gefunden[id]
-        ? { id, gefunden: gefunden[id], label: cosmetics.label(g.art, g.id), ort: g.ort, satz: g.satz, schwer: g.schwer, weserlicht: id === "weserlicht" }
+        ? { id, gefunden: gefunden[id], label: cosmetics.label(g.art, g.id), titel: cosmetics.label("title", titelVon(id)), ort: g.ort, satz: g.satz, schwer: g.schwer, weserlicht: id === "weserlicht" }
         : { id, gefunden: null, schwer: g.schwer, weserlicht: id === "weserlicht" });
       const stufe = raetsel.stufe(acc);
-      ack({ ok: true, liste, weserlicht: {
+      ack({ ok: true, liste, meilensteine, nachgetragen, weserlicht: {
         stufe, von: raetsel.STUFEN, notizen: raetsel.notizen(acc), eingetragen: raetsel.anzahlEingetragen(),
         nr: acc.weserlicht && acc.weserlicht.nr || null,
       } });

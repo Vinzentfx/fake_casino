@@ -91,6 +91,7 @@
           <span class="welt-mehr hidden" role="menu"></span>
         </span>
         <button type="button" class="welt-knopf welt-musik-knopf" data-welt="musik" aria-haspopup="dialog" aria-expanded="false" aria-label="Musik"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
+        <button type="button" class="welt-knopf welt-geh-knopf" data-welt="geheimnisse" aria-label="Buch der Geheimnisse">${Casino.icons ? Casino.icons.ui("stern") : ""}<span>Geheimnisse</span><b class="welt-geh-zahl" aria-hidden="true"></b></button>
         <button type="button" class="welt-knopf" data-welt="liste">${Casino.icons ? Casino.icons.ui("feed") : ""}<span>Übersicht</span></button>
       </div>
       <div class="welt-musik hidden" role="dialog" aria-label="Musik">
@@ -841,6 +842,7 @@
       betrittGerade = false;
       if (!res || !res.ok) { drin = false; return; }
       uebernehmen(res);
+      if (Casino.logbuch) Casino.logbuch.aktualisieren();
     });
   }
 
@@ -1228,6 +1230,8 @@
       eintraege.push(["gesten", "Gesten"]);
       if (fahrt.fahrzeug) eintraege.push(["fahrt", fahrt.auf ? "Absteigen" : "Aufsteigen"]);
       eintraege.push(["musik", "Musik"]);
+      const zahl = el.querySelector(".welt-geh-zahl").textContent;
+      eintraege.push(["geheimnisse", zahl ? `Geheimnisse (${zahl})` : "Geheimnisse"]);
       eintraege.push(["liste", "Übersicht"]);
       mehrMenue.innerHTML = eintraege.map(([was, text]) => `<button type="button" role="menuitem" data-mehr="${was}">${esc(text)}</button>`).join("");
     }
@@ -1354,6 +1358,7 @@
     else if (was === "fahrt") aufsitzen();
     else if (was === "mehr") mehrAuf(mehrMenue.classList.contains("hidden"));
     else if (was === "musik") musikAuf(musikFeld.classList.contains("hidden"));
+    else if (was === "geheimnisse") Casino.showScreen("logbuch");
     else if (was === "starter") {
       setzeAnsicht("liste");
       setTimeout(() => document.getElementById("starter-pass")?.scrollIntoView({ behavior: reduziert() ? "auto" : "smooth", block: "center" }), 60);
@@ -2660,10 +2665,22 @@
       return setTimeout(() => geheimnisZeigen({ ...g, blitz: false }), 1100);
     }
     Casino.sound && Casino.sound.play && Casino.sound.play(g.neu ? "geheimnis" : "tick");
-    const text = g.neu ? `${g.satz}\n\nNeu in deiner Sammlung: ${g.label}. Geheimnis ${g.zahl} von ${g.von}.` : g.satz;
+    if (g.neu && Casino.logbuch) Casino.logbuch.aktualisieren();
+    /* Was zum Fund dazukommt: der Titel, und wenn eine Schwelle erreicht
+       ist, ein Meilenstein. Steht einzeln da, damit man es nicht überliest. */
+    const dazu = (g.dazu || []).map((x) => x.ab ? `Meilenstein (${x.ab} Geheimnisse): ${x.name} „${x.label}“` : `${x.name}: „${x.label}“`);
+    const text = g.neu
+      ? `${g.satz}\n\nNeu in deiner Sammlung: ${g.label}.${dazu.length ? "\n" + dazu.join("\n") : ""}\n\nGeheimnis ${g.zahl} von ${g.von}. Alles steht im Buch der Geheimnisse.`
+      : g.satz;
     Casino.dialog.hinweis(text, { titel: g.neu ? "Gefunden!" : "Schon entdeckt" });
   }
   socket.on("welt:geheimnis", (g) => geheimnisZeigen(g));
+  /* Für Funde von früher kommen Titel und Meilensteine einmal nachträglich. */
+  socket.on("welt:nachgetragen", (liste) => {
+    if (!Array.isArray(liste) || !liste.length) return;
+    const zeilen = liste.map((x) => x.ab ? `Meilenstein (${x.ab} Geheimnisse): ${x.name} „${x.label}“` : `${x.name}: „${x.label}“`);
+    Casino.dialog.hinweis(`Für die Geheimnisse, die du schon gefunden hast, gibt es jetzt mehr:\n\n${zeilen.join("\n")}\n\nAnlegen kannst du alles in der Sammlung.`, { titel: "Nachgetragen" });
+  });
 
   /* Das alte Garagentor geht auf, nur für den, der davor gehupt hat. */
   socket.on("welt:tor", (t) => {

@@ -1025,7 +1025,20 @@ const LEADERBOARD_CATS = {
   bigloss: { sort: (a) => (a.stats && a.stats.biggestLoss) || 0, label: "Größter Einzelverlust", icon: "auszahlen" },
   games:   { sort: (a) => (a.stats && a.stats.gamesPlayed) || 0, label: "Aktivste", icon: "wuerfel" },
   horses:  { sort: (a) => a.horseWins || 0,           label: "Renn-Champion", icon: "horses" },
+  /* Wer die meisten Geheimnisse im Haus gefunden hat. Bei Gleichstand liegt
+     vorn, wer seinen letzten Fund früher gemacht hat; das steckt als
+     Bruchteil hinter dem Komma, angezeigt wird nur die ganze Zahl. */
+  raetsel: { sort: (a) => geheimnisWert(a),            label: "Rätselkönig", icon: "stern" },
 };
+
+function geheimnisWert(a) {
+  let alle = {};
+  try { alle = require("./welt").GEHEIMNISSE; } catch {}
+  const g = a && a.geheimnisse && typeof a.geheimnisse === "object" ? a.geheimnisse : {};
+  const zeiten = Object.keys(g).filter((k) => alle[k]).map((k) => Number(g[k]) || 0);
+  if (!zeiten.length) return 0;
+  return zeiten.length + (1 - Math.max(...zeiten) / 1e14);
+}
 
 /** Renn-Ergebnis eines eigenen Pferds verbuchen (Gesamt- + Wochen-Zähler). */
 function recordHorseResult(name, pos) {

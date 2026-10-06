@@ -637,3 +637,35 @@ test("keine Lösung steht im Klartext im Rätselmodul", () => {
     assert.equal(quelle.includes(geheim), false, `${geheim} steht im Quelltext`);
   }
 });
+
+test("jedes Geheimnis gibt einen Titel, und ab drei Funden gibt es den ersten Meilenstein", (t) => {
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  const anna = w.neuerSocket("anna");
+  anna.frage("welt:betreten", {});
+  const fig = w.welt.figuren.get("anna");
+  fig.raum = "tresor"; fig.x = 7.6; fig.y = 5.6;
+  const erst = anna.frage("welt:nutzen", { ding: "katze" }).ziel.geheimnis;
+  assert.deepEqual(erst.dazu.map((x) => x.name), ["Titel"]);
+  fig.raum = "hof"; fig.x = 4.3; fig.y = 9.35;
+  anna.frage("welt:nutzen", { ding: "kleeblatt" });
+  fig.raum = "fundus"; fig.x = 7.9; fig.y = 5.1;
+  const dritt = anna.frage("welt:nutzen", { ding: "truhe" }).ziel.geheimnis;
+  assert.ok(dritt.dazu.some((x) => x.ab === 3 && x.name === "Schild"), "der dritte Fund bringt das Schild");
+  const lb = anna.frage("welt:logbuch");
+  assert.equal(lb.meilensteine.filter((m) => m.erreicht).length, 1);
+});
+
+test("alle Titel und Meilensteine gibt es im Katalog", () => {
+  const cosmetics = require("../game/cosmetics");
+  const { GEHEIMNISSE } = require("../game/welt");
+  for (const gid of Object.keys(GEHEIMNISSE)) {
+    const id = gid === "weserlicht" ? "weserlicht" : "geh_" + gid;
+    assert.ok(cosmetics.KATALOG.title[id], `Titel ${id} fehlt`);
+    assert.equal(cosmetics.handelbar("title", id), false, `${id} darf man nicht kaufen können`);
+  }
+  for (const [art, id] of [["schild", "geh_schluesselloch"], ["frame", "geh_kompass"], ["aura", "geh_gluehwurm"], ["style", "geh_tinte"]]) {
+    assert.ok(cosmetics.KATALOG[art][id], `${art} ${id} fehlt`);
+    assert.equal(cosmetics.handelbar(art, id), false);
+  }
+});

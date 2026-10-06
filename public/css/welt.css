@@ -1838,7 +1838,7 @@ html:not(.reduce-motion) .m-kuehl { animation: m-atmen 2.4s ease-in-out infinite
 @media (max-width: 430px) {
   .welt-mehr-huelle { display: inline-flex; }
   .welt-knoepfe > [data-welt="starter"], .welt-knoepfe > .welt-gesten-huelle,
-  .welt-knoepfe > [data-welt="fahrt"], .welt-knoepfe > [data-welt="liste"] { display: none; }
+  .welt-knoepfe > [data-welt="fahrt"], .welt-knoepfe > [data-welt="liste"], .welt-knoepfe > [data-welt="geheimnisse"] { display: none; }
 }
 
 /* Ankauf im Markt (js/ankauf.js) */
@@ -2163,3 +2163,42 @@ html[data-welt-raum="sternwarte"] { --raum-ton: 16, 22, 54; }
 .lb-notiz { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
 .lb-notiz h4 { margin: 0 0 4px; font-size: var(--fs-sm); color: var(--accent); }
 .lb-notiz pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 500 var(--fs-sm)/1.5 ui-monospace, Menlo, monospace; color: var(--text); }
+.wf-aura[data-aura="geh_gluehwurm"] { --aura-farbe: rgba(170, 230, 90, 0.45); --aura-funke: #e8ff9a; }
+.lb-titel { color: var(--accent) !important; font-weight: 700; }
+.lb-meilensteine { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-2); margin-top: var(--sp-4); }
+.lb-meilenstein {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; min-width: 0;
+  border: 1px dashed var(--line); border-radius: var(--r-lg); color: var(--text-dim);
+}
+.lb-meilenstein b {
+  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+  border: 1.5px solid var(--line); font-size: var(--fs-sm);
+}
+.lb-meilenstein span { display: flex; flex-direction: column; min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+.lb-meilenstein small { font-weight: 600; color: var(--text-mute); }
+.lb-meilenstein.an { border-style: solid; border-color: rgba(var(--accent-rgb), 0.55); color: var(--text); background: rgba(var(--accent-rgb), 0.07); }
+.lb-meilenstein.an b { background: var(--accent); border-color: var(--accent); color: var(--bg-1, #111); }
+@media (max-width: 640px) { .lb-meilensteine { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Der Zähler am Knopf „Geheimnisse“ in der Weltleiste. */
+.welt-geh-zahl { margin-left: 6px; padding: 1px 7px; border-radius: var(--r-pill); background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent); font: 800 var(--fs-xs) var(--font); }
+.welt-geh-zahl:empty { display: none; }
+.welt-geh-knopf.alle .welt-geh-zahl { background: var(--accent); color: var(--bg-1, #111); }
+
+/* Im Logbuch: zwei Abschnitte, damit man auf einen Blick sieht, was fehlt. */
+.lb-abschnitt { margin: var(--sp-5) 0 0; font-size: var(--fs-md); display: flex; align-items: center; gap: 8px; }
+.lb-abschnitt small { color: var(--text-dim); font-weight: 600; }
+.lb-status { align-self: flex-start; padding: 2px 9px; border-radius: var(--r-pill); font: 800 var(--fs-xs) var(--font); }
+.lb-status.ja { background: rgba(var(--good-rgb), 0.18); color: var(--good); }
+.lb-status.nein { border: 1px dashed var(--line); color: var(--text-mute); }
+.lb-leer { color: var(--text-dim); font-size: var(--fs-sm); margin: 6px 0 0; }
+
+/* Im eigenen Profil: der Stand der Geheimnisse als eine Zeile mit Balken. */
+.pf-geh { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); margin: var(--sp-3) 0; }
+.pf-geh-text { flex: 1 1 200px; min-width: 0; }
+.pf-geh-text b { display: block; }
+.pf-geh-balken { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 6px; }
+.pf-geh-balken i { display: block; height: 100%; background: var(--accent); }
+.lb-rangliste { margin-top: var(--sp-3); }

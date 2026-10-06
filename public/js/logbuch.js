@@ -34,26 +34,87 @@
     </article>`;
   }
 
+  const eintrag = (e) => {
+    if (!e.gefunden) return `<article class="lb-eintrag zu"><span class="lb-status nein">Offen</span><b>???</b><span class="lb-sterne">${sterne(e.schwer)}</span></article>`;
+    return `<article class="lb-eintrag">
+      <span class="lb-status ja">✓ Gelöst</span>
+      <b>${esc(e.label)}</b>
+      <small>${esc(e.ort)}, ${esc(datum(e.gefunden))}</small>
+      <span class="lb-sterne">${sterne(e.schwer)}</span>
+      ${e.titel ? `<small class="lb-titel">Titel: ${esc(e.titel)}</small>` : ""}
+      <p>${esc(e.satz)}</p>
+    </article>`;
+  };
+
+  /* Der Stand an drei Stellen: Knopf in der Weltleiste, Eintrag im Menü,
+     Zeile im eigenen Profil. Alle drei aus derselben Antwort. */
+  function standZeigen(r) {
+    if (!r || !r.ok) return;
+    const gefunden = r.liste.filter((e) => e.gefunden).length, von = r.liste.length;
+    const zahl = document.querySelector(".welt-geh-zahl");
+    if (zahl) {
+      zahl.textContent = `${gefunden}/${von}`;
+      zahl.closest(".welt-geh-knopf")?.classList.toggle("alle", gefunden === von);
+    }
+    const sub = $("#menu-logbuch-sub");
+    if (sub) sub.textContent = `${gefunden} von ${von} gelöst`;
+    const pf = $("#profile-geheimnisse");
+    if (pf) {
+      pf.hidden = false;
+      $("#profile-geh-zahl").textContent = `Geheimnisse: ${gefunden} von ${von} gelöst`;
+      const offen = r.liste.filter((e) => !e.gefunden);
+      $("#profile-geh-sub").textContent = offen.length
+        ? `Noch offen: ${offen.length}, das leichteste mit ${Math.min(...offen.map((e) => e.schwer))} von 5 Sternen.`
+        : "Alles gefunden. Das Haus hat keine Geheimnisse mehr vor dir.";
+      $("#profile-geh-balken").style.width = `${Math.round((gefunden / von) * 100)}%`;
+    }
+  }
+
   function zeichne(r) {
     const box = $("#lb-liste");
     if (!r || !r.ok) { box.innerHTML = `<p class="muted small">${esc((r && r.error) || "Das Buch klemmt.")}</p>`; return; }
+    standZeigen(r);
     const gefunden = r.liste.filter((e) => e.gefunden).length;
-    $("#lb-zahl").textContent = `${gefunden} von ${r.liste.length}`;
-    // Das Weserlicht zuerst, dann Gefundenes, dann der Rest nach Schwierigkeit.
-    const sortiert = [...r.liste].sort((a, b) => (b.weserlicht - a.weserlicht) || (!!b.gefunden - !!a.gefunden) || (a.schwer - b.schwer));
-    box.innerHTML = sortiert.map((e) => {
-      if (e.weserlicht) return weserlicht(e, r.weserlicht);
-      if (!e.gefunden) return `<article class="lb-eintrag zu"><b>???</b><span class="lb-sterne">${sterne(e.schwer)}</span><small>Noch nicht gefunden</small></article>`;
-      return `<article class="lb-eintrag">
-        <b>${esc(e.label)}</b>
-        <small>${esc(e.ort)}, ${esc(datum(e.gefunden))}</small>
-        <span class="lb-sterne">${sterne(e.schwer)}</span>
-        <p>${esc(e.satz)}</p>
-      </article>`;
-    }).join("");
-    const sub = $("#menu-logbuch-sub");
-    if (sub) sub.textContent = `${gefunden} von ${r.liste.length} gefunden`;
+    $("#lb-zahl").textContent = `${gefunden} von ${r.liste.length} gelöst`;
+    const wl = r.liste.find((e) => e.weserlicht);
+    const rest = r.liste.filter((e) => !e.weserlicht);
+    // Gelöstes nach Datum, Offenes vom leichtesten zum schwersten.
+    const geloest = rest.filter((e) => e.gefunden).sort((a, b) => a.gefunden - b.gefunden);
+    const offen = rest.filter((e) => !e.gefunden).sort((a, b) => a.schwer - b.schwer);
+    box.innerHTML = (wl ? weserlicht(wl, r.weserlicht) : "");
+        const abschnitte = `
+      <h3 class="lb-abschnitt">✓ Gelöst <small>${geloest.length}</small></h3>
+      <div class="lb-liste">${geloest.map(eintrag).join("") || '<p class="lb-leer">Noch nichts. Fang mit einem Stern an.</p>'}</div>
+      <h3 class="lb-abschnitt">Noch offen <small>${offen.length}</small></h3>
+      <div class="lb-liste">${offen.map(eintrag).join("") || '<p class="lb-leer">Nichts mehr offen.</p>'}</div>`;
+    let rest2 = $("#lb-abschnitte");
+    if (!rest2) { rest2 = document.createElement("div"); rest2.id = "lb-abschnitte"; box.after(rest2); }
+    rest2.innerHTML = abschnitte;
+    const leiste = $("#lb-meilensteine");
+    if (leiste) leiste.innerHTML = (r.meilensteine || []).map((m) => `<div class="lb-meilenstein${m.erreicht ? " an" : ""}">
+        <b>${m.ab}</b><span><small>${esc(m.name)}</small>${esc(m.label)}</span></div>`).join("");
   }
+
+  /* Der Zähler soll auch stimmen, wenn das Buch nie aufgeschlagen wurde:
+     einmal nach dem Anmelden und nach jedem Fund neu holen. */
+  let holen = null;
+  function standHolen() {
+    clearTimeout(holen);
+    holen = setTimeout(() => socket.emit("welt:logbuch", standZeigen), 600);
+  }
+  socket.on("welt:geheimnis", standHolen);
+  socket.on("welt:nachgetragen", standHolen);
+  // Nach dem Anmelden genau einmal; account:update kommt sonst bei jedem Dreh.
+  let einmal = false;
+  socket.on("account:update", () => { if (!einmal) { einmal = true; standHolen(); } });
+  socket.on("connect", () => { einmal = false; });
+  document.addEventListener("casino:screen", (e) => { if (e.detail && e.detail.screen === "profile") standHolen(); });
+  Casino.logbuch = { aktualisieren: standHolen };
+  $("#lb-rangliste")?.addEventListener("click", () => {
+    if (Casino._lbKategorie) Casino._lbKategorie("raetsel");
+    Casino.showScreen("leaderboard");
+  });
+  if (socket.connected) standHolen();
 
   function laden() { socket.emit("welt:logbuch", zeichne); }
   Casino.screens.register("logbuch", { onEnter: laden });

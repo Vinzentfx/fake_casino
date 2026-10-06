@@ -97,6 +97,10 @@ const STYLES = [
   { id: "gift",     label: "Gift",          cost: 60000,   preview: ["#a8ff60", "#17c964"] },
   { id: "beere",    label: "Beere",         cost: 60000,   preview: ["#ff8ad4", "#8b5cf6"] },
   { id: "puls",     label: "Puls",          cost: 200000,  preview: ["#ffe9a8", "#ffb347"], motion: true },
+  /* Meilenstein im Buch der Geheimnisse (zwölf Funde). Der Name steht in
+     dunkler Tinte da, und eine warme Welle zieht durch und lässt ihn kurz
+     golden aufscheinen, wie Geheimtinte über einer Kerze. */
+  { id: "geh_tinte", label: "Geheimtinte",   cost: null, via: "Zwölf Geheimnisse gefunden", preview: ["#2b3a55", "#e2b656"], motion: true },
   { id: "schimmer", label: "Goldschimmer",  cost: 250000,  preview: ["#f7dc8c", "#fff6d8"], motion: true },
   { id: "neon",     label: "Neon",          cost: 300000,  preview: ["#7ef9ff", "#22d3ee"], motion: true },
   { id: "regenbogen", label: "Regenbogen",  cost: 500000,  preview: ["#ff6b6b", "#4ecdc4"], motion: true },
@@ -197,6 +201,10 @@ const FRAMES = [
   /* Gala, episch. Kein Ring, sondern zwei Lorbeerzweige, die sich unten
      treffen und oben offen bleiben — wie auf der Kiste. */
   { id: "gala_kranz", label: "Lorbeerkranz", cost: 390000, nur: "gala", motion: true },
+  /* Meilenstein im Buch der Geheimnisse (sechs Funde). Eine Kompassrose:
+     vier goldene Marken auf einem dunklen Ring, und die Nadel darin sucht
+     hin und her, statt sich gleichmäßig zu drehen. */
+  { id: "geh_kompass", label: "Kompassrose", cost: null, via: "Sechs Geheimnisse gefunden", motion: true },
   /* Ein gezahnter, gegenläufiger Doppelring – exklusiv im Atelier. */
   { id: "staub_zahnkranz", label: "Zahnkranz", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "episch", motion: true },
 ];
@@ -220,6 +228,21 @@ const TITLES = [
   // Nicht kaeuflich: kommt mit dem ersten kompletten Strassen-Monopol.
   { id: "strassenkoenig", text: "Straßenherr", cost: null, via: "Eine Straße komplett besitzen" },
   { id: "schatzsucher",   text: "Schatzsucher", cost: null, via: "Alle goldenen Marken einer Schnitzeljagd finden" },
+  /* Je Geheimnis im Haus ein Titel (GEHEIMNISSE in game/welt.js, Feld
+     `titel`). Ohne Preis und ohne Begrenzung, also nicht handelbar: was man
+     gefunden hat, kauft man niemandem ab. */
+  { id: "geh_tresorkatze",  text: "Katzenflüsterer",      cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_kleeblatt",    text: "Glückskind",           cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_spiegel",      text: "Spiegelbild",          cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_schallplatte", text: "Plattenleger",         cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_pokal",        text: "Podestheld",           cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_wunderkerze",  text: "Funkenfreund",         cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_e46",          text: "Kreidemond",           cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_laufsteg",     text: "Laufstegdiva",         cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_massband",     text: "Maßschneider",         cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_zylinder",     text: "Fundusgeist",          cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_dachluke",     text: "Hausmeister",          cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_blauestunde",  text: "Stammgast der Dachbar", cost: null, via: "Ein Geheimnis im Haus" },
   // Für die, die sich in der Sternwarte eingetragen haben (game/raetsel.js).
   { id: "weserlicht",     text: "Hüter des Weserlichts", cost: null, via: "Irgendwo ganz oben" },
   // Aus dem Warteraum vor einer Öffnung (game/einlass.js).
@@ -351,6 +374,9 @@ const SCHILDER = [
   /* Gala, episch. Bordeauxfarbener Samt mit einer goldenen Kordel am Rand,
      wie die Absperrung vor dem Eingang. */
   { id: "gala_samt", label: "Samtkordel", cost: 190000, nur: "gala" },
+  /* Meilenstein im Buch der Geheimnisse (drei Funde). Dunkles Holz mit
+     einem Schlüsselloch aus Messing am Ende. Steht still. */
+  { id: "geh_schluesselloch", label: "Schlüsselloch", cost: null, via: "Drei Geheimnisse gefunden" },
   /* Flüssiges Metall mit einem glühenden Kern, exklusiv im Atelier. */
   { id: "staub_schmelzkern", label: "Schmelzkern", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "legendaer", motion: true },
 ];
@@ -384,6 +410,10 @@ const AUREN = [
   /* Gala, legendaer. Die anderen Auren schweben, schiessen, kreisen oder
      liegen. Diese FAELLT: Konfetti rieselt am Bild vorbei nach unten. */
   { id: "gala_konfetti", label: "Konfettiregen", cost: 950000, nur: "gala", motion: true },
+  /* Meilenstein im Buch der Geheimnisse (neun Funde). Kein Ring und kein
+     Schein, sondern ein paar Glühwürmchen, die langsam um das Bild ziehen
+     und dabei auf und ab glimmen. */
+  { id: "geh_gluehwurm", label: "Glühwürmchen", cost: null, via: "Neun Geheimnisse gefunden", motion: true },
   /* Eine kleine Sternenschmiede: Ring, Funken und violette Korona. */
   { id: "staub_sternenschmiede", label: "Sternenschmiede", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "legendaer", motion: true },
 ];
