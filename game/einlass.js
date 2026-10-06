@@ -144,7 +144,12 @@ function stand(key, acc) {
     glas: { schaetzungen: Object.keys(state.schaetz || {}).length, meine: (state.schaetz[k] || {}).zahl || null, preis: SCHAETZ_PREIS },
     wand: (state.wand || []).slice(-WAND_MAX).map(({ name, text, t }) => ({ name, text, t })),
     meineZeile: ((state.wand || []).find((w) => w.key === k) || {}).text || "",
-    ergebnis: state.ergebnis ? { ...state.ergebnis, meine: (state.schaetz[k] || {}).zahl || null } : null,
+    /* Das Ergebnis vom Schätzglas genau einmal je Öffnung. Gemerkt am Konto
+       (`einlassErgebnis` = Zeitpunkt der Öffnung, die man gesehen hat) und
+       nicht nur im Browser: vorher kam es bei jedem Neuladen wieder. Nach
+       zwei Tagen fragt ohnehin niemand mehr danach. */
+    ergebnis: state.ergebnis && offen && Date.now() < state.offenSeit + PAKET_MS && !(acc && acc.einlassErgebnis === state.offenSeit)
+      ? { ...state.ergebnis, meine: (state.schaetz[k] || {}).zahl || null } : null,
     paket: offen && Date.now() < state.offenSeit + PAKET_MS && !state.paket[k] && acc && paketBerechtigt(acc)
       ? { chips: Math.round(PAKET_CHIPS * (acc ? faktor(acc) : 1)), bis: state.offenSeit + PAKET_MS } : null,
   };
@@ -253,6 +258,13 @@ function setupEinlass(io, accounts) {
       if (!w) return ack({ ok: false });
       if (zu()) premiere(w.key);
       ack(stand(w.key, w.acc));
+    });
+
+    socket.on("einlass:ergebnisGesehen", () => {
+      const w = wer();
+      if (!w || !state.offenSeit || w.acc.einlassErgebnis === state.offenSeit) return;
+      w.acc.einlassErgebnis = state.offenSeit;
+      accounts.save();
     });
 
     socket.on("einlass:schaetzen", ({ zahl } = {}, ack) => {

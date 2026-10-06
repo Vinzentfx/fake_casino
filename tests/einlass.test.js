@@ -78,3 +78,17 @@ test("Schätzglas, Gästebuch und Klopfen, dann die Öffnung mit Paket", () => {
   assert.equal(w.frage("einlass:paket").ok, false, "das Paket nur einmal");
   assert.equal(w.frage("slots:spin", {}), "durchgelassen", "nach der Öffnung ist alles offen");
 });
+
+test("das Ergebnis vom Schätzglas kommt einmal, nicht bei jedem Neuladen", () => {
+  accounts.login("Nochmal", "Passwort2026");
+  Object.assign(einlass._state(), { an: true, bis: Date.now() + 3600000, schaetz: {}, wand: [], premiere: {}, paket: {}, karte: {}, ergebnis: null, glas: 2000 });
+  const w = aufbau("nochmal");
+  w.frage("einlass:state");
+  w.frage("einlass:schaetzen", { zahl: 1500 });
+  w.steuerung.oeffnen();
+  assert.ok(w.frage("einlass:state").ergebnis, "nach der Öffnung steht das Ergebnis da");
+  w.frage("einlass:ergebnisGesehen", {});
+  // Neu laden heißt: ein neuer Socket fragt den Stand ab.
+  const nachher = aufbau("nochmal");
+  assert.equal(nachher.frage("einlass:state").ergebnis, null, "gesehen ist gesehen");
+});

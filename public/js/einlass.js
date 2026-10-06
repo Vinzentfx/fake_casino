@@ -293,6 +293,9 @@
       const e = st.ergebnis;
       const sieger = e.sieger ? `${e.sieger.name} lag mit ${de(e.sieger.zahl)} am nächsten.` : "";
       toast(`Schätzglas: ${de(e.glas)} Chips waren drin. Du hattest ${de(e.meine)}. ${sieger}`);
+      // Am Konto abhaken, sonst kommt es nach dem Neuladen wieder.
+      socket.emit("einlass:ergebnisGesehen");
+      st = { ...st, ergebnis: null };
     }
     if (st.paket && !paketGefragt) {
       paketGefragt = true;
