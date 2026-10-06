@@ -220,6 +220,8 @@ const TITLES = [
   // Nicht kaeuflich: kommt mit dem ersten kompletten Strassen-Monopol.
   { id: "strassenkoenig", text: "Straßenherr", cost: null, via: "Eine Straße komplett besitzen" },
   { id: "schatzsucher",   text: "Schatzsucher", cost: null, via: "Alle goldenen Marken einer Schnitzeljagd finden" },
+  // Für die, die sich in der Sternwarte eingetragen haben (game/raetsel.js).
+  { id: "weserlicht",     text: "Hüter des Weserlichts", cost: null, via: "Irgendwo ganz oben" },
   // Aus dem Warteraum vor einer Öffnung (game/einlass.js).
   { id: "premierengast",  text: "Premierengast", cost: null, via: "War vor der Eröffnung im Warteraum", limitiert: "premiere" },
   { id: "augenmass",      text: "Augenmaß", cost: null, via: "Am Schätzglas am nächsten dran", limitiert: "einlass" },

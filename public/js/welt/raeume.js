@@ -227,6 +227,9 @@
       { id: "kalender", art: "kalender", x: 5.3, y: 3.0, block: null,
         nutz: { x: 5.3, y: 3.7, r: 0 }, label: "Eventkalender", verb: "Ansehen", ziel: { screen: "calendar" } },
       { id: "vitrine", art: "vitrine", x: 12, y: 10.2, block: [11.2, 9.5, 12.8, 10.2] },
+      /* Das Logbuch der Geheimnisse: was man gefunden hat, und wie viel noch fehlt. */
+      { id: "logbuch", art: "buchpult", x: 11.0, y: 7.6, block: [10.7, 7.25, 11.3, 7.6],
+        nutz: "rand", label: "Buch der Geheimnisse", verb: "Aufschlagen", ziel: { screen: "logbuch" }, fokus: { x: 11.0, y: 7.0, zoom: 2.5 } },
       { id: "r-pflanze", art: "pflanze", x: 1.0, y: 3.45, block: [0.7, 3.0, 1.35, 3.45] },
     ],
   };
@@ -235,13 +238,16 @@
      Lotteriebude. Irgendwo im Gras liegt etwas. */
   RAEUME.hof = {
     id: "hof", name: "Terrasse", w: 16, h: 11, wand: 3, boden: "wiese", himmel: true,
-    flaechen: [[0.7, 3.0, 15.3, 10.4], [0.0, 5.6, 2.0, 7.2], [14.0, 5.6, 16.0, 7.2]],
+    flaechen: [[0.7, 3.0, 15.3, 10.4], [0.0, 5.6, 2.0, 7.2], [14.0, 5.6, 16.0, 7.2], [10.0, 9.6, 11.6, 11.0]],
     start: { x: 1.4, y: 6.4, d: "rechts" },
     tueren: [
       { id: "zum-casino", x1: 0.0, y1: 5.6, x2: 0.4, y2: 7.2, ziel: "casino", ankunft: { x: 17.2, y: 11.6, d: "hoch" },
         label: "Zum Casino", schild: { x: 1.0, y: 5.1 } },
       { id: "zur-strasse", x1: 15.6, y1: 5.6, x2: 16.0, y2: 7.2, ziel: "strasse", ankunft: { x: 1.4, y: 6.6, d: "rechts" },
         label: "Ladenstraße", schild: { x: 14.9, y: 5.1 } },
+      // Die Außentreppe hinauf zum Dachgarten.
+      { id: "zum-dachgarten", x1: 10.0, y1: 10.6, x2: 11.6, y2: 11.0, ziel: "dachgarten", ankunft: { x: 9.0, y: 9.7, d: "hoch" },
+        label: "Dachgarten", schild: { x: 10.8, y: 10.2 } },
     ],
     sitze: [
       { id: "bank-1", x: 7.4, y: 9.8, d: "hoch", auf: { x: 7.4, y: 8.95 } },
@@ -447,12 +453,115 @@
     dinge: [
       { id: "kostueme", art: "kleiderstange", x: 2.3, y: 4.4, block: [1.2, 4.1, 3.4, 4.4],
         farben: ["#7a2230", "#e2b656", "#2b3a55", "#3f9a5a", "#8d5bd6", "#e8812b"] },
-      { id: "schminkspiegel", art: "schminkspiegel", x: 5.0, y: 3.0, block: null },
+      { id: "schminkspiegel", art: "schminkspiegel", x: 5.0, y: 3.0, block: null,
+        nutz: { x: 5.0, y: 3.8, r: 1.0 }, label: "Beschlagener Spiegel", verb: "Hineinschreiben",
+        ziel: { eingabe: { art: "spiegel", titel: "Der Spiegel", text: "Das Glas ist so beschlagen, dass du dich kaum siehst. Man könnte mit dem Finger etwas hineinschreiben.", platzhalter: "Was schreibst du?" } } },
+      { id: "heft", art: "programmheft", x: 3.4, y: 6.4, block: null,
+        nutz: { x: 3.4, y: 6.4, r: 0.7 }, label: "Altes Programmheft", verb: "Lesen", ziel: { hinweis: [
+          "GROSSES VARIETÉ IM HAUS AN DER WESER",
+          "Samstag, den 12. September 1987, Einlass 19 Uhr",
+          "Es spielt die Kapelle Die Croupiers von Schallplatte",
+          "Erster Akt: Der Zauberer Malvoni sucht die verlorene Karte",
+          "Zweiter Akt: Madame Rose liest aus der Hand und aus dem Fernrohr",
+          "Pause mit Sekt, Salzstangen und einer Verlosung",
+          "Dritter Akt: Das rote Ballett tanzt auf der Schulter des Riesen",
+          "Vierter Akt: Der Hutmacher und die Tauben vom Dach",
+          "Zum Schluss: Feuerwerk über dem Berg, wenn das Wetter hält",
+          "Der Wirt bittet, die Gläser an der Bar zurückzugeben",
+        ].join("\n") } },
       { id: "truhe", art: "truhe", x: 7.9, y: 4.6, block: [7.2, 4.1, 8.6, 4.6],
         nutz: "rand", label: "Alte Truhe", verb: "Deckel heben", ziel: { geheimnis: "zylinder" } },
       { id: "f-notiz", art: "notiz", x: 2.2, y: 3.0, block: null,
         nutz: { x: 2.2, y: 4.9, r: 0.9 }, label: "Zettel", verb: "Lesen",
         ziel: { hinweis: "Wer ganz vorn auf dem Laufsteg jubelt, steht im Blitzlicht. Und die Puppe im Atelier will von allen Seiten vermessen werden, nicht nur von vorn." } },
+    ],
+  };
+
+  /*
+   * Der Dachgarten über der Terrasse: eine kleine Bar unter freiem Himmel,
+   * ein Fernrohr, eine alte Luke mit Zahlenschloss und ein Taubenschlag.
+   * Hier oben steht mehr Rätsel als irgendwo sonst im Haus, die Lösungen
+   * prüft game/welt.js (`eingabe`), im Klartext steht keine davon hier.
+   *
+   * `lichterkette` ist das, was über dem Dach hängt, als Folge aus kurzen
+   * und langen Birnen. moebel.js zeichnet sie genau so.
+   */
+  RAEUME.dachgarten = {
+    id: "dachgarten", name: "Dachgarten", w: 18, h: 11, wand: 3, boden: "dielen", himmel: true,
+    lichterkette: "-. .- -.-. .... - . ..- .-.. .",
+    flaechen: [[0.7, 3.0, 17.3, 10.4], [8.2, 9.6, 9.8, 11.0]],
+    start: { x: 9.0, y: 9.7, d: "hoch" },
+    tueren: [
+      { id: "zur-terrasse", x1: 8.2, y1: 10.6, x2: 9.8, y2: 11.0, ziel: "hof", ankunft: { x: 10.8, y: 9.9, d: "hoch" },
+        label: "Zur Terrasse", schild: { x: 9.0, y: 10.2 } },
+      /* Hinter dem Schornstein. Nur mit dem, was der Greifer einmal findet. */
+      { id: "zur-sternwarte", versteckt: true, verschlossen: true, schluessel: "weserlicht",
+        x1: 10.0, y1: 2.6, x2: 11.2, y2: 3.5, ziel: "sternwarte", ankunft: { x: 5, y: 6.6, d: "hoch" } },
+    ],
+    sitze: [
+      { id: "bar-1", tisch: "bar", x: 2.0, y: 4.25, d: "hoch", auf: { x: 2.0, y: 4.9 } },
+      { id: "bar-2", tisch: "bar", x: 3.3, y: 4.25, d: "hoch", auf: { x: 3.3, y: 4.9 } },
+      { id: "bar-3", tisch: "bar", x: 4.6, y: 4.25, d: "hoch", auf: { x: 4.6, y: 4.9 } },
+      { id: "bar-4", tisch: "bar", x: 5.9, y: 4.25, d: "hoch", auf: { x: 5.9, y: 4.9 } },
+      { id: "dach-sofa-1", x: 1.25, y: 7.55, d: "rechts", auf: { x: 2.15, y: 7.55 } },
+      { id: "dach-sofa-2", x: 1.25, y: 8.75, d: "rechts", auf: { x: 2.15, y: 8.75 } },
+    ],
+    dinge: [
+      { id: "bar", art: "dachbar", x: 4.0, y: 3.6, block: [1.2, 2.4, 6.8, 3.6],
+        nutz: "rand", label: "Dachbar", verb: "Bestellen",
+        ziel: { eingabe: { art: "bar", titel: "An der Bar", platzhalter: "Was darf's sein?" } }, fokus: { x: 4.0, y: 3.0, zoom: 2.0 } },
+      ...[["bar-1", 2.0], ["bar-2", 3.3], ["bar-3", 4.6], ["bar-4", 5.9]]
+        .map(([id, x]) => ({ id: "hocker-" + id, art: "hocker", x, y: 4.23, block: null })),
+      { id: "karte", art: "kreidetafel", x: 7.7, y: 4.2, block: [7.45, 3.95, 7.95, 4.2],
+        nutz: { x: 7.7, y: 4.8, r: 0.8 }, label: "Tafel", verb: "Lesen", ziel: { hinweis: [
+          "Heute an der Dachbar",
+          "",
+          "Weserwelle: Blue Curaçao, Zitrone, Soda",
+          "Rote Laterne: Erdbeere, Rum, Limette",
+          "Goldene Spielmarke: Ingwer, Honig, Whisky",
+          "Nachtfalter: Espresso, Vanille, Wodka",
+          "Hebel runter: Orange, Grenadine, Tequila",
+          "",
+          "Was nicht auf der Tafel steht, fragt man den Wirt.",
+        ].join("\n") } },
+      { id: "schornstein", art: "schornstein", x: 10.6, y: 3.5, block: [10.0, 2.6, 11.2, 3.5], geheim: true,
+        nutz: { x: 10.6, y: 4.1, r: 0.8 }, label: "Schornstein", verb: "Hineinsehen",
+        ziel: { tuer: "zur-sternwarte" }, fokus: { x: 10.6, y: 2.6, zoom: 2.4 } },
+      { id: "luke", art: "dachluke", x: 13.2, y: 3.5, block: [12.5, 2.7, 13.9, 3.5],
+        nutz: { x: 13.2, y: 4.2, r: 0.9 }, label: "Alte Luke", verb: "Am Schloss drehen",
+        ziel: { eingabe: { art: "luke", titel: "Die alte Luke", platzhalter: "Vier Ziffern",
+          text: "Ein Zahlenschloss mit vier Rädern. Daneben hat jemand mit Kreide geschrieben:\n\nErst, was im Verborgenen erloschen ist.\nDann, wer auf dem Podest steht und nie ein Wort sagt.\nDann die Banditen mit nur einem Arm.\nZuletzt, was hinter Glas für die Besten glänzt." } },
+        fokus: { x: 13.2, y: 2.8, zoom: 2.4 } },
+      { id: "taubenschlag", art: "taubenschlag", x: 16.4, y: 3.5, block: [15.6, 2.4, 17.2, 3.5] },
+      { id: "fernrohr", art: "teleskop", x: 15.6, y: 6.8, block: [15.3, 6.5, 15.9, 6.8],
+        nutz: "rand", label: "Fernrohr", verb: "Hindurchsehen",
+        ziel: { eingabe: { art: "teleskop", titel: "Das Fernrohr", text: "Ein altes Messingfernrohr auf drei Beinen. Wohin richtest du es?", platzhalter: "Ein Stern, ein Planet, irgendwas" } },
+        fokus: { x: 15.6, y: 6.0, zoom: 2.4 } },
+      { id: "dach-sofa", art: "sofa", x: 1.2, y: 9.4, block: [0.7, 6.9, 1.75, 9.4] },
+      { id: "dach-tisch", art: "couchtisch", x: 3.15, y: 8.6, block: [2.75, 7.7, 3.55, 8.6] },
+      { id: "kuebel-d1", art: "pflanze", x: 7.6, y: 9.9, block: [7.4, 9.6, 7.8, 9.9] },
+      { id: "kuebel-d2", art: "pflanze", x: 10.4, y: 9.9, block: [10.2, 9.6, 10.6, 9.9] },
+      { id: "kuebel-d3", art: "pflanze", x: 17.0, y: 9.9, block: [16.8, 9.6, 17.2, 9.9] },
+      { id: "laterne-d1", art: "laterne", x: 5.6, y: 9.9, block: [5.4, 9.7, 5.8, 9.9] },
+      { id: "laterne-d2", art: "laterne", x: 12.6, y: 9.9, block: [12.4, 9.7, 12.8, 9.9] },
+    ],
+  };
+
+  /* Die Sternwarte über dem Dach. Hierher kommt nur, wer das Weserlicht
+     bis zum Ende verfolgt hat; an der Tafel steht, wer es geschafft hat. */
+  RAEUME.sternwarte = {
+    id: "sternwarte", name: "Sternwarte", w: 10, h: 8, wand: 3, boden: "stein", wandStil: "sternwarte", geheim: true,
+    flaechen: [[0.7, 3.0, 9.3, 7.4], [4.2, 6.4, 5.8, 8.0]],
+    start: { x: 5, y: 6.6, d: "hoch" },
+    tueren: [
+      { id: "runter", x1: 4.2, y1: 7.6, x2: 5.8, y2: 8.0, ziel: "dachgarten", ankunft: { x: 10.6, y: 4.3, d: "runter" },
+        label: "Runter", schild: { x: 5, y: 7.2 } },
+    ],
+    sitze: [],
+    dinge: [
+      { id: "sternrohr", art: "sternrohr", x: 4.6, y: 4.6, block: [3.6, 3.8, 5.6, 4.6] },
+      { id: "tafel", art: "ehrentafel", x: 8.0, y: 3.0, block: null,
+        nutz: { x: 8.0, y: 3.8, r: 1.0 }, label: "Ehrentafel", verb: "Lesen", ziel: { weserlicht: "tafel" }, fokus: { x: 8.0, y: 2.0, zoom: 2.4 } },
     ],
   };
 

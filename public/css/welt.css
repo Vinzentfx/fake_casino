@@ -2121,3 +2121,45 @@ html:not(.welt-vorn) .einlass-frei, html:not(.welt-vorn) .einlass-band { display
   0%, 12%, 30%, 44%, 70%, 82%, 100% { opacity: 0; }
   6%, 37%, 76% { opacity: 0.75; }
 }
+
+/* Dachgarten: Lichterkette, Bar, Rauch aus dem Schornstein. */
+.wb-kabel { fill: none; stroke: #2a2d33; stroke-width: 1.2; }
+.wb-birne { fill: #ffe7a0; stroke: #b8901c; stroke-width: 0.6; }
+html:not(.sparsam) .wb-birne { filter: drop-shadow(0 0 3px rgba(255, 220, 140, 0.8)); }
+.m-bar-schrift { fill: #ff8fc8; }
+html:not(.sparsam) .m-bar-schrift { filter: drop-shadow(0 0 3px #ff4fa8); }
+html:not(.reduce-motion) .m-rauch { animation: m-rauch 6s ease-in-out infinite; }
+@keyframes m-rauch { 0%, 100% { opacity: 0.15; transform: translateY(0); } 50% { opacity: 0.4; transform: translateY(-4px); } }
+
+/* Sternwarte: Kuppel, Spalt, Sternkarte. */
+.wb-sternwarte-wand { fill: #0d1430; }
+.wb-kuppelspalt { fill: #050817; stroke: #2a3150; stroke-width: 2; }
+.wb-sternkarte { fill: #e8dcc4; stroke: #8e6931; stroke-width: 2; }
+.wb-sternbild { fill: none; stroke: #2b3a55; stroke-width: 1; stroke-dasharray: 3 2; }
+.wb-sternbild-punkt { fill: #2b3a55; }
+.wb-sternbild-rot { fill: #c8243a; }
+html[data-welt-raum="dachgarten"] { --raum-ton: 22, 30, 60; }
+html[data-welt-raum="sternwarte"] { --raum-ton: 16, 22, 54; }
+
+/* Das Logbuch der Geheimnisse. */
+.lb-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+.lb-zahl { font-size: var(--fs-lg); font-weight: 800; color: var(--accent); }
+.lb-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); margin-top: var(--sp-4); }
+.lb-eintrag {
+  border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4);
+  background: var(--surface); display: flex; flex-direction: column; gap: 6px; min-width: 0;
+}
+.lb-eintrag.zu { border-style: dashed; background: transparent; }
+.lb-eintrag b { font-size: var(--fs-md); }
+.lb-eintrag.zu b { letter-spacing: 0.3em; color: var(--text-dim); }
+.lb-eintrag small { color: var(--text-dim); }
+.lb-eintrag p { margin: 0; font-size: var(--fs-sm); color: var(--text-dim); line-height: 1.45; }
+.lb-sterne { color: var(--accent); letter-spacing: 2px; font-size: var(--fs-sm); }
+.lb-sterne i { font-style: normal; color: var(--text-mute); }
+.lb-weserlicht { border-color: rgba(var(--accent-rgb), 0.5); background: rgba(var(--accent-rgb), 0.06); }
+.lb-stufen { display: flex; gap: 6px; }
+.lb-stufen i { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(var(--accent-rgb), 0.6); }
+.lb-stufen i.an { background: var(--accent); box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.6); }
+.lb-notiz { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
+.lb-notiz h4 { margin: 0 0 4px; font-size: var(--fs-sm); color: var(--accent); }
+.lb-notiz pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 500 var(--fs-sm)/1.5 ui-monospace, Menlo, monospace; color: var(--text); }

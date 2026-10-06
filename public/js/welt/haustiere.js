@@ -87,6 +87,16 @@
       <g class="ht-feuer"><path d="M38.4 15l3.4-1.6-1.2 1.8 2.6.6-3.6 1Z" fill="#ff8a3d"/></g>
       ${bein(12, 24, "#2e7a52", 5)}${bein(16, 24, "#2e7a52", 5)}${bein(21, 24, "#2e7a52", 5)}${bein(25, 24, "#2e7a52", 5)}`,
     tresorkatze: () => TIERE.katze("#7d8591", "#5c646d", "#1d2a6e"),
+    /* Der Rabe aus der Sternwarte: schwarz mit einem blauen Schimmer und
+       einem Stern im Auge. */
+    rabe: () => `
+      <path class="ht-schwanz" d="M10 21L1 24L3 26L11 24Z" fill="#14161c" stroke="${L}" stroke-width=".6"/>
+      <path d="M27 13q4.4-3.4 7 0q1 2.4-1.4 4L27.6 18Z" fill="#1a1d25" stroke="${L}" stroke-width=".7"/>
+      <path d="M33.6 13.6L39 15.2L33.4 16.6Z" fill="#2b2f38" stroke="${L}" stroke-width=".5"/>
+      <path class="ht-stern" d="M31 12.2l.5 1 1.1.1-.8.7.2 1.1-1-.6-1 .6.2-1.1-.8-.7 1.1-.1z" fill="#f2d27a"/>
+      <path d="M26.6 16.4Q30.4 21 27 25Q20 29 11 25.6Q6 23.4 5.4 20.6Q12 20.6 16.4 17.4Q21.4 14.4 26.6 16.4Z" fill="#1d2029" stroke="${L}" stroke-width=".7"/>
+      <g class="ht-fluegel"><path d="M13.4 19Q20 17 25 21Q19 25 12 23Z" fill="#2a3150"/></g>
+      ${bein(16, 25, "#3a3e44", 4.6)}${bein(21, 25, "#3a3e44", 4.6)}`,
     igel: () => `
       <path d="M8 25Q6 14 17 12Q27 11 29 20L30 25Z" fill="#6b4a2e" stroke="${L}" stroke-width=".7"/>
       ${[[10, 18], [13, 14.6], [17, 13], [21, 13], [25, 14.6], [12, 21.6], [16, 17], [20, 16.6], [24, 18]].map(([x, y]) => `<path d="M${x} ${y}l-2.4-3.6 3.6 1.4z" fill="#4a3220"/>`).join("")}

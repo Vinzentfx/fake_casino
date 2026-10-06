@@ -122,6 +122,8 @@
     modehaus: { stil: "lounge", leiser: 0.7 },
     atelier: { stil: "swing", leiser: 0.5 },
     fundus: { atmo: "tresor" },
+    dachgarten: { stil: "house", leiser: 0.5 },
+    sternwarte: { atmo: "tresor" },
     hof: { atmo: "draussen" },
     strasse: { atmo: "stadt" },
     garage: { atmo: "garage" },

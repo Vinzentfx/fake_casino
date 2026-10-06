@@ -25,6 +25,21 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-06-b",
+      datum: "6. Oktober 2026",
+      titel: "Ein Dachgarten, und ein Buch voller Fragezeichen",
+      items: [
+        { icon: "stern", titel: "Der Dachgarten",
+          text: "Von der Terrasse führt eine Treppe aufs Dach. Oben gibt es eine kleine Bar unter freiem Himmel mit Barhockern, einem Wirt und einer Tafel mit Cocktails, dazu ein Fernrohr, einen Taubenschlag und eine Lounge mit Blick auf den Berg. Setz dich an den Tresen und bestell was." },
+
+        { icon: "stern", titel: "Das Buch der Geheimnisse",
+          text: "In der Ruhmeshalle liegt ein Buch, in dem steht, was du im Haus schon gefunden hast: welches Stück, wo und wann. Was dir noch fehlt, steht nur mit Sternen da, je mehr, desto schwerer. Du findest es auch im Menü unter „Geheimnisse“." },
+
+        { icon: "frage", titel: "Es gibt mehr zu finden",
+          text: "Ein paar neue Geheimnisse sind dazugekommen, und eins davon ist größer als alle anderen zusammen. Es hat fünf Sterne und bisher keinen, der es gelöst hat. Wer es schafft, bekommt etwas, das es sonst nirgends gibt." },
+      ],
+    },
+    {
       id: "2026-10-06",
       datum: "6. Oktober 2026",
       titel: "Flüssiger auf dem iPad, das Modehaus gleich nebenan",

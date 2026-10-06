@@ -194,6 +194,10 @@ const HANDDINGE = [
   { id: "pokal",         label: "Goldener Pokal",     cost: null, via: "Irgendwo im Haus versteckt" },
   { id: "wunderkerze",   label: "Wunderkerze",        cost: null, via: "Irgendwo im Haus versteckt", motion: true },
   { id: "massband",      label: "Maßband",            cost: null, via: "Irgendwo im Haus versteckt" },
+  { id: "fernglas",      label: "Altes Fernglas",     cost: null, via: "Irgendwo im Haus versteckt" },
+  { id: "blauestunde",   label: "Die Blaue Stunde",   cost: null, via: "Steht auf keiner Tafel", motion: true },
+  // Nur für die, die das Weserlicht bis in die Sternwarte verfolgt haben (game/raetsel.js).
+  { id: "sternenlaterne", label: "Sternenlaterne",    cost: null, via: "Irgendwo ganz oben", motion: true },
   // Nur aus dem Greifautomaten, und dort fast nie (game/greifer.js).
   { id: "gummihuhn",     label: "Königliches Gummihuhn", cost: null, via: "Am Greifautomaten gefangen", limitiert: "greifer" },
   // Nur in der Nacht vor einer Öffnung zu holen, an der Tür des Warteraums.
@@ -235,6 +239,7 @@ const HAUSTIERE = [
   { id: "pinguin",       label: "Pinguin",            cost: 190_000, nur: ZOO },
   { id: "minidrache",    label: "Mini-Drache",        cost: 1_500_000, nur: K, motion: true },
   { id: "tresorkatze",   label: "Tresorkatze",        cost: null, via: "Irgendwo im Haus versteckt" },
+  { id: "rabe",          label: "Rabe vom Wittekindsberg", cost: null, via: "Irgendwo ganz oben" },
 ];
 
 /* Die Arten, wie game/cosmetics.js sie braucht: Topf am Konto, angelegtes

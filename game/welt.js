@@ -66,17 +66,24 @@ const RICHTUNGEN = new Set(["hoch", "runter", "links", "rechts"]);
  * gibt, und zwar genau einmal. Verraten wird im Chat nur, DASS jemand etwas
  * gefunden hat, nicht wo: sonst wäre es nach dem ersten Fund keins mehr.
  */
+/* `ort` und `schwer` stehen für das Logbuch: was man gefunden hat, steht
+   dort mit Raum, was fehlt, nur mit der Zahl der Sterne. */
 const GEHEIMNISSE = {
-  tresorkatze: { art: "haustier", id: "tresorkatze", satz: "Die Katze blinzelt, streckt sich und läuft dir ab jetzt hinterher." },
-  kleeblatt:   { art: "hand",     id: "kleeblatt",   satz: "Ein vierblättriges Kleeblatt. Du steckst es ein, es gehört jetzt dir." },
-  spiegel:     { art: "brille",   id: "spiegelbrille", satz: "Dein Spiegelbild winkt zurück und reicht dir eine Brille herüber." },
-  schallplatte: { art: "hand",    id: "schallplatte", satz: "Beim dritten Drücken rattert die Jukebox, ruckelt, und unten fällt eine alte Schallplatte heraus. Die gehört jetzt dir." },
-  pokal:       { art: "hand",     id: "pokal",       satz: "Oben auf dem Podest jubelst du, als hättest du gewonnen. Jemand drückt dir einen goldenen Pokal in die Hand." },
-  wunderkerze: { art: "hand",     id: "wunderkerze", satz: "Du winkst dem Feuer zu, und aus der Glut springt ein Funke in deine Hand. Eine Wunderkerze, die nie ausgeht." },
-  e46:         { art: "fahrzeug", id: "e46",         satz: "Unter der Plane steht ein alter BMW E46 in Orientblau, auf BBS-Felgen. Der Schlüssel steckt. Er gehört jetzt dir. Anspringen wird er nie." },
-  laufsteg:    { art: "brille",   id: "divabrille",  satz: "Ganz vorn auf dem Laufsteg reißt du die Arme hoch, und von irgendwo blitzt es dreimal. Jemand reicht dir eine Sonnenbrille: „Die brauchst du jetzt.“" },
-  massband:    { art: "hand",     id: "massband",    satz: "Brust, Rücken, beide Schultern: alles notiert. Die Puppe sieht zufrieden aus, und das Maßband darfst du behalten." },
-  zylinder:    { art: "kopf",     id: "zylinder",    satz: "Unter dem Deckel liegt Staub, ein Programmheft von 1987 und ein alter Zylinder. Er passt, als hätte er auf dich gewartet." },
+  tresorkatze: { art: "haustier", id: "tresorkatze", ort: "Tresorraum", schwer: 2, satz: "Die Katze blinzelt, streckt sich und läuft dir ab jetzt hinterher." },
+  kleeblatt:   { art: "hand",     id: "kleeblatt",   ort: "Terrasse", schwer: 1, satz: "Ein vierblättriges Kleeblatt. Du steckst es ein, es gehört jetzt dir." },
+  spiegel:     { art: "brille",   id: "spiegelbrille", ort: "Modehaus", schwer: 1, satz: "Dein Spiegelbild winkt zurück und reicht dir eine Brille herüber." },
+  schallplatte: { art: "hand",    id: "schallplatte", ort: "Spielhalle", schwer: 2, satz: "Beim dritten Drücken rattert die Jukebox, ruckelt, und unten fällt eine alte Schallplatte heraus. Die gehört jetzt dir." },
+  pokal:       { art: "hand",     id: "pokal",       ort: "Ruhmeshalle", schwer: 1, satz: "Oben auf dem Podest jubelst du, als hättest du gewonnen. Jemand drückt dir einen goldenen Pokal in die Hand." },
+  wunderkerze: { art: "hand",     id: "wunderkerze", ort: "Terrasse", schwer: 2, satz: "Du winkst dem Feuer zu, und aus der Glut springt ein Funke in deine Hand. Eine Wunderkerze, die nie ausgeht." },
+  e46:         { art: "fahrzeug", id: "e46",         ort: "Garage", schwer: 4, satz: "Unter der Plane steht ein alter BMW E46 in Orientblau, auf BBS-Felgen. Der Schlüssel steckt. Er gehört jetzt dir. Anspringen wird er nie." },
+  laufsteg:    { art: "brille",   id: "divabrille",  ort: "Modehaus", schwer: 2, satz: "Ganz vorn auf dem Laufsteg reißt du die Arme hoch, und von irgendwo blitzt es dreimal. Jemand reicht dir eine Sonnenbrille: „Die brauchst du jetzt.“" },
+  massband:    { art: "hand",     id: "massband",    ort: "Atelier", schwer: 2, satz: "Brust, Rücken, beide Schultern: alles notiert. Die Puppe sieht zufrieden aus, und das Maßband darfst du behalten." },
+  dachluke:    { art: "hand",     id: "fernglas",    ort: "Dachgarten", schwer: 4, satz: "Die Räder rasten ein, das Schloss springt auf. Unter der Luke liegt in einer Blechkiste ein altes Fernglas, daneben ein Zettel: „Für den, der zählen kann.“" },
+  blauestunde: { art: "hand",     id: "blauestunde", ort: "Dachgarten", schwer: 3, satz: "Der Wirt nimmt die Schallplatte, dreht sie im Licht und lächelt. „Die lief hier, als unten noch Varieté war.“ Dann mixt er etwas Blaues, das leise leuchtet. „Die Blaue Stunde. Steht auf keiner Tafel.“" },
+  /* Das Weserlicht (game/raetsel.js). Der Rabe ist das Stück, das hier
+     gezählt wird; Laterne und Titel gibt die Ehrentafel dazu. */
+  weserlicht:  { art: "haustier", id: "rabe",        ort: "Sternwarte", schwer: 5, satz: "Der Rabe bleibt bei dir." },
+  zylinder:    { art: "kopf",     id: "zylinder",    ort: "Kostümfundus", schwer: 3, satz: "Unter dem Deckel liegt Staub, ein Programmheft von 1987 und ein alter Zylinder. Er passt, als hätte er auf dich gewartet." },
 };
 
 /* Die Schneiderpuppe im Atelier will von allen vier Seiten vermessen
@@ -118,6 +125,17 @@ const LIEDER = [
 const LIED_MS = 3 * 60 * 1000;
 
 const runde = (n) => Math.round(n * 100) / 100;
+const raetsel = require("./raetsel");
+const WIRT_STANDARD = "Der Wirt poliert ein Glas. „Was darf's sein?“";
+
+/** Vom Greifautomaten gerufen, nach jedem Griff. Gibt einen Fund oder null. */
+function greiferFund(key, treffer) {
+  const acc = zuschauen.accounts && zuschauen.accounts.get(key);
+  if (!acc) return null;
+  const f = raetsel.greifer(acc, treffer);
+  if (f) { zuschauen.accounts.save(); try { require("./achievements").check(key); } catch {} }
+  return f;
+}
 
 /* Für schau(): die Spielmodule melden ein Ergebnis, und wer im Raum am
    Tisch steht, sieht es. Gesetzt in setupWelt. */
@@ -173,7 +191,7 @@ function setupWelt(io, accounts) {
   let naechsteId = 1;
   const kanal = (raumId) => "welt:" + raumId;
   const verification = require("./verification");
-  Object.assign(zuschauen, { io, figuren, kanal });
+  Object.assign(zuschauen, { io, figuren, kanal, accounts });
 
   /* Die Spielhalle spielt mit: wer an einem ihrer Automaten oder Tische
      gewinnt, dessen Gewinn sehen alle im Raum dort, ab dem 25-Fachen als
@@ -529,6 +547,39 @@ function setupWelt(io, accounts) {
         }
         return ack({ ok: true, ding: d.id, ziel: { einlass: "tuer", ...k } });
       }
+      /* Eine Eingabe: das Ding stellt eine Frage, der Browser fragt, die
+         Antwort kommt über welt:eingabe. An der Bar setzt man sich dabei,
+         und der Wirt sagt jedes Mal etwas anderes. */
+      if (d.ziel.eingabe) {
+        const frage = { ...d.ziel.eingabe };
+        if (frage.art === "bar") {
+          const b = raetsel.barBesuch(accounts.get(fig.key));
+          const platz = amTischSetzen(fig, raum, d);
+          if (b.geheimnis) {
+            const g = geheimnisFinden(fig.key, b.geheimnis);
+            if (g && g.neu) return ack({ ok: true, ding: d.id, ziel: { geheimnis: g }, ...(platz ? { platz } : {}) });
+          }
+          frage.text = b.spruch || WIRT_STANDARD;
+          return ack({ ok: true, ding: d.id, ziel: { eingabe: frage }, ...(platz ? { platz } : {}) });
+        }
+        return ack({ ok: true, ding: d.id, ziel: { eingabe: frage } });
+      }
+      if (d.ziel.weserlicht === "tafel") {
+        const acc = accounts.get(fig.key);
+        const t = raetsel.tafel(acc, fig.key, (k) => { const a = accounts.get(k); return a ? a.name : "Unbekannt"; });
+        if (t.neu) {
+          geheimnisFinden(fig.key, "weserlicht");
+          cosmetics.grant(acc, "hand", "sternenlaterne", fig.key);
+          cosmetics.grant(acc, "title", "weserlicht", fig.key);
+          accounts.save();
+          try { require("./achievements").check(fig.key); } catch {}
+          try { require("./chat").announce(io, `${acc.name} hat sich als Nr. ${t.nr} in die Tafel der Sternwarte eingetragen.`); } catch {}
+          try { require("./chronik").notiere("event", `${acc.name} hat das Weserlicht gefunden (Nr. ${t.nr}).`); } catch {}
+          const pub = accounts.publicAccount(acc);
+          for (const s of fig.sockets) s.emit("account:update", { account: pub });
+        }
+        return ack({ ok: true, ding: d.id, ziel: { tafel: { titel: t.neu ? "Eingetragen" : "Die Ehrentafel", satz: t.satz } } });
+      }
       if (d.ziel.puppe) {
         const jetzt = Date.now();
         if (!fig.puppe || jetzt - fig.puppe.t > PUPPE_MS) fig.puppe = { t: jetzt, seiten: new Set() };
@@ -562,7 +613,9 @@ function setupWelt(io, accounts) {
       if (d.ziel.tuer) {
         const t = raum.tueren.find((x) => x.id === d.ziel.tuer);
         if (!t || !R.raum(t.ziel)) return ack({ ok: false, error: "Da geht es nicht weiter." });
-        if (t.verschlossen && !(fig.torOffenBis > Date.now())) return ack({ ok: false, error: "Abgeschlossen. Dahinter ist es ganz still." });
+        if (t.schluessel) {
+          if (!raetsel.tuerOffen(accounts.get(fig.key), t.schluessel)) return ack({ ok: false, error: "Nur Ruß und ein kalter Luftzug von oben." });
+        } else if (t.verschlossen && !(fig.torOffenBis > Date.now())) return ack({ ok: false, error: "Abgeschlossen. Dahinter ist es ganz still." });
         return ack({ ok: true, ding: d.id, ziel: { umzug: umziehen(fig, t.ziel, t.ankunft, socket) } });
       }
       if (d.ziel.jukebox) {
@@ -586,6 +639,50 @@ function setupWelt(io, accounts) {
       const platz = (d.ziel.screen || d.ziel.shisha) ? amTischSetzen(fig, raum, d) : null;
       if (d.ziel.shisha && platz) shishaRunde(fig);
       ack({ ok: true, ding: d.id, ziel: d.ziel, ...(platz ? { platz } : {}) });
+    });
+
+    /* Die Antwort auf eine Eingabe (Bar, Spiegel, Fernrohr, Luke). Geprüft
+       wird wie beim Benutzen, ob man davorsteht; entschieden wird in
+       game/raetsel.js. */
+    socket.on("welt:eingabe", ({ ding, text } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const fig = figVon(socket);
+      if (!fig) return ack({ ok: false, error: "Du bist gerade nicht in der Welt." });
+      const raum = R.raum(fig.raum);
+      const d = raum.dinge.find((x) => x.id === String(ding || ""));
+      if (!d || !d.ziel || !d.ziel.eingabe) return ack({ ok: false, error: "Das gibt es hier nicht." });
+      if (R.abstandZuDing(d, fig.x, fig.y) > R.reichweite(d) + NUTZ_SPIELRAUM) return ack({ ok: false, error: "Geh erst etwas näher heran." });
+      if (typeof text !== "string" || text.length > 80) return ack({ ok: false, error: "Das ist zu lang." });
+      const darf = raetsel.darf(fig.key);
+      if (!darf.ok) return ack(darf);
+      const acc = accounts.get(fig.key);
+      const vorher = raetsel.stufe(acc);
+      const r = raetsel.eingabe(acc, d.ziel.eingabe.art, text);
+      if (raetsel.stufe(acc) !== vorher) { accounts.save(); try { require("./achievements").check(fig.key); } catch {} }
+      if (r.geheimnis) {
+        const g = geheimnisFinden(fig.key, r.geheimnis);
+        if (g) return ack({ ok: true, geheimnis: g });
+      }
+      ack({ ok: true, titel: r.titel || d.label, satz: r.satz });
+    });
+
+    /* Das Logbuch der Geheimnisse. Was fehlt, steht nur mit seinen Sternen
+       da; ob man beim Weserlicht schon unterwegs ist, sieht man an der Stufe,
+       und was man unterwegs bekommen hat, steht zum Nachlesen dabei. */
+    socket.on("welt:logbuch", (...args) => {
+      const ack = args.find((a) => typeof a === "function");
+      if (!ack) return;
+      const acc = socket.data.account && accounts.get(socket.data.account);
+      if (!acc) return ack({ ok: false, error: "Nicht eingeloggt." });
+      const gefunden = acc.geheimnisse && typeof acc.geheimnisse === "object" ? acc.geheimnisse : {};
+      const liste = Object.entries(GEHEIMNISSE).map(([id, g]) => gefunden[id]
+        ? { id, gefunden: gefunden[id], label: cosmetics.label(g.art, g.id), ort: g.ort, satz: g.satz, schwer: g.schwer, weserlicht: id === "weserlicht" }
+        : { id, gefunden: null, schwer: g.schwer, weserlicht: id === "weserlicht" });
+      const stufe = raetsel.stufe(acc);
+      ack({ ok: true, liste, weserlicht: {
+        stufe, von: raetsel.STUFEN, notizen: raetsel.notizen(acc), eingetragen: raetsel.anzahlEingetragen(),
+        nr: acc.weserlicht && acc.weserlicht.nr || null,
+      } });
     });
 
     /* Wer einen Kartentisch benutzt, sitzt danach daran, auf dem freien
@@ -860,4 +957,4 @@ function schau(socket, dingId, daten) {
   io.to(kanal(fig.raum)).emit("welt:schau", { id: fig.id, ding: dingId, ...daten });
 }
 
-module.exports = { setupWelt, pruefeZug, saubereGrundform, GEHEIMNISSE, schau, nachts, uhr, figurVon, puppenSeite };
+module.exports = { setupWelt, pruefeZug, saubereGrundform, GEHEIMNISSE, schau, nachts, uhr, figurVon, puppenSeite, greiferFund };

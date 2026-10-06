@@ -90,6 +90,7 @@
       <button class="sheet-item" data-nav="wheel"><i class="si-icon" data-icon="gluecksrad"></i><b>Glücksrad</b><small id="menu-wheel-sub">Einmal am Tag drehen</small></button>
       <button class="sheet-item" data-nav="leaderboard"><i class="si-icon" data-icon="bestenliste"></i><b>Bestenliste</b><small>Wer liegt vorn</small></button>
       <button class="sheet-item" data-nav="stats"><i class="si-icon" data-icon="statistik"></i><b>Statistik</b><small>Deine Bilanz je Spiel</small></button>
+      <button class="sheet-item" data-nav="logbuch"><i class="si-icon" data-icon="stern"></i><b>Geheimnisse</b><small id="menu-logbuch-sub">Was du im Haus gefunden hast</small></button>
     </div>
 
     <div class="sheet-group">
@@ -1743,6 +1744,17 @@
       <div id="updates-list" class="cl-list"></div>
     </section>
 
+    <!-- Logbuch der Geheimnisse (public/js/logbuch.js) -->
+    <section class="screen" data-screen="logbuch">
+      <button class="back-btn" data-nav="lobby">‹ Lobby</button>
+      <h2 class="screen-title"><i data-icon="stern"></i>Buch der Geheimnisse</h2>
+      <div class="lb-kopf">
+        <p class="muted small" style="margin:0">Was du im Haus gefunden hast. Was noch fehlt, steht hier nur mit seinen Sternen: je mehr, desto schwerer.</p>
+        <span class="lb-zahl" id="lb-zahl"></span>
+      </div>
+      <div class="lb-liste" id="lb-liste"><p class="muted small">Wird aufgeschlagen…</p></div>
+    </section>
+
     <!-- Einstellungen -->
     <section class="screen" data-screen="settings">
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
@@ -2824,6 +2836,7 @@
   <script defer src="/js/clans.js"></script>
   <script defer src="/js/cosmetics.js"></script>
   <script defer src="/js/praegestaub.js"></script>
+  <script defer src="/js/logbuch.js"></script>
   <script defer src="/js/blackjackLobby.js"></script>
   <script defer src="/js/poker.js"></script>
   <script defer src="/js/slots.js"></script>

@@ -113,7 +113,12 @@ function setupGreifer(io, accounts) {
         try { require("./chat").announce(io, text); } catch {}
         try { require("./feed").add("event", text); } catch {}
       }
-      ack({ ok: true, ...szene, neu, trost, preis: PREIS, account });
+      /* Das Weserlicht (game/raetsel.js) hat hier eine Stufe: wer zur
+         rechten Zeit mit dem richtigen Hut ins Leere greift, findet etwas.
+         Gemeldet wird nur dem, der gegriffen hat. */
+      let fund = null;
+      try { fund = welt().greiferFund(key, treffer); } catch {}
+      ack({ ok: true, ...szene, neu, trost, preis: PREIS, account, ...(fund ? { fund } : {}) });
     });
   });
 }

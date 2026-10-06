@@ -548,3 +548,92 @@ test("im Casino gibt es keine Garderobe und keine Kisten mehr, im Modehaus die K
   // In der Ladenstraße ist das Modehaus nur noch Schaufenster, keine Tür.
   assert.equal(R.raum("strasse").tueren.some((x) => x.ziel === "modehaus"), false);
 });
+
+/* Das Weserlicht, einmal ganz durchgespielt, und die Reihenfolge, die es
+   verlangt. Die Antworten stehen hier im Test im Klartext, im Spiel nur als
+   Prüfsumme (game/raetsel.js). */
+test("das Weserlicht geht nur Stufe für Stufe, und am Ende steht man an der Tafel", (t) => {
+  const os = require("os"), path = require("path"), fs = require("fs");
+  const raetsel = require("../game/raetsel");
+  const datei = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "wl-")), "weserlicht.json");
+  raetsel._zuruecksetzen(datei);
+  t.after(() => raetsel._zuruecksetzen());
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  const anna = w.neuerSocket("anna");
+  anna.frage("welt:betreten", {});
+  const fig = w.welt.figuren.get("anna");
+  const konto = w.kontoVon("anna");
+  const sag = (ding, text) => { raetsel._zuruecksetzen(datei); return anna.frage("welt:eingabe", { ding, text }); };
+
+  // Der Spiegel nimmt die Jahreszahl nicht, solange der Bierdeckel fehlt.
+  fig.raum = "fundus"; fig.x = 5.0; fig.y = 3.8;
+  assert.doesNotMatch(sag("schminkspiegel", "1896").satz, /Zahlen/);
+  // Stufe 1: an der Bar bestellen.
+  fig.raum = "dachgarten"; fig.x = 4.0; fig.y = 4.3;
+  const bar = anna.frage("welt:nutzen", { ding: "bar" });
+  assert.ok(bar.ziel.eingabe && bar.platz, "an der Bar sitzt man und wird gefragt");
+  assert.doesNotMatch(sag("bar", "Weserlicht").satz, /Bierdeckel/, "der Name des Rätsels ist nicht das Passwort");
+  assert.match(sag("bar", "Nacht-Eule!").satz, /Bierdeckel/);
+  assert.equal(raetsel.stufe(konto), 1);
+  // Stufe 2: in den Spiegel im Fundus.
+  fig.raum = "fundus"; fig.x = 5.0; fig.y = 3.8;
+  assert.match(sag("schminkspiegel", "1896").satz, /7·3/);
+  // Stufe 3: das Fernrohr. Orion allein reicht nicht.
+  fig.raum = "dachgarten"; fig.x = 15.6; fig.y = 7.3;
+  assert.doesNotMatch(sag("fernrohr", "Orion").satz, /zählst/);
+  assert.match(sag("fernrohr", "Betelgeuse").satz, /zählst/);
+  // Der Schornstein bleibt zu, bis der Schlüssel da ist.
+  fig.x = 10.6; fig.y = 4.1;
+  assert.equal(anna.frage("welt:nutzen", { ding: "schornstein" }).ok, false);
+  // Stufe 4: ins Leere greifen, aber nur mit dem alten Hut.
+  assert.equal(w.welt.greiferFund ? null : require("../game/welt").greiferFund("anna", null), null);
+  konto.kopf = "zylinder";
+  assert.equal(require("../game/welt").greiferFund("anna", 2), null, "ein Ball zählt nicht");
+  assert.match(require("../game/welt").greiferFund("anna", null).satz, /Schornstein/);
+  // Stufe 5: durch den Schornstein an die Tafel.
+  const hoch = anna.frage("welt:nutzen", { ding: "schornstein" });
+  assert.equal(hoch.ziel.umzug.raum, "sternwarte");
+  fig.x = 8.0; fig.y = 3.8;
+  const tafel = anna.frage("welt:nutzen", { ding: "tafel" });
+  assert.match(tafel.ziel.tafel.satz, /1\. Anna/);
+  assert.equal(raetsel.stufe(konto), 5);
+  assert.ok(konto.geheimnisse.weserlicht);
+  // Ein zweites Mal wird niemand doppelt eingetragen.
+  assert.equal(anna.frage("welt:nutzen", { ding: "tafel" }).ziel.tafel.titel, "Die Ehrentafel");
+  assert.equal(JSON.parse(fs.readFileSync(datei, "utf8")).length, 1);
+});
+
+test("die Luke will vier gezählte Ziffern, und der Wirt kennt die alte Platte", (t) => {
+  const raetsel = require("../game/raetsel");
+  raetsel._zuruecksetzen();
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  const anna = w.neuerSocket("anna");
+  anna.frage("welt:betreten", {});
+  const fig = w.welt.figuren.get("anna");
+  fig.raum = "dachgarten"; fig.x = 13.2; fig.y = 4.2;
+  assert.match(anna.frage("welt:eingabe", { ding: "luke", text: "1234" }).satz, /bleibt zu/);
+  // Gleich danach noch einmal: zu schnell.
+  assert.equal(anna.frage("welt:eingabe", { ding: "luke", text: "2343" }).ok, false);
+  raetsel._zuruecksetzen();
+  assert.equal(anna.frage("welt:eingabe", { ding: "luke", text: "2343" }).geheimnis.label, "fernglas");
+  w.kontoVon("anna").handding = "schallplatte";
+  fig.x = 4.0; fig.y = 4.3;
+  assert.equal(anna.frage("welt:nutzen", { ding: "bar" }).ziel.geheimnis.label, "blauestunde");
+  // Das Logbuch kennt jetzt beide, den Rest nur als Sterne.
+  const lb = anna.frage("welt:logbuch");
+  const luke = lb.liste.find((e) => e.id === "dachluke");
+  assert.equal(luke.ort, "Dachgarten");
+  const fehlt = lb.liste.find((e) => e.id === "e46");
+  assert.equal(fehlt.label, undefined);
+  assert.equal(fehlt.ort, undefined);
+});
+
+test("keine Lösung steht im Klartext im Rätselmodul", () => {
+  // Die Prüfsummen selbst nimmt der Test heraus: Hex kann zufällig vier passende Ziffern enthalten.
+  const quelle = require("fs").readFileSync(require.resolve("../game/raetsel.js"), "utf8").toLowerCase().replace(/"[0-9a-f]{24}"/g, "");
+  for (const geheim of ["nachteule", "1896", "beteigeuze", "betelgeuse", "2343"]) {
+    assert.equal(quelle.includes(geheim), false, `${geheim} steht im Quelltext`);
+  }
+});

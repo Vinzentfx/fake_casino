@@ -1685,6 +1685,8 @@
       else if (z.umzug) geheimgang(d, z.umzug);
       else if (z.geheimnis) geheimnisZeigen(z.geheimnis);
       else if (z.puppe && z.puppe.satz) { klang("tick", ich); Casino.toast(z.puppe.satz); }
+      else if (z.eingabe) eingabeAuf(d, z.eingabe);
+      else if (z.tafel) Casino.dialog.hinweis(z.tafel.satz, { titel: z.tafel.titel });
       else if (z.jukebox) {
         Casino.toast(`♪ Die Jukebox spielt ${z.jukebox.lied}`);
         klang("jukebox");
@@ -1697,6 +1699,19 @@
       else if (z.hinweis) Casino.dialog.hinweis(z.hinweis, { titel: d.label });
       else if (z.ansicht) zeigeInUebersicht(z.ansicht);
       else oeffne(d, z);
+    });
+  }
+
+  /* Ein Ding, das etwas wissen will: Bar, Spiegel, Fernrohr, Schloss. Die
+     Frage kommt vom Server (der Wirt sagt jedes Mal etwas anderes), die
+     Antwort geht über welt:eingabe zurück und wird nur dort entschieden. */
+  async function eingabeAuf(d, frage) {
+    const text = await Casino.dialog.eingabe(frage.text || "", { titel: frage.titel || d.label, platzhalter: frage.platzhalter || "", okText: "Los" });
+    if (text == null || !String(text).trim()) return;
+    socket.emit("welt:eingabe", { ding: d.id, text: String(text).slice(0, 80) }, (r) => {
+      if (!r || !r.ok) { Casino.toast((r && r.error) || "Das geht gerade nicht."); return; }
+      if (r.geheimnis) return geheimnisZeigen(r.geheimnis);
+      Casino.dialog.hinweis(r.satz, { titel: r.titel || d.label });
     });
   }
 
@@ -2425,6 +2440,7 @@
           setTimeout(() => Casino.sound && Casino.sound.play("gummihuhn"), 500);
           Casino.dialog.hinweis("Der Griff hält, der Ball fällt in den Schacht, und darin liegt: das Königliche Gummihuhn. Es gibt kaum eins davon im Haus.\n\nNimm es in der Garderobe in die Hand. Unter Gesten kannst du es dann quietschen lassen, und zwar so, dass es der ganze Raum hört.", { titel: "Gefangen!" });
         } else if (r.gewonnen) Casino.sound && Casino.sound.play("cash");
+        if (r.fund) { Casino.sound && Casino.sound.play("geheimnis"); Casino.dialog.hinweis(r.fund.satz, { titel: r.fund.titel }); }
       });
     });
   }
@@ -2970,7 +2986,7 @@
      Hund und Katze nicht, der Papagei plappert nach. Danach ist eine Weile
      Ruhe, sonst redet ein Rudel am Tisch ununterbrochen. */
   const LAUT = { taube: "Gurr!", hamster: "Piep!", frosch: "Quak!", dackel: "Wuff!", waschbaer: "Fiep!", gluecksschwein: "Oink!",
-    minidrache: "Fauch!", tresorkatze: "Miau!", igel: "Schnüff!", hase: "Mümmel!", schildkroete: "…", pinguin: "Kwääk!", papagei: "Hallo!" };
+    minidrache: "Fauch!", tresorkatze: "Miau!", igel: "Schnüff!", hase: "Mümmel!", schildkroete: "…", pinguin: "Kwääk!", papagei: "Hallo!", rabe: "Krah!" };
   const TIER_RUHE = 25000;
   function tierLaut(t, text, warte = 0, klasse = "begegnet", ton = null) {
     setTimeout(() => {

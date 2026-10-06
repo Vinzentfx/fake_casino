@@ -1417,6 +1417,151 @@
     return { svg: svg(w, h, innen, "m-sammelvitrine"), w, h, unten: 2 };
   }
 
+  /* Die Dachbar: ein Tresen aus dunklem Holz unter einer gestreiften
+     Markise, dahinter ein Regal mit Flaschen und eine kleine Leuchtschrift. */
+  function dachbar(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 6, h = 150;
+    const flaschen = Array.from({ length: Math.floor((w - 40) / 13) }, (_, i) => {
+      const f = ["#3f9a5a", "#c8243a", "#e2b656", "#7ec8e3", "#8d5bd6", "#e8812b", "#f4f1ea"][i % 7];
+      const x = 20 + i * 13, hoch = 18 + (i % 3) * 4;
+      return `<rect x="${x}" y="${62 - hoch}" width="7" height="${hoch}" rx="2" fill="${f}" fill-opacity=".85" stroke="#1d1d23" stroke-width=".5"/><rect x="${x + 2}" y="${58 - hoch}" width="3" height="5" fill="${f}"/>`;
+    }).join("");
+    const n = Math.round(w / 22), bw = (w - 8) / n;
+    const markise = Array.from({ length: n }, (_, i) => `<path d="M${4 + i * bw} 8H${4 + (i + 1) * bw}L${4 + (i + 1) * bw} 22Q${4 + (i + 0.5) * bw} 28 ${4 + i * bw} 22Z" fill="${i % 2 ? "#f4f1ea" : "#2b3a55"}" stroke="#1d1d23" stroke-width=".5"/>`).join("");
+    const innen = `<rect x="2" y="${h - 6}" width="${w - 4}" height="6" fill="#000" opacity=".25"/>
+      <rect x="6" y="24" width="${w - 12}" height="66" fill="#241820"/>
+      <rect x="10" y="62" width="${w - 20}" height="4" fill="#6b4a2e"/><rect x="10" y="38" width="${w - 20}" height="3" fill="#6b4a2e" opacity=".6"/>
+      ${flaschen}
+      <text class="m-bar-schrift" x="${w / 2}" y="84" text-anchor="middle" font-size="12" font-weight="900" letter-spacing="4" font-family="ui-rounded, system-ui">DACHBAR</text>
+      <path d="M6 24V${h - 10}M${w - 6} 24V${h - 10}" stroke="#3a2718" stroke-width="3"/>
+      ${markise}
+      <rect x="0" y="92" width="${w}" height="12" rx="3" fill="#8a5a2b" stroke="#3a2718" stroke-width="1"/>
+      <rect x="4" y="104" width="${w - 8}" height="${h - 110}" fill="#5a3d27" stroke="#2b1d12" stroke-width="1"/>
+      ${[0.2, 0.4, 0.6, 0.8].map((f) => `<path d="M${w * f} 106V${h - 8}" stroke="#3a2718" stroke-width="1.4"/>`).join("")}
+      <path d="M${w * 0.3} 92v-8h10v8M${w * 0.62} 92l2 -12h6l2 12" fill="#bcd3dc" fill-opacity=".5" stroke="#d8e6ea" stroke-width=".8"/>
+      <circle cx="${w * 0.8}" cy="86" r="4" fill="#f2d24a" stroke="#b8901c" stroke-width=".6"/>`;
+    return { svg: svg(w, h, innen, "m-dachbar"), w, h, unten: 2 };
+  }
+
+  /* Eine Kreidetafel auf einem Ständer, wie vor jeder Kneipe. */
+  function kreidetafel() {
+    const w = 36, h = 64;
+    const innen = `<ellipse cx="18" cy="${h - 3}" rx="14" ry="3" fill="#000" opacity=".22"/>
+      <path d="M6 ${h - 4}L12 6M30 ${h - 4}L24 6" stroke="#6b4a2e" stroke-width="2.6"/>
+      <rect x="4" y="8" width="28" height="36" rx="2" fill="#1f2a24" stroke="#8a5a2b" stroke-width="2"/>
+      <path d="M9 16h14M9 22h18M9 28h12M9 34h16" stroke="#f4f1ea" stroke-width="1" opacity=".75"/>
+      <path d="M9 39h8" stroke="#f2c94c" stroke-width="1.2"/>`;
+    return { svg: svg(w, h, innen, "m-kreidetafel"), w, h };
+  }
+
+  /* Ein Schornstein aus Klinker. Wer genauer hinsieht, findet unten eine
+     kleine Klappe mit einem Schlüsselloch. */
+  function schornstein(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 4, h = 140;
+    const ziegel = Array.from({ length: 14 }, (_, z) => `<path d="M4 ${16 + z * 9}H${w - 4}" stroke="#5a2a1c" stroke-width=".8"/>`
+      + Array.from({ length: Math.ceil(w / 16) }, (_, i) => `<path d="M${4 + i * 16 + (z % 2 ? 8 : 0)} ${16 + z * 9}v9" stroke="#5a2a1c" stroke-width=".8"/>`).join("")).join("");
+    const innen = `<rect x="3" y="${h - 5}" width="${w - 6}" height="5" fill="#000" opacity=".25"/>
+      <rect x="4" y="10" width="${w - 8}" height="${h - 14}" fill="#9a4a32" stroke="#4a2418" stroke-width="1.2"/>${ziegel}
+      <rect x="0" y="4" width="${w}" height="10" rx="1" fill="#6b3a28" stroke="#3a1c12" stroke-width="1"/>
+      <path class="m-rauch" d="M${w / 2} 2q-6 -8 2 -14q8 -6 0 -14" fill="none" stroke="#c0c6cc" stroke-width="3" stroke-linecap="round" opacity=".35"/>
+      <rect x="${w / 2 - 8}" y="${h - 30}" width="16" height="16" rx="1" fill="#3a3e44" stroke="#1d1f23" stroke-width="1"/>
+      <circle cx="${w / 2}" cy="${h - 23}" r="1.6" fill="#c9a14a"/><path d="M${w / 2} ${h - 22}v3" stroke="#c9a14a" stroke-width="1"/>`;
+    return { svg: svg(w, h, innen, "m-schornstein"), w, h, unten: 2 };
+  }
+
+  /* Eine alte Dachluke im Aufbau, mit Vorhängeschloss aus Messing und
+     vier Zahlenrädern. Daneben Kreide. */
+  function dachluke(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 4, h = 96;
+    const innen = `<rect x="3" y="${h - 5}" width="${w - 6}" height="5" fill="#000" opacity=".25"/>
+      <path d="M2 30L${w / 2} 6L${w - 2} 30Z" fill="#4a4f57" stroke="#23262b" stroke-width="1.2"/>
+      <rect x="6" y="28" width="${w - 12}" height="${h - 32}" fill="#5c646d" stroke="#23262b" stroke-width="1.2"/>
+      <rect x="14" y="36" width="${w - 28}" height="${h - 46}" rx="2" fill="#3a3e44" stroke="#1d1f23" stroke-width="1"/>
+      ${[0, 1, 2].map((i) => `<path d="M14 ${46 + i * 12}H${w - 14}" stroke="#2b2f36" stroke-width="1.2"/>`).join("")}
+      <g transform="translate(${w / 2 - 12} ${h / 2 + 2})"><path d="M6 0V-6Q12 -12 18 -6V0" fill="none" stroke="#c0c6cc" stroke-width="2.2"/>
+        <rect x="0" y="0" width="24" height="16" rx="2" fill="#c9a14a" stroke="#6e5420" stroke-width="1"/>
+        ${[0, 1, 2, 3].map((i) => `<rect x="${2.4 + i * 5}" y="5" width="4" height="7" rx=".8" fill="#2a2d33"/><path d="M${3.4 + i * 5} 8.4h2" stroke="#f4f1ea" stroke-width=".7"/>`).join("")}</g>
+      <path d="M${w - 12} ${h - 10}l4 -6M${w - 9} ${h - 10}l3 -4" stroke="#f4f1ea" stroke-width=".8" opacity=".7"/>`;
+    return { svg: svg(w, h, innen, "m-dachluke"), w, h, unten: 2 };
+  }
+
+  /* Ein Taubenschlag auf Stelzen, mit zwei Tauben davor. */
+  function taubenschlag(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 4, h = 130, mx = w / 2;
+    const taube = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M0 0q6 -6 12 0q-2 4 -8 4z" fill="#9aa3b1" stroke="#16241f" stroke-width=".5"/><circle cx="11" cy="-1" r="2.2" fill="#8c95a3"/><path d="M13 -1l2 .6-2 .6z" fill="#e2a144"/></g>`;
+    const innen = `<rect x="3" y="${h - 5}" width="${w - 6}" height="5" fill="#000" opacity=".25"/>
+      <path d="M12 70V${h - 4}M${w - 12} 70V${h - 4}" stroke="#5a3d27" stroke-width="4"/>
+      <path d="M4 34L${mx} 10L${w - 4} 34Z" fill="#7a2230" stroke="#3a0f16" stroke-width="1"/>
+      <rect x="8" y="32" width="${w - 16}" height="40" fill="#c9a46a" stroke="#6b4a2e" stroke-width="1"/>
+      ${[0, 1, 2].map((i) => `<path d="M${16 + i * ((w - 32) / 2)} 60V48a6 6 0 0 1 12 0V60Z" fill="#2b1d12"/>`).join("")}
+      <rect x="4" y="70" width="${w - 8}" height="4" fill="#6b4a2e"/>
+      ${taube(10, 68, 0.9)}${taube(w - 26, 68)}`;
+    return { svg: svg(w, h, innen, "m-taubenschlag"), w, h, unten: 2 };
+  }
+
+  /* Ein Messingfernrohr auf drei Beinen, schräg zum Himmel. */
+  function teleskop() {
+    const w = 60, h = 92;
+    const innen = `<ellipse cx="30" cy="${h - 3}" rx="18" ry="3" fill="#000" opacity=".25"/>
+      <path d="M30 56L14 ${h - 4}M30 56L46 ${h - 4}M30 56V${h - 2}" stroke="#3a2718" stroke-width="2.6" stroke-linecap="round"/>
+      <g transform="rotate(-32 30 50)"><rect x="6" y="44" width="50" height="11" rx="3" fill="#c9a14a" stroke="#6e5420" stroke-width="1"/>
+        <rect x="50" y="42" width="8" height="15" rx="2" fill="#e2b656" stroke="#6e5420" stroke-width="1"/>
+        <rect x="2" y="46" width="6" height="7" rx="1" fill="#8e6931"/><path d="M14 46H48" stroke="#fff" stroke-opacity=".35" stroke-width="1.4"/></g>
+      <circle cx="30" cy="54" r="3.4" fill="#6e5420"/>`;
+    return { svg: svg(w, h, innen, "m-teleskop"), w, h };
+  }
+
+  /* Das große Fernrohr in der Sternwarte, und darauf sitzt manchmal ein Rabe. */
+  function sternrohr(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 30, h = 150, mx = w / 2;
+    const innen = `<ellipse cx="${mx}" cy="${h - 4}" rx="${w / 2 - 10}" ry="5" fill="#000" opacity=".25"/>
+      <path d="M${mx - 28} ${h - 6}H${mx + 28}L${mx + 16} ${h - 40}H${mx - 16}Z" fill="#3a3e44" stroke="#1d1f23" stroke-width="1.2"/>
+      <circle cx="${mx}" cy="${h - 44}" r="9" fill="#6b7078" stroke="#23262b" stroke-width="1.2"/>
+      <g transform="rotate(-38 ${mx} ${h - 44})"><rect x="${mx - 40}" y="${h - 56}" width="92" height="22" rx="5" fill="#c9a14a" stroke="#6e5420" stroke-width="1.2"/>
+        <rect x="${mx + 46}" y="${h - 60}" width="12" height="30" rx="3" fill="#e2b656" stroke="#6e5420" stroke-width="1.2"/>
+        <path d="M${mx - 30} ${h - 52}H${mx + 40}" stroke="#fff" stroke-opacity=".35" stroke-width="2"/></g>`;
+    return { svg: svg(w, h, innen, "m-sternrohr"), w, h, unten: 2 };
+  }
+
+  /* Die Ehrentafel: dunkles Holz, Goldrand, oben ein Stern. Die Namen
+     selbst stehen nicht hier, sondern im Dialog: wer sie lesen will, tritt
+     davor. */
+  function ehrentafel() {
+    const w = 96, h = 112;
+    const innen = `<rect x="6" y="14" width="${w - 12}" height="${h - 22}" rx="4" fill="#2b1d12" stroke="#c9a14a" stroke-width="2.4"/>
+      <path class="m-glitzer" d="M${w / 2} 2l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z" fill="#f2d27a" stroke="#8e6931" stroke-width=".6"/>
+      <text x="${w / 2}" y="34" text-anchor="middle" font-size="7.5" font-weight="900" letter-spacing="1.6" fill="#e2b656" font-family="ui-serif, Georgia, serif">WESERLICHT</text>
+      ${Array.from({ length: 6 }, (_, i) => `<path d="M16 ${46 + i * 10}H${w - 16 - (i % 3) * 8}" stroke="#c9a14a" stroke-width="1" opacity="${0.6 - i * 0.08}"/>`).join("")}`;
+    return { svg: svg(w, h, innen, "m-ehrentafel"), w, h, unten: -6 };
+  }
+
+  /* Ein vergilbtes Programmheft, aufgeschlagen auf dem Boden. */
+  function programmheft() {
+    const w = 34, h = 16;
+    const innen = `<path d="M2 12L16 8L32 12L18 15Z" fill="#000" opacity=".2"/>
+      <path d="M2 10L16 4L17 12L3 14Z" fill="#efe2c2" stroke="#a8916a" stroke-width=".6"/>
+      <path d="M17 12L16 4L31 8L30 13Z" fill="#e8d8b0" stroke="#a8916a" stroke-width=".6"/>
+      <path d="M5 10l8 -3M6 12l8 -3M20 9l8 2M20 11l7 2" stroke="#7a2230" stroke-width=".5"/>`;
+    return { svg: svg(w, h, innen, "m-programmheft"), w, h };
+  }
+
+  /* Ein Lesepult mit einem dicken Buch, für das Logbuch der Geheimnisse. */
+  function buchpult() {
+    const w = 46, h = 76;
+    const innen = `<ellipse cx="23" cy="${h - 3}" rx="14" ry="3" fill="#000" opacity=".22"/>
+      <path d="M17 34H29L27 ${h - 4}H19Z" fill="#5a3d27" stroke="#2b1d12" stroke-width="1"/>
+      <path d="M4 24L42 18L40 34L6 38Z" class="m-holz-hell" stroke="#3a2718" stroke-width="1"/>
+      <path d="M8 26L22 22L23 31L9 34Z" fill="#f4efe2" stroke="#b9b3a2" stroke-width=".6"/><path d="M23 31L22 22L38 20L37 29Z" fill="#ece4d0" stroke="#b9b3a2" stroke-width=".6"/>
+      <path d="M11 27l9 -2M11 30l8 -2M25 24l10 -1.4M25 27l9 -1.2" stroke="#6b5a45" stroke-width=".5"/>
+      <path class="m-glitzer" d="M30 9l1.6 3.2 3.4.4-2.6 2.2.8 3.4-3.2-1.8-3.2 1.8.8-3.4-2.6-2.2 3.4-.4z" fill="#f2d27a"/>`;
+    return { svg: svg(w, h, innen, "m-buchpult"), w, h };
+  }
+
   const ARTEN = {
     slot: automat, rad, schild, spielhalle, wettschalter, roulette, blackjack, poker, sofa, couchtisch,
     sessel, hocker, zeitungsstaender, spieltisch, kisten, torbogen, arcade, neonschild, pinco, greifautomat,
@@ -1425,6 +1570,7 @@
     einlasstuer, teasertafel, gaestewand, schaetzglas,
     rennbahn, lotteriebude, fahnenmast, feuerschale, parkbank, laterne, busch, kleeblatt, tresortuer, goldstapel,
     katzenkissen, notiz, umkleide, puppen, kleiderstange, theke, taschenvitrine,
+    dachbar, kreidetafel, schornstein, dachluke, taubenschlag, teleskop, sternrohr, ehrentafel, programmheft, buchpult,
     kordel, praegepresse, kleiderschrank, schneiderpuppe, naehtisch, zuschnitt, stoffregal, truhe, schminkspiegel, sammelvitrine,
   };
 
@@ -1464,6 +1610,32 @@
     }
   }
 
+  /* Eine Lichterkette quer über den Himmel. Kurze Zeichen sind runde
+     Birnen, lange sind längliche; zwischen zwei Gruppen bleibt eine
+     größere Lücke. Steht genau so in `r.lichterkette`. Absichtlich ohne
+     Blinken: wer Bewegung reduziert hat, soll dasselbe sehen. */
+  function lichterkette(r, W) {
+    if (!r.lichterkette) return "";
+    const kette = r.lichterkette.split("");
+    const breite = (z) => (z === "." ? 9 : z === "-" ? 17 : z === " " ? 18 : 0);
+    const gesamt = kette.reduce((n, z) => n + breite(z), 0);
+    let x = Math.max(30, (W - gesamt) / 2);
+    /* Ganz oben am Himmel, über Bar und Schornstein: hinge sie tiefer,
+       verdeckten die Möbel davor einen Teil der Birnen. */
+    const durchhang = (px) => 5 + Math.sin(((px - 10) / (W - 20)) * Math.PI) * 8;
+    let birnen = "";
+    for (const z of kette) {
+      if (z === "." || z === "-") {
+        const y = durchhang(x + 4);
+        birnen += `<path d="M${(x + 4).toFixed(1)} ${(y - 3).toFixed(1)}v3" stroke="#3a3e44" stroke-width=".8"/>`
+          + (z === "." ? `<circle class="wb-birne" cx="${(x + 4).toFixed(1)}" cy="${(y + 3).toFixed(1)}" r="3"/>`
+            : `<rect class="wb-birne" x="${(x - 1).toFixed(1)}" y="${y.toFixed(1)}" width="13" height="6" rx="3"/>`);
+      }
+      x += breite(z);
+    }
+    return `<path d="M10 2Q${W / 2} 18 ${W - 10} 2" class="wb-kabel"/>${birnen}`;
+  }
+
   function rueckwand(r, W, wand) {
     if (r.himmel) {
       /* Draußen: Nachthimmel über Porta, mit den Bergen an der Weser und dem
@@ -1479,7 +1651,7 @@
         <path d="M0 ${wand - 26}Q${W / 2} ${wand - 16} ${W} ${wand - 28}" fill="none" class="wb-weser"/>
         <rect x="0" y="${wand - 16}" width="${W}" height="16" class="wb-hecke"/>
         ${Array.from({ length: Math.ceil(W / 24) }, (_, i) => `<rect x="${i * 24 + 2}" y="${wand - 30}" width="4" height="26" class="wb-zaun"/>`).join("")}
-        <rect x="0" y="${wand - 26}" width="${W}" height="3" class="wb-zaun"/>`;
+        <rect x="0" y="${wand - 26}" width="${W}" height="3" class="wb-zaun"/>${lichterkette(r, W)}`;
     }
     /* Das Modehaus: Streifentapete, goldener Schriftzug, zwei gerahmte
        Modeplakate und ein Wandregal mit Schuhen und Taschen. Wo die Dinge
@@ -1527,6 +1699,20 @@
           <g transform="translate(${lochX + 12} 70) rotate(40)"><circle cx="0" cy="6" r="3" fill="none" stroke="#3f6fd0" stroke-width="1.6"/><circle cx="7" cy="6" r="3" fill="none" stroke="#3f6fd0" stroke-width="1.6"/><path d="M2 4L18 0M5 4L18 2" stroke="#c0c6cc" stroke-width="1.6"/></g>
           ${[["#c8243a", 40], ["#e2b656", 50], ["#3f9a5a", 60]].map(([c, x]) => `<rect x="${lochX + x}" y="84" width="6" height="10" rx="1" fill="${c}" stroke="#1d1d23" stroke-width=".5"/>`).join("")}
           <path d="M${lochX + 12} 96q14 8 40 0" fill="none" stroke="#f2d24a" stroke-width="2"/></g>
+        <rect x="0" y="${wand - 12}" width="${W}" height="12" class="wb-sockel"/>`;
+    }
+    /* Die Sternwarte: dunkelblaue Kuppel mit einem offenen Spalt, durch den
+       man den Himmel sieht, und eine Sternkarte an der Wand. */
+    if (r.wandStil === "sternwarte") {
+      const sterne = Array.from({ length: 40 }, (_, i) => `<circle cx="${(i * 71) % W}" cy="${8 + ((i * 37) % (wand - 40))}" r="${i % 5 ? 0.9 : 1.6}" class="wb-stern${i % 4 ? "" : " blinkt"}"/>`).join("");
+      const orion = [[0.18, 0.28], [0.3, 0.26], [0.22, 0.5], [0.24, 0.52], [0.26, 0.54], [0.17, 0.78], [0.31, 0.76]];
+      const kx = W * 0.05, ky = 20, kb = W * 0.13, kh = wand - 50;
+      const p = orion.map(([a, b]) => [kx + a * kb * 2, ky + b * kh]);
+      return `<rect x="0" y="0" width="${W}" height="${wand}" class="wb-sternwarte-wand"/>${sterne}
+        <path d="M${W * 0.36} 0H${W * 0.52}V${wand - 30}H${W * 0.36}Z" class="wb-kuppelspalt"/>
+        <rect x="${kx - 6}" y="${ky - 6}" width="${kb + 12}" height="${kh + 12}" rx="3" class="wb-sternkarte"/>
+        <path d="M${p[0][0]} ${p[0][1]}L${p[2][0]} ${p[2][1]}L${p[3][0]} ${p[3][1]}L${p[4][0]} ${p[4][1]}L${p[1][0]} ${p[1][1]}M${p[2][0]} ${p[2][1]}L${p[5][0]} ${p[5][1]}M${p[4][0]} ${p[4][1]}L${p[6][0]} ${p[6][1]}" class="wb-sternbild"/>
+        ${p.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i === 0 ? 3 : 2}" class="${i === 0 ? "wb-sternbild-rot" : "wb-sternbild-punkt"}"/>`).join("")}
         <rect x="0" y="${wand - 12}" width="${W}" height="12" class="wb-sockel"/>`;
     }
     /* Der Fundus: dunkle Bretter, ein schräger Dachbalken und Spinnweben in
