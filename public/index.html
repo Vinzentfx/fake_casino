@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="/css/garderobe.css" />
   <link rel="stylesheet" href="/css/modehaus.css" />
   <link rel="stylesheet" href="/css/tresor.css" />
+  <link rel="stylesheet" href="/css/leistung.css" />
   <script>
     /* Theme so früh wie möglich setzen, noch vor dem ersten Zeichnen.
        Sonst blitzt beim Laden kurz das Standard-Grün auf, bevor das
@@ -31,6 +32,15 @@
         if (t === "klassik" || t === "mitternacht" || t === "neon") {
           document.documentElement.setAttribute("data-theme", t);
         }
+      } catch (e) {}
+      /* Dasselbe für die Grafik (public/js/core/leistung.js): auf dem
+         iPad startet das Haus sparsam, sonst ruckelt schon der erste Dreh. */
+      try {
+        var l = localStorage.getItem("casino_leistung");
+        var ua = navigator.userAgent || "";
+        var touch = /iPad|iPhone|iPod|Android/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
+          || (navigator.maxTouchPoints > 1 && window.matchMedia("(pointer: coarse)").matches);
+        if (l === "sparsam" || (l !== "voll" && touch)) document.documentElement.classList.add("sparsam");
       } catch (e) {}
     })();
   </script>
@@ -1761,8 +1771,16 @@
           <input type="range" id="set-musik-vol" min="0" max="100" value="55" class="settings-range" />
         </label>
         <label class="toggle-row">
-          <span>Bewegung reduzieren<small class="toggle-note">Weniger Deko-Animationen. Spielabläufe bleiben.</small></span>
+          <span>Bewegung reduzieren<small class="toggle-note">Keine Deko-Animationen mehr, auch nicht in der Welt. Spielabläufe bleiben.</small></span>
           <input type="checkbox" id="set-motion" />
+        </label>
+        <label class="toggle-row">
+          <span>Grafik<small class="toggle-note">Sparsam lässt Weichzeichner, Leuchtschatten und wandernde Hintergründe weg. Auf dem iPad läuft dann alles flüssiger.</small></span>
+          <select id="set-leistung" class="settings-select">
+            <option value="auto">Automatisch</option>
+            <option value="voll">Volle Effekte</option>
+            <option value="sparsam">Sparsam</option>
+          </select>
         </label>
 
         <hr class="settings-rule" />
@@ -2748,6 +2766,7 @@
 
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/js/core/theme.js"></script>
+  <script defer src="/js/core/leistung.js"></script>
   <script defer src="/js/core/screens.js"></script>
   <script defer src="/js/core/sound.js"></script>
   <script defer src="/js/core/klaenge.js"></script>

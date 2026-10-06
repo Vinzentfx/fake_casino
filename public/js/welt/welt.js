@@ -206,7 +206,7 @@
       const zIndex = d.block ? Math.round(d.block[3] * 100) : Math.round(d.y * 100);
       return `<${tag} class="welt-ding m-${d.art}${benutzbar ? " benutzbar" : ""}${d.geheim ? " geheim" : ""}"${attr} style="left:${z.links}px;top:${z.oben}px;width:${z.w}px;height:${z.h}px;z-index:${zIndex}">${z.svg}${z.html || ""}</${tag}>`;
     }).join("");
-    const tuerSchilder = r.tueren.filter((t) => !t.versteckt && t.schild).map((t) => `<button type="button" class="welt-tuerschild" data-tuer="${t.id}" data-ziel-raum="${t.ziel}" style="left:${t.schild.x * T}px;top:${t.schild.y * T}px">${esc(t.label)} <small></small><b aria-hidden="true">›</b></button>`).join("");
+    const tuerSchilder = r.tueren.filter((t) => !t.versteckt && t.schild).map((t) => `<button type="button" class="welt-tuerschild${t.stil ? " stil-" + esc(t.stil) : ""}" data-tuer="${t.id}" data-ziel-raum="${t.ziel}" style="left:${t.schild.x * T}px;top:${t.schild.y * T}px">${esc(t.label)} <small></small><b aria-hidden="true">›</b></button>`).join("");
     raumEl.innerHTML = M.raum(r)
       + `<div class="welt-ebene welt-dinge">${dinge}</div>`
       + `<div class="welt-ebene welt-schilder">${tuerSchilder}<div class="welt-hinweis hidden" aria-hidden="true"></div></div>`;
@@ -1684,6 +1684,7 @@
       else if (z.auswahl) zeigeAuswahl(d, z.auswahl);
       else if (z.umzug) geheimgang(d, z.umzug);
       else if (z.geheimnis) geheimnisZeigen(z.geheimnis);
+      else if (z.puppe && z.puppe.satz) { klang("tick", ich); Casino.toast(z.puppe.satz); }
       else if (z.jukebox) {
         Casino.toast(`♪ Die Jukebox spielt ${z.jukebox.lied}`);
         klang("jukebox");
@@ -1710,6 +1711,18 @@
       if (zielDaten.screen === "stocks" && aktieWunsch && Casino._aktieWunsch) Casino._aktieWunsch(aktieWunsch);
       ortsteilWunsch = null; aktieWunsch = null;
       Casino.showScreen(zielDaten.screen);
+      /* Ein Ding kann auf einen Abschnitt im Bildschirm zeigen, die
+         Prägepresse im Atelier etwa auf das Prägeatelier in der Sammlung.
+         Liegt der Abschnitt in einem zugeklappten details, geht es auf. */
+      if (zielDaten.abschnitt) {
+        setTimeout(() => {
+          const ziel = document.getElementById(zielDaten.abschnitt);
+          if (!ziel) return;
+          const auf = ziel.closest("details");
+          if (auf) auf.open = true;
+          ziel.scrollIntoView({ behavior: reduziert() ? "auto" : "smooth", block: "start" });
+        }, 160);
+      }
     };
     if (reduziert()) los();
     else setTimeout(los, 430);
@@ -2622,6 +2635,14 @@
 
   function geheimnisZeigen(g) {
     if (!g) return;
+    /* Am Laufsteg blitzt es dreimal, bevor der Hinweis kommt. */
+    if (g.blitz && !reduziert()) {
+      const b = document.createElement("div");
+      b.className = "welt-blitzlicht";
+      el.appendChild(b);
+      setTimeout(() => b.remove(), 1400);
+      return setTimeout(() => geheimnisZeigen({ ...g, blitz: false }), 1100);
+    }
     Casino.sound && Casino.sound.play && Casino.sound.play(g.neu ? "geheimnis" : "tick");
     const text = g.neu ? `${g.satz}\n\nNeu in deiner Sammlung: ${g.label}. Geheimnis ${g.zahl} von ${g.von}.` : g.satz;
     Casino.dialog.hinweis(text, { titel: g.neu ? "Gefunden!" : "Schon entdeckt" });
@@ -2882,17 +2903,30 @@
 
   /* Takt */
   let letzt = performance.now();
-  /* Liegt ein Spiel über dem Raum, ist die Welt weichgezeichnet, und jedes
-     Bild zwingt das iPad, den ganzen Hintergrund neu unscharf zu rechnen,
-     während vorn Slots laufen. Dahinter reichen drei Bilder je Sekunde:
-     andere Figuren gehen weiter, nur in gröberen Schritten. */
-  let letzterHinten = 0;
+  /* Liegt ein Spiel über dem Raum, steht die Welt still. Vorher lief sie
+     dahinter mit drei Bildern je Sekunde weiter, und jedes davon zwang das
+     iPad, den ganzen weichgezeichneten Raum neu zu rechnen: alle 330 ms ein
+     Ruckler, genau im Takt der Walzen. Jetzt wird dahinter gar nichts mehr
+     geschrieben. Die Züge der anderen sammeln sich im Puffer, und beim
+     Zurückkommen stehen alle sofort dort, wo sie inzwischen sind. */
+  let warHinten = false;
   function takt(jetzt) {
-    if (vorn || jetzt - letzterHinten > 330) {
-      if (!vorn) letzterHinten = jetzt;
+    if (vorn) {
+      if (warHinten) { warHinten = false; letzt = jetzt; aufholen(jetzt); }
       schritt(jetzt);
+    } else {
+      warHinten = true;
     }
     requestAnimationFrame(takt);
+  }
+  /* Nach der Pause: jede fremde Figur an ihren letzten bekannten Platz,
+     ohne durch den Raum zu gleiten. */
+  function aufholen(jetzt) {
+    for (const f of andere.values()) {
+      const p = f.puffer;
+      if (p.length > 1) f.puffer = [p[p.length - 1]];
+      if (f.puffer[0]) f.puffer[0].t = Math.min(f.puffer[0].t, jetzt - PUFFER_MS);
+    }
   }
   function schritt(jetzt) {
     const dt = Math.min(0.05, Math.max(0, (jetzt - letzt) / 1000));

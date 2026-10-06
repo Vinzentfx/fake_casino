@@ -3819,6 +3819,11 @@ html.reduce-motion .bj-card { animation: none; }
 .badge.on { background: rgba(0,0,0,0.45); border-color: rgba(var(--accent-rgb), 0.55); }
 .badge.on .badge-label { color: #ffe9a8; }
 .badge.on small { color: #9fdcaa; }
+/* Versteckte Achievements: gestrichelt, damit man sieht, dass dort etwas
+   ist, aber nicht, was. */
+.badge.geheim:not(.on) { border-style: dashed; border-color: rgba(var(--accent-rgb), 0.35); }
+.badge.geheim:not(.on) .badge-label { letter-spacing: 0.3em; color: var(--text-dim); }
+.badge.geheim:not(.on) .badge-desc { color: var(--text-mute); }
 .badge.on .badge-emoji { opacity: 1; }
 .badge-emoji { font-size: 1.5rem; }
 .badge-label { font-weight: 800; font-size: 0.78rem; }

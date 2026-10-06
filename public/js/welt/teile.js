@@ -520,6 +520,12 @@
       case "spiegelbrille":
         if (seite) return `<path d="M36.6 28.6h6.4v3.4q-3.2 2.2-6.4 0z" fill="url(#fg-hologramm)" stroke="#8d949c" stroke-width=".7"/>${buegel("#8d949c")}`;
         return `<path d="M22.8 28.6h8v3.2q-4 3.2-8 0zM33.2 28.6h8v3.2q-4 3.2-8 0z" fill="url(#fg-hologramm)" stroke="#8d949c" stroke-width=".7"/><path d="M30.8 29.2h2.4" stroke="#8d949c" stroke-width="1"/><path d="M24 29.6l3-.9M34.4 29.6l3-.9" stroke="#fff" stroke-opacity=".8" stroke-width=".7"/>`;
+      case "divabrille": {
+        /* Groß, weiß gerahmt, mit Strass in den Ecken: die Brille für das
+           Ende des Laufstegs. */
+        if (seite) return `<path d="M35.8 27.8h7.6v4.4q-3.8 2.8-7.6 0z" fill="#2a1a2e" stroke="#f4f1ea" stroke-width="1.1"/>${buegel("#f4f1ea")}<circle cx="43" cy="27.8" r=".8" fill="#ffe7f4"/>`;
+        return `<path d="M21.2 27.4h9.6v4.4q-4.8 3.6-9.6 0zM33.2 27.4h9.6v4.4q-4.8 3.6-9.6 0z" fill="#2a1a2e" stroke="#f4f1ea" stroke-width="1.2"/><path d="M30.8 28.6h2.4" stroke="#f4f1ea" stroke-width="1.1"/><path d="M22.6 28.8l2.4-.9M34.6 28.8l2.4-.9" stroke="#f06ab0" stroke-opacity=".7" stroke-width=".7"/><g class="fg-glitzer" fill="#ffe7f4"><circle cx="21.2" cy="27.4" r=".9"/><circle cx="42.8" cy="27.4" r=".9"/></g>`;
+      }
       case "laservisier":
         if (seite) return `<path d="M34 27.6h10v5.4H34z" fill="#ff2d4b" fill-opacity=".65" stroke="#7a1022" stroke-width=".8"/><path class="fg-laser" d="M34.5 30.3H43.5" stroke="#fff" stroke-width=".8"/>`;
         return `<path d="M20.4 27.8Q32 25.8 43.6 27.8V33Q32 35 20.4 33Z" fill="#ff2d4b" fill-opacity=".65" stroke="#7a1022" stroke-width=".8"/><path class="fg-laser" d="M21.5 30.4H42.5" stroke="#fff" stroke-width=".8"/>`;
@@ -622,6 +628,7 @@
       case "kamera": return `<g class="fg-ding" ${t}><rect x="-3" y="-9" width="11" height="7.4" rx="1.4" fill="#2a2d33" stroke="#0f1013" stroke-width=".6"/><circle cx="2.6" cy="-5.3" r="2.6" fill="#6b7078" stroke="#c0c6cc" stroke-width=".6"/><circle cx="2.6" cy="-5.3" r="1.2" fill="#6fb6d9"/><rect x="5" y="-10.2" width="2.2" height="1.4" rx=".4" fill="#e5534b"/></g>`;
       case "luftballon": return `<g class="fg-ding" ${t}><path d="M1 0Q-2 -10 1 -20Q3 -26 1 -34" fill="none" stroke="#f4efe2" stroke-width=".5"/><g class="fg-ballon"><ellipse cx="1" cy="-40" rx="6" ry="7.2" fill="#e5534b" stroke="#8e2320" stroke-width=".6"/><path d="M-1.4 -44q1.6-1.8 3.4-1" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/><path d="M0 -32.6l1-1.2 1 1.2z" fill="#8e2320"/></g></g>`;
       case "chipstapel": return `<g class="fg-ding" ${t}>${[0, 1, 2, 3, 4].map((i) => `<rect x="-2.4" y="${-3 - i * 2.2}" width="8" height="2.4" rx="1.1" fill="${["#e5534b", "#f4efe2", "#3f6fd0", "#1d1d23", "#e2b656"][i]}" stroke="#555" stroke-width=".4"/>`).join("")}</g>`;
+      case "massband": return `<g class="fg-ding" ${t}><circle cx="1.6" cy="-6" r="4.4" fill="#e5534b" stroke="#8e2320" stroke-width=".7"/><circle cx="1.6" cy="-6" r="1.4" fill="#f4f1ea"/><path d="M5.6 -4.6Q9 -3 8.4 2Q8 6 5 8" fill="none" stroke="#f2d24a" stroke-width="1.8"/><path d="M7.6 -2.4l1 .2M8.4 .2l1 .1M8.2 2.8l1 0M7.2 5.2l.9.4" stroke="#1d1d23" stroke-width=".4"/></g>`;
       case "zollstock": return `<g class="fg-ding" ${t}><path d="M0 2L1.4 -8L-3 -14L1.6 -20" fill="none" stroke="#f2c94c" stroke-width="2.2" stroke-linejoin="bevel"/><path d="M.6 -2l.2-1.4M1 -5l.2-1.4M-1 -11l-.8-1.2M.2 -17l.8-1.2" stroke="#1d1d23" stroke-width=".5"/></g>`;
       case "kuchen": return `<g class="fg-ding" ${t}><ellipse cx="2.4" cy="-3" rx="7" ry="2" fill="#f4f1ea" stroke="#b9b3a2" stroke-width=".6"/><path d="M-2 -4L6 -4L2.4 -10Z" fill="#f0d59a" stroke="#a8803c" stroke-width=".6"/><path d="M-1.2 -5.4H5.2" stroke="#f5b8c8" stroke-width="1.2"/><path d="M0.6 -7.6H4.2" stroke="#f5b8c8" stroke-width="1"/><circle cx="2.4" cy="-10.6" r="1.1" fill="#d24a3c"/></g>`;
       case "pfanne": return `<g class="fg-ding" ${t}><path d="M0 1L1 -8" stroke="#3a2718" stroke-width="2" stroke-linecap="round"/><ellipse cx="3" cy="-13" rx="7" ry="4.4" fill="#2a2d33" stroke="#111317" stroke-width=".8"/><ellipse cx="3" cy="-13.4" rx="5.2" ry="3" fill="#3a3e44"/><ellipse cx="2" cy="-13.6" rx="2" ry="1.4" fill="#fff4c9"/><circle cx="2" cy="-13.6" r=".8" fill="#f0a23b"/></g>`;
@@ -958,6 +965,13 @@
         if (seite) return `<path d="M19 27Q18.6 9 32 9Q45 9 45.6 25Z" fill="${c}" stroke="${d}" stroke-width="1"/><path d="M22 14Q32 7 43 14" fill="none" stroke="#c8243a" stroke-width="3"/><path d="M42.6 23.6Q49 22.8 51 25.4Q47 27 42.8 26.4Z" fill="#2a2d33"/><path d="M25.6 24h6v8q-3 2-6 0z" fill="${leder}"/><path d="M28.6 32Q32 41 40 41" fill="none" stroke="${leder}" stroke-width="1"/>`;
         if (hinten) return `<path d="M17 28Q16.4 8.4 32 8.2Q47.6 8.4 47 28Z" fill="${c}" stroke="${d}" stroke-width="1"/><path d="M30 8.6H34V28H30Z" fill="#c8243a"/><path d="M17 24h5v9q-3 0-5-3zM47 24h-5v9q3 0 5-3z" fill="${leder}"/>`;
         return `<path d="M17 27Q16.4 8.4 32 8.2Q47.6 8.4 47 27Z" fill="${c}" stroke="${d}" stroke-width="1"/><path d="M30 8.6H34V22H30Z" fill="#c8243a"/><path d="M20 24.6Q32 20.4 44 24.6L42.6 27.2Q32 24 21.4 27.2Z" fill="#2a2d33"/><path d="M17 24h5v10q-3 0-5-3zM47 24h-5v10q3 0 5-3z" fill="${leder}"/><path d="M20 33Q32 46 44 33" fill="none" stroke="${leder}" stroke-width="1"/><path d="M22 14q3-3 6-3.6" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-linecap="round"/>`;
+      }
+      case "zylinder": {
+        /* Aus dem Fundus: verstaubt, leicht eingedrückt, mit einem Band,
+           das einmal rot war. */
+        const c = "#1d1b22", d = "#000", band = "#7a2230";
+        if (seite) return `<path d="M24.6 19.6L25.4 2.6Q32 1.2 39 2.6L39.8 19.6Z" fill="${c}" stroke="${d}" stroke-width=".8"/><path d="M25 15.6H39.4" stroke="${band}" stroke-width="2.4"/><path d="M17 20.6Q32 17.6 47 20.6Q46 23 32 22.6Q18 23 17 20.6Z" fill="${c}" stroke="${d}" stroke-width=".8"/><path d="M27 4.6l.6 9" stroke="#fff" stroke-opacity=".18" stroke-width="1.2"/>`;
+        return `<path d="M22.4 19.6L23.4 2.4Q32 .6 40.6 2.4L41.6 19.6Z" fill="${c}" stroke="${d}" stroke-width=".8"/><path d="M23 2.6Q32 4.4 41 2.6" fill="none" stroke="#3a3640" stroke-width=".8"/><path d="M22.8 15.6H41.2" stroke="${band}" stroke-width="2.6"/><path d="M13.6 20.6Q32 16.8 50.4 20.6Q49 23.6 32 23Q15 23.6 13.6 20.6Z" fill="${c}" stroke="${d}" stroke-width=".8"/>${hinten ? "" : `<path d="M26 4.6l.8 9.6" stroke="#fff" stroke-opacity=".18" stroke-width="1.4"/><path d="M36 9q2 1 1.6 3" fill="none" stroke="#3a3640" stroke-width=".6"/>`}`;
       }
       case "wikingerhelm": {
         const c = "#8b929c", d = dunkler(c, 0.4);

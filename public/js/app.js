@@ -434,6 +434,11 @@ function applyPrefs(prefs) {
     const box = $("#set-motion");
     if (box) box.checked = prefs.reduceMotion;
   }
+  if (window.Casino.leistung && typeof prefs.leistung === "string") {
+    window.Casino.leistung.setze(prefs.leistung, { speichern: false });
+    const sel = $("#set-leistung");
+    if (sel) sel.value = window.Casino.leistung.modus();
+  }
   renderThemePicker();
 }
 
@@ -1197,7 +1202,8 @@ function renderAchievements() {
     const offen = res.list.filter((a) => a.unlocked);
     // Gesperrte nach Fortschritt: was fast geschafft ist, steht oben. Sonst
     // sucht man das Naheliegende zwischen fuenfzig Schloessern.
-    const zu = res.list.filter((a) => !a.unlocked).sort((x, y) => (y.anteil || 0) - (x.anteil || 0));
+    // Die versteckten ganz nach unten, sie haben ohnehin keinen Balken.
+    const zu = res.list.filter((a) => !a.unlocked).sort((x, y) => (!!x.geheim - !!y.geheim) || (y.anteil || 0) - (x.anteil || 0));
     if (zaehler) zaehler.textContent = `${offen.length} von ${res.list.length}`;
 
     /*
@@ -1217,7 +1223,9 @@ function renderAchievements() {
         ? "★ Wird in der Bestenliste getragen"
         : a.unlocked
           ? `✓ Geschafft${wann ? " am " + wann : ""}`
-          : `+${a.reward.toLocaleString("de-DE")}<i class=mk></i>`;
+          : a.reward == null
+            ? "Versteckt"
+            : `+${a.reward.toLocaleString("de-DE")}<i class=mk></i>`;
       /*
        * Fortschrittsbalken bei allem, was mehr als einen Schritt braucht.
        *
@@ -1231,8 +1239,8 @@ function renderAchievements() {
         ? `<div class="badge-bar"><i style="width:${Math.round((a.anteil || 0) * 100)}%"></i></div>` +
           `<span class="badge-fort">${(a.ist || 0).toLocaleString("de-DE")} von ${a.ziel.toLocaleString("de-DE")}</span>`
         : "";
-      return `<div class="badge ${a.unlocked ? "on" : ""}${sel ? " selected" : ""}${mitBalken && a.anteil >= 0.5 ? " nah" : ""}" data-ach="${a.id}" data-unlocked="${a.unlocked ? 1 : 0}">` +
-        `<span class="badge-emoji">${a.unlocked ? a.emoji : "🔒"}</span>` +
+      return `<div class="badge ${a.unlocked ? "on" : ""}${a.geheim ? " geheim" : ""}${sel ? " selected" : ""}${mitBalken && a.anteil >= 0.5 ? " nah" : ""}" data-ach="${a.id}" data-unlocked="${a.unlocked ? 1 : 0}">` +
+        `<span class="badge-emoji">${a.unlocked ? a.emoji : a.geheim ? "❔" : "🔒"}</span>` +
         `<span class="badge-label">${escapeHtml(a.label)}</span>` +
         `<span class="badge-desc">${escapeHtml(a.desc)}</span>` +
         balken +
@@ -3984,6 +3992,12 @@ $("#set-motion")?.addEventListener("change", (e) => {
   document.documentElement.classList.toggle("reduce-motion", on);
   window.Casino.savePrefs({ reduceMotion: on });
 });
+(function () {
+  const sel = $("#set-leistung");
+  if (!sel || !window.Casino.leistung) return;
+  sel.value = window.Casino.leistung.modus();
+  sel.addEventListener("change", () => window.Casino.leistung.setze(sel.value));
+})();
 
 // Eckdaten vom Server holen, damit im Login keine veralteten Zahlen stehen.
 (async function loadPublicConfig() {

@@ -215,9 +215,9 @@ function setupPoker(io, accounts) {
     }
     return { screen, label: SCREEN_LABELS[screen] || "online" };
   }
-  /* Geheime Räume (Garage, Tresor) verrät die Liste nicht. */
+  /* Geheime Räume (Garage, Tresor, Fundus) verrät die Liste nicht. */
   const WELT_ORT = { casino: "im Casino", kontor: "im Kontor", ruhm: "in der Ruhmeshalle", hof: "auf der Terrasse",
-    strasse: "in der Ladenstraße", spielhalle: "in der Spielhalle", modehaus: "im Modehaus", foyer: "im Foyer" };
+    strasse: "in der Ladenstraße", spielhalle: "in der Spielhalle", modehaus: "im Modehaus", atelier: "im Atelier", foyer: "im Foyer" };
   function weltOrt(key) {
     try {
       const fig = require("./welt").figurVon(key);

@@ -51,6 +51,7 @@
         [18.0, 6.6, 20.0, 8.3],
         [0.0, 4.3, 2.0, 5.9],
         [16.4, 11.4, 18.0, 13.0],
+        [0.9, 11.4, 2.5, 13.0],
       ],
       start: { x: 10, y: 11.6, d: "hoch" },
       tueren: [
@@ -62,6 +63,13 @@
           label: "Terrasse", schild: { x: 17.2, y: 12.2 } },
         { id: "zur-spielhalle", x1: 14.0, y1: 2.95, x2: 16.2, y2: 3.32, ziel: "spielhalle", ankunft: { x: 8.0, y: 9.7, d: "hoch" },
           label: "Spielhalle", schild: { x: 15.1, y: 3.75 } },
+        /* Alles fürs Aussehen liegt im Modehaus. Vorher standen Garderobe
+           und Kisten zusätzlich hier, und das Modehaus selbst lag drei
+           Räume weit hinter der Ladenstraße. Jetzt geht man von der Lounge
+           aus hinein, über einen roten Läufer zwischen zwei Kordeln
+           (`stil` färbt Tür und Schild, moebel.js und welt.css). */
+        { id: "zum-modehaus", x1: 0.9, y1: 12.6, x2: 2.5, y2: 13.0, ziel: "modehaus", ankunft: { x: 8.0, y: 9.7, d: "hoch" },
+          label: "Modehaus", schild: { x: 1.7, y: 12.2 }, stil: "boutique" },
       ],
       sitze: [
         { id: "sofa-1", x: 1.25, y: 7.55, d: "rechts", auf: { x: 2.15, y: 7.55 } },
@@ -83,9 +91,7 @@
         { id: "poker-5", tisch: "poker", x: 15.8, y: 8.9, d: "runter", auf: { x: 15.8, y: 8.35 } },
       ],
       dinge: [
-        { id: "garderobe", art: "garderobe", x: 1.7, y: 3.35, block: [0.7, 2.4, 2.75, 3.45],
-          nutz: { x: 1.7, y: 4.05, r: 1.25 }, label: "Garderobe", verb: "Umziehen",
-          ziel: { screen: "garderobe" }, fokus: { x: 1.7, y: 2.6, zoom: 2.1 } },
+        { id: "pflanze-4", art: "pflanze", x: 1.1, y: 3.45, block: [0.75, 3.0, 1.45, 3.45] },
         { id: "slot-lucky7", art: "slot", farbe: "rot", x: 3.9, y: 3.4, block: [3.35, 2.4, 4.45, 3.45],
           nutz: { x: 3.9, y: 4.1, r: 0.95 }, label: "Lucky 7s", verb: "Spielen",
           ziel: { screen: "slots", maschine: "lucky7" }, fokus: { x: 3.9, y: 2.7, zoom: 2.6 } },
@@ -134,9 +140,9 @@
         { id: "spieltisch", art: "spieltisch", x: 6.6, y: 10.7, block: [5.9, 9.9, 7.3, 10.7],
           nutz: "rand", label: "Spieltisch", verb: "Duell wählen",
           ziel: { auswahl: ["chess", "memory", "sudoku", "kniffel", "solitaire"] }, fokus: { x: 6.6, y: 10.2, zoom: 2.3 } },
-        { id: "kisten", art: "kisten", x: 1.5, y: 12.4, block: [0.7, 11.4, 2.3, 12.4],
-          nutz: { x: 2.2, y: 11.0, r: 1.35 }, label: "Kisten", verb: "Öffnen",
-          ziel: { screen: "kiste" }, fokus: { x: 1.5, y: 11.6, zoom: 2.3 } },
+        // Die Kordeln am Eingang zum Modehaus. Sie halten den Läufer frei.
+        { id: "kordel-l", art: "kordel", x: 0.82, y: 12.45, block: [0.7, 11.3, 0.92, 12.45] },
+        { id: "kordel-r", art: "kordel", x: 2.58, y: 12.45, block: [2.48, 11.3, 2.7, 12.45] },
         /* Der Tagesbericht als Zeitung, gleich neben der Tür: wer reinkommt,
            steht davor. Er öffnet dieselbe Zeitung wie das Menü. */
         { id: "zeitung", art: "zeitungsstaender", x: 8.05, y: 12.4, block: [7.75, 12.0, 8.35, 12.4],
@@ -285,10 +291,6 @@
         label: "Zur Terrasse", schild: { x: 1.0, y: 5.3 } },
       /* Hinter dem Garagentor. Zu Fuß kommt man nie hinein: das Tor
          selbst ist der Weg, und es ist abgeschlossen, bis man weiß wie. */
-      /* Die Tür des Modehauses ist Teil seiner Fassade (moebel.js zeichnet
-         sie); wie bei der Spielhalle geht man von vorn senkrecht hinein. */
-      { id: "zum-modehaus", x1: 18.5, y1: 2.95, x2: 19.2, y2: 3.32, ziel: "modehaus", ankunft: { x: 8.0, y: 9.7, d: "hoch" },
-        label: "Modehaus", schild: { x: 18.85, y: 3.75 } },
       { id: "zur-garage", versteckt: true, verschlossen: true, x1: 19.6, y1: 2.4, x2: 21.2, y2: 3.5, ziel: "garage", ankunft: { x: 4.5, y: 5.7, d: "hoch" } },
     ],
     sitze: [
@@ -302,9 +304,11 @@
         nutz: { x: 9.4, y: 4.3, r: 1.8 }, label: "Autohaus", verb: "Reingehen", ziel: { screen: "laeden", laden: "autohaus" }, fokus: { x: 9.4, y: 2.4, zoom: 1.9 } },
       { id: "kiosk", art: "ladenfront", laden: "kiosk", x: 14.0, y: 3.5, block: [12.6, 2.4, 15.4, 3.5],
         nutz: { x: 14.0, y: 4.3, r: 1.3 }, label: "Kiosk", verb: "Was holen", ziel: { screen: "laeden", laden: "kiosk" }, fokus: { x: 14.0, y: 2.5, zoom: 2.2 } },
-      /* Der Block endet vor der Tür, sonst käme man nicht hinein. */
-      { id: "modehaus", art: "ladenfront", laden: "modehaus", x: 17.5, y: 3.5, block: [15.6, 2.4, 18.45, 3.5], front: [15.6, 2.4, 19.4, 3.5],
-        nutz: { x: 17.5, y: 4.3, r: 1.6 }, label: "Modehaus", verb: "Reingehen", ziel: { tuer: "zum-modehaus" } },
+      /* Das Modehaus hat seinen Eingang im Casino. Hier draußen liegt nur
+         sein Schaufenster, wie bei den anderen Läden der Straße. */
+      { id: "modehaus", art: "ladenfront", laden: "modehaus", x: 17.5, y: 3.5, block: [15.6, 2.4, 19.4, 3.5],
+        nutz: { x: 17.5, y: 4.3, r: 1.6 }, label: "Modehaus", verb: "Schaufenster ansehen",
+        ziel: { screen: "modehaus", reiter: "fenster" }, fokus: { x: 17.5, y: 2.4, zoom: 1.9 } },
       /* Klein, ohne Leuchten, der Hinweis erst ganz nah. Wer rüttelt, hört
          nichts; auf das Kritzeln am Tor muss man selbst kommen. */
       { id: "garage", art: "garagentor", x: 20.4, y: 3.5, block: [19.6, 2.4, 21.2, 3.5], geheim: true,
@@ -324,16 +328,21 @@
    * Das Modehaus von innen: alles, was mit Aussehen zu tun hat, an einem
    * Ort. Hinten die Umkleide mit dem Spiegel (Garderobe), in der Mitte das
    * Schaufenster und die Kleiderstangen (Modehaus), rechts die Tresortür
-   * mit den Kisten. Die Bildschirme sind dieselben wie überall, der Raum
+   * mit den Kisten und die Vitrine mit der eigenen Sammlung. Daneben geht
+   * es ins Atelier. Die Bildschirme sind dieselben wie überall, der Raum
    * ist nur der Weg dorthin.
+   *
+   * Vorne am Laufsteg passiert etwas, wenn man dort jubelt (game/welt.js).
    */
   RAEUME.modehaus = {
     id: "modehaus", name: "Modehaus", w: 16, h: 11, wand: 3, boden: "fischgrat", wandStil: "boutique",
-    flaechen: [[0.7, 3.0, 15.3, 10.4], [7.2, 9.6, 8.8, 11.0]],
+    flaechen: [[0.7, 3.0, 15.3, 10.4], [7.2, 9.6, 8.8, 11.0], [14.0, 5.0, 16.0, 6.6]],
     start: { x: 8.0, y: 9.7, d: "hoch" },
     tueren: [
-      { id: "zur-strasse", x1: 7.2, y1: 10.6, x2: 8.8, y2: 11.0, ziel: "strasse", ankunft: { x: 18.85, y: 3.9, d: "runter" },
-        label: "Zur Ladenstraße", schild: { x: 8.0, y: 10.2 } },
+      { id: "zum-casino", x1: 7.2, y1: 10.6, x2: 8.8, y2: 11.0, ziel: "casino", ankunft: { x: 1.7, y: 11.7, d: "hoch" },
+        label: "Zum Casino", schild: { x: 8.0, y: 10.2 } },
+      { id: "zum-atelier", x1: 15.6, y1: 5.0, x2: 16.0, y2: 6.6, ziel: "atelier", ankunft: { x: 1.4, y: 5.8, d: "rechts" },
+        label: "Atelier", schild: { x: 15.1, y: 4.55 } },
     ],
     /* Das Sofa für die, die warten, bis jemand aus der Kabine kommt. */
     sitze: [
@@ -351,8 +360,11 @@
         nutz: "rand", label: "Kleiderstange", verb: "Stöbern", ziel: { screen: "modehaus", reiter: "stange" }, fokus: { x: 11.4, y: 6.4, zoom: 2.3 } },
       { id: "mode-tresor", art: "tresortuer", x: 12.6, y: 3.0, block: null,
         nutz: { x: 12.6, y: 3.8, r: 1.3 }, label: "Tresor", verb: "Kisten öffnen", ziel: { screen: "kiste" }, fokus: { x: 12.6, y: 2.2, zoom: 2.0 } },
-      { id: "mode-kisten", art: "kisten", x: 14.5, y: 4.3, block: [13.8, 3.7, 15.2, 4.3],
-        nutz: "rand", label: "Kisten", verb: "Öffnen", ziel: { screen: "kiste" } },
+      /* Hier standen die Kisten ein zweites Mal, gleich neben der
+         Tresortür, die schon in denselben Bildschirm führt. Jetzt zeigt die
+         Vitrine, was man selbst schon besitzt. */
+      { id: "sammlung", art: "sammelvitrine", x: 14.5, y: 4.3, block: [13.8, 3.7, 15.2, 4.3],
+        nutz: { x: 14.0, y: 4.85, r: 0.9 }, label: "Deine Sammlung", verb: "Ansehen", ziel: { screen: "cosmetics" }, fokus: { x: 14.5, y: 3.6, zoom: 2.4 } },
       { id: "mode-sofa", art: "sofa", x: 1.2, y: 9.4, block: [0.7, 6.9, 1.75, 9.4] },
       { id: "mode-pflanze-1", art: "pflanze", x: 1.2, y: 4.0, block: [1.0, 3.7, 1.4, 4.0] },
       { id: "mode-pflanze-2", art: "pflanze", x: 14.8, y: 9.9, block: [14.6, 9.6, 15.0, 9.9] },
@@ -378,6 +390,69 @@
         nutz: "rand", label: "Etwas unter einer Plane", verb: "Plane lüften", ziel: { geheimnis: "e46" }, fokus: { x: 4.5, y: 3.9, zoom: 2.4 } },
       { id: "werkbank", art: "werkbank", x: 1.6, y: 3.45, block: [0.8, 2.4, 2.4, 3.45] },
       { id: "reifen", art: "reifenstapel", x: 7.6, y: 3.5, block: [7.1, 2.9, 8.1, 3.5] },
+    ],
+  };
+
+  /*
+   * Das Atelier hinter dem Modehaus: hier wird geprägt (der Prägestaub aus
+   * doppelten Funden, game/praegestaub.js), genäht und Maß genommen. Der
+   * alte Kleiderschrank hinten rechts ist tiefer, als er aussieht.
+   *
+   * Die Schneiderpuppe steht absichtlich frei im Raum: wer sie von allen
+   * vier Seiten vermisst, bekommt ein Maßband (game/welt.js, `puppe`).
+   */
+  RAEUME.atelier = {
+    id: "atelier", name: "Atelier", w: 14, h: 10, wand: 3, boden: "dielen", wandStil: "atelier",
+    flaechen: [[0.7, 3.0, 13.3, 9.4], [0.0, 5.0, 2.0, 6.6]],
+    start: { x: 1.4, y: 5.8, d: "rechts" },
+    tueren: [
+      { id: "zum-modehaus", x1: 0.0, y1: 5.0, x2: 0.4, y2: 6.6, ziel: "modehaus", ankunft: { x: 14.6, y: 5.8, d: "links" },
+        label: "Zum Modehaus", schild: { x: 0.9, y: 4.5 } },
+      /* Versteckt: nur über den Schrank, nie zu Fuß. */
+      { id: "zum-fundus", versteckt: true, x1: 10.6, y1: 2.4, x2: 12.6, y2: 3.45, ziel: "fundus", ankunft: { x: 5, y: 6.6, d: "hoch" } },
+    ],
+    sitze: [
+      { id: "naehhocker", x: 3.0, y: 8.05, d: "hoch", auf: { x: 3.9, y: 8.55 } },
+    ],
+    dinge: [
+      { id: "stoffregal", art: "stoffregal", x: 2.4, y: 3.45, block: [1.0, 2.4, 3.8, 3.45] },
+      { id: "presse", art: "praegepresse", x: 6.9, y: 3.5, block: [5.9, 2.4, 7.9, 3.5],
+        nutz: { x: 6.9, y: 4.25, r: 1.3 }, label: "Prägeatelier", verb: "Prägen",
+        ziel: { screen: "cosmetics", abschnitt: "staub-atelier" }, fokus: { x: 6.9, y: 2.5, zoom: 2.3 } },
+      { id: "schrank", art: "kleiderschrank", x: 11.6, y: 3.45, block: [10.6, 2.4, 12.6, 3.45], geheim: true,
+        nutz: { x: 11.6, y: 4.1, r: 0.8 }, label: "Alter Kleiderschrank", verb: "Mäntel beiseiteschieben",
+        ziel: { tuer: "zum-fundus" }, fokus: { x: 11.6, y: 2.6, zoom: 2.4 } },
+      { id: "puppe", art: "schneiderpuppe", x: 8.6, y: 6.6, block: [8.3, 6.3, 8.9, 6.6],
+        nutz: "rand", label: "Schneiderpuppe", verb: "Maß nehmen", ziel: { puppe: true } },
+      { id: "naehtisch", art: "naehtisch", x: 3.0, y: 7.6, block: [1.9, 7.0, 4.1, 7.6],
+        nutz: "rand", label: "Nähmaschine", verb: "Nähen",
+        ziel: { hinweis: "Die Maschine rattert ein paar Stiche ins Leere. Ohne Stoff wird das nichts." } },
+      { id: "naehhocker", art: "hocker", x: 3.0, y: 8.03, block: null },
+      { id: "zuschnitt", art: "zuschnitt", x: 11.0, y: 7.9, block: [9.8, 7.3, 12.2, 7.9] },
+      { id: "a-pflanze", art: "pflanze", x: 12.9, y: 9.3, block: [12.55, 8.85, 13.25, 9.3] },
+    ],
+  };
+
+  /* Der Kostümfundus hinter den Mänteln. Nicht in der Schnellwahl, nicht
+     auf den Türschildern. Was hier liegt, hat seit Jahren niemand getragen. */
+  RAEUME.fundus = {
+    id: "fundus", name: "Kostümfundus", w: 10, h: 8, wand: 3, boden: "dielen", wandStil: "fundus", geheim: true,
+    flaechen: [[0.7, 3.0, 9.3, 7.4], [4.2, 6.4, 5.8, 8.0]],
+    start: { x: 5, y: 6.6, d: "hoch" },
+    tueren: [
+      { id: "zurueck", x1: 4.2, y1: 7.6, x2: 5.8, y2: 8.0, ziel: "atelier", ankunft: { x: 11.6, y: 4.3, d: "runter" },
+        label: "Zurück", schild: { x: 5, y: 7.2 } },
+    ],
+    sitze: [],
+    dinge: [
+      { id: "kostueme", art: "kleiderstange", x: 2.3, y: 4.4, block: [1.2, 4.1, 3.4, 4.4],
+        farben: ["#7a2230", "#e2b656", "#2b3a55", "#3f9a5a", "#8d5bd6", "#e8812b"] },
+      { id: "schminkspiegel", art: "schminkspiegel", x: 5.0, y: 3.0, block: null },
+      { id: "truhe", art: "truhe", x: 7.9, y: 4.6, block: [7.2, 4.1, 8.6, 4.6],
+        nutz: "rand", label: "Alte Truhe", verb: "Deckel heben", ziel: { geheimnis: "zylinder" } },
+      { id: "f-notiz", art: "notiz", x: 2.2, y: 3.0, block: null,
+        nutz: { x: 2.2, y: 4.9, r: 0.9 }, label: "Zettel", verb: "Lesen",
+        ziel: { hinweis: "Wer ganz vorn auf dem Laufsteg jubelt, steht im Blitzlicht. Und die Puppe im Atelier will von allen Seiten vermessen werden, nicht nur von vorn." } },
     ],
   };
 
@@ -484,7 +559,7 @@
         nutz: "rand", label: "Schlafende Katze", verb: "Streicheln", ziel: { geheimnis: "tresorkatze" } },
       { id: "notiz", art: "notiz", x: 2.4, y: 3.0, block: null,
         nutz: { x: 2.4, y: 3.7, r: 1.0 }, label: "Zettel", verb: "Lesen",
-        ziel: { hinweis: "Wer im Spiegel der Garderobe winkt, bekommt eine Antwort. Und draußen, links vor der Bank, wächst etwas, das Glück bringt." } },
+        ziel: { hinweis: "Wer im Spiegel der Umkleide winkt, bekommt eine Antwort. Und draußen, links vor der Bank, wächst etwas, das Glück bringt." } },
     ],
   };
 

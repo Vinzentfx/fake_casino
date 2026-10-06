@@ -1,0 +1,95 @@
+/*
+ * Grafik sparsam und Bewegung reduzieren.
+ *
+ * Diese Datei kommt als letzte, damit ihre Regeln gegen die gleich
+ * spezifischen in styles.css und welt.css gewinnen. Was hier steht, ist
+ * nie Spiellogik: alles, was ausfällt, war nur Dekoration.
+ *
+ * html.sparsam setzt public/js/core/leistung.js (auf Touch-Geräten von
+ * selbst, sonst nach Einstellung). Gemessen wurde, wo das iPad hängt:
+ * Weichzeichner hinter Glas, der unscharfe Raum hinter einem Spiel,
+ * Hintergründe, die über background-position wandern (das ist kein
+ * Verschieben einer Ebene, sondern ein neu gemaltes Vollbild in jedem
+ * Bild), und Leuchtschatten auf großen Flächen.
+ */
+
+/* Glas ohne Weichzeichner. Die Flächen dahinter sind ohnehin fast
+   deckend, man sieht den Unterschied kaum. */
+html.sparsam *,
+html.sparsam *::before,
+html.sparsam *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Der Raum hinter einem Spiel: nicht weichgezeichnet, nur gedimmt. Ein
+   Weichzeichner über einer 1000 Pixel breiten Ebene ist auf dem iPad die
+   teuerste Zeile im ganzen Haus. */
+html.sparsam.welt-hinter .welt-buehne { filter: none; }
+html.sparsam .welt-schleier {
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 45%, transparent 30%, color-mix(in srgb, var(--bg3, var(--bg-3)) 78%, transparent) 100%),
+    color-mix(in srgb, var(--bg3, var(--bg-3)) 58%, transparent);
+}
+
+/* Der wandernde Scheinwerfer hinter allem liegt unter der Welt und ist
+   dort gar nicht zu sehen; trotzdem lief er die ganze Zeit mit. */
+html.sparsam body::before,
+html.welt-an body::before { animation: none; }
+
+/* Die Automaten-Szenen: das Bild bleibt, nur die Bewegung darin nicht.
+   Staub und Blasen wandern über background-position, also kostet jedes
+   Bild ein neu gemaltes Vollbild. Die Fackeln und das Licht unter Wasser
+   sind reine Deckkraft und dürfen weiter flackern. */
+html.sparsam.welt-fenster body:is(.bg-pharaoh, .bg-algae) #app > .screen[data-screen="slots"].active::after { animation: none !important; transform: scale(1.06); }
+html.sparsam.welt-fenster body.bg-pharaoh #app > .screen[data-screen="slots"].active::before { animation: fackeln 2.6s ease-in-out infinite alternate !important; }
+html.sparsam.welt-fenster body.bg-algae #app > .screen[data-screen="slots"].active::before { animation: strahlen 9s ease-in-out infinite alternate !important; }
+html.sparsam.welt-fenster body.bg-classic #app > .screen[data-screen="slots"].active::before { animation: none !important; }
+html.sparsam body:is(.bg-algae, .bg-pharaoh, .bg-cosmic)::before { animation: none !important; }
+
+/* An den Walzen: kein Bewegungsunschärfe-Filter auf dem laufenden
+   Streifen und kein Leuchten, das sich in jedem Bild neu rechnet. */
+html.sparsam .reel.rolling .strip { filter: none; }
+html.sparsam .payline { box-shadow: none; }
+html.sparsam .payline .pl-arrow { animation: none; filter: none; }
+html.sparsam .spin-btn:not(:disabled) { animation: none; }
+html.sparsam .machine-card .mc-syms span { animation: none; filter: none; }
+html.sparsam .razor-coin.gold img { animation: none; }
+
+/* Die Welt selbst: Leuchtröhren und Glühen sind Schatten-Filter auf SVG,
+   die beim Laufen der Kamera neu gerechnet werden. */
+html.sparsam .welt-buehne .m-neonroehre,
+html.sparsam .welt-buehne .m-neon-text,
+html.sparsam .welt-buehne .m-neon,
+html.sparsam .welt-buehne .m-arcade-bild,
+html.sparsam .welt-buehne .m-schild-casino,
+html.sparsam .welt-buehne .wb-laufsteg-licht,
+html.sparsam .welt-buehne .fg-neon rect { filter: none; }
+html.sparsam .welt-ding.nah svg { filter: none; }
+html.sparsam .welt-ding.nah { outline: 2px solid rgba(var(--accent-rgb), 0.7); outline-offset: 2px; border-radius: 6px; }
+
+/* Wenn ein Automat seine Szene über den ganzen Bildschirm legt, ist der
+   Raum darunter vollständig verdeckt. Dann muss er auch nicht gemalt
+   werden, egal welche Grafik eingestellt ist. */
+html.welt-fenster body:is(.bg-classic, .bg-gems, .bg-pharaoh, .bg-algae) .welt-buehne { visibility: hidden; }
+
+/*
+ * Bewegung reduzieren, diesmal wirklich.
+ *
+ * Vorher hing nur ein Teil der Animationen an html:not(.reduce-motion),
+ * und jede neue, bei der das vergessen wurde, lief einfach weiter. Jetzt
+ * werden alle Keyframe-Animationen auf einen einzigen Schritt gekürzt.
+ * Nicht auf null: so feuert animationend weiterhin, und was sich danach
+ * selbst entfernt, bleibt nicht hängen.
+ *
+ * Übergänge (transition) bleiben unangetastet. Über sie laufen die Walzen,
+ * das Glücksrad und die Kugel, und die gehören zum Spiel.
+ */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0s !important;
+  scroll-behavior: auto !important;
+}

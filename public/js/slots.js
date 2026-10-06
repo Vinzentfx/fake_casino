@@ -26,12 +26,16 @@
   let autoRemaining = Infinity; // remaining auto-spins (Infinity = ∞)
   let freeWinTotal = 0;
   let cellH = 70; // wird zur Laufzeit gemessen
+  /* Bei sparsamer Grafik (core/leistung.js) gibt es von allem ein Drittel.
+     Ein Gewinn soll sich weiter wie einer anfühlen, aber 360 Schnipsel auf
+     einer Leinwand über der ganzen Seite schafft das iPad nicht flüssig. */
+  const sparsam = () => document.documentElement.classList.contains("sparsam");
   const FX_LIMITS = {
-    confetti: 360,
-    rainCoins: 220,
-    fountainNodes: 30,
-    emojiNodes: 28,
-    hypeWords: 18,
+    get confetti() { return sparsam() ? 120 : 360; },
+    get rainCoins() { return sparsam() ? 70 : 220; },
+    get fountainNodes() { return sparsam() ? 12 : 30; },
+    get emojiNodes() { return sparsam() ? 10 : 28; },
+    get hypeWords() { return sparsam() ? 6 : 18; },
   };
 
   // PvP duel state

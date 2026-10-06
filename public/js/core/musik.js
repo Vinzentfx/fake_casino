@@ -120,6 +120,8 @@
     ruhm: { stil: "ruhm" },
     spielhalle: { stil: "synthwave" },
     modehaus: { stil: "lounge", leiser: 0.7 },
+    atelier: { stil: "swing", leiser: 0.5 },
+    fundus: { atmo: "tresor" },
     hof: { atmo: "draussen" },
     strasse: { atmo: "stadt" },
     garage: { atmo: "garage" },

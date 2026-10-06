@@ -1244,6 +1244,179 @@
     return { svg: svg(w, h, innen), w, h, unten: -38 };
   }
 
+  /* Eine Messingstange mit Samtkordel am Eingang zum Modehaus: zwei
+     Pfosten hintereinander, die Kordel hängt dazwischen durch. Das Ding
+     steht mit dem vorderen Pfosten auf dem Boden, der hintere liegt eine
+     gute Kachel weiter oben im Raum. */
+  function kordel() {
+    const w = 30, tief = 55, hoch = 34, h = tief + hoch + 8;
+    const pfosten = (y) => `<ellipse cx="15" cy="${y}" rx="7" ry="2.4" fill="#8e6931"/><rect x="13.4" y="${y - hoch}" width="3.2" height="${hoch}" fill="#e2b656" stroke="#8e6931" stroke-width=".6"/><circle cx="15" cy="${y - hoch - 2}" r="3.6" fill="#f4d782" stroke="#8e6931" stroke-width=".6"/>`;
+    const unten = h - 4, oben = unten - tief;
+    const innen = `<ellipse cx="15" cy="${unten + 1}" rx="9" ry="2.6" fill="#000" opacity=".25"/>
+      ${pfosten(oben)}
+      <path d="M15 ${oben - hoch + 2}Q27 ${(oben + unten) / 2 - hoch + 14} 15 ${unten - hoch + 2}" fill="none" stroke="#7a1022" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M15 ${oben - hoch + 2}Q25 ${(oben + unten) / 2 - hoch + 12} 15 ${unten - hoch + 2}" fill="none" stroke="#c8243a" stroke-width="1.4" stroke-linecap="round"/>
+      ${pfosten(unten)}`;
+    return { svg: svg(w, h, innen, "m-kordel"), w, h, unten: -4 };
+  }
+
+  /* Die Prägepresse im Atelier: gusseiserne Spindel mit Schwungrad, unten
+     der Amboss mit einer frisch geprägten Marke. */
+  function praegepresse(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 6, h = 140, mx = w / 2;
+    const innen = `<ellipse cx="${mx}" cy="${h - 4}" rx="${w / 2 - 4}" ry="4" fill="#000" opacity=".25"/>
+      <rect x="${mx - 30}" y="${h - 30}" width="60" height="26" rx="3" fill="#3a3e44" stroke="#1d1f23" stroke-width="1.2"/>
+      <path d="M${mx - 26} 46V${h - 30}M${mx + 26} 46V${h - 30}" stroke="#4a4f57" stroke-width="9" stroke-linecap="round"/>
+      <rect x="${mx - 34}" y="38" width="68" height="14" rx="4" fill="#4a4f57" stroke="#1d1f23" stroke-width="1.2"/>
+      <path d="M${mx} 24V${h - 52}" stroke="#8b929c" stroke-width="6"/>
+      <path d="M${mx} 24V${h - 52}" stroke="#c0c6cc" stroke-width="1.4" stroke-dasharray="2 3"/>
+      <rect x="${mx - 12}" y="${h - 54}" width="24" height="8" rx="2" fill="#6b7078"/>
+      <g class="m-praegerad" style="transform-origin:${mx}px 24px"><ellipse cx="${mx}" cy="24" rx="42" ry="8" fill="none" stroke="#c9a14a" stroke-width="4"/>
+        <path d="M${mx - 42} 24H${mx + 42}" stroke="#8e6931" stroke-width="2"/><circle cx="${mx - 42}" cy="24" r="4.4" fill="#e2b656"/><circle cx="${mx + 42}" cy="24" r="4.4" fill="#e2b656"/></g>
+      <rect x="${mx - 18}" y="${h - 40}" width="36" height="10" rx="2" fill="#23262b"/>
+      <g class="m-praegemarke"><ellipse cx="${mx}" cy="${h - 41}" rx="9" ry="3.2" fill="#e2b656" stroke="#8e6931" stroke-width=".8"/><path d="M${mx - 3} ${h - 42}l3-1.4 3 1.4" fill="none" stroke="#8e6931" stroke-width=".7"/></g>
+      <text x="${mx}" y="${h - 13}" text-anchor="middle" font-size="7.5" font-weight="900" letter-spacing="1.4" fill="#e2b656" font-family="ui-rounded, system-ui">PRÄGEATELIER</text>`;
+    return { svg: svg(w, h, innen, "m-praegepresse"), w, h, unten: 2 };
+  }
+
+  /* Ein alter Schrank, der so aussieht wie jeder andere. Nur die rechte Tür
+     steht einen Spalt offen, ein Ärmel hängt heraus, und dahinter ist es
+     heller, als es in einem Schrank sein dürfte. */
+  function kleiderschrank(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 4, h = 152, mx = w / 2;
+    const innen = `<rect x="3" y="${h - 6}" width="${w - 6}" height="6" fill="#000" opacity=".25"/>
+      <path d="M2 14Q${mx} 2 ${w - 2} 14V20H2Z" fill="#5a3d27" stroke="#2b1d12" stroke-width="1.2"/>
+      <rect x="4" y="18" width="${w - 8}" height="${h - 28}" fill="#6b4a2e" stroke="#2b1d12" stroke-width="1.4"/>
+      <rect x="9" y="24" width="${mx - 12}" height="${h - 42}" rx="2" fill="#5a3d27" stroke="#2b1d12" stroke-width="1"/>
+      <rect x="15" y="34" width="${mx - 24}" height="${h - 64}" rx="2" fill="none" stroke="#3a2718" stroke-width="1"/>
+      <path class="m-schrankspalt" d="M${mx + 1} 24V${h - 18}" stroke="#fff1c4" stroke-width="2.4" opacity=".7"/>
+      <g transform="skewY(-3)"><rect x="${mx + 3}" y="${27}" width="${mx - 12}" height="${h - 42}" rx="2" fill="#5a3d27" stroke="#2b1d12" stroke-width="1"/>
+        <rect x="${mx + 9}" y="37" width="${mx - 24}" height="${h - 64}" rx="2" fill="none" stroke="#3a2718" stroke-width="1"/></g>
+      <circle cx="${mx - 6}" cy="${h / 2 + 4}" r="2.2" fill="#c9a14a"/><circle cx="${mx + 8}" cy="${h / 2 + 2}" r="2.2" fill="#c9a14a"/>
+      <path d="M${mx + 2} ${h / 2 + 18}q-6 10-2 26q4 6 8 2l-2-26z" fill="#7a2230" stroke="#3a0f16" stroke-width=".8"/>
+      <rect x="4" y="${h - 12}" width="${w - 8}" height="6" fill="#3a2718"/>
+      <path d="M10 ${h - 6}v4M${w - 10} ${h - 6}v4" stroke="#2b1d12" stroke-width="3"/>`;
+    return { svg: svg(w, h, innen, "m-kleiderschrank"), w, h, unten: 2 };
+  }
+
+  /* Eine Schneiderpuppe auf drei Beinen, um den Hals ein Maßband. */
+  function schneiderpuppe() {
+    const w = 46, h = 104;
+    const innen = `<ellipse cx="23" cy="${h - 4}" rx="16" ry="3.6" fill="#000" opacity=".25"/>
+      <path d="M23 ${h - 26}V${h - 8}M23 ${h - 10}L10 ${h - 3}M23 ${h - 10}L36 ${h - 3}M23 ${h - 10}V${h - 2}" stroke="#4a3120" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M21 14h4v8h-4z" fill="#4a3120"/><circle cx="23" cy="12" r="4" fill="#c9a14a"/>
+      <path d="M8 26Q23 18 38 26Q40 40 34 52Q38 64 34 ${h - 28}H12Q8 64 12 52Q6 40 8 26Z" fill="#e8dcc4" stroke="#a8916a" stroke-width="1.2"/>
+      <path d="M23 22V${h - 28}" stroke="#a8916a" stroke-width=".8" stroke-dasharray="2 2"/>
+      <path d="M12 52Q23 56 34 52" fill="none" stroke="#a8916a" stroke-width=".8"/>
+      <path d="M12 24Q16 40 15 58M34 24Q30 40 31 58" fill="none" stroke="#f2d24a" stroke-width="2.2"/>
+      ${[30, 36, 42, 48, 54].map((y) => `<path d="M14 ${y}h2M30 ${y}h2" stroke="#1d1d23" stroke-width=".5"/>`).join("")}
+      <circle cx="31" cy="36" r="1.4" fill="#c8243a"/><circle cx="28" cy="40" r="1.4" fill="#3f6fd0"/>`;
+    return { svg: svg(w, h, innen, "m-schneiderpuppe"), w, h, unten: 2 };
+  }
+
+  /* Der Nähtisch mit einer alten schwarzen Maschine und Garnrollen. */
+  function naehtisch(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 6, h = 92;
+    const innen = `<rect x="4" y="${h - 6}" width="${w - 8}" height="5" rx="2" fill="#000" opacity=".22"/>
+      <path d="M12 52V${h - 4}M${w - 12} 52V${h - 4}" stroke="#2b2f36" stroke-width="4"/>
+      <path d="M12 ${h - 22}H${w - 12}" stroke="#2b2f36" stroke-width="2"/>
+      <circle cx="${w - 30}" cy="${h - 22}" r="9" fill="none" stroke="#2b2f36" stroke-width="2.4"/>
+      <rect x="2" y="44" width="${w - 4}" height="10" rx="2" class="m-holz-hell" stroke="#3a2718" stroke-width="1"/>
+      <g class="m-naehmaschine"><path d="M${w / 2 - 34} 44V22Q${w / 2 - 34} 12 ${w / 2 - 22} 12H${w / 2 + 22}Q${w / 2 + 30} 12 ${w / 2 + 30} 22V30H${w / 2 - 22}V44Z" fill="#17181c" stroke="#000" stroke-width="1"/>
+        <path d="M${w / 2 - 28} 18H${w / 2 + 24}" stroke="#c9a14a" stroke-width="1.4"/>
+        <text x="${w / 2}" y="26" text-anchor="middle" font-size="6" font-weight="900" fill="#c9a14a" font-family="ui-serif, Georgia, serif">Porta</text>
+        <circle cx="${w / 2 + 30}" cy="22" r="6" fill="#8b929c" stroke="#23262b"/>
+        <path d="M${w / 2 - 22} 30V40" stroke="#c0c6cc" stroke-width="1.6"/></g>
+      <path d="M${w / 2 - 30} 44H${w / 2 + 8}" stroke="#c8243a" stroke-width="3"/>
+      ${[["#3f6fd0", 10], ["#e2b656", 18], ["#3f9a5a", 26]].map(([c, x]) => `<rect x="${x}" y="36" width="6" height="8" rx="1" fill="${c}" stroke="#1d1d23" stroke-width=".5"/>`).join("")}`;
+    return { svg: svg(w, h, innen, "m-naehtisch"), w, h, unten: 2 };
+  }
+
+  /* Der Zuschnitttisch: eine Stoffbahn, eine große Schere, Schnittmuster. */
+  function zuschnitt(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 6, h = 70;
+    const innen = `<rect x="4" y="${h - 6}" width="${w - 8}" height="5" rx="2" fill="#000" opacity=".22"/>
+      <path d="M10 34V${h - 4}M${w - 10} 34V${h - 4}" stroke="#3a2718" stroke-width="4"/>
+      <rect x="2" y="24" width="${w - 4}" height="12" rx="2" class="m-holz-hell" stroke="#3a2718" stroke-width="1"/>
+      <path d="M10 26H${w * 0.6}L${w * 0.6 + 8} 34H6Z" fill="#2b3a55" stroke="#1d1d23" stroke-width=".7"/>
+      <path d="M14 30H${w * 0.55}" stroke="#f4f1ea" stroke-width=".7" stroke-dasharray="3 2"/>
+      <rect x="${w * 0.62}" y="16" width="${w * 0.3}" height="10" rx="4" fill="#c8243a" stroke="#6b1018" stroke-width=".8"/>
+      <path d="M${w * 0.64} 21H${w * 0.9}" stroke="#a51b2f" stroke-width=".7"/>
+      <g transform="translate(${w * 0.28} 18) rotate(-12)"><circle cx="0" cy="6" r="3" fill="none" stroke="#e5534b" stroke-width="1.6"/><circle cx="7" cy="6" r="3" fill="none" stroke="#e5534b" stroke-width="1.6"/><path d="M2 4L22 0M5 4L22 2" stroke="#c0c6cc" stroke-width="1.6"/></g>`;
+    return { svg: svg(w, h, innen, "m-zuschnitt"), w, h, unten: 2 };
+  }
+
+  /* Ein Regal voller Stoffballen. */
+  function stoffregal(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 4, h = 120;
+    const farben = ["#c8243a", "#2b3a55", "#e2b656", "#3f9a5a", "#c86bd6", "#f4f1ea", "#e8812b", "#7ec8e3", "#2a2f38", "#f06a8a"];
+    const fach = (y, n0) => Array.from({ length: Math.floor((w - 16) / 15) }, (_, i) => {
+      const f = farben[(i + n0) % farben.length];
+      return `<rect x="${9 + i * 15}" y="${y - 22}" width="13" height="22" rx="3" fill="${f}" stroke="#1d1d23" stroke-width=".6"/><ellipse cx="${15.5 + i * 15}" cy="${y - 22}" rx="6.5" ry="2" fill="${f}" stroke="#1d1d23" stroke-width=".5"/>`;
+    }).join("");
+    const innen = `<rect x="2" y="4" width="${w - 4}" height="${h - 8}" rx="3" fill="#4a3120"/>
+      <rect x="6" y="8" width="${w - 12}" height="${h - 16}" fill="#2b1d12"/>
+      ${[42, 76, 110].map((y, i) => `${fach(y, i * 3)}<rect x="4" y="${y}" width="${w - 8}" height="4" fill="#6b4a2e"/>`).join("")}`;
+    return { svg: svg(w, h, innen, "m-stoffregal"), w, h };
+  }
+
+  /* Eine alte Truhe mit Eisenbändern im Fundus. */
+  function truhe(ding) {
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 6, h = 62;
+    const innen = `<ellipse cx="${w / 2}" cy="${h - 3}" rx="${w / 2 - 3}" ry="3.4" fill="#000" opacity=".25"/>
+      <rect x="4" y="26" width="${w - 8}" height="${h - 30}" rx="3" fill="#6b4423" stroke="#2b1d12" stroke-width="1.2"/>
+      <path d="M4 26Q${w / 2} 4 ${w - 4} 26Z" fill="#7d5230" stroke="#2b1d12" stroke-width="1.2"/>
+      <path d="M16 12V${h - 4}M${w - 16} 12V${h - 4}" stroke="#3a3e44" stroke-width="4"/>
+      <path d="M4 27H${w - 4}" stroke="#3a3e44" stroke-width="3"/>
+      <rect x="${w / 2 - 6}" y="24" width="12" height="12" rx="2" fill="#c9a14a" stroke="#6e5420"/>
+      <path d="M${w / 2} 28v4" stroke="#2b1d12" stroke-width="1.6"/>
+      <path class="m-truhenschein" d="M8 26Q${w / 2} 20 ${w - 8} 26" stroke="#fff1c4" stroke-width="1" opacity=".0" fill="none"/>`;
+    return { svg: svg(w, h, innen, "m-truhe"), w, h };
+  }
+
+  /* Der Schminkspiegel im Fundus, mit Glühbirnen rundherum, von denen
+     zwei nicht mehr gehen. */
+  function schminkspiegel() {
+    const w = 104, h = 92;
+    const birnen = [];
+    for (let i = 0; i < 6; i++) birnen.push([10 + i * 16.8, 8]);
+    for (let i = 1; i < 5; i++) { birnen.push([6, 8 + i * 17]); birnen.push([w - 6, 8 + i * 17]); }
+    const innen = `<rect x="4" y="4" width="${w - 8}" height="${h - 14}" rx="6" fill="#2a2230" stroke="#b8923e" stroke-width="2"/>
+      <rect x="14" y="16" width="${w - 28}" height="${h - 38}" rx="3" fill="#3b4a52"/>
+      <path d="M22 22L38 22L24 46Z" fill="#fff" opacity=".18"/>
+      ${birnen.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="3.6" fill="${i === 3 || i === 9 ? "#6e6650" : "#fff1c4"}" stroke="#b8923e" stroke-width=".6"${i === 3 || i === 9 ? "" : ' class="m-birne"'}/>`).join("")}
+      <rect x="10" y="${h - 14}" width="${w - 20}" height="8" rx="2" fill="#6b4a2e"/>
+      <circle cx="26" cy="${h - 16}" r="3" fill="#c8243a"/><rect x="40" y="${h - 22}" width="5" height="8" rx="1" fill="#e2b656"/><path d="M60 ${h - 15}h16" stroke="#f4f1ea" stroke-width="2"/>`;
+    return { svg: svg(w, h, innen, "m-schminkspiegel"), w, h, unten: -10 };
+  }
+
+  /* Die Vitrine für die eigene Sammlung: drei Fächer mit Hut, Brille und
+     einem Stein, die gerade Licht abbekommen. */
+  function sammelvitrine(ding) {
+    /* Niedriger als die Pokalvitrine in der Ruhmeshalle: dahinter hängt
+       das Wandregal mit Schuhen und Taschen, und das soll sichtbar bleiben. */
+    const [x1, , x2] = ding.block;
+    const w = Math.round((x2 - x1) * T) + 6, h = 98, mx = w / 2;
+    const innen = `<ellipse cx="${mx}" cy="${h - 3}" rx="${w / 2 - 4}" ry="3.4" fill="#000" opacity=".25"/>
+      <rect x="4" y="${h - 24}" width="${w - 8}" height="20" fill="#2a2230" stroke="#b8923e" stroke-width="1.2"/>
+      <rect x="2" y="${h - 28}" width="${w - 4}" height="6" rx="1" fill="#b8923e"/>
+      <rect x="7" y="8" width="${w - 14}" height="${h - 36}" fill="#bcd3dc" fill-opacity=".16" stroke="#d8e6ea" stroke-width="1.2"/>
+      <rect x="4" y="4" width="${w - 8}" height="6" rx="2" fill="#b8923e"/>
+      <path d="M7 38H${w - 7}" stroke="#d8e6ea" stroke-width="1"/>
+      <path d="M${mx - 26} 34H${mx - 4}M${mx - 21} 34Q${mx - 21} 20 ${mx - 15} 20Q${mx - 9} 20 ${mx - 9} 34" fill="#1d1b22" stroke="#000" stroke-width="1"/><path d="M${mx - 21} 31H${mx - 9}" stroke="#c8243a" stroke-width="2"/>
+      <path class="m-glitzer" d="M${mx + 15} 20l7 6-7 10-7-10z" fill="#b6ff4d" stroke="#5c8a20" stroke-width=".8"/>
+      <path d="M${mx - 18} 54h12v3q-6 4-12 0zM${mx + 6} 54h12v3q-6 4-12 0z" fill="#111317" stroke="#e2b656" stroke-width=".8"/><path d="M${mx - 6} 55h12" stroke="#e2b656" stroke-width="1"/>
+      <path class="m-glanz" d="M11 12L19 12L11 26Z" fill="#fff" opacity=".35"/>
+      <text x="${mx}" y="${h - 10}" text-anchor="middle" font-size="6.5" font-weight="900" letter-spacing="1" fill="#f2d27a" font-family="ui-rounded, system-ui">SAMMLUNG</text>`;
+    return { svg: svg(w, h, innen, "m-sammelvitrine"), w, h, unten: 2 };
+  }
+
   const ARTEN = {
     slot: automat, rad, schild, spielhalle, wettschalter, roulette, blackjack, poker, sofa, couchtisch,
     sessel, hocker, zeitungsstaender, spieltisch, kisten, torbogen, arcade, neonschild, pinco, greifautomat,
@@ -1252,6 +1425,7 @@
     einlasstuer, teasertafel, gaestewand, schaetzglas,
     rennbahn, lotteriebude, fahnenmast, feuerschale, parkbank, laterne, busch, kleeblatt, tresortuer, goldstapel,
     katzenkissen, notiz, umkleide, puppen, kleiderstange, theke, taschenvitrine,
+    kordel, praegepresse, kleiderschrank, schneiderpuppe, naehtisch, zuschnitt, stoffregal, truhe, schminkspiegel, sammelvitrine,
   };
 
   /** Ein Ding als Weltrechteck: wo es steht, wie groß es ist, wie es aussieht. */
@@ -1338,6 +1512,34 @@
         <rect x="0" y="${wand - 44}" width="${W}" height="32" class="wb-boutique-sockel"/>
         <rect x="0" y="${wand - 12}" width="${W}" height="12" class="wb-sockel"/>`;
     }
+    /* Das Atelier: helle Ziegel, ein Schriftzug aus Draht, eine Lochwand
+       mit Scheren und Garn, und Stoffproben an einer Leine. */
+    if (r.wandStil === "atelier") {
+      const ziegel = Array.from({ length: Math.ceil(wand / 16) }, (_, z) => `<path d="M0 ${z * 16}H${W}" class="wb-atelier-fuge"/>` + Array.from({ length: Math.ceil(W / 36) }, (_, i) => `<path d="M${i * 36 + (z % 2 ? 18 : 0)} ${z * 16}v16" class="wb-atelier-fuge"/>`).join("")).join("");
+      const proben = Array.from({ length: 9 }, (_, i) => { const x = 4.6 * T + i * 26; const f = ["#c8243a", "#2b3a55", "#e2b656", "#3f9a5a", "#c86bd6", "#f4f1ea", "#e8812b", "#7ec8e3", "#f06a8a"][i]; return `<path d="M${x} ${62 + (i % 2) * 3}v-4" stroke="#8a5a2b" stroke-width="1"/><path d="M${x - 8} ${63 + (i % 2) * 3}h16v20l-4-3-4 3-4-3-4 3z" fill="${f}" stroke="#1d1d23" stroke-width=".5"/>`; }).join("");
+      const lochX = 8.6 * T, lochB = 1.5 * T;
+      return `<rect x="0" y="0" width="${W}" height="${wand}" class="wb-atelier-wand"/>${ziegel}
+        <rect x="0" y="0" width="${W}" height="8" class="wb-wand-dunkel"/>
+        <text x="${W / 2}" y="40" text-anchor="middle" class="wb-atelier-schrift">Atelier</text>
+        <path d="M${4.2 * T} 58Q${6.6 * T} 64 ${9.0 * T} 58" fill="none" stroke="#8a5a2b" stroke-width="1"/>${proben}
+        <g class="wb-lochwand"><rect x="${lochX}" y="54" width="${lochB}" height="56" rx="2" fill="#c9a46a" stroke="#8a5a2b"/>
+          ${Array.from({ length: 24 }, (_, i) => `<circle cx="${lochX + 7 + (i % 8) * 8.6}" cy="${60 + Math.floor(i / 8) * 16}" r="1" fill="#8a5a2b"/>`).join("")}
+          <g transform="translate(${lochX + 12} 70) rotate(40)"><circle cx="0" cy="6" r="3" fill="none" stroke="#3f6fd0" stroke-width="1.6"/><circle cx="7" cy="6" r="3" fill="none" stroke="#3f6fd0" stroke-width="1.6"/><path d="M2 4L18 0M5 4L18 2" stroke="#c0c6cc" stroke-width="1.6"/></g>
+          ${[["#c8243a", 40], ["#e2b656", 50], ["#3f9a5a", 60]].map(([c, x]) => `<rect x="${lochX + x}" y="84" width="6" height="10" rx="1" fill="${c}" stroke="#1d1d23" stroke-width=".5"/>`).join("")}
+          <path d="M${lochX + 12} 96q14 8 40 0" fill="none" stroke="#f2d24a" stroke-width="2"/></g>
+        <rect x="0" y="${wand - 12}" width="${W}" height="12" class="wb-sockel"/>`;
+    }
+    /* Der Fundus: dunkle Bretter, ein schräger Dachbalken und Spinnweben in
+       den Ecken. Licht kommt nur vom Schminkspiegel. */
+    if (r.wandStil === "fundus") {
+      const bretter = Array.from({ length: Math.ceil(W / 30) }, (_, i) => `<rect x="${i * 30}" y="0" width="29" height="${wand}" class="${i % 2 ? "wb-fundus-brett" : "wb-fundus-brett b"}"/>`).join("");
+      const netz = (x, s) => `<path d="M${x} 0L${x + s * 34} 0M${x} 0L${x} 34M${x} 0L${x + s * 26} 26M${x + s * 12} 0Q${x + s * 10} 10 ${x} 12M${x + s * 24} 0Q${x + s * 20} 20 ${x} 24" class="wb-spinnweben"/>`;
+      return `${bretter}
+        <path d="M0 ${wand * 0.55}L${W} ${wand * 0.18}" class="wb-fundus-balken"/>
+        ${netz(0, 1)}${netz(W, -1)}
+        <ellipse cx="${W / 2}" cy="${wand - 40}" rx="${W * 0.22}" ry="50" class="wb-fundus-licht"/>
+        <rect x="0" y="${wand - 12}" width="${W}" height="12" class="wb-sockel"/>`;
+    }
     /* Die Spielhalle: dunkle Wand mit Leuchtröhren statt Gold und Lampen. */
     if (r.neon) {
       return `<rect x="0" y="0" width="${W}" height="${wand}" class="wb-neonwand"/>
@@ -1382,6 +1584,19 @@
       const seite = tuerSeite(r, t);
       // Eine Tür in der Rückwand zeichnet ihr Ding selbst (der Torbogen).
       if (seite === "oben") return "";
+      if (seite === "unten" && t.stil === "boutique") {
+        /* Der Eingang zum Modehaus: ein roter Läufer bis in die Lounge,
+           ein Rahmen in Roségold und ein warmer Schein auf dem Boden. Die
+           Kordeln daneben sind eigene Dinge (raeume.js). */
+        const x1 = t.x1 * T, x2 = t.x2 * T, lang = 1.7 * T;
+        return `<rect x="${x1 + 6}" y="${H - 14 - lang}" width="${x2 - x1 - 12}" height="${lang + 14}" class="wb-roter-teppich"/>
+          <path d="M${x1 + 10} ${H - 14 - lang}V${H}M${x2 - 10} ${H - 14 - lang}V${H}" class="wb-laeufer-kante"/>
+          <ellipse cx="${(x1 + x2) / 2}" cy="${H - 20}" rx="${(x2 - x1) / 2 + 14}" ry="26" class="wb-boutique-schein"/>
+          <rect x="${x1 - 4}" y="${H - 14}" width="${x2 - x1 + 8}" height="14" class="wb-tuer"/>
+          <rect x="${x1 - 10}" y="${H - 22}" width="6" height="22" rx="1" class="wb-rosegold"/><rect x="${x2 + 4}" y="${H - 22}" width="6" height="22" rx="1" class="wb-rosegold"/>
+          <circle cx="${x1 - 7}" cy="${H - 24}" r="4" class="wb-rosegold"/><circle cx="${x2 + 7}" cy="${H - 24}" r="4" class="wb-rosegold"/>
+          <rect x="${x1 + 4}" y="${H - 56}" width="${x2 - x1 - 8}" height="42" class="wb-tuer-licht wb-tuer-licht-boutique"/>`;
+      }
       if (seite === "unten") {
         const x1 = t.x1 * T, x2 = t.x2 * T;
         return `<rect x="${x1 - 4}" y="${H - 14}" width="${x2 - x1 + 8}" height="14" class="wb-tuer"/>
@@ -1410,6 +1625,13 @@
       hof: `<path d="M0 ${6.1 * T}H${4 * T}Q${6 * T} ${6.1 * T} ${7 * T} ${7.8 * T}T${9 * T} ${9 * T}" fill="none" stroke-width="${1.1 * T}" class="wb-weg"/><circle cx="${8.1 * T}" cy="${6.6 * T}" r="${1.4 * T}" class="wb-weg-platz"/>
         <ellipse cx="${11.6 * T}" cy="${7.9 * T}" rx="${1.5 * T}" ry="${1.15 * T}" class="wb-teppich-shisha"/><ellipse cx="${11.6 * T}" cy="${7.9 * T}" rx="${1.3 * T}" ry="${0.98 * T}" class="wb-teppich-shisha-rand"/>`,
       tresor: "",
+      /* Im Atelier ein Webteppich unter der Puppe und Kreidestriche auf
+         den Dielen, wo jemand einen Schnitt angezeichnet hat. */
+      atelier: `<ellipse cx="${8.6 * T}" cy="${6.6 * T}" rx="${1.6 * T}" ry="${1.1 * T}" class="wb-atelier-teppich"/>
+        <ellipse cx="${8.6 * T}" cy="${6.6 * T}" rx="${1.6 * T - 7}" ry="${1.1 * T - 7}" class="wb-teppich-rand"/>
+        <path d="M${10 * T} ${8.9 * T}l40 -6l30 10M${10.4 * T} ${9.1 * T}h70" class="wb-kreide"/>`,
+      fundus: `<ellipse cx="${5 * T}" cy="${4.2 * T}" rx="${2.4 * T}" ry="${0.9 * T}" class="wb-fundus-licht"/>
+        <path d="M${1.4 * T} ${6.4 * T}q20 -6 40 0M${7.6 * T} ${6.8 * T}q14 -4 30 2" class="wb-staub"/>`,
       /* Die Spielhalle: eine Tanzfläche aus Leuchtkacheln in der Mitte und
          ein Lichtband von der Tür dorthin. */
       spielhalle: `<rect x="${7.35 * T}" y="${8.4 * T}" width="${1.3 * T}" height="${2.6 * T}" class="wb-lichtband"/>

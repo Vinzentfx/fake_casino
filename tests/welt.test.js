@@ -466,3 +466,85 @@ test("ein stehendes Fahrzeug kann auch mit winzigen Schritten nicht fahren", () 
   assert.equal(pruefeZug(f, 10, 11, 100).ok, true, "Umdrehen bleibt erlaubt");
   assert.equal(pruefeZug(f, 10, 10.99, 100).ok, false);
 });
+
+test("die Schneiderpuppe will von allen vier Seiten vermessen werden, und das geht auch zu Fuß", (t) => {
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  const { puppenSeite } = require("../game/welt");
+  const raum = R.raum("atelier");
+  const puppe = raum.dinge.find((d) => d.id === "puppe");
+  // Jede Seite muss es auf freiem Boden geben, sonst ist das Geheimnis unlösbar.
+  const punkte = erreichbar(raum, raum.start);
+  for (const seite of ["vorn", "hinten", "links", "rechts"]) {
+    const ok = punkte.some(([x, y]) => R.abstandZuDing(puppe, x, y) <= R.reichweite(puppe) && puppenSeite(puppe, x, y) === seite
+      && R.naechstesDing(raum, x, y) === puppe);
+    assert.ok(ok, `von ${seite} kommt man nicht an die Puppe`);
+  }
+  const anna = w.neuerSocket("anna");
+  anna.frage("welt:betreten", {});
+  const fig = w.welt.figuren.get("anna");
+  fig.raum = "atelier";
+  const [b0, b1, b2, b3] = puppe.block;
+  const stellen = { vorn: [8.6, b3 + 0.5], hinten: [8.6, b1 - 0.5], links: [b0 - 0.5, 6.45], rechts: [b2 + 0.5, 6.45] };
+  fig.x = stellen.vorn[0]; fig.y = stellen.vorn[1];
+  assert.match(anna.frage("welt:nutzen", { ding: "puppe" }).ziel.puppe.satz, /Brustweite/);
+  // Dieselbe Seite zählt nicht doppelt.
+  assert.match(anna.frage("welt:nutzen", { ding: "puppe" }).ziel.puppe.satz, /schon/);
+  for (const seite of ["hinten", "links"]) {
+    [fig.x, fig.y] = stellen[seite];
+    assert.ok(anna.frage("welt:nutzen", { ding: "puppe" }).ziel.puppe);
+  }
+  [fig.x, fig.y] = stellen.rechts;
+  const g = anna.frage("welt:nutzen", { ding: "puppe" });
+  assert.equal(g.ziel.geheimnis.neu, true);
+  assert.equal(g.ziel.geheimnis.label, "massband");
+});
+
+test("der Fundus liegt hinter dem Schrank im Atelier, und die Truhe gibt den Zylinder", (t) => {
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  assert.equal(R.raum("fundus").geheim, true);
+  assert.ok(R.raum("atelier").tueren.find((x) => x.ziel === "fundus").versteckt, "zu Fuß kommt man nicht hinein");
+  const anna = w.neuerSocket("anna");
+  anna.frage("welt:betreten", {});
+  const fig = w.welt.figuren.get("anna");
+  fig.raum = "atelier"; fig.x = 11.6; fig.y = 4.1;
+  const gang = anna.frage("welt:nutzen", { ding: "schrank" });
+  assert.equal(gang.ziel.umzug.raum, "fundus");
+  fig.x = 7.9; fig.y = 5.1;
+  const g = anna.frage("welt:nutzen", { ding: "truhe" });
+  assert.equal(g.ziel.geheimnis.neu, true);
+  assert.equal(g.ziel.geheimnis.label, "zylinder");
+  assert.ok(w.kontoVon("anna").welt.verstecke.fundus, "der Besuch steht am Konto (Achievement)");
+});
+
+test("ganz vorn auf dem Laufsteg jubeln gibt die Diva-Brille, in der Umkleide winken die Spiegelbrille", (t) => {
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  const anna = w.neuerSocket("anna");
+  anna.frage("welt:betreten", {});
+  const fig = w.welt.figuren.get("anna");
+  fig.raum = "modehaus"; fig.x = 8.0; fig.y = 8.0;
+  // Hinten auf dem Laufsteg passiert nichts.
+  anna.frage("welt:geste", { art: "jubeln" });
+  assert.equal(anna.hat("welt:geheimnis").length, 0);
+  fig.y = 5.2; fig.gesteTs = 0;
+  anna.frage("welt:geste", { art: "jubeln" });
+  const [blitz] = anna.hat("welt:geheimnis");
+  assert.equal(blitz.label, "divabrille");
+  assert.equal(blitz.blitz, true);
+  fig.x = 3.4; fig.y = 4.3; fig.gesteTs = 0;
+  anna.frage("welt:geste", { art: "winken" });
+  assert.equal(anna.hat("welt:geheimnis")[1].label, "spiegelbrille");
+});
+
+test("im Casino gibt es keine Garderobe und keine Kisten mehr, im Modehaus die Kisten nur einmal", () => {
+  const casino = R.raum("casino");
+  assert.equal(casino.dinge.some((d) => d.ziel && (d.ziel.screen === "garderobe" || d.ziel.screen === "kiste")), false);
+  assert.equal(casino.tueren.find((x) => x.id === "zum-modehaus").ziel, "modehaus");
+  const mode = R.raum("modehaus");
+  assert.equal(mode.dinge.filter((d) => d.ziel && d.ziel.screen === "kiste").length, 1);
+  assert.equal(mode.tueren.find((x) => x.id === "zum-casino").ziel, "casino");
+  // In der Ladenstraße ist das Modehaus nur noch Schaufenster, keine Tür.
+  assert.equal(R.raum("strasse").tueren.some((x) => x.ziel === "modehaus"), false);
+});

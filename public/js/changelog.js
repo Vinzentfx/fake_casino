@@ -25,6 +25,24 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-06",
+      datum: "6. Oktober 2026",
+      titel: "Flüssiger auf dem iPad, das Modehaus gleich nebenan",
+      items: [
+        { icon: "einstellungen", titel: "Slots und Co. ruckeln nicht mehr",
+          text: "Solange ein Spiel offen ist, steht der Raum dahinter jetzt ganz still, und vor einem Automaten wird er gar nicht mehr gezeichnet. Auf dem iPad startet das Haus außerdem mit sparsamer Grafik: keine Weichzeichner, kein wandernder Staub, weniger Konfetti. Wer alles will, stellt in den Einstellungen unter „Grafik“ auf „Volle Effekte“. „Bewegung reduzieren“ hält jetzt wirklich fast alles an." },
+
+        { icon: "modehaus", titel: "Das Modehaus hat seinen Eingang im Casino",
+          text: "Unten links in der Lounge führt ein roter Läufer zwischen zwei Kordeln direkt ins Modehaus. Garderobe und Kisten stehen nicht mehr doppelt im Casino, im Modehaus gibt es die Kisten nur noch hinter der Tresortür, und die Vitrine daneben zeigt deine Sammlung. In der Ladenstraße liegt nur noch das Schaufenster." },
+
+        { icon: "kosmetik", titel: "Ein Atelier hinter dem Modehaus",
+          text: "Rechts im Modehaus geht es ins Atelier. Dort steht die Prägepresse, an der du Prägestaub gegen die Wochenstücke tauschst, dazu Nähmaschine, Stoffregal und eine Schneiderpuppe. Wer genau hinsieht, findet dort nicht nur Stoff." },
+
+        { icon: "bestenliste", titel: "Neue Achievements",
+          text: "Der Greifautomat zählt mit: 100, 1.000 und 5.000 Versuche, 25 Mal knapp vor dem Schacht verloren, und der eine Griff, der wirklich hält. Dazu kommen Achievements, von denen du erst erfährst, wofür es sie gibt, wenn du sie hast." },
+      ],
+    },
+    {
       id: "2026-10-05-d",
       datum: "5. Oktober 2026",
       titel: "Das Modehaus hat eine Tür",

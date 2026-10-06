@@ -97,9 +97,16 @@ function setupGreifer(io, accounts) {
           account = accounts.publicAccount(acc);
         }
       }
+      const szene = { x: ziel, treffer, rutscht: gewonnen ? null : rutschStelle(), gewonnen };
+      /* Für die Achievements: wie oft der Greifer gehalten hat, und wie oft
+         der Ball erst kurz vor dem Schacht herausgerutscht ist. Die Versuche
+         selbst zählt schon recordHand (stats.perGame.greifer). Gezählt wird
+         vor recordHand, denn dort läuft die Prüfung der Achievements. */
+      const zaehler = acc.greifer && typeof acc.greifer === "object" ? acc.greifer : (acc.greifer = {});
+      if (gewonnen) zaehler.gehalten = (zaehler.gehalten || 0) + 1;
+      else if (treffer != null && szene.rutscht >= 0.9) zaehler.knapp = (zaehler.knapp || 0) + 1;
       accounts.recordHand(key, (gewonnen ? trost : 0) - PREIS, true, "greifer", { einsatz: PREIS });
 
-      const szene = { x: ziel, treffer, rutscht: gewonnen ? null : rutschStelle(), gewonnen };
       welt().schau(socket, "greifer", { greifer: szene });
       if (gewonnen && neu) {
         const text = `${acc.name} hat am Greifautomaten das Königliche Gummihuhn gefangen!`;

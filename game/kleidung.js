@@ -74,6 +74,7 @@ const KOPF = [
   { id: "sonnenhut",     label: "Sonnenhut",          cost: 42_000, nur: K },
   { id: "diadem",        label: "Diadem",             cost: 680_000, nur: K, motion: true },
   { id: "schalenhelm",   label: "Schalenhelm",        cost: 24_000, nur: K },
+  { id: "zylinder",      label: "Alter Zylinder",     cost: null, via: "Irgendwo im Haus versteckt" },
 ];
 
 const OBERTEILE = [
@@ -148,6 +149,7 @@ const BRILLEN = [
   { id: "laservisier",   label: "Laser-Visier",       cost: 900_000, nur: K, motion: true },
   { id: "cateye",        label: "Cat-Eye-Brille",     cost: 34_000, nur: K },
   { id: "spiegelbrille", label: "Spiegelbrille",      cost: null, via: "Irgendwo im Haus versteckt" },
+  { id: "divabrille",    label: "Diva-Sonnenbrille",  cost: null, via: "Irgendwo im Haus versteckt" },
 ];
 
 const ACCESSOIRES = [
@@ -191,6 +193,7 @@ const HANDDINGE = [
   { id: "schallplatte",  label: "Alte Schallplatte",  cost: null, via: "Irgendwo im Haus versteckt" },
   { id: "pokal",         label: "Goldener Pokal",     cost: null, via: "Irgendwo im Haus versteckt" },
   { id: "wunderkerze",   label: "Wunderkerze",        cost: null, via: "Irgendwo im Haus versteckt", motion: true },
+  { id: "massband",      label: "Maßband",            cost: null, via: "Irgendwo im Haus versteckt" },
   // Nur aus dem Greifautomaten, und dort fast nie (game/greifer.js).
   { id: "gummihuhn",     label: "Königliches Gummihuhn", cost: null, via: "Am Greifautomaten gefangen", limitiert: "greifer" },
   // Nur in der Nacht vor einer Öffnung zu holen, an der Tür des Warteraums.

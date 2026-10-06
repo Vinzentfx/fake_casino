@@ -184,7 +184,35 @@ const DEFS = [
     ziel: 1,        wert: (a) => ((a.cosOwned && a.cosOwned.haustiere) || []).length ? 1 : 0 },
   { id: "welt_jagd",    emoji: "🪙", label: "Schatzsucher",    desc: "Finde bei einer Schnitzeljagd alle goldenen Marken", reward: 50000,
     ziel: 1,        wert: (a) => (a.jagd && a.jagd.fertig ? 1 : 0) },
+
+  /* Der Greifautomat in der Spielhalle. Die Versuche zählt recordHand
+     schon seit es ihn gibt, also zählt auch, was vor diesen Zeilen
+     gespielt wurde. Was dabei passiert ist, steht in acc.greifer
+     (game/greifer.js). */
+  { id: "greifer_100",  emoji: "🕹️", label: "Greifer-Neuling",  desc: "Versuch es 100 Mal am Greifautomaten", reward: 2500,
+    ziel: 100,      wert: (a) => greiferVersuche(a) },
+  { id: "greifer_1000", emoji: "🧸", label: "Stammkunde am Greifer", desc: "Versuch es 1.000 Mal am Greifautomaten", reward: 20000,
+    ziel: 1000,     wert: (a) => greiferVersuche(a) },
+  { id: "greifer_5000", emoji: "🦾", label: "Eiserner Greifarm", desc: "Versuch es 5.000 Mal am Greifautomaten", reward: 100000,
+    ziel: 5000,     wert: (a) => greiferVersuche(a) },
+  { id: "greifer_knapp", emoji: "😩", label: "So nah dran",     desc: "Der Ball rutscht 25 Mal erst kurz vor dem Schacht heraus", reward: 10000,
+    ziel: 25,       wert: (a) => (a.greifer && a.greifer.knapp) || 0 },
+  { id: "greifer_halt", emoji: "🐔", label: "Festgehalten",     desc: "Der Greifer hält. Einmal in 2.000 Griffen passiert das wirklich", reward: 50000,
+    ziel: 1,        wert: (a) => ((a.greifer && a.greifer.gehalten) || 0) + (((a.cosOwned && a.cosOwned.hand) || []).includes("gummihuhn") ? 1 : 0) },
+
+  /* Versteckte Achievements. Solange sie zu sind, steht dort nur „???“,
+     auch Bedingung und Belohnung bleiben verdeckt (siehe listFor). Was
+     danach dasteht, verrät ebenfalls nichts: andere sehen es im Profil. */
+  { id: "geheim_kreidemond", emoji: "🌙", label: "Kreidemond",   desc: "Du weißt, was du getan hast.", reward: 25000, geheim: true,
+    ziel: 1,        wert: (a) => (a.geheimnisse && a.geheimnisse.e46 ? 1 : 0) },
+  { id: "geheim_fundus",  emoji: "🎭", label: "Hinter den Mänteln", desc: "Manche Schränke sind tiefer, als sie aussehen.", reward: 15000, geheim: true,
+    ziel: 1,        wert: (a) => (a.welt && a.welt.verstecke && a.welt.verstecke.fundus ? 1 : 0) },
 ];
+
+function greiferVersuche(a) {
+  const g = a && a.stats && a.stats.perGame && a.stats.perGame.greifer;
+  return (g && g.plays) || 0;
+}
 
 /* Die Räume, die man zu Fuß erreicht, kommen aus der Raumdatei selbst:
    ein neuer Raum zählt damit automatisch mit. Geheime zählen nicht. */
@@ -251,9 +279,16 @@ function listFor(name) {
   const key = String(name).trim().toLowerCase();
   return DEFS.map((d) => {
     const f = acc ? fortschritt(d, acc, key) : { ist: 0, ziel: d.ziel || 1, anteil: 0 };
+    /* Ein verstecktes, das noch zu ist, verlässt den Server nur als
+       Fragezeichen. Stünde die Bedingung im Browser, könnte man sie dort
+       nachlesen, auch wenn die Oberfläche sie nicht zeigt. */
+    if (d.geheim && !ach[d.id]) {
+      return { id: d.id, emoji: "❔", label: "???", desc: "???", reward: null, geheim: true,
+        unlocked: false, at: null, ist: 0, ziel: 1, anteil: 0 };
+    }
     return {
       id: d.id, emoji: d.emoji, label: d.label, desc: d.desc, reward: d.reward,
-      unlocked: !!ach[d.id], at: ach[d.id] || null,
+      unlocked: !!ach[d.id], at: ach[d.id] || null, geheim: !!d.geheim,
       ist: f.ist, ziel: f.ziel, anteil: ach[d.id] ? 1 : f.anteil,
     };
   });

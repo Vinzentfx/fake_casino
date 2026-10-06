@@ -686,6 +686,8 @@ html[data-welt-raum="ruhm"] { --raum-ton: 52, 48, 60; }
 html[data-welt-raum="hof"], html[data-welt-raum="strasse"] { --raum-ton: 18, 34, 58; }
 html[data-welt-raum="spielhalle"] { --raum-ton: 40, 16, 66; }
 html[data-welt-raum="modehaus"] { --raum-ton: 58, 30, 50; }
+html[data-welt-raum="atelier"] { --raum-ton: 66, 42, 32; }
+html[data-welt-raum="fundus"] { --raum-ton: 46, 34, 26; }
 html[data-welt-raum="tresor"], html[data-welt-raum="garage"] { --raum-ton: 38, 40, 44; }
 
 /* Bildschirme über der Welt: ein Fenster statt einer Webseite.
@@ -808,6 +810,47 @@ html:not(.reduce-motion) .wb-stern.blinkt { animation: m-blinken 2.6s steps(2, j
 html:not(.reduce-motion) .wb-laufsteg-licht { animation: wb-laufsteg 3.2s ease-in-out infinite; }
 html:not(.reduce-motion) .wb-laufsteg-licht:nth-of-type(4n) { animation-delay: -1.6s; }
 @keyframes wb-laufsteg { 50% { opacity: 0.45; } }
+
+/* Der Eingang zum Modehaus im Casino: Läufer, Roségold und ein Schild,
+   das sich von den anderen Türschildern abhebt. Feste Töne wie im
+   Modehaus selbst, damit der Eingang in allen drei Paletten nach dem Raum
+   dahinter aussieht. */
+.wb-laeufer-kante { stroke: #e2b656; stroke-width: 2; fill: none; opacity: 0.8; }
+.wb-boutique-schein { fill: rgba(255, 196, 214, 0.16); }
+.wb-rosegold { fill: #e0a98f; stroke: #8e5a44; stroke-width: 0.8; }
+.wb-tuer-licht-boutique { fill: rgba(255, 196, 214, 0.18); }
+.m-kordel { overflow: visible; }
+.welt-tuerschild.stil-boutique {
+  background: linear-gradient(180deg, #3a2533, #241820);
+  border-color: #e0a98f; color: #f6d9cd;
+  box-shadow: 0 0 0 2px rgba(224, 169, 143, 0.18), 0 4px 14px rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.08em;
+}
+.welt-tuerschild.stil-boutique b { color: #e2b656; }
+html:not(.reduce-motion):not(.sparsam) .welt-tuerschild.stil-boutique { animation: tuer-boutique 3.6s ease-in-out infinite; }
+@keyframes tuer-boutique { 50% { box-shadow: 0 0 0 3px rgba(224, 169, 143, 0.32), 0 4px 18px rgba(255, 170, 200, 0.28); } }
+
+/* Atelier: helle Ziegel, Dielen, Kreide. */
+.wb-atelier-wand { fill: color-mix(in srgb, #b07a5a 80%, var(--bg-1)); }
+.wb-atelier-fuge { stroke: rgba(70, 40, 24, 0.35); stroke-width: 1; fill: none; }
+.wb-atelier-schrift { fill: none; stroke: #2a2230; stroke-width: 1.6; font: italic 700 30px/1 ui-serif, Georgia, serif; letter-spacing: 2px; }
+.wb-atelier-teppich { fill: color-mix(in srgb, #4a5d6e 82%, var(--bg-1)); }
+.wb-kreide { stroke: rgba(255, 255, 255, 0.45); stroke-width: 1.4; fill: none; stroke-dasharray: 5 4; }
+html:not(.reduce-motion) .m-praegerad { animation: praegerad 9s ease-in-out infinite; }
+@keyframes praegerad { 0%, 70%, 100% { transform: scaleX(1); } 80% { transform: scaleX(-1); } 90% { transform: scaleX(1); } }
+html:not(.reduce-motion) .m-schrankspalt { animation: schrankspalt 5s ease-in-out infinite; }
+@keyframes schrankspalt { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.8; } }
+
+/* Fundus: dunkle Bretter, ein Balken, Spinnweben, und das einzige Licht
+   kommt vom Schminkspiegel. */
+.wb-fundus-brett { fill: #3a2a1f; }
+.wb-fundus-brett.b { fill: #33251b; }
+.wb-fundus-balken { stroke: #24180f; stroke-width: 22; }
+.wb-spinnweben { stroke: rgba(230, 230, 230, 0.35); stroke-width: 0.8; fill: none; }
+.wb-fundus-licht { fill: rgba(255, 228, 170, 0.1); }
+.wb-staub { stroke: rgba(255, 240, 210, 0.18); stroke-width: 3; fill: none; stroke-linecap: round; }
+html:not(.reduce-motion) .m-birne:nth-of-type(5n) { animation: birne 4s steps(1, end) infinite; }
+@keyframes birne { 0%, 86%, 92%, 100% { opacity: 1; } 88%, 95% { opacity: 0.3; } }
 html:not(.reduce-motion) .m-flammen { transform-box: fill-box; transform-origin: 50% 100%; animation: fg-flackern 0.6s ease-in-out infinite alternate; }
 html:not(.reduce-motion) .m-flagge { animation: fg-wehen 1.4s ease-in-out infinite alternate; }
 html:not(.reduce-motion) .m-pferd { animation: m-pferd 3s linear infinite; }
@@ -2068,3 +2111,13 @@ html:not(.reduce-motion) .welt-online-feld:not(.hidden) { animation: welt-auf 0.
 /* Die Bänder des Einlasses gehören in die Welt; über einem Spiel oder den
    Einstellungen lägen sie auf deren Knöpfen. */
 html:not(.welt-vorn) .einlass-frei, html:not(.welt-vorn) .einlass-band { display: none !important; }
+
+/* Blitzlicht am Laufsteg: drei kurze weiße Blitze über dem Raum. */
+.welt-blitzlicht {
+  position: absolute; inset: 0; z-index: 6000; pointer-events: none; background: #fff; opacity: 0;
+  animation: welt-blitzlicht 1.1s linear forwards;
+}
+@keyframes welt-blitzlicht {
+  0%, 12%, 30%, 44%, 70%, 82%, 100% { opacity: 0; }
+  6%, 37%, 76% { opacity: 0.75; }
+}

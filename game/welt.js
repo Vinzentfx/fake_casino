@@ -74,7 +74,23 @@ const GEHEIMNISSE = {
   pokal:       { art: "hand",     id: "pokal",       satz: "Oben auf dem Podest jubelst du, als hättest du gewonnen. Jemand drückt dir einen goldenen Pokal in die Hand." },
   wunderkerze: { art: "hand",     id: "wunderkerze", satz: "Du winkst dem Feuer zu, und aus der Glut springt ein Funke in deine Hand. Eine Wunderkerze, die nie ausgeht." },
   e46:         { art: "fahrzeug", id: "e46",         satz: "Unter der Plane steht ein alter BMW E46 in Orientblau, auf BBS-Felgen. Der Schlüssel steckt. Er gehört jetzt dir. Anspringen wird er nie." },
+  laufsteg:    { art: "brille",   id: "divabrille",  satz: "Ganz vorn auf dem Laufsteg reißt du die Arme hoch, und von irgendwo blitzt es dreimal. Jemand reicht dir eine Sonnenbrille: „Die brauchst du jetzt.“" },
+  massband:    { art: "hand",     id: "massband",    satz: "Brust, Rücken, beide Schultern: alles notiert. Die Puppe sieht zufrieden aus, und das Maßband darfst du behalten." },
+  zylinder:    { art: "kopf",     id: "zylinder",    satz: "Unter dem Deckel liegt Staub, ein Programmheft von 1987 und ein alter Zylinder. Er passt, als hätte er auf dich gewartet." },
 };
+
+/* Die Schneiderpuppe im Atelier will von allen vier Seiten vermessen
+   werden. Welche Seite man gerade misst, ergibt sich daraus, wo man steht.
+   Gemerkt nur im Speicher an der Figur, und nur zwei Minuten lang: wer
+   zwischendurch spielen geht, fängt von vorn an, verliert aber nichts. */
+const PUPPE_MASS = { vorn: "Brustweite", hinten: "Rückenbreite", links: "linke Schulter", rechts: "rechte Schulter" };
+const PUPPE_MS = 2 * 60 * 1000;
+function puppenSeite(d, x, y) {
+  const b = d.block;
+  const dx = x - (b[0] + b[2]) / 2, dy = y - (b[1] + b[3]) / 2;
+  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? "links" : "rechts";
+  return dy < 0 ? "hinten" : "vorn";
+}
 
 /* Das Garagentor in der Ladenstraße geht nur nachts auf, und nur für
    jemanden, der davor hupt. Gerechnet in deutscher Zeit, egal wo der
@@ -257,7 +273,12 @@ function setupWelt(io, accounts) {
     try { require("./achievements").check(key); } catch {}
   }
   function besucht(fig) {
-    if (R.raum(fig.raum) && R.raum(fig.raum).geheim) return;
+    /* Geheime Räume zählen nicht für den Weltenbummler, stehen aber
+       getrennt am Konto: der Fundus hat ein eigenes Achievement. */
+    if (R.raum(fig.raum) && R.raum(fig.raum).geheim) {
+      weltFortschritt(fig.key, (w) => { w.verstecke = w.verstecke || {}; if (!w.verstecke[fig.raum]) w.verstecke[fig.raum] = Date.now(); });
+      return;
+    }
     weltFortschritt(fig.key, (w) => { w.raeume = w.raeume || {}; if (!w.raeume[fig.raum]) w.raeume[fig.raum] = Date.now(); });
   }
 
@@ -508,6 +529,22 @@ function setupWelt(io, accounts) {
         }
         return ack({ ok: true, ding: d.id, ziel: { einlass: "tuer", ...k } });
       }
+      if (d.ziel.puppe) {
+        const jetzt = Date.now();
+        if (!fig.puppe || jetzt - fig.puppe.t > PUPPE_MS) fig.puppe = { t: jetzt, seiten: new Set() };
+        const seite = puppenSeite(d, fig.x, fig.y);
+        if (fig.puppe.seiten.has(seite)) {
+          return ack({ ok: true, ding: d.id, ziel: { puppe: { satz: `Die ${PUPPE_MASS[seite]} hast du schon. Von hier sieht die Puppe immer gleich aus.` } } });
+        }
+        fig.puppe.seiten.add(seite);
+        if (fig.puppe.seiten.size >= Object.keys(PUPPE_MASS).length) {
+          fig.puppe = null;
+          const g = geheimnisFinden(fig.key, "massband");
+          if (g) return ack({ ok: true, ding: d.id, ziel: { geheimnis: g } });
+        }
+        const fehlt = Object.keys(PUPPE_MASS).length - fig.puppe.seiten.size;
+        return ack({ ok: true, ding: d.id, ziel: { puppe: { satz: `Notiert: ${PUPPE_MASS[seite]}. ${fehlt === 1 ? "Ein Maß fehlt noch." : `Es fehlen noch ${fehlt} Maße.`}` } } });
+      }
       if (d.ziel.geheimnis) {
         const g = geheimnisFinden(fig.key, d.ziel.geheimnis);
         return ack(g ? { ok: true, ding: d.id, ziel: { geheimnis: g } } : { ok: false, error: "Da ist nichts." });
@@ -702,10 +739,18 @@ function setupWelt(io, accounts) {
         const g = geheimnisFinden(fig.key, "wunderkerze");
         if (g && g.neu) socket.emit("welt:geheimnis", g);
       }
-      const spiegel = fig.raum === "casino" && R.raum("casino").dinge.find((x) => x.id === "garderobe");
-      if (art === "winken" && spiegel && R.abstandZuDing(spiegel, fig.x, fig.y) <= 1.4) {
+      /* Der Spiegel stand früher an der Garderobe im Casino; seit es dort
+         keine mehr gibt, winkt man dem großen Spiegel in der Umkleide. */
+      const spiegel = fig.raum === "modehaus" && R.raum("modehaus").dinge.find((x) => x.id === "umkleide");
+      if (art === "winken" && spiegel && R.abstandZuDing(spiegel, fig.x, fig.y) <= 1.6) {
         const g = geheimnisFinden(fig.key, "spiegel");
         if (g && g.neu) socket.emit("welt:geheimnis", g);
+      }
+      /* Ganz vorn auf dem Laufsteg jubeln: Blitzlicht und eine Brille. Der
+         Laufsteg ist das Rechteck in den extras von moebel.js. */
+      if (art === "jubeln" && fig.raum === "modehaus" && fig.x >= 7.0 && fig.x <= 9.0 && fig.y <= 5.6) {
+        const g = geheimnisFinden(fig.key, "laufsteg");
+        if (g && g.neu) socket.emit("welt:geheimnis", { ...g, blitz: true });
       }
     });
 
@@ -815,4 +860,4 @@ function schau(socket, dingId, daten) {
   io.to(kanal(fig.raum)).emit("welt:schau", { id: fig.id, ding: dingId, ...daten });
 }
 
-module.exports = { setupWelt, pruefeZug, saubereGrundform, GEHEIMNISSE, schau, nachts, uhr, figurVon };
+module.exports = { setupWelt, pruefeZug, saubereGrundform, GEHEIMNISSE, schau, nachts, uhr, figurVon, puppenSeite };
