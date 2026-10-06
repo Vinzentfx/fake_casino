@@ -114,6 +114,37 @@ const HIMMEL = {
 /* Die Luke am Rand des Dachs: vier Zahlen, die man im Haus abzählen muss. */
 const LUKE_SATZ = "Die Räder rasten ein, das Schloss springt auf. Unter der Luke liegt in einer Blechkiste ein altes Fernglas, daneben ein Zettel: „Für den, der zählen kann.“";
 
+/*
+ * Hinweise der Woche. Jeden Montag (deutsche Zeit, game/hauszeit.js) wird
+ * einer mehr sichtbar, im Buch der Geheimnisse und einmal in der Zeitung.
+ * Sie werden langsam deutlicher, verraten aber nie eine Antwort: wer alle
+ * gelesen hat, muss trotzdem noch jede Stufe selbst lösen. Der erste gilt
+ * ab der Woche, in der das Rätsel ins Haus kam.
+ *
+ * An den Browser geht nur, was schon freigegeben ist.
+ */
+const HINWEISE = [
+  "Wer nachts auf dem Dach steht, sollte nach oben sehen. Nicht alle Lichter dort sind gleich lang.",
+  "Der Wirt kennt mehr Drinks, als auf seiner Tafel stehen. Einer davon hängt über seinem Kopf.",
+  "Den Bierdeckel hat ein Diplomat aus dem 16. Jahrhundert verschlüsselt. Sein Schlüssel ist kein Wort aus dem Wörterbuch, sondern ein Berg in Porta.",
+  "Was verborgen ist, liegt hinter Mänteln. Und das Jahr, in dem der Kaiser auf den Berg kam, steht in jeder Chronik der Stadt.",
+  "Zahlenpaare sind Adressen: erst die Zeile, dann das Wort. Das Heft dazu liegt seit 1987 am selben Fleck.",
+  "Der Jäger am Winterhimmel hat zwei helle Ecken, eine blaue und eine rote. Gesucht ist die rote.",
+  "Wenn ein Stern rückwärts zählt, ist das Z die Eins.",
+  "Ins Leere greifen heißt: dorthin, wo kein Ball liegt. Und ein Hut gehört auf den Kopf, nicht in den Schrank.",
+  "Ein Schlüssel mit einem Schornstein darauf passt dorthin, wo es raucht.",
+];
+const hauszeit = require("./hauszeit");
+// Die Woche, in der das Rätsel ins Haus kam (Montag, 5. Oktober 2026).
+const START_WOCHE = hauszeit.abschnittVon(Date.parse("2026-10-07T12:00:00+02:00"), 7);
+function hinweiseFrei(jetzt = Date.now()) {
+  return Math.max(0, Math.min(HINWEISE.length, hauszeit.abschnittVon(jetzt, 7) - START_WOCHE + 1));
+}
+function hinweise(jetzt = Date.now()) {
+  const n = hinweiseFrei(jetzt);
+  return { liste: HINWEISE.slice(0, n), naechster: n < HINWEISE.length ? hauszeit.abschnittEndet(jetzt, 7) : null, von: HINWEISE.length };
+}
+
 /* Wie oft man es versuchen darf. Gilt für alle Eingaben zusammen, damit
    sich das Zahlenschloss nicht durchprobieren lässt: zehntausend
    Möglichkeiten bei zwölf Versuchen je Stunde sind gut zwei Monate. */
@@ -165,6 +196,8 @@ function barBesuch(acc) {
   const an = kleidung.angelegt(acc) || {};
   if (an.hand === "schallplatte") return { geheimnis: "blauestunde" };
   if (an.kopf === "zylinder") return { spruch: "Der Wirt mustert deinen Hut. „Schön. Aber der ist jünger als ich. Was darf's sein?“" };
+  const frei = hinweiseFrei();
+  if (frei && Math.random() < 0.25) return { spruch: `Der Wirt beugt sich vor. „Man erzählt sich hier oben: ${HINWEISE[frei - 1]}“ Dann lauter: „Was darf's sein?“` };
   return { spruch: WIRT[Math.floor(Math.random() * WIRT.length)] };
 }
 
@@ -210,7 +243,10 @@ function eingabe(acc, art, text) {
 function greifer(acc, treffer) {
   if (treffer != null || stufe(acc) !== 3) return null;
   const an = kleidung.angelegt(acc) || {};
-  if (an.kopf !== "zylinder") return null;
+  /* Richtig gegriffen, aber falsch angezogen. Ohne diese Zeile sähe es aus
+     wie jeder andere Fehlgriff, und man hielte den ganzen Gedanken für
+     falsch. Leise: es steht nur am Automaten, kein Fenster. */
+  if (an.kopf !== "zylinder") return { leise: true, satz: "Der Greifer kratzt über den leeren Boden, als suche er etwas. Du hast das Gefühl, nicht passend angezogen zu sein." };
   hebe(acc, 4);
   return { titel: "Ein kleiner Schlüssel", satz: TEXT.schluessel };
 }
@@ -254,4 +290,4 @@ const anzahlEingetragen = () => liste().length;
 // Für Tests: Liste und Versuche zurücksetzen, ohne die Datei anzufassen.
 function _zuruecksetzen(datei) { eingetragen = []; versuche.clear(); if (datei) DATEI = datei; }
 
-module.exports = { norm, pruefsumme, stimmt, eingabe, barBesuch, greifer, tuerOffen, tafel, notizen, stufe, darf, anzahlEingetragen, STUFEN, _zuruecksetzen };
+module.exports = { HINWEISE, hinweise, hinweiseFrei, norm, pruefsumme, stimmt, eingabe, barBesuch, greifer, tuerOffen, tafel, notizen, stufe, darf, anzahlEingetragen, STUFEN, _zuruecksetzen };

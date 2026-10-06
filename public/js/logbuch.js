@@ -23,6 +23,13 @@
   function weserlicht(e, w) {
     const stufen = Array.from({ length: w.von }, (_, i) => `<i class="${i < w.stufe ? "an" : ""}"></i>`).join("");
     const notizen = (w.notizen || []).map((n) => `<div class="lb-notiz"><h4>${esc(n.titel)}</h4><pre>${esc(n.text)}</pre></div>`).join("");
+    /* Die Hinweise der Woche sieht jeder, auch wer noch nicht angefangen hat:
+       sie sind der Weg hinein. */
+    const h = w.hinweise || { liste: [] };
+    const naechster = h.naechster ? new Date(h.naechster).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" }) : null;
+    const tipps = h.liste.length || naechster ? `<div class="lb-notiz lb-hinweise"><h4>Hinweise der Woche (${h.liste.length} von ${h.von})</h4>
+        ${h.liste.length ? `<ol>${h.liste.map((t) => `<li>${esc(t)}</li>`).join("")}</ol>` : ""}
+        ${naechster ? `<small>Der nächste kommt am ${esc(naechster)}.</small>` : "<small>Mehr Hinweise gibt es nicht.</small>"}</div>` : "";
     const kopf = e.gefunden
       ? `<b>${esc(e.label)}</b><small>Nr. ${esc(w.nr || "?")} an der Tafel, seit ${esc(datum(e.gefunden))}</small>`
       : `<b>???</b><small>${w.stufe ? "Du bist auf der Spur." : "Ein Rätsel in mehreren Teilen."} ${w.eingetragen ? `Bisher ${w.eingetragen} eingetragen.` : "Bisher hat es niemand gelöst."}</small>`;
@@ -30,6 +37,7 @@
       ${kopf}
       <span class="lb-sterne">${sterne(e.schwer)}</span>
       ${w.stufe ? `<div class="lb-stufen" aria-label="Stufe ${w.stufe} von ${w.von}">${stufen}</div>` : ""}
+      ${tipps}
       ${notizen}
     </article>`;
   }

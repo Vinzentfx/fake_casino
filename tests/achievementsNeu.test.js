@@ -49,3 +49,31 @@ test("die Greifer-Achievements zählen Versuche, knappe Fehlgriffe und den einen
   ach.check("bert");
   assert.ok(freigeschaltet.includes("greifer_halt"));
 });
+
+test("die Hinweise zum großen Rätsel kommen montags, einer je Woche, und nie im Voraus", () => {
+  const r = require("../game/raetsel");
+  const t = (s) => Date.parse(s);
+  assert.equal(r.hinweiseFrei(t("2026-10-04T23:00:00+02:00")), 0, "vor dem Start keiner");
+  assert.equal(r.hinweiseFrei(t("2026-10-06T12:00:00+02:00")), 1);
+  assert.equal(r.hinweiseFrei(t("2026-10-11T23:59:00+02:00")), 1, "Sonntagnacht noch derselbe");
+  assert.equal(r.hinweiseFrei(t("2026-10-12T00:30:00+02:00")), 2, "Montag kommt der nächste");
+  assert.equal(r.hinweiseFrei(t("2027-06-01T12:00:00+02:00")), r.HINWEISE.length, "irgendwann sind alle da");
+  const h = r.hinweise(t("2026-10-06T12:00:00+02:00"));
+  assert.equal(h.liste.length, 1);
+  assert.ok(h.naechster > t("2026-10-11T23:00:00+02:00") && h.naechster <= t("2026-10-12T00:00:00+02:00"));
+  // Kein Hinweis verrät eine Antwort im Klartext.
+  const alle = r.HINWEISE.join(" ").toLowerCase();
+  for (const geheim of ["nachteule", "1896", "beteigeuze", "betelgeuse", "wittekind", "zylinder"]) assert.equal(alle.includes(geheim), false, geheim);
+});
+
+test("wer auf der richtigen Stufe ohne Hut ins Leere greift, bekommt einen leisen Wink", () => {
+  const r = require("../game/raetsel");
+  const acc = { weserlicht: { stufe: 3 } };
+  const ohne = r.greifer(acc, null);
+  assert.equal(ohne.leise, true);
+  assert.equal(acc.weserlicht.stufe, 3, "der Wink hebt keine Stufe");
+  assert.equal(r.greifer(acc, 1), null, "mit einem Ball passiert nichts");
+  acc.kopf = "zylinder";
+  assert.match(r.greifer(acc, null).satz, /Schornstein/);
+  assert.equal(acc.weserlicht.stufe, 4);
+});

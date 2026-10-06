@@ -587,7 +587,7 @@ test("das Weserlicht geht nur Stufe für Stufe, und am Ende steht man an der Taf
   fig.x = 10.6; fig.y = 4.1;
   assert.equal(anna.frage("welt:nutzen", { ding: "schornstein" }).ok, false);
   // Stufe 4: ins Leere greifen, aber nur mit dem alten Hut.
-  assert.equal(w.welt.greiferFund ? null : require("../game/welt").greiferFund("anna", null), null);
+  assert.equal(require("../game/welt").greiferFund("anna", null).leise, true, "ohne Hut nur ein Wink");
   konto.kopf = "zylinder";
   assert.equal(require("../game/welt").greiferFund("anna", 2), null, "ein Ball zählt nicht");
   assert.match(require("../game/welt").greiferFund("anna", null).satz, /Schornstein/);

@@ -35,6 +35,9 @@
         { icon: "kosmetik", titel: "Vier Meilensteine",
           text: "Ab drei gefundenen Geheimnissen gibt es das Schild „Schlüsselloch“, ab sechs den Rahmen „Kompassrose“ mit einer suchenden Nadel, ab neun die Aura „Glühwürmchen“ und ab zwölf den Namensstil „Geheimtinte“. Kaufen kann man keins davon, nur finden." },
 
+        { icon: "frage", titel: "Jeden Montag ein Hinweis",
+          text: "Zum größten Rätsel im Haus gibt es ab jetzt jede Woche einen Hinweis. Er steht im Buch der Geheimnisse beim Eintrag mit den fünf Sternen, und die alten bleiben dort stehen. Manchmal erzählt ihn auch der Wirt auf dem Dach." },
+
         { icon: "bestenliste", titel: "Auf einen Blick, was fehlt",
           text: "Oben in der Welt steht jetzt „Geheimnisse“ mit deinem Stand. Im Buch der Geheimnisse ist alles in „Gelöst“ und „Noch offen“ getrennt, und im Profil siehst du deinen Fortschritt als Balken. In der Bestenliste gibt es die neue Kategorie „Rätselkönig“: wer die meisten gelöst hat." },
       ],

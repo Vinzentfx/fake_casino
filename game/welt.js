@@ -147,7 +147,7 @@ function greiferFund(key, treffer) {
   const acc = zuschauen.accounts && zuschauen.accounts.get(key);
   if (!acc) return null;
   const f = raetsel.greifer(acc, treffer);
-  if (f) { zuschauen.accounts.save(); try { require("./achievements").check(key); } catch {} }
+  if (f && !f.leise) { zuschauen.accounts.save(); try { require("./achievements").check(key); } catch {} }
   return f;
 }
 
@@ -465,6 +465,32 @@ function setupWelt(io, accounts) {
     },
   });
 
+  /* Ein neuer Hinweis der Woche steht einmal in der Zeitung und im Chat.
+     Welcher zuletzt angesagt wurde, liegt auf der Platte, sonst käme die
+     Ansage nach jedem Neustart wieder. Geprüft wird stündlich; die Woche
+     wechselt montags um Mitternacht, eine Stunde später ist früh genug. */
+  const ANSAGE_DATEI = require("path").join(__dirname, "..", "data", "raetsel-hinweise.json");
+  function hinweisAnsagen() {
+    const fs = require("fs");
+    let angesagt = 0;
+    try { angesagt = JSON.parse(fs.readFileSync(ANSAGE_DATEI, "utf8")).angesagt || 0; } catch {}
+    const frei = raetsel.hinweiseFrei();
+    if (frei <= angesagt) return;
+    try {
+      fs.writeFileSync(ANSAGE_DATEI + ".tmp", JSON.stringify({ angesagt: frei }));
+      fs.renameSync(ANSAGE_DATEI + ".tmp", ANSAGE_DATEI);
+    } catch { return; }
+    const text = frei === 1
+      ? "Im Buch der Geheimnisse steht ein erster Hinweis zum größten Rätsel im Haus. Jeden Montag kommt einer dazu."
+      : `Im Buch der Geheimnisse steht ein neuer Hinweis zum größten Rätsel im Haus (${frei} von ${raetsel.HINWEISE.length}).`;
+    try { require("./chronik").notiere("event", text); } catch {}
+    try { require("./chat").announce(io, text); } catch {}
+  }
+  if (!process.env.NODE_TEST_CONTEXT) {
+    setTimeout(hinweisAnsagen, 15000).unref();
+    setInterval(hinweisAnsagen, 60 * 60 * 1000).unref();
+  }
+
   // Wer länger weg ist, fängt wieder am Eingang an. Ohne Timer je Figur:
   // der wäre nach jedem Neustart ohnehin weg.
   setInterval(() => {
@@ -732,6 +758,7 @@ function setupWelt(io, accounts) {
       const stufe = raetsel.stufe(acc);
       ack({ ok: true, liste, meilensteine, nachgetragen, weserlicht: {
         stufe, von: raetsel.STUFEN, notizen: raetsel.notizen(acc), eingetragen: raetsel.anzahlEingetragen(),
+        hinweise: raetsel.hinweise(),
         nr: acc.weserlicht && acc.weserlicht.nr || null,
       } });
     });

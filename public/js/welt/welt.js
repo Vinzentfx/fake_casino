@@ -2445,7 +2445,8 @@
           setTimeout(() => Casino.sound && Casino.sound.play("gummihuhn"), 500);
           Casino.dialog.hinweis("Der Griff hält, der Ball fällt in den Schacht, und darin liegt: das Königliche Gummihuhn. Es gibt kaum eins davon im Haus.\n\nNimm es in der Garderobe in die Hand. Unter Gesten kannst du es dann quietschen lassen, und zwar so, dass es der ganze Raum hört.", { titel: "Gefangen!" });
         } else if (r.gewonnen) Casino.sound && Casino.sound.play("cash");
-        if (r.fund) { Casino.sound && Casino.sound.play("geheimnis"); Casino.dialog.hinweis(r.fund.satz, { titel: r.fund.titel }); }
+        if (r.fund && r.fund.leise) { tisch.info = r.fund.satz; greiferKnopf(); }
+        else if (r.fund) { Casino.sound && Casino.sound.play("geheimnis"); Casino.dialog.hinweis(r.fund.satz, { titel: r.fund.titel }); }
       });
     });
   }

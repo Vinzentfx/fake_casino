@@ -2202,3 +2202,7 @@ html[data-welt-raum="sternwarte"] { --raum-ton: 16, 22, 54; }
 .pf-geh-balken { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 6px; }
 .pf-geh-balken i { display: block; height: 100%; background: var(--accent); }
 .lb-rangliste { margin-top: var(--sp-3); }
+.lb-hinweise ol { margin: 0 0 6px; padding-left: 1.3em; display: grid; gap: 4px; font-size: var(--fs-sm); line-height: 1.45; }
+.lb-hinweise small { color: var(--text-dim); }
+/* Das große Rätsel steht über die ganze Breite, sonst wird die Hinweisliste ein schmaler Streifen. */
+#lb-liste:has(> .lb-weserlicht) { grid-template-columns: 1fr; }
