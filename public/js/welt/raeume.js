@@ -266,7 +266,10 @@
         nutz: { x: 12.6, y: 4.3, r: 1.6 }, label: "Lotteriebude", verb: "Tippen", ziel: { screen: "lotterie", lotto: true }, fokus: { x: 12.6, y: 2.6, zoom: 2.1 } },
       { id: "fahne", art: "fahnenmast", x: 14.4, y: 8.2, block: [14.1, 7.9, 14.7, 8.2],
         nutz: { x: 14.0, y: 8.7, r: 1.1 }, label: "Clans", verb: "Banner ansehen", ziel: { screen: "clans" }, fokus: { x: 14.4, y: 6.6, zoom: 2.2 } },
-      { id: "feuer", art: "feuerschale", x: 8.1, y: 6.9, block: [7.6, 6.4, 8.6, 6.9] },
+      /* Ohne `nutz` maß der Server den Abstand fürs Winken als unendlich,
+         und die Wunderkerze war nie zu bekommen. „rand“ misst zum Block;
+         ohne `ziel` bleibt die Schale trotzdem kein Knopf. */
+      { id: "feuer", art: "feuerschale", x: 8.1, y: 6.9, block: [7.6, 6.4, 8.6, 6.9], nutz: "rand" },
       { id: "shisha", art: "shisha", x: 11.6, y: 7.95, block: [11.35, 7.6, 11.85, 7.95],
         nutz: "rand", label: "Shisha", verb: "Hinsetzen", ziel: { shisha: true }, fokus: { x: 11.6, y: 7.4, zoom: 2.4 } },
       ...[["kissen-1", 10.4, 8.05, "rot"], ["kissen-2", 12.8, 8.05, "blau"], ["kissen-3", 11.6, 6.95, "gold"], ["kissen-4", 11.6, 9.15, "gruen"]]

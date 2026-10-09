@@ -669,3 +669,34 @@ test("alle Titel und Meilensteine gibt es im Katalog", () => {
     assert.equal(cosmetics.handelbar(art, id), false);
   }
 });
+
+/* Jedes Geheimnis, das an einer Geste in der Nähe eines Dings hängt,
+   braucht einen messbaren Abstand. Die Feuerschale hatte keinen Nutzpunkt,
+   der Abstand war unendlich, und die Wunderkerze gab es nie. */
+test("nachts der Feuerschale zuwinken gibt die Wunderkerze, tagsüber nicht", (t) => {
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  const welt = require("../game/welt");
+  const echteUhr = welt.uhr.jetzt;
+  t.after(() => { welt.uhr.jetzt = echteUhr; });
+  const anna = w.neuerSocket("anna");
+  anna.frage("welt:betreten", {});
+  const fig = w.welt.figuren.get("anna");
+  fig.raum = "hof"; fig.x = 8.1; fig.y = 7.4;
+  assert.ok(R.begehbar(R.raum("hof"), fig.x, fig.y), "vor der Schale ist freier Boden");
+  welt.uhr.jetzt = () => Date.parse("2026-10-01T15:00:00+02:00");
+  anna.frage("welt:geste", { art: "winken" });
+  assert.equal(anna.hat("welt:geheimnis").length, 0, "tagsüber nichts");
+  welt.uhr.jetzt = () => Date.parse("2026-10-01T23:30:00+02:00");
+  fig.gesteTs = 0;
+  anna.frage("welt:geste", { art: "winken" });
+  assert.equal(anna.hat("welt:geheimnis")[0].label, "wunderkerze");
+});
+
+test("jedes Ding, an dem ein Geheimnis per Geste hängt, hat einen messbaren Abstand", () => {
+  for (const [raum, id] of [["hof", "feuer"], ["ruhm", "podest"], ["modehaus", "umkleide"], ["strasse", "garage"]]) {
+    const d = R.raum(raum).dinge.find((x) => x.id === id);
+    assert.ok(d && d.nutz, `${raum}/${id} braucht nutz`);
+    assert.ok(Number.isFinite(R.abstandZuDing(d, d.x, d.y + 0.6)), `${raum}/${id} misst keinen Abstand`);
+  }
+});
