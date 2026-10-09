@@ -192,12 +192,19 @@ function hebe(acc, auf) {
 }
 
 /** Wer an die Bar kommt. Hält er die alte Schallplatte, gibt es die Blaue Stunde. */
-function barBesuch(acc) {
+function barBesuch(acc, geruechte = []) {
   const an = kleidung.angelegt(acc) || {};
   if (an.hand === "schallplatte") return { geheimnis: "blauestunde" };
   if (an.kopf === "zylinder") return { spruch: "Der Wirt mustert deinen Hut. „Schön. Aber der ist jünger als ich. Was darf's sein?“" };
   const frei = hinweiseFrei();
   if (frei && Math.random() < 0.25) return { spruch: `Der Wirt beugt sich vor. „Man erzählt sich hier oben: ${HINWEISE[frei - 1]}“ Dann lauter: „Was darf's sein?“` };
+  /* Sonst oft ein Gerücht zu etwas, das man selbst noch nicht gefunden hat.
+     Der Wirt hört viel; so gibt es zu jedem Geheimnis auch in der Welt
+     einen Weg, und nicht nur im Buch. */
+  if (geruechte.length && Math.random() < 0.45) {
+    const g = geruechte[Math.floor(Math.random() * geruechte.length)];
+    return { spruch: `Der Wirt wischt über den Tresen. „Hab gehört: ${g}“ Er zwinkert. „Was darf's sein?“` };
+  }
   return { spruch: WIRT[Math.floor(Math.random() * WIRT.length)] };
 }
 
@@ -280,10 +287,24 @@ function notizen(acc) {
   const s = stufe(acc);
   const n = [];
   if (s >= 1) n.push({ titel: "Der Bierdeckel", text: TEXT.bierdeckel });
-  if (s >= 2) n.push({ titel: "Die Schrift im Spiegel", text: TEXT.spiegel });
+  if (s >= 2) {
+    n.push({ titel: "Die Schrift im Spiegel", text: TEXT.spiegel });
+    /* Das Heft gleich daneben, eine Zeile je Absatz: wer auf dem iPad
+       zwischen zwei Fenstern hin und her musste, hat die Zeilen verzählt. */
+    const heft = programmheft();
+    if (heft) n.push({ titel: "Das Programmheft aus dem Fundus", text: heft, zeilen: true });
+  }
   if (s >= 3) n.push({ titel: "Was der Stern zählt", text: TEXT.fernrohr });
   if (s >= 4) n.push({ titel: "Der Messingschlüssel", text: TEXT.schluessel });
   return n;
+}
+
+/* Der Text des Programmhefts steht genau einmal, am Ding in raeume.js. */
+function programmheft() {
+  try {
+    const d = require("../public/js/welt/raeume.js").raum("fundus").dinge.find((x) => x.id === "heft");
+    return d && d.ziel && d.ziel.hinweis || null;
+  } catch { return null; }
 }
 
 const anzahlEingetragen = () => liste().length;

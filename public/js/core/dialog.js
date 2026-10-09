@@ -24,13 +24,23 @@
 
   let offen = null;   // { schliessen(wert) }
 
-  function baue({ titel, text, art, wert, platzhalter, okText, abbruchText, gefahr, optionen }) {
+  /* `zeilen`: jede Zeile des Texts als eigener Absatz. Für Texte, in denen
+     die Zeile etwas zählt (das Programmheft im Fundus): in einem 400 Pixel
+     breiten Fenster brach sonst jede lange Zeile um, und wer die sichtbaren
+     Zeilen zählte, kam beim falschen Wort heraus. Ein Umbruch rückt ein, so
+     sieht man, dass er noch zur Zeile davor gehört. */
+  function textHtml(text, zeilen) {
+    if (!zeilen) return `<p class="dlg-text">${esc(text).replace(/\n/g, "<br>")}</p>`;
+    return `<div class="dlg-text dlg-zeilen">${String(text || "").split("\n").map((z) => `<p class="dlg-zeile">${esc(z) || "&nbsp;"}</p>`).join("")}</div>`;
+  }
+
+  function baue({ titel, text, art, wert, platzhalter, okText, abbruchText, gefahr, optionen, zeilen }) {
     const wrap = document.createElement("div");
     wrap.className = "dlg-overlay";
     wrap.innerHTML = `
-      <div class="dlg-card" role="dialog" aria-modal="true">
+      <div class="dlg-card${zeilen ? " dlg-breit" : ""}" role="dialog" aria-modal="true">
         ${titel ? `<h3 class="dlg-titel">${esc(titel)}</h3>` : ""}
-        <p class="dlg-text">${esc(text).replace(/\n/g, "<br>")}</p>
+        ${textHtml(text, zeilen)}
         ${art === "eingabe" ? `<input class="dlg-input" id="dlg-input" value="${esc(wert || "")}" placeholder="${esc(platzhalter || "")}" />` : ""}
         ${art === "wahl" ? `<div class="dlg-wahl">${(optionen || []).map((o, i) =>
           `<button type="button" class="dlg-option" data-wert="${esc(o.wert)}">

@@ -560,6 +560,12 @@
       case "schal":
         if (seite) return `<path d="M27 42.6Q33 45.6 38.6 43.2L38.8 47Q33 49.6 26.8 46.4Z" fill="#c8453c" stroke="#7a221c" stroke-width=".7"/><path d="M36 46L37.4 56L34.4 56.4L33.6 47Z" fill="#c8453c" stroke="#7a221c" stroke-width=".7"/>`;
         return `<path d="M24.4 43.4Q32 47.6 39.6 43.4L39.8 47.2Q32 51.6 24.2 47.2Z" fill="#c8453c" stroke="#7a221c" stroke-width=".7"/>${hinten ? "" : `<path d="M34.6 47.6L36.4 59L33.2 59.4L32 48.6Z" fill="#c8453c" stroke="#7a221c" stroke-width=".7"/><path d="M33 58h3.4M33.2 56h3" stroke="#f2c94c" stroke-width=".6"/>`}`;
+      case "seidentuch":
+        /* Ein Dreieckstuch aus roter Seide, vorn geknotet, mit einem
+           goldenen Saum. */
+        if (seite) return `<path d="M27.4 42.8Q33 45.4 38.4 43.4L38.2 46.6Q33 49 27.6 46Z" fill="#b3122e" stroke="#5c0716" stroke-width=".6"/><path d="M36.4 46.2L38.6 53L35 51.2Z" fill="#c8243a" stroke="#5c0716" stroke-width=".6"/>`;
+        if (hinten) return `<path d="M24.6 43.4Q32 47 39.4 43.4L39.4 46.2Q32 49.6 24.6 46.2Z" fill="#b3122e" stroke="#5c0716" stroke-width=".6"/>`;
+        return `<path d="M24.6 43.2Q32 47 39.4 43.2L39.6 45.8Q32 49.6 24.4 45.8Z" fill="#b3122e" stroke="#5c0716" stroke-width=".6"/><path d="M27.4 46.6L32 57L36.6 46.6Q32 49.2 27.4 46.6Z" fill="#c8243a" stroke="#5c0716" stroke-width=".6"/><path d="M28.6 47.8L32 55.4L35.4 47.8" fill="none" stroke="#e2b656" stroke-width=".6"/><circle cx="32" cy="47.4" r="1.6" fill="#8e0e22" stroke="#5c0716" stroke-width=".5"/>`;
       case "fliege":
         if (hinten) return "";
         if (seite) return `<path d="M38.4 44.6l2.6-1.6v3.4z" fill="#b3261e" stroke="#5c0f0c" stroke-width=".6"/>`;

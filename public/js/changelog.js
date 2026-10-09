@@ -25,6 +25,18 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-10-09",
+      datum: "9. Oktober 2026",
+      titel: "Gerüchte im Haus",
+      items: [
+        { icon: "stern", titel: "Zu jedem Geheimnis ein Gerücht",
+          text: "Im Buch der Geheimnisse steht bei jedem offenen Eintrag jetzt ein Gerücht, das in die richtige Richtung zeigt. Lesen kannst du es aber erst, wenn du den Raum schon betreten hast, in dem das Geheimnis liegt. Und der Wirt auf dem Dach erzählt gern, was er so gehört hat, und zwar über die Dinge, die du selbst noch nicht gefunden hast." },
+
+        { icon: "frage", titel: "Ein Geheimnis mehr",
+          text: "Im Atelier ist ein neues Geheimnis dazugekommen. Und das alte Programmheft zeigt seine Zeilen jetzt so, wie sie gedruckt sind, auch auf dem iPad." },
+      ],
+    },
+    {
       id: "2026-10-06-c",
       datum: "6. Oktober 2026",
       titel: "Geheimnisse lohnen sich jetzt doppelt",

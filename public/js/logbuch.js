@@ -22,7 +22,9 @@
 
   function weserlicht(e, w) {
     const stufen = Array.from({ length: w.von }, (_, i) => `<i class="${i < w.stufe ? "an" : ""}"></i>`).join("");
-    const notizen = (w.notizen || []).map((n) => `<div class="lb-notiz"><h4>${esc(n.titel)}</h4><pre>${esc(n.text)}</pre></div>`).join("");
+    const notizen = (w.notizen || []).map((n) => `<div class="lb-notiz"><h4>${esc(n.titel)}</h4>${n.zeilen
+      ? `<div class="dlg-zeilen lb-zeilen">${n.text.split("\n").map((z) => `<p class="dlg-zeile">${esc(z)}</p>`).join("")}</div>`
+      : `<pre>${esc(n.text)}</pre>`}</div>`).join("");
     /* Die Hinweise der Woche sieht jeder, auch wer noch nicht angefangen hat:
        sie sind der Weg hinein. */
     const h = w.hinweise || { liste: [] };
@@ -43,7 +45,9 @@
   }
 
   const eintrag = (e) => {
-    if (!e.gefunden) return `<article class="lb-eintrag zu"><span class="lb-status nein">Offen</span><b>???</b><span class="lb-sterne">${sterne(e.schwer)}</span></article>`;
+    if (!e.gefunden) return `<article class="lb-eintrag zu"><span class="lb-status nein">Offen</span><b>???</b><span class="lb-sterne">${sterne(e.schwer)}</span>
+      ${e.geruecht ? `<p class="lb-geruecht"><small>Gerücht</small>${esc(e.geruecht)}</p>`
+        : e.geruechtFern ? '<p class="lb-geruecht fern">Man erzählt sich etwas darüber, aber nur in einem Raum, in dem du noch nicht warst.</p>' : ""}</article>`;
     return `<article class="lb-eintrag">
       <span class="lb-status ja">✓ Gelöst</span>
       <b>${esc(e.label)}</b>

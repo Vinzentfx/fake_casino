@@ -69,21 +69,22 @@ const RICHTUNGEN = new Set(["hoch", "runter", "links", "rechts"]);
 /* `ort` und `schwer` stehen für das Logbuch: was man gefunden hat, steht
    dort mit Raum, was fehlt, nur mit der Zahl der Sterne. */
 const GEHEIMNISSE = {
-  tresorkatze: { art: "haustier", id: "tresorkatze", ort: "Tresorraum", schwer: 2, satz: "Die Katze blinzelt, streckt sich und läuft dir ab jetzt hinterher." },
-  kleeblatt:   { art: "hand",     id: "kleeblatt",   ort: "Terrasse", schwer: 1, satz: "Ein vierblättriges Kleeblatt. Du steckst es ein, es gehört jetzt dir." },
-  spiegel:     { art: "brille",   id: "spiegelbrille", ort: "Modehaus", schwer: 1, satz: "Dein Spiegelbild winkt zurück und reicht dir eine Brille herüber." },
-  schallplatte: { art: "hand",    id: "schallplatte", ort: "Spielhalle", schwer: 2, satz: "Beim dritten Drücken rattert die Jukebox, ruckelt, und unten fällt eine alte Schallplatte heraus. Die gehört jetzt dir." },
-  pokal:       { art: "hand",     id: "pokal",       ort: "Ruhmeshalle", schwer: 1, satz: "Oben auf dem Podest jubelst du, als hättest du gewonnen. Jemand drückt dir einen goldenen Pokal in die Hand." },
-  wunderkerze: { art: "hand",     id: "wunderkerze", ort: "Terrasse", schwer: 2, satz: "Du winkst dem Feuer zu, und aus der Glut springt ein Funke in deine Hand. Eine Wunderkerze, die nie ausgeht." },
-  e46:         { art: "fahrzeug", id: "e46",         ort: "Garage", schwer: 4, satz: "Unter der Plane steht ein alter BMW E46 in Orientblau, auf BBS-Felgen. Der Schlüssel steckt. Er gehört jetzt dir. Anspringen wird er nie." },
-  laufsteg:    { art: "brille",   id: "divabrille",  ort: "Modehaus", schwer: 2, satz: "Ganz vorn auf dem Laufsteg reißt du die Arme hoch, und von irgendwo blitzt es dreimal. Jemand reicht dir eine Sonnenbrille: „Die brauchst du jetzt.“" },
-  massband:    { art: "hand",     id: "massband",    ort: "Atelier", schwer: 2, satz: "Brust, Rücken, beide Schultern: alles notiert. Die Puppe sieht zufrieden aus, und das Maßband darfst du behalten." },
-  dachluke:    { art: "hand",     id: "fernglas",    ort: "Dachgarten", schwer: 4, satz: "Die Räder rasten ein, das Schloss springt auf. Unter der Luke liegt in einer Blechkiste ein altes Fernglas, daneben ein Zettel: „Für den, der zählen kann.“" },
-  blauestunde: { art: "hand",     id: "blauestunde", ort: "Dachgarten", schwer: 3, satz: "Der Wirt nimmt die Schallplatte, dreht sie im Licht und lächelt. „Die lief hier, als unten noch Varieté war.“ Dann mixt er etwas Blaues, das leise leuchtet. „Die Blaue Stunde. Steht auf keiner Tafel.“" },
+  tresorkatze: { art: "haustier", id: "tresorkatze", raum: "kontor", geruecht: "Im Kontor steht in einem Regal ein Buch weiter vor als die anderen. Man sagt, dahinter schläft jemand.", ort: "Tresorraum", schwer: 2, satz: "Die Katze blinzelt, streckt sich und läuft dir ab jetzt hinterher." },
+  kleeblatt:   { art: "hand",     id: "kleeblatt",   raum: "hof", geruecht: "Auf der Terrasse, links vor der Bank, wächst etwas, das Glück bringt. Man muss nur genau hinsehen.", ort: "Terrasse", schwer: 1, satz: "Ein vierblättriges Kleeblatt. Du steckst es ein, es gehört jetzt dir." },
+  spiegel:     { art: "brille",   id: "spiegelbrille", raum: "modehaus", geruecht: "Wer seinem Spiegelbild in der Umkleide freundlich zuwinkt, bekommt eine Antwort.", ort: "Modehaus", schwer: 1, satz: "Dein Spiegelbild winkt zurück und reicht dir eine Brille herüber." },
+  schallplatte: { art: "hand",    id: "schallplatte", raum: "spielhalle", geruecht: "Die alte Jukebox in der Spielhalle hört schlecht. Wer sie schnell hintereinander drückt, dem gibt sie mehr als ein Lied.", ort: "Spielhalle", schwer: 2, satz: "Beim dritten Drücken rattert die Jukebox, ruckelt, und unten fällt eine alte Schallplatte heraus. Die gehört jetzt dir." },
+  pokal:       { art: "hand",     id: "pokal",       raum: "ruhm", geruecht: "Auf dem Podest der Ruhmeshalle freuen sich die Besten. Wer sich davor mitfreut, geht nicht leer aus.", ort: "Ruhmeshalle", schwer: 1, satz: "Oben auf dem Podest jubelst du, als hättest du gewonnen. Jemand drückt dir einen goldenen Pokal in die Hand." },
+  wunderkerze: { art: "hand",     id: "wunderkerze", raum: "hof", geruecht: "Wenn es dunkel ist auf der Terrasse, grüßt das Feuer zurück. Man muss es nur zuerst grüßen.", ort: "Terrasse", schwer: 2, satz: "Du winkst dem Feuer zu, und aus der Glut springt ein Funke in deine Hand. Eine Wunderkerze, die nie ausgeht." },
+  e46:         { art: "fahrzeug", id: "e46",         raum: "strasse", geruecht: "Am alten Garagentor ist ein Kreidemond gemalt, und daneben steht „tüt“. Nachts soll dort jemand aufmachen, wenn man laut genug ist.", ort: "Garage", schwer: 4, satz: "Unter der Plane steht ein alter BMW E46 in Orientblau, auf BBS-Felgen. Der Schlüssel steckt. Er gehört jetzt dir. Anspringen wird er nie." },
+  laufsteg:    { art: "brille",   id: "divabrille",  raum: "modehaus", geruecht: "Ganz vorn auf dem Laufsteg, bei den Puppen, wartet ein Fotograf. Er drückt erst ab, wenn jemand jubelt.", ort: "Modehaus", schwer: 2, satz: "Ganz vorn auf dem Laufsteg reißt du die Arme hoch, und von irgendwo blitzt es dreimal. Jemand reicht dir eine Sonnenbrille: „Die brauchst du jetzt.“" },
+  massband:    { art: "hand",     id: "massband",    raum: "atelier", geruecht: "Die Schneiderpuppe im Atelier will ordentlich vermessen werden. Von vorn allein ist das kein Maß.", ort: "Atelier", schwer: 2, satz: "Brust, Rücken, beide Schultern: alles notiert. Die Puppe sieht zufrieden aus, und das Maßband darfst du behalten." },
+  dachluke:    { art: "hand",     id: "fernglas",    raum: "dachgarten", geruecht: "Der alte Hausmeister hat den Code der Luke nie aufgeschrieben. Er hat ihn im Haus gezählt, Zeile für Zeile.", ort: "Dachgarten", schwer: 4, satz: "Die Räder rasten ein, das Schloss springt auf. Unter der Luke liegt in einer Blechkiste ein altes Fernglas, daneben ein Zettel: „Für den, der zählen kann.“" },
+  blauestunde: { art: "hand",     id: "blauestunde", raum: "dachgarten", geruecht: "Der Wirt schwärmt von der Musik aus der Zeit, als unten noch Varieté war. Wer ihm etwas mitbringt, das sie abspielt, bekommt einen besonderen Drink.", ort: "Dachgarten", schwer: 3, satz: "Der Wirt nimmt die Schallplatte, dreht sie im Licht und lächelt. „Die lief hier, als unten noch Varieté war.“ Dann mixt er etwas Blaues, das leise leuchtet. „Die Blaue Stunde. Steht auf keiner Tafel.“" },
   /* Das Weserlicht (game/raetsel.js). Der Rabe ist das Stück, das hier
      gezählt wird; Laterne und Titel gibt die Ehrentafel dazu. */
   weserlicht:  { art: "haustier", id: "rabe",        ort: "Sternwarte", schwer: 5, satz: "Der Rabe bleibt bei dir." },
-  zylinder:    { art: "kopf",     id: "zylinder",    ort: "Kostümfundus", schwer: 3, satz: "Unter dem Deckel liegt Staub, ein Programmheft von 1987 und ein alter Zylinder. Er passt, als hätte er auf dich gewartet." },
+  naehmaschine: { art: "accessoire", id: "seidentuch", raum: "atelier", geruecht: "Im Stoffregal im Atelier fehlt ein Ballen. Wer wissen will, wo er hin ist, sollte nach Federn suchen.", ort: "Atelier", schwer: 3, satz: "Du legst den roten Seidenrest unter die Nadel. Die Maschine rattert, als hätte sie seit Jahren darauf gewartet, und am Ende liegt ein Halstuch mit goldenem Saum vor dir." },
+  zylinder:    { art: "kopf",     id: "zylinder",    raum: "atelier", geruecht: "Hinter den Mänteln im alten Schrank im Atelier ist es heller, als es in einem Schrank sein dürfte.", ort: "Kostümfundus", schwer: 3, satz: "Unter dem Deckel liegt Staub, ein Programmheft von 1987 und ein alter Zylinder. Er passt, als hätte er auf dich gewartet." },
 };
 
 /* Mehr als das Stück in der Hand. Jedes Geheimnis gibt dazu einen eigenen
@@ -99,6 +100,17 @@ const GEH_MEILENSTEINE = [
   { ab: 12, art: "style", id: "geh_tinte", name: "Namensstil" },
 ];
 const titelVon = (gid) => (gid === "weserlicht" ? "weserlicht" : "geh_" + gid);
+
+/* Ob jemand einen Raum schon betreten hat, offen oder geheim. */
+function warDort(acc, raum) {
+  const w = acc && acc.welt;
+  return !!(w && ((w.raeume && w.raeume[raum]) || (w.verstecke && w.verstecke[raum])));
+}
+/* Was der Wirt über die Geheimnisse weiß, die jemand noch nicht hat. */
+function offeneGeruechte(acc) {
+  const gefunden = (acc && acc.geheimnisse) || {};
+  return Object.entries(GEHEIMNISSE).filter(([id, g]) => g.geruecht && !gefunden[id]).map(([, g]) => g.geruecht);
+}
 
 /* Die Schneiderpuppe im Atelier will von allen vier Seiten vermessen
    werden. Welche Seite man gerade misst, ergibt sich daraus, wo man steht.
@@ -623,7 +635,7 @@ function setupWelt(io, accounts) {
       if (d.ziel.eingabe) {
         const frage = { ...d.ziel.eingabe };
         if (frage.art === "bar") {
-          const b = raetsel.barBesuch(accounts.get(fig.key));
+          const b = raetsel.barBesuch(accounts.get(fig.key), offeneGeruechte(accounts.get(fig.key)));
           const platz = amTischSetzen(fig, raum, d);
           if (b.geheimnis) {
             const g = geheimnisFinden(fig.key, b.geheimnis);
@@ -649,6 +661,34 @@ function setupWelt(io, accounts) {
           for (const s of fig.sockets) s.emit("account:update", { account: pub });
         }
         return ack({ ok: true, ding: d.id, ziel: { tafel: { titel: t.neu ? "Eingetragen" : "Die Ehrentafel", satz: t.satz } } });
+      }
+      /* Der Taubenschlag auf dem Dach: an das Nest kommt nur, wer Krümel
+         dabeihat. Darin liegt der rote Stoff, der im Atelier fehlt. Gemerkt
+         am Konto, nicht als Stück: er wird an der Nähmaschine verbraucht. */
+      if (d.ziel.tauben) {
+        const acc = accounts.get(fig.key);
+        const hand = (kleidung.angelegt(acc) || {}).hand;
+        const gefunden = acc.geheimnisse && acc.geheimnisse.naehmaschine;
+        const w = acc.welt && typeof acc.welt === "object" ? acc.welt : (acc.welt = {});
+        let satz;
+        if (gefunden || w.stoff) satz = "Die Tauben gurren zufrieden. Im Nest liegt nur noch Stroh.";
+        else if (hand === "kuchen" || hand === "doener") {
+          w.stoff = Date.now();
+          accounts.save();
+          satz = "Du streust ein paar Krümel. Während die Tauben picken, ziehst du zwischen den Federn einen roten Seidenrest aus dem Nest. Der wäre was für eine Nähmaschine.";
+        } else satz = "Die Tauben plustern sich auf und lassen dich nicht an ihr Nest. Sie beäugen deine leeren Hände.";
+        return ack({ ok: true, ding: d.id, ziel: { hinweis: satz } });
+      }
+      if (d.ziel.naehen) {
+        const acc = accounts.get(fig.key);
+        if (acc.geheimnisse && acc.geheimnisse.naehmaschine) {
+          return ack({ ok: true, ding: d.id, ziel: { hinweis: "Die Maschine näht einen sauberen Saum ins Leere. Mehr Stoff hast du nicht." } });
+        }
+        if (acc.welt && acc.welt.stoff) {
+          const g = geheimnisFinden(fig.key, "naehmaschine");
+          if (g) return ack({ ok: true, ding: d.id, ziel: { geheimnis: g } });
+        }
+        return ack({ ok: true, ding: d.id, ziel: { hinweis: "Die Maschine rattert ein paar Stiche ins Leere. Ohne Stoff wird das nichts." } });
       }
       if (d.ziel.puppe) {
         const jetzt = Date.now();
@@ -754,7 +794,10 @@ function setupWelt(io, accounts) {
       const meilensteine = GEH_MEILENSTEINE.map((m) => ({ ab: m.ab, name: m.name, label: cosmetics.label(m.art, m.id), erreicht: zahlGefunden >= m.ab }));
       const liste = Object.entries(GEHEIMNISSE).map(([id, g]) => gefunden[id]
         ? { id, gefunden: gefunden[id], label: cosmetics.label(g.art, g.id), titel: cosmetics.label("title", titelVon(id)), ort: g.ort, satz: g.satz, schwer: g.schwer, weserlicht: id === "weserlicht" }
-        : { id, gefunden: null, schwer: g.schwer, weserlicht: id === "weserlicht" });
+        : { id, gefunden: null, schwer: g.schwer, weserlicht: id === "weserlicht",
+          /* Das Gerücht nur, wenn man in dem Raum schon war. Sonst steht
+             nur da, dass es eins gibt: das lockt ins Erkunden. */
+          ...(g.geruecht ? (warDort(acc, g.raum) ? { geruecht: g.geruecht } : { geruechtFern: true }) : {}) });
       const stufe = raetsel.stufe(acc);
       ack({ ok: true, liste, meilensteine, nachgetragen, weserlicht: {
         stufe, von: raetsel.STUFEN, notizen: raetsel.notizen(acc), eingetragen: raetsel.anzahlEingetragen(),

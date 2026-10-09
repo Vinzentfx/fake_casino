@@ -13000,3 +13000,9 @@ html:not(.reduce-motion) .au-geh_gluehwurm::after { animation: geh-schwirren 9.5
 }
 html:not(.reduce-motion) .nm-geh_tinte { animation: pl-sweep 4.6s ease-in-out infinite; }
 html[data-theme] .nm-geh_tinte { filter: drop-shadow(0 0 1px rgba(242, 210, 122, 0.35)); }
+
+/* Dialog mit einer Zeile je Absatz (Programmheft): breiter, und ein
+   Umbruch rückt ein, damit man die Zeilen richtig zählt. */
+.dlg-card.dlg-breit { max-width: min(640px, 100%); }
+.dlg-zeilen { display: grid; gap: 7px; }
+.dlg-zeile { margin: 0; padding-left: 1.1em; text-indent: -1.1em; line-height: 1.4; }

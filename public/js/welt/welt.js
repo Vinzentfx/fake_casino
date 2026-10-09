@@ -1701,7 +1701,7 @@
       }
       else if (z.shisha && res.platz) Casino.toast("Du sitzt an der Shisha. Tipp sie noch einmal an, um zu ziehen.");
       else if (z.shisha) Casino.toast("Gerade sind alle Kissen besetzt.");
-      else if (z.hinweis) Casino.dialog.hinweis(z.hinweis, { titel: d.label });
+      else if (z.hinweis) Casino.dialog.hinweis(z.hinweis, { titel: d.label, zeilen: !!z.zeilen });
       else if (z.ansicht) zeigeInUebersicht(z.ansicht);
       else oeffne(d, z);
     });

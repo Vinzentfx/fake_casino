@@ -165,6 +165,8 @@ const ACCESSOIRES = [
   { id: "clutch",        label: "Glitzer-Clutch",     cost: 125_000, nur: K },
   { id: "umhang",        label: "Umhang",             cost: 320_000, nur: K, motion: true },
   { id: "fluegel",       label: "Flügel",             cost: 1_250_000, nur: K, motion: true },
+  // An der Nähmaschine im Atelier, aus dem Stoff aus dem Taubenschlag (game/welt.js).
+  { id: "seidentuch",    label: "Rotes Seidentuch",   cost: null, via: "Irgendwo im Haus versteckt" },
 ];
 
 const HANDDINGE = [

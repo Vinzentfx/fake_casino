@@ -700,3 +700,59 @@ test("jedes Ding, an dem ein Geheimnis per Geste hängt, hat einen messbaren Abs
     assert.ok(Number.isFinite(R.abstandZuDing(d, d.x, d.y + 0.6)), `${raum}/${id} misst keinen Abstand`);
   }
 });
+
+test("die Nähmaschine braucht den roten Stoff, und den gibt es nur mit Krümeln bei den Tauben", (t) => {
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  const anna = w.neuerSocket("anna");
+  anna.frage("welt:betreten", {});
+  const fig = w.welt.figuren.get("anna");
+  const konto = w.kontoVon("anna");
+  fig.raum = "atelier"; fig.x = 3.0; fig.y = 6.6;
+  assert.match(anna.frage("welt:nutzen", { ding: "naehtisch" }).ziel.hinweis, /Ohne Stoff/);
+  fig.x = 2.4; fig.y = 4.1;
+  assert.match(anna.frage("welt:nutzen", { ding: "stoffregal" }).ziel.hinweis, /Feder/);
+  // Ohne Krümel kommt man nicht ans Nest.
+  fig.raum = "dachgarten"; fig.x = 16.4; fig.y = 4.2;
+  assert.match(anna.frage("welt:nutzen", { ding: "taubenschlag" }).ziel.hinweis, /leeren Hände/);
+  konto.handding = "kuchen";
+  assert.match(anna.frage("welt:nutzen", { ding: "taubenschlag" }).ziel.hinweis, /Seidenrest/);
+  fig.raum = "atelier"; fig.x = 3.0; fig.y = 6.6;
+  const g = anna.frage("welt:nutzen", { ding: "naehtisch" }).ziel.geheimnis;
+  assert.equal(g.neu, true);
+  assert.equal(g.label, "seidentuch");
+  assert.match(anna.frage("welt:nutzen", { ding: "naehtisch" }).ziel.hinweis, /Mehr Stoff hast du nicht/);
+});
+
+test("das Programmheft zählt nach Zeilen, und im Logbuch steht es als eine Zeile je Absatz", () => {
+  const heft = R.raum("fundus").dinge.find((d) => d.id === "heft");
+  assert.equal(heft.ziel.zeilen, true, "der Dialog zeigt jede Zeile als eigenen Absatz");
+  const zeilen = heft.ziel.hinweis.split("\n");
+  assert.equal(zeilen.length, 10);
+  const wort = (z, n) => zeilen[z - 1].match(/[\wÄÖÜäöüßÉé]+/g)[n - 1];
+  const satz = [[7, 3], [5, 12], [4, 6], [4, 7], [7, 4], [7, 9], [7, 10], [7, 11]].map(([z, n]) => wort(z, n)).join(" ");
+  assert.equal(satz, "Das Fernrohr sucht die rote Schulter des Riesen");
+  const raetsel = require("../game/raetsel");
+  const notiz = raetsel.notizen({ weserlicht: { stufe: 2 } }).find((n) => n.zeilen);
+  assert.ok(notiz && notiz.text === heft.ziel.hinweis, "ab Stufe 2 liegt das Heft im Logbuch");
+});
+
+test("jedes Geheimnis hat ein Gerücht, und das steht erst im Buch, wenn man den Raum kennt", (t) => {
+  const { GEHEIMNISSE } = require("../game/welt");
+  for (const [id, g] of Object.entries(GEHEIMNISSE)) {
+    if (id === "weserlicht") continue; // dafür gibt es die Hinweise der Woche
+    assert.ok(g.geruecht && g.geruecht.length > 20, `${id} braucht ein Gerücht`);
+    assert.ok(R.raum(g.raum), `${id}: Raum ${g.raum} gibt es nicht`);
+  }
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  const anna = w.neuerSocket("anna");
+  anna.frage("welt:betreten", {});
+  const kleeblatt = () => anna.frage("welt:logbuch").liste.find((e) => e.id === "kleeblatt");
+  assert.equal(kleeblatt().geruecht, undefined);
+  assert.equal(kleeblatt().geruechtFern, true);
+  const fig = w.welt.figuren.get("anna");
+  fig.raum = "casino"; fig.x = 17.2; fig.y = 12.7;
+  anna.frage("welt:tuer", { tuer: "zur-terrasse" });
+  assert.match(kleeblatt().geruecht, /Glück/);
+});

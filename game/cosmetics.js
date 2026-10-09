@@ -243,6 +243,7 @@ const TITLES = [
   { id: "geh_zylinder",     text: "Fundusgeist",          cost: null, via: "Ein Geheimnis im Haus" },
   { id: "geh_dachluke",     text: "Hausmeister",          cost: null, via: "Ein Geheimnis im Haus" },
   { id: "geh_blauestunde",  text: "Stammgast der Dachbar", cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_naehmaschine", text: "Flickschneider",       cost: null, via: "Ein Geheimnis im Haus" },
   // Für die, die sich in der Sternwarte eingetragen haben (game/raetsel.js).
   { id: "weserlicht",     text: "Hüter des Weserlichts", cost: null, via: "Irgendwo ganz oben" },
   // Aus dem Warteraum vor einer Öffnung (game/einlass.js).

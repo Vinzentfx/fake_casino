@@ -424,7 +424,11 @@
       { id: "naehhocker", x: 3.0, y: 8.05, d: "hoch", auf: { x: 3.9, y: 8.55 } },
     ],
     dinge: [
-      { id: "stoffregal", art: "stoffregal", x: 2.4, y: 3.45, block: [1.0, 2.4, 3.8, 3.45] },
+      /* Ein Ballen fehlt. Wer fragt, wo er hin ist, findet eine Feder, und
+         die führt aufs Dach (game/welt.js, `tauben` und `naehen`). */
+      { id: "stoffregal", art: "stoffregal", x: 2.4, y: 3.45, block: [1.0, 2.4, 3.8, 3.45],
+        nutz: { x: 2.4, y: 4.1, r: 1.0 }, label: "Stoffregal", verb: "Ansehen",
+        ziel: { hinweis: "Ballen über Ballen, nach Farben sortiert. Nur ganz oben fehlt einer, der rote. An seinem Platz liegt eine kleine graue Feder." } },
       { id: "presse", art: "praegepresse", x: 6.9, y: 3.5, block: [5.9, 2.4, 7.9, 3.5],
         nutz: { x: 6.9, y: 4.25, r: 1.3 }, label: "Prägeatelier", verb: "Prägen",
         ziel: { screen: "cosmetics", abschnitt: "staub-atelier" }, fokus: { x: 6.9, y: 2.5, zoom: 2.3 } },
@@ -434,8 +438,7 @@
       { id: "puppe", art: "schneiderpuppe", x: 8.6, y: 6.6, block: [8.3, 6.3, 8.9, 6.6],
         nutz: "rand", label: "Schneiderpuppe", verb: "Maß nehmen", ziel: { puppe: true } },
       { id: "naehtisch", art: "naehtisch", x: 3.0, y: 7.6, block: [1.9, 7.0, 4.1, 7.6],
-        nutz: "rand", label: "Nähmaschine", verb: "Nähen",
-        ziel: { hinweis: "Die Maschine rattert ein paar Stiche ins Leere. Ohne Stoff wird das nichts." } },
+        nutz: "rand", label: "Nähmaschine", verb: "Nähen", ziel: { naehen: true } },
       { id: "naehhocker", art: "hocker", x: 3.0, y: 8.03, block: null },
       { id: "zuschnitt", art: "zuschnitt", x: 11.0, y: 7.9, block: [9.8, 7.3, 12.2, 7.9] },
       { id: "a-pflanze", art: "pflanze", x: 12.9, y: 9.3, block: [12.55, 8.85, 13.25, 9.3] },
@@ -460,7 +463,7 @@
         nutz: { x: 5.0, y: 3.8, r: 1.0 }, label: "Beschlagener Spiegel", verb: "Hineinschreiben",
         ziel: { eingabe: { art: "spiegel", titel: "Der Spiegel", text: "Das Glas ist so beschlagen, dass du dich kaum siehst. Man könnte mit dem Finger etwas hineinschreiben.", platzhalter: "Was schreibst du?" } } },
       { id: "heft", art: "programmheft", x: 3.4, y: 6.4, block: null,
-        nutz: { x: 3.4, y: 6.4, r: 0.7 }, label: "Altes Programmheft", verb: "Lesen", ziel: { hinweis: [
+        nutz: { x: 3.4, y: 6.4, r: 0.7 }, label: "Altes Programmheft", verb: "Lesen", ziel: { zeilen: true, hinweis: [
           "GROSSES VARIETÉ IM HAUS AN DER WESER",
           "Samstag, den 12. September 1987, Einlass 19 Uhr",
           "Es spielt die Kapelle Die Croupiers von Schallplatte",
@@ -535,7 +538,8 @@
         ziel: { eingabe: { art: "luke", titel: "Die alte Luke", platzhalter: "Vier Ziffern",
           text: "Ein Zahlenschloss mit vier Rädern. Daneben hat jemand mit Kreide geschrieben:\n\nErst, was im Verborgenen erloschen ist.\nDann, wer auf dem Podest steht und nie ein Wort sagt.\nDann die Banditen mit nur einem Arm.\nZuletzt, was hinter Glas für die Besten glänzt." } },
         fokus: { x: 13.2, y: 2.8, zoom: 2.4 } },
-      { id: "taubenschlag", art: "taubenschlag", x: 16.4, y: 3.5, block: [15.6, 2.4, 17.2, 3.5] },
+      { id: "taubenschlag", art: "taubenschlag", x: 16.4, y: 3.5, block: [15.6, 2.4, 17.2, 3.5],
+        nutz: { x: 16.4, y: 4.2, r: 0.9 }, label: "Taubenschlag", verb: "Nachsehen", ziel: { tauben: true } },
       { id: "fernrohr", art: "teleskop", x: 15.6, y: 6.8, block: [15.3, 6.5, 15.9, 6.8],
         nutz: "rand", label: "Fernrohr", verb: "Hindurchsehen",
         ziel: { eingabe: { art: "teleskop", titel: "Das Fernrohr", text: "Ein altes Messingfernrohr auf drei Beinen. Wohin richtest du es?", platzhalter: "Ein Stern, ein Planet, irgendwas" } },
