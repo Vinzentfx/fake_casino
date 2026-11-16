@@ -364,3 +364,39 @@ html.reduce-motion .fx-beben { animation: none; }
   52%  { opacity: 0.85; transform: scale(1.05); }
   100% { opacity: 0; transform: scale(1.15); }
 }
+
+/* Schneegestöber (Winterkiste)
+   Der einzige Effekt mit Wind: die Flocke fährt waagerecht über das ganze
+   Bild und tanzt dabei auf und ab (--tanz), sinkt nur leicht (--sink).
+   Die Grenzen dafür stehen an `schneesturm` in fx.js. */
+.fx-flocke {
+  position: absolute;
+  left: -2vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, rgba(255, 255, 255, 0.9) 45%, rgba(220, 238, 255, 0) 72%);
+  animation: fx-wind cubic-bezier(0.3, 0.1, 0.6, 1) forwards;
+  will-change: transform, opacity;
+}
+@keyframes fx-wind {
+  0%   { opacity: 0; transform: translate(0, 0); }
+  10%  { opacity: 1; }
+  30%  { transform: translate(30vw, calc(var(--tanz) * -1)); }
+  55%  { transform: translate(56vw, calc(var(--tanz) + var(--sink) * 0.5)); }
+  80%  { transform: translate(82vw, calc(var(--tanz) * -1 + var(--sink) * 0.8)); opacity: 1; }
+  100% { opacity: 0; transform: translate(104vw, var(--sink)); }
+}
+.fx-boe {
+  position: absolute;
+  left: -40vw;
+  width: 40vw;
+  height: 30vh;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(235, 245, 255, 0.28), transparent 70%);
+  opacity: 0;
+  animation: fx-boe 1.2s ease-in forwards;
+}
+@keyframes fx-boe {
+  0%   { opacity: 0; transform: translateX(0); }
+  25%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(150vw); }
+}

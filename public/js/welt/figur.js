@@ -51,26 +51,30 @@
     hochspannung: "#e8c93a", gala_gravur: "#b29558", gala_rampenlicht: "#e6d3a3", staub_quecksilber: "#aab3bf",
     regenbogen: "url(#fg-regenbogen)", auk_hologramm: "url(#fg-hologramm)", aurora: "url(#fg-aurora)",
     geh_tinte: "#2b3a55",
+    s3_raureif: "#a9cbe0", s3_nordstern: "#1f3b78", winter_eisblume: "#5d9ccc", winter_schneekugel: "#2a4560",
   };
   const JACKE_GRUND = "#5a9d91";
 
   const MUETZEN = new Set(["silber", "gold", "neon", "rotierend", "flamme", "sterne", "s2_wolf", "rad_fortuna",
-    "adm_orbit", "uhrwerk", "kiste_sprung", "gala_kranz", "staub_zahnkranz"]);
+    "adm_orbit", "uhrwerk", "kiste_sprung", "gala_kranz", "staub_zahnkranz",
+    "s3_eiskristall", "winter_eiszapfen"]);
   const HAND = new Set(["stern", "flagge", "ziel", "blitz", "edelstein", "krone", "bombe", "totenkopf", "auk_marke",
-    "hai", "klingen", "tresor", "gala_konfetti", "gala_stern", "staub_siegel"]);
+    "hai", "klingen", "tresor", "gala_konfetti", "gala_stern", "staub_siegel",
+    "winter_flocke", "winter_zuckerstange"]);
   const AUREN = new Set(["auk_goldstaub", "auk_leere", "kiste_funken", "adm_eklipse", "sml_nachtschwarm",
-    "kiste_ringsystem", "gala_konfetti", "staub_sternenschmiede", "geh_gluehwurm"]);
+    "kiste_ringsystem", "gala_konfetti", "staub_sternenschmiede", "geh_gluehwurm", "winter_frosthauch"]);
 
   const MUETZE_NAME = {
     silber: "Strickmütze", gold: "Krone", neon: "Neon-Kopfhörer", rotierend: "Propellermütze", flamme: "Flammenschopf",
     sterne: "Sternenkranz", s2_wolf: "Wolfskapuze", rad_fortuna: "Fortuna-Diadem", adm_orbit: "Orbitring",
     uhrwerk: "Uhrwerk-Zylinder", kiste_sprung: "Sprungfeder", gala_kranz: "Lorbeerkranz", staub_zahnkranz: "Zahnradkrone",
+    s3_eiskristall: "Eiskrone", winter_eiszapfen: "Fellmütze",
   };
   const HAND_NAME = {
     stern: "Sternstab", flagge: "Fähnchen", ziel: "Dartscheibe", blitz: "Blitzschild", edelstein: "Edelstein",
     krone: "Zepter", bombe: "Knallbombe", totenkopf: "Totenkopf", auk_marke: "Siegelstempel", hai: "Plüschhai",
     klingen: "Holzschwert", tresor: "Mini-Tresor", gala_konfetti: "Konfettikanone", gala_stern: "Wunderkerze",
-    staub_siegel: "Siegelstempel",
+    staub_siegel: "Siegelstempel", winter_flocke: "Schneeball", winter_zuckerstange: "Zuckerstange",
   };
 
   function dunkler(hex, anteil = 0.28) {
@@ -98,14 +102,29 @@
       hand: p && HAND.has(p.zeichen) ? p.zeichen : null,
       aura: p && AUREN.has(p.aura) ? p.aura : null,
       stil,
-      k: kleidungVon(p),
+      k: derbyKleidung(p),
+      derby: p && (p.derby === 0 || p.derby === 1) ? p.derby : null,
     };
+  }
+
+  /* Im Wochenend-Derby trägt die Figur einen Schal in Teamfarbe, aber nur,
+     wenn kein eigenes Accessoire angelegt ist: Flügel oder Goldkette nimmt
+     das Derby niemandem weg. Erkennen kann man das Team trotzdem immer an
+     der Marke am Namen (welt.js). */
+  function derbyKleidung(p) {
+    const k = kleidungVon(p);
+    if (p && (p.derby === 0 || p.derby === 1) && !k.accessoire) k.accessoire = "derbyschal";
+    return k;
   }
 
   /* Die Kleidung kommt als Kennungen vom Server. Sie wird nur als
      Nachschlagewert benutzt und nie ins Dokument geschrieben; trotzdem
      bleibt nur, was wie eine Kennung aussieht. */
-  const KLEIDUNG_ARTEN = ["kopf", "frisur", "oberteil", "hose", "schuhe", "brille", "accessoire", "hand", "fahrzeug", "haustier"];
+  const KLEIDUNG_ARTEN = ["kopf", "frisur", "oberteil", "hose", "schuhe", "brille", "accessoire", "hand", "fahrzeug", "haustier", "spur"];
+  /* Fußspuren. Die Figur trägt sie nicht, sie liegen hinter ihr auf dem
+     Boden (welt.js `spurAbdruck`). Erlaubnisliste wie überall: eine Kennung
+     aus einer Nachricht wird nur zur Klasse, wenn sie bekannt ist. */
+  const SPUREN = new Set(["pfoten", "rosen", "neon", "funken", "sternstaub", "schnee"]);
   function kleidungVon(p) {
     const roh = (p && p.kleidung) || {};
     const k = {};
@@ -148,6 +167,8 @@
       case "staub_siegel": return `<g class="fg-ding" ${t}><rect x="-1.4" y="-13" width="3.2" height="8.5" rx="1.4" fill="#6b4a2e"/><circle cx=".2" cy="-13.8" r="2.4" fill="#8a6440"/><rect x="-4.2" y="-5" width="8.8" height="3.2" rx="1" fill="#b33a3a" stroke="#6d1f1f" stroke-width=".7"/></g>`;
       case "hai": return `<g class="fg-ding" ${t}><path d="M-3 -4q5 -5.5 13.5 -2.2q-1.6 1.4 0 3.2q-8.5 3.4 -13.5 -1z" fill="#8aa3b3" stroke="#475d6b" stroke-width=".8"/><path d="M3 -7.4l2 -4.2l1.8 4.2" fill="#8aa3b3" stroke="#475d6b" stroke-width=".7"/><circle cx="0" cy="-4.4" r=".7" fill="#1b2328"/><path d="M-1 -2.3q2 .8 4 0" stroke="#fff" stroke-width=".5" fill="none"/></g>`;
       case "klingen": return `<g class="fg-ding" ${t}><path d="M-.9 -3.5L.9 -3.5L1.1 -20L0 -22.4L-1.1 -20Z" fill="#d9c7a3" stroke="#7d6a4a" stroke-width=".6"/><rect x="-3.6" y="-4" width="7.2" height="1.8" rx=".8" fill="#8e5a33"/><rect x="-.9" y="-2.2" width="1.8" height="4.4" fill="#5a3a24"/></g>`;
+      case "winter_flocke": return `<g class="fg-ding" ${t}><circle cx="2.5" cy="-4.5" r="4.6" fill="#f4f9fd" stroke="#8fb0c8" stroke-width=".8"/><path d="M0.4 -6.4q1.4 -1.2 3 -.6" fill="none" stroke="#c8dceb" stroke-width=".8" stroke-linecap="round"/><circle cx="4.3" cy="-2.6" r=".7" fill="#d7e7f3"/></g>`;
+      case "winter_zuckerstange": return `<g class="fg-ding" ${t}><path d="M0 3V-12Q0 -17.5 4.5 -17.5Q9 -17.5 9 -13" fill="none" stroke="#f6f2ee" stroke-width="2.6" stroke-linecap="round"/><path d="M0 3V-12Q0 -17.5 4.5 -17.5Q9 -17.5 9 -13" fill="none" stroke="#d6363d" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="1.6 2"/></g>`;
       case "tresor": return `<g class="fg-ding" ${t}><rect x="-3.5" y="-10" width="11" height="9.5" rx="1.4" fill="#6b7078" stroke="#3a3e44" stroke-width=".8"/><circle cx="2" cy="-5.3" r="2.4" fill="#c9ccd1" stroke="#3a3e44" stroke-width=".6"/><path d="M2 -5.3l1.3 -1" stroke="#3a3e44" stroke-width=".6"/></g>`;
       case "gala_konfetti": return `<g class="fg-ding" ${t}><path d="M-1.8 1L4.2 -12L9 -8.8Z" fill="#e2b656" stroke="#8e6931" stroke-width=".7" stroke-linejoin="round"/><g class="fg-konfetti"><rect x="5" y="-19" width="1.8" height="1.8" fill="#e5534b"/><rect x="9" y="-16" width="1.6" height="1.6" fill="#4a8fe0"/><rect x="1.5" y="-17" width="1.6" height="1.6" fill="#4fb76a"/><rect x="7.5" y="-21.5" width="1.5" height="1.5" fill="#f0a23b"/></g></g>`;
       case "gala_stern": return `<g class="fg-ding" ${t}><path d="M0 3L3 -11" stroke="#5a5a5a" stroke-width="1.2" stroke-linecap="round"/><g class="fg-funkeln"><path d="M3.4 -18.5v7M-.1 -15h7M1 -17.4l4.8 4.8M5.8 -17.4l-4.8 4.8" stroke="#fff3b0" stroke-width="1" stroke-linecap="round"/><circle cx="3.4" cy="-15" r="1.2" fill="#ffe27a"/></g></g>`;
@@ -176,6 +197,8 @@
       case "uhrwerk": return `<g class="fg-hut"><ellipse cx="32" cy="17" rx="15.5" ry="3" fill="#2a2530" stroke="#141117" stroke-width="1"/><path d="M22.2 17L23 1.5H41L41.8 17Z" fill="#2f2a36" stroke="#141117" stroke-width="1"/><rect x="22.6" y="11.4" width="18.8" height="3.4" fill="#8a5a2b"/><g class="fg-zahnrad"><circle cx="37.4" cy="13" r="3.4" fill="#c9a14a" stroke="#6e5420" stroke-width=".8" stroke-dasharray="1.6 1"/><circle cx="37.4" cy="13" r="1.1" fill="#6e5420"/></g></g>`;
       case "kiste_sprung": return `<g class="fg-hut fg-feder"><path d="M32 16l-3.4-2 6.8-2-6.8-2 6.8-2-6.8-2 3.4-1.4" fill="none" stroke="#c0c6cc" stroke-width="1.5" stroke-linejoin="round"/><circle cx="32" cy="1.2" r="3.4" fill="#e2574c" stroke="#8e2a22" stroke-width=".8"/><circle cx="30.8" cy=".1" r="1" fill="#fff" opacity=".5"/></g>`;
       case "gala_kranz": return `<g class="fg-hut">${[[19, 25, -60], [20.5, 20.5, -45], [23.5, 16.5, -30], [27.5, 13.8, -12], [45, 25, 60], [43.5, 20.5, 45], [40.5, 16.5, 30], [36.5, 13.8, 12]].map(([x, y, w]) => `<ellipse cx="${x}" cy="${y}" rx="1.9" ry="3.6" fill="#b5a64a" stroke="#6f6a23" stroke-width=".6" transform="rotate(${w} ${x} ${y})"/>`).join("")}<circle cx="32" cy="13" r="1.4" fill="#e2b656"/></g>`;
+      case "s3_eiskristall": return `<g class="fg-hut fg-eiskrone"><path d="M19.5 18.5L20.5 8L24 13.5L26.5 4.5L29.5 12.5L32 1.5L34.5 12.5L37.5 4.5L40 13.5L43.5 8L44.5 18.5Z" fill="#dff1ff" fill-opacity=".92" stroke="#6f9fc4" stroke-width=".9" stroke-linejoin="round"/><path d="M19.6 16.2h24.8" stroke="#9cc6e6" stroke-width="1.4"/><path d="M32 4.5v6M26.5 7.5v4M37.5 7.5v4" stroke="#ffffff" stroke-width=".8" stroke-linecap="round"/></g>`;
+      case "winter_eiszapfen": return `<g class="fg-hut"><path d="M18 21Q17.5 8.5 32 8.2Q46.5 8.5 46 21Z" fill="#8a3a32" stroke="#4e1f1a" stroke-width="1"/><rect x="15.6" y="18.5" width="32.8" height="6.4" rx="3" fill="#efe6da" stroke="#a89884" stroke-width="1"/><path d="M19 21.5h26" stroke="#d8cbb9" stroke-width="1" stroke-dasharray="1.2 1.6"/><path d="M20.5 24.9l1 4.2 1 -4.2M27 24.9l.9 3.2.9 -3.2M36.2 24.9l.9 3.6.9 -3.6M42.4 24.9l.9 2.8.9 -2.8" fill="#dff1ff" stroke="#8fb6d4" stroke-width=".6" stroke-linejoin="round"/></g>`;
       case "staub_zahnkranz": return `<g class="fg-hut"><path d="M20 17.5V9.5H23V6.5H26V9.5H29V5H35V9.5H38V6.5H41V9.5H44V17.5Z" fill="#8b929c" stroke="#4c535c" stroke-width="1" stroke-linejoin="round"/><circle cx="24.5" cy="14" r=".9" fill="#d5d9de"/><circle cx="32" cy="14" r=".9" fill="#d5d9de"/><circle cx="39.5" cy="14" r=".9" fill="#d5d9de"/></g>`;
       default: return "";
     }
@@ -423,6 +446,14 @@
   };
   const VON_HINTEN = new Set(["umhang", "fluegel", "rucksack"]);
   function stueckVorschau(art, id, p) {
+    /* Eine Spur zeigt sich als vier Schritte schräg über das Feld, wie sie
+       im Raum liegen würde. */
+    if (art === "spur") {
+      if (!SPUREN.has(id)) return "";
+      const schritte = [[20, 62, 0], [40, 44, 1], [36, 24, 0], [56, 6, 1]];
+      return `<span class="fg-stueck fg-stueck-spur">${schritte.map(([x, y, f]) =>
+        `<i class="wsp wsp-${id}" style="left:${x + (f ? 7 : -7)}%;top:${y}%;transform:rotate(28deg)"></i>`).join("")}</span>`;
+    }
     if (art === "haustier") {
       return `<span class="fg-stueck fg-stueck-haustier">${Casino.haustiere ? Casino.haustiere.tier(id) : ""}</span>`;
     }
@@ -440,6 +471,6 @@
 
   Casino.figur = {
     ansichten, vorschau, beschreibung, farbenVon, stueckVorschau,
-    HAUT, HAAR, HOSE, FRISUREN, NAMEN, AUREN, KLEIDUNG_ARTEN,
+    HAUT, HAAR, HOSE, FRISUREN, NAMEN, AUREN, KLEIDUNG_ARTEN, SPUREN,
   };
 })();

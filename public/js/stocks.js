@@ -45,10 +45,23 @@
 
   function render() {
     if (!data) return;
+    renderRegeln();
     renderNews();
     renderList();
     renderTrade();
     renderPortfolio();
+  }
+
+  /* Was an der Börse gilt, in einem Satz und mit den Zahlen des Servers.
+     textContent, deshalb "Chips" als Wort und nicht die Marke. */
+  function renderRegeln() {
+    const el = $("#stk-regeln");
+    const r = data.regeln;
+    if (!el || !r) return;
+    el.textContent = `Fällt ein Kurs unter ${fmt(r.pleiteGrenze * 100)} % seines Ausgabekurses, ist die Firma pleite `
+      + `und jede Position wird zum letzten Kurs abgerechnet. Ordergebühr: ${fmt(r.spread * 100)} % des Positionswerts, `
+      + `sie steckt im Einstiegskurs. Je Position höchstens ${fmt(r.maxMargin)} Chips Einsatz und ${fmt(r.maxWin)} Chips `
+      + `Auszahlung, höchstens ${r.maxOffen} Positionen gleichzeitig.`;
   }
 
   function renderNews() {
@@ -80,6 +93,7 @@
     const s = data.stocks.find((x) => x.sym === selected);
     if (!s) { el.classList.add("hidden"); return; }
     el.classList.remove("hidden");
+    const regeln = data.regeln || {};
     const levBtns = [];
     for (let i = 1; i <= data.maxLeverage; i++)
       levBtns.push(`<button class="stk-lev ${lev === i ? "on" : ""}" data-lev="${i}">${i}×</button>`);
@@ -89,7 +103,7 @@
     const mine = (data.positions || []).filter((p) => p.sym === s.sym);
     const posHtml = mine.map((p) => `
       <div class="stk-detpos">
-        <span>${p.dir > 0 ? "Long" : "Short"} ${p.lev}× <span class="muted small">@${fmt(p.entry)}</span></span>
+        <span>${p.dir > 0 ? "Long" : "Short"} ${p.lev}× <span class="muted small">@${fmt(p.entry)}${p.gedeckelt ? " · Deckel erreicht" : ""}</span></span>
         <b class="${p.pnl >= 0 ? "up" : "down"}">${p.pnl >= 0 ? "+" : ""}${fmt(p.pnl)}<i class=mk></i></b>
         <button class="stk-close" data-id="${p.id}">Verkaufen<small>${fmt(p.equity)}<i class=mk></i></small></button>
       </div>`).join("");
@@ -100,8 +114,9 @@
       <div class="stk-detprice"><b>${fmt(s.price)}<i class=mk></i></b> <span class="${cls}">${arrow} ${fmt(Math.abs(s.changePct))}%</span></div>
       ${bigChart(s.history)}
       ${mine.length ? `<div class="stk-detpos-wrap"><div class="muted small">Deine Positionen:</div>${posHtml}</div>` : ""}
-      <label class="bank-input-row"><span>Einsatz (Margin)</span><input id="stk-margin" type="number" min="1000" value="5000"/></label>
+      <label class="bank-input-row"><span>Einsatz (Margin)</span><input id="stk-margin" type="number" min="${regeln.minMargin || 1000}" max="${regeln.maxMargin || ""}" value="5000"/></label>
       <div class="stk-lev-row"><span class="muted small">Hebel</span>${levBtns.join("")}</div>
+      ${regeln.spread ? `<div class="muted small">Ordergebühr bei ${lev}× Hebel: ${fmt(lev * regeln.spread * 100)} % deines Einsatzes</div>` : ""}
       <div class="stk-actions">
         <button class="stk-long" id="stk-long">Long (steigt)</button>
         <button class="stk-short" id="stk-short">Short (fällt)</button>
@@ -154,7 +169,7 @@
     el.innerHTML = ps.map((p) => {
       const cls = p.pnl >= 0 ? "up" : "down";
       return `<div class="stk-pos">
-          <div class="stk-pos-id">${p.dir > 0 ? "▲" : "▼"} <b>${p.sym}</b> ${p.lev}× <span class="muted small">@${fmt(p.entry)}</span></div>
+          <div class="stk-pos-id">${p.dir > 0 ? "▲" : "▼"} <b>${p.sym}</b> ${p.lev}× <span class="muted small">@${fmt(p.entry)}${p.gedeckelt ? " · Deckel erreicht" : ""}</span></div>
           <div class="stk-pos-pnl ${cls}">${p.pnl >= 0 ? "+" : ""}${fmt(p.pnl)}<i class=mk></i></div>
           <button class="stk-close" data-id="${p.id}">Schließen<small>${fmt(p.equity)}<i class=mk></i></small></button>
         </div>`;
@@ -177,7 +192,7 @@
   socket.on("stocks:update", () => { if (onScreen()) load(); });
   socket.on("stocks:liquidated", ({ lost, won, account }) => {
     if (account) applyAccount(account);
-    if (won > 0) toast(`Insolvenz! Dein Short zahlte +${fmt(won)} Chips.`);
+    if (won > 0) toast(`Firma pleite. Deine Position wurde zum letzten Kurs abgerechnet: ${fmt(won)} Chips zurück.`);
     if (lost > 0) toast(`Liquidiert! −${fmt(lost)} Chips verloren.`);
     if (onScreen()) load();
   });

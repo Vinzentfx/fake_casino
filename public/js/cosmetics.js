@@ -85,7 +85,15 @@
     // passt der Countdown nicht in die schmale Kachel und wird abgeschnitten.
     const bau = (art, kopf, frist) =>
       `<span class="cos-marke cos-marke-${art}">${kopf}${frist ? `<i>${frist}</i>` : ""}</span>`;
-    if (x.season) return bau("season", "Season 2", f.season ? restText(f.season) : "");
+    /* Jedes Stück nennt SEINE Season. Hier stand fest "Season 2" mit der
+       Frist der laufenden Season; seit es mehrere gibt, hinge ein Stück aus
+       Season 2 sonst an der Uhr von Season 3. */
+    if (x.season) {
+      const se = (f.seasons || {})[x.season];
+      if (!se) return bau("season", "Season", "");
+      if (se.vorbei) return bau("vorbei", escapeHtml(se.kurz || "Season"), "nicht mehr zu haben");
+      return bau("season", escapeHtml(se.kurz || "Season"), restText(se.endsAt));
+    }
     if (x.limitiert === "comeback") {
       return f.comeback
         ? bau("jetzt", "Nur jetzt", restText(f.comeback))

@@ -370,6 +370,43 @@
   }
 
   /**
+   * Schneegestöber (Winterkiste): der einzige Effekt mit WIND.
+   *
+   * Alles andere fällt, steigt oder knallt. Hier fegt der Schnee
+   * waagerecht von links nach rechts über den Bildschirm, in Böen, und
+   * jede Flocke tanzt dabei auf und ab. Die Bahn ist geprüft: gestartet
+   * wird zwischen 4 und 84 vh, der Tanz geht 3 vh nach oben und unten,
+   * das Absinken höchstens 8 vh. Damit bleibt jede Flocke zwischen 1 und
+   * 95 vh, also im Bild. Waagerecht beginnt sie knapp links außerhalb und
+   * endet knapp rechts außerhalb, die Strecke dazwischen liegt ganz im Bild.
+   */
+  function schneesturm(w) {
+    const boeen = 2 + Math.min(2, w - 1);
+    for (let b = 0; b < boeen; b++) {
+      const start = b * 520;
+      // Ein heller Schleier vorneweg, damit man die Böe als Ganzes sieht.
+      teil("fx-boe", { top: zufall(10, 60) + "vh", animationDelay: start + "ms" }, start + 1600);
+      const anzahl = 26 + w * 12;
+      for (let i = 0; i < anzahl; i++) {
+        const gross = zufall(3, 7 + w * 2);
+        const dauer = zufall(950, 1500);
+        const verzug = start + zufall(0, 380);
+        teil("fx-flocke", {
+          top: zufall(4, 84) + "vh",
+          width: gross + "px",
+          height: gross + "px",
+          "--sink": zufall(0, 8) + "vh",
+          "--tanz": (Math.random() < 0.5 ? -1 : 1) * zufall(1, 3) + "vh",
+          opacity: 0,
+          animationDelay: verzug + "ms",
+          animationDuration: dauer + "ms",
+        }, verzug + dauer + 120);
+      }
+    }
+    if (w >= 3) schwall("220,238,255", w);
+  }
+
+  /**
    * Tresorsprengung: eine Druckwelle aus der Mitte, dann fliegt das Geld raus.
    *
    * Bewusst als einziger Effekt von innen nach aussen. Alles andere im Laden
@@ -465,6 +502,7 @@
       case "salut": return salut(w);
       case "auk_tresor": return tresor(w);
       case "gala_blitzlicht": return blitzlicht(w);
+      case "winter_schneesturm": return schneesturm(w);
       default: {
         // Konfetti: mehr, groesser, laenger, und ab Stufe 3 eine zweite Welle.
         confetti({ count: 60 * w, wucht: w });

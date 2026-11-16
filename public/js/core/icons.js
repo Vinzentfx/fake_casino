@@ -587,6 +587,14 @@
     "gala-stern": `<circle cx="12" cy="12" r="8.6" ${S} stroke-width="1.5"/>
       <path d="M12 5.6 13.9 10h4.5l-3.6 2.8 1.4 4.4L12 14.6l-4.2 2.6 1.4-4.4L5.6 10h4.5Z" ${A}/>`,
 
+    /* Winterkiste. Die Flocke hat sechs Arme mit je einem Zweigpaar; ohne
+       die Zweige ist es ein Sternchen. Die Zuckerstange ist ein Haken mit
+       schrägen Streifen, gezeichnet als zweite, dickere Linie mit Lücken. */
+    schneeflocke: `<path d="M12 2.6v18.8M3.9 7.3l16.2 9.4M3.9 16.7l16.2-9.4" ${S} stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M9.8 4.4 12 6.4l2.2-2M9.8 19.6l2.2-2 2.2 2M4.2 10.4l2.9-.6-.9-2.9M19.8 13.6l-2.9.6.9 2.9M4.2 13.6l2.9.6-.9 2.9M19.8 10.4l-2.9-.6.9-2.9" ${S} stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>`,
+    zuckerstange: `<path d="M9 21.4V8.2a4.2 4.2 0 0 1 8.4 0v1.6" ${S} stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M9 21.4V8.2a4.2 4.2 0 0 1 8.4 0v1.6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3.4" stroke-dasharray="1.4 2.6"/>`,
+
     // Rueckenflosse ueber der Wasserlinie. Mehr braucht ein Hai nicht.
     hai: `<path d="M12 3.4c3.4 2.6 5.6 6.6 6.4 11.6h-9.6c.4-4.4 1.4-8.2 3.2-11.6Z" ${A}/>
       <path d="M2.6 17.6c1.6 0 1.6 1.6 3.2 1.6s1.6-1.6 3.2-1.6 1.6 1.6 3.2 1.6 1.6-1.6 3.2-1.6 1.6 1.6 3.2 1.6 1.6-1.6 3.2-1.6" ${S}/>`,

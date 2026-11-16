@@ -756,3 +756,39 @@ test("jedes Geheimnis hat ein Gerücht, und das steht erst im Buch, wenn man den
   anna.frage("welt:tuer", { tuer: "zur-terrasse" });
   assert.match(kleeblatt().geruecht, /Glück/);
 });
+
+test("Fußspuren bleiben im Raum liegen, für alle, die später kommen", (t) => {
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  w.kontoVon("anna").spur = "schnee";
+  const anna = w.neuerSocket("anna");
+  anna.frage("welt:betreten", {});
+  const fig = w.welt.figuren.get("anna");
+  const start = { x: fig.x, y: fig.y };
+  // Sechs Schritte nach oben, jeder knapp über dem Abstand zwischen zwei Abdrücken.
+  for (let i = 1; i <= 6; i++) {
+    fig.t = Date.now() - 300;
+    anna.rufe("welt:zug", { x: start.x, y: start.y - i * 0.45, d: "hoch", g: 1 });
+  }
+  assert.equal(anna.hat("welt:korrektur").length, 0, "der Weg war frei");
+  const bert = w.neuerSocket("bert");
+  const sicht = bert.frage("welt:betreten", {});
+  assert.ok(sicht.spuren.length >= 5, `Bert sieht Annas Spur (${sicht.spuren.length} Abdrücke)`);
+  const [x, y, winkel, fuss, art, alter] = sicht.spuren[0];
+  assert.equal(art, "schnee");
+  assert.ok(Number.isFinite(x) && Number.isFinite(y));
+  assert.equal(winkel, -90, "nach oben gegangen");
+  assert.ok(alter >= 0 && alter < 5000, "das Alter kommt mit, nicht die Uhrzeit");
+  assert.deepEqual(sicht.spuren.slice(0, 2).map((s) => s[3]), [0, 1], "links und rechts im Wechsel");
+  void fuss;
+
+  // Wer keine Spur trägt, hinterlässt nichts.
+  const vorher = sicht.spuren.length;
+  const bfig = w.welt.figuren.get("bert");
+  for (let i = 1; i <= 4; i++) {
+    bfig.t = Date.now() - 300;
+    bert.rufe("welt:zug", { x: bfig.x, y: bfig.y - 0.45, d: "hoch", g: 1 });
+  }
+  const dritte = w.neuerSocket("anna");
+  assert.equal(dritte.frage("welt:betreten", {}).spuren.length, vorher);
+});

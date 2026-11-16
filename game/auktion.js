@@ -49,6 +49,7 @@ const crypto = require("crypto");
 const chat = require("./chat");
 const strafen = require("./strafen");
 const cosmetics = require("./cosmetics");
+const hauszeit = require("./hauszeit");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const DATEI = path.join(DATA_DIR, "auktion.json");
@@ -124,11 +125,10 @@ function save() {
 }
 
 /** Das naechste 20:30, das mindestens einen Tag entfernt ist. */
+/* 20:30 deutscher Zeit (game/hauszeit.js). Vorher setHours, also die Uhr
+   des Servers: beim Hoster fiel der Hammer um 21:30 oder 22:30. */
 function naechstesEnde(ab = Date.now()) {
-  const d = new Date(ab + MIN_LAUFZEIT_MS);
-  d.setHours(ENDE_STUNDE, ENDE_MINUTE, 0, 0);
-  if (d.getTime() <= ab + MIN_LAUFZEIT_MS) d.setDate(d.getDate() + 1);
-  return d.getTime();
+  return hauszeit.naechsteUhrzeit(ab + MIN_LAUFZEIT_MS, ENDE_STUNDE, ENDE_MINUTE);
 }
 
 /** Alle Auktionsstuecke, die noch niemandem gehoeren. */
@@ -386,15 +386,18 @@ function starteEingeliefertes() {
   return state.los;
 }
 
-function endeText(ts) {
-  const d = new Date(ts);
-  const heute = new Date();
-  const gleich = d.toDateString() === heute.toDateString();
-  const morgen = new Date(heute.getTime() + 86400000).toDateString() === d.toDateString();
-  const uhr = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")} Uhr`;
-  if (gleich) return `heute um ${uhr}`;
-  if (morgen) return `morgen um ${uhr}`;
-  return `am ${d.toLocaleDateString("de-DE", { weekday: "long" })} um ${uhr}`;
+/* Der Satz für den Chat, ebenfalls nach deutscher Uhr. Vorher las er Stunde
+   und Tag aus der Serverzeit: die Ansage sagte "20:30 Uhr", auch wenn der
+   Hammer für alle Spieler um 21:30 fiel. */
+function endeText(ts, jetzt = Date.now()) {
+  // Die Wanduhr in Berlin, abgelegt als wäre sie UTC; deshalb die getUTC-Leser.
+  const d = new Date(hauszeit.wandzeit(ts));
+  const tag = (t) => Math.floor(hauszeit.wandzeit(t) / 86400000);
+  const tage = tag(ts) - tag(jetzt);
+  const uhr = `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} Uhr`;
+  if (tage === 0) return `heute um ${uhr}`;
+  if (tage === 1) return `morgen um ${uhr}`;
+  return `am ${new Date(ts).toLocaleDateString("de-DE", { weekday: "long", timeZone: hauszeit.ZONE })} um ${uhr}`;
 }
 
 /** Zuschlag: Stueck vergeben, Gebot verbrennen, neues Los aufmachen. */
@@ -781,4 +784,8 @@ function umbenennen(key, alt, neu) {
   return n;
 }
 
-module.exports = { setupAuktion, oeffentlich, menueMarke, umbenennen, istHinterlegt, START_GEBOT, EINLIEFER_GEBUEHR, EINLIEFER_PROVISION };
+module.exports = {
+  setupAuktion, oeffentlich, menueMarke, umbenennen, istHinterlegt, START_GEBOT, EINLIEFER_GEBUEHR, EINLIEFER_PROVISION,
+  // Für tests/abendtermine.test.js.
+  _intern: { naechstesEnde, endeText },
+};

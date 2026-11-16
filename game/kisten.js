@@ -145,6 +145,20 @@ const KISTEN = {
     eigenerTopf: "gala",
     chancen: { gewoehnlich: 34, selten: 30, episch: 24, legendaer: 9, mythisch: 2, kiste: 1 },
   },
+  /*
+   * Die Winterkiste. Gebaut wie die Gala: eigener Topf mit Stücken für
+   * JEDE Stufe (`nur: "winter"` im Katalog), sonst wäre sie eine
+   * Messingkiste mit Ablaufdatum. Sie steht bis zum Dreikönigstag, also
+   * über die Feiertage, und endet wie die Auktion um halb neun.
+   */
+  winter: {
+    id: "winter", label: "Winterkiste", preis: 250_000,
+    text: "Schneegestöber, Frosthauch, Eisblume und Schneestapfen für deine Figur. Vierzehn Stücke, die es nur hier gibt, und nur bis zum Dreikönigstag.",
+    limitiert: true,
+    bis: new Date("2027-01-06T20:30:00+01:00").getTime(),
+    eigenerTopf: "winter",
+    chancen: { gewoehnlich: 34, selten: 30, episch: 24, legendaer: 9, mythisch: 2, kiste: 1 },
+  },
 };
 
 /* Was ein Einzelstück wert ist, wenn man es doppelt zieht. Es hat keinen

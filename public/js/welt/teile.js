@@ -560,6 +560,20 @@
       case "schal":
         if (seite) return `<path d="M27 42.6Q33 45.6 38.6 43.2L38.8 47Q33 49.6 26.8 46.4Z" fill="#c8453c" stroke="#7a221c" stroke-width=".7"/><path d="M36 46L37.4 56L34.4 56.4L33.6 47Z" fill="#c8453c" stroke="#7a221c" stroke-width=".7"/>`;
         return `<path d="M24.4 43.4Q32 47.6 39.6 43.4L39.8 47.2Q32 51.6 24.2 47.2Z" fill="#c8453c" stroke="#7a221c" stroke-width=".7"/>${hinten ? "" : `<path d="M34.6 47.6L36.4 59L33.2 59.4L32 48.6Z" fill="#c8453c" stroke="#7a221c" stroke-width=".7"/><path d="M33 58h3.4M33.2 56h3" stroke="#f2c94c" stroke-width=".6"/>`}`;
+      /* Der Schal im Wochenend-Derby: derselbe Schnitt wie der Schal, in der
+         Farbe des Teams und mit zwei hellen Streifen wie bei einem
+         Fanschal. Die Figur trägt ihn nur, solange das Derby läuft und
+         kein eigenes Accessoire angelegt ist (figur.js `farbenVon`). Der
+         Siegerschal ist derselbe in Gold, für immer. */
+      case "derbyschal":
+      case "siegerschal": {
+        const sieger = id === "siegerschal";
+        const farbe = sieger ? "#d9a73a" : f.derby === 1 ? "#3b7bd9" : "#d9483b";
+        const rand = sieger ? "#7a5414" : f.derby === 1 ? "#1d3f78" : "#7a221c";
+        const streif = sieger ? "#fff3c2" : "#f4f1ea";
+        if (seite) return `<path d="M27 42.6Q33 45.6 38.6 43.2L38.8 47Q33 49.6 26.8 46.4Z" fill="${farbe}" stroke="${rand}" stroke-width=".7"/><path d="M36 46L37.4 57L34.4 57.4L33.6 47Z" fill="${farbe}" stroke="${rand}" stroke-width=".7"/><path d="M34 52.6h3.2M34.2 54.6h3.2" stroke="${streif}" stroke-width=".9"/>`;
+        return `<path d="M24.4 43.4Q32 47.6 39.6 43.4L39.8 47.2Q32 51.6 24.2 47.2Z" fill="${farbe}" stroke="${rand}" stroke-width=".7"/>${hinten ? "" : `<path d="M34.6 47.6L36.6 60L33.2 60.4L32 48.6Z" fill="${farbe}" stroke="${rand}" stroke-width=".7"/><path d="M32.9 53.4h3.2M33.2 55.6h3.2" stroke="${streif}" stroke-width=".9"/><path d="M33.2 60.4l-.4 1.4M34.6 60.2v1.5M36 60l.4 1.4" stroke="${rand}" stroke-width=".6"/>`}`;
+      }
       case "seidentuch":
         /* Ein Dreieckstuch aus roter Seide, vorn geknotet, mit einem
            goldenen Saum. */

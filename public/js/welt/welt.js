@@ -165,6 +165,7 @@
   let hinweisEl = null;
   let schilderEbene = null;
   let dingeEbene = null;
+  let spurEbene = null;
 
   /* Draußen gilt die Uhr des Geräts: morgens Morgenrot, tagsüber blauer
      Himmel und die Laternen aus, abends Sonnenuntergang, nachts Mond und
@@ -209,9 +210,11 @@
     }).join("");
     const tuerSchilder = r.tueren.filter((t) => !t.versteckt && t.schild).map((t) => `<button type="button" class="welt-tuerschild${t.stil ? " stil-" + esc(t.stil) : ""}" data-tuer="${t.id}" data-ziel-raum="${t.ziel}" style="left:${t.schild.x * T}px;top:${t.schild.y * T}px">${esc(t.label)} <small></small><b aria-hidden="true">›</b></button>`).join("");
     raumEl.innerHTML = M.raum(r)
+      + `<div class="welt-ebene welt-spuren" aria-hidden="true"></div>`
       + `<div class="welt-ebene welt-dinge">${dinge}</div>`
       + `<div class="welt-ebene welt-schilder">${tuerSchilder}<div class="welt-hinweis hidden" aria-hidden="true"></div></div>`;
     dingeEbene = raumEl.querySelector(".welt-dinge");
+    spurEbene = raumEl.querySelector(".welt-spuren");
     schilderEbene = raumEl.querySelector(".welt-schilder");
     hinweisEl = raumEl.querySelector(".welt-hinweis");
     raumEl.querySelectorAll("[data-ding]").forEach((b) => dingEls.set(b.dataset.ding, b));
@@ -523,9 +526,11 @@
     if (set) f.el.classList.add("set-" + set.id);
     haustierSetzen(f, typeof k.haustier === "string" ? k.haustier : null);
     const name = Casino.spieler ? Casino.spieler.name(f.look, { tag: "b" }) : `<b>${esc(f.look.name)}</b>`;
+    // Das Team im Wochenend-Derby: ein Punkt in Teamfarbe vor dem Namen.
+    const derby = f.look.derby === 0 || f.look.derby === 1 ? `<i class="wf-derby t${f.look.derby}" aria-label="Team ${f.look.derby ? "Blau" : "Rot"}"></i>` : "";
     f.schild.innerHTML = `<div class="wf-oben"><span class="wf-blase hidden"></span><span class="wf-aktiv hidden"></span></div>`
       + (set ? `<span class="wf-set">${esc(set.label)}</span>` : "")
-      + `<button type="button" class="wf-name" data-profil="${esc(f.look.name || "")}" aria-label="${esc(f.look.name || "")} ansehen">${name}</button>`;
+      + `<button type="button" class="wf-name" data-profil="${esc(f.look.name || "")}" aria-label="${esc(f.look.name || "")} ansehen">${derby}${name}</button>`;
     f.el.setAttribute("role", "img");
     f.el.setAttribute("aria-label", f.look.name || "Figur");
     zeigeAktiv(f);
@@ -856,6 +861,10 @@
     ich = neueFigur({ id: res.ich, look: res.look, x: res.pos.x, y: res.pos.y, d: res.pos.d, s: res.pos.s, g: 0 }, true);
     if (res.fahrt) fahrtSetzen(res.fahrt);
     for (const p of res.spieler || []) andere.set(p.id, neueFigur(p, false));
+    // Was vor uns hier lang ging, mit dem Alter, das der Server mitgibt.
+    for (const s of Array.isArray(res.spuren) ? res.spuren : []) {
+      if (Array.isArray(s) && s.length === 6) spurAbdruck(s[0], s[1], s[2], s[3], s[4], s[5]);
+    }
     zeigeOrtZeile();
     zuletztGesendet = { x: ich.x, y: ich.y, d: ich.d, g: 0, t: 0 };
     kameraSofort = true;
@@ -2968,6 +2977,8 @@
     if (raum && ich) {
       bewegeMich(dt, jetzt);
       for (const f of andere.values()) bewegeAndere(f, jetzt);
+      spurFolgt(ich);
+      for (const f of andere.values()) spurFolgt(f);
       tierFolgt(ich, dt);
       for (const f of andere.values()) tierFolgt(f, dt);
       pruefeNaehe();
@@ -2979,6 +2990,58 @@
     }
     setzeKamera();
   }
+
+  /*
+   * Fußspuren. Jeder Browser setzt die Abdrücke selbst, aus der Bewegung,
+   * die er ohnehin zeichnet; der Server merkt sie sich nur für alle, die
+   * später kommen (game/welt.js `spurMerken`). Abstand, Versatz, Dauer und
+   * Obergrenze stehen in raeume.js (`SPUR`), auf beiden Seiten dieselben.
+   *
+   * Verblasst wird über die Deckkraft aus JavaScript, nicht über eine
+   * CSS-Animation: „Bewegung reduzieren“ kürzt jede Animation auf null,
+   * und dann wären die Spuren sofort weg.
+   */
+  function spurArt(f) {
+    const a = f && f.look && f.look.kleidung && f.look.kleidung.spur;
+    return typeof a === "string" && F.SPUREN.has(a) ? a : null;
+  }
+  function spurDeckkraft(el, jetzt) {
+    const anteil = (jetzt - Number(el.dataset.t)) / R.SPUR.ms;
+    if (anteil >= 1) { el.remove(); return; }
+    // Die erste Hälfte frisch, danach wird sie langsam blass.
+    el.style.opacity = anteil < 0.5 ? "0.9" : Math.max(0.08, 0.9 * (1 - (anteil - 0.5) / 0.5)).toFixed(2);
+  }
+  function spurAbdruck(x, y, w, fuss, art, alter) {
+    if (!spurEbene || !F.SPUREN.has(art) || ![x, y, w, alter].every(Number.isFinite)) return;
+    const el = document.createElement("i");
+    el.className = "wsp wsp-" + art;
+    // Links und rechts der Laufrichtung, im Wechsel.
+    const r = w * Math.PI / 180, s = (fuss ? 1 : -1) * R.SPUR.seite;
+    const px = (x - Math.sin(r) * s) * T, py = (y + Math.cos(r) * s) * T;
+    el.style.transform = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) rotate(${w + 90}deg)`;
+    const jetzt = Date.now();
+    el.dataset.t = String(jetzt - Math.max(0, alter));
+    spurEbene.appendChild(el);
+    spurDeckkraft(el, jetzt);
+    while (spurEbene.childElementCount > R.SPUR.max) spurEbene.firstElementChild.remove();
+  }
+  function spurFolgt(f) {
+    const art = spurArt(f);
+    if (!art || f.s || f.el.classList.contains("reitet")) { f.spurLetzt = null; return; }
+    const l = f.spurLetzt;
+    if (!l) { f.spurLetzt = { x: f.x, y: f.y, f: 0 }; return; }
+    const dx = f.x - l.x, dy = f.y - l.y, weit = Math.hypot(dx, dy);
+    if (weit < R.SPUR.schritt) return;
+    // Ein Sprung (Schnellwahl, Korrektur) zieht keine Spur quer durch den Raum.
+    if (weit > 3) { f.spurLetzt = { x: f.x, y: f.y, f: l.f }; return; }
+    spurAbdruck(f.x, f.y, Math.round(Math.atan2(dy, dx) * 180 / Math.PI), l.f, art, 0);
+    f.spurLetzt = { x: f.x, y: f.y, f: l.f ? 0 : 1 };
+  }
+  setInterval(() => {
+    if (!spurEbene) return;
+    const jetzt = Date.now();
+    for (const el of [...spurEbene.children]) spurDeckkraft(el, jetzt);
+  }, 20000);
 
   /* Die Tanzfläche in der Spielhalle, dieselben Maße wie die Leuchtkacheln
      in moebel.js. Wer darauf steht und nichts tut, tanzt; die Kachel unter

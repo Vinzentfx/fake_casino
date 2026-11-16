@@ -50,4 +50,17 @@ function abschnittEndet(jetzt, tage) {
   return ausWandzeit(Math.round(((n + 1) * tage - 3) * TAG_MS));
 }
 
-module.exports = { ZONE, wandzeit, ausWandzeit, stunde, abschnittVon, abschnittEndet };
+/**
+ * Der nächste Zeitpunkt NACH `ab`, an dem die Uhr in Berlin `uhrStunde`:`minute`
+ * zeigt. Für alles mit festem Abendtermin (Lotterie 20 Uhr, Zuschlag 20:30).
+ * Gerechnet wird auf der Wanduhr und erst am Ende zurück in echte Zeit, damit
+ * der Termin auch in der Woche einer Zeitumstellung zur richtigen Stunde fällt.
+ */
+function naechsteUhrzeit(ab, uhrStunde, minute = 0) {
+  const wand = wandzeit(ab);
+  let ziel = Math.floor(wand / TAG_MS) * TAG_MS + (uhrStunde * 60 + minute) * 60000;
+  if (ziel <= wand) ziel += TAG_MS;
+  return ausWandzeit(ziel);
+}
+
+module.exports = { ZONE, wandzeit, ausWandzeit, stunde, abschnittVon, abschnittEndet, naechsteUhrzeit };

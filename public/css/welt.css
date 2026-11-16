@@ -260,6 +260,7 @@ html:not(.reduce-motion) .wf-aura[data-aura]::before { animation: m-atmen 3s eas
 .wf-aura[data-aura="kiste_ringsystem"] { --aura-farbe: rgba(95, 210, 230, 0.7); --aura-funke: #d2f7ff; }
 .wf-aura[data-aura="gala_konfetti"] { --aura-farbe: rgba(229, 83, 75, 0.6); --aura-funke: #4fb76a; }
 .wf-aura[data-aura="staub_sternenschmiede"] { --aura-farbe: rgba(255, 245, 214, 0.75); --aura-funke: #ffffff; }
+.wf-aura[data-aura="winter_frosthauch"] { --aura-farbe: rgba(170, 215, 245, 0.7); --aura-funke: #ffffff; }
 
 /* Die eigene Figur findet man an einem Ring am Boden, und sie steht in
    einem weichen Lichtkegel: der Platz um sie herum ist ruhiger als der
@@ -2210,3 +2211,114 @@ html[data-welt-raum="sternwarte"] { --raum-ton: 16, 22, 54; }
 .lb-geruecht { margin: 2px 0 0; font-size: var(--fs-sm); line-height: 1.45; color: var(--text); font-style: italic; }
 .lb-geruecht small { display: block; font-style: normal; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; }
 .lb-geruecht.fern { color: var(--text-mute); }
+
+/* ------------------------------------------------------------------
+   Fußspuren (Kleidungsart „Spur“, game/kleidung.js SPUREN)
+
+   Jeder Abdruck ist ein kleines Element, das mit der Spitze nach oben
+   gezeichnet ist; welt.js dreht es in die Laufrichtung und setzt es
+   abwechselnd links und rechts. Verblassen macht welt.js über die
+   Deckkraft. Die Ebene liegt unter allen Möbeln und Figuren.
+   ------------------------------------------------------------------ */
+.welt-spuren { z-index: 0; pointer-events: none; }
+.wsp {
+  position: absolute;
+  left: 0; top: 0;
+  width: 12px; height: 19px;
+  margin: -9.5px 0 0 -6px;
+  pointer-events: none;
+}
+
+/* Schneestapfen: Ballen und Ferse eingedrückt, mit weißem Rand. */
+.wsp-schnee {
+  background:
+    radial-gradient(ellipse 42% 34% at 50% 34%, rgba(96, 128, 164, 0.75) 0 58%, rgba(240, 248, 255, 0.95) 62% 72%, transparent 76%),
+    radial-gradient(ellipse 32% 19% at 50% 82%, rgba(96, 128, 164, 0.75) 0 58%, rgba(240, 248, 255, 0.95) 62% 72%, transparent 76%);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+/* Pfotenabdrücke: ein Ballen, vier Zehen. Hell und staubig statt dunkel,
+   die Böden im Haus sind fast alle dunkel. */
+.wsp-pfoten {
+  width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px;
+  --pf: rgba(238, 226, 206, 0.8);
+  background:
+    radial-gradient(ellipse 30% 24% at 50% 70%, var(--pf) 0 70%, transparent 76%),
+    radial-gradient(circle at 18% 40%, var(--pf) 0 10%, transparent 13%),
+    radial-gradient(circle at 38% 20%, var(--pf) 0 10%, transparent 13%),
+    radial-gradient(circle at 62% 20%, var(--pf) 0 10%, transparent 13%),
+    radial-gradient(circle at 82% 40%, var(--pf) 0 10%, transparent 13%);
+  filter: drop-shadow(0 0 1px rgba(60, 40, 20, 0.8));
+}
+
+/* Rosenblätter: kein Fuß, sondern ein Blatt bei jedem Schritt. */
+.wsp-rosen {
+  width: 9px; height: 12px; margin: -6px 0 0 -4.5px;
+  background: linear-gradient(160deg, #ff8fa3, #c2183e);
+  border-radius: 80% 15% 80% 15% / 70% 30% 70% 30%;
+  box-shadow: inset 0 0 0 0.5px rgba(90, 0, 20, 0.5);
+}
+
+/* Neonsohlen: nur der Umriss, und er leuchtet. Die Farbe wandert
+   zwischen Cyan und Magenta. */
+.wsp-neon {
+  border: 1.6px solid #3cf2ff;
+  border-radius: 50% 50% 45% 45% / 62% 62% 38% 38%;
+  box-shadow: 0 0 5px rgba(60, 242, 255, 0.9), 0 0 10px rgba(214, 90, 255, 0.5);
+}
+html:not(.reduce-motion):not(.sparsam) .wsp-neon { animation: wsp-neon 2.6s ease-in-out infinite alternate; }
+@keyframes wsp-neon {
+  from { border-color: #3cf2ff; }
+  to   { border-color: #e15bff; }
+}
+
+/* Funkenspur: ein glühender Punkt mit drei Funken daneben, die flackern. */
+.wsp-funken {
+  width: 4px; height: 4px; margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: #fff3c2;
+  box-shadow:
+    0 0 4px 1px #ffb23d,
+    5px -3px 0 -0.5px #ffd36e,
+    -4px -5px 0 -0.8px #ff8a3d,
+    2px 5px 0 -0.8px #ffe7a0;
+}
+html:not(.reduce-motion):not(.sparsam) .wsp-funken { animation: wsp-flackern 0.9s steps(3, end) infinite; }
+@keyframes wsp-flackern {
+  0%   { filter: brightness(1.25); }
+  50%  { filter: brightness(0.75); }
+  100% { filter: brightness(1.1); }
+}
+
+/* Sternenstaub: kleine Sterne mit vier Zacken, die nacheinander funkeln. */
+.wsp-sternstaub {
+  width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
+  background: radial-gradient(circle, #ffffff 0 18%, #ffe27a 40%, #d9a73a 100%);
+  clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+  filter: drop-shadow(0 0 2px rgba(255, 226, 122, 0.9));
+}
+html:not(.reduce-motion):not(.sparsam) .wsp-sternstaub { animation: wsp-funkeln 2.2s ease-in-out infinite; }
+html:not(.reduce-motion):not(.sparsam) .wsp-sternstaub:nth-child(3n+1) { animation-delay: -0.7s; }
+html:not(.reduce-motion):not(.sparsam) .wsp-sternstaub:nth-child(3n+2) { animation-delay: -1.4s; }
+@keyframes wsp-funkeln {
+  0%, 100% { scale: 0.7; }
+  50%      { scale: 1.15; }
+}
+
+/* Die Vorschau in Garderobe, Sammlung und Kiste: vier Schritte schräg. */
+.fg-stueck-spur { position: relative; display: block; width: 64px; height: 64px; }
+.fg-stueck-spur .wsp { margin-left: 0; margin-top: 0; }
+
+/* Wochenend-Derby: der Punkt in Teamfarbe vor dem Namen. Die Farben
+   stehen fest wie die der Automaten, ein Team sieht in jeder Palette
+   gleich aus (game/eventCalendar.js FARBEN). */
+.wf-derby {
+  display: inline-block;
+  width: 0.62em; height: 0.62em;
+  margin-right: 0.3em;
+  border-radius: 50%;
+  vertical-align: 0.02em;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+}
+.wf-derby.t0 { background: #d9483b; }
+.wf-derby.t1 { background: #3b7bd9; }

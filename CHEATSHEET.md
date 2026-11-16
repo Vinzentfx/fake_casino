@@ -1,7 +1,7 @@
 # Spickzettel
 
 Alle Regeln, Quoten und Grenzen des Casinos auf einen Blick. Alles ist
-Spielgeld, es gibt keine Ein- und keine Auszahlung. Stand: **30. September 2026**. Regeln und Zahlen beschreiben die vorhandenen
+Spielgeld, es gibt keine Ein- und keine Auszahlung. Stand: **16. November 2026**. Regeln und Zahlen beschreiben die vorhandenen
 Systeme. Auszahlungsquoten sind nur dort als berechnet bezeichnet, wo sie
 tatsächlich mathematisch geprüft wurden; Schätzungen sind keine Garantie.
 
@@ -84,7 +84,7 @@ Strategie, die in jeder Runde einen Gewinn garantiert.
 | Soforthilfe | füllt auf 2.000 auf | alle 30 Minuten |
 | Tagesaufträge | 2.000 bis 5.200 je Auftrag | drei am Tag |
 | Wochenaufträge | 18.000 bis 32.000 je Auftrag | zwei in der Woche |
-| Wochenend-Pokal | 7.500, 20.000 und 40.000 plus 25.000 gemeinsam | Freitag 18 Uhr bis Montag 0 Uhr |
+| Wochenend-Derby | 30.000 im Siegerteam, 10.000 im anderen, ab 10 Punkten | Freitag 18 Uhr bis Montag 0 Uhr |
 | Season-Stufen | 2.500 bis 80.000 | 20 Stufen je Season |
 | Arbeiten (Klicker und Jobs) | abhängig von Vermögen und Aufgabe | laufend, gedeckelt |
 
@@ -201,8 +201,16 @@ Hai (ab 20), Legende (ab 35), Casino-Ikone (ab 50).
 
 ## Season
 
-Aktuell läuft **Porta-Herbst**, vom 6. September bis 1. November 2026, mit 20
-Stufen. Season-XP sind unabhängig vom Spieler-Level.
+Aktuell läuft **Porta-Winter** (Season 3), vom 16. November 2026 bis
+18. Januar 2027, jeweils 0 Uhr, mit 20 Stufen. Davor lief Porta-Herbst
+(Season 2) vom 6. September bis 1. November 2026. Season-XP sind unabhängig
+vom Spieler-Level.
+
+**Season-Wechsel:** Was in der alten Season freigeschaltet und nie abgeholt
+wurde, wird beim ersten Besuch in der neuen automatisch ausgezahlt, Chips
+durch die Vermögensbremse. Tagesserie und Tagesdeckel laufen über den
+Wechsel weiter. Zwischen zwei Seasons wächst der Pass nicht, die XP zählen
+aber weiter für den Clan (Wochenliga, Clan-Krieg).
 
 **Tagesdeckel:** 700 XP fürs Spielen und 280 XP aus Aufträgen. Drei Zutaten
 bestimmen, wie schnell du den Deckel erreichst:
@@ -217,22 +225,22 @@ bestimmen, wie schnell du den Deckel erreichst:
 | 2 | 280 | 4.000 Chips |
 | 3 | 480 | 6.000 Chips |
 | 4 | 720 | 8.000 Chips |
-| 5 | 1.000 | Profilbild Joker |
+| 5 | 1.000 | Profilbild Schneemann |
 | 6 | 1.330 | 11.000 Chips |
 | 7 | 1.710 | 13.000 Chips |
 | 8 | 2.140 | 16.000 Chips |
 | 9 | 2.620 | 19.000 Chips |
-| 10 | 3.150 | 24.000 Chips und Namensstil Bernstein |
+| 10 | 3.150 | 24.000 Chips und Namensstil Raureif |
 | 11 | 3.740 | 27.000 Chips |
 | 12 | 4.390 | 30.000 Chips |
 | 13 | 5.100 | 34.000 Chips |
 | 14 | 5.880 | 38.000 Chips |
-| 15 | 6.730 | 45.000 Chips, Profilbild und Rahmen Wolf |
+| 15 | 6.730 | 45.000 Chips, Profilbild Schneeeule und Rahmen Eiskristall |
 | 16 | 7.650 | 48.000 Chips |
 | 17 | 8.650 | 53.000 Chips |
 | 18 | 9.730 | 58.000 Chips |
 | 19 | 10.890 | 64.000 Chips |
-| 20 | 12.140 | 80.000 Chips und das Phönix-Set |
+| 20 | 12.140 | 80.000 Chips, Profilbild Winterhirsch, Namensstil Nordstern und Titel „Nordstern von Porta“ |
 
 ## Aufträge
 
@@ -259,18 +267,29 @@ sind pro Tag gedeckelt.
 
 ## Live-Events
 
-**Fester Wochenend-Pokal.** Jede Woche von Freitag 18:00 bis Montag 00:00 Uhr
-(Berliner Zeit). Jede abgeschlossene Spielrunde zählt einen Punkt, Freispiele
-und passives Pferde-Preisgeld nicht. Einsatzhöhe, Gewinn und Uhrzeit geben
-keinen Vorteil. Bei 5, 15 und 30 Runden gibt es 7.500, 20.000 und 40.000 Chips;
-mehr als 30 Punkte kann eine Person nicht sammeln. Sobald alle zusammen 30
-Punkte erreicht haben, bekommt jeder Teilnehmer zusätzlich 25.000 Chips. Wer
-erst danach einsteigt, erhält den gemeinsamen Preis nach seiner ersten Runde.
-Alle Beträge laufen durch die Vermögensbremse.
+**Wochenend-Derby.** Jede Woche von Freitag 18:00 bis Montag 00:00 Uhr
+(Berliner Zeit) spielen zwei Teams gegeneinander, jede Woche eine andere
+Paarung (etwa Wittekindsberg gegen Jakobsberg). Mit deiner ersten Runde am
+Wochenende kommst du in ein Team: das kleinere bekommt dich, und
+Clanmitglieder landen zusammen, solange die Teams danach höchstens zwei
+auseinanderliegen.
 
-Der Eventkalender zeigt den Termin schon ab Montag, den Countdown, den eigenen
-Fortschritt und den gemeinsamen Pokal. Deshalb muss niemand gleichzeitig mit
-anderen online sein.
+Jede abgeschlossene Spielrunde bringt deinem Team einen Punkt, höchstens 25
+am Tag. Die erste Runde an jedem Tag bringt 5 extra. Freispiele und passives
+Pferde-Preisgeld zählen nicht. Einsatzhöhe und Gewinn geben keinen Vorteil;
+es gewinnt das Team, dessen Leute an mehr Tagen wiederkommen.
+
+Abgerechnet wird Montag um Mitternacht. Ab 10 eigenen Punkten bekommt jeder
+im Siegerteam 30.000 Chips, im anderen Team 10.000, bei Gleichstand beide
+20.000, alles durch die Vermögensbremse. Wer zum ersten Mal gewinnt, bekommt
+den **Siegerschal** für seine Figur.
+
+Der Eventkalender zeigt die Paarung schon ab Montag, während des Derbys den
+Stand als Tauziehen, die besten Spieler beider Teams und deinen eigenen
+Beitrag, danach das letzte Ergebnis. In der Welt tragen alle Teilnehmer
+einen Schal in Teamfarbe (wenn kein eigenes Accessoire angelegt ist) und
+einen farbigen Punkt vor dem Namen. Führungswechsel kommen in den Chat,
+höchstens alle 30 Minuten, das Ergebnis in die Zeitung.
 
 Live-Events erscheinen automatisch oder werden vom Besitzer angekündigt. Kurze
 Events laufen direkt über dem aktuellen Bildschirm; du musst dafür keinen
@@ -600,10 +619,22 @@ einen dauerhaften Vorteil.
 * **Sparkonto:** 0,08 % Zinsen pro Tag, höchstens 25 Mio auf dem Konto.
   Die Zinsen laufen automatisch auf, werden aber wie Gratis-Chips von der
   Vermögensbremse gekürzt. Kredite gibt es nicht.
-* **Börse:** Mindestposition 1.000 Chips. Long und Short sind mit Hebel 1 bis 5
-  möglich. Der Hebel vervielfacht Gewinn und Verlust; fällt der Wert deiner
-  Position auf null, wird sie ohne Auszahlung liquidiert. Geht eine Firma
-  pleite, verlieren Long-Positionen ihren Einsatz, Shorts werden abgerechnet.
+* **Börse:** Je Position 1.000 bis 100.000 Chips Einsatz, höchstens fünf
+  Positionen gleichzeitig. Long und Short sind mit Hebel 1 bis 5 möglich. Der
+  Hebel vervielfacht Gewinn und Verlust; fällt der Wert deiner Position auf
+  null, wird sie ohne Auszahlung liquidiert. Eine Position zahlt höchstens
+  2 Millionen aus.
+  * **Der Kurs hat keine Richtung.** Im Mittel steht er nach jedem Takt (alle
+    6 Sekunden) da, wo er vorher stand. Long und Short sind damit gleich gut,
+    und es gibt keine Spielweise, die im Schnitt gewinnt.
+  * **Ordergebühr:** 1,5 % des Positionswerts (Einsatz mal Hebel). Sie steckt
+    im Einstiegskurs: ein Long kauft 1,5 % über dem Kurs, ein Short verkauft
+    1,5 % darunter. Mit Hebel 5 sind das 7,5 % deines Einsatzes. Gemessener
+    Rückfluss über zwanzig Minuten Haltezeit: rund 98 % bei Hebel 1, rund 92 %
+    bei Hebel 5.
+  * **Pleite:** Fällt ein Kurs unter 12 % seines Ausgabekurses, wird die Firma
+    von der Tafel genommen und jede Position zum letzten Kurs abgerechnet. Eine
+    Aktie lebt im Mittel fünf bis zwanzig Tage.
 * **Eigener Börsengang:** Kiosk, Café, Laden, Hotel oder Fabrik können pro
   Gebäude einmalig gelistet werden. Du erhältst höchstens 50 % des Marktwerts
   und höchstens 50 % der noch offenen Investition; danach ist die Aktie für
@@ -664,21 +695,34 @@ auf genau dieses Stück und der Markierung, was du davon schon hast.
 | Holzkiste | 30.000 | 65 / 25 / 8 / 2 % bis legendär |
 | Messingkiste | 150.000 | 30 / 42 / 21 / 6 / 1 % bis mythisch |
 | Schwarze Kiste | 600.000 | 20 / 38 / 30 / 9 % plus **3 % Einzelstück** |
-| **Gala-Kiste** | 250.000 | 34 / 30 / 24 / 9 / 2 % plus **1 % Einzelstück** |
+| **Winterkiste** | 250.000 | 34 / 30 / 24 / 9 / 2 % plus **1 % Einzelstück** |
 
-**Die Gala-Kiste ist limitiert und hat einen eigenen Topf.** Sie zieht kein
-einziges Stück aus dem allgemeinen Katalog, sondern aus dreizehn, die es
-ausschließlich dort gibt, ein eigener Satz für jede Seltenheit: Konfetti,
-Ehrengast, Anstoßen (gewöhnlich), Goldstern, Nominiert, Roter Teppich
-(selten), Samtkordel, Lorbeerkranz, Auftritt (episch), Konfettiregen und
-Blitzlichtgewitter (legendär), Gravur (mythisch) und **Rampenlicht** als
-Einzelstück. Am **12. Oktober 2026 um 20:30 Uhr** verschwindet die Kiste, und diese dreizehn
-entstehen nie wieder; was dann noch existiert, gibt es nur über den Markt.
+**Die Winterkiste ist limitiert und hat einen eigenen Topf.** Sie zieht kein
+einziges Stück aus dem allgemeinen Katalog, sondern aus vierzehn, die es
+ausschließlich dort gibt, ein eigener Satz für jede Seltenheit: Heißer Kakao,
+Frostbeule, Schneeflocke (gewöhnlich), Zuckerstange, Glühweinkenner,
+Tannenwald, Schneestapfen (selten), Eiszapfen, Strickmuster, Auftritt (episch), Frosthauch
+und Schneegestöber (legendär), Eisblume (mythisch) und **Schneekugel** als
+Einzelstück. Am **6. Januar 2027 um 20:30 Uhr** verschwindet die Kiste, und
+diese vierzehn entstehen nie wieder; was dann noch existiert, gibt es nur
+über den Markt.
+
+**Fußspuren** sind eine eigene Kleidungsart in der Garderobe. Wer eine
+anlegt, hinterlässt beim Gehen Abdrücke, die eine halbe Stunde im Raum
+liegen bleiben und langsam verblassen; wer später kommt, sieht, wo du
+gegangen bist. Auf Fahrzeugen und im Sitzen entsteht keine Spur. Fünf gibt
+es aus der Kleiderkiste: Pfotenabdrücke (gewöhnlich), Rosenblätter (selten),
+Neonsohlen (episch), Funkenspur (legendär) und Sternenstaub (mythisch).
+Schneestapfen gibt es nur aus der Winterkiste.
+
+Die **Gala-Kiste** lief nach demselben Muster bis zum 12. Oktober 2026. Ihre
+dreizehn Stücke, mit Rampenlicht als Einzelstück, gibt es seitdem nur noch
+über den Markt.
 
 Die Seltenheit kommt aus dem alten Ladenpreis: bis 30.000 gewöhnlich, bis
 120.000 selten, bis 400.000 episch, bis 1 Mio legendär, darüber mythisch.
 Die allgemeinen **Einzelstücke** gibt es nur aus der Schwarzen Kiste;
-Rampenlicht bleibt das eigene Einzelstück des Gala-Topfs.
+Rampenlicht und Schneekugel bleiben die eigenen Einzelstücke ihrer Töpfe.
 
 Ziehst du etwas, das du schon hast, wird es zu **Prägestaub**. Doppelte aus
 der Tageskiste geben immer 5 Staub; bei bezahlten Kisten richtet sich die
@@ -739,8 +783,8 @@ bekommt eine Marke am Namen, mit dem Namen der Familie und der Zahl; ab fünf
 leuchtet sie. Sie hängt wie das Prunkstück am Namen und ist damit überall zu
 sehen.
 
-Acht Familien: Gala, Auktionshaus, Season 2, Einzelstücke, Haus,
-Kollektion, Fortuna und Prägeatelier. In der Sammlung
+Zehn Familien: Gala, Winter, Auktionshaus, Season 2, Season 3,
+Einzelstücke, Haus, Kollektion, Fortuna und Prägeatelier. In der Sammlung
 steht für jede, wie viele es gibt, wie viele du hast und wie viele du gerade
 trägst.
 
@@ -947,7 +991,8 @@ Roulette-Tisch oder nach Double/Split der gesamte Blackjack-Einsatz.
 | Kisten-Duell | 1.000 | 1 Mio | 10 Kisten je Seite |
 | Solitär solo | 20 | 500 | doppelter Einsatz |
 
-Weitere Obergrenzen: Sparkonto 25 Mio, Hebel an der Börse 5-fach, Clan bis 20
+Weitere Obergrenzen: Sparkonto 25 Mio, an der Börse Hebel 5-fach, 100.000 je
+Position und fünf Positionen, Clan bis 20
 Mitglieder, Chips je Konto 100 Mrd. Beim Arbeiten gelten 35.000 Klicklohn pro
 Stunde, 10.000 Fleißbonus pro Stunde und 60.000 am Tag sowie 32.000 Joblohn pro
 Stunde und 150.000 am Tag. Chip-Transfers sind auf 100.000 je Absender und Tag

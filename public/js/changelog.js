@@ -25,6 +25,62 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-11-17",
+      datum: "17. November 2026",
+      titel: "Fußspuren und das Wochenend-Derby",
+      gross: true,
+      items: [
+        { icon: "kosmetik", titel: "Fußspuren",
+          text: "Eine neue Kleidungsart in der Garderobe: Wer eine Spur trägt, hinterlässt beim Gehen Abdrücke auf dem Boden. Sie bleiben eine halbe Stunde liegen und verblassen langsam, und wer nach dir in den Raum kommt, sieht, wo du gegangen bist. In der Kleiderkiste gibt es Pfotenabdrücke, Rosenblätter, leuchtende Neonsohlen, eine Funkenspur und ganz oben Sternenstaub. Die Schneestapfen gibt es nur in der Winterkiste." },
+
+        { icon: "clans", titel: "Das Wochenend-Derby",
+          text: "Der Wochenend-Pokal ist weg. Ab Freitag 18 Uhr spielen jede Woche zwei Teams gegeneinander, etwa Wittekindsberg gegen Jakobsberg. Mit deiner ersten Runde kommst du in ein Team, und jede Runde zählt für dein Team, egal welches Spiel und egal wie hoch der Einsatz. Wer an jedem Tag des Wochenendes vorbeikommt, bringt am meisten: höchstens 25 Punkte am Tag, und der erste Besuch am Tag gibt 5 extra. Im Kalender siehst du das Tauziehen und wer für welches Team am meisten zieht." },
+
+        { icon: "geschenk", titel: "Schal, Marke und Siegerschal",
+          text: "Während des Derbys trägt deine Figur in der Welt einen Schal in Teamfarbe, und vor deinem Namen steht ein roter oder blauer Punkt. Wer die Führung übernimmt, steht im Chat. Am Montag um Mitternacht gibt es ab 10 Punkten 30.000 Chips fürs Siegerteam und 10.000 für das andere, und wer zum ersten Mal gewinnt, bekommt den goldenen Siegerschal für immer." },
+      ],
+    },
+    {
+      id: "2026-11-16",
+      datum: "16. November 2026",
+      titel: "Der Winter ist da",
+      gross: true,
+      items: [
+        { icon: "season", titel: "Season 3: Porta-Winter",
+          text: "Neun Wochen, vom 16. November bis zum 18. Januar, wieder zwanzig Stufen. Auf Stufe 5 wartet der Schneemann, auf Stufe 10 der Namensstil Raureif, auf Stufe 15 Schneeeule und der Rahmen Eiskristall. Wer Stufe 20 schafft, bekommt den Winterhirsch, den Namensstil Nordstern und den Titel „Nordstern von Porta“. Deine Tagesserie läuft dabei einfach weiter." },
+
+        { icon: "geschenk", titel: "Nichts aus Season 2 geht verloren",
+          text: "Was du in Porta-Herbst freigeschaltet, aber nie abgeholt hast, bekommst du beim ersten Besuch automatisch, Chips wie Stücke. Was du bekommen hast, steht eine Woche lang oben auf der Season-Seite." },
+
+        { icon: "kosmetik", titel: "Die Winterkiste",
+          text: "Vierzehn Stücke, die es nur hier gibt: vom Heißen Kakao über Strickmuster, Eiszapfen, Tannenwald und Schneestapfen für deine Figur bis zum Schneegestöber, das bei einem großen Gewinn quer über den Bildschirm fegt. Ganz oben die Eisblume und als Einzelstück die Schneekugel, in deren Buchstaben es schneit. Die Kiste steht bis zum Dreikönigstag, 6. Januar, 20:30 Uhr. Danach gibt es die Stücke nur noch über den Markt." },
+
+        { icon: "season", titel: "Season-XP nur, solange die Season läuft",
+          text: "Nach dem Ende einer Season wächst der Pass nicht mehr weiter. Für deinen Clan zählt jede Runde trotzdem, Wochenliga und Clan-Krieg laufen wie immer." },
+
+        { icon: "profil", titel: "Dein Namensstil auch oben in der Leiste",
+          text: "Aurora, Hochspannung, Gravur, Rampenlicht, Fortuna und alle neueren Stile standen bisher im Chat und in den Listen, oben neben deinem Guthaben aber nicht. Jetzt siehst du dort jeden Stil und jeden Rahmen." },
+      ],
+    },
+    {
+      id: "2026-11-12",
+      datum: "12. November 2026",
+      titel: "Die Börse rechnet neu, und abends stimmt die Uhr",
+      items: [
+        { icon: "stocks", titel: "Die Börse ist ruhiger geworden",
+          text: "Kurse bewegen sich jetzt langsamer, und Nachrichten rütteln seltener und weniger stark. Eine Position kannst du damit auch über Nacht liegen lassen, ohne dass sie nach zehn Minuten liquidiert ist. Firmen gehen nicht mehr aus heiterem Himmel pleite, sondern nur noch, wenn ihr Kurs unter 12 % des Ausgabekurses fällt. Das passiert alle paar Tage statt alle paar Minuten." },
+
+        { icon: "stocks", titel: "Bei einer Pleite wird zum letzten Kurs abgerechnet",
+          text: "Vorher bekam ein Short bei jeder Pleite pauschal das Hebelfache und ein Long gar nichts. Jetzt bekommen beide, was ihre Position zum letzten Kurs wert ist. Für einen Short ist das weiter ein guter Gewinn, nur eben der echte." },
+
+        { icon: "chip", titel: "Ordergebühr und Grenzen",
+          text: "Jede neue Position kostet 1,5 % des Positionswerts, die Gebühr steckt im Einstiegskurs. Mit Hebel 5 startest du also 7,5 % im Minus, mit Hebel 1 nur 1,5 %. Je Position gehen höchstens 100.000 Chips Einsatz und 2 Millionen Auszahlung, und du kannst fünf Positionen gleichzeitig offen haben. Alle Zahlen stehen oben in der Börse. Positionen, die du schon hattest, laufen weiter." },
+
+        { icon: "uhr", titel: "Lotterie um 20 Uhr, Zuschlag um halb neun",
+          text: "Beide Termine hingen an der Uhr des Servers und kamen deshalb eine Stunde zu spät, im Sommer zwei. Jetzt gilt deutsche Zeit, auch in der Woche der Zeitumstellung. Das Los, das gerade unter dem Hammer liegt, läuft noch nach der alten Uhr aus." },
+      ],
+    },
+    {
       id: "2026-10-09",
       datum: "9. Oktober 2026",
       titel: "Gerüchte im Haus",

@@ -34,6 +34,8 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
+const hauszeit = require("./hauszeit");
+
 const DATA_DIR = path.join(__dirname, "..", "data");
 const DATEI = path.join(DATA_DIR, "lotterie.json");
 
@@ -60,11 +62,12 @@ const ZIEHUNG_STUNDE = 20;  // jeden Abend um 20 Uhr
 let io = null, accounts = null;
 let state = { jackpot: JACKPOT_START, lose: {}, gekauft: {}, letzte: null, naechste: 0, nr: 1 };
 
+/* 20 Uhr deutscher Zeit, egal wo der Server steht (game/hauszeit.js).
+   Vorher stand hier setHours, und das rechnet in der Zeitzone des Servers:
+   beim Hoster läuft die Uhr in UTC, gezogen wurde also um 21 Uhr (im Sommer
+   um 22 Uhr), während auf der Kachel "Ziehung um 20 Uhr" stand. */
 function naechsteZiehung(ab = Date.now()) {
-  const d = new Date(ab);
-  d.setHours(ZIEHUNG_STUNDE, 0, 0, 0);
-  if (d.getTime() <= ab) d.setDate(d.getDate() + 1);
-  return d.getTime();
+  return hauszeit.naechsteUhrzeit(ab, ZIEHUNG_STUNDE);
 }
 
 function load() {
@@ -83,6 +86,11 @@ function load() {
     };
   } catch { /* erste Ziehung */ }
   if (!state.naechste || state.naechste < Date.now() - 7 * 86400000) state.naechste = naechsteZiehung();
+  /* Ein gespeicherter Termin stammt vielleicht noch aus der Rechnung in
+     Serverzeit und liegt dann eine oder zwei Stunden zu spät. Er wird auf
+     die nächste Ziehung nach deutscher Uhr vorgezogen, nie nach hinten
+     geschoben: eine Ziehung fällt dadurch nicht aus. */
+  state.naechste = Math.min(state.naechste, naechsteZiehung());
   save();
 }
 

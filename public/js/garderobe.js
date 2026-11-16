@@ -26,7 +26,7 @@
   /* Die Fächer in der Reihenfolge, in der man an sich herunterschaut.
      Links stehen die am Körper, rechts was man dabeihat. */
   const LINKS = ["kopf", "frisur", "brille", "oberteil", "hose"];
-  const RECHTS = ["schuhe", "accessoire", "hand", "fahrzeug", "haustier"];
+  const RECHTS = ["schuhe", "spur", "accessoire", "hand", "fahrzeug", "haustier"];
 
   const HINWEIS = {
     kopf: "Ohne Kopfbedeckung trägt deine Figur, was ihr Rahmen hergibt.",
@@ -35,6 +35,7 @@
     hand: "Ohne Ding in der Hand hältst du dein Chat-Zeichen.",
     fahrzeug: "Darauf rollst du im Raum etwas schneller. Am Spiel ändert das nichts.",
     haustier: "Läuft dir im Raum hinterher.",
+    spur: "Bleibt eine halbe Stunde auf dem Boden liegen. Wer nach dir in den Raum kommt, sieht, wo du gegangen bist.",
   };
   const STUFE = { gewoehnlich: "Gewöhnlich", selten: "Selten", episch: "Episch", legendaer: "Legendär", mythisch: "Mythisch", einzel: "Einzelstück", haus: "Vom Haus" };
   const STUFEN = new Set(Object.keys(STUFE));

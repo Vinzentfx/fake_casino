@@ -114,6 +114,10 @@
           <div>
             <h2>${escapeHtml(season.name || "Casino Season")}</h2>
             <p class="muted small">${escapeHtml(season.subtitle || "")}</p>
+            ${s.nachgereicht ? `<p class="se-nachgereicht small">Aus ${escapeHtml(s.nachgereicht.season)} nachgereicht: ${[
+              s.nachgereicht.chips ? window.Casino.betrag(s.nachgereicht.chips) : "",
+              ...(s.nachgereicht.stuecke || []).map(escapeHtml),
+            ].filter(Boolean).join(" + ")}</p>` : ""}
           </div>
           <div class="se-timer">${
             s.phase === "vor" ? "startet in " + timeLeft(season.startsAt)

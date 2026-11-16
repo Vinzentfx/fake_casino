@@ -791,7 +791,7 @@ function renderAbholBadge() {
     const sub = $("#menu-season-sub");
     if (sub) sub.textContent = m.season ? `${m.season} ${m.season === 1 ? "Stufe wartet" : "Stufen warten"}` : "Fortschritt und Belohnungen";
     const kal = $("#menu-calendar-sub");
-    if (kal) kal.textContent = m.kalender ? "Tagesbonus wartet · Wochenend-Pokal" : "Wochenend-Pokal & Tagesbonus";
+    if (kal) kal.textContent = m.kalender ? "Tagesbonus wartet · Wochenend-Derby" : "Wochenend-Derby & Tagesbonus";
     const rad = $("#menu-wheel-sub");
     if (rad) rad.textContent = m.rad ? "Gratis-Dreh ist frei" : "Heute schon gedreht";
     const eintrag = $("#menu-geschenk");
@@ -919,7 +919,7 @@ socket.on("account:update", ({ account }) => {
 
 // Nur bekannte Schilder durchlassen: ein alter Wert aus einer Nachricht darf
 // keine fremde Klasse ins Dokument schreiben.
-const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma", "auk_tresor", "sml_wesergold", "gezeiten", "gala_samt", "staub_schmelzkern", "geh_schluesselloch"]);
+const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma", "auk_tresor", "sml_wesergold", "gezeiten", "gala_samt", "staub_schmelzkern", "geh_schluesselloch", "winter_strick"]);
 const schildKlasse = (p) => (p && SCHILDER.has(p.schild) ? " sch-" + p.schild : "");
 
 function renderOnlinePlayers(players = []) {
@@ -1036,9 +1036,12 @@ setInterval(renderBuffs, 5000); // Countdowns aktuell halten
  * Element aber fest im Dokument, deshalb werden hier nur die Klassen
  * ausgetauscht statt alles neu zu schreiben.
  */
-const NAMENS_KLASSEN = ["nm-sonne", "nm-eis", "nm-gift", "nm-beere", "nm-puls", "nm-schimmer",
-  "nm-neon", "nm-regenbogen", "nm-feuer", "nm-glitch", "nm-vanta", "nm-splitter", "nm-krone", "nm-s2_bernstein", "nm-s2_phoenix"];
-const RAHMEN_KLASSEN = ["fr-silber", "fr-gold", "fr-neon", "fr-rotierend", "fr-flamme", "fr-sterne", "fr-s2_wolf"];
+/* Die Klassen kommen aus den Erlaubnislisten in core/player.js. Hier stand
+   vorher eine eigene Liste, die bei Season 2 stehengeblieben war: Aurora,
+   Gala, Fortuna und alles danach waren angelegt und im Chat zu sehen, oben
+   in der eigenen Leiste aber nicht. */
+const NAMENS_KLASSEN = [...window.Casino.spieler.stile].map((s) => "nm-" + s);
+const RAHMEN_KLASSEN = [...window.Casino.spieler.rahmen].map((r) => "fr-" + r);
 
 function setzeNamensStil(el, acc) {
   if (!el) return;

@@ -4,15 +4,30 @@
  * Simulierte Börse, für alle dieselbe.
  *
  * Eine Handvoll ausgedachter Firmen, deren Kurse sich bei jedem Takt zufällig
- * bewegen, ab und zu mit Nachrichten-Schocks und dem Risiko einer Pleite
- * (Kurs auf 0, wer long ist, verliert seinen Einsatz, und eine neue Firma
- * rückt nach).
+ * bewegen, ab und zu mit Nachrichten-Schocks. Fällt ein Kurs unter 12 % seines
+ * Ausgabekurses, ist die Firma pleite: alle Positionen darin werden zum
+ * letzten Kurs abgerechnet, und eine neue Firma rückt nach.
  *
  * Man eröffnet Long oder Short Positionen mit Einschuss und Hebel (Daytrading
  * oder halten). Wert = Einschuss + Richtung × (Kurs − Einstieg) × Stückzahl.
  * Fällt der Wert auf 0, wird die Position liquidiert (Einschuss weg). Gewinn
  * und Verlust entstehen gegen den Markt, wie bei den Casinospielen. Gespeichert
  * in data/stocks.json.
+ *
+ * DER KURS HAT KEINE RICHTUNG. Das ist die eine Regel, an der alles hängt.
+ * Im Mittel steht er nach jedem Takt da, wo er vorher stand; dann gibt es
+ * keine Spielweise (long, short, früh raus, lange halten), die im Schnitt
+ * gewinnt. Vorher hatte er zwei eingebaute Richtungen, die nicht
+ * zueinander passten: einen Drift nach oben und eine Pleite aus heiterem
+ * Himmel (0,25 % je Takt, also rund 35 Mal am Tag je Aktie). Wer short
+ * ging, bekam bei jeder dieser Pleiten das Hebelfache ausgezahlt und
+ * verdoppelte seinen Einsatz im Schnitt alle Viertelstunde.
+ *
+ * Ein Rest bleibt, und den deckt die Ordergebühr (SPREAD): springt der Kurs
+ * über die Liquidation hinaus, verliert man trotzdem nur den Einschuss,
+ * während ein Sprung in die andere Richtung voll zählt. Gemessen ist dieser
+ * Vorteil höchstens 0,76 % des Positionswerts. tests/boerse.test.js rechnet
+ * beides nach; wer hier eine Zahl ändert, sieht dort, ob es noch hält.
  */
 
 const path = require("path");
@@ -24,24 +39,63 @@ const FILE = path.join(DATA_DIR, "stocks.json");
 const MAX_LEVERAGE = 5;
 const HISTORY_LEN = 40;
 
+/* Grenzen je Position. Vorher gab es nur die Untergrenze: wer wollte, legte
+   Millionen in eine einzige Wette. 100.000 ist derselbe Deckel wie bei Pinco
+   und beim Gesamteinsatz je Pferderennen. */
+const MIN_MARGIN = 1000;
+const MAX_MARGIN = 100_000;
+// So viele Positionen darf ein Konto gleichzeitig offen haben. Ohne die Zahl
+// wäre der Deckel je Position mit zwanzig kleinen Positionen umgangen.
+const MAX_OFFEN = 5;
+/* Deckel auf die Auszahlung einer Position, wie bei Mines, Towers und
+   Higher/Lower. Ein Kurs kann sich ohne Grenze nach oben vervielfachen, und
+   mit Hebel 5 wäre ein einziger Ausreißer mehr, als im Haus im Umlauf ist. */
+const MAX_WIN = 2_000_000;
+/* Ordergebühr: man steigt um diesen Anteil schlechter ein, als der Kurs
+   steht. Auf den Einschuss gerechnet kostet das Hebel mal 1,5 %. Sie muss
+   über dem Sprungvorteil liegen (siehe Kopf der Datei), sonst lohnt sich
+   Hebeln wieder im Schnitt. */
+const SPREAD = 0.015;
+// Unter diesem Anteil des Ausgabekurses ist eine Firma pleite.
+const PLEITE_GRENZE = 0.12;
+/* Wie stark sich ein Kurs je Takt (6 Sekunden) höchstens bewegt, je Klasse:
+   ruhig, mittel, wild. Vorher 2,5 / 4,5 / 9 %: damit war jede gehebelte
+   Position nach Minuten liquidiert und jede Aktie nach Stunden pleite. In
+   einer Runde, die versetzt spielt, soll man eine Position auch über Nacht
+   halten können. Jetzt lebt eine Aktie im Mittel fünf bis zwanzig Tage. */
+const SCHWANKUNG = [0.004, 0.007, 0.012];
+const SCHWANKUNG_IPO = 0.007;
+/* Nachrichten: wie oft je Takt und Aktie, und wie groß der Sprung ist
+   (NEWS_MIN bis NEWS_MIN + NEWS_SPANNE). Vorher 4 % je Takt und 5 bis 23 %;
+   die großen Sprünge sind es, die den Sprungvorteil treiben. */
+const NEWS_CHANCE = 0.005;
+const NEWS_MIN = 0.02, NEWS_SPANNE = 0.04;
+/* Gespeicherte Aktien tragen noch die alte Schwankung. Beim Laden wird sie
+   einmal auf die neue Klasse umgeschrieben. */
+const ALTE_SCHWANKUNG = { 0.025: SCHWANKUNG[0], 0.045: SCHWANKUNG[1], 0.09: SCHWANKUNG[2], 0.05: SCHWANKUNG_IPO };
+
 const COMPANY_NAMES = [
   "LuckyDip Casinos", "MoonCoin", "ChipWorks", "FizzPop Drinks", "RockSolid Mining",
   "ByteForge Tech", "AeroNova", "GreenLeaf Farms", "Vortex Motors", "Solaris Energy",
   "PixelPlay Games", "IronClad Steel", "NimbusCloud", "DeepBlue Foods", "QuantumLeap",
 ];
 
-function newCompany(sym, seed) {
+/* `vergeben` sind die Namen, die schon an der Tafel stehen. Vorher wurde
+   blind gezogen, und zwei Kürzel konnten dieselbe Firma heißen. */
+function newCompany(sym, seed, vergeben = new Set()) {
   const tiers = [
-    { vol: 0.025, drift: 0.0008, price: [60, 220] },   // stable
-    { vol: 0.045, drift: 0.0012, price: [80, 320] },   // medium
-    { vol: 0.09,  drift: 0.0005, price: [30, 120] },   // volatile (bankruptcy-prone)
+    { vol: SCHWANKUNG[0], price: [60, 220] },   // ruhig
+    { vol: SCHWANKUNG[1], price: [80, 320] },   // mittel
+    { vol: SCHWANKUNG[2], price: [30, 120] },   // wild
   ];
   const t = tiers[seed % tiers.length];
   const price = Math.round(t.price[0] + Math.random() * (t.price[1] - t.price[0]));
+  const frei = COMPANY_NAMES.filter((n) => !vergeben.has(n));
+  const namen = frei.length ? frei : COMPANY_NAMES;
   return {
     sym,
-    name: COMPANY_NAMES[Math.floor(Math.random() * COMPANY_NAMES.length)],
-    price, basePrice: price, vol: t.vol, drift: t.drift,
+    name: namen[Math.floor(Math.random() * namen.length)],
+    price, basePrice: price, vol: t.vol,
     history: [price], bankrupt: false,
   };
 }
@@ -62,6 +116,10 @@ function load() {
   let m;
   try { m = JSON.parse(roh); } catch (e) { throw new Error(`[stocks] ${FILE} ist beschädigt: ${e.message}`); }
   if (!m || typeof m !== "object" || !m.stocks || !m.positions) throw new Error(`[stocks] ${FILE} hat keine Kurse oder Positionen.`);
+  for (const s of Object.values(m.stocks)) {
+    if (ALTE_SCHWANKUNG[s.vol]) s.vol = ALTE_SCHWANKUNG[s.vol];
+    delete s.drift;
+  }
   return m;
 }
 
@@ -79,7 +137,11 @@ function save() {
 function generate() {
   const syms = ["LUCK", "MOON", "CHIP", "FIZZ", "ROCK", "BYTE"];
   const stocks = {};
-  syms.forEach((s, i) => (stocks[s] = newCompany(s, i)));
+  const vergeben = new Set();
+  syms.forEach((s, i) => {
+    stocks[s] = newCompany(s, i, vergeben);
+    vergeben.add(stocks[s].name);
+  });
   return { stocks, positions: {}, nextId: 1, news: [] };
 }
 
@@ -96,6 +158,27 @@ function equity(pos) {
   return pos.margin + pnl;
 }
 
+/** Was eine Position jetzt auszahlen würde: nie unter null, nie über dem Deckel. */
+function wert(pos) {
+  return Math.min(MAX_WIN, Math.max(0, equity(pos)));
+}
+
+/**
+ * Ein Takt für eine Aktie. Beide Bewegungen sind im Mittel null: die
+ * Schwankung ist nach oben und unten gleich groß, und eine Nachricht geht
+ * mit derselben Wahrscheinlichkeit um denselben Anteil rauf wie runter.
+ * Gibt die Nachricht zurück, falls es eine gab.
+ */
+function kursSchritt(s) {
+  const shock = (Math.random() * 2 - 1) * s.vol;
+  s.price = Math.max(0.01, s.price * (1 + shock));
+  if (Math.random() >= NEWS_CHANCE) return null;
+  const up = Math.random() < 0.5;
+  const mag = NEWS_MIN + Math.random() * NEWS_SPANNE;
+  s.price = Math.max(0.01, s.price * (up ? 1 + mag : 1 - mag));
+  return { up, mag };
+}
+
 function pushNews(text) {
   market.news.unshift({ text, at: Date.now() });
   if (market.news.length > 8) market.news.pop();
@@ -110,23 +193,18 @@ function tick() {
 
   for (const sym of Object.keys(market.stocks)) {
     const s = market.stocks[sym];
-    // Random walk.
-    const shock = (Math.random() * 2 - 1) * s.vol;
-    s.price = Math.max(0.01, s.price * (1 + s.drift + shock));
-
-    // Occasional news shock.
-    if (Math.random() < 0.04) {
-      const up = Math.random() < 0.5;
-      const mag = 0.05 + Math.random() * 0.18;
-      s.price = Math.max(0.01, s.price * (up ? 1 + mag : 1 - mag));
+    const nachricht = kursSchritt(s);
+    if (nachricht) {
+      const { up, mag } = nachricht;
       pushNews(`${up ? "▲" : "▼"}${s.name} (${sym}) ${up ? "+" : "−"}${Math.round(mag * 100)} %`);
     }
 
-    // Pleite: weit unter den Grundwert gefallen, oder einfach Pech aus heiterem Himmel.
-    const crashed = s.price < s.basePrice * 0.12;
-    if (!s.bankrupt && (crashed || Math.random() < 0.0025)) {
+    /* Pleite nur noch über den Kursverfall. Der Kurs bleibt dabei stehen,
+       wo er ist: zu genau diesem Kurs werden unten alle Positionen
+       abgerechnet. Vorher sprang er auf null, und dieser Sprung war
+       geschenktes Geld für jeden, der kurz vor der Grenze short ging. */
+    if (!s.bankrupt && s.price < s.basePrice * PLEITE_GRENZE) {
       s.bankrupt = true;
-      s.price = 0;
       pushNews(`${s.name} (${sym}) ist pleite.`);
       bankruptcies.push(sym);
     }
@@ -140,10 +218,9 @@ function tick() {
     const s = market.stocks[pos.sym];
     if (!s) { delete market.positions[id]; continue; }
     if (s.bankrupt) {
-      // Shorts verdienen an einer Pleite und werden mit Gewinn geschlossen,
-      // Longs verlieren ihren Einschuss.
-      if (pos.dir < 0) liquidated.push({ owner: pos.owner, sym: pos.sym, payout: Math.max(0, pos.margin + pos.margin * pos.lev), margin: pos.margin });
-      else liquidated.push({ owner: pos.owner, sym: pos.sym, payout: 0, margin: pos.margin });
+      // Long wie Short bekommen, was die Position zum letzten Kurs wert ist.
+      // Für einen Long ist das wenig oder nichts, für einen Short sein Gewinn.
+      liquidated.push({ owner: pos.owner, sym: pos.sym, payout: Math.round(wert(pos)), margin: pos.margin, pleite: true });
       delete market.positions[id];
       continue;
     }
@@ -158,7 +235,8 @@ function tick() {
     if (market.stocks[sym] && market.stocks[sym].ipo) delete market.stocks[sym];
     else {
       const seed = Object.keys(market.stocks).indexOf(sym);
-      market.stocks[sym] = newCompany(sym, seed < 0 ? 0 : seed);
+      const vergeben = new Set(Object.values(market.stocks).map((x) => x.name));
+      market.stocks[sym] = newCompany(sym, seed < 0 ? 0 : seed, vergeben);
     }
   }
 
@@ -188,15 +266,17 @@ function positionsFor(key) {
       entry: Math.round(p.entry * 100) / 100,
       price: Math.round(priceOf(p.sym) * 100) / 100,
       shares: Math.round(p.shares * 1000) / 1000,
-      equity: Math.round(Math.max(0, equity(p))),
-      pnl: Math.round(equity(p) - p.margin),
+      equity: Math.round(wert(p)),
+      pnl: Math.round(wert(p) - p.margin),
+      // Am Deckel bringt Warten nichts mehr; der Client sagt das dazu.
+      gedeckelt: equity(p) >= MAX_WIN,
     }));
 }
 
 /** Wie viele Chips in den offenen Positionen eines Spielers stecken (fürs Vermögen). */
 function portfolioValue(key) {
   let v = 0;
-  for (const p of Object.values(market.positions)) if (p.owner === key) v += Math.max(0, equity(p));
+  for (const p of Object.values(market.positions)) if (p.owner === key) v += wert(p);
   return Math.round(v);
 }
 
@@ -206,12 +286,17 @@ function open(key, sym, dir, margin, lev) {
   if (!s || s.bankrupt) return { ok: false, error: "Aktie nicht handelbar." };
   margin = Math.floor(Number(margin));
   lev = Math.floor(Number(lev));
-  if (!Number.isFinite(margin) || margin < 1000) return { ok: false, error: "Mindest-Einsatz 1.000 Chips." };
+  if (!Number.isFinite(margin) || margin < MIN_MARGIN) return { ok: false, error: `Mindest-Einsatz ${MIN_MARGIN.toLocaleString("de-DE")} Chips.` };
+  if (margin > MAX_MARGIN) return { ok: false, error: `Höchstens ${MAX_MARGIN.toLocaleString("de-DE")} Chips je Position.` };
   if (!Number.isFinite(lev) || lev < 1 || lev > MAX_LEVERAGE) return { ok: false, error: `Hebel zwischen 1 und ${MAX_LEVERAGE}.` };
+  const offen = Object.values(market.positions).filter((p) => p.owner === key).length;
+  if (offen >= MAX_OFFEN) return { ok: false, error: `Höchstens ${MAX_OFFEN} offene Positionen. Schließ erst eine.` };
   dir = dir < 0 ? -1 : 1;
-  const shares = (margin * lev) / s.price;
+  // Die Ordergebühr: ein Long kauft über dem Kurs, ein Short verkauft darunter.
+  const entry = s.price * (1 + dir * SPREAD);
+  const shares = (margin * lev) / entry;
   const id = String(market.nextId++);
-  market.positions[id] = { owner: key, sym, dir, entry: s.price, shares, margin, lev, openedAt: Date.now() };
+  market.positions[id] = { owner: key, sym, dir, entry, shares, margin, lev, openedAt: Date.now() };
   save();
   return { ok: true, cost: margin, id };
 }
@@ -220,7 +305,7 @@ function close(key, id) {
   const pos = market.positions[id];
   if (!pos) return { ok: false, error: "Position nicht gefunden." };
   if (pos.owner !== key) return { ok: false, error: "Nicht deine Position." };
-  const payout = Math.round(Math.max(0, equity(pos)));
+  const payout = Math.round(wert(pos));
   delete market.positions[id];
   save();
   return { ok: true, payout, margin: pos.margin };
@@ -229,7 +314,11 @@ function close(key, id) {
 // Socket wiring
 function setupStocks(io, accounts) {
   function snapshot(key) {
-    return { stocks: publicStocks(), positions: positionsFor(key), news: market.news.slice(0, 6), maxLeverage: MAX_LEVERAGE };
+    return {
+      stocks: publicStocks(), positions: positionsFor(key), news: market.news.slice(0, 6), maxLeverage: MAX_LEVERAGE,
+      // Grenzen und Gebühr kommen von hier; der Client zeigt und prüft nur damit.
+      regeln: { minMargin: MIN_MARGIN, maxMargin: MAX_MARGIN, maxOffen: MAX_OFFEN, maxWin: MAX_WIN, spread: SPREAD, pleiteGrenze: PLEITE_GRENZE },
+    };
   }
 
   io.on("connection", (socket) => {
@@ -277,13 +366,13 @@ function setupStocks(io, accounts) {
     });
   });
 
-  // Der Markt lebt: Kurse bewegen, Gewinne aus Short-Pleiten auszahlen,
+  // Der Markt lebt: Kurse bewegen, bei einer Pleite zum letzten Kurs abrechnen,
   // Liquidierte benachrichtigen und allen den neuen Stand schicken.
   setInterval(() => {
     const { liquidated } = tick();
     let gezahlt = false;
     for (const ev of liquidated) {
-      if (ev.payout > 0) { accounts.adjustChips(ev.owner, ev.payout); gezahlt = true; } // Short wird bei der Pleite ausgezahlt
+      if (ev.payout > 0) { accounts.adjustChips(ev.owner, ev.payout); gezahlt = true; } // Abrechnung nach einer Pleite
     }
     // Die Positionen sind schon aus der Datei; die Auszahlungen dazu gleich sichern.
     if (gezahlt) { try { accounts.saveJetzt(); } catch {} }
@@ -309,7 +398,7 @@ function ipo(key, name, seedPrice) {
   const price = Math.max(20, Math.round(seedPrice || 100));
   market.stocks[sym] = {
     sym, name, price, basePrice: price,
-    vol: 0.05, drift: 0.0012, history: [price], bankrupt: false,
+    vol: SCHWANKUNG_IPO, history: [price], bankrupt: false,
     ipo: true, founder: key,
   };
   pushNews(`${name} (${sym}) ist an die Börse gegangen.`);
@@ -338,4 +427,6 @@ function umbenennen(key, alt, neu) {
 module.exports = {
   umbenennen,
   MAX_LEVERAGE, tick, publicStocks, positionsFor, portfolioValue, open, close, ipo, setupStocks,
+  // Für tests/boerse.test.js.
+  _intern: { kursSchritt, wert, markt: () => market, MIN_MARGIN, MAX_MARGIN, MAX_OFFEN, MAX_WIN, SPREAD, PLEITE_GRENZE, SCHWANKUNG, NEWS_MIN, NEWS_SPANNE },
 };

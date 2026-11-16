@@ -40,6 +40,12 @@ const AVATARS = [
   /* Gala. Alles mit `nur: "gala"` gibt es AUSSCHLIESSLICH aus der Gala-Kiste
      und in keinem anderen Topf; siehe game/kisten.js. */
   { id: "gala_sekt", emoji: "🥂", label: "Anstoßen", cost: 28000, nur: "gala" },
+  /* Season 3, Porta-Winter. */
+  { id: "s3_schneemann", emoji: "⛄", label: "Schneemann",   cost: null, via: "Season 3, Stufe 5",  season: "porta-winter-3" },
+  { id: "s3_eule",       emoji: "🦉", label: "Schneeeule",   cost: null, via: "Season 3, Stufe 15", season: "porta-winter-3" },
+  { id: "s3_hirsch",     emoji: "🦌", label: "Winterhirsch", cost: null, via: "Season 3, Stufe 20", season: "porta-winter-3" },
+  /* Winterkiste. Alles mit `nur: "winter"` gibt es AUSSCHLIESSLICH dort. */
+  { id: "winter_kakao", emoji: "☕", label: "Heißer Kakao", cost: 26000, nur: "winter" },
 ];
 /* Die Namen sind nicht schmueckendes Beiwerk, sondern noetig: label() gab
    fuer eine Farbe den Hex-Wert zurueck, und in einer Ziehung stand dann
@@ -168,6 +174,23 @@ const STYLES = [
    * anderer Stil arbeitet mit Licht UND Schatten, alle anderen faerben nur.
    */
   { id: "gala_rampenlicht", label: "Rampenlicht", cost: null, via: "Nur aus der Gala-Kiste", limitiert: "kiste", nur: "gala", preview: ["#fff6d8", "#2a2418"], motion: true },
+  /* Season 3. Raureif legt sich langsam von unten über die Schrift und
+     taut wieder ab; Nordstern ist tiefes Nachtblau, über das ein heller
+     Stern mit vier Zacken zieht. */
+  { id: "s3_raureif",  label: "Raureif",   cost: null, via: "Season 3, Stufe 10", season: "porta-winter-3", preview: ["#f4fbff", "#6f9fc4"], motion: true },
+  { id: "s3_nordstern", label: "Nordstern", cost: null, via: "Season 3, Stufe 20", season: "porta-winter-3", preview: ["#ffffff", "#5f8be0"], motion: true },
+  /*
+   * Winterkiste, mythisch. Eisblume wächst: feine Kristallnadeln stehen in
+   * der Schrift und ein kalter Glanz fährt schräg darüber, wie Licht auf
+   * einer gefrorenen Scheibe.
+   */
+  { id: "winter_eisblume", label: "Eisblume", cost: 1600000, nur: "winter", preview: ["#e9f8ff", "#3b7fb0"], motion: true },
+  /*
+   * Das Einzelstück der Winterkiste. Die Schrift ist eine Schneekugel: der
+   * Name steht in dunklem Glas, und IN den Buchstaben fällt Schnee. Kein
+   * anderer Stil hat Bewegung innerhalb der Schrift, die nicht Farbe ist.
+   */
+  { id: "winter_schneekugel", label: "Schneekugel", cost: null, via: "Nur aus der Winterkiste", limitiert: "kiste", nur: "winter", preview: ["#ffffff", "#3f6a98"], motion: true },
   /* Exklusiv im Prägeatelier. Quecksilber ist kein weiterer bunter Verlauf:
      ein schmaler, fast weißer Reflex läuft durch dunkles flüssiges Metall. */
   { id: "staub_quecksilber", label: "Quecksilber", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "episch", preview: ["#f5f0ff", "#625477"], motion: true },
@@ -201,6 +224,12 @@ const FRAMES = [
   /* Gala, episch. Kein Ring, sondern zwei Lorbeerzweige, die sich unten
      treffen und oben offen bleiben — wie auf der Kiste. */
   { id: "gala_kranz", label: "Lorbeerkranz", cost: 390000, nur: "gala", motion: true },
+  /* Season 3, Stufe 15. Sechs Kristallspitzen sitzen auf dem Ring und
+     glitzern nacheinander auf. */
+  { id: "s3_eiskristall", label: "Eiskristall", cost: null, via: "Season 3, Stufe 15", season: "porta-winter-3", motion: true },
+  /* Winterkiste, episch. Eiszapfen hängen unten am Ring, und ab und zu
+     löst sich ein Tropfen. */
+  { id: "winter_eiszapfen", label: "Eiszapfen", cost: 380000, nur: "winter", motion: true },
   /* Meilenstein im Buch der Geheimnisse (sechs Funde). Eine Kompassrose:
      vier goldene Marken auf einem dunklen Ring, und die Nadel darin sucht
      hin und her, statt sich gleichmäßig zu drehen. */
@@ -270,6 +299,10 @@ const TITLES = [
      nominiert. */
   { id: "gala_gast",      text: "Ehrengast", cost: 22000,  nur: "gala" },
   { id: "gala_nominiert", text: "Nominiert", cost: 85000,  nur: "gala" },
+  { id: "s3_nordstern",      text: "Nordstern von Porta", cost: null, via: "Season 3, Stufe 20", season: "porta-winter-3" },
+  /* Winterkiste. */
+  { id: "winter_frostbeule", text: "Frostbeule",     cost: 21000, nur: "winter" },
+  { id: "winter_gluehwein",  text: "Glühweinkenner", cost: 85000, nur: "winter" },
 ];
 
 /* Gewinn-Effekt
@@ -300,6 +333,12 @@ const EFFEKTE = [
    * deshalb ist er drin: alles andere im Haus wirft etwas.
    */
   { id: "gala_blitzlicht", label: "Blitzlichtgewitter", cost: 620000, nur: "gala", motion: true },
+  /*
+   * Winterkiste, legendär. Kein Fallen und kein Werfen, sondern WIND: ein
+   * Schneegestöber fegt waagerecht über den Bildschirm, in Böen, und die
+   * Flocken tanzen dabei auf und ab.
+   */
+  { id: "winter_schneesturm", label: "Schneegestöber", cost: 640000, nur: "winter", motion: true },
 ];
 
 /* Eintritts-Spruch
@@ -326,6 +365,8 @@ const SPRUECHE = [
   { id: "eigen", text: "{name} …", eigen: true, cost: 900000 },
   /* Gala, episch. */
   { id: "gala_auftritt", text: "{name} betritt den roten Teppich.", cost: 280000, nur: "gala" },
+  /* Winterkiste, episch. */
+  { id: "winter_auftritt", text: "{name} klopft sich den Schnee von den Schuhen.", cost: 270000, nur: "winter" },
 ];
 
 const SPRUCH_MAX = 60;
@@ -346,6 +387,9 @@ const BANNER = [
   /* Gala, selten. Ein roter Laeufer mit Goldkante, der schraeg nach hinten
      laeuft — Flaeche, aber mit Richtung. */
   { id: "gala_teppich", label: "Roter Teppich", cost: 55000, nur: "gala" },
+  /* Winterkiste, selten. Drei Reihen Tannen hintereinander, die hinteren
+     blasser, und es schneit davor. */
+  { id: "winter_tannen", label: "Tannenwald", cost: 60000, nur: "winter" },
   /* Blaupause: feine Konstruktionslinien plus wandernder Prüfstrahl. */
   { id: "staub_blaupause", label: "Blaupause", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "selten", motion: true },
 ];
@@ -375,6 +419,8 @@ const SCHILDER = [
   /* Gala, episch. Bordeauxfarbener Samt mit einer goldenen Kordel am Rand,
      wie die Absperrung vor dem Eingang. */
   { id: "gala_samt", label: "Samtkordel", cost: 190000, nur: "gala" },
+  /* Winterkiste, episch. Rot-weißes Norwegermuster wie ein Pulloverbund. */
+  { id: "winter_strick", label: "Strickmuster", cost: 195000, nur: "winter" },
   /* Meilenstein im Buch der Geheimnisse (drei Funde). Dunkles Holz mit
      einem Schlüsselloch aus Messing am Ende. Steht still. */
   { id: "geh_schluesselloch", label: "Schlüsselloch", cost: null, via: "Drei Geheimnisse gefunden" },
@@ -411,6 +457,9 @@ const AUREN = [
   /* Gala, legendaer. Die anderen Auren schweben, schiessen, kreisen oder
      liegen. Diese FAELLT: Konfetti rieselt am Bild vorbei nach unten. */
   { id: "gala_konfetti", label: "Konfettiregen", cost: 950000, nur: "gala", motion: true },
+  /* Winterkiste, legendär. Die einzige Aura, die WÄCHST: Eiskristalle
+     bilden sich am Bild, werden größer, treiben nach außen und vergehen. */
+  { id: "winter_frosthauch", label: "Frosthauch", cost: 940000, nur: "winter", motion: true },
   /* Meilenstein im Buch der Geheimnisse (neun Funde). Kein Ring und kein
      Schein, sondern ein paar Glühwürmchen, die langsam um das Bild ziehen
      und dabei auf und ab glimmen. */
@@ -465,6 +514,9 @@ const ZEICHEN = [
   /* Gala, gewoehnlich und selten. */
   { id: "gala_konfetti", label: "Konfetti",  icon: "konfetti",   cost: 15000,  nur: "gala" },
   { id: "gala_stern",    label: "Goldstern", icon: "gala-stern", cost: 115000, nur: "gala" },
+  /* Winterkiste, gewöhnlich und selten. */
+  { id: "winter_flocke",       label: "Schneeflocke", icon: "schneeflocke", cost: 15000,  nur: "winter" },
+  { id: "winter_zuckerstange", label: "Zuckerstange", icon: "zuckerstange", cost: 110000, nur: "winter" },
   /* Das kleine Siegel ist absichtlich im Chat sichtbar: Atelierstücke
      sollen auch auffallen, wenn niemand gleichzeitig online ist. */
   { id: "staub_siegel", label: "Prägesiegel", icon: "marke", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "selten", motion: true },
@@ -633,8 +685,10 @@ function setupCosmetics(io, accounts) {
        * Ohne diese Unterscheidung stand ueberall nur ein Schloss, und niemand
        * konnte sehen, wo es eilt.
        */
-      let seasonEnde = 0, comebackEnde = 0;
+      let seasonEnde = 0, comebackEnde = 0, seasons = {};
       try { seasonEnde = require("./season").SEASON.endsAt || 0; } catch {}
+      // Je Season Name und Ende: ein Stück aus Season 2 hängt sonst an der Frist von Season 3.
+      try { seasons = require("./season").uebersicht(); } catch {}
       try { const cb = require("./comeback").publicState(null); comebackEnde = cb.geschenkOffen ? cb.geschenkBis : 0; } catch {}
       const radRest = Math.max(0, FORTUNA_MAX - fortunaVergeben(accounts));
       /* Woher ein Stueck kommt, in einem Wort. Seit es den Laden nicht mehr
@@ -698,7 +752,7 @@ function setupCosmetics(io, accounts) {
       return {
         chips: acc.chips,
         outfits: [0, 1, 2].map(slot => ({ slot, saved: !!acc.outfits?.[slot], savedAt: acc.outfits?.[slot]?.savedAt || null, look: outfitLook(acc.outfits?.[slot]) })),
-        fristen: { season: seasonEnde, comeback: comebackEnde },
+        fristen: { season: seasonEnde, comeback: comebackEnde, seasons },
         fortuna: { rest: radRest, max: FORTUNA_MAX },
         serien: praegung.serienRegeln(),
         avatars: AVATARS.map((a) => ({ ...a, owned: hat("avatar", a.id), equipped: a.emoji === eqAva, ...mitPraegung("avatar")(a) })),
@@ -1218,6 +1272,8 @@ const FAMILIEN = {
   auk:   { label: "Auktionshaus", farbe: "#c86bd6" },
   adm:   { label: "Haus",         farbe: "#e6b7ee" },
   s2:    { label: "Season 2",     farbe: "#ff9f43" },
+  s3:    { label: "Season 3",     farbe: "#9fd4ff" },
+  winter:{ label: "Winter",       farbe: "#cfe9ff" },
   kiste: { label: "Einzelstücke", farbe: "#b6ff4d" },
   rad:   { label: "Fortuna",      farbe: "#f4d782" },
   staub: { label: "Prägeatelier", farbe: "#d8c0ff" },

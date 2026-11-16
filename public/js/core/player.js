@@ -27,11 +27,13 @@
   const STILE = new Set(["sonne", "eis", "gift", "beere", "puls", "schimmer",
     "neon", "regenbogen", "feuer", "glitch", "vanta", "splitter", "krone", "s2_bernstein", "s2_phoenix",
     "rad_fortuna", "auk_hologramm", "kiste_lack", "adm_zensiert", "sml_glutkern",
-    "aurora", "hochspannung", "gala_gravur", "gala_rampenlicht", "staub_quecksilber", "geh_tinte"]);
+    "aurora", "hochspannung", "gala_gravur", "gala_rampenlicht", "staub_quecksilber", "geh_tinte",
+    "s3_raureif", "s3_nordstern", "winter_eisblume", "winter_schneekugel"]);
   const RAHMEN = new Set(["silber", "gold", "neon", "rotierend", "flamme", "sterne", "s2_wolf",
-    "rad_fortuna", "adm_orbit", "uhrwerk", "kiste_sprung", "gala_kranz", "staub_zahnkranz", "geh_kompass"]);
+    "rad_fortuna", "adm_orbit", "uhrwerk", "kiste_sprung", "gala_kranz", "staub_zahnkranz", "geh_kompass",
+    "s3_eiskristall", "winter_eiszapfen"]);
   const AUREN = new Set(["auk_goldstaub", "auk_leere", "kiste_funken", "adm_eklipse", "sml_nachtschwarm",
-    "kiste_ringsystem", "gala_konfetti", "staub_sternenschmiede", "geh_gluehwurm"]);
+    "kiste_ringsystem", "gala_konfetti", "staub_sternenschmiede", "geh_gluehwurm", "winter_frosthauch"]);
 
   /**
    * Der Name mit Farbe oder Stil.
@@ -95,6 +97,7 @@
     hai: "hai", klingen: "krieg", tresor: "schatzkammer",
     gala_konfetti: "konfetti", gala_stern: "gala-stern",
     staub_siegel: "marke",
+    winter_flocke: "schneeflocke", winter_zuckerstange: "zuckerstange",
   };
   /** Das Zeichen vor einer Chat-Nachricht. Nichts, wenn keins angelegt ist. */
   function zeichen(p) {
@@ -147,7 +150,7 @@
    * auch: der Server schickt nur die Kennung, und ein unbekannter Wert aus
    * einer alten Nachricht darf keine fremde Klasse ins Dokument schreiben.
    */
-  const FAMILIEN = new Set(["gala", "sml", "auk", "adm", "s2", "kiste", "rad", "staub"]);
+  const FAMILIEN = new Set(["gala", "sml", "auk", "adm", "s2", "s3", "winter", "kiste", "rad", "staub"]);
   function garnitur(p) {
     const g = p && p.garnitur;
     if (!g || !FAMILIEN.has(g.id) || !g.teile) return "";
@@ -229,5 +232,8 @@
     return `<span class="club-figure club-figure-welt${aura}" aria-hidden="true">${bild}</span>`;
   }
 
-  Casino.spieler = { figur, name, avatar, title, chip, prunk, garnitur, zeichen, kosVorschau, serienCode, serienRang, serienBadge };
+  Casino.spieler = { figur, name, avatar, title, chip, prunk, garnitur, zeichen, kosVorschau, serienCode, serienRang, serienBadge,
+    /* Die Erlaubnislisten selbst, damit Topbar und Profil in app.js keine
+       zweite, unvollständige Fassung führen müssen. */
+    stile: STILE, rahmen: RAHMEN };
 })();

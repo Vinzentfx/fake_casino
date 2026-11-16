@@ -167,6 +167,8 @@ const ACCESSOIRES = [
   { id: "fluegel",       label: "Flügel",             cost: 1_250_000, nur: K, motion: true },
   // An der Nähmaschine im Atelier, aus dem Stoff aus dem Taubenschlag (game/welt.js).
   { id: "seidentuch",    label: "Rotes Seidentuch",   cost: null, via: "Irgendwo im Haus versteckt" },
+  // Für den ersten Sieg im Wochenend-Derby (game/eventCalendar.js).
+  { id: "siegerschal",   label: "Siegerschal",        cost: null, via: "Mit deinem Team ein Wochenend-Derby gewonnen" },
 ];
 
 const HANDDINGE = [
@@ -244,6 +246,27 @@ const HAUSTIERE = [
   { id: "rabe",          label: "Rabe vom Wittekindsberg", cost: null, via: "Irgendwo ganz oben" },
 ];
 
+/*
+ * Spuren: was die Figur beim Gehen auf dem Boden hinterlässt.
+ *
+ * Das einzige Stück im Haus, das man sieht, OHNE dass man sich trifft. Der
+ * Server merkt sich die Abdrücke je Raum eine halbe Stunde lang
+ * (`SPUR_MS` in game/welt.js); wer später kommt, sieht, wer hier war und
+ * wohin er gegangen ist. Die Runde spielt meistens versetzt, und genau dafür
+ * ist es gebaut. Gezeichnet wird in public/js/welt/welt.js (`spurSetzen`),
+ * aussehen tut jede Spur über `.wsp-<id>` in welt.css.
+ */
+const SPUREN = [
+  { id: "keine",      label: "Ohne",           cost: 0 },
+  { id: "pfoten",     label: "Pfotenabdrücke", cost: 24_000,    nur: K },
+  { id: "rosen",      label: "Rosenblätter",   cost: 95_000,    nur: K },
+  { id: "neon",       label: "Neonsohlen",     cost: 320_000,   nur: K, motion: true },
+  { id: "funken",     label: "Funkenspur",     cost: 850_000,   nur: K, motion: true },
+  { id: "sternstaub", label: "Sternenstaub",   cost: 1_400_000, nur: K, motion: true },
+  /* Aus der Winterkiste, nicht aus der Kleiderkiste. */
+  { id: "schnee",     label: "Schneestapfen",  cost: 60_000,    nur: "winter" },
+];
+
 /* Die Arten, wie game/cosmetics.js sie braucht: Topf am Konto, angelegtes
    Feld, deutscher Name und die Kennung für "nichts angelegt". */
 const ARTEN = {
@@ -257,6 +280,7 @@ const ARTEN = {
   hand:       { topf: "handdinge",   feld: "handding",   name: "In der Hand", leer: "keins",    liste: HANDDINGE },
   fahrzeug:   { topf: "fahrzeuge",   feld: "fahrzeug",   name: "Fahrzeug",    leer: "keins",    liste: FAHRZEUGE },
   haustier:   { topf: "haustiere",   feld: "haustier",   name: "Haustier",    leer: "keins",    liste: HAUSTIERE },
+  spur:       { topf: "spuren",      feld: "spur",       name: "Spur",        leer: "keine",    liste: SPUREN },
 };
 
 /*
@@ -351,4 +375,4 @@ function fahrtVon(acc) {
 /** Ladenware ist nicht geprägt und nicht handelbar (Autohaus, Kiosk). */
 const istLadenware = (item) => !!item && LADENWARE.has(item.nur);
 
-module.exports = { ZOO, AUTOHAUS, KIOSK, istLadenware, ARTEN, SETS, setVon, angelegt, fahrzeugVon, fahrtVon, KOPF, FRISUREN, OBERTEILE, HOSEN, SCHUHE, BRILLEN, ACCESSOIRES, HANDDINGE, FAHRZEUGE, HAUSTIERE };
+module.exports = { ZOO, AUTOHAUS, KIOSK, istLadenware, ARTEN, SETS, setVon, angelegt, fahrzeugVon, fahrtVon, KOPF, FRISUREN, OBERTEILE, HOSEN, SCHUHE, BRILLEN, ACCESSOIRES, HANDDINGE, FAHRZEUGE, HAUSTIERE, SPUREN };

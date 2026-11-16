@@ -250,8 +250,16 @@ function setupWelt(io, accounts) {
       kleidung: l.kleidung || {}, stilSet: l.stilSet || null,
       // Der Name, den das Tier im Zoo bekommen hat. Geprüft beim Kauf.
       tierName: acc.haustier && acc.tierNamen && typeof acc.tierNamen[acc.haustier] === "string" ? acc.tierNamen[acc.haustier] : null,
+      // Das Team im Wochenend-Derby (0 oder 1), nur solange es läuft.
+      derby: accounts.schluesselVon ? require("./eventCalendar").teamVon(accounts.schluesselVon(acc)) : null,
     };
   }
+  /* Bekommt jemand ein Team oder ist das Derby vorbei, zeigt die Welt es
+     sofort: Schal und Marke am Namen hängen am Aussehen. */
+  require("./eventCalendar").setAussehen((key) => {
+    const fig = figuren.get(String(key || "").toLowerCase());
+    if (fig && sichtbar(fig)) io.to(kanal(fig.raum)).emit("welt:aussehen", oeffentlich(fig));
+  });
 
   /* Was ein Tab gerade offen hat, steht seit jeher in socket.data.screen
      (tableManager.js setzt es und laesst unbekannte Namen auf "lobby"
@@ -274,12 +282,47 @@ function setupWelt(io, accounts) {
 
   const sichtbar = (fig) => fig.sockets.size > 0;
 
+  /*
+   * Fußspuren. Je Raum eine Liste der letzten Abdrücke, eine halbe Stunde
+   * lang, nur im Speicher: nach einem Neustart ist der Boden sauber, und
+   * das ist in Ordnung. Live zeichnet jeder Browser die Abdrücke selbst aus
+   * der Bewegung; diese Liste ist nur für die, die SPÄTER kommen.
+   * Abstand und Seitenversatz stehen in raeume.js (`SPUR`), damit der
+   * Browser dieselben Schritte setzt wie der Server.
+   */
+  const spuren = new Map();   // raumId: [{ x, y, w, f, a, t }]
+  function spurMerken(fig, acc) {
+    const art = kleidung.angelegt(acc).spur;
+    if (!art || fig.faehrt || fig.sitzt) { fig.spurLetzt = null; return; }
+    const l = fig.spurLetzt;
+    if (!l || l.raum !== fig.raum) { fig.spurLetzt = { raum: fig.raum, x: fig.x, y: fig.y, f: 0 }; return; }
+    const dx = fig.x - l.x, dy = fig.y - l.y;
+    const weit = Math.hypot(dx, dy);
+    if (weit < R.SPUR.schritt) return;
+    // Ein Sprung (Schnellwahl) zieht keine Spur quer durch den Raum.
+    if (weit > 3) { fig.spurLetzt = { raum: fig.raum, x: fig.x, y: fig.y, f: l.f }; return; }
+    const jetzt = Date.now();
+    const liste = spuren.get(fig.raum) || [];
+    const w = Math.round(Math.atan2(dy, dx) * 180 / Math.PI);
+    liste.push({ x: fig.x, y: fig.y, w, f: l.f, a: art, t: jetzt });
+    // Alte weg, und nie mehr als die Obergrenze: ein Raum ist kein Archiv.
+    while (liste.length && (jetzt - liste[0].t > R.SPUR.ms || liste.length > R.SPUR.max)) liste.shift();
+    spuren.set(fig.raum, liste);
+    fig.spurLetzt = { raum: fig.raum, x: fig.x, y: fig.y, f: l.f ? 0 : 1 };
+  }
+  /** Was im Raum liegt, mit Alter statt Uhrzeit: die Uhr im Browser muss nicht stimmen. */
+  function spurenVon(raumId) {
+    const jetzt = Date.now();
+    return (spuren.get(raumId) || []).filter((s) => jetzt - s.t < R.SPUR.ms)
+      .map((s) => [s.x, s.y, s.w, s.f, s.a, jetzt - s.t]);
+  }
+
   function zustand(fig) {
     const andere = [];
     for (const f of figuren.values()) {
       if (f !== fig && f.raum === fig.raum && sichtbar(f)) andere.push(oeffentlich(f));
     }
-    return { ok: true, ich: fig.id, raum: fig.raum, pos: { x: fig.x, y: fig.y, d: fig.d, s: fig.sitzt || 0 }, look: oeffentlich(fig).look, spieler: andere, fahrt: fahrtZustand(fig), musik: musikVon(fig.raum) };
+    return { ok: true, ich: fig.id, raum: fig.raum, pos: { x: fig.x, y: fig.y, d: fig.d, s: fig.sitzt || 0 }, look: oeffentlich(fig).look, spieler: andere, fahrt: fahrtZustand(fig), musik: musikVon(fig.raum), spuren: spurenVon(fig.raum) };
   }
 
   /* Was die Jukebox im Raum gerade spielt, mit Restzeit statt Uhrzeit:
@@ -599,6 +642,7 @@ function setupWelt(io, accounts) {
         return;
       }
       fig.x = runde(x); fig.y = runde(y); fig.d = d; fig.geht = geht; fig.sitzt = null;
+      spurMerken(fig, accounts.get(fig.key));
       const zug = [fig.id, fig.x, fig.y, fig.d, geht ? 1 : 0, 0];
       /* Laufende Züge dürfen verloren gehen, der nächste kommt gleich. Der
          letzte (stehen geblieben) nicht: sonst läuft die Figur bei den

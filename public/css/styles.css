@@ -6959,6 +6959,7 @@ html:not(.reduce-motion) .cb-geschenk .cb-icon { animation: cb-wippen 1.8s ease-
 }
 .se-hero-kopf { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); }
 .se-hero-kopf h2 { margin: 0; font-size: var(--fs-xl); }
+.se-nachgereicht { margin: var(--sp-2) 0 0; color: var(--good); }
 .se-timer {
   flex: 0 0 auto;
   font-size: var(--fs-xs);
@@ -11897,6 +11898,8 @@ html:not(.reduce-motion) .ki-limit { animation: ki-limit-puls 2.8s ease-in-out i
 .ga-kiste { color: #b6ff4d; }
 .ga-rad   { color: #f4d782; }
 .ga-staub { color: #d8c0ff; }
+.ga-s3    { color: #9fd4ff; }
+.ga-winter { color: #cfe9ff; }
 /* Ab fuenf Teilen leuchtet sie. Drei sind ein Anfang, fuenf sind eine
    Ansage, und wer will, dass es auffaellt, sammelt weiter. */
 .pl-garnitur.voll {
@@ -13006,3 +13009,283 @@ html[data-theme] .nm-geh_tinte { filter: drop-shadow(0 0 1px rgba(242, 210, 122,
 .dlg-card.dlg-breit { max-width: min(640px, 100%); }
 .dlg-zeilen { display: grid; gap: 7px; }
 .dlg-zeile { margin: 0; padding-left: 1.1em; text-indent: -1.1em; line-height: 1.4; }
+
+/* ==================================================================
+   Season 3 (Porta-Winter) und die Winterkiste
+
+   Gemeinsame Handschrift: Eisblau, Nachtblau und Weiss, beim Strick und
+   der Zuckerstange ein Rot dazu. Wie bei der Gala macht jedes Stück
+   etwas, das im Haus sonst keins macht.
+   ================================================================== */
+
+/* --- Raureif (Namensstil, Season 3, Stufe 10) ---------------------
+   Die anderen Stile fahren waagerecht. Hier steigt der Frost von unten
+   in die Schrift und taut wieder ab. */
+.nm-s3_raureif {
+  background-image: linear-gradient(0deg, #f4fbff 0%, #d8ecf8 34%, #8fb9d8 50%, #6f9fc4 66%, #4d7aa0 100%);
+  background-size: 100% 260%;
+  background-position: 50% 0%;
+  filter: drop-shadow(0 0 3px rgba(200, 230, 250, 0.45));
+}
+html:not(.reduce-motion) .nm-s3_raureif { animation: s3-raureif 6s ease-in-out infinite; }
+@keyframes s3-raureif {
+  0%, 100% { background-position: 50% 0%; }
+  50%      { background-position: 50% 100%; }
+}
+html.reduce-motion .nm-s3_raureif { background-position: 50% 60%; }
+
+/* --- Nordstern (Namensstil, Season 3, Stufe 20) -------------------
+   Nachtblaue Schrift mit einem hellen Streif, und darüber zieht ein
+   kleiner Stern mit vier Zacken. Der Abschluss von neun Wochen darf zwei
+   Ebenen haben, wie der Phönix. */
+.nm-s3_nordstern {
+  position: relative;
+  /* Nachtblau ist auf den dunklen Paletten unlesbar; das Blau hier ist
+     deshalb hell genug für Mitternacht und Neon, der Streif fast weiß. */
+  background-image: linear-gradient(100deg, #5f8be0 0%, #8fb2f5 38%, #eef4ff 48%, #ffffff 50%, #eef4ff 52%, #8fb2f5 62%, #5f8be0 100%);
+  background-size: 260% 100%;
+  filter: drop-shadow(0 0 3px rgba(150, 190, 255, 0.45)) drop-shadow(0 1px 1px rgba(5, 15, 40, 0.7));
+}
+.nm-s3_nordstern::after {
+  content: "";
+  position: absolute;
+  left: 0; top: -0.35em;
+  width: 0.5em; height: 0.5em;
+  background: #ffffff;
+  clip-path: polygon(50% 0%, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0% 50%, 40% 40%);
+  pointer-events: none;
+}
+html:not(.reduce-motion) .nm-s3_nordstern { animation: pl-sweep 4.2s linear infinite; }
+html:not(.reduce-motion) .nm-s3_nordstern::after { animation: s3-stern 4.2s ease-in-out infinite; }
+@keyframes s3-stern {
+  0%   { transform: translateX(0) scale(0.4); opacity: 0; }
+  20%  { opacity: 1; }
+  50%  { transform: translateX(3.2em) scale(1); }
+  80%  { opacity: 1; }
+  100% { transform: translateX(6em) scale(0.4); opacity: 0; }
+}
+html.reduce-motion .nm-s3_nordstern { background-position: 50% 50%; }
+html.reduce-motion .nm-s3_nordstern::after { left: auto; right: -0.3em; }
+
+/* --- Eiskristall (Rahmen, Season 3, Stufe 15) ---------------------
+   Ein eisblauer Ring, und aussen darauf sechs Kristallspitzen, die
+   nacheinander aufglitzern. */
+.fr-s3_eiskristall { --rahmen-farbe: #bfe1f7; position: relative; }
+.fr-s3_eiskristall::after {
+  content: "";
+  position: absolute;
+  inset: -6px; padding: 4px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from -4deg, #f2faff 0deg 8deg, transparent 8deg 60deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 2px rgba(160, 210, 245, 0.9));
+  pointer-events: none;
+}
+html:not(.reduce-motion) .fr-s3_eiskristall::after { animation: s3-glitzer 3.6s ease-in-out infinite; }
+@keyframes s3-glitzer {
+  0%, 100% { transform: rotate(0deg);  opacity: 0.75; }
+  50%      { transform: rotate(30deg); opacity: 1; }
+}
+
+/* --- Eiszapfen (Rahmen, episch) -----------------------------------
+   Unten am Ring hängen Zapfen, und alle paar Sekunden löst sich ein
+   Tropfen. Der Ring selbst ist der Rand, die Zapfen sind die eine
+   Ebene, der Tropfen die andere. */
+.fr-winter_eiszapfen { --rahmen-farbe: #d9eefb; position: relative; }
+.fr-winter_eiszapfen::before {
+  content: "";
+  position: absolute;
+  inset: -7px; padding: 5px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 90deg, rgba(225, 243, 255, 0.95) 0deg 7deg, transparent 7deg 18deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  clip-path: polygon(0 58%, 100% 58%, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+.fr-winter_eiszapfen::after {
+  content: "";
+  position: absolute;
+  left: 50%; bottom: -6px;
+  width: 4px; height: 5px;
+  margin-left: -2px;
+  border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+  background: #cfeaff;
+  opacity: 0;
+  pointer-events: none;
+}
+html:not(.reduce-motion) .fr-winter_eiszapfen::after { animation: winter-tropfen 4.5s ease-in infinite; }
+@keyframes winter-tropfen {
+  0%, 70% { transform: translateY(0) scale(0.5); opacity: 0; }
+  76%     { transform: translateY(0) scale(1);   opacity: 1; }
+  100%    { transform: translateY(14px) scale(1); opacity: 0; }
+}
+
+/* --- Frosthauch (Aura, legendär) ----------------------------------
+   Die anderen Auren schweben, kreisen, liegen oder fallen. Diese WÄCHST:
+   ein Kristall bildet sich am Bild, wird größer, treibt nach außen und
+   vergeht. */
+.au-winter_frosthauch::before, .au-winter_frosthauch::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 0.62em; height: 0.62em;
+  margin: -0.31em 0 0 -0.31em;
+  background: #e6f5ff;
+  clip-path: polygon(50% 0%, 58.5% 35.3%, 93.3% 25%, 67% 50%, 93.3% 75%, 58.5% 64.7%, 50% 100%, 41.5% 64.7%, 6.7% 75%, 33% 50%, 6.7% 25%, 41.5% 35.3%);
+  filter: drop-shadow(0 0 2px rgba(140, 200, 245, 0.9));
+  pointer-events: none;
+  z-index: 0;
+}
+.au-winter_frosthauch::after { background: #b9dcf5; }
+html:not(.reduce-motion) .au-winter_frosthauch::before { animation: winter-frost-a 3.4s ease-out infinite; }
+html:not(.reduce-motion) .au-winter_frosthauch::after  { animation: winter-frost-b 3.4s ease-out infinite 1.7s; }
+@keyframes winter-frost-a {
+  0%   { transform: translate(-0.3em, -0.2em) scale(0.15) rotate(0deg);  opacity: 0; }
+  25%  { opacity: 1; }
+  100% { transform: translate(-1.15em, -0.85em) scale(1.1) rotate(60deg); opacity: 0; }
+}
+@keyframes winter-frost-b {
+  0%   { transform: translate(0.3em, 0.2em) scale(0.15) rotate(0deg);    opacity: 0; }
+  25%  { opacity: 1; }
+  100% { transform: translate(1.1em, 0.8em) scale(1.1) rotate(-60deg);  opacity: 0; }
+}
+html.reduce-motion .au-winter_frosthauch::before { transform: translate(-0.95em, -0.7em) scale(0.8); }
+html.reduce-motion .au-winter_frosthauch::after  { transform: translate(0.95em, 0.65em) scale(0.6); }
+
+/* --- Eisblume (Namensstil, mythisch) ------------------------------
+   Feine Kristallnadeln in zwei Richtungen stehen fest in der Schrift,
+   und darunter fährt ein kalter Glanz durch, wie Licht über eine
+   gefrorene Scheibe. Nur die unterste Ebene bewegt sich. */
+.nm-winter_eisblume {
+  background-image:
+    repeating-linear-gradient(60deg, rgba(255, 255, 255, 0.5) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(-60deg, rgba(255, 255, 255, 0.35) 0 1px, transparent 1px 7px),
+    linear-gradient(100deg, #2f6c9c 0%, #6fb0dc 30%, #e9f8ff 46%, #ffffff 50%, #bfe3f8 58%, #3b7fb0 100%);
+  background-size: auto, auto, 260% 100%;
+  background-position: 0 0, 0 0, 0% 50%;
+  filter: drop-shadow(0 0 5px rgba(170, 220, 250, 0.55)) drop-shadow(0 1px 1px rgba(0, 20, 40, 0.6));
+}
+html:not(.reduce-motion) .nm-winter_eisblume { animation: winter-eisblume 4.4s linear infinite; }
+@keyframes winter-eisblume {
+  from { background-position: 0 0, 0 0, 100% 50%; }
+  to   { background-position: 0 0, 0 0, -60% 50%; }
+}
+html.reduce-motion .nm-winter_eisblume { background-position: 0 0, 0 0, 50% 50%; }
+
+/* --- Schneekugel (Namensstil, EINZELSTÜCK) ------------------------
+ *
+ * Der Name ist eine Schneekugel: dunkles Glas, und IN den Buchstaben
+ * fällt Schnee. Kein anderer Stil hat Bewegung in der Schrift, die
+ * nicht Farbe ist.
+ *
+ * Der Schnee steckt im Verlauf, nicht in einer Ebene darüber, aus
+ * demselben Grund wie beim Rampenlicht: über `background-clip: text`
+ * wird er mit der Schrift ausgestanzt und fällt nur in den Buchstaben.
+ * Zwei Lagen Flocken mit verschiedener Größe und Geschwindigkeit geben
+ * Tiefe. Gerollt wird um ein Vielfaches der Kachel, sonst springt es.
+ */
+.nm-winter_schneekugel {
+  background-image:
+    radial-gradient(circle, #ffffff 0 0.07em, transparent 0.1em),
+    radial-gradient(circle, rgba(255, 255, 255, 0.8) 0 0.045em, transparent 0.07em),
+    linear-gradient(180deg, #c4e0f5 0%, #7aa6d0 50%, #3f6a98 100%);
+  background-size: 0.9em 0.9em, 0.55em 0.55em, 100% 100%;
+  background-position: 0 0, 0.25em 0.1em, 0 0;
+  filter: drop-shadow(0 0 2px rgba(190, 225, 255, 0.4)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7));
+}
+html:not(.reduce-motion) .nm-winter_schneekugel { animation: winter-schneekugel 5s linear infinite; }
+@keyframes winter-schneekugel {
+  from { background-position: 0 0, 0.25em 0.1em, 0 0; }
+  to   { background-position: 0.9em 1.8em, -0.3em 1.75em, 0 0; }
+}
+
+/* --- Strickmuster (Namensschild, episch) --------------------------
+   Rot mit einem feinen Rautenmuster und weißen Bündchen oben und unten,
+   wie ein Pullover. Dunkel genug, dass der Name darauf lesbar bleibt. */
+.sch-winter_strick {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.13) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.13) 0 2px, transparent 2px 7px),
+    #7d1820;
+  border-color: #efe6da;
+  box-shadow: inset 0 2px 0 rgba(239, 230, 218, 0.85), inset 0 -2px 0 rgba(239, 230, 218, 0.85);
+}
+
+/* --- Tannenwald (Banner, selten) ----------------------------------
+   Drei Reihen Tannen, die hinteren kleiner und blasser, davor Schnee am
+   Boden und Flocken in der Luft. Die Bäume sind Kegel aus einem
+   conic-gradient mit der Spitze oben. */
+.pf-card[data-banner="winter_tannen"]::before,
+.cos-pass[data-banner="winter_tannen"]::before,
+.player-profile-head[data-banner="winter_tannen"]::before,
+.cos-banner-demo[data-banner="winter_tannen"] {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.85) 0 1px, transparent 1.6px) 3px 2px / 15px 13px,
+    linear-gradient(transparent 84%, #e6f1f9 84%),
+    conic-gradient(from 152deg at 50% 0%, #1d4636 0deg 56deg, transparent 56deg) 0 100% / 30px 46px repeat-x,
+    conic-gradient(from 152deg at 50% 0%, #3c6b5b 0deg 56deg, transparent 56deg) 11px 78% / 22px 34px repeat-x,
+    conic-gradient(from 152deg at 50% 0%, #6f8fa0 0deg 56deg, transparent 56deg) 4px 58% / 16px 24px repeat-x,
+    linear-gradient(180deg, #172440 0%, #34507a 100%);
+}
+
+/* Chat-Zeichen */
+.zn-winter_flocke       { color: #bfe3ff; }
+.zn-winter_zuckerstange { color: #e0525a; }
+
+/* ==================================================================
+   Wochenend-Derby (game/eventCalendar.js, public/js/eventCalendar.js)
+
+   Zwei Teams in fester Farbe: Rot und Blau stehen bewusst nicht in den
+   Paletten, ein Team muss in allen drei Designs gleich aussehen, wie die
+   Eigenfarben der Automaten. Alles andere kommt aus den Tokens.
+   ================================================================== */
+.derby { --derby-0: #d9483b; --derby-0-rgb: 217, 72, 59; --derby-1: #3b7bd9; --derby-1-rgb: 59, 123, 217; }
+.derby-tau { margin-top: var(--sp-4); }
+.derby-seiten { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: var(--sp-3); }
+.derby-seite { min-width: 0; }
+.derby-seite.t1 { text-align: right; }
+.derby-seite small { display: block; color: var(--text-mute); font-size: 0.66rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+.derby-seite.meins small { color: var(--text); }
+.derby-seite b { display: block; overflow: hidden; font-size: clamp(1rem, 3vw, 1.3rem); text-overflow: ellipsis; white-space: nowrap; }
+.derby-seite.t0 b { color: var(--derby-0); }
+.derby-seite.t1 b { color: var(--derby-1); }
+.derby-seite strong { display: block; font: 900 clamp(1.6rem, 6vw, 2.4rem)/1.05 var(--font-num); }
+.derby-gegen { padding-bottom: 0.5em; color: var(--text-mute); font-size: var(--fs-xs); }
+.derby-balken { position: relative; display: flex; height: 14px; margin-top: var(--sp-2); overflow: hidden; border-radius: var(--r-pill); background: rgba(0, 0, 0, 0.25); }
+.derby-balken > i { display: block; height: 100%; transition: width 0.6s var(--ease); }
+.derby-balken > i.t0 { background: linear-gradient(90deg, rgba(var(--derby-0-rgb), 0.7), var(--derby-0)); }
+.derby-balken > i.t1 { flex: 1; background: linear-gradient(90deg, var(--derby-1), rgba(var(--derby-1-rgb), 0.7)); }
+.derby-balken > span { position: absolute; top: -2px; bottom: -2px; width: 4px; margin-left: -2px; border-radius: 2px; background: var(--text); box-shadow: 0 0 8px rgba(0, 0, 0, 0.5); transition: left 0.6s var(--ease); }
+.derby-meins { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin-top: var(--sp-4); padding: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-lg); background: rgba(0, 0, 0, 0.12); }
+.derby-meins.t0 { border-color: rgba(var(--derby-0-rgb), 0.55); }
+.derby-meins.t1 { border-color: rgba(var(--derby-1-rgb), 0.55); }
+.derby-meins small { display: block; color: var(--text-mute); font-size: 0.66rem; }
+.derby-meins b { font-size: var(--fs-sm); }
+.derby-hinweis { margin: var(--sp-4) 0 0; color: var(--text-dim); }
+.derby-teams { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-top: var(--sp-4); }
+.derby-team { padding: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-lg); background: rgba(0, 0, 0, 0.1); }
+.derby-team.t0 { border-top: 3px solid var(--derby-0); }
+.derby-team.t1 { border-top: 3px solid var(--derby-1); }
+.derby-team h4 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
+.derby-team h4 small { color: var(--text-mute); font-weight: 600; }
+.derby-team ol { margin: 0; padding-left: 1.3em; }
+.derby-team li { display: flex; justify-content: space-between; gap: var(--sp-2); padding: 2px 0; font-size: var(--fs-sm); }
+.derby-team li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.derby-team li b { font-family: var(--font-num); }
+.derby-regeln { margin: var(--sp-4) 0 0; line-height: 1.5; }
+.derby-zuletzt { display: grid; gap: 4px; margin-top: var(--sp-4); padding: var(--sp-3); border: 1px solid rgba(var(--accent-rgb), 0.35); border-radius: var(--r-lg); background: rgba(var(--accent-rgb), 0.06); }
+.derby-zuletzt small { color: var(--accent-strong); font-size: 0.66rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+.derby-zuletzt span { color: var(--text-dim); font-size: var(--fs-sm); }
+.derby-beste { display: grid; gap: 2px; }
+.derby-beste em { font-style: normal; }
+.derby-beste em.t0 { color: var(--derby-0); }
+.derby-beste em.t1 { color: var(--derby-1); }
+@media (max-width: 520px) {
+  .derby-teams, .derby-meins { grid-template-columns: 1fr; }
+}

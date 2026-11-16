@@ -30,6 +30,10 @@
      ändert das nichts. */
   const FAHRZEUG_FAKTOR = 1.35;
   const RAND_REICHWEITE = 0.95;
+  /* Fußspuren: alle `schritt` Kacheln ein Abdruck, abwechselnd links und
+     rechts um `seite` versetzt; sie liegen `ms` lang und höchstens `max`
+     je Raum. Server und Browser rechnen mit denselben Zahlen. */
+  const SPUR = Object.freeze({ schritt: 0.42, seite: 0.11, ms: 30 * 60 * 1000, max: 360 });
 
   /* Wie viele Möglichkeiten die kostenlose Grundform je Feld hat. Die
      Farben selbst stehen in public/js/welt/figur.js; der Server prüft nur,
@@ -802,7 +806,7 @@
   }
 
   const api = {
-    KACHEL, FUSS, TEMPO, FAHRZEUG_FAKTOR, RAEUME, GRUNDFORM, STUECK_GESTEN, GREIFER,
+    KACHEL, FUSS, TEMPO, FAHRZEUG_FAKTOR, SPUR, RAEUME, GRUNDFORM, STUECK_GESTEN, GREIFER,
     raum, begehbar, wegFrei, abstandZuDing, reichweite, naechstesDing, inTuer, grundform, gestenFuer,
   };
 

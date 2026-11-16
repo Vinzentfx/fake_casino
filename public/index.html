@@ -188,11 +188,11 @@
           <span class="lobby-event-cup"><i data-icon="krone"></i></span>
           <span class="lobby-event-main">
             <small id="lobby-event-kicker">DAS FESTE WOCHENEND-EVENT</small>
-            <b id="lobby-event-title">Wochenend-Pokal</b>
-            <span id="lobby-event-timer">Freitag 18:00 bis Sonntag</span>
+            <b id="lobby-event-title">Wochenend-Derby</b>
+            <span id="lobby-event-timer">Freitag 18 Uhr bis Sonntag</span>
           </span>
           <span class="lobby-event-progress">
-            <span><em>Deine Runden</em><strong id="lobby-event-points">0 / 30</strong></span>
+            <span><em id="lobby-event-label">Stand</em><strong id="lobby-event-points">0 : 0</strong></span>
             <i><u id="lobby-event-fill"></u></i>
           </span>
           <span class="lobby-event-cta">Kalender öffnen <b>›</b></span>
@@ -1609,35 +1609,24 @@
       <button class="back-btn" data-nav="lobby">‹ Lobby</button>
       <h2 class="screen-title"><i data-icon="kalender"></i>Eventkalender</h2>
 
-      <section class="event-week-card" id="event-week-card">
+      <section class="event-week-card derby" id="event-week-card">
         <div class="event-week-glow" aria-hidden="true"></div>
         <div class="event-week-head">
           <span class="event-cup"><i data-icon="krone"></i></span>
           <div>
-            <small>Jeden Freitag bis Sonntag</small>
-            <h3 id="event-week-title">Wochenend-Pokal</h3>
+            <small>Jeden Freitag 18 Uhr bis Sonntag Mitternacht</small>
+            <h3 id="event-week-title">Wochenend-Derby</h3>
           </div>
           <span class="event-status" id="event-week-status">Lädt…</span>
         </div>
-        <p class="event-week-copy">Spiele am Wochenende bis zu 30 Runden – wann es dir passt. Jede abgeschlossene Runde zählt gleich viel, und gemeinsam füllt ihr den Casino-Pokal.</p>
-        <div class="event-week-days" aria-label="Wochenplan">
-          <span>MO</span><span>DI</span><span>MI</span><span>DO</span><span class="event-day-main">FR<small>18:00</small></span><span class="event-day-main">SA</span><span class="event-day-main">SO</span>
-        </div>
+        <p class="event-week-copy" id="derby-text">Zwei Teams, ein Wochenende. Lädt…</p>
         <div class="event-countdown" id="event-countdown">Termin wird geladen…</div>
 
-        <div class="event-progress-head"><span>Deine Runden</span><b id="event-points">0 / 30</b></div>
-        <div class="event-main-track"><i id="event-points-fill"></i></div>
-        <div class="event-milestones" id="event-milestones"></div>
-
-        <div class="event-community">
-          <div class="event-community-icon"><i data-icon="clans"></i></div>
-          <div class="event-community-body">
-            <div><b>Gemeinsamer Pokal</b><span id="event-community-people">Noch niemand dabei</span></div>
-            <p>30 Runden von allen zusammen schalten für jeden Teilnehmer eine Extra-Belohnung frei.</p>
-            <div class="event-main-track"><i id="event-community-fill"></i></div>
-            <small id="event-community-label">0 / 30</small>
-          </div>
-        </div>
+        <div class="derby-tau" id="derby-tau" aria-live="polite"></div>
+        <div class="derby-ich" id="derby-ich"></div>
+        <div class="derby-teams" id="derby-teams"></div>
+        <p class="derby-regeln muted small" id="derby-regeln"></p>
+        <div class="derby-letztes" id="derby-letztes"></div>
       </section>
 
       <div class="tafel calendar-login-card">
@@ -2018,7 +2007,9 @@
         <div style="text-align:center">
           <div class="ph-icon" data-icon="stocks"></div>
           <h2>Börse</h2>
-          <p class="muted small">Long oder Short mit Hebel. Vorsicht: Aktien können pleitegehen, dann ist alles weg.</p>
+          <p class="muted small">Long oder Short mit Hebel. Vorsicht: Aktien können pleitegehen.</p>
+          <!-- Grenzen und Gebühr kommen vom Server (stocks:state), public/js/stocks.js füllt die Zeile. -->
+          <p class="muted small" id="stk-regeln"></p>
         </div>
 
         <div class="stk-news" id="stk-news"></div>
