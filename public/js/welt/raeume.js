@@ -33,7 +33,10 @@
   /* Fußspuren: alle `schritt` Kacheln ein Abdruck, abwechselnd links und
      rechts um `seite` versetzt; sie liegen `ms` lang und höchstens `max`
      je Raum. Server und Browser rechnen mit denselben Zahlen. */
-  const SPUR = Object.freeze({ schritt: 0.42, seite: 0.11, ms: 30 * 60 * 1000, max: 360 });
+  /* Zehn Minuten, nicht dreißig: eine halbe Stunde lang voll sichtbar
+     wirkte beim Spielen wie „für immer“, man lief durch die eigene Spur von
+     vorhin. Wie schnell sie verblasst, steht in welt.js (`spurDeckkraft`). */
+  const SPUR = Object.freeze({ schritt: 0.42, seite: 0.11, ms: 10 * 60 * 1000, max: 360 });
 
   /* Wie viele Möglichkeiten die kostenlose Grundform je Feld hat. Die
      Farben selbst stehen in public/js/welt/figur.js; der Server prüft nur,
@@ -680,6 +683,12 @@
       { id: "notiz", art: "notiz", x: 2.4, y: 3.0, block: null,
         nutz: { x: 2.4, y: 3.7, r: 1.0 }, label: "Zettel", verb: "Lesen",
         ziel: { hinweis: "Wer im Spiegel der Umkleide winkt, bekommt eine Antwort. Und draußen, links vor der Bank, wächst etwas, das Glück bringt." } },
+      /* Das Vermächtnis des Kartografen (game/kartograf.js). Was das Pult
+         sagt, entscheidet der Server, für jeden etwas anderes. */
+      { id: "kartenpult", art: "pult", x: 3.2, y: 6.4, block: [2.75, 5.8, 3.65, 6.4],
+        nutz: { x: 3.2, y: 7.1, r: 1.0 }, label: "Kartenpult", verb: "Lesen",
+        ziel: { eingabe: { art: "kartograf", titel: "Das Pult des Kartografen", platzhalter: "Straße und Hausnummer" } },
+        fokus: { x: 3.2, y: 5.6, zoom: 2.6 } },
     ],
   };
 

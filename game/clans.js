@@ -833,6 +833,32 @@ function setupClans(io, accounts) {
     });
 
     // Rollen und Verwaltung (Gründer und Offiziere)
+    /*
+     * Den Clan umbenennen (Spielervorschlag vom 8.11.).
+     *
+     * Die Kennung des Clans bleibt, sie steht an jedem Mitglied (`acc.clan`),
+     * am Wappen und an jedem Krieg. Geändert werden nur Name und Kürzel, so
+     * wie bei Konten der Schlüssel bleibt und nur der Name wechselt. Nur der
+     * Gründer, höchstens einmal je Woche: ein Name, der täglich wechselt,
+     * macht Rangliste und Kriegsansagen unlesbar.
+     */
+    socket.on("clan:umbenennen", ({ name, tag } = {}, ack) => {
+      if (typeof ack !== "function") return;
+      const id = myClan(socket);
+      if (!id || roleOf(id, socket.data.account) !== "founder") return ack({ ok: false, error: "Nur der Gründer kann den Clan umbenennen." });
+      const c = clans[id];
+      const r = umbenennenPruefen(c, name, tag);
+      if (!r.ok) return ack(r);
+      const vorher = `[${c.tag}] ${c.name}`;
+      c.name = r.name; c.tag = r.tag; c.umbenanntAm = Date.now();
+      const acc = accounts.get(socket.data.account);
+      logClan(c, `${acc ? acc.name : "Der Gründer"} benennt den Clan um: ${vorher} heißt jetzt [${c.tag}] ${c.name}`);
+      save();
+      chat.announce(io, `${vorher} heißt jetzt [${c.tag}] ${c.name}.`);
+      notifyClan(id);
+      ack({ ok: true, clan: clanPublic(id) });
+    });
+
     socket.on("clan:setMotto", ({ motto } = {}, ack) => {
       if (typeof ack !== "function") return;
       const id = myClan(socket);
@@ -1042,6 +1068,32 @@ function meldungErledigen(clanId, entfernen) {
 }
 
 /** Name, Tag und Motto aller Clans, fuer die Filter-Pruefung im Admin. */
+const UMBENENNEN_PAUSE_MS = 7 * 24 * 3600 * 1000;
+/** Prüft einen neuen Namen samt Kürzel für Clan `c`. Gleiche Regeln wie beim Gründen. */
+function umbenennenPruefen(c, name, tag, jetzt = Date.now()) {
+  if (c.umbenanntAm && jetzt - c.umbenanntAm < UMBENENNEN_PAUSE_MS) {
+    const tage = Math.ceil((UMBENENNEN_PAUSE_MS - (jetzt - c.umbenanntAm)) / 86400000);
+    return { ok: false, error: `Umbenennen geht einmal je Woche. Noch ${tage} ${tage === 1 ? "Tag" : "Tage"}.` };
+  }
+  name = String(name || "").trim().slice(0, 22);
+  tag = String(tag || c.tag || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+  if (name.length < 3) return { ok: false, error: "Name mind. 3 Zeichen." };
+  if (tag.length < 2) return { ok: false, error: "Das Kürzel braucht 2 bis 4 Buchstaben oder Zahlen." };
+  if (name === c.name && tag === c.tag) return { ok: false, error: "Das ist schon der Name." };
+  const wf = require("./wortfilter");
+  const p1 = wf.pruefe(name, "Der Clan-Name");
+  if (!p1.ok) return { ok: false, error: p1.error };
+  const p2 = wf.pruefe(tag, "Der Tag");
+  if (!p2.ok) return { ok: false, error: p2.error };
+  const neu = slug(name);
+  if (!neu) return { ok: false, error: "Der Name braucht Buchstaben oder Zahlen." };
+  // Vergeben ist ein Name, wenn ein ANDERER Clan so heißt oder so angelegt wurde.
+  const andere = Object.values(clans).filter((x) => x.id !== c.id);
+  if (andere.some((x) => x.id === neu || slug(x.name) === neu)) return { ok: false, error: "Name schon vergeben." };
+  if (andere.some((x) => x.tag === tag)) return { ok: false, error: "Tag schon vergeben." };
+  return { ok: true, name, tag };
+}
+
 function alleNamen() {
   return Object.values(clans).map((c) => ({ id: c.id, name: c.name, tag: c.tag, motto: c.motto || "" }));
 }
@@ -1053,4 +1105,6 @@ module.exports = {
   addSeasonXp, seasonBonusFor, clanSeasonState,
   // Nur zum Nachsehen, welche Auftraege eine Woche zieht.
   questsDerWoche,
+  umbenennenPruefen, UMBENENNEN_PAUSE_MS,
+  _clans: () => clans,
 };

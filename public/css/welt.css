@@ -2291,18 +2291,21 @@ html:not(.reduce-motion):not(.sparsam) .wsp-funken { animation: wsp-flackern 0.9
 }
 
 /* Sternenstaub: kleine Sterne mit vier Zacken, die nacheinander funkeln. */
+/* Klein gehalten: gleich groß wie ein Fußabdruck wirkte der Stern auf dem
+   Boden wie ein Stempel, nicht wie Staub. */
 .wsp-sternstaub {
-  width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
-  background: radial-gradient(circle, #ffffff 0 18%, #ffe27a 40%, #d9a73a 100%);
+  width: 6px; height: 6px; margin: -3px 0 0 -3px;
+  background: radial-gradient(circle, #ffffff 0 22%, #ffe27a 50%, #d9a73a 100%);
   clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
-  filter: drop-shadow(0 0 2px rgba(255, 226, 122, 0.9));
+  filter: drop-shadow(0 0 1px rgba(255, 226, 122, 0.8));
 }
 html:not(.reduce-motion):not(.sparsam) .wsp-sternstaub { animation: wsp-funkeln 2.2s ease-in-out infinite; }
 html:not(.reduce-motion):not(.sparsam) .wsp-sternstaub:nth-child(3n+1) { animation-delay: -0.7s; }
 html:not(.reduce-motion):not(.sparsam) .wsp-sternstaub:nth-child(3n+2) { animation-delay: -1.4s; }
 @keyframes wsp-funkeln {
-  0%, 100% { scale: 0.7; }
-  50%      { scale: 1.15; }
+  /* Nur die Größe: die Deckkraft gehört dem Verblassen in welt.js. */
+  0%, 100% { scale: 0.6; }
+  50%      { scale: 1; }
 }
 
 /* Die Vorschau in Garderobe, Sammlung und Kiste: vier Schritte schräg. */

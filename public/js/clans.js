@@ -443,7 +443,8 @@
       <div class="cl-motto">${c.motto
         ? `„${escapeHtml(c.motto)}”`
         : `<span class="muted small">Kein Motto.</span>`}${canManage()
-        ? ` <button class="icon-btn" id="clan-motto-btn">${sym("bearbeiten")}<span>Motto</span></button>` : ""}</div>
+        ? ` <button class="icon-btn" id="clan-motto-btn">${sym("bearbeiten")}<span>Motto</span></button>` : ""}${isFounder()
+        ? ` <button class="icon-btn" id="clan-name-btn">${sym("bearbeiten")}<span>Umbenennen</span></button>` : ""}</div>
 
       ${renderKrieg(c)}
 
@@ -539,6 +540,16 @@
         toast("Wappen entfernt.");
         load();
       });
+    });
+
+    /* Umbenennen: erst der Name, dann das Kürzel, beide vorausgefüllt.
+       Was nicht geht (vergeben, Wortfilter, schon diese Woche), sagt der Server. */
+    $("#clan-name-btn")?.addEventListener("click", async () => {
+      const name = await window.Casino.dialog.eingabe("Neuer Name für den Clan. Geht einmal je Woche, Mitglieder, Wappen und Kasse bleiben.", { titel: "Clan umbenennen", wert: c.name || "", okText: "Weiter" });
+      if (name == null) return;
+      const tag = await window.Casino.dialog.eingabe("Und das Kürzel, 2 bis 4 Buchstaben oder Zahlen:", { titel: "Clan umbenennen", wert: c.tag || "", okText: "Umbenennen" });
+      if (tag == null) return;
+      socket.emit("clan:umbenennen", { name, tag }, (r) => { if (r && r.ok) { toast("Der Clan heißt jetzt so."); load(); } else toast(r?.error || "Fehler."); });
     });
 
     $("#clan-motto-btn")?.addEventListener("click", async () => {

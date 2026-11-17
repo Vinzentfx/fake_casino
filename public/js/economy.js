@@ -692,7 +692,49 @@
     for (const p of pts) { x += p[0]; y += p[1]; }
     return [x / pts.length, y / pts.length];
   };
-  const setViewBox = () => { if (vb) $("#city-map").setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); };
+  /* Straßennamen erscheinen erst, wenn man nah genug dran ist; aus der
+     ganzen Ortsteilansicht wären es achtzig Namen übereinander. Die
+     Schrift rechnet in Metern und wird deshalb mit dem Ausschnitt
+     mitgezogen: auf dem Bildschirm bleibt sie immer gleich groß. */
+  const STRASSEN_AB_M = 1300;
+  const setViewBox = () => {
+    if (!vb) return;
+    const svg = $("#city-map");
+    svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+    svg.style.setProperty("--strassen-fs", (vb.w / 58).toFixed(2));
+    svg.classList.toggle("strassen-nah", vb.w <= STRASSEN_AB_M);
+  };
+
+  /*
+   * Die Straßennamen eines Ortsteils, als Schrift am Straßenverlauf.
+   *
+   * Eine Straße besteht in den Kartendaten aus vielen Stücken. Beschriftet
+   * wird nur ein Stück, das lang genug für den Namen ist, und je Name höchstens
+   * eins im Umkreis von 220 Metern, sonst stünde dieselbe Straße fünfmal
+   * nebeneinander. Monopole haben schon ihre eigene Beschriftung mit dem
+   * Besitzer. Läuft ein Stück von rechts nach links, wird es umgedreht, damit
+   * keine Schrift auf dem Kopf steht.
+   */
+  function strassenNamen(roads, monoBySt) {
+    const laenge = (pts) => { let l = 0; for (let i = 1; i < pts.length; i++) l += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return l; };
+    const gesetzt = new Map();   // Name: [Mittelpunkte]
+    const defs = [], texte = [];
+    const stuecke = (roads || []).filter((r) => r.n && !monoBySt[r.n] && r.pts.length >= 2)
+      .map((r) => ({ r, l: laenge(r.pts) }))
+      .filter((x) => x.l >= 55)
+      .sort((a, b) => b.l - a.l);
+    stuecke.forEach(({ r }, i) => {
+      const mitte = r.pts[Math.floor(r.pts.length / 2)];
+      const schon = gesetzt.get(r.n) || [];
+      if (schon.some((p) => Math.hypot(p[0] - mitte[0], p[1] - mitte[1]) < 220)) return;
+      schon.push(mitte);
+      gesetzt.set(r.n, schon);
+      const pts = r.pts[0][0] > r.pts[r.pts.length - 1][0] ? [...r.pts].reverse() : r.pts;
+      defs.push(`<path id="sn-${i}" d="${openPath(pts)}"/>`);
+      texte.push(`<text><textPath href="#sn-${i}" startOffset="50%" text-anchor="middle">${escapeHtml(r.n)}</textPath></text>`);
+    });
+    return `<defs>${defs.join("")}</defs><g class="strassen-namen" aria-hidden="true">${texte.join("")}</g>`;
+  }
 
   // Übersicht: alle Ortsteile
   function renderOverview() {
@@ -833,6 +875,9 @@
     for (const l of district.landmarks) {
       parts.push(window.Casino.icons.svgGruppe(LM_ICON[l.type] || "marke", l.x, l.y, 26, "#fff"));
     }
+
+    // Straßennamen über den Häusern, unter den Monopolen.
+    parts.push(strassenNamen(district.roads, monoBySt));
 
     // Monopol-Beschriftungen obendrauf.
     for (const [st, info] of Object.entries(monoLabelAt)) {

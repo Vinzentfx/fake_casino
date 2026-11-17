@@ -214,6 +214,10 @@ const DEFS = [
      wissen, dass es da etwas gibt. */
   { id: "geheim_weserlicht", emoji: "✴️", label: "Weserlicht", desc: "Du hast es bis ganz nach oben geschafft.", reward: 150000, geheim: true,
     ziel: 1,        wert: (a) => (a.weserlicht && a.weserlicht.stufe >= 5 ? 1 : 0) },
+  /* Das Vermächtnis des Kartografen (game/kartograf.js). Mehr als das
+     Weserlicht, weil es sich nicht weitersagen lässt. */
+  { id: "geheim_kartograf", emoji: "🧭", label: "Kartograf", desc: "Du hast sein Haus gefunden, vermessen und angepeilt.", reward: 250000, geheim: true,
+    ziel: 1,        wert: (a) => (a.kartograf && a.kartograf.stufe >= 4 ? 1 : 0) },
   { id: "geheim_fundus",  emoji: "🎭", label: "Hinter den Mänteln", desc: "Manche Schränke sind tiefer, als sie aussehen.", reward: 15000, geheim: true,
     ziel: 1,        wert: (a) => (a.welt && a.welt.verstecke && a.welt.verstecke.fundus ? 1 : 0) },
 ];

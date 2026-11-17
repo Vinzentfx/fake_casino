@@ -265,6 +265,7 @@ const TITLES = [
   { id: "geh_spiegel",      text: "Spiegelbild",          cost: null, via: "Ein Geheimnis im Haus" },
   { id: "geh_schallplatte", text: "Plattenleger",         cost: null, via: "Ein Geheimnis im Haus" },
   { id: "geh_pokal",        text: "Podestheld",           cost: null, via: "Ein Geheimnis im Haus" },
+  { id: "geh_kartograf",    text: "Kartograf von Porta",  cost: null, via: "Ein Geheimnis im Haus" },
   { id: "geh_wunderkerze",  text: "Funkenfreund",         cost: null, via: "Ein Geheimnis im Haus" },
   { id: "geh_e46",          text: "Kreidemond",           cost: null, via: "Ein Geheimnis im Haus" },
   { id: "geh_laufsteg",     text: "Laufstegdiva",         cost: null, via: "Ein Geheimnis im Haus" },
@@ -424,6 +425,8 @@ const SCHILDER = [
   /* Meilenstein im Buch der Geheimnisse (drei Funde). Dunkles Holz mit
      einem Schlüsselloch aus Messing am Ende. Steht still. */
   { id: "geh_schluesselloch", label: "Schlüsselloch", cost: null, via: "Drei Geheimnisse gefunden" },
+  /* Für das Vermächtnis des Kartografen. Höhenlinien auf altem Papier. */
+  { id: "geh_messtisch", label: "Messtischblatt", cost: null, via: "Das Vermächtnis des Kartografen" },
   /* Flüssiges Metall mit einem glühenden Kern, exklusiv im Atelier. */
   { id: "staub_schmelzkern", label: "Schmelzkern", cost: null, via: "Nur im Prägeatelier", limitiert: "staub", nur: "staub", staubTier: "legendaer", motion: true },
 ];

@@ -31,7 +31,9 @@
      sieht man, dass er noch zur Zeile davor gehört. */
   function textHtml(text, zeilen) {
     if (!zeilen) return `<p class="dlg-text">${esc(text).replace(/\n/g, "<br>")}</p>`;
-    return `<div class="dlg-text dlg-zeilen">${String(text || "").split("\n").map((z) => `<p class="dlg-zeile">${esc(z) || "&nbsp;"}</p>`).join("")}</div>`;
+    /* Eine eingerückte Zeile ist Rätseltext (ein verschlüsseltes Wort, eine
+       Zahlenreihe): Schreibmaschinenschrift, damit sie sich vom Brief abhebt. */
+    return `<div class="dlg-text dlg-zeilen">${String(text || "").split("\n").map((z) => `<p class="dlg-zeile${/^ {4}/.test(z) ? " code" : ""}">${esc(z) || "&nbsp;"}</p>`).join("")}</div>`;
   }
 
   function baue({ titel, text, art, wert, platzhalter, okText, abbruchText, gefahr, optionen, zeilen }) {

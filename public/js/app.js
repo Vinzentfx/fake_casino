@@ -919,7 +919,7 @@ socket.on("account:update", ({ account }) => {
 
 // Nur bekannte Schilder durchlassen: ein alter Wert aus einer Nachricht darf
 // keine fremde Klasse ins Dokument schreiben.
-const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma", "auk_tresor", "sml_wesergold", "gezeiten", "gala_samt", "staub_schmelzkern", "geh_schluesselloch", "winter_strick"]);
+const SCHILDER = new Set(["messing", "jade", "rubin", "karo", "neon", "puls", "prisma", "auk_tresor", "sml_wesergold", "gezeiten", "gala_samt", "staub_schmelzkern", "geh_schluesselloch", "winter_strick", "geh_messtisch"]);
 const schildKlasse = (p) => (p && SCHILDER.has(p.schild) ? " sch-" + p.schild : "");
 
 function renderOnlinePlayers(players = []) {
@@ -1719,7 +1719,9 @@ async function claimBonus() {
       // einen Fehler.
       const st = data.stadt;
       const steuer = st && st.satz > 0.005 ? `, ${Math.round(st.satz * 100)} % Grundsteuer ab` : "";
-      extras.push(`+${data.houses.toLocaleString("de-DE")} Haus-Miete (${data.housesOwned} Häuser${steuer})`);
+      // Nachgeholte Stunden nennen, sonst wirkt die größere Zahl wie ein Fehler.
+      const nachgeholt = data.mietStunden > 1 ? `, ${data.mietStunden} Stunden nachgeholt` : "";
+      extras.push(`+${data.houses.toLocaleString("de-DE")} Haus-Miete (${data.housesOwned} Häuser${steuer}${nachgeholt})`);
     }
     if (data.sets) extras.push(`+${data.sets.toLocaleString("de-DE")} Sammel-Sets`);
     if (data.cashback) extras.push(`+${data.cashback.toLocaleString("de-DE")} Cashback`);

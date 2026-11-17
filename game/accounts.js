@@ -29,6 +29,28 @@ const MAX_CHIPS = 100_000_000_000; // 100 Mrd., weit über jedem ehrlichen Stand
 // Kompatibilität weiter DAILY_.
 const DAILY_BONUS = 1000;                    // je Abholung (1× pro Stunde)
 const DAILY_BONUS_COOLDOWN_MS = 60 * 60 * 1000; // 1h
+/*
+ * Miete, die man verpasst hat.
+ *
+ * Die Miete kam nur mit der Abholung, eine Stunde je Abholung, egal wie
+ * lange man weg war. Wer nachts schlief, hatte acht Stunden Miete
+ * verschenkt; ein Spielervorschlag vom 12.11. wollte genau das ändern.
+ *
+ * Nachgeholt werden höchstens MIETE_NACHHOLEN_H Stunden, und jede nach der
+ * ersten nur zur Hälfte. Wer jede Stunde abholt, bekommt dasselbe wie
+ * bisher; wer über Nacht weg war, bekommt viereinhalb Stunden statt einer.
+ * Volle Nachzahlung hätte die Miete der großen Besitzer verachtfacht, ohne
+ * dass jemand dafür etwas tut. Gerechnet wird je Stunde nach Steuer, nicht
+ * auf die Summe: die Grundsteuer ist eine Wurzelkurve und hätte die
+ * gesammelten Stunden sonst noch einmal kleingerechnet.
+ */
+const MIETE_NACHHOLEN_H = 8;
+const MIETE_NACHHOLEN_SATZ = 0.5;
+function mietStunden(lastBonusAt, now = Date.now()) {
+  if (!lastBonusAt) return { stunden: 1, faktor: 1 };
+  const stunden = Math.max(1, Math.min(MIETE_NACHHOLEN_H, Math.floor((now - lastBonusAt) / DAILY_BONUS_COOLDOWN_MS)));
+  return { stunden, faktor: 1 + (stunden - 1) * MIETE_NACHHOLEN_SATZ };
+}
 
 // Serie: jede Abholung in Folge (innerhalb der Frist) gibt STREAK_STEP drauf,
 // höchstens STREAK_MAX mal, also maximal +2.500.
@@ -887,7 +909,8 @@ function claimDailyBonus(name) {
    */
   const f = faucetFactor(acc.name);
   const tBase = Math.round(base * f), tTribute = Math.round(tribute * f);
-  const tHouses = stadt.netto, tSets = Math.round(sets * f);
+  const nach = mietStunden(acc.lastBonusAt, now);
+  const tHouses = Math.round(stadt.netto * nach.faktor), tSets = Math.round(sets * f);
   const amount = tBase + tTribute + tHouses + tSets + cashback;
   acc.chips += amount;
   acc.lastBonusAt = now;
@@ -895,6 +918,8 @@ function claimDailyBonus(name) {
   return {
     ok: true, amount, base: tBase, tribute: tTribute, streets, golden,
     houses: tHouses, housesOwned, stadt, sets: tSets, setList, cashback,
+    // Wie viele Stunden Miete in dieser Abholung stecken (1 = nur die eine).
+    mietStunden: tHouses ? nach.stunden : 0,
     streak: acc.bonusStreak, taper: Math.round(f * 100), account: publicAccount(acc),
   };
 }
@@ -1442,6 +1467,7 @@ function publicProfile(acc) {
 module.exports = {
   publicProfile, onSessionRevoked,
   meldeStand,
+  mietStunden, MIETE_NACHHOLEN_H,
   STARTING_CHIPS,
   touchSeen,
   DAILY_BONUS,

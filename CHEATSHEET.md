@@ -103,6 +103,10 @@ den Pass nicht nachträglich.
 * **Haus-Miete:** 0,9 % des Werts je Gebäude und Stunde, abzüglich Verwaltung
   und Grundsteuer (siehe [Stadt](#stadt)). Als Einziges am Stunden-Bonus wird
   die Miete nicht von der Vermögensbremse gekürzt: du hast dafür bezahlt.
+  Warst du länger weg, wird verpasste Miete nachgeholt: höchstens acht
+  Stunden, jede nach der ersten zur Hälfte. Wer stündlich abholt, bekommt
+  dasselbe wie vorher; nach einer Nacht gibt es viereinhalb Stunden Miete
+  statt einer.
 * **Sammel-Sets:** zum Beispiel Stadtbekannt (2.000) oder ein Kaffee-Kartell
   (3.000 je Ortsteil).
 * **Cashback:** 10 % des insgesamt noch nicht vergüteten Nettoverlusts aus
@@ -651,6 +655,8 @@ einen dauerhaften Vorteil.
 * Gründen kostet 100.000 Chips, bis zu 20 Mitglieder.
 * Kürzel haben 2 bis 4 Zeichen. Clans können offen oder geschlossen sein;
   Gründer und Offiziere bearbeiten Motto, Anfragen, Rollen und Mitglieder.
+  Der Gründer kann den Clan einmal je Woche umbenennen, Name und Kürzel;
+  Mitglieder, Wappen, Kasse und Fortschritt bleiben.
 * **Schatzkammer:** Mitglieder spenden Chips in eine gemeinsame Kasse. Gründer
   und Offiziere können Auszahlungen vornehmen; alles steht im Clan-Protokoll.
 * **Clan-Krieg:** Einsatz mindestens 10.000 aus der Kasse, Dauer 1, 3 oder 7
@@ -708,8 +714,8 @@ diese vierzehn entstehen nie wieder; was dann noch existiert, gibt es nur
 über den Markt.
 
 **Fußspuren** sind eine eigene Kleidungsart in der Garderobe. Wer eine
-anlegt, hinterlässt beim Gehen Abdrücke, die eine halbe Stunde im Raum
-liegen bleiben und langsam verblassen; wer später kommt, sieht, wo du
+anlegt, hinterlässt beim Gehen Abdrücke, die zehn Minuten im Raum
+liegen bleiben und schnell verblassen; wer später kommt, sieht, wo du
 gegangen bist. Auf Fahrzeugen und im Sitzen entsteht keine Spur. Fünf gibt
 es aus der Kleiderkiste: Pfotenabdrücke (gewöhnlich), Rosenblätter (selten),
 Neonsohlen (episch), Funkenspur (legendär) und Sternenstaub (mythisch).

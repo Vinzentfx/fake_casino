@@ -1449,6 +1449,35 @@ function ownedLots() {
 
 function err(error) { return { ok: false, error }; }
 
+/*
+ * Für das Vermächtnis des Kartografen (game/kartograf.js): jedes Haus, das
+ * als persönliches Ziel taugt. Nur echte Adressen mit einer reinen Zahl als
+ * Hausnummer (die lässt sich römisch schreiben), groß genug, um es auf der
+ * Karte anzutippen, und nichts Besonderes: Casino, Bank und Trophäen stehen
+ * ohnehin im Rampenlicht. Einmal gebaut, die Karte ändert sich nie.
+ */
+let kartografListe = null;
+function kartografHaeuser() {
+  if (kartografListe) return kartografListe;
+  kartografListe = [];
+  for (const d of MAP.districts) {
+    for (const b of d.buildings) {
+      if (!b.st || b.trophy || b.id === CASINO_ID || b.id === BANK_ID || b.a < 40) continue;
+      const m = b.n.match(/^.+?\s+(\d{1,3})$/);
+      const nr = m ? Number(m[1]) : 0;
+      if (!nr || nr > 199) continue;
+      kartografListe.push({ id: b.id, did: d.id, ortsteil: d.name, strasse: b.st, nr, a: b.a, c: b.c });
+    }
+  }
+  kartografListe.sort((x, y) => x.id - y.id);
+  return kartografListe;
+}
+/** Wo das Casino-Gebäude auf der Karte steht (Meter ab der Stadtmitte). */
+function casinoMitte() {
+  const e = CASINO_ID != null ? bldIndex.get(CASINO_ID) : null;
+  return e ? e.b.c : null;
+}
+
 /**
  * Der Besitzer heisst jetzt anders.
  *
@@ -1506,4 +1535,5 @@ module.exports = {
   zollSatz, zollSetzen, zollFuer, ZOLL_MAX,
   buyBuilding, sellBuilding, takeover, streetPlan, streetOffer,
   listCompany, adminClearLot, adminRemoveOwner, ownedLots, resetCity,
+  kartografHaeuser, casinoMitte,
 };

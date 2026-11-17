@@ -13289,3 +13289,40 @@ html:not(.reduce-motion) .nm-winter_schneekugel { animation: winter-schneekugel 
 @media (max-width: 520px) {
   .derby-teams, .derby-meins { grid-template-columns: 1fr; }
 }
+
+/* Rätseltext in einem Brief (eingerückte Zeile, core/dialog.js und Logbuch). */
+.dlg-zeile.code {
+  margin: 0.2em 0;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--accent-strong);
+  overflow-wrap: anywhere;
+}
+
+/* Messtischblatt (Namensschild für das Vermächtnis des Kartografen):
+   Höhenlinien auf dunklem Kartenpapier, wie ein Berg im Schnitt. */
+.sch-geh_messtisch {
+  background:
+    repeating-radial-gradient(ellipse 120% 90% at 78% 130%, transparent 0 5px, rgba(214, 190, 140, 0.42) 5px 6px),
+    linear-gradient(160deg, #36402c, #1f2619);
+  border-color: #c9a86a !important;
+  color: #f1e6c8 !important;
+}
+
+/* Straßennamen auf der Stadtkarte (economy.js `strassenNamen`). Erst ab
+   einem gewissen Zoom sichtbar; die Größe kommt in Kartenmetern aus
+   `setViewBox`, damit sie auf dem Bildschirm gleich bleibt. Feste helle
+   Schrift mit dunklem Rand wie die übrigen Kartenbeschriftungen, die
+   Karte selbst ist in allen Paletten dunkel. */
+#city-map .strassen-namen { display: none; pointer-events: none; }
+#city-map.strassen-nah .strassen-namen { display: inline; }
+#city-map .strassen-namen text {
+  font-size: calc(var(--strassen-fs, 12) * 1px);
+  font-weight: 700;
+  fill: #e9eee6;
+  stroke: #1c231b;
+  stroke-width: calc(var(--strassen-fs, 12) * 0.28px);
+  paint-order: stroke;
+  letter-spacing: 0.02em;
+}

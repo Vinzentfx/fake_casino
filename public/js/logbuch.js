@@ -20,6 +20,31 @@
   const sterne = (n) => "★".repeat(n) + `<i>${"★".repeat(Math.max(0, 5 - n))}</i>`;
   const datum = (t) => new Date(t).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
 
+  /* Das Vermächtnis des Kartografen. Wie das Weserlicht eine Kette, aber
+     ohne Hinweise der Woche und ohne Tafel: für jeden steht ein anderer
+     Brief darin, und der ist das Einzige, was man zum Nachlesen braucht. */
+  function kartograf(e, k) {
+    const stufen = Array.from({ length: k.von }, (_, i) => `<i class="${i < k.stufe ? "an" : ""}"></i>`).join("");
+    const notizen = (k.notizen || []).map((n) => `<div class="lb-notiz"><h4>${esc(n.titel)}</h4>${n.zeilen
+      ? `<div class="dlg-zeilen lb-zeilen">${n.text.split("\n").map((z) => `<p class="dlg-zeile${/^ {4}/.test(z) ? " code" : ""}">${esc(z) || "&nbsp;"}</p>`).join("")}</div>`
+      : `<pre>${esc(n.text)}</pre>`}</div>`).join("");
+    const wieviele = k.geloest ? `Bisher ${k.geloest} gelöst.` : "Bisher hat es niemand gelöst.";
+    const kopf = e.gefunden
+      ? `<b>${esc(e.label)}</b><small>Als ${esc(k.nr || "?")}. gelöst am ${esc(datum(e.gefunden))}</small>`
+      : `<b>???</b><small>${k.stufe ? "Du bist auf der Spur." : "Ein Rätsel in mehreren Teilen, für jeden ein anderes."} ${wieviele}</small>`;
+    const geruecht = !e.gefunden && !k.stufe && !k.notizen.length
+      ? (e.geruecht ? `<p class="lb-geruecht"><small>Gerücht</small>${esc(e.geruecht)}</p>`
+        : e.geruechtFern ? '<p class="lb-geruecht fern">Man erzählt sich etwas darüber, aber nur in einem Raum, in dem du noch nicht warst.</p>' : "")
+      : "";
+    return `<article class="lb-eintrag lb-weserlicht lb-kartograf${e.gefunden ? "" : " zu"}">
+      ${kopf}
+      <span class="lb-sterne">${sterne(e.schwer)}</span>
+      ${k.stufe ? `<div class="lb-stufen" aria-label="Stufe ${k.stufe} von ${k.von}">${stufen}</div>` : ""}
+      ${geruecht}
+      ${notizen}
+    </article>`;
+  }
+
   function weserlicht(e, w) {
     const stufen = Array.from({ length: w.von }, (_, i) => `<i class="${i < w.stufe ? "an" : ""}"></i>`).join("");
     const notizen = (w.notizen || []).map((n) => `<div class="lb-notiz"><h4>${esc(n.titel)}</h4>${n.zeilen
@@ -89,11 +114,12 @@
     const gefunden = r.liste.filter((e) => e.gefunden).length;
     $("#lb-zahl").textContent = `${gefunden} von ${r.liste.length} gelöst`;
     const wl = r.liste.find((e) => e.weserlicht);
-    const rest = r.liste.filter((e) => !e.weserlicht);
+    const kg = r.liste.find((e) => e.kartograf);
+    const rest = r.liste.filter((e) => !e.weserlicht && !e.kartograf);
     // Gelöstes nach Datum, Offenes vom leichtesten zum schwersten.
     const geloest = rest.filter((e) => e.gefunden).sort((a, b) => a.gefunden - b.gefunden);
     const offen = rest.filter((e) => !e.gefunden).sort((a, b) => a.schwer - b.schwer);
-    box.innerHTML = (wl ? weserlicht(wl, r.weserlicht) : "");
+    box.innerHTML = (wl ? weserlicht(wl, r.weserlicht) : "") + (kg && r.kartograf ? kartograf(kg, r.kartograf) : "");
         const abschnitte = `
       <h3 class="lb-abschnitt">✓ Gelöst <small>${geloest.length}</small></h3>
       <div class="lb-liste">${geloest.map(eintrag).join("") || '<p class="lb-leer">Noch nichts. Fang mit einem Stern an.</p>'}</div>

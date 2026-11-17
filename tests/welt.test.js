@@ -792,3 +792,24 @@ test("Fußspuren bleiben im Raum liegen, für alle, die später kommen", (t) => 
   const dritte = w.neuerSocket("anna");
   assert.equal(dritte.frage("welt:betreten", {}).spuren.length, vorher);
 });
+
+test("das Pult des Kartografen gibt jedem einen eigenen Brief", (t) => {
+  const w = aufbau();
+  t.after(w.aufraeumen);
+  const anna = w.neuerSocket("anna");
+  const bert = w.neuerSocket("bert");
+  anna.frage("welt:betreten", {});
+  bert.frage("welt:betreten", {});
+  const pult = R.raum("tresor").dinge.find((d) => d.id === "kartenpult");
+  for (const k of ["anna", "bert"]) Object.assign(w.welt.figuren.get(k), { raum: "tresor", x: pult.nutz.x, y: pult.nutz.y });
+  const a = anna.frage("welt:nutzen", { ding: "kartenpult" });
+  const b = bert.frage("welt:nutzen", { ding: "kartenpult" });
+  assert.equal(a.ok, true);
+  assert.ok(a.ziel.eingabe && a.ziel.eingabe.zeilen, "der Brief steht Zeile für Zeile");
+  assert.notEqual(a.ziel.eingabe.text, b.ziel.eingabe.text, "Anna und Bert lesen verschiedene Briefe");
+  assert.ok(w.kontoVon("anna").kartograf, "wer den Brief gelesen hat, ist dabei");
+  require("../game/raetsel")._zuruecksetzen();   // die Atempause aus früheren Tests
+  const falsch = anna.frage("welt:eingabe", { ding: "kartenpult", text: "Hauptstraße 1" });
+  assert.equal(falsch.ok, true, JSON.stringify(falsch));
+  assert.match(falsch.satz, /nicht sein Haus/);
+});

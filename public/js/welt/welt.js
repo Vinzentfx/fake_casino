@@ -1720,7 +1720,7 @@
      Frage kommt vom Server (der Wirt sagt jedes Mal etwas anderes), die
      Antwort geht über welt:eingabe zurück und wird nur dort entschieden. */
   async function eingabeAuf(d, frage) {
-    const text = await Casino.dialog.eingabe(frage.text || "", { titel: frage.titel || d.label, platzhalter: frage.platzhalter || "", okText: "Los" });
+    const text = await Casino.dialog.eingabe(frage.text || "", { titel: frage.titel || d.label, platzhalter: frage.platzhalter || "", okText: "Los", zeilen: !!frage.zeilen });
     if (text == null || !String(text).trim()) return;
     socket.emit("welt:eingabe", { ding: d.id, text: String(text).slice(0, 80) }, (r) => {
       if (!r || !r.ok) { Casino.toast((r && r.error) || "Das geht gerade nicht."); return; }
@@ -3005,11 +3005,21 @@
     const a = f && f.look && f.look.kleidung && f.look.kleidung.spur;
     return typeof a === "string" && F.SPUREN.has(a) ? a : null;
   }
+  /*
+   * Wie ein Abdruck verblasst. Ein paar Sekunden frisch, dann schnell blass
+   * wie eine echte Spur, nach rund zwei Minuten nur noch ein Hauch, und der
+   * bleibt bis zum Ende stehen. Gerade dieser Hauch ist für die, die später
+   * kommen: man sieht noch, wo jemand war, aber er drängt sich nicht auf.
+   */
+  const SPUR_FRISCH_MS = 15000, SPUR_HALB_MS = 40000, SPUR_HAUCH = 0.14;
   function spurDeckkraft(el, jetzt) {
-    const anteil = (jetzt - Number(el.dataset.t)) / R.SPUR.ms;
-    if (anteil >= 1) { el.remove(); return; }
-    // Die erste Hälfte frisch, danach wird sie langsam blass.
-    el.style.opacity = anteil < 0.5 ? "0.9" : Math.max(0.08, 0.9 * (1 - (anteil - 0.5) / 0.5)).toFixed(2);
+    const alter = jetzt - Number(el.dataset.t);
+    if (!(alter < R.SPUR.ms)) { el.remove(); return; }
+    const nach = Math.max(0, alter - SPUR_FRISCH_MS);
+    const wert = SPUR_HAUCH + (0.9 - SPUR_HAUCH) * Math.pow(0.5, nach / SPUR_HALB_MS);
+    // Die letzte Minute blendet auch den Hauch aus, statt ihn auf einen Schlag zu nehmen.
+    const ende = Math.min(1, (R.SPUR.ms - alter) / 60000);
+    el.style.opacity = (wert * ende).toFixed(2);
   }
   function spurAbdruck(x, y, w, fuss, art, alter) {
     if (!spurEbene || !F.SPUREN.has(art) || ![x, y, w, alter].every(Number.isFinite)) return;
@@ -3037,11 +3047,12 @@
     spurAbdruck(f.x, f.y, Math.round(Math.atan2(dy, dx) * 180 / Math.PI), l.f, art, 0);
     f.spurLetzt = { x: f.x, y: f.y, f: l.f ? 0 : 1 };
   }
+  // Alle drei Sekunden, damit das Verblassen nicht in Stufen springt.
   setInterval(() => {
-    if (!spurEbene) return;
+    if (!spurEbene || !spurEbene.childElementCount) return;
     const jetzt = Date.now();
     for (const el of [...spurEbene.children]) spurDeckkraft(el, jetzt);
-  }, 20000);
+  }, 3000);
 
   /* Die Tanzfläche in der Spielhalle, dieselben Maße wie die Leuchtkacheln
      in moebel.js. Wer darauf steht und nichts tut, tanzt; die Kachel unter

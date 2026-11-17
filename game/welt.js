@@ -84,6 +84,9 @@ const GEHEIMNISSE = {
      gezählt wird; Laterne und Titel gibt die Ehrentafel dazu. */
   weserlicht:  { art: "haustier", id: "rabe",        ort: "Sternwarte", schwer: 5, satz: "Der Rabe bleibt bei dir." },
   naehmaschine: { art: "accessoire", id: "seidentuch", raum: "atelier", geruecht: "Im Stoffregal im Atelier fehlt ein Ballen. Wer wissen will, wo er hin ist, sollte nach Federn suchen.", ort: "Atelier", schwer: 3, satz: "Du legst den roten Seidenrest unter die Nadel. Die Maschine rattert, als hätte sie seit Jahren darauf gewartet, und am Ende liegt ein Halstuch mit goldenem Saum vor dir." },
+  /* Das Vermächtnis des Kartografen (game/kartograf.js): für jeden ein
+     anderes Haus in Porta, gefunden wird am Pult im Tresorraum. */
+  kartograf:   { art: "hand",     id: "kartenrolle", raum: "tresor", geruecht: "Auf dem Pult im Tresorraum liegt ein Brief, und für jeden steht etwas anderes darin. Wer sich in Porta auskennt, findet das Haus, von dem er spricht.", ort: "Tresorraum", schwer: 5, satz: "Unter dem Kompass löst sich eine Schublade im Pult. Darin liegt eine Kartenrolle, die Karte von Porta, von Hand gezeichnet. Ganz unten steht dein Name, in derselben Schrift wie der Brief." },
   zylinder:    { art: "kopf",     id: "zylinder",    raum: "atelier", geruecht: "Hinter den Mänteln im alten Schrank im Atelier ist es heller, als es in einem Schrank sein dürfte.", ort: "Kostümfundus", schwer: 3, satz: "Unter dem Deckel liegt Staub, ein Programmheft von 1987 und ein alter Zylinder. Er passt, als hätte er auf dich gewartet." },
 };
 
@@ -152,6 +155,7 @@ const LIED_MS = 3 * 60 * 1000;
 
 const runde = (n) => Math.round(n * 100) / 100;
 const raetsel = require("./raetsel");
+const kartograf = require("./kartograf");
 const WIRT_STANDARD = "Der Wirt poliert ein Glas. „Was darf's sein?“";
 
 /** Vom Greifautomaten gerufen, nach jedem Griff. Gibt einen Fund oder null. */
@@ -283,7 +287,7 @@ function setupWelt(io, accounts) {
   const sichtbar = (fig) => fig.sockets.size > 0;
 
   /*
-   * Fußspuren. Je Raum eine Liste der letzten Abdrücke, eine halbe Stunde
+   * Fußspuren. Je Raum eine Liste der letzten Abdrücke, zehn Minuten
    * lang, nur im Speicher: nach einem Neustart ist der Boden sauber, und
    * das ist in Ordnung. Live zeichnet jeder Browser die Abdrücke selbst aus
    * der Bewegung; diese Liste ist nur für die, die SPÄTER kommen.
@@ -688,6 +692,30 @@ function setupWelt(io, accounts) {
           frage.text = b.spruch || WIRT_STANDARD;
           return ack({ ok: true, ding: d.id, ziel: { eingabe: frage }, ...(platz ? { platz } : {}) });
         }
+        /* Das Pult des Kartografen: der Brief ist für jeden ein anderer,
+           und wer alle Stufen hat, findet hier das Geheimnis. */
+        if (frage.art === "kartograf") {
+          const acc = accounts.get(fig.key);
+          const neuDabei = !acc.kartograf;
+          const p = kartograf.pult(acc, fig.key);
+          if (neuDabei) { kartograf.angefangen(acc); accounts.save(); }
+          if (p.fund && kartograf.finden(acc, accounts.rawAll())) {
+            /* Die Belohnung steht über dem, was das Weserlicht gibt, weil
+               hier nichts weiterzusagen ist: Kartenrolle und Titel über das
+               Geheimnis, dazu das Messtischblatt als Namensschild, das in
+               jeder Liste neben dem Namen steht, und 250.000 über das
+               Achievement (achievements.js). */
+            cosmetics.grant(acc, "schild", "geh_messtisch", fig.key);
+            accounts.save();
+            const g = geheimnisFinden(fig.key, "kartograf");
+            const nr = acc.kartograf.nr;
+            try { require("./chat").announce(io, `${acc.name} hat das Vermächtnis des Kartografen entschlüsselt, als ${nr}. im Haus. Für jeden steht ein anderes Haus im Brief.`); } catch {}
+            try { require("./chronik").notiere("event", `${acc.name} hat als ${nr}. das Vermächtnis des Kartografen entschlüsselt.`, { user: acc.name }); } catch {}
+            if (g) return ack({ ok: true, ding: d.id, ziel: { geheimnis: { ...g, satz: `${g.satz}\n\nDazu ein Namensschild: das Messtischblatt. Du bist der ${nr}. Kartograf von Porta.` } } });
+          }
+          if (p.keineEingabe || p.fund) return ack({ ok: true, ding: d.id, ziel: { hinweis: p.text || "Das Pult ist leer. Die Kartenrolle trägst du bei dir." } });
+          return ack({ ok: true, ding: d.id, ziel: { eingabe: { ...frage, text: p.text, zeilen: !!p.zeilen, platzhalter: p.platzhalter || frage.platzhalter } } });
+        }
         return ack({ ok: true, ding: d.id, ziel: { eingabe: frage } });
       }
       if (d.ziel.weserlicht === "tafel") {
@@ -810,6 +838,15 @@ function setupWelt(io, accounts) {
       const darf = raetsel.darf(fig.key);
       if (!darf.ok) return ack(darf);
       const acc = accounts.get(fig.key);
+      /* Der Kartograf zuerst: am Pult immer, am Fernrohr nur, wenn er dort
+         etwas erwartet. Sonst entscheidet das Weserlicht wie bisher. */
+      const kVorher = kartograf.stufe(acc);
+      const k = d.ziel.eingabe.art === "kartograf" ? kartograf.eingabePult(acc, fig.key, text)
+        : d.ziel.eingabe.art === "teleskop" ? kartograf.fernrohr(acc, fig.key, text) : null;
+      if (k) {
+        if (kartograf.stufe(acc) !== kVorher) accounts.save();
+        return ack({ ok: true, titel: k.titel || d.label, satz: k.satz });
+      }
       const vorher = raetsel.stufe(acc);
       const r = raetsel.eingabe(acc, d.ziel.eingabe.art, text);
       if (raetsel.stufe(acc) !== vorher) { accounts.save(); try { require("./achievements").check(fig.key); } catch {} }
@@ -837,8 +874,8 @@ function setupWelt(io, accounts) {
       const zahlGefunden = Object.keys(gefunden).filter((k) => GEHEIMNISSE[k]).length;
       const meilensteine = GEH_MEILENSTEINE.map((m) => ({ ab: m.ab, name: m.name, label: cosmetics.label(m.art, m.id), erreicht: zahlGefunden >= m.ab }));
       const liste = Object.entries(GEHEIMNISSE).map(([id, g]) => gefunden[id]
-        ? { id, gefunden: gefunden[id], label: cosmetics.label(g.art, g.id), titel: cosmetics.label("title", titelVon(id)), ort: g.ort, satz: g.satz, schwer: g.schwer, weserlicht: id === "weserlicht" }
-        : { id, gefunden: null, schwer: g.schwer, weserlicht: id === "weserlicht",
+        ? { id, gefunden: gefunden[id], label: cosmetics.label(g.art, g.id), titel: cosmetics.label("title", titelVon(id)), ort: g.ort, satz: g.satz, schwer: g.schwer, weserlicht: id === "weserlicht", kartograf: id === "kartograf" }
+        : { id, gefunden: null, schwer: g.schwer, weserlicht: id === "weserlicht", kartograf: id === "kartograf",
           /* Das Gerücht nur, wenn man in dem Raum schon war. Sonst steht
              nur da, dass es eins gibt: das lockt ins Erkunden. */
           ...(g.geruecht ? (warDort(acc, g.raum) ? { geruecht: g.geruecht } : { geruechtFern: true }) : {}) });
@@ -847,6 +884,12 @@ function setupWelt(io, accounts) {
         stufe, von: raetsel.STUFEN, notizen: raetsel.notizen(acc), eingetragen: raetsel.anzahlEingetragen(),
         hinweise: raetsel.hinweise(),
         nr: acc.weserlicht && acc.weserlicht.nr || null,
+      }, kartograf: {
+        // Stufe 0 bis 3, dazu der Fund am Pult als vierte.
+        stufe: Math.min(kartograf.stufe(acc), kartograf.STUFEN + 1), von: kartograf.STUFEN + 1,
+        notizen: kartograf.notizen(acc, socket.data.account),
+        nr: acc.kartograf && acc.kartograf.nr || null,
+        geloest: kartograf.geloest(accounts.rawAll ? accounts.rawAll() : []),
       } });
     });
 

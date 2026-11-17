@@ -25,13 +25,25 @@
 (function () {
   const RELEASES = [
     {
+      id: "2026-11-17b",
+      datum: "17. November 2026",
+      titel: "Miete über Nacht, Clans mit neuem Namen",
+      items: [
+        { icon: "businesses", titel: "Verpasste Miete wird nachgeholt",
+          text: "Bisher gab es bei jeder Abholung genau eine Stunde Miete, egal wie lange du weg warst. Jetzt holt der Stunden-Bonus bis zu acht verpasste Stunden nach, jede nach der ersten zur Hälfte. Wer stündlich abholt, bekommt dasselbe wie vorher, und wer morgens nach einer Nacht vorbeikommt, bekommt viereinhalb Stunden Miete statt einer. Wie viele Stunden drin stecken, steht in der Meldung." },
+
+        { icon: "clans", titel: "Clans umbenennen",
+          text: "Der Gründer kann den Clan jetzt umbenennen, Name und Kürzel, einmal je Woche. Mitglieder, Wappen, Kasse und Fortschritt bleiben, und im Chat steht, wie der Clan jetzt heißt." },
+      ],
+    },
+    {
       id: "2026-11-17",
       datum: "17. November 2026",
       titel: "Fußspuren und das Wochenend-Derby",
       gross: true,
       items: [
         { icon: "kosmetik", titel: "Fußspuren",
-          text: "Eine neue Kleidungsart in der Garderobe: Wer eine Spur trägt, hinterlässt beim Gehen Abdrücke auf dem Boden. Sie bleiben eine halbe Stunde liegen und verblassen langsam, und wer nach dir in den Raum kommt, sieht, wo du gegangen bist. In der Kleiderkiste gibt es Pfotenabdrücke, Rosenblätter, leuchtende Neonsohlen, eine Funkenspur und ganz oben Sternenstaub. Die Schneestapfen gibt es nur in der Winterkiste." },
+          text: "Eine neue Kleidungsart in der Garderobe: Wer eine Spur trägt, hinterlässt beim Gehen Abdrücke auf dem Boden. Sie verblassen beim Gehen und sind nach zehn Minuten weg, und wer in der Zeit nach dir in den Raum kommt, sieht noch, wo du gegangen bist. In der Kleiderkiste gibt es Pfotenabdrücke, Rosenblätter, leuchtende Neonsohlen, eine Funkenspur und ganz oben Sternenstaub. Die Schneestapfen gibt es nur in der Winterkiste." },
 
         { icon: "clans", titel: "Das Wochenend-Derby",
           text: "Der Wochenend-Pokal ist weg. Ab Freitag 18 Uhr spielen jede Woche zwei Teams gegeneinander, etwa Wittekindsberg gegen Jakobsberg. Mit deiner ersten Runde kommst du in ein Team, und jede Runde zählt für dein Team, egal welches Spiel und egal wie hoch der Einsatz. Wer an jedem Tag des Wochenendes vorbeikommt, bringt am meisten: höchstens 25 Punkte am Tag, und der erste Besuch am Tag gibt 5 extra. Im Kalender siehst du das Tauziehen und wer für welches Team am meisten zieht." },

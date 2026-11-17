@@ -206,6 +206,8 @@ const HANDDINGE = [
   { id: "gummihuhn",     label: "Königliches Gummihuhn", cost: null, via: "Am Greifautomaten gefangen", limitiert: "greifer" },
   // Nur in der Nacht vor einer Öffnung zu holen, an der Tür des Warteraums.
   { id: "eintrittskarte", label: "Goldene Eintrittskarte", cost: null, via: "Beim Einlass ergattert", limitiert: "einlass" },
+  // Das Vermächtnis des Kartografen (game/kartograf.js), für jeden ein anderes Haus.
+  { id: "kartenrolle",   label: "Kartenrolle des Kartografen", cost: null, via: "Irgendwo im Haus versteckt" },
 ];
 
 /* Fahrzeuge. Man steht oder sitzt darauf und rollt etwas schneller als zu
@@ -250,7 +252,7 @@ const HAUSTIERE = [
  * Spuren: was die Figur beim Gehen auf dem Boden hinterlässt.
  *
  * Das einzige Stück im Haus, das man sieht, OHNE dass man sich trifft. Der
- * Server merkt sich die Abdrücke je Raum eine halbe Stunde lang
+ * Server merkt sich die Abdrücke je Raum zehn Minuten lang
  * (`SPUR_MS` in game/welt.js); wer später kommt, sieht, wer hier war und
  * wohin er gegangen ist. Die Runde spielt meistens versetzt, und genau dafür
  * ist es gebaut. Gezeichnet wird in public/js/welt/welt.js (`spurSetzen`),
